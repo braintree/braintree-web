@@ -81,11 +81,11 @@ braintree.setup(clientToken, integration, options);
 
 | option | description |
 | --- | --- |
-| `container` | **required**, `String` or `Element` <br /> If String, the ID of the element braintree will attach to. If DOM or jQuery Element, the element braintree will attach to. |
+| `container` | `String` or `Element` - **required** <br /> If String, the ID of the element braintree will attach to. If DOM or jQuery Element, the element braintree will attach to. |
 | `form` | `String`, custom only <br /> The `name` attribute of the payment form. Defaults to the nearest parent of `container`. |
 | `paymentMethodNonceReceived` | `function (event, nonce)` <br />For intercepting the default form submit. If you provide this callback, the checkout form will not be submitted automatically. |
 | `paypal` | `Object` <br /> For configuring PayPal button and modal. See below. |
-| `paypal.container` | **required**, `String` or `Element` <br /> The ID or Element you want the PayPal button to bind to. |
+| `paypal.container` | `String` or `Element` - **required** <br /> The ID or Element you want the PayPal button to bind to. |
 | `paypal.paymentMethodNonceInputField` | `String` or `Element` <br /> The id, native DOM element, or jQuery object specifying an input field that the client will write the resulting `paymentMethodNonce` once the customer has authenticated with PayPal. If not provided, an `<input>` will be created and added to the form. |
 | `paypal.displayName` | `String` <br /> The name to display as the merchant inside of the PayPal lightbox. Defaults to the company name on your Braintree account. |
 | `paypal.onSuccess` | `function (nonce, email, shippingAddress)` <br /> A callback function, which is fired after the customer successfully authenticates with PayPal via the popup. It's called with the following arguments: nonce (String), email (String), shippingAddress (Object - only returned when shipping addresses are enabled). |
