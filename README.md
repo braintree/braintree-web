@@ -81,16 +81,16 @@ braintree.setup(clientToken, integration, options);
 
 | option | description |
 | --- | --- |
-| `container` | **required**, String, DOM or jQuery Element - If String, the ID of the element braintree will attach to. If DOM or jQuery Element, the element braintree will attach to. |
-| `form` | `String`, custom only - The `name` attribute of the payment form. Defaults to the nearest parent of `container`. |
-| `paymentMethodNonceReceived` | `function (event, nonce)` - For intercepting the default form submit. If you provide this callback, the checkout form will not be submitted automatically. |
-| `paypal` | `Object` - For configuring PayPal button and modal. See below. |
-| `paypal.container` | **required**, `String` or `Element` - The ID or Element you want the PayPal button to bind to. |
-| `paypal.paymentMethodNonceInputField` | `String` or `Element` - The id, native DOM element, or jQuery object specifying an input field that the client will write the resulting `paymentMethodNonce` once the customer has authenticated with PayPal. If not provided, an `<input>` will be created and added to the form. |
-| `paypal.displayName` | `String` - The name to display as the merchant inside of the PayPal lightbox. Defaults to the company name on your Braintree account. |
-| `paypal.onSuccess` | `function` - A callback function, which is fired after the customer successfully authenticates with PayPal via the popup. It's called with the following arguments: nonce (String), email (String), shippingAddress (Object - only returned when shipping addresses are enabled). |
-| `paypal.onUnsupported` | `function` - A callback function that is fired if the customer's browser does not support the PayPal checkout experience. |
-| `paypal.onCancelled` | `function` - A callback function, which is fired if the customer cancels or logs out without completing PayPal authentication. |
-| `paypal.singleUse` | `Boolean` - Defaults to `false`. When set to `true`, triggers one time flow instead of future payment flow. |
-| `paypal.locale` | `String` - The locale. |
-| `paypal.enableShippingAddress` | `Boolean` - Whether a shipping address selector should be displayed in a future payment flow. Defaults to `false`. |
+| `container` | **required**, `String` or `Element` <br /> If String, the ID of the element braintree will attach to. If DOM or jQuery Element, the element braintree will attach to. |
+| `form` | `String`, custom only <br /> The `name` attribute of the payment form. Defaults to the nearest parent of `container`. |
+| `paymentMethodNonceReceived` | `function (event, nonce)` <br />For intercepting the default form submit. If you provide this callback, the checkout form will not be submitted automatically. |
+| `paypal` | `Object` <br /> For configuring PayPal button and modal. See below. |
+| `paypal.container` | **required**, `String` or `Element` <br /> The ID or Element you want the PayPal button to bind to. |
+| `paypal.paymentMethodNonceInputField` | `String` or `Element` <br /> The id, native DOM element, or jQuery object specifying an input field that the client will write the resulting `paymentMethodNonce` once the customer has authenticated with PayPal. If not provided, an `<input>` will be created and added to the form. |
+| `paypal.displayName` | `String` <br /> The name to display as the merchant inside of the PayPal lightbox. Defaults to the company name on your Braintree account. |
+| `paypal.onSuccess` | `function (nonce, email, shippingAddress)` <br /> A callback function, which is fired after the customer successfully authenticates with PayPal via the popup. It's called with the following arguments: nonce (String), email (String), shippingAddress (Object - only returned when shipping addresses are enabled). |
+| `paypal.onUnsupported` | `function ()` <br /> A callback function that is fired if the customer's browser does not support the PayPal checkout experience. |
+| `paypal.onCancelled` | `function ()` <br /> A callback function, which is fired if the customer cancels or logs out without completing PayPal authentication. |
+| `paypal.singleUse` | `Boolean` <br /> Defaults to `false`. When set to `true`, triggers one time flow instead of future payment flow. |
+| `paypal.locale` | `String` <br /> The locale. |
+| `paypal.enableShippingAddress` | `Boolean` <br /> Whether a shipping address selector should be displayed in a future payment flow. Defaults to `false`. |
