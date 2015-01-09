@@ -92,8 +92,8 @@ braintree.setup(clientToken, integration, options);
 | `paypal.container` | `String` or `Element` - **required** <br /> The ID or Element you want the PayPal button to bind to. |
 | `paypal.paymentMethodNonceInputField` | `String` or `Element` <br /> The id, native DOM element, or jQuery object specifying an input field that the client will write the resulting `paymentMethodNonce` once the customer has authenticated with PayPal. If not provided, an `<input>` will be created and added to the form. |
 | `paypal.displayName` | `String` <br /> The name to display as the merchant inside of the PayPal lightbox. Defaults to the company name on your Braintree account. |
-| `paypal.onSuccess` | `function (nonce, email, shippingAddress)` <br /> A callback function, which is fired after the customer successfully authenticates with PayPal via the popup. It's called with the following arguments: nonce (String), email (String), shippingAddress (Object - only returned when shipping addresses are enabled). |
-| `paypal.onUnsupported` | `function ()` <br /> A callback function that is fired if the customer's browser does not support the PayPal checkout experience. |
+| `paypal.onSuccess` | `function (nonce, email, shippingAddress)` <br /> A callback function, which is fired after the customer successfully authenticates with PayPal via the popup. <br /><ul><li>`nonce` - `String`</li><li>`email` - `String`</li><li>`shippingAddress` - `Object` - only returned when shipping addresses are enabled.</ul> |
+| `paypal.onUnsupported` | `function (err)` <br /> A callback function that is fired if the customer's browser does not support the PayPal checkout experience. <br /><ul><li>err - `Error`</li></ul> |
 | `paypal.onCancelled` | `function ()` <br /> A callback function, which is fired if the customer cancels or logs out without completing PayPal authentication. |
 | `paypal.singleUse` | `Boolean` <br /> Defaults to `false`. When set to `true`, triggers one time flow instead of future payment flow. |
 | `paypal.locale` | `String` <br /> The locale. |
