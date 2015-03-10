@@ -45,7 +45,7 @@ braintree.setup('your-client-token', 'dropin', {
 
 ```javascript
 braintree.setup('your-client-token', 'custom', {
-  container: 'payment-form'
+  id: 'payment-form'
 });
 ```
 
