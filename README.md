@@ -24,12 +24,14 @@ For more thorough documentation, visit [the JS SDK docs](https://developers.brai
 #### Drop-in integration
 
 ```html
-<div id="payment-form"></div>
+<form action="/your/server/endpoint" method="post">
+    <div id="dropin-container"></div>
+</form>
 ```
 
 ```javascript
 braintree.setup('your-client-token', 'dropin', {
-  container: 'payment-form'
+  container: 'dropin-container'
 });
 ```
 
