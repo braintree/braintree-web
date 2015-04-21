@@ -56,6 +56,9 @@ req.end();
 // verify versions all match
 dest.on('finish', function () {
   jsdom.env('', ['../dist/braintree.js'], function (errors, window) {
-    assert.equal(pkg.version, window.braintree.VERSION);
+    assert.equal(
+      pkg.version,
+      window.braintree.VERSION,
+      'bower/npm version (' + pkg.version +') does not match hotlinked version (' + window.braintree.VERSION + ')');
   });
 });
