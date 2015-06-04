@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.7.3
+  * PayPal
+    * Render errors for failed two-factor auth logins
+    * Add modal support in webviews on iOS
+
 ## 2.7.2
   * Drop-in
     * Refactor expiration validation to max out at 19 years in the future
