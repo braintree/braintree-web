@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 2.8.0
+  * Drop-in
+    * Report client-side validation failures to `onError`
+    * Add support for valid cards over 16 digits (including Maestro)
+    * Fix missing background on error overlay in Internet Explorer 8
+
+  * PayPal
+    * Bugfixes
+
 ## 2.7.4
   * Bugfixes
 
