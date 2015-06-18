@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+## 2.7.4
+  * Bugfixes
+
+  * Drop-in
+    * Generate new nonce on each submit attempt when new payment method is available
+
+  * Coinbase
+    * Bugfixes related to popup logins not working in some Metro versions of IE
+
+  * PayPal
+    * Add billing address retrieval via `enableBillingAddress` client option
+
 ## 2.7.3
   * PayPal
     * Render errors for failed two-factor auth logins
