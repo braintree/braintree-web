@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.9.0
+  * Drop-in
+    * Contextually validate month based on current date
+    * Bugfix for Chrome auto-fill issue
+
 ## 2.8.1
   * PayPal
     * Bugfixes
