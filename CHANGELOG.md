@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.8.1
+  * PayPal
+    * Bugfixes
+
 ## 2.8.0
   * Drop-in
     * Report client-side validation failures to `onError`
