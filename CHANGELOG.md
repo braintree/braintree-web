@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 2.10.0
+  * Use CORS in favor of JSONP
+
+  * Drop-in
+    * Bugfixes
+
+  * PayPal
+    * Fixes a bug with the footer not persisting across views
+
 ## 2.9.0
   * Drop-in
     * Contextually validate month based on current date
