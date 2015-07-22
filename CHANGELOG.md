@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.10.1
+  * Coinbase
+    * Fixes a bug where the authorization popup did not close after clicking "Deny"
+
 ## 2.10.0
   * Use CORS in favor of JSONP
 
