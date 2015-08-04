@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## 2.11.0
+ * Add `enableCORS` as configuration option
+
 ## 2.10.1
   * Coinbase
     * Fixes a bug where the authorization popup did not close after clicking "Deny"
