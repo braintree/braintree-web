@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## 2.11.1
+ * iframe messaging bug fixes
+
 ## 2.11.0
  * Add `enableCORS` as configuration option
 
