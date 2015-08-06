@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## 2.11.2
+ * Bugfixes
+
 ## 2.11.1
  * iframe messaging bug fixes
 
