@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 2.11.3
+  * Bugfixes
+
+  * PayPal
+    * Adds indicator to app if mock data is being used
+    * onUnsupported errors console.log by default
+
 ## 2.11.2
  * Bugfixes
 
