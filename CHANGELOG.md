@@ -1,8 +1,13 @@
 CHANGELOG
 =========
 
+## 2.11.4
+  * PayPal
+    * Bugfixes
+
 ## 2.11.3
   * Bugfixes
+
 
   * PayPal
     * Adds indicator to app if mock data is being used
