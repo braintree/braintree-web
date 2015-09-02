@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.12.0
+
+  * Adds new features for partners
+
 ## 2.11.4
   * PayPal
     * Bugfixes
