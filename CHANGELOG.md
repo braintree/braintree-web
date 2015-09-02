@@ -1,13 +1,15 @@
 CHANGELOG
 =========
 
-## 2.12.1
+## 2.12.2
+  * PayPal
+    * Bugfixes
 
+## 2.12.1
   * Api
     * Timeout optimizations
 
 ## 2.12.0
-
   * Adds new features for partners
 
 ## 2.11.4
