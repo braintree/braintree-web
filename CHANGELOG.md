@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.12.1
+
+  * Api
+    * Timeout optimizations
+
 ## 2.12.0
 
   * Adds new features for partners
