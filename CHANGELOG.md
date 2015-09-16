@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.14.0
+
+* Introduce `hosted-fields`
+* Bugfixes
+
 ## 2.13.0
 
 * Introduce `teardown`
