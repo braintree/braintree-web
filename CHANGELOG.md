@@ -1,11 +1,20 @@
 CHANGELOG
 =========
 
+## 2.13.0
+
+* Introduce `teardown`
+
+* PayPal
+  * Bugfixes
+
 ## 2.12.2
+
   * PayPal
     * Bugfixes
 
 ## 2.12.1
+
   * Api
     * Timeout optimizations
 
