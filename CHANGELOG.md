@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.14.2
+
+ * PayPal
+    * Bugfixes
+
 ## 2.14.1
 
 * PayPal
