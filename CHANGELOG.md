@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.14.1
+
+* PayPal
+  * Bugfixes
+
 ## 2.14.0
 
 * Introduce `hosted-fields`
