@@ -51,6 +51,54 @@ braintree.setup('your-client-token', 'custom', {
 });
 ```
 
+####Hosted Fields integration
+
+```html
+<form action="/" id="my-sample-form">
+  <label for="card-number">Card Number</label>
+  <div id="card-number"></div>
+
+  <label for="cvv">CVV</label>
+  <div id="cvv"></div>
+
+  <label for="expiration-date">Expiration Date</label>
+  <div id="expiration-date"></div>
+
+  <input type="submit" value="Pay" />
+</form>
+```
+
+```javascript
+braintree.setup("YOUR_CLIENT_TOKEN", "custom", {
+  id: "my-sample-form",
+  hostedFields: {
+    styles: {
+      "input": {
+        "font-size": "16pt",
+        "color": "#3A3A3A"
+      },
+
+      ".number": {
+        "font-family": "monospace"
+      },
+
+      ".valid": {
+        "color": "green"
+      }
+    },
+    number: {
+      selector: "#card-number"
+    },
+    cvv: {
+      selector: "#cvv"
+    },
+    expirationDate: {
+      selector: "#expiration-date"
+    }
+  }
+});
+```
+
 #### Advanced integration
 
 ```javascript

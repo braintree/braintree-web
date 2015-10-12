@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+## 2.14.3
+
+* Improve formatting of error handler if you don't specify an `onError` callback
+
+* Fix [an issue](https://github.com/braintree/braintree-web/issues/74) when handling credit card fields
+
+* Coinbase
+  * Update popup size to reflect new Coinbase design
+
+* PayPal
+  * BugFixes
+
 ## 2.14.2
 
  * PayPal
