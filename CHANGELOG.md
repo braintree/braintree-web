@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.14.4
+
+* Dropin
+  * Fix spriting over text for coinbase button
+
 ## 2.14.3
 
 * Improve formatting of error handler if you don't specify an `onError` callback
