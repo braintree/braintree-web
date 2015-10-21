@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+## 2.15.0
+
+* Hosted Fields
+  * Allow CVV-only integrations
+
+* PayPal
+  * Introduce `headless` merchant configuration option
+  * Introduce programmatic initialization and closing of PayPal auth flow
+  * Increase localization coverage
+
+* Coinbase
+  * Fix regression where button appeared in unsupported browsers
+
 ## 2.14.4
 
 * Dropin
