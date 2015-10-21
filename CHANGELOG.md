@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.15.1
+
+* Custom & Coinbase
+  * Bugfixes
+
 ## 2.15.0
 
 * Hosted Fields
