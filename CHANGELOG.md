@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.15.2
+
+* PayPal
+  * Fix a regression where `onCancelled` was no longer called
+
 ## 2.15.1
 
 * Custom & Coinbase
