@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## 2.15.3
+
+* Deduped some internal dependencies for filesize reductions
+
+* Hosted Fields
+  * Fixes a bug where emptying a previously filled form would retain stale nonce
+  * Bugfix: correctly report `card.type` in `onFieldEvent`
+
 ## 2.15.2
 
 * PayPal
@@ -15,6 +23,7 @@ CHANGELOG
 
 * Hosted Fields
   * Allow CVV-only integrations
+  * Contextually validate month based on current date when using split fields
 
 * PayPal
   * Introduce `headless` merchant configuration option
