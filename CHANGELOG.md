@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.15.4
+
+* Dropin
+  * Bugfix: Properly complete card tokenization flow in IE8
+
 ## 2.15.3
 
 * Deduped some internal dependencies for filesize reductions
