@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.16.0
+
+* DataCollector
+  * bundles BraintreeData functionality into v.zero integrations
+
 ## 2.15.4
 
 * Dropin
