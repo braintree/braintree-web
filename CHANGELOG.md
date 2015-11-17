@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.16.1
+
+* Bugfix: Fix [#98](https://github.com/braintree/braintree-web/issues/98) 
+
 ## 2.16.0
 
 * DataCollector
