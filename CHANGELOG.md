@@ -1,9 +1,14 @@
 CHANGELOG
 =========
 
+## 2.17.0
+
+* Added support for tokenization keys
+* Bugfix: Prevent unexpected mutation of manipulate configuration object passed to `.setup()`
+
 ## 2.16.1
 
-* Bugfix: Fix [#98](https://github.com/braintree/braintree-web/issues/98) 
+* Bugfix: Fix [#98](https://github.com/braintree/braintree-web/issues/98)
 
 ## 2.16.0
 
