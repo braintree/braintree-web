@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.17.1
+
+* Bugfixes
+
 ## 2.17.0
 
 * Added support for tokenization keys
