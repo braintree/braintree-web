@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.17.2
+
+* Bugfixes
+
 ## 2.17.1
 
 * Bugfixes
@@ -8,7 +12,7 @@ CHANGELOG
 ## 2.17.0
 
 * Added support for tokenization keys
-* Bugfix: Prevent unexpected mutation of manipulate configuration object passed to `.setup()`
+* Bugfix: Prevent unexpected mutation of configuration object passed to `.setup()`
 
 ## 2.16.1
 
