@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 2.17.3
+
+* Drop-in
+  * Bugfix - IE8 now correctly accepts DOM nodes as containers (fixes [#105](https://github.com/braintree/braintree-web/issues/105))
+  * Bugfix - jQuery elements are properly accepted as containers (fixes [#105](https://github.com/braintree/braintree-web/issues/105))
+  * Bugfix - PayPal popups now properly open when `paypal` options are not given
+
 ## 2.17.2
 
 * Bugfixes
