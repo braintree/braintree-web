@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 2.17.4
+
+* Drop-in
+  * Bugfix - Allow PayPal Vault flow to complete when no `paypal` options are given
+
 ## 2.17.3
 
 * Drop-in
