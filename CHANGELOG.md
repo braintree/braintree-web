@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.17.5
+
+* Fixes use of jQuery or DOM objects specifying containers or buttons
+
 ## 2.17.4
 
 * Drop-in
