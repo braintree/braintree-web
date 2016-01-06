@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+## 2.17.6
+
+* Bugfix - Reduce time to report error if there is an unhandled error (SSL, gateway unreachable, etc) with the JSONP driver
+* Avoid exceptions caused by closed `window.opener`s in IE
+* Hosted Fields
+  * Bugfixes
+    * `onFieldEvent` wasn't being called when `isEmpty` changed (fixes [#110](https://github.com/braintree/braintree-web/issues/110))
+    * Teardown no longer injects empty `payment_method_nonce` input field
+    * Field locking no longer occurs on iOS
+    * 3-digit expiration month+date strings such as `2/20` are now valid
+    * Space separated expiration dates such as `1 2020` are now valid
+    * Potential validity of slashless expiration dates is now consistent
+    * Expiration dates that are too long are no longer considered valid
+    * CVV validation does not always validate 3-digit values as valid
+* Dropin
+  * Bugfix - Fixes an error around deviceData being undefined (fixes [#114](https://github.com/braintree/braintree-web/issues/114))
+
 ## 2.17.5
 
 * Fixes use of jQuery or DOM objects specifying containers or buttons
