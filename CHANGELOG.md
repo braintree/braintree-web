@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## 2.18.0
+
+* Improve validation of tokenization keys
+* Drop-in
+  * Introduce PayPal checkout button option
+* Hosted Fields
+   * Support `-webkit-tap-highlight-color` and `-moz-tap-highlight-color` inner properties
+
 ## 2.17.6
 
 * Bugfix - Reduce time to report error if there is an unhandled error (SSL, gateway unreachable, etc) with the JSONP driver
