@@ -1,13 +1,20 @@
 CHANGELOG
 =========
 
+## 2.19.0
+
+* Drop-in
+  * PayPal checkout button style changes
+* PayPal
+  * Add `onAuthorizationDismissed` callback to handle dismissal of the authorization flow
+
 ## 2.18.0
 
 * Improve validation of tokenization keys
 * Drop-in
   * Introduce PayPal checkout button option
 * Hosted Fields
-   * Support `-webkit-tap-highlight-color` and `-moz-tap-highlight-color` inner properties
+  * Support `-webkit-tap-highlight-color` and `-moz-tap-highlight-color` inner properties
 
 ## 2.17.6
 
