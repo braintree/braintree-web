@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## 2.20.0
+
+* Hosted-Fields/Drop-in
+  * Bump `card-validator` to `2.2.7`
+* PayPal
+ * Adds support for `MXN` and `ILS` currencies in Checkout with PayPal flow
+ * Translation updates
+
 ## 2.19.0
 
 * Drop-in

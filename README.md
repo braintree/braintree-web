@@ -19,7 +19,7 @@ bower install braintree-web
 Usage
 =====
 
-For more thorough documentation, visit [the JS SDK docs](https://developers.braintreepayments.com/javascript/sdk/client).
+For more thorough documentation, visit [the JavaScript client SDK docs](https://developers.braintreepayments.com/guides/client-sdk/javascript/v2).
 
 #### Drop-in integration
 
