@@ -1,13 +1,20 @@
 CHANGELOG
 =========
 
+## 2.21.0
+
+* PayPal
+  * Add `billingAgreementDescription` for Checkout with PayPal flow
+  * Update behavior of `shippingAddressOverride` in sandbox (fixes [#119](https://github.com/braintree/braintree-web/issues/119))
+  * Bugfixes
+
 ## 2.20.0
 
 * Hosted-Fields/Drop-in
   * Bump `card-validator` to `2.2.7`
 * PayPal
- * Adds support for `MXN` and `ILS` currencies in Checkout with PayPal flow
- * Translation updates
+  * Adds support for `MXN` and `ILS` currencies in Checkout with PayPal flow
+  * Translation updates
 
 ## 2.19.0
 
