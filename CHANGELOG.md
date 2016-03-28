@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 2.22.0
+
+* PayPal
+  * Adds support for additional currencies in Checkout with PayPal flow
+     - `SGD`
+     - `THB`
+     - `PHP`
+     - `NZD`
+     - `HKD`
+     - `MYR`
+
 ## 2.21.0
 
 * PayPal

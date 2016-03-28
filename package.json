@@ -1,8 +1,8 @@
 {
   "name": "braintree-web",
   "description": "A suite of tools for integrating Braintree in the browser",
-  "version": "2.21.0",
-  "main": "dist/braintree.js",
+  "version": "2.22.0",
+  "main": "braintree.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:braintree/braintree-web"
