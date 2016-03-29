@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.22.1
+
+* Fixes an issue that prevented `2.22.0` from being `require`-able when installing through `npm`
+
 ## 2.22.0
 
 * PayPal
