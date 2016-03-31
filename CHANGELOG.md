@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 2.22.2
+
+* PayPal
+  * Bugfix - Fixes some scrolling issues with PayPal auth flow dialogs (fixes [#143](https://github.com/braintree/braintree-web/issues/143))
+* DataCollector
+  * Bugfix - Removes a non-critical error in IE8 (fixes [#141](https://github.com/braintree/braintree-web/issues/141))
+
 ## 2.22.1
 
 * Fixes an issue that prevented `2.22.0` from being `require`-able when installing through `npm`
@@ -9,12 +16,12 @@ CHANGELOG
 
 * PayPal
   * Adds support for additional currencies in Checkout with PayPal flow
-     - `SGD`
-     - `THB`
-     - `PHP`
-     - `NZD`
-     - `HKD`
-     - `MYR`
+    - `SGD`
+    - `THB`
+    - `PHP`
+    - `NZD`
+    - `HKD`
+    - `MYR`
 
 ## 2.21.0
 
@@ -60,7 +67,7 @@ CHANGELOG
     * Potential validity of slashless expiration dates is now consistent
     * Expiration dates that are too long are no longer considered valid
     * CVV validation does not always validate 3-digit values as valid
-* Dropin
+* Drop-in
   * Bugfix - Fixes an error around deviceData being undefined (fixes [#114](https://github.com/braintree/braintree-web/issues/114))
 
 ## 2.17.5
@@ -103,7 +110,7 @@ CHANGELOG
 
 ## 2.15.4
 
-* Dropin
+* Drop-in
   * Bugfix: Properly complete card tokenization flow in IE8
 
 ## 2.15.3
@@ -140,8 +147,8 @@ CHANGELOG
 
 ## 2.14.4
 
-* Dropin
-  * Fix spriting over text for coinbase button
+* Drop-in
+  * Fix spriting over text for Coinbase button
 
 ## 2.14.3
 
