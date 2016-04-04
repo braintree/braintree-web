@@ -1,11 +1,11 @@
 {
   "name": "braintree-web",
-  "version": "2.22.2",
+  "version": "3.0.0-beta.2",
   "authors": [
     "braintree <code@getbraintree.com>"
   ],
   "description": "A suite of tools for integrating Braintree in the browser",
-  "main": "dist/braintree.js",
+  "main": "index.js",
   "moduleType": [
     "amd",
     "globals",
@@ -23,6 +23,6 @@
   "homepage": "https://github.com/braintree/braintree-web",
   "ignore": [
     "*",
-    "!dist/braintree.js"
+    "!*.js"
   ]
 }
