@@ -167,7 +167,7 @@ module.exports = {
 var kount = _dereq_('./kount');
 var fraudnet = _dereq_('./fraudnet');
 var BraintreeError = _dereq_('../lib/error');
-var packageVersion = "3.0.0-beta.2";
+var packageVersion = "3.0.0-beta.3";
 
 /**
  * @class

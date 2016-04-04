@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.3
+
+* npm packaging fixes
+
 ## 3.0.0-beta.2
 
 * Hosted Fields

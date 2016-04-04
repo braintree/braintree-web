@@ -1676,7 +1676,7 @@ module.exports = {
 },{}],44:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.2";
+var VERSION = "3.0.0-beta.3";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1941,7 +1941,7 @@ module.exports = create;
 
 var frameService = _dereq_('../../frame-service/external');
 var BraintreeError = _dereq_('../../lib/error');
-var VERSION = "3.0.0-beta.2";
+var VERSION = "3.0.0-beta.3";
 var constants = _dereq_('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = _dereq_('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = _dereq_('../../lib/analytics');
@@ -2095,7 +2095,7 @@ module.exports = PayPal;
  */
 
 var create = _dereq_('./external/create');
-var packageVersion = "3.0.0-beta.2";
+var packageVersion = "3.0.0-beta.3";
 
 module.exports = {
   /**

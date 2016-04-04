@@ -2266,7 +2266,7 @@ module.exports = HostedFields;
 'use strict';
 
 var HostedFields = _dereq_('./hosted-fields');
-var packageVersion = "3.0.0-beta.2";
+var packageVersion = "3.0.0-beta.3";
 
 /** @module braintree-web/hosted-fields */
 
@@ -2379,7 +2379,7 @@ module.exports = function injectFrame(frame, container) {
 /* eslint-disable no-reserved-keys */
 
 var enumerate = _dereq_('../../lib/enumerate');
-var VERSION = "3.0.0-beta.2";
+var VERSION = "3.0.0-beta.3";
 
 var constants = {
   VERSION: VERSION,
@@ -2564,7 +2564,7 @@ module.exports = {
 },{"./add-metadata":55,"./constants":57}],57:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.2";
+var VERSION = "3.0.0-beta.3";
 var PLATFORM = 'web';
 
 module.exports = {

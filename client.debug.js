@@ -923,7 +923,7 @@ module.exports = {
 var BraintreeError = _dereq_('../lib/error');
 var Client = _dereq_('./client');
 var getConfiguration = _dereq_('./get-configuration').getConfiguration;
-var packageVersion = "3.0.0-beta.2";
+var packageVersion = "3.0.0-beta.3";
 
 /** @module braintree-web/client */
 
@@ -1028,7 +1028,7 @@ module.exports = addMetadata;
 },{"./constants":23,"./create-authorization-data":24,"./json-clone":27}],23:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.2";
+var VERSION = "3.0.0-beta.3";
 var PLATFORM = 'web';
 
 module.exports = {
