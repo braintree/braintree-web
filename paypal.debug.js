@@ -1368,6 +1368,7 @@ function FrameService(componentConfiguration, frameConfiguration) {
 
   this._bus = new Bus({channel: this._serviceId});
   this._setBusEvents();
+  this._tornDown = false;
 }
 
 FrameService.prototype.initialize = function (callback) {
@@ -1412,6 +1413,15 @@ FrameService.prototype._setBusEvents = function () {
 
 FrameService.prototype.open = function (callback) {
   this._onCompleteCallback = callback;
+
+  if (this._tornDown) {
+    this._onCompleteCallback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: constants.TORN_DOWN_FRAME_ERROR_MESSAGE
+    }));
+    return null;
+  }
+
   this._frame = popup.open(this._frameConfiguration);
   this._pollForPopupClose();
 
@@ -1429,9 +1439,14 @@ FrameService.prototype.close = function () {
 };
 
 FrameService.prototype.teardown = function () {
+  this._tornDown = true;
   this.close();
   this._dispatchFrame.parentNode.removeChild(this._dispatchFrame);
   this._dispatchFrame = null;
+  this._cleanupFrame();
+  if (this._onCompleteCallback) {
+    this._onCompleteCallback();
+  }
 };
 
 FrameService.prototype.isFrameClosed = function () {
@@ -1440,12 +1455,6 @@ FrameService.prototype.isFrameClosed = function () {
 
 FrameService.prototype._cleanupFrame = function () {
   this._frame = null;
-  if (this._onCompleteCallback) {
-    this._onCompleteCallback(new BraintreeError({
-      type: BraintreeError.types.CUSTOMER,
-      message: constants.FRAME_CLOSED_ERROR_MESSAGE
-    }));
-  }
   clearInterval(this._popupInterval);
   this._popupInterval = null;
 };
@@ -1454,6 +1463,12 @@ FrameService.prototype._pollForPopupClose = function () {
   this._popupInterval = setInterval(function () {
     if (this.isFrameClosed()) {
       this._cleanupFrame();
+      if (this._onCompleteCallback) {
+        this._onCompleteCallback(new BraintreeError({
+          type: BraintreeError.types.CUSTOMER,
+          message: constants.FRAME_CLOSED_ERROR_MESSAGE
+        }));
+      }
     }
   }.bind(this), constants.POPUP_POLL_INTERVAL);
 
@@ -1554,6 +1569,7 @@ var POPUP_WIDTH = 450;
 module.exports = {
   DISPATCH_FRAME_NAME: 'dispatch',
   FRAME_CLOSED_ERROR_MESSAGE: 'Frame closed before tokenization could occur',
+  TORN_DOWN_FRAME_ERROR_MESSAGE: 'Cannot open a frame that has been torn down',
   POPUP_BASE_OPTIONS: 'resizable,scrollbars,height=' + POPUP_HEIGHT + ',width=' + POPUP_WIDTH,
   POPUP_WIDTH: POPUP_WIDTH,
   POPUP_HEIGHT: POPUP_HEIGHT,
@@ -1676,7 +1692,7 @@ module.exports = {
 },{}],44:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.3";
+var VERSION = "3.0.0-beta.4";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1762,7 +1778,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>Do not use this constructor directly. You will interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
@@ -1884,6 +1900,7 @@ var PayPal = _dereq_('./paypal');
 var browserDetection = _dereq_('../../lib/browser-detection');
 var BraintreeError = _dereq_('../../lib/error');
 var analytics = _dereq_('../../lib/analytics');
+var VERSION = "3.0.0-beta.4";
 
 function create(options, callback) {
   var config, pp;
@@ -1897,6 +1914,14 @@ function create(options, callback) {
   }
 
   config = options.client.getConfiguration();
+
+  if (config.analyticsMetadata.sdkVersion !== VERSION) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Client and PayPal components must be from the same SDK version'
+    }));
+    return;
+  }
 
   if (config.gatewayConfiguration.paypalEnabled !== true) {
     callback(new BraintreeError({
@@ -1941,7 +1966,7 @@ module.exports = create;
 
 var frameService = _dereq_('../../frame-service/external');
 var BraintreeError = _dereq_('../../lib/error');
-var VERSION = "3.0.0-beta.3";
+var VERSION = "3.0.0-beta.4";
 var constants = _dereq_('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = _dereq_('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = _dereq_('../../lib/analytics');
@@ -1949,22 +1974,20 @@ var analytics = _dereq_('../../lib/analytics');
 /**
  * @typedef {object} PayPal~tokenizePayload
  * @property {string} nonce The payment method nonce
- * @property {string} type Always <code>PayPalAccount</code>
  * @property {object} details Additional PayPal account details
  * @property {string} details.email User's email address
  * @property {string} details.firstName User's given name
  * @property {string} details.lastName User's surname
- * @property {string} details.payerId User's PayPal payerId
  * @property {?string} details.countryCode User's 2 character country code
  * @property {?string} details.phone User's phone number (e.g. 555-867-5309)
- * @property {?object} details.shippingAddress User's shipping address details
+ * @property {?object} details.shippingAddress User's shipping address details, only available if shipping address is enabled
  * @property {string} details.shippingAddress.recipientName Recipient of postage
  * @property {string} details.shippingAddress.line1 Street number and name
  * @property {string} details.shippingAddress.line2 Extended address
  * @property {string} details.shippingAddress.city City or locality
  * @property {string} details.shippingAddress.state State or region
  * @property {string} details.shippingAddress.postalCode Postal code
- * @property {string} details.shippingAddress.countryCodeAlpha2 2 character country code (e.g. US)
+ * @property {string} details.shippingAddress.countryCode 2 character country code (e.g. US)
  */
 
 /**
@@ -2012,7 +2035,16 @@ PayPal.prototype._initialize = function (callback) {
  * @returns {PayPal~tokenizeReturn} A handle to close the PayPal checkout frame
  */
 PayPal.prototype.tokenize = function (errback) { //eslint-disable-line
-  var client = this._options.client;
+  var client;
+
+  if (typeof errback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'tokenize must include a callback function'
+    });
+  }
+
+  client = this._options.client;
 
   if (this._authorizationInProgress) {
     analytics.sendEvent(client, 'web.paypal.tokenization.error.already-opened');
@@ -2055,7 +2087,7 @@ PayPal.prototype.tokenize = function (errback) { //eslint-disable-line
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/paypal.create|create}
  * @public
- * @param {errorCallback} errback An errback
+ * @param {errorCallback} [errback] An errback
  * @returns {void}
  */
 PayPal.prototype.teardown = function (errback) {
@@ -2063,7 +2095,9 @@ PayPal.prototype.teardown = function (errback) {
 
   analytics.sendEvent(this._options.client, 'web.paypal.teardown-completed');
 
-  errback();
+  if (errback) {
+    errback();
+  }
 };
 
 module.exports = PayPal;
@@ -2095,7 +2129,7 @@ module.exports = PayPal;
  */
 
 var create = _dereq_('./external/create');
-var packageVersion = "3.0.0-beta.3";
+var packageVersion = "3.0.0-beta.4";
 
 module.exports = {
   /**

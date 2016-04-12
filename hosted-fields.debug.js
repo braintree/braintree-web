@@ -1925,11 +1925,12 @@ var events = constants.events;
 var EventEmitter = _dereq_('../../lib/event-emitter');
 var injectFrame = _dereq_('./inject-frame');
 var analytics = _dereq_('../../lib/analytics');
+var whitelistedFields = constants.whitelistedFields;
+var VERSION = "3.0.0-beta.4";
 
 /**
  * @typedef {object} HostedFields~tokenizePayload
  * @property {string} nonce The payment method nonce
- * @property {string} type Always <code>CreditCard</code>
  * @property {object} details Additional account details
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard
  * @property {string} details.lastTwo Last two digits of card number
@@ -1953,7 +1954,7 @@ var analytics = _dereq_('../../lib/analytics');
  *     } else {
  *       console.log('Type of card not yet known');
  *     }
- *   }
+ *   });
  * });
  * @returns {void}
  */
@@ -1976,7 +1977,7 @@ var analytics = _dereq_('../../lib/analytics');
  *     } else {
  *       console.log('Type of card not yet known');
  *     }
- *   }
+ *   });
  * });
  * @property {string} type
  * <table>
@@ -1989,7 +1990,7 @@ var analytics = _dereq_('../../lib/analytics');
  * @property {boolean} isFocused Whether or not the input is currently focused
  * @property {boolean} isPotentiallyValid
  * A determination based on the future validity of the input value.
- * This is helpful when a user is entering a card number and types <code>"41"<code>.
+ * This is helpful when a user is entering a card number and types <code>"41"</code>.
  * While that value is not valid for submission, it is still possible for
  * it to become a fully qualified entry. However, if the user enters <code>"4x"</code>
  * it is clear that the card number can never become valid and isPotentiallyValid will
@@ -2060,23 +2061,34 @@ function inputEventHandler(fields) {
 
 /**
  * @class HostedFields
- * @param {object} configuration Hosted Fields {@link module:braintree-web/hosted-fields.create create} options
+ * @param {object} options Hosted Fields {@link module:braintree-web/hosted-fields.create create} options
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/hosted-fields.create|braintree-web.hosted-fields.create} instead.</strong>
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
-function HostedFields(configuration) {
-  var field, container, frame, key, failureTimeout;
+function HostedFields(options) {
+  var field, container, frame, key, failureTimeout, config;
   var self = this;
   var fields = {};
   var fieldCount = 0;
   var componentId = uuid();
 
-  if (!configuration.client) {
+  if (!options.client) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
       message: 'You must specify a client when initializing Hosted Fields'
     });
-  } else if (!configuration.fields) {
+  }
+
+  config = options.client.getConfiguration();
+
+  if (config.analyticsMetadata.sdkVersion !== VERSION) {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Client and Hosted Fields components must be from the same SDK version'
+    });
+  }
+
+  if (!options.fields) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
       message: 'You must specify fields when initializing Hosted Fields'
@@ -2087,6 +2099,7 @@ function HostedFields(configuration) {
 
   this._injectedNodes = [];
   this._destructor = new Destructor();
+  this._fields = fields;
 
   this._bus = new Bus({
     channel: componentId,
@@ -2097,13 +2110,13 @@ function HostedFields(configuration) {
     self._bus.teardown();
   });
 
-  this._client = configuration.client;
+  this._client = options.client;
 
   analytics.sendEvent(this._client, 'web.custom.hosted-fields.initialized');
 
   for (key in constants.whitelistedFields) {
     if (constants.whitelistedFields.hasOwnProperty(key)) {
-      field = configuration.fields[key];
+      field = options.fields[key];
 
       if (!field) { continue; }
 
@@ -2163,7 +2176,7 @@ function HostedFields(configuration) {
     fieldCount--;
     if (fieldCount === 0) {
       clearTimeout(failureTimeout);
-      reply(configuration);
+      reply(options);
       self._emit('ready');
     }
   });
@@ -2224,11 +2237,11 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/hosted-fields.create|create}
  * @public
- * @param {errorCallback} done An errback called when teardown has completed
+ * @param {errorCallback} [done] Callback executed on completion, containing an error if one occurred.
  * @example
  * hostedFieldsInstance.teardown(function (err) {
  *   if (err) {
- *     console.error('Could not tear down hosted fields!');
+ *     console.error('Could not tear down Hosted Fields!');
  *   } else {
  *     console.info('Hosted Fields has been torn down!');
  *   }
@@ -2255,9 +2268,71 @@ HostedFields.prototype.teardown = function (done) {
  * @returns {void}
  */
 HostedFields.prototype.tokenize = function (callback) {
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'tokenize must include a callback function'
+    });
+  }
+
   this._bus.emit(events.TOKENIZATION_REQUEST, function (response) {
     callback.apply(null, response);
   });
+};
+
+/**
+ * Sets the placeholder of a {@link module:braintree-web/hosted-fields~field field}.
+ * @public
+ * @param {string} field The field whose placeholder you wish to change. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
+ * @param {errorCallback} errorCallback Callback executed on completion, containing an error if one occurred.
+ *
+ * @example
+ * hostedFieldsInstance.setPlaceholder('number', '4111 1111 1111 1111', function (err) {
+ *   if (err) {
+ *     console.error(err);
+ *   }
+ * });
+ *
+ * @example <caption>Update CVV field on card type change</caption>
+ * var cvvPlaceholder = 'CVV'; // Create a default value
+ *
+ * hostedFieldsInstance.on('fieldEvent', function (event) {
+ *   if (event.target.fieldKey !== 'number') { return; } // Ignore all non-number field events
+ *
+ *   // Update the placeholder value if the card code name has changed
+ *   if (event.card && event.card.code.name !== cvvPlaceholder) {
+ *     cvvPlaceholder = event.card.code.name;
+ *     hostedFields.setPlaceholder('cvv', cvvPlaceholder, function (err) {
+ *       if (err) {
+ *         console.error(err);
+ *       }
+ *     });
+ *   }
+ * });
+ * @returns {void}
+ */
+
+HostedFields.prototype.setPlaceholder = function (field, placeholder, errorCallback) {
+  var err;
+
+  if (!whitelistedFields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: field + ' is not a valid field. You must use a valid field option when setting a placeholder.'
+    });
+  } else if (!this._fields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Cannot set placeholder for ' + field + ' field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    this._bus.emit(events.SET_PLACEHOLDER, field, placeholder);
+  }
+
+  if (errorCallback) {
+    errorCallback(err);
+  }
 };
 
 module.exports = HostedFields;
@@ -2266,7 +2341,7 @@ module.exports = HostedFields;
 'use strict';
 
 var HostedFields = _dereq_('./hosted-fields');
-var packageVersion = "3.0.0-beta.3";
+var packageVersion = "3.0.0-beta.4";
 
 /** @module braintree-web/hosted-fields */
 
@@ -2379,7 +2454,7 @@ module.exports = function injectFrame(frame, container) {
 /* eslint-disable no-reserved-keys */
 
 var enumerate = _dereq_('../../lib/enumerate');
-var VERSION = "3.0.0-beta.3";
+var VERSION = "3.0.0-beta.4";
 
 var constants = {
   VERSION: VERSION,
@@ -2468,7 +2543,8 @@ constants.events = enumerate([
   'CONFIGURATION',
   'TOKENIZATION_REQUEST',
   'INPUT_EVENT',
-  'TRIGGER_INPUT_FOCUS'
+  'TRIGGER_INPUT_FOCUS',
+  'SET_PLACEHOLDER'
 ], 'hosted-fields:');
 
 module.exports = constants;
@@ -2564,7 +2640,7 @@ module.exports = {
 },{"./add-metadata":55,"./constants":57}],57:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.3";
+var VERSION = "3.0.0-beta.4";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -2650,7 +2726,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>Do not use this constructor directly. You will interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {

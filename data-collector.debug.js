@@ -167,7 +167,7 @@ module.exports = {
 var kount = _dereq_('./kount');
 var fraudnet = _dereq_('./fraudnet');
 var BraintreeError = _dereq_('../lib/error');
-var packageVersion = "3.0.0-beta.3";
+var packageVersion = "3.0.0-beta.4";
 
 /**
  * @class
@@ -190,7 +190,7 @@ var packageVersion = "3.0.0-beta.3";
  * @name teardown
  * @function
  * @description Cleanly remove all event handlers and DOM nodes that were added
- * @param {errorCallback} callback Called once teardown is complete
+ * @param {errorCallback} [callback] Called once teardown is complete
  * @instance
  * @returns {void}
  */
@@ -394,7 +394,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>Do not use this constructor directly. You will interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {

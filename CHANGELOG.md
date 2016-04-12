@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.4
+
+* Client
+  * `client` components no longer have a `teardown` function
+* Hosted Fields
+  * Add `setPlaceholder` to allow dynamic updating of field placeholders
+  * Client component version must match Hosted Fields' component version
+  * Throw `BraintreeError` if tokenize does not include a callback
+* PayPal
+  * Bugfixes in teardown
+  * Client component version must match PayPal's component version
+  * Make teardown callback optional
+  * Throw `BraintreeError` if tokenize does not include a callback
+
 ## 3.0.0-beta.3
 
 * npm packaging fixes

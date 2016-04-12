@@ -771,16 +771,6 @@ function Client(configuration) {
 }
 
 /**
- * Cleanly tear down anything set up by {@link module:braintree-web/client.create|create}
- * @public
- * @param {errorCallback} callback An errback
- * @returns {void}
- */
-Client.prototype.teardown = function (callback) {
-  callback();
-};
-
-/**
  * Used by other modules to formulate all network requests to the Braintree gateway. It is also capable of being used directly from your own form to tokenize credit card information. However, be sure to satisfy PCI compliance if you use direct card tokenization.
  * @public
  * @param {object} options Request options
@@ -923,7 +913,7 @@ module.exports = {
 var BraintreeError = _dereq_('../lib/error');
 var Client = _dereq_('./client');
 var getConfiguration = _dereq_('./get-configuration').getConfiguration;
-var packageVersion = "3.0.0-beta.3";
+var packageVersion = "3.0.0-beta.4";
 
 /** @module braintree-web/client */
 
@@ -1028,7 +1018,7 @@ module.exports = addMetadata;
 },{"./constants":23,"./create-authorization-data":24,"./json-clone":27}],23:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.3";
+var VERSION = "3.0.0-beta.4";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1114,7 +1104,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>Do not use this constructor directly. You will interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
