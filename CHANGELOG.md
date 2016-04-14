@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 2.23.0
+
+* PayPal
+  * Bugfix - Change cancel button's `type` to `button` to keep it from "stealing" Enter keypresses (fixes [#150](https://github.com/braintree/braintree-web/issues/150))
+* Drop-in
+  * Call `onError` when server-side tokenization fails (fixes [#59](https://github.com/braintree/braintree-web/issues/59))
+
 ## 2.22.2
 
 * PayPal
