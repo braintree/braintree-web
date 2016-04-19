@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>data-collector/index.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li></ul><h3>Events</h3><ul><li><a href="HostedFields.html#event:fieldEvent">fieldEvent</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">data-collector/index.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/* eslint-disable camelcase */
+/** @module braintree-web/data-collector */
+
+var kount = require('./kount');
+var fraudnet = require('./fraudnet');
+var BraintreeError = require('../lib/error');
+var packageVersion = require('package.version');
+
+/**
+ * @class
+ * @global
+ * @name DataCollector
+ * @description instance returned by {@link module:braintree-web/data-collector.create create}
+ * @classdesc This class is used for advanced fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions.
+ */
+
+/**
+ * @memberof DataCollector
+ * @name deviceData
+ * @type string
+ * @description JSON string to pass with server transactions
+ * @instance
+ */
+
+/**
+ * @memberof DataCollector
+ * @name teardown
+ * @function
+ * @description Cleanly remove all event handlers and DOM nodes that were added
+ * @param {errorCallback} [callback] Called once teardown is complete
+ * @instance
+ * @returns {void}
+ */
+
+/**
+ * @function
+ * @param {object} options Object containing all {@link DataCollector} options
+ * @param {object} [options.kount] If supplied, Kount fraud capabilities are enabled
+ * @param {string} options.kount.environment Which Kount environment to operate in. Options are "sandbox" or "production"
+ * @param {string} [options.kount.merchantId] If using a direct Kount integration, your Kount-provided merchantId
+ * @param {boolean} [options.paypal] If true, PayPal fraud capabilities are enabled
+ * @param {errback} callback The second argument, &lt;code>data&lt;/code>, is the {@link DataCollector} instance
+ * @returns {void}
+ * @static
+ */
+function create(options, callback) {
+  var data, kountInstance, fraudnetInstance;
+  var instances = [];
+
+  function teardown(cb) {
+    var i;
+
+    for (i = 0; i &lt; instances.length; i++) {
+      instances[i].teardown();
+    }
+
+    if (cb) {
+      cb();
+    }
+  }
+
+  if (options.kount != null) {
+    try {
+      kountInstance = kount.setup(options.kount);
+    } catch (err) {
+      callback(new BraintreeError({
+        message: err.message,
+        type: BraintreeError.types.MERCHANT
+      }));
+      return;
+    }
+
+    data = kountInstance.deviceData;
+    instances.push(kountInstance);
+  } else {
+    data = {};
+  }
+
+  if (options.paypal === true) {
+    fraudnetInstance = fraudnet.setup();
+    data.correlation_id = fraudnetInstance.sessionId;
+    instances.push(fraudnetInstance);
+  }
+
+  if (instances.length === 0) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Data Collector must be created with Kount and/or PayPal.'
+    }));
+    return;
+  }
+
+  callback(null, {
+    deviceData: JSON.stringify(data),
+    teardown: teardown
+  });
+}
+
+module.exports = {
+  create: create,
+  /**
+   * @description The current version of the SDK, i.e. `{@pkg version}`.
+   * @type {string}
+   */
+  VERSION: packageVersion
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
