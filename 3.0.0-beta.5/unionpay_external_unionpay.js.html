@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>unionpay/external/unionpay.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Events</h3><ul><li><a href="HostedFields.html#event:fieldEvent">fieldEvent</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">unionpay/external/unionpay.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+var BraintreeError = require('../../lib/error');
+var analytics = require('../../lib/analytics');
+
+/**
+ * @class
+ * @param {object} options see {@link module:braintree-web/unionpay.create|unionpay.create}
+ * @description &lt;strong>Do not use this constructor directly. Use {@link module:braintree-web/unionpay.create|braintree-web.unionpay.create} instead.&lt;/strong>
+ * @classdesc This class represents a UnionPay component. Instances of this class have methods for {@link UnionPay#fetchCapabilities fetching capabilities} of UnionPay cards, {@link UnionPay#enroll enrolling} a UnionPay card, and {@link UnionPay#tokenize tokenizing} a UnionPay card.
+ */
+function UnionPay(options) {
+  this._options = options;
+  this._merchantAccountId = options.client.getConfiguration().gatewayConfiguration.unionPay.merchantAccountId;
+}
+
+/**
+ * @typedef {object} UnionPay~fetchCapabilitiesPayload
+ * @property {boolean} isUnionPay Determines if this card is a UnionPay card
+ * @property {boolean} isDebit Determines if this card is a debit card
+ * @property {object} unionPay UnionPay specific properties
+ * @property {boolean} unionPay.supportsTwoStepAuthAndCapture Determines if the card allows for an authorization, but settling the transaction later
+ * @property {boolean} unionPay.isUnionPayEnrollmentRequired Notifies if {@link UnionPay#enroll|enrollment} should be completed
+ */
+
+/**
+ * Fetches the capabilities of a card, including whether or not the card needs to be enrolled before use. If the card needs to be enrolled, use {@link UnionPay#enroll|enroll}
+ * @public
+ * @param {object} options UnionPay {@link UnionPay#fetchCapabilities fetchCapabilities} options
+ * @param {object} options.cardNumber The card number to fetch capabilities for
+ * @param {errback} errback The second argument, &lt;code>data&lt;/code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}
+ * @returns {void}
+ */
+UnionPay.prototype.fetchCapabilities = function (options, errback) {
+  var client = this._options.client;
+  var cardNumber = options.cardNumber;
+
+  if (!cardNumber) {
+    errback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'A card number is required'
+    }));
+    return;
+  }
+
+  client.request({
+    method: 'get',
+    endpoint: 'payment_methods/credit_cards/capabilities',
+    data: {
+      _meta: {source: 'unionpay'},
+      creditCard: {
+        number: cardNumber
+      }
+    }
+  }, function (err, response) {
+    if (err) {
+      errback(new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        message: 'Fetch capabilities network error',
+        details: {
+          originalError: err
+        }
+      }));
+      analytics.sendEvent(client, 'web.unionpay.capabilities-failed');
+      return;
+    }
+
+    analytics.sendEvent(client, 'web.unionpay.capabilities-received');
+    errback(null, response);
+  });
+};
+
+/**
+ */
+
+/**
+ * @typedef {object} UnionPay~enrollPayload
+ * @property {string} unionPayEnrollmentId UnionPay enrollment ID
+ */
+
+/**
+ * Enrolls a UnionPay card. Only call this method if the card needs to be enrolled. Use {@link UnionPay#fetchCapabilities|fetchCapabilities} to determine if the user's card needs to be enrolled.
+ * @public
+ * @param {object} options UnionPay enrollment options
+ * @param {object} options.card The card to enroll
+ * @param {string} options.card.number Card number
+ * @param {string} options.card.expirationMonth The card's expiration month
+ * @param {string} options.card.expirationYear The card's expiration year
+ * @param {string} options.card.mobileCountryCode Customer's mobile country code
+ * @param {string} options.card.mobileNumber Customer's mobile phone number. This is the mobile phone number UnionPay will send an SMS auth code to
+ * @param {errback} callback The second argument, &lt;code>data&lt;/code>, is a {@link UnionPay~enrollPayload|enrollPayload}
+ * @returns {void}
+ */
+UnionPay.prototype.enroll = function (options, callback) {
+  var client = this._options.client;
+  var card = options.card;
+  var data = {
+    _meta: {source: 'unionpay'},
+    unionPayEnrollment: {
+      number: card.number,
+      expirationMonth: card.expirationMonth,
+      expirationYear: card.expirationYear,
+      mobileCountryCode: card.mobileCountryCode,
+      mobileNumber: card.mobileNumber
+    }
+  };
+
+  if (this._merchantAccountId) {
+    data.merchantAccountId = this._merchantAccountId;
+  }
+
+  client.request({
+    method: 'post',
+    endpoint: 'union_pay_enrollments',
+    data: data
+  }, function (err, response) {
+    var message;
+
+    if (err) {
+      // TODO: We cannot get response codes, so we can't know whose "fault" this error is.
+      // This requires a new feature of braintree-request which we are waiting on.
+      if (err.type === BraintreeError.types.CUSTOMER) {
+        message = 'Enrollment invalid due to customer input error';
+      } else {
+        err.type = BraintreeError.types.NETWORK;
+        message = 'Enrollment network error';
+      }
+
+      analytics.sendEvent(client, 'web.unionpay.enrollment-failed');
+      callback(new BraintreeError({
+        type: err.type,
+        message: message,
+        details: {
+          originalError: err
+        }
+      }));
+      return;
+    }
+
+    analytics.sendEvent(client, 'web.unionpay.enrollment-succeeded');
+    callback(null, {unionPayEnrollmentId: response.unionPayEnrollmentId});
+  });
+};
+
+/**
+ * @typedef {object} UnionPay~tokenizePayload
+ * @property {string} nonce The payment method nonce
+ * @property {string} type Always &lt;code>CreditCard&lt;/code>
+ * @property {object} details Additional account details
+ * @property {string} details.cardType Type of card, ex: Visa, MasterCard
+ * @property {string} details.lastTwo Last two digits of card number
+ * @property {string} description A human-readable description
+ */
+
+/**
+ * Tokenizes a UnionPay card, returning a nonce payload!
+ * @public
+ * @param {object} options UnionPay tokenization options
+ * @param {object} options.card The card to enroll
+ * @param {string} options.card.number Card number
+ * @param {string} options.card.expirationMonth The card's expiration month
+ * @param {string} options.card.expirationYear The card's expiration year
+ * @param {string} options.card.cvv The card's security number
+ * @param {object} options.options Additional options
+ * @param {string} options.options.id The enrollment id if {@link UnionPay#enroll} was required
+ * @param {string} options.options.smsCode The SMS code recieved from the user if {@link UnionPay#enroll} was required
+ * @param {errback} callback The second argument, &lt;code>data&lt;/code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}
+ * @returns {void}
+ */
+UnionPay.prototype.tokenize = function (options, callback) {
+  var tokenizedCard;
+  var client = this._options.client;
+
+  client.request({
+    method: 'post',
+    endpoint: 'payment_methods/credit_cards',
+    data: {
+      _meta: {source: 'unionpay'},
+      creditCard: {
+        number: options.card.number,
+        expirationMonth: options.card.expirationMonth,
+        expirationYear: options.card.expirationYear,
+        cvv: options.card.cvv
+      },
+      options: options.options
+    }
+  }, function (err, response) {
+    if (err) {
+      analytics.sendEvent(client, 'web.unionpay.nonce-failed');
+      // TODO: We cannot get response codes, so we can't know whose "fault" this error is.
+      // This requires a new feature of braintree-request which we are waiting on.
+      callback(new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        message: 'Tokenization network error',
+        details: {
+          originalError: err
+        }
+      }));
+      return;
+    }
+
+    tokenizedCard = response.creditCards[0];
+    delete tokenizedCard.consumed;
+    delete tokenizedCard.threeDSecureInfo;
+    delete tokenizedCard.type;
+
+    analytics.sendEvent(client, 'web.unionpay.nonce-received');
+    callback(null, tokenizedCard);
+  });
+};
+
+module.exports = UnionPay;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
