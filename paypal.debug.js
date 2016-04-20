@@ -1284,7 +1284,7 @@ BraintreeBus.events = events;
 
 module.exports = BraintreeBus;
 
-},{"../lib/error":47,"./lib/check-origin":31,"./lib/events":32,"framebus":1}],31:[function(_dereq_,module,exports){
+},{"../lib/error":48,"./lib/check-origin":31,"./lib/events":32,"framebus":1}],31:[function(_dereq_,module,exports){
 'use strict';
 
 var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
@@ -1321,7 +1321,7 @@ module.exports = enumerate([
   'CONFIGURATION_REQUEST'
 ], 'bus:');
 
-},{"../../lib/enumerate":46}],33:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":47}],33:[function(_dereq_,module,exports){
 'use strict';
 
 var popup = _dereq_('./popup');
@@ -1368,7 +1368,6 @@ function FrameService(componentConfiguration, frameConfiguration) {
 
   this._bus = new Bus({channel: this._serviceId});
   this._setBusEvents();
-  this._tornDown = false;
 }
 
 FrameService.prototype.initialize = function (callback) {
@@ -1414,14 +1413,6 @@ FrameService.prototype._setBusEvents = function () {
 FrameService.prototype.open = function (callback) {
   this._onCompleteCallback = callback;
 
-  if (this._tornDown) {
-    this._onCompleteCallback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: constants.TORN_DOWN_FRAME_ERROR_MESSAGE
-    }));
-    return null;
-  }
-
   this._frame = popup.open(this._frameConfiguration);
   this._pollForPopupClose();
 
@@ -1439,7 +1430,6 @@ FrameService.prototype.close = function () {
 };
 
 FrameService.prototype.teardown = function () {
-  this._tornDown = true;
   this.close();
   this._dispatchFrame.parentNode.removeChild(this._dispatchFrame);
   this._dispatchFrame = null;
@@ -1477,7 +1467,7 @@ FrameService.prototype._pollForPopupClose = function () {
 
 module.exports = FrameService;
 
-},{"../../bus":30,"../../lib/error":47,"../../lib/uuid":50,"../shared/constants":39,"../shared/events":40,"./popup":36,"iframer":2}],34:[function(_dereq_,module,exports){
+},{"../../bus":30,"../../lib/error":48,"../../lib/uuid":52,"../shared/constants":39,"../shared/events":40,"./popup":36,"iframer":2}],34:[function(_dereq_,module,exports){
 'use strict';
 
 var FrameService = _dereq_('./frame-service');
@@ -1569,7 +1559,6 @@ var POPUP_WIDTH = 450;
 module.exports = {
   DISPATCH_FRAME_NAME: 'dispatch',
   FRAME_CLOSED_ERROR_MESSAGE: 'Frame closed before tokenization could occur',
-  TORN_DOWN_FRAME_ERROR_MESSAGE: 'Cannot open a frame that has been torn down',
   POPUP_BASE_OPTIONS: 'resizable,scrollbars,height=' + POPUP_HEIGHT + ',width=' + POPUP_WIDTH,
   POPUP_WIDTH: POPUP_WIDTH,
   POPUP_HEIGHT: POPUP_HEIGHT,
@@ -1587,7 +1576,7 @@ module.exports = enumerate([
   'DISPATCH_FRAME_REPORT'
 ], 'frameService:');
 
-},{"../../lib/enumerate":46}],41:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":47}],41:[function(_dereq_,module,exports){
 'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
@@ -1621,7 +1610,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":44,"./create-authorization-data":45,"./json-clone":48}],42:[function(_dereq_,module,exports){
+},{"./constants":44,"./create-authorization-data":46,"./json-clone":49}],42:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -1692,7 +1681,7 @@ module.exports = {
 },{}],44:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.4";
+var VERSION = "3.0.0-beta.5";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1706,6 +1695,22 @@ module.exports = {
 };
 
 },{}],45:[function(_dereq_,module,exports){
+'use strict';
+
+var BraintreeError = _dereq_('./error');
+
+module.exports = function (instance, methodNames) {
+  methodNames.forEach(function (methodName) {
+    instance[methodName] = function () {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: methodName + ' cannot be called after teardown'
+      });
+    };
+  });
+};
+
+},{"./error":48}],46:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -1754,7 +1759,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":49}],46:[function(_dereq_,module,exports){
+},{"../lib/polyfill":51}],47:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -1768,7 +1773,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],47:[function(_dereq_,module,exports){
+},{}],48:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -1833,14 +1838,23 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":46}],48:[function(_dereq_,module,exports){
+},{"./enumerate":47}],49:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],49:[function(_dereq_,module,exports){
+},{}],50:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (obj) {
+  return Object.keys(obj).filter(function (key) {
+    return typeof obj[key] === 'function';
+  });
+};
+
+},{}],51:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1879,7 +1893,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],50:[function(_dereq_,module,exports){
+},{}],52:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
@@ -1893,14 +1907,14 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}],51:[function(_dereq_,module,exports){
+},{}],53:[function(_dereq_,module,exports){
 'use strict';
 
 var PayPal = _dereq_('./paypal');
 var browserDetection = _dereq_('../../lib/browser-detection');
 var BraintreeError = _dereq_('../../lib/error');
 var analytics = _dereq_('../../lib/analytics');
-var VERSION = "3.0.0-beta.4";
+var VERSION = "3.0.0-beta.5";
 
 function create(options, callback) {
   var config, pp;
@@ -1961,15 +1975,17 @@ function _isBrowserSupported() {
 
 module.exports = create;
 
-},{"../../lib/analytics":42,"../../lib/browser-detection":43,"../../lib/error":47,"./paypal":52}],52:[function(_dereq_,module,exports){
+},{"../../lib/analytics":42,"../../lib/browser-detection":43,"../../lib/error":48,"./paypal":54}],54:[function(_dereq_,module,exports){
 'use strict';
 
 var frameService = _dereq_('../../frame-service/external');
 var BraintreeError = _dereq_('../../lib/error');
-var VERSION = "3.0.0-beta.4";
+var VERSION = "3.0.0-beta.5";
 var constants = _dereq_('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = _dereq_('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = _dereq_('../../lib/analytics');
+var methods = _dereq_('../../lib/methods');
+var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
 
 /**
  * @typedef {object} PayPal~tokenizePayload
@@ -2031,13 +2047,13 @@ PayPal.prototype._initialize = function (callback) {
 /**
  * Launch the PayPal login flow, returning a nonce payload
  * @public
- * @param {errback} errback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}
+ * @param {errback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}
  * @returns {PayPal~tokenizeReturn} A handle to close the PayPal checkout frame
  */
-PayPal.prototype.tokenize = function (errback) { //eslint-disable-line
+PayPal.prototype.tokenize = function (callback) { //eslint-disable-line
   var client;
 
-  if (typeof errback !== 'function') {
+  if (typeof callback !== 'function') {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
       message: 'tokenize must include a callback function'
@@ -2049,7 +2065,7 @@ PayPal.prototype.tokenize = function (errback) { //eslint-disable-line
   if (this._authorizationInProgress) {
     analytics.sendEvent(client, 'web.paypal.tokenization.error.already-opened');
 
-    errback(new BraintreeError({
+    callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
       message: 'Another tokenization request is active'
     }));
@@ -2072,7 +2088,7 @@ PayPal.prototype.tokenize = function (errback) { //eslint-disable-line
 
       this._authorizationInProgress = false;
 
-      errback.apply(null, arguments);
+      callback.apply(null, arguments);
     }.bind(this));
   }
 
@@ -2087,22 +2103,24 @@ PayPal.prototype.tokenize = function (errback) { //eslint-disable-line
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/paypal.create|create}
  * @public
- * @param {errorCallback} [errback] An errback
+ * @param {errback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @returns {void}
  */
-PayPal.prototype.teardown = function (errback) {
+PayPal.prototype.teardown = function (callback) {
   this._frameService.teardown();
+
+  convertMethodsToError(this, methods(PayPal.prototype));
 
   analytics.sendEvent(this._options.client, 'web.paypal.teardown-completed');
 
-  if (errback) {
-    errback();
+  if (typeof callback === 'function') {
+    callback();
   }
 };
 
 module.exports = PayPal;
 
-},{"../../frame-service/external":34,"../../lib/analytics":42,"../../lib/constants":44,"../../lib/error":47,"../shared/constants":54}],53:[function(_dereq_,module,exports){
+},{"../../frame-service/external":34,"../../lib/analytics":42,"../../lib/constants":44,"../../lib/convert-methods-to-error":45,"../../lib/error":48,"../../lib/methods":50,"../shared/constants":56}],55:[function(_dereq_,module,exports){
 'use strict';
 /** @module braintree-web/paypal */
 
@@ -2129,7 +2147,7 @@ module.exports = PayPal;
  */
 
 var create = _dereq_('./external/create');
-var packageVersion = "3.0.0-beta.4";
+var packageVersion = "3.0.0-beta.5";
 
 module.exports = {
   /**
@@ -2147,7 +2165,7 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"./external/create":51}],54:[function(_dereq_,module,exports){
+},{"./external/create":53}],56:[function(_dereq_,module,exports){
 'use strict';
 
 var POPUP_HEIGHT = 535;
@@ -2162,5 +2180,5 @@ module.exports = {
   POPUP_POLL_INTERVAL: 100
 };
 
-},{}]},{},[53])(53)
+},{}]},{},[55])(55)
 });

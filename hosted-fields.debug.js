@@ -1855,7 +1855,7 @@ BraintreeBus.events = events;
 
 module.exports = BraintreeBus;
 
-},{"../lib/error":60,"./lib/check-origin":47,"./lib/events":48,"framebus":16}],47:[function(_dereq_,module,exports){
+},{"../lib/error":61,"./lib/check-origin":47,"./lib/events":48,"framebus":16}],47:[function(_dereq_,module,exports){
 'use strict';
 
 var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
@@ -1892,7 +1892,7 @@ module.exports = enumerate([
   'CONFIGURATION_REQUEST'
 ], 'bus:');
 
-},{"../../lib/enumerate":59}],49:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":60}],49:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('../shared/constants');
@@ -1926,7 +1926,9 @@ var EventEmitter = _dereq_('../../lib/event-emitter');
 var injectFrame = _dereq_('./inject-frame');
 var analytics = _dereq_('../../lib/analytics');
 var whitelistedFields = constants.whitelistedFields;
-var VERSION = "3.0.0-beta.4";
+var VERSION = "3.0.0-beta.5";
+var methods = _dereq_('../../lib/methods');
+var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
 
 /**
  * @typedef {object} HostedFields~tokenizePayload
@@ -2202,6 +2204,12 @@ function HostedFields(options) {
       );
     }
   });
+
+  this._destructor.registerFunctionForTeardown(function () {
+    var methodNames = methods(HostedFields.prototype).concat(methods(EventEmitter.prototype));
+
+    convertMethodsToError(self, methodNames);
+  });
 }
 
 HostedFields.prototype = Object.create(EventEmitter.prototype, {
@@ -2237,7 +2245,7 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/hosted-fields.create|create}
  * @public
- * @param {errorCallback} [done] Callback executed on completion, containing an error if one occurred.
+ * @param {errback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if teardown completes successfully.
  * @example
  * hostedFieldsInstance.teardown(function (err) {
  *   if (err) {
@@ -2248,8 +2256,8 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
  * });
  * @returns {void}
  */
-HostedFields.prototype.teardown = function (done) {
-  this._destructor.teardown(done);
+HostedFields.prototype.teardown = function (callback) {
+  this._destructor.teardown(callback);
   analytics.sendEvent(this._client, 'web.custom.hosted-fields.teardown-completed');
 };
 
@@ -2285,7 +2293,7 @@ HostedFields.prototype.tokenize = function (callback) {
  * @public
  * @param {string} field The field whose placeholder you wish to change. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
- * @param {errorCallback} errorCallback Callback executed on completion, containing an error if one occurred.
+ * @param {errback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
  *
  * @example
  * hostedFieldsInstance.setPlaceholder('number', '4111 1111 1111 1111', function (err) {
@@ -2313,7 +2321,7 @@ HostedFields.prototype.tokenize = function (callback) {
  * @returns {void}
  */
 
-HostedFields.prototype.setPlaceholder = function (field, placeholder, errorCallback) {
+HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) {
   var err;
 
   if (!whitelistedFields.hasOwnProperty(field)) {
@@ -2330,18 +2338,18 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, errorCallb
     this._bus.emit(events.SET_PLACEHOLDER, field, placeholder);
   }
 
-  if (errorCallback) {
-    errorCallback(err);
+  if (typeof callback === 'function') {
+    callback(err);
   }
 };
 
 module.exports = HostedFields;
 
-},{"../../bus":46,"../../lib/analytics":56,"../../lib/constants":57,"../../lib/error":60,"../../lib/event-emitter":61,"../../lib/is-ios":62,"../../lib/uuid":65,"../shared/constants":53,"../shared/find-parent-tags":54,"./compose-url":49,"./inject-frame":52,"braintree-utilities":9,"classlist":10,"destructor":13,"iframer":17,"nodelist-to-array":45}],51:[function(_dereq_,module,exports){
+},{"../../bus":46,"../../lib/analytics":56,"../../lib/constants":57,"../../lib/convert-methods-to-error":58,"../../lib/error":61,"../../lib/event-emitter":62,"../../lib/is-ios":63,"../../lib/methods":65,"../../lib/uuid":67,"../shared/constants":53,"../shared/find-parent-tags":54,"./compose-url":49,"./inject-frame":52,"braintree-utilities":9,"classlist":10,"destructor":13,"iframer":17,"nodelist-to-array":45}],51:[function(_dereq_,module,exports){
 'use strict';
 
 var HostedFields = _dereq_('./hosted-fields');
-var packageVersion = "3.0.0-beta.4";
+var packageVersion = "3.0.0-beta.5";
 
 /** @module braintree-web/hosted-fields */
 
@@ -2454,7 +2462,7 @@ module.exports = function injectFrame(frame, container) {
 /* eslint-disable no-reserved-keys */
 
 var enumerate = _dereq_('../../lib/enumerate');
-var VERSION = "3.0.0-beta.4";
+var VERSION = "3.0.0-beta.5";
 
 var constants = {
   VERSION: VERSION,
@@ -2549,7 +2557,7 @@ constants.events = enumerate([
 
 module.exports = constants;
 
-},{"../../lib/enumerate":59}],54:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":60}],54:[function(_dereq_,module,exports){
 'use strict';
 
 function findParentTags(element, tag) {
@@ -2603,7 +2611,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":57,"./create-authorization-data":58,"./json-clone":63}],56:[function(_dereq_,module,exports){
+},{"./constants":57,"./create-authorization-data":59,"./json-clone":64}],56:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -2640,7 +2648,7 @@ module.exports = {
 },{"./add-metadata":55,"./constants":57}],57:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.4";
+var VERSION = "3.0.0-beta.5";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -2654,6 +2662,22 @@ module.exports = {
 };
 
 },{}],58:[function(_dereq_,module,exports){
+'use strict';
+
+var BraintreeError = _dereq_('./error');
+
+module.exports = function (instance, methodNames) {
+  methodNames.forEach(function (methodName) {
+    instance[methodName] = function () {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: methodName + ' cannot be called after teardown'
+      });
+    };
+  });
+};
+
+},{"./error":61}],59:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -2702,7 +2726,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":64}],59:[function(_dereq_,module,exports){
+},{"../lib/polyfill":66}],60:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -2716,7 +2740,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],60:[function(_dereq_,module,exports){
+},{}],61:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -2781,7 +2805,7 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":59}],61:[function(_dereq_,module,exports){
+},{"./enumerate":60}],62:[function(_dereq_,module,exports){
 'use strict';
 
 function EventEmitter() {
@@ -2811,7 +2835,7 @@ EventEmitter.prototype._emit = function (event) {
 
 module.exports = EventEmitter;
 
-},{}],62:[function(_dereq_,module,exports){
+},{}],63:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function isIos(userAgent) {
@@ -2819,14 +2843,23 @@ module.exports = function isIos(userAgent) {
   return /(iPad|iPhone|iPod)/i.test(userAgent);
 };
 
-},{}],63:[function(_dereq_,module,exports){
+},{}],64:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],64:[function(_dereq_,module,exports){
+},{}],65:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (obj) {
+  return Object.keys(obj).filter(function (key) {
+    return typeof obj[key] === 'function';
+  });
+};
+
+},{}],66:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -2865,7 +2898,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],65:[function(_dereq_,module,exports){
+},{}],67:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {

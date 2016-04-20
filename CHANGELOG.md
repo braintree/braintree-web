@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.5
+
+* Improve documentation of callbacks
+* Hosted Fields
+  * Calling methods (such as `tokenize` or `setPlaceholder`) after Hosted Fields has been torn down throws an error
+* PayPal
+  * Calling methods (such as `tokenize`) after PayPal has been torn down throws an error
+* DataCollector
+  * Throw an error when trying to tear down twice
+* American Express
+  * `getRewardsBalance` to get the rewards balance of a Braintree nonce
+  * `getExpressCheckoutProfile` to get the Express Checkout profile of an Amex nonce
+* UnionPay
+  * `fetchCapabilities` to fetch card capabilities, and determine if a card requires enrollment
+  * `enroll` to process enrollment for a card
+  * `tokenize` UnionPay cards
+
 ## 3.0.0-beta.4
 
 * Client

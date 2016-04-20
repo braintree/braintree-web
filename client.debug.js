@@ -913,7 +913,7 @@ module.exports = {
 var BraintreeError = _dereq_('../lib/error');
 var Client = _dereq_('./client');
 var getConfiguration = _dereq_('./get-configuration').getConfiguration;
-var packageVersion = "3.0.0-beta.4";
+var packageVersion = "3.0.0-beta.5";
 
 /** @module braintree-web/client */
 
@@ -935,7 +935,12 @@ var packageVersion = "3.0.0-beta.4";
  * @static
  */
 function create(options, callback) {
-  if (!options.authorization) {
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'create must include a callback function'
+    });
+  } else if (!options.authorization) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
       message: 'options.authorization is required'
@@ -1018,7 +1023,7 @@ module.exports = addMetadata;
 },{"./constants":23,"./create-authorization-data":24,"./json-clone":27}],23:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.4";
+var VERSION = "3.0.0-beta.5";
 var PLATFORM = 'web';
 
 module.exports = {

@@ -167,7 +167,9 @@ module.exports = {
 var kount = _dereq_('./kount');
 var fraudnet = _dereq_('./fraudnet');
 var BraintreeError = _dereq_('../lib/error');
-var packageVersion = "3.0.0-beta.4";
+var methods = _dereq_('../lib/methods');
+var convertMethodsToError = _dereq_('../lib/convert-methods-to-error');
+var packageVersion = "3.0.0-beta.5";
 
 /**
  * @class
@@ -190,7 +192,7 @@ var packageVersion = "3.0.0-beta.4";
  * @name teardown
  * @function
  * @description Cleanly remove all event handlers and DOM nodes that were added
- * @param {errorCallback} [callback] Called once teardown is complete
+ * @param {errback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @instance
  * @returns {void}
  */
@@ -207,7 +209,7 @@ var packageVersion = "3.0.0-beta.4";
  * @static
  */
 function create(options, callback) {
-  var data, kountInstance, fraudnetInstance;
+  var data, kountInstance, fraudnetInstance, result;
   var instances = [];
 
   function teardown(cb) {
@@ -216,6 +218,8 @@ function create(options, callback) {
     for (i = 0; i < instances.length; i++) {
       instances[i].teardown();
     }
+
+    convertMethodsToError(result, methods(result));
 
     if (cb) {
       cb();
@@ -253,10 +257,12 @@ function create(options, callback) {
     return;
   }
 
-  callback(null, {
+  result = {
     deviceData: JSON.stringify(data),
     teardown: teardown
-  });
+  };
+
+  callback(null, result);
 }
 
 module.exports = {
@@ -268,7 +274,7 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"../lib/error":7,"./fraudnet":3,"./kount":5}],5:[function(_dereq_,module,exports){
+},{"../lib/convert-methods-to-error":6,"../lib/error":8,"../lib/methods":9,"./fraudnet":3,"./kount":5}],5:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable camelcase */
 
@@ -373,6 +379,22 @@ module.exports = {
 },{"sjcl":2}],6:[function(_dereq_,module,exports){
 'use strict';
 
+var BraintreeError = _dereq_('./error');
+
+module.exports = function (instance, methodNames) {
+  methodNames.forEach(function (methodName) {
+    instance[methodName] = function () {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: methodName + ' cannot be called after teardown'
+      });
+    };
+  });
+};
+
+},{"./error":8}],7:[function(_dereq_,module,exports){
+'use strict';
+
 function enumerate(values, prefix) {
   prefix = prefix == null ? '' : prefix;
 
@@ -384,7 +406,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],7:[function(_dereq_,module,exports){
+},{}],8:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -449,5 +471,14 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":6}]},{},[4])(4)
+},{"./enumerate":7}],9:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (obj) {
+  return Object.keys(obj).filter(function (key) {
+    return typeof obj[key] === 'function';
+  });
+};
+
+},{}]},{},[4])(4)
 });

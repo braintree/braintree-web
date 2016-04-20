@@ -11,11 +11,11 @@ Install
 =======
 
 ```
-npm install braintree-web@3.0.0-beta.4
+npm install braintree-web@3.0.0-beta.5
 ```
 
 ```
-bower install braintree-web@3.0.0-beta.4
+bower install braintree-web@3.0.0-beta.5
 ```
 
 Usage
