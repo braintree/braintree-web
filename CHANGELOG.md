@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## 2.24.0
+
+* PayPal
+  * Bugfixes for popup flows in iOS9 Chrome
+  * Fixes recognition of Hong Kong and Swedish locales
+* Drop-in
+  * option `defaultFirst: true` added to list a customer's default payment method first
+
 ## 2.23.0
 
 * PayPal
