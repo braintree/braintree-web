@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 2.15.5
+
+* Fixes analytics reporting bugs
+
 ## 2.15.4
 
 * Dropin
