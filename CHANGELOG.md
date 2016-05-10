@@ -1,6 +1,25 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.6
+
+* Hosted Fields
+  * `postalCode` field now has a maximum length of 10 characters
+  * Fix issues when pasting into fields
+* UnionPay
+  * Added support for UnionPay and Hosted Fields
+  * Updated the API
+  * Added `teardown` to cleanly destroy a UnionPay instance
+* PayPal
+  * Add support for `billingAgreementDescription`
+
+__BREAKING CHANGES__
+* UnionPay
+  * `fetchCapabilities` now takes `card: {number: '4111'}` instead of `cardNumber: '4111'`
+  * `enroll` now takes mobile phone data under the `mobile` property instead of the `card` property
+  * `enroll` now returns a property called `enrollmentId` instead of `unionpayEnrollmentId`
+  * Removed the `options.options` property from `tokenize`; `smsCode` and `enrollmentId` are now top-level options
+
 ## 3.0.0-beta.5
 
 * Improve documentation of callbacks

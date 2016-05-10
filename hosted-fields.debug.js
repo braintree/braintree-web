@@ -562,7 +562,7 @@ arguments[4][5][0].apply(exports,arguments)
   } else {
     root.framebus = factory();
   }
-})(this, function () {
+})(this, function () { // eslint-disable-line no-invalid-this
   var win, framebus;
   var popups = [];
   var subscribers = {};
@@ -594,7 +594,7 @@ arguments[4][5][0].apply(exports,arguments)
 
   function publish(event) {
     var payload, args;
-    var origin = _getOrigin(this);
+    var origin = _getOrigin(this); // eslint-disable-line no-invalid-this
 
     if (_isntString(event)) { return false; }
     if (_isntString(origin)) { return false; }
@@ -610,7 +610,7 @@ arguments[4][5][0].apply(exports,arguments)
   }
 
   function subscribe(event, fn) {
-    var origin = _getOrigin(this);
+    var origin = _getOrigin(this); // eslint-disable-line no-invalid-this
 
     if (_subscriptionArgsInvalid(event, fn, origin)) { return false; }
 
@@ -623,7 +623,7 @@ arguments[4][5][0].apply(exports,arguments)
 
   function unsubscribe(event, fn) {
     var i, subscriberList;
-    var origin = _getOrigin(this);
+    var origin = _getOrigin(this); // eslint-disable-line no-invalid-this
 
     if (_subscriptionArgsInvalid(event, fn, origin)) { return false; }
 
@@ -651,7 +651,7 @@ arguments[4][5][0].apply(exports,arguments)
   function _packagePayload(event, args, origin) {
     var packaged = false;
     var payload = {
-      event:  event,
+      event: event,
       origin: origin
     };
     var reply = args[args.length - 1];
@@ -687,8 +687,9 @@ arguments[4][5][0].apply(exports,arguments)
       replySource = e.source;
       replyEvent = payload.reply;
 
-      payload.reply = function reply(data) {
+      payload.reply = function reply(data) { // eslint-disable-line consistent-return
         var replyPayload = _packagePayload(replyEvent, [data], replyOrigin);
+
         if (replyPayload === false) { return false; }
 
         replySource.postMessage(replyPayload, replyOrigin);
@@ -719,12 +720,14 @@ arguments[4][5][0].apply(exports,arguments)
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       var r = Math.random() * 16 | 0;
       var v = c === 'x' ? r : r & 0x3 | 0x8;
+
       return v.toString(16);
     });
   }
 
   function _onmessage(e) {
     var payload;
+
     if (_isntString(e.data)) { return; }
 
     payload = _unpackPayload(e);
@@ -737,6 +740,7 @@ arguments[4][5][0].apply(exports,arguments)
 
   function _dispatch(origin, event, args, e) {
     var i;
+
     if (!subscribers[origin]) { return; }
     if (!subscribers[origin][event]) { return; }
 
@@ -745,13 +749,22 @@ arguments[4][5][0].apply(exports,arguments)
     }
   }
 
+  function _hasOpener(frame) {
+    if (frame.top !== frame) { return false; }
+    if (frame.opener == null) { return false; }
+    if (frame.opener === frame) { return false; }
+    if (frame.opener.closed === true) { return false; }
+
+    return true;
+  }
+
   function _broadcast(frame, payload, origin) {
     var i;
 
     try {
       frame.postMessage(payload, origin);
 
-      if (frame.opener && frame.opener !== frame && !frame.opener.closed && frame.opener !== win) {
+      if (_hasOpener(frame)) {
         _broadcast(frame.opener.top, payload, origin);
       }
 
@@ -798,18 +811,18 @@ arguments[4][5][0].apply(exports,arguments)
   _attach();
 
   framebus = {
-    target:                   target,
-    include:                  include,
-    publish:                  publish,
-    pub:                      publish,
-    trigger:                  publish,
-    emit:                     publish,
-    subscribe:                subscribe,
-    sub:                      subscribe,
-    on:                       subscribe,
-    unsubscribe:              unsubscribe,
-    unsub:                    unsubscribe,
-    off:                      unsubscribe
+    target: target,
+    include: include,
+    publish: publish,
+    pub: publish,
+    trigger: publish,
+    emit: publish,
+    subscribe: subscribe,
+    sub: subscribe,
+    on: subscribe,
+    unsubscribe: unsubscribe,
+    unsub: unsubscribe,
+    off: unsubscribe
   };
 
   return framebus;
@@ -1728,173 +1741,6 @@ if (typeof module !== 'undefined') {
 },{}],46:[function(_dereq_,module,exports){
 'use strict';
 
-var bus = _dereq_('framebus');
-var events = _dereq_('./lib/events');
-var checkOrigin = _dereq_('./lib/check-origin').checkOrigin;
-var BraintreeError = _dereq_('../lib/error');
-
-function BraintreeBus(options) {
-  options = options || {};
-
-  this.channel = options.channel;
-  if (!this.channel) {
-    throw new BraintreeError({
-      type: BraintreeError.types.INTERNAL,
-      message: 'Channel ID must be specified'
-    });
-  }
-
-  this.merchantUrl = options.merchantUrl;
-
-  this._isDestroyed = false;
-  this._isVerbose = false;
-
-  this._listeners = [];
-
-  this._log('new bus on channel ' + this.channel, [location.href]);
-}
-
-BraintreeBus.prototype.on = function (eventName, originalHandler) {
-  var namespacedEvent, args;
-  var handler = originalHandler;
-  var self = this;
-
-  if (this._isDestroyed) { return; }
-
-  if (this.merchantUrl) {
-    handler = function () {
-      /* eslint-disable no-invalid-this */
-      if (checkOrigin(this.origin, self.merchantUrl)) {
-        originalHandler.apply(this, arguments);
-      }
-      /* eslint-enable no-invalid-this */
-    };
-  }
-
-  namespacedEvent = this._namespaceEvent(eventName);
-  args = Array.prototype.slice.call(arguments);
-  args[0] = namespacedEvent;
-  args[1] = handler;
-
-  this._log('on', args);
-  bus.on.apply(bus, args);
-
-  this._listeners.push({
-    eventName: eventName,
-    handler: handler,
-    originalHandler: originalHandler
-  });
-};
-
-BraintreeBus.prototype.emit = function (eventName) {
-  var args;
-
-  if (this._isDestroyed) { return; }
-
-  args = Array.prototype.slice.call(arguments);
-  args[0] = this._namespaceEvent(eventName);
-
-  this._log('emit', args);
-  bus.emit.apply(bus, args);
-};
-
-BraintreeBus.prototype._offDirect = function (eventName) {
-  var args = Array.prototype.slice.call(arguments);
-
-  if (this._isDestroyed) { return; }
-
-  args[0] = this._namespaceEvent(eventName);
-
-  this._log('off', args);
-  bus.off.apply(bus, args);
-};
-
-BraintreeBus.prototype.off = function (eventName, originalHandler) {
-  var i, listener;
-  var handler = originalHandler;
-
-  if (this._isDestroyed) { return; }
-
-  if (this.merchantUrl) {
-    for (i = 0; i < this._listeners.length; i++) {
-      listener = this._listeners[i];
-
-      if (listener.originalHandler === originalHandler) {
-        handler = listener.handler;
-      }
-    }
-  }
-
-  this._offDirect(eventName, handler);
-};
-
-BraintreeBus.prototype._namespaceEvent = function (eventName) {
-  return ['braintree', this.channel, eventName].join(':');
-};
-
-BraintreeBus.prototype.teardown = function () {
-  var listener, i;
-
-  for (i = 0; i < this._listeners.length; i++) {
-    listener = this._listeners[i];
-    this._offDirect(listener.eventName, listener.handler);
-  }
-
-  this._listeners.length = 0;
-
-  this._isDestroyed = true;
-};
-
-BraintreeBus.prototype._log = function (functionName, args) {
-  if (this._isVerbose) {
-    console.log(functionName, args); // eslint-disable-line no-console
-  }
-};
-
-BraintreeBus.events = events;
-
-module.exports = BraintreeBus;
-
-},{"../lib/error":61,"./lib/check-origin":47,"./lib/events":48,"framebus":16}],47:[function(_dereq_,module,exports){
-'use strict';
-
-var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
-
-function checkOrigin(postMessageOrigin, merchantUrl) {
-  var merchantOrigin, merchantHost;
-  var a = document.createElement('a');
-
-  a.href = merchantUrl;
-
-  if (a.protocol === 'https:') {
-    merchantHost = a.host.replace(/:443$/, '');
-  } else if (a.protocol === 'http:') {
-    merchantHost = a.host.replace(/:80$/, '');
-  } else {
-    merchantHost = a.host;
-  }
-
-  merchantOrigin = a.protocol + '//' + merchantHost;
-
-  return merchantOrigin === postMessageOrigin || BT_ORIGIN_REGEX.test(postMessageOrigin);
-}
-
-module.exports = {
-  checkOrigin: checkOrigin
-};
-
-},{}],48:[function(_dereq_,module,exports){
-'use strict';
-
-var enumerate = _dereq_('../../lib/enumerate');
-
-module.exports = enumerate([
-  'CONFIGURATION_REQUEST'
-], 'bus:');
-
-},{"../../lib/enumerate":60}],49:[function(_dereq_,module,exports){
-'use strict';
-
 var constants = _dereq_('../shared/constants');
 
 module.exports = function composeUrl(assetsUrl, componentId) {
@@ -1905,13 +1751,13 @@ module.exports = function composeUrl(assetsUrl, componentId) {
     componentId;
 };
 
-},{"../shared/constants":53}],50:[function(_dereq_,module,exports){
+},{"../shared/constants":50}],47:[function(_dereq_,module,exports){
 'use strict';
 
 var Destructor = _dereq_('destructor');
 var classListManager = _dereq_('classlist');
 var iFramer = _dereq_('iframer');
-var Bus = _dereq_('../../bus');
+var Bus = _dereq_('../../lib/bus');
 var BraintreeError = _dereq_('../../lib/error');
 var composeUrl = _dereq_('./compose-url');
 var constants = _dereq_('../shared/constants');
@@ -1926,25 +1772,25 @@ var EventEmitter = _dereq_('../../lib/event-emitter');
 var injectFrame = _dereq_('./inject-frame');
 var analytics = _dereq_('../../lib/analytics');
 var whitelistedFields = constants.whitelistedFields;
-var VERSION = "3.0.0-beta.5";
+var VERSION = "3.0.0-beta.6";
 var methods = _dereq_('../../lib/methods');
 var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
 
 /**
  * @typedef {object} HostedFields~tokenizePayload
- * @property {string} nonce The payment method nonce
- * @property {object} details Additional account details
- * @property {string} details.cardType Type of card, ex: Visa, MasterCard
- * @property {string} details.lastTwo Last two digits of card number
- * @property {string} description A human-readable description
+ * @property {string} nonce The payment method nonce.
+ * @property {object} details Additional account details.
+ * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastTwo Last two digits of card number.
+ * @property {string} description A human-readable description.
  */
 
 /**
  * @name HostedFields#on
  * @function
- * @param {string} event The name of the event to subscribe to
- * @param {function} handler A callback to handle the event
- * @description Subscribes a handler function to a named event, such as {@link HostedFields#event:fieldEvent|fieldEvent}
+ * @param {string} event The name of the event to which you are subscribing.
+ * @param {function} handler A callback to handle the event.
+ * @description Subscribes a handler function to a named event, such as {@link HostedFields#event:fieldEvent|fieldEvent}.
  * @example
  * <caption>Listening to a fieldEvent</caption>
  * var hostedFields = require('braintree-web/hosted-fields');
@@ -1984,12 +1830,12 @@ var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
  * @property {string} type
  * <table>
  * <tr><th>Value</th><th>Meaning</th></tr>
- * <tr><td><code>focus</code></td><td>The input has gained focus</td></tr>
- * <tr><td><code>blur</code></td><td> The input has lost focus</td></tr>
- * <tr><td><code>fieldStateChange</code></td><td> Some state has changed within an input including: validation, focus, card type detection, etc</td></tr>
+ * <tr><td><code>focus</code></td><td>The input has gained focus.</td></tr>
+ * <tr><td><code>blur</code></td><td> The input has lost focus.</td></tr>
+ * <tr><td><code>fieldStateChange</code></td><td> Some state has changed within an input including: validation, focus, card type detection, etc.</td></tr>
  * </table>
- * @property {boolean} isEmpty Whether or not the user has entered a value in the input
- * @property {boolean} isFocused Whether or not the input is currently focused
+ * @property {boolean} isEmpty Whether or not the user has entered a value in the input.
+ * @property {boolean} isFocused Whether or not the input is currently focused.
  * @property {boolean} isPotentiallyValid
  * A determination based on the future validity of the input value.
  * This is helpful when a user is entering a card number and types <code>"41"</code>.
@@ -1997,7 +1843,7 @@ var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
  * it to become a fully qualified entry. However, if the user enters <code>"4x"</code>
  * it is clear that the card number can never become valid and isPotentiallyValid will
  * return false.
- * @property {boolean} isValid Whether or not the value of the associated input is <i>fully</i> qualified for submission
+ * @property {boolean} isValid Whether or not the value of the associated input is <i>fully</i> qualified for submission.
  * @property {object} target
  * @property {object} target.container Reference to the container DOM element on your page associated with the current event.
  * @property {string} target.fieldKey
@@ -2063,7 +1909,7 @@ function inputEventHandler(fields) {
 
 /**
  * @class HostedFields
- * @param {object} options Hosted Fields {@link module:braintree-web/hosted-fields.create create} options
+ * @param {object} options The Hosted Fields {@link module:braintree-web/hosted-fields.create create} options.
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/hosted-fields.create|braintree-web.hosted-fields.create} instead.</strong>
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
@@ -2077,7 +1923,7 @@ function HostedFields(options) {
   if (!options.client) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'You must specify a client when initializing Hosted Fields'
+      message: 'You must specify a client when initializing Hosted Fields.'
     });
   }
 
@@ -2086,14 +1932,14 @@ function HostedFields(options) {
   if (config.analyticsMetadata.sdkVersion !== VERSION) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'Client and Hosted Fields components must be from the same SDK version'
+      message: 'Client and Hosted Fields components must be from the same SDK version.'
     });
   }
 
   if (!options.fields) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'You must specify fields when initializing Hosted Fields'
+      message: 'You must specify fields when initializing Hosted Fields.'
     });
   }
 
@@ -2127,7 +1973,7 @@ function HostedFields(options) {
       if (!container) {
         throw new BraintreeError({
           type: BraintreeError.types.MERCHANT,
-          message: 'Selector does not reference a valid DOM node',
+          message: 'Selector does not reference a valid DOM node.',
           details: {
             fieldSelector: field.selector,
             fieldKey: key
@@ -2136,7 +1982,7 @@ function HostedFields(options) {
       } else if (container.querySelector('iframe[name^="braintree-"]')) {
         throw new BraintreeError({
           type: BraintreeError.types.MERCHANT,
-          message: 'Element already contains a Braintree iframe',
+          message: 'Element already contains a Braintree iframe.',
           details: {
             fieldSelector: field.selector,
             fieldKey: key
@@ -2257,12 +2103,17 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
  * @returns {void}
  */
 HostedFields.prototype.teardown = function (callback) {
-  this._destructor.teardown(callback);
-  analytics.sendEvent(this._client, 'web.custom.hosted-fields.teardown-completed');
+  var client = this._client;
+
+  this._destructor.teardown(function (err) {
+    analytics.sendEvent(client, 'web.custom.hosted-fields.teardown-completed');
+
+    callback(err);
+  });
 };
 
 /**
- * Attempts to tokenize fields, returning a nonce payload
+ * Tokenizes fields and returns a nonce payload.
  * @public
  * @param {errback} callback The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
  * @example
@@ -2279,7 +2130,7 @@ HostedFields.prototype.tokenize = function (callback) {
   if (typeof callback !== 'function') {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'tokenize must include a callback function'
+      message: 'tokenize must include a callback function.'
     });
   }
 
@@ -2320,19 +2171,18 @@ HostedFields.prototype.tokenize = function (callback) {
  * });
  * @returns {void}
  */
-
 HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) {
   var err;
 
   if (!whitelistedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: field + ' is not a valid field. You must use a valid field option when setting a placeholder.'
+      message: '"' + field + '" is not a valid field. You must use a valid field option when setting a placeholder.'
     });
   } else if (!this._fields.hasOwnProperty(field)) {
     err = new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'Cannot set placeholder for ' + field + ' field because it is not part of the current Hosted Fields options.'
+      message: 'Cannot set placeholder for "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
     this._bus.emit(events.SET_PLACEHOLDER, field, placeholder);
@@ -2343,20 +2193,77 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
   }
 };
 
+/**
+ * Clear the value of a {@link module:braintree-web/hosted-fields~field field}.
+ * @public
+ * @param {string} field The field whose placeholder you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {errback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
+ * @returns {void}
+ * @example
+ * hostedFieldsInstance.clear('number', function (err) {
+ *   if (err) {
+ *     console.error(err);
+ *   }
+ * });
+ *
+ * @example <caption>Clear several fields</caption>
+ * hostedFieldsInstance.clear('number');
+ * hostedFieldsInstance.clear('cvv');
+ * hostedFieldsInstance.clear('expirationDate');
+ */
+HostedFields.prototype.clear = function (field, callback) {
+  var err;
+
+  if (!whitelistedFields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: '"' + field + '" is not a valid field. You must use a valid field option when clearing a field.'
+    });
+  } else if (!this._fields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Cannot clear "' + field + '" field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    this._bus.emit(events.CLEAR_FIELD, field);
+  }
+
+  if (typeof callback === 'function') {
+    callback(err);
+  }
+};
+
 module.exports = HostedFields;
 
-},{"../../bus":46,"../../lib/analytics":56,"../../lib/constants":57,"../../lib/convert-methods-to-error":58,"../../lib/error":61,"../../lib/event-emitter":62,"../../lib/is-ios":63,"../../lib/methods":65,"../../lib/uuid":67,"../shared/constants":53,"../shared/find-parent-tags":54,"./compose-url":49,"./inject-frame":52,"braintree-utilities":9,"classlist":10,"destructor":13,"iframer":17,"nodelist-to-array":45}],51:[function(_dereq_,module,exports){
+},{"../../lib/analytics":53,"../../lib/bus":56,"../../lib/constants":57,"../../lib/convert-methods-to-error":58,"../../lib/error":61,"../../lib/event-emitter":62,"../../lib/is-ios":63,"../../lib/methods":65,"../../lib/uuid":67,"../shared/constants":50,"../shared/find-parent-tags":51,"./compose-url":46,"./inject-frame":48,"braintree-utilities":9,"classlist":10,"destructor":13,"iframer":17,"nodelist-to-array":45}],48:[function(_dereq_,module,exports){
 'use strict';
 
-var HostedFields = _dereq_('./hosted-fields');
-var packageVersion = "3.0.0-beta.5";
+module.exports = function injectFrame(frame, container) {
+  var clearboth = document.createElement('div');
+  var fragment = document.createDocumentFragment();
+
+  clearboth.style.clear = 'both';
+
+  fragment.appendChild(frame);
+  fragment.appendChild(clearboth);
+
+  container.appendChild(fragment);
+
+  return [frame, clearboth];
+};
+
+},{}],49:[function(_dereq_,module,exports){
+'use strict';
+
+var HostedFields = _dereq_('./external/hosted-fields');
+var packageVersion = "3.0.0-beta.6";
 
 /** @module braintree-web/hosted-fields */
 
 /**
  * Fields used in {@link module:braintree-web/hosted-fields~fieldOptions fields options}
  * @typedef {object} field
- * @property {string} selector A CSS selector to find the container where the hosted field will be inserted
+ * @property {string} selector A CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
  * @property {boolean} [formatInput=true] - Enable or disable automatic formatting on this field.
  */
@@ -2364,12 +2271,12 @@ var packageVersion = "3.0.0-beta.5";
 /**
  * An object that has {@link module:braintree-web/hosted-fields~field field objects} for each field. Used in {@link module:braintree-web/hosted-fields~create create}.
  * @typedef {object} fieldOptions
- * @property {field} [number] A field for card number
+ * @property {field} [number] A field for card number.
  * @property {field} [expirationDate] A field for expiration date in `MM/YYYY` format. This should not be used with the `expirationMonth` and `expirationYear` properties.
  * @property {field} [expirationMonth] A field for expiration month in `MM` format. This should be used with the `expirationYear` property.
  * @property {field} [expirationYear] A field for expiration year in `YYYY` format. This should be used with the `expirationMonth` property.
- * @property {field} [cvv] A field for 3 or 4 digit CVV or CID
- * @property {field} [postalCode] A field for postal or region code
+ * @property {field} [cvv] A field for 3 or 4 digit CVV or CID.
+ * @property {field} [postalCode] A field for postal or region code.
  */
 
 /**
@@ -2385,11 +2292,11 @@ module.exports = {
   /**
    * @static
    * @function create
-   * @param {object} options Creation options
-   * @param {client} options.client A {@link Client} instance
-   * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}
-   * @param {styleOptions} options.styles {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field
-   * @param {errback} callback The second argument, `data`, is the {@link HostedFields} instance
+   * @param {object} options Creation options:
+   * @param {client} options.client A {@link Client} instance.
+   * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}.
+   * @param {styleOptions} options.styles {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
+   * @param {errback} callback The second argument, `data`, is the {@link HostedFields} instance.
    * @returns {void}
    * @example
    * braintree.hostedFields.create({
@@ -2440,29 +2347,12 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"./hosted-fields":50}],52:[function(_dereq_,module,exports){
-'use strict';
-
-module.exports = function injectFrame(frame, container) {
-  var clearboth = document.createElement('div');
-  var fragment = document.createDocumentFragment();
-
-  clearboth.style.clear = 'both';
-
-  fragment.appendChild(frame);
-  fragment.appendChild(clearboth);
-
-  container.appendChild(fragment);
-
-  return [frame, clearboth];
-};
-
-},{}],53:[function(_dereq_,module,exports){
+},{"./external/hosted-fields":47}],50:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable no-reserved-keys */
 
 var enumerate = _dereq_('../../lib/enumerate');
-var VERSION = "3.0.0-beta.5";
+var VERSION = "3.0.0-beta.6";
 
 var constants = {
   VERSION: VERSION,
@@ -2552,12 +2442,13 @@ constants.events = enumerate([
   'TOKENIZATION_REQUEST',
   'INPUT_EVENT',
   'TRIGGER_INPUT_FOCUS',
-  'SET_PLACEHOLDER'
+  'SET_PLACEHOLDER',
+  'CLEAR_FIELD'
 ], 'hosted-fields:');
 
 module.exports = constants;
 
-},{"../../lib/enumerate":60}],54:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":60}],51:[function(_dereq_,module,exports){
 'use strict';
 
 function findParentTags(element, tag) {
@@ -2577,7 +2468,7 @@ function findParentTags(element, tag) {
 
 module.exports = findParentTags;
 
-},{}],55:[function(_dereq_,module,exports){
+},{}],52:[function(_dereq_,module,exports){
 'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
@@ -2611,7 +2502,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":57,"./create-authorization-data":59,"./json-clone":64}],56:[function(_dereq_,module,exports){
+},{"./constants":57,"./create-authorization-data":59,"./json-clone":64}],53:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -2645,10 +2536,177 @@ module.exports = {
   sendEvent: sendAnalyticsEvent
 };
 
-},{"./add-metadata":55,"./constants":57}],57:[function(_dereq_,module,exports){
+},{"./add-metadata":52,"./constants":57}],54:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.5";
+var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
+
+function checkOrigin(postMessageOrigin, merchantUrl) {
+  var merchantOrigin, merchantHost;
+  var a = document.createElement('a');
+
+  a.href = merchantUrl;
+
+  if (a.protocol === 'https:') {
+    merchantHost = a.host.replace(/:443$/, '');
+  } else if (a.protocol === 'http:') {
+    merchantHost = a.host.replace(/:80$/, '');
+  } else {
+    merchantHost = a.host;
+  }
+
+  merchantOrigin = a.protocol + '//' + merchantHost;
+
+  return merchantOrigin === postMessageOrigin || BT_ORIGIN_REGEX.test(postMessageOrigin);
+}
+
+module.exports = {
+  checkOrigin: checkOrigin
+};
+
+},{}],55:[function(_dereq_,module,exports){
+'use strict';
+
+var enumerate = _dereq_('../enumerate');
+
+module.exports = enumerate([
+  'CONFIGURATION_REQUEST'
+], 'bus:');
+
+},{"../enumerate":60}],56:[function(_dereq_,module,exports){
+'use strict';
+
+var bus = _dereq_('framebus');
+var events = _dereq_('./events');
+var checkOrigin = _dereq_('./check-origin').checkOrigin;
+var BraintreeError = _dereq_('../error');
+
+function BraintreeBus(options) {
+  options = options || {};
+
+  this.channel = options.channel;
+  if (!this.channel) {
+    throw new BraintreeError({
+      type: BraintreeError.types.INTERNAL,
+      message: 'Channel ID must be specified.'
+    });
+  }
+
+  this.merchantUrl = options.merchantUrl;
+
+  this._isDestroyed = false;
+  this._isVerbose = false;
+
+  this._listeners = [];
+
+  this._log('new bus on channel ' + this.channel, [location.href]);
+}
+
+BraintreeBus.prototype.on = function (eventName, originalHandler) {
+  var namespacedEvent, args;
+  var handler = originalHandler;
+  var self = this;
+
+  if (this._isDestroyed) { return; }
+
+  if (this.merchantUrl) {
+    handler = function () {
+      /* eslint-disable no-invalid-this */
+      if (checkOrigin(this.origin, self.merchantUrl)) {
+        originalHandler.apply(this, arguments);
+      }
+      /* eslint-enable no-invalid-this */
+    };
+  }
+
+  namespacedEvent = this._namespaceEvent(eventName);
+  args = Array.prototype.slice.call(arguments);
+  args[0] = namespacedEvent;
+  args[1] = handler;
+
+  this._log('on', args);
+  bus.on.apply(bus, args);
+
+  this._listeners.push({
+    eventName: eventName,
+    handler: handler,
+    originalHandler: originalHandler
+  });
+};
+
+BraintreeBus.prototype.emit = function (eventName) {
+  var args;
+
+  if (this._isDestroyed) { return; }
+
+  args = Array.prototype.slice.call(arguments);
+  args[0] = this._namespaceEvent(eventName);
+
+  this._log('emit', args);
+  bus.emit.apply(bus, args);
+};
+
+BraintreeBus.prototype._offDirect = function (eventName) {
+  var args = Array.prototype.slice.call(arguments);
+
+  if (this._isDestroyed) { return; }
+
+  args[0] = this._namespaceEvent(eventName);
+
+  this._log('off', args);
+  bus.off.apply(bus, args);
+};
+
+BraintreeBus.prototype.off = function (eventName, originalHandler) {
+  var i, listener;
+  var handler = originalHandler;
+
+  if (this._isDestroyed) { return; }
+
+  if (this.merchantUrl) {
+    for (i = 0; i < this._listeners.length; i++) {
+      listener = this._listeners[i];
+
+      if (listener.originalHandler === originalHandler) {
+        handler = listener.handler;
+      }
+    }
+  }
+
+  this._offDirect(eventName, handler);
+};
+
+BraintreeBus.prototype._namespaceEvent = function (eventName) {
+  return ['braintree', this.channel, eventName].join(':');
+};
+
+BraintreeBus.prototype.teardown = function () {
+  var listener, i;
+
+  for (i = 0; i < this._listeners.length; i++) {
+    listener = this._listeners[i];
+    this._offDirect(listener.eventName, listener.handler);
+  }
+
+  this._listeners.length = 0;
+
+  this._isDestroyed = true;
+};
+
+BraintreeBus.prototype._log = function (functionName, args) {
+  if (this._isVerbose) {
+    console.log(functionName, args); // eslint-disable-line no-console
+  }
+};
+
+BraintreeBus.events = events;
+
+module.exports = BraintreeBus;
+
+},{"../error":61,"./check-origin":54,"./events":55,"framebus":16}],57:[function(_dereq_,module,exports){
+'use strict';
+
+var VERSION = "3.0.0-beta.6";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -2671,7 +2729,7 @@ module.exports = function (instance, methodNames) {
     instance[methodName] = function () {
       throw new BraintreeError({
         type: BraintreeError.types.MERCHANT,
-        message: methodName + ' cannot be called after teardown'
+        message: methodName + ' cannot be called after teardown.'
       });
     };
   });
@@ -2754,28 +2812,28 @@ var enumerate = _dereq_('./enumerate');
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
-    throw new Error(options.type + ' is not a valid type');
+    throw new Error(options.type + ' is not a valid type.');
   }
 
   if (!options.message) {
-    throw new Error('Error message required');
+    throw new Error('Error message required.');
   }
 
   /**
    * @type {string}
-   * @description A short description of the error
+   * @description A short description of the error.
    */
   this.message = options.message;
 
   /**
    * @type {BraintreeError.types}
-   * @description The type of error
+   * @description The type of error.
    */
   this.type = options.type;
 
   /**
    * @type {object=}
-   * @description Additional information about the error, such as an underlying network error response
+   * @description Additional information about the error, such as an underlying network error response.
    */
   this.details = options.details;
 }
@@ -2784,16 +2842,16 @@ BraintreeError.prototype = Object.create(Error.prototype);
 BraintreeError.prototype.constructor = BraintreeError;
 
 /**
- * Enum for {@link BraintreeError} types
+ * Enum for {@link BraintreeError} types.
  * @name BraintreeError.types
  * @enum
  * @readonly
  * @memberof BraintreeError
- * @property {string} CUSTOMER Error caused by the customer
- * @property {string} MERCHANT Error that is actionable by the merchant
- * @property {string} NETWORK Error due to a network problem
- * @property {string} INTERNAL Error caused by Braintree code
- * @property {string} UNKNOWN Error of unknown origin
+ * @property {string} CUSTOMER An error caused by the customer.
+ * @property {string} MERCHANT An error that is actionable by the merchant.
+ * @property {string} NETWORK An error due to a network problem.
+ * @property {string} INTERNAL An error caused by Braintree code.
+ * @property {string} UNKNOWN An error where the origin is unknown.
  */
 BraintreeError.types = enumerate([
   'CUSTOMER',
@@ -2912,5 +2970,5 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}]},{},[51])(51)
+},{}]},{},[49])(49)
 });

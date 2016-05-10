@@ -142,15 +142,15 @@ module.exports = AmericanExpress;
  * @description This module is for use with Amex Express Checkout. To accept American Express cards, use Hosted Fields.
  */
 
-var VERSION = "3.0.0-beta.5";
+var VERSION = "3.0.0-beta.6";
 var BraintreeError = _dereq_('../lib/error');
 var AmericanExpress = _dereq_('./american-express');
 
 /**
  * @function
- * @param {object} options Object containing all {@link AmericanExpress} options
- * @param {Client} options.client A {@link Client} instance
- * @param {errback} callback The second argument, <code>data</code>, is the {@link AmericanExpress} instance
+ * @param {object} options Object containing all {@link AmericanExpress} options:
+ * @param {Client} options.client A {@link Client} instance.
+ * @param {errback} callback The second argument, <code>data</code>, is the {@link AmericanExpress} instance.
  * @returns {void}
  * @static
  */
@@ -218,28 +218,28 @@ var enumerate = _dereq_('./enumerate');
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
-    throw new Error(options.type + ' is not a valid type');
+    throw new Error(options.type + ' is not a valid type.');
   }
 
   if (!options.message) {
-    throw new Error('Error message required');
+    throw new Error('Error message required.');
   }
 
   /**
    * @type {string}
-   * @description A short description of the error
+   * @description A short description of the error.
    */
   this.message = options.message;
 
   /**
    * @type {BraintreeError.types}
-   * @description The type of error
+   * @description The type of error.
    */
   this.type = options.type;
 
   /**
    * @type {object=}
-   * @description Additional information about the error, such as an underlying network error response
+   * @description Additional information about the error, such as an underlying network error response.
    */
   this.details = options.details;
 }
@@ -248,16 +248,16 @@ BraintreeError.prototype = Object.create(Error.prototype);
 BraintreeError.prototype.constructor = BraintreeError;
 
 /**
- * Enum for {@link BraintreeError} types
+ * Enum for {@link BraintreeError} types.
  * @name BraintreeError.types
  * @enum
  * @readonly
  * @memberof BraintreeError
- * @property {string} CUSTOMER Error caused by the customer
- * @property {string} MERCHANT Error that is actionable by the merchant
- * @property {string} NETWORK Error due to a network problem
- * @property {string} INTERNAL Error caused by Braintree code
- * @property {string} UNKNOWN Error of unknown origin
+ * @property {string} CUSTOMER An error caused by the customer.
+ * @property {string} MERCHANT An error that is actionable by the merchant.
+ * @property {string} NETWORK An error due to a network problem.
+ * @property {string} INTERNAL An error caused by Braintree code.
+ * @property {string} UNKNOWN An error where the origin is unknown.
  */
 BraintreeError.types = enumerate([
   'CUSTOMER',

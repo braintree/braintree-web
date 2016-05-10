@@ -169,13 +169,13 @@ var fraudnet = _dereq_('./fraudnet');
 var BraintreeError = _dereq_('../lib/error');
 var methods = _dereq_('../lib/methods');
 var convertMethodsToError = _dereq_('../lib/convert-methods-to-error');
-var packageVersion = "3.0.0-beta.5";
+var packageVersion = "3.0.0-beta.6";
 
 /**
  * @class
  * @global
  * @name DataCollector
- * @description instance returned by {@link module:braintree-web/data-collector.create create}
+ * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/data-collector.create|braintree-web.data-collector.create} instead.</strong>
  * @classdesc This class is used for advanced fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions.
  */
 
@@ -183,7 +183,7 @@ var packageVersion = "3.0.0-beta.5";
  * @memberof DataCollector
  * @name deviceData
  * @type string
- * @description JSON string to pass with server transactions
+ * @description JSON string to pass with server transactions.
  * @instance
  */
 
@@ -191,7 +191,7 @@ var packageVersion = "3.0.0-beta.5";
  * @memberof DataCollector
  * @name teardown
  * @function
- * @description Cleanly remove all event handlers and DOM nodes that were added
+ * @description Cleanly remove all event handlers and DOM nodes that were added.
  * @param {errback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @instance
  * @returns {void}
@@ -199,12 +199,12 @@ var packageVersion = "3.0.0-beta.5";
 
 /**
  * @function
- * @param {object} options Object containing all {@link DataCollector} options
- * @param {object} [options.kount] If supplied, Kount fraud capabilities are enabled
- * @param {string} options.kount.environment Which Kount environment to operate in. Options are "sandbox" or "production"
- * @param {string} [options.kount.merchantId] If using a direct Kount integration, your Kount-provided merchantId
- * @param {boolean} [options.paypal] If true, PayPal fraud capabilities are enabled
- * @param {errback} callback The second argument, <code>data</code>, is the {@link DataCollector} instance
+ * @param {object} options Object containing all {@link DataCollector} options:
+ * @param {object} [options.kount] If supplied, Kount fraud capabilities are enabled:
+ * @param {string} options.kount.environment Which Kount environment to operate in. Options are "sandbox" or "production".
+ * @param {string} [options.kount.merchantId] If using a direct Kount integration, your Kount-provided merchantId.
+ * @param {boolean} [options.paypal] If true, PayPal fraud capabilities are enabled.
+ * @param {errback} callback The second argument, <code>data</code>, is the {@link DataCollector} instance.
  * @returns {void}
  * @static
  */
@@ -386,7 +386,7 @@ module.exports = function (instance, methodNames) {
     instance[methodName] = function () {
       throw new BraintreeError({
         type: BraintreeError.types.MERCHANT,
-        message: methodName + ' cannot be called after teardown'
+        message: methodName + ' cannot be called after teardown.'
       });
     };
   });
@@ -420,28 +420,28 @@ var enumerate = _dereq_('./enumerate');
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
-    throw new Error(options.type + ' is not a valid type');
+    throw new Error(options.type + ' is not a valid type.');
   }
 
   if (!options.message) {
-    throw new Error('Error message required');
+    throw new Error('Error message required.');
   }
 
   /**
    * @type {string}
-   * @description A short description of the error
+   * @description A short description of the error.
    */
   this.message = options.message;
 
   /**
    * @type {BraintreeError.types}
-   * @description The type of error
+   * @description The type of error.
    */
   this.type = options.type;
 
   /**
    * @type {object=}
-   * @description Additional information about the error, such as an underlying network error response
+   * @description Additional information about the error, such as an underlying network error response.
    */
   this.details = options.details;
 }
@@ -450,16 +450,16 @@ BraintreeError.prototype = Object.create(Error.prototype);
 BraintreeError.prototype.constructor = BraintreeError;
 
 /**
- * Enum for {@link BraintreeError} types
+ * Enum for {@link BraintreeError} types.
  * @name BraintreeError.types
  * @enum
  * @readonly
  * @memberof BraintreeError
- * @property {string} CUSTOMER Error caused by the customer
- * @property {string} MERCHANT Error that is actionable by the merchant
- * @property {string} NETWORK Error due to a network problem
- * @property {string} INTERNAL Error caused by Braintree code
- * @property {string} UNKNOWN Error of unknown origin
+ * @property {string} CUSTOMER An error caused by the customer.
+ * @property {string} MERCHANT An error that is actionable by the merchant.
+ * @property {string} NETWORK An error due to a network problem.
+ * @property {string} INTERNAL An error caused by Braintree code.
+ * @property {string} UNKNOWN An error where the origin is unknown.
  */
 BraintreeError.types = enumerate([
   'CUSTOMER',

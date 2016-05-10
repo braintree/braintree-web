@@ -1,5 +1,1174 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.braintree || (g.braintree = {})).unionpay = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
+(function (root, factory) {
+  if (typeof exports === 'object' && typeof module !== 'undefined') {
+    module.exports = factory();
+  } else if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  } else {
+    root.framebus = factory();
+  }
+})(this, function () { // eslint-disable-line no-invalid-this
+  var win, framebus;
+  var popups = [];
+  var subscribers = {};
+  var prefix = '/*framebus*/';
+
+  function include(popup) {
+    if (popup == null) { return false; }
+    if (popup.Window == null) { return false; }
+    if (popup.constructor !== popup.Window) { return false; }
+
+    popups.push(popup);
+    return true;
+  }
+
+  function target(origin) {
+    var key;
+    var targetedFramebus = {};
+
+    for (key in framebus) {
+      if (!framebus.hasOwnProperty(key)) { continue; }
+
+      targetedFramebus[key] = framebus[key];
+    }
+
+    targetedFramebus._origin = origin || '*';
+
+    return targetedFramebus;
+  }
+
+  function publish(event) {
+    var payload, args;
+    var origin = _getOrigin(this); // eslint-disable-line no-invalid-this
+
+    if (_isntString(event)) { return false; }
+    if (_isntString(origin)) { return false; }
+
+    args = Array.prototype.slice.call(arguments, 1);
+
+    payload = _packagePayload(event, args, origin);
+    if (payload === false) { return false; }
+
+    _broadcast(win.top, payload, origin);
+
+    return true;
+  }
+
+  function subscribe(event, fn) {
+    var origin = _getOrigin(this); // eslint-disable-line no-invalid-this
+
+    if (_subscriptionArgsInvalid(event, fn, origin)) { return false; }
+
+    subscribers[origin] = subscribers[origin] || {};
+    subscribers[origin][event] = subscribers[origin][event] || [];
+    subscribers[origin][event].push(fn);
+
+    return true;
+  }
+
+  function unsubscribe(event, fn) {
+    var i, subscriberList;
+    var origin = _getOrigin(this); // eslint-disable-line no-invalid-this
+
+    if (_subscriptionArgsInvalid(event, fn, origin)) { return false; }
+
+    subscriberList = subscribers[origin] && subscribers[origin][event];
+    if (!subscriberList) { return false; }
+
+    for (i = 0; i < subscriberList.length; i++) {
+      if (subscriberList[i] === fn) {
+        subscriberList.splice(i, 1);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function _getOrigin(scope) {
+    return scope && scope._origin || '*';
+  }
+
+  function _isntString(string) {
+    return typeof string !== 'string';
+  }
+
+  function _packagePayload(event, args, origin) {
+    var packaged = false;
+    var payload = {
+      event: event,
+      origin: origin
+    };
+    var reply = args[args.length - 1];
+
+    if (typeof reply === 'function') {
+      payload.reply = _subscribeReplier(reply, origin);
+      args = args.slice(0, -1);
+    }
+
+    payload.args = args;
+
+    try {
+      packaged = prefix + JSON.stringify(payload);
+    } catch (e) {
+      throw new Error('Could not stringify event: ' + e.message);
+    }
+    return packaged;
+  }
+
+  function _unpackPayload(e) {
+    var payload, replyOrigin, replySource, replyEvent;
+
+    if (e.data.slice(0, prefix.length) !== prefix) { return false; }
+
+    try {
+      payload = JSON.parse(e.data.slice(prefix.length));
+    } catch (err) {
+      return false;
+    }
+
+    if (payload.reply != null) {
+      replyOrigin = e.origin;
+      replySource = e.source;
+      replyEvent = payload.reply;
+
+      payload.reply = function reply(data) { // eslint-disable-line consistent-return
+        var replyPayload = _packagePayload(replyEvent, [data], replyOrigin);
+
+        if (replyPayload === false) { return false; }
+
+        replySource.postMessage(replyPayload, replyOrigin);
+      };
+
+      payload.args.push(payload.reply);
+    }
+
+    return payload;
+  }
+
+  function _attach(w) {
+    if (win) { return; }
+    win = w || window;
+
+    if (win.addEventListener) {
+      win.addEventListener('message', _onmessage, false);
+    } else if (win.attachEvent) {
+      win.attachEvent('onmessage', _onmessage);
+    } else if (win.onmessage === null) {
+      win.onmessage = _onmessage;
+    } else {
+      win = null;
+    }
+  }
+
+  function _uuid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      var v = c === 'x' ? r : r & 0x3 | 0x8;
+
+      return v.toString(16);
+    });
+  }
+
+  function _onmessage(e) {
+    var payload;
+
+    if (_isntString(e.data)) { return; }
+
+    payload = _unpackPayload(e);
+    if (!payload) { return; }
+
+    _dispatch('*', payload.event, payload.args, e);
+    _dispatch(e.origin, payload.event, payload.args, e);
+    _broadcastPopups(e.data, payload.origin, e.source);
+  }
+
+  function _dispatch(origin, event, args, e) {
+    var i;
+
+    if (!subscribers[origin]) { return; }
+    if (!subscribers[origin][event]) { return; }
+
+    for (i = 0; i < subscribers[origin][event].length; i++) {
+      subscribers[origin][event][i].apply(e, args);
+    }
+  }
+
+  function _hasOpener(frame) {
+    if (frame.top !== frame) { return false; }
+    if (frame.opener == null) { return false; }
+    if (frame.opener === frame) { return false; }
+    if (frame.opener.closed === true) { return false; }
+
+    return true;
+  }
+
+  function _broadcast(frame, payload, origin) {
+    var i;
+
+    try {
+      frame.postMessage(payload, origin);
+
+      if (_hasOpener(frame)) {
+        _broadcast(frame.opener.top, payload, origin);
+      }
+
+      for (i = 0; i < frame.frames.length; i++) {
+        _broadcast(frame.frames[i], payload, origin);
+      }
+    } catch (_) { /* ignored */ }
+  }
+
+  function _broadcastPopups(payload, origin, source) {
+    var i, popup;
+
+    for (i = popups.length - 1; i >= 0; i--) {
+      popup = popups[i];
+
+      if (popup.closed === true) {
+        popups = popups.slice(i, 1);
+      } else if (source !== popup) {
+        _broadcast(popup.top, payload, origin);
+      }
+    }
+  }
+
+  function _subscribeReplier(fn, origin) {
+    var uuid = _uuid();
+
+    function replier(d, o) {
+      fn(d, o);
+      framebus.target(origin).unsubscribe(uuid, replier);
+    }
+
+    framebus.target(origin).subscribe(uuid, replier);
+    return uuid;
+  }
+
+  function _subscriptionArgsInvalid(event, fn, origin) {
+    if (_isntString(event)) { return true; }
+    if (typeof fn !== 'function') { return true; }
+    if (_isntString(origin)) { return true; }
+
+    return false;
+  }
+
+  _attach();
+
+  framebus = {
+    target: target,
+    include: include,
+    publish: publish,
+    pub: publish,
+    trigger: publish,
+    emit: publish,
+    subscribe: subscribe,
+    sub: subscribe,
+    on: subscribe,
+    unsubscribe: unsubscribe,
+    unsub: unsubscribe,
+    off: unsubscribe
+  };
+
+  return framebus;
+});
+
+},{}],2:[function(_dereq_,module,exports){
+'use strict';
+
+var assign = _dereq_('lodash/object/assign');
+var isString = _dereq_('lodash/lang/isString');
+var setAttributes = _dereq_('setattributes');
+var defaultAttributes = _dereq_('./lib/default-attributes');
+
+module.exports = function createFrame(options) {
+  var iframe = document.createElement('iframe');
+  var config = assign({}, defaultAttributes, options);
+
+  if (config.style && !isString(config.style)) {
+    assign(iframe.style, config.style);
+    delete config.style;
+  }
+
+  setAttributes(iframe, config);
+
+  if (!iframe.getAttribute('id')) {
+    iframe.id = iframe.name;
+  }
+
+  return iframe;
+};
+
+},{"./lib/default-attributes":3,"lodash/lang/isString":24,"lodash/object/assign":25,"setattributes":29}],3:[function(_dereq_,module,exports){
+module.exports={
+  "src": "about:blank",
+  "frameBorder": 0,
+  "allowtransparency": true,
+  "scrolling": "no"
+}
+
+},{}],4:[function(_dereq_,module,exports){
+/** Used as the `TypeError` message for "Functions" methods. */
+var FUNC_ERROR_TEXT = 'Expected a function';
+
+/* Native method references for those with the same name as other `lodash` methods. */
+var nativeMax = Math.max;
+
+/**
+ * Creates a function that invokes `func` with the `this` binding of the
+ * created function and arguments from `start` and beyond provided as an array.
+ *
+ * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/Web/JavaScript/Reference/Functions/rest_parameters).
+ *
+ * @static
+ * @memberOf _
+ * @category Function
+ * @param {Function} func The function to apply a rest parameter to.
+ * @param {number} [start=func.length-1] The start position of the rest parameter.
+ * @returns {Function} Returns the new function.
+ * @example
+ *
+ * var say = _.restParam(function(what, names) {
+ *   return what + ' ' + _.initial(names).join(', ') +
+ *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+ * });
+ *
+ * say('hello', 'fred', 'barney', 'pebbles');
+ * // => 'hello fred, barney, & pebbles'
+ */
+function restParam(func, start) {
+  if (typeof func != 'function') {
+    throw new TypeError(FUNC_ERROR_TEXT);
+  }
+  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+  return function() {
+    var args = arguments,
+        index = -1,
+        length = nativeMax(args.length - start, 0),
+        rest = Array(length);
+
+    while (++index < length) {
+      rest[index] = args[start + index];
+    }
+    switch (start) {
+      case 0: return func.call(this, rest);
+      case 1: return func.call(this, args[0], rest);
+      case 2: return func.call(this, args[0], args[1], rest);
+    }
+    var otherArgs = Array(start + 1);
+    index = -1;
+    while (++index < start) {
+      otherArgs[index] = args[index];
+    }
+    otherArgs[start] = rest;
+    return func.apply(this, otherArgs);
+  };
+}
+
+module.exports = restParam;
+
+},{}],5:[function(_dereq_,module,exports){
+var keys = _dereq_('../object/keys');
+
+/**
+ * A specialized version of `_.assign` for customizing assigned values without
+ * support for argument juggling, multiple sources, and `this` binding `customizer`
+ * functions.
+ *
+ * @private
+ * @param {Object} object The destination object.
+ * @param {Object} source The source object.
+ * @param {Function} customizer The function to customize assigned values.
+ * @returns {Object} Returns `object`.
+ */
+function assignWith(object, source, customizer) {
+  var index = -1,
+      props = keys(source),
+      length = props.length;
+
+  while (++index < length) {
+    var key = props[index],
+        value = object[key],
+        result = customizer(value, source[key], key, object, source);
+
+    if ((result === result ? (result !== value) : (value === value)) ||
+        (value === undefined && !(key in object))) {
+      object[key] = result;
+    }
+  }
+  return object;
+}
+
+module.exports = assignWith;
+
+},{"../object/keys":26}],6:[function(_dereq_,module,exports){
+var baseCopy = _dereq_('./baseCopy'),
+    keys = _dereq_('../object/keys');
+
+/**
+ * The base implementation of `_.assign` without support for argument juggling,
+ * multiple sources, and `customizer` functions.
+ *
+ * @private
+ * @param {Object} object The destination object.
+ * @param {Object} source The source object.
+ * @returns {Object} Returns `object`.
+ */
+function baseAssign(object, source) {
+  return source == null
+    ? object
+    : baseCopy(source, keys(source), object);
+}
+
+module.exports = baseAssign;
+
+},{"../object/keys":26,"./baseCopy":7}],7:[function(_dereq_,module,exports){
+/**
+ * Copies properties of `source` to `object`.
+ *
+ * @private
+ * @param {Object} source The object to copy properties from.
+ * @param {Array} props The property names to copy.
+ * @param {Object} [object={}] The object to copy properties to.
+ * @returns {Object} Returns `object`.
+ */
+function baseCopy(source, props, object) {
+  object || (object = {});
+
+  var index = -1,
+      length = props.length;
+
+  while (++index < length) {
+    var key = props[index];
+    object[key] = source[key];
+  }
+  return object;
+}
+
+module.exports = baseCopy;
+
+},{}],8:[function(_dereq_,module,exports){
+/**
+ * The base implementation of `_.property` without support for deep paths.
+ *
+ * @private
+ * @param {string} key The key of the property to get.
+ * @returns {Function} Returns the new function.
+ */
+function baseProperty(key) {
+  return function(object) {
+    return object == null ? undefined : object[key];
+  };
+}
+
+module.exports = baseProperty;
+
+},{}],9:[function(_dereq_,module,exports){
+var identity = _dereq_('../utility/identity');
+
+/**
+ * A specialized version of `baseCallback` which only supports `this` binding
+ * and specifying the number of arguments to provide to `func`.
+ *
+ * @private
+ * @param {Function} func The function to bind.
+ * @param {*} thisArg The `this` binding of `func`.
+ * @param {number} [argCount] The number of arguments to provide to `func`.
+ * @returns {Function} Returns the callback.
+ */
+function bindCallback(func, thisArg, argCount) {
+  if (typeof func != 'function') {
+    return identity;
+  }
+  if (thisArg === undefined) {
+    return func;
+  }
+  switch (argCount) {
+    case 1: return function(value) {
+      return func.call(thisArg, value);
+    };
+    case 3: return function(value, index, collection) {
+      return func.call(thisArg, value, index, collection);
+    };
+    case 4: return function(accumulator, value, index, collection) {
+      return func.call(thisArg, accumulator, value, index, collection);
+    };
+    case 5: return function(value, other, key, object, source) {
+      return func.call(thisArg, value, other, key, object, source);
+    };
+  }
+  return function() {
+    return func.apply(thisArg, arguments);
+  };
+}
+
+module.exports = bindCallback;
+
+},{"../utility/identity":28}],10:[function(_dereq_,module,exports){
+var bindCallback = _dereq_('./bindCallback'),
+    isIterateeCall = _dereq_('./isIterateeCall'),
+    restParam = _dereq_('../function/restParam');
+
+/**
+ * Creates a `_.assign`, `_.defaults`, or `_.merge` function.
+ *
+ * @private
+ * @param {Function} assigner The function to assign values.
+ * @returns {Function} Returns the new assigner function.
+ */
+function createAssigner(assigner) {
+  return restParam(function(object, sources) {
+    var index = -1,
+        length = object == null ? 0 : sources.length,
+        customizer = length > 2 ? sources[length - 2] : undefined,
+        guard = length > 2 ? sources[2] : undefined,
+        thisArg = length > 1 ? sources[length - 1] : undefined;
+
+    if (typeof customizer == 'function') {
+      customizer = bindCallback(customizer, thisArg, 5);
+      length -= 2;
+    } else {
+      customizer = typeof thisArg == 'function' ? thisArg : undefined;
+      length -= (customizer ? 1 : 0);
+    }
+    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+      customizer = length < 3 ? undefined : customizer;
+      length = 1;
+    }
+    while (++index < length) {
+      var source = sources[index];
+      if (source) {
+        assigner(object, source, customizer);
+      }
+    }
+    return object;
+  });
+}
+
+module.exports = createAssigner;
+
+},{"../function/restParam":4,"./bindCallback":9,"./isIterateeCall":15}],11:[function(_dereq_,module,exports){
+var baseProperty = _dereq_('./baseProperty');
+
+/**
+ * Gets the "length" property value of `object`.
+ *
+ * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+ * that affects Safari on at least iOS 8.1-8.3 ARM64.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {*} Returns the "length" value.
+ */
+var getLength = baseProperty('length');
+
+module.exports = getLength;
+
+},{"./baseProperty":8}],12:[function(_dereq_,module,exports){
+var isNative = _dereq_('../lang/isNative');
+
+/**
+ * Gets the native function at `key` of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {string} key The key of the method to get.
+ * @returns {*} Returns the function if it's native, else `undefined`.
+ */
+function getNative(object, key) {
+  var value = object == null ? undefined : object[key];
+  return isNative(value) ? value : undefined;
+}
+
+module.exports = getNative;
+
+},{"../lang/isNative":22}],13:[function(_dereq_,module,exports){
+var getLength = _dereq_('./getLength'),
+    isLength = _dereq_('./isLength');
+
+/**
+ * Checks if `value` is array-like.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ */
+function isArrayLike(value) {
+  return value != null && isLength(getLength(value));
+}
+
+module.exports = isArrayLike;
+
+},{"./getLength":11,"./isLength":16}],14:[function(_dereq_,module,exports){
+/** Used to detect unsigned integer values. */
+var reIsUint = /^\d+$/;
+
+/**
+ * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+ * of an array-like value.
+ */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+  length = length == null ? MAX_SAFE_INTEGER : length;
+  return value > -1 && value % 1 == 0 && value < length;
+}
+
+module.exports = isIndex;
+
+},{}],15:[function(_dereq_,module,exports){
+var isArrayLike = _dereq_('./isArrayLike'),
+    isIndex = _dereq_('./isIndex'),
+    isObject = _dereq_('../lang/isObject');
+
+/**
+ * Checks if the provided arguments are from an iteratee call.
+ *
+ * @private
+ * @param {*} value The potential iteratee value argument.
+ * @param {*} index The potential iteratee index or key argument.
+ * @param {*} object The potential iteratee object argument.
+ * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
+ */
+function isIterateeCall(value, index, object) {
+  if (!isObject(object)) {
+    return false;
+  }
+  var type = typeof index;
+  if (type == 'number'
+      ? (isArrayLike(object) && isIndex(index, object.length))
+      : (type == 'string' && index in object)) {
+    var other = object[index];
+    return value === value ? (value === other) : (other !== other);
+  }
+  return false;
+}
+
+module.exports = isIterateeCall;
+
+},{"../lang/isObject":23,"./isArrayLike":13,"./isIndex":14}],16:[function(_dereq_,module,exports){
+/**
+ * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+ * of an array-like value.
+ */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ */
+function isLength(value) {
+  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+module.exports = isLength;
+
+},{}],17:[function(_dereq_,module,exports){
+/**
+ * Checks if `value` is object-like.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+module.exports = isObjectLike;
+
+},{}],18:[function(_dereq_,module,exports){
+var isArguments = _dereq_('../lang/isArguments'),
+    isArray = _dereq_('../lang/isArray'),
+    isIndex = _dereq_('./isIndex'),
+    isLength = _dereq_('./isLength'),
+    keysIn = _dereq_('../object/keysIn');
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * A fallback implementation of `Object.keys` which creates an array of the
+ * own enumerable property names of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function shimKeys(object) {
+  var props = keysIn(object),
+      propsLength = props.length,
+      length = propsLength && object.length;
+
+  var allowIndexes = !!length && isLength(length) &&
+    (isArray(object) || isArguments(object));
+
+  var index = -1,
+      result = [];
+
+  while (++index < propsLength) {
+    var key = props[index];
+    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+module.exports = shimKeys;
+
+},{"../lang/isArguments":19,"../lang/isArray":20,"../object/keysIn":27,"./isIndex":14,"./isLength":16}],19:[function(_dereq_,module,exports){
+var isArrayLike = _dereq_('../internal/isArrayLike'),
+    isObjectLike = _dereq_('../internal/isObjectLike');
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/** Native method references. */
+var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+
+/**
+ * Checks if `value` is classified as an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+function isArguments(value) {
+  return isObjectLike(value) && isArrayLike(value) &&
+    hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
+}
+
+module.exports = isArguments;
+
+},{"../internal/isArrayLike":13,"../internal/isObjectLike":17}],20:[function(_dereq_,module,exports){
+var getNative = _dereq_('../internal/getNative'),
+    isLength = _dereq_('../internal/isLength'),
+    isObjectLike = _dereq_('../internal/isObjectLike');
+
+/** `Object#toString` result references. */
+var arrayTag = '[object Array]';
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objToString = objectProto.toString;
+
+/* Native method references for those with the same name as other `lodash` methods. */
+var nativeIsArray = getNative(Array, 'isArray');
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(function() { return arguments; }());
+ * // => false
+ */
+var isArray = nativeIsArray || function(value) {
+  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
+};
+
+module.exports = isArray;
+
+},{"../internal/getNative":12,"../internal/isLength":16,"../internal/isObjectLike":17}],21:[function(_dereq_,module,exports){
+var isObject = _dereq_('./isObject');
+
+/** `Object#toString` result references. */
+var funcTag = '[object Function]';
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objToString = objectProto.toString;
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in older versions of Chrome and Safari which return 'function' for regexes
+  // and Safari 8 which returns 'object' for typed array constructors.
+  return isObject(value) && objToString.call(value) == funcTag;
+}
+
+module.exports = isFunction;
+
+},{"./isObject":23}],22:[function(_dereq_,module,exports){
+var isFunction = _dereq_('./isFunction'),
+    isObjectLike = _dereq_('../internal/isObjectLike');
+
+/** Used to detect host constructors (Safari > 5). */
+var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var fnToString = Function.prototype.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/** Used to detect if a method is native. */
+var reIsNative = RegExp('^' +
+  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+);
+
+/**
+ * Checks if `value` is a native function.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+ * @example
+ *
+ * _.isNative(Array.prototype.push);
+ * // => true
+ *
+ * _.isNative(_);
+ * // => false
+ */
+function isNative(value) {
+  if (value == null) {
+    return false;
+  }
+  if (isFunction(value)) {
+    return reIsNative.test(fnToString.call(value));
+  }
+  return isObjectLike(value) && reIsHostCtor.test(value);
+}
+
+module.exports = isNative;
+
+},{"../internal/isObjectLike":17,"./isFunction":21}],23:[function(_dereq_,module,exports){
+/**
+ * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+ * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(1);
+ * // => false
+ */
+function isObject(value) {
+  // Avoid a V8 JIT bug in Chrome 19-20.
+  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+module.exports = isObject;
+
+},{}],24:[function(_dereq_,module,exports){
+var isObjectLike = _dereq_('../internal/isObjectLike');
+
+/** `Object#toString` result references. */
+var stringTag = '[object String]';
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objToString = objectProto.toString;
+
+/**
+ * Checks if `value` is classified as a `String` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+ * @example
+ *
+ * _.isString('abc');
+ * // => true
+ *
+ * _.isString(1);
+ * // => false
+ */
+function isString(value) {
+  return typeof value == 'string' || (isObjectLike(value) && objToString.call(value) == stringTag);
+}
+
+module.exports = isString;
+
+},{"../internal/isObjectLike":17}],25:[function(_dereq_,module,exports){
+var assignWith = _dereq_('../internal/assignWith'),
+    baseAssign = _dereq_('../internal/baseAssign'),
+    createAssigner = _dereq_('../internal/createAssigner');
+
+/**
+ * Assigns own enumerable properties of source object(s) to the destination
+ * object. Subsequent sources overwrite property assignments of previous sources.
+ * If `customizer` is provided it's invoked to produce the assigned values.
+ * The `customizer` is bound to `thisArg` and invoked with five arguments:
+ * (objectValue, sourceValue, key, object, source).
+ *
+ * **Note:** This method mutates `object` and is based on
+ * [`Object.assign`](http://ecma-international.org/ecma-262/6.0/#sec-object.assign).
+ *
+ * @static
+ * @memberOf _
+ * @alias extend
+ * @category Object
+ * @param {Object} object The destination object.
+ * @param {...Object} [sources] The source objects.
+ * @param {Function} [customizer] The function to customize assigned values.
+ * @param {*} [thisArg] The `this` binding of `customizer`.
+ * @returns {Object} Returns `object`.
+ * @example
+ *
+ * _.assign({ 'user': 'barney' }, { 'age': 40 }, { 'user': 'fred' });
+ * // => { 'user': 'fred', 'age': 40 }
+ *
+ * // using a customizer callback
+ * var defaults = _.partialRight(_.assign, function(value, other) {
+ *   return _.isUndefined(value) ? other : value;
+ * });
+ *
+ * defaults({ 'user': 'barney' }, { 'age': 36 }, { 'user': 'fred' });
+ * // => { 'user': 'barney', 'age': 36 }
+ */
+var assign = createAssigner(function(object, source, customizer) {
+  return customizer
+    ? assignWith(object, source, customizer)
+    : baseAssign(object, source);
+});
+
+module.exports = assign;
+
+},{"../internal/assignWith":5,"../internal/baseAssign":6,"../internal/createAssigner":10}],26:[function(_dereq_,module,exports){
+var getNative = _dereq_('../internal/getNative'),
+    isArrayLike = _dereq_('../internal/isArrayLike'),
+    isObject = _dereq_('../lang/isObject'),
+    shimKeys = _dereq_('../internal/shimKeys');
+
+/* Native method references for those with the same name as other `lodash` methods. */
+var nativeKeys = getNative(Object, 'keys');
+
+/**
+ * Creates an array of the own enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects. See the
+ * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
+ * for more details.
+ *
+ * @static
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keys(new Foo);
+ * // => ['a', 'b'] (iteration order is not guaranteed)
+ *
+ * _.keys('hi');
+ * // => ['0', '1']
+ */
+var keys = !nativeKeys ? shimKeys : function(object) {
+  var Ctor = object == null ? undefined : object.constructor;
+  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+      (typeof object != 'function' && isArrayLike(object))) {
+    return shimKeys(object);
+  }
+  return isObject(object) ? nativeKeys(object) : [];
+};
+
+module.exports = keys;
+
+},{"../internal/getNative":12,"../internal/isArrayLike":13,"../internal/shimKeys":18,"../lang/isObject":23}],27:[function(_dereq_,module,exports){
+var isArguments = _dereq_('../lang/isArguments'),
+    isArray = _dereq_('../lang/isArray'),
+    isIndex = _dereq_('../internal/isIndex'),
+    isLength = _dereq_('../internal/isLength'),
+    isObject = _dereq_('../lang/isObject');
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Creates an array of the own and inherited enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects.
+ *
+ * @static
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keysIn(new Foo);
+ * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+ */
+function keysIn(object) {
+  if (object == null) {
+    return [];
+  }
+  if (!isObject(object)) {
+    object = Object(object);
+  }
+  var length = object.length;
+  length = (length && isLength(length) &&
+    (isArray(object) || isArguments(object)) && length) || 0;
+
+  var Ctor = object.constructor,
+      index = -1,
+      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
+      result = Array(length),
+      skipIndexes = length > 0;
+
+  while (++index < length) {
+    result[index] = (index + '');
+  }
+  for (var key in object) {
+    if (!(skipIndexes && isIndex(key, length)) &&
+        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+module.exports = keysIn;
+
+},{"../internal/isIndex":14,"../internal/isLength":16,"../lang/isArguments":19,"../lang/isArray":20,"../lang/isObject":23}],28:[function(_dereq_,module,exports){
+/**
+ * This method returns the first argument provided to it.
+ *
+ * @static
+ * @memberOf _
+ * @category Utility
+ * @param {*} value Any value.
+ * @returns {*} Returns `value`.
+ * @example
+ *
+ * var object = { 'user': 'fred' };
+ *
+ * _.identity(object) === object;
+ * // => true
+ */
+function identity(value) {
+  return value;
+}
+
+module.exports = identity;
+
+},{}],29:[function(_dereq_,module,exports){
+module.exports = function setAttributes(element, attributes) {
+  var value;
+
+  for (var key in attributes) {
+    if (attributes.hasOwnProperty(key)) {
+      value = attributes[key];
+
+      if (value == null) {
+        element.removeAttribute(key);
+      } else {
+        element.setAttribute(key, value);
+      }
+    }
+  }
+};
+
+},{}],30:[function(_dereq_,module,exports){
+'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
 var jsonClone = _dereq_('./json-clone');
@@ -32,7 +1201,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":3,"./create-authorization-data":4,"./json-clone":7}],2:[function(_dereq_,module,exports){
+},{"./constants":35,"./create-authorization-data":37,"./json-clone":40}],31:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -66,10 +1235,177 @@ module.exports = {
   sendEvent: sendAnalyticsEvent
 };
 
-},{"./add-metadata":1,"./constants":3}],3:[function(_dereq_,module,exports){
+},{"./add-metadata":30,"./constants":35}],32:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.5";
+var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
+
+function checkOrigin(postMessageOrigin, merchantUrl) {
+  var merchantOrigin, merchantHost;
+  var a = document.createElement('a');
+
+  a.href = merchantUrl;
+
+  if (a.protocol === 'https:') {
+    merchantHost = a.host.replace(/:443$/, '');
+  } else if (a.protocol === 'http:') {
+    merchantHost = a.host.replace(/:80$/, '');
+  } else {
+    merchantHost = a.host;
+  }
+
+  merchantOrigin = a.protocol + '//' + merchantHost;
+
+  return merchantOrigin === postMessageOrigin || BT_ORIGIN_REGEX.test(postMessageOrigin);
+}
+
+module.exports = {
+  checkOrigin: checkOrigin
+};
+
+},{}],33:[function(_dereq_,module,exports){
+'use strict';
+
+var enumerate = _dereq_('../enumerate');
+
+module.exports = enumerate([
+  'CONFIGURATION_REQUEST'
+], 'bus:');
+
+},{"../enumerate":38}],34:[function(_dereq_,module,exports){
+'use strict';
+
+var bus = _dereq_('framebus');
+var events = _dereq_('./events');
+var checkOrigin = _dereq_('./check-origin').checkOrigin;
+var BraintreeError = _dereq_('../error');
+
+function BraintreeBus(options) {
+  options = options || {};
+
+  this.channel = options.channel;
+  if (!this.channel) {
+    throw new BraintreeError({
+      type: BraintreeError.types.INTERNAL,
+      message: 'Channel ID must be specified.'
+    });
+  }
+
+  this.merchantUrl = options.merchantUrl;
+
+  this._isDestroyed = false;
+  this._isVerbose = false;
+
+  this._listeners = [];
+
+  this._log('new bus on channel ' + this.channel, [location.href]);
+}
+
+BraintreeBus.prototype.on = function (eventName, originalHandler) {
+  var namespacedEvent, args;
+  var handler = originalHandler;
+  var self = this;
+
+  if (this._isDestroyed) { return; }
+
+  if (this.merchantUrl) {
+    handler = function () {
+      /* eslint-disable no-invalid-this */
+      if (checkOrigin(this.origin, self.merchantUrl)) {
+        originalHandler.apply(this, arguments);
+      }
+      /* eslint-enable no-invalid-this */
+    };
+  }
+
+  namespacedEvent = this._namespaceEvent(eventName);
+  args = Array.prototype.slice.call(arguments);
+  args[0] = namespacedEvent;
+  args[1] = handler;
+
+  this._log('on', args);
+  bus.on.apply(bus, args);
+
+  this._listeners.push({
+    eventName: eventName,
+    handler: handler,
+    originalHandler: originalHandler
+  });
+};
+
+BraintreeBus.prototype.emit = function (eventName) {
+  var args;
+
+  if (this._isDestroyed) { return; }
+
+  args = Array.prototype.slice.call(arguments);
+  args[0] = this._namespaceEvent(eventName);
+
+  this._log('emit', args);
+  bus.emit.apply(bus, args);
+};
+
+BraintreeBus.prototype._offDirect = function (eventName) {
+  var args = Array.prototype.slice.call(arguments);
+
+  if (this._isDestroyed) { return; }
+
+  args[0] = this._namespaceEvent(eventName);
+
+  this._log('off', args);
+  bus.off.apply(bus, args);
+};
+
+BraintreeBus.prototype.off = function (eventName, originalHandler) {
+  var i, listener;
+  var handler = originalHandler;
+
+  if (this._isDestroyed) { return; }
+
+  if (this.merchantUrl) {
+    for (i = 0; i < this._listeners.length; i++) {
+      listener = this._listeners[i];
+
+      if (listener.originalHandler === originalHandler) {
+        handler = listener.handler;
+      }
+    }
+  }
+
+  this._offDirect(eventName, handler);
+};
+
+BraintreeBus.prototype._namespaceEvent = function (eventName) {
+  return ['braintree', this.channel, eventName].join(':');
+};
+
+BraintreeBus.prototype.teardown = function () {
+  var listener, i;
+
+  for (i = 0; i < this._listeners.length; i++) {
+    listener = this._listeners[i];
+    this._offDirect(listener.eventName, listener.handler);
+  }
+
+  this._listeners.length = 0;
+
+  this._isDestroyed = true;
+};
+
+BraintreeBus.prototype._log = function (functionName, args) {
+  if (this._isVerbose) {
+    console.log(functionName, args); // eslint-disable-line no-console
+  }
+};
+
+BraintreeBus.events = events;
+
+module.exports = BraintreeBus;
+
+},{"../error":39,"./check-origin":32,"./events":33,"framebus":1}],35:[function(_dereq_,module,exports){
+'use strict';
+
+var VERSION = "3.0.0-beta.6";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -82,7 +1418,23 @@ module.exports = {
   BRAINTREE_LIBRARY_VERSION: 'braintree/' + PLATFORM + '/' + VERSION
 };
 
-},{}],4:[function(_dereq_,module,exports){
+},{}],36:[function(_dereq_,module,exports){
+'use strict';
+
+var BraintreeError = _dereq_('./error');
+
+module.exports = function (instance, methodNames) {
+  methodNames.forEach(function (methodName) {
+    instance[methodName] = function () {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: methodName + ' cannot be called after teardown.'
+      });
+    };
+  });
+};
+
+},{"./error":39}],37:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -131,7 +1483,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":8}],5:[function(_dereq_,module,exports){
+},{"../lib/polyfill":42}],38:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -145,7 +1497,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],6:[function(_dereq_,module,exports){
+},{}],39:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -159,28 +1511,28 @@ var enumerate = _dereq_('./enumerate');
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
-    throw new Error(options.type + ' is not a valid type');
+    throw new Error(options.type + ' is not a valid type.');
   }
 
   if (!options.message) {
-    throw new Error('Error message required');
+    throw new Error('Error message required.');
   }
 
   /**
    * @type {string}
-   * @description A short description of the error
+   * @description A short description of the error.
    */
   this.message = options.message;
 
   /**
    * @type {BraintreeError.types}
-   * @description The type of error
+   * @description The type of error.
    */
   this.type = options.type;
 
   /**
    * @type {object=}
-   * @description Additional information about the error, such as an underlying network error response
+   * @description Additional information about the error, such as an underlying network error response.
    */
   this.details = options.details;
 }
@@ -189,16 +1541,16 @@ BraintreeError.prototype = Object.create(Error.prototype);
 BraintreeError.prototype.constructor = BraintreeError;
 
 /**
- * Enum for {@link BraintreeError} types
+ * Enum for {@link BraintreeError} types.
  * @name BraintreeError.types
  * @enum
  * @readonly
  * @memberof BraintreeError
- * @property {string} CUSTOMER Error caused by the customer
- * @property {string} MERCHANT Error that is actionable by the merchant
- * @property {string} NETWORK Error due to a network problem
- * @property {string} INTERNAL Error caused by Braintree code
- * @property {string} UNKNOWN Error of unknown origin
+ * @property {string} CUSTOMER An error caused by the customer.
+ * @property {string} MERCHANT An error that is actionable by the merchant.
+ * @property {string} NETWORK An error due to a network problem.
+ * @property {string} INTERNAL An error caused by Braintree code.
+ * @property {string} UNKNOWN An error where the origin is unknown.
  */
 BraintreeError.types = enumerate([
   'CUSTOMER',
@@ -210,14 +1562,23 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":5}],7:[function(_dereq_,module,exports){
+},{"./enumerate":38}],40:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],8:[function(_dereq_,module,exports){
+},{}],41:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (obj) {
+  return Object.keys(obj).filter(function (key) {
+    return typeof obj[key] === 'function';
+  });
+};
+
+},{}],42:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -256,12 +1617,28 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],9:[function(_dereq_,module,exports){
+},{}],43:[function(_dereq_,module,exports){
 'use strict';
 
-var UnionPay = _dereq_('./unionpay');
-var BraintreeError = _dereq_('../../lib/error');
-var analytics = _dereq_('../../lib/analytics');
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : r & 0x3 | 0x8;
+
+    return v.toString(16);
+  });
+}
+
+module.exports = uuid;
+
+},{}],44:[function(_dereq_,module,exports){
+'use strict';
+/** @module braintree-web/unionpay */
+
+var packageVersion = "3.0.0-beta.6";
+var UnionPay = _dereq_('./shared/unionpay');
+var BraintreeError = _dereq_('../lib/error');
+var analytics = _dereq_('../lib/analytics');
 
 function create(options, callback) {
   var config;
@@ -269,14 +1646,14 @@ function create(options, callback) {
   if (typeof callback !== 'function') {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'UnionPay creation requires a callback'
+      message: 'UnionPay creation requires a callback.'
     });
   }
 
   if (options.client == null) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'options.client is required when instantiating UnionPay'
+      message: 'options.client is required when instantiating UnionPay.'
     }));
     return;
   }
@@ -286,7 +1663,7 @@ function create(options, callback) {
   if (!config.gatewayConfiguration.unionPay || config.gatewayConfiguration.unionPay.enabled !== true) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'UnionPay is not enabled for this merchant'
+      message: 'UnionPay is not enabled for this merchant.'
     }));
     return;
   }
@@ -296,235 +1673,20 @@ function create(options, callback) {
   callback(null, new UnionPay(options));
 }
 
-module.exports = create;
-
-},{"../../lib/analytics":2,"../../lib/error":6,"./unionpay":10}],10:[function(_dereq_,module,exports){
-'use strict';
-
-var BraintreeError = _dereq_('../../lib/error');
-var analytics = _dereq_('../../lib/analytics');
-
-/**
- * @class
- * @param {object} options see {@link module:braintree-web/unionpay.create|unionpay.create}
- * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/unionpay.create|braintree-web.unionpay.create} instead.</strong>
- * @classdesc This class represents a UnionPay component. Instances of this class have methods for {@link UnionPay#fetchCapabilities fetching capabilities} of UnionPay cards, {@link UnionPay#enroll enrolling} a UnionPay card, and {@link UnionPay#tokenize tokenizing} a UnionPay card.
- */
-function UnionPay(options) {
-  this._options = options;
-  this._merchantAccountId = options.client.getConfiguration().gatewayConfiguration.unionPay.merchantAccountId;
-}
-
-/**
- * @typedef {object} UnionPay~fetchCapabilitiesPayload
- * @property {boolean} isUnionPay Determines if this card is a UnionPay card
- * @property {boolean} isDebit Determines if this card is a debit card
- * @property {object} unionPay UnionPay specific properties
- * @property {boolean} unionPay.supportsTwoStepAuthAndCapture Determines if the card allows for an authorization, but settling the transaction later
- * @property {boolean} unionPay.isUnionPayEnrollmentRequired Notifies if {@link UnionPay#enroll|enrollment} should be completed
- */
-
-/**
- * Fetches the capabilities of a card, including whether or not the card needs to be enrolled before use. If the card needs to be enrolled, use {@link UnionPay#enroll|enroll}
- * @public
- * @param {object} options UnionPay {@link UnionPay#fetchCapabilities fetchCapabilities} options
- * @param {object} options.cardNumber The card number to fetch capabilities for
- * @param {errback} errback The second argument, <code>data</code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}
- * @returns {void}
- */
-UnionPay.prototype.fetchCapabilities = function (options, errback) {
-  var client = this._options.client;
-  var cardNumber = options.cardNumber;
-
-  if (!cardNumber) {
-    errback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'A card number is required'
-    }));
-    return;
-  }
-
-  client.request({
-    method: 'get',
-    endpoint: 'payment_methods/credit_cards/capabilities',
-    data: {
-      _meta: {source: 'unionpay'},
-      creditCard: {
-        number: cardNumber
-      }
-    }
-  }, function (err, response) {
-    if (err) {
-      errback(new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        message: 'Fetch capabilities network error',
-        details: {
-          originalError: err
-        }
-      }));
-      analytics.sendEvent(client, 'web.unionpay.capabilities-failed');
-      return;
-    }
-
-    analytics.sendEvent(client, 'web.unionpay.capabilities-received');
-    errback(null, response);
-  });
-};
-
-/**
- */
-
-/**
- * @typedef {object} UnionPay~enrollPayload
- * @property {string} unionPayEnrollmentId UnionPay enrollment ID
- */
-
-/**
- * Enrolls a UnionPay card. Only call this method if the card needs to be enrolled. Use {@link UnionPay#fetchCapabilities|fetchCapabilities} to determine if the user's card needs to be enrolled.
- * @public
- * @param {object} options UnionPay enrollment options
- * @param {object} options.card The card to enroll
- * @param {string} options.card.number Card number
- * @param {string} options.card.expirationMonth The card's expiration month
- * @param {string} options.card.expirationYear The card's expiration year
- * @param {string} options.card.mobileCountryCode Customer's mobile country code
- * @param {string} options.card.mobileNumber Customer's mobile phone number. This is the mobile phone number UnionPay will send an SMS auth code to
- * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay~enrollPayload|enrollPayload}
- * @returns {void}
- */
-UnionPay.prototype.enroll = function (options, callback) {
-  var client = this._options.client;
-  var card = options.card;
-  var data = {
-    _meta: {source: 'unionpay'},
-    unionPayEnrollment: {
-      number: card.number,
-      expirationMonth: card.expirationMonth,
-      expirationYear: card.expirationYear,
-      mobileCountryCode: card.mobileCountryCode,
-      mobileNumber: card.mobileNumber
-    }
-  };
-
-  if (this._merchantAccountId) {
-    data.merchantAccountId = this._merchantAccountId;
-  }
-
-  client.request({
-    method: 'post',
-    endpoint: 'union_pay_enrollments',
-    data: data
-  }, function (err, response) {
-    var message;
-
-    if (err) {
-      // TODO: We cannot get response codes, so we can't know whose "fault" this error is.
-      // This requires a new feature of braintree-request which we are waiting on.
-      if (err.type === BraintreeError.types.CUSTOMER) {
-        message = 'Enrollment invalid due to customer input error';
-      } else {
-        err.type = BraintreeError.types.NETWORK;
-        message = 'Enrollment network error';
-      }
-
-      analytics.sendEvent(client, 'web.unionpay.enrollment-failed');
-      callback(new BraintreeError({
-        type: err.type,
-        message: message,
-        details: {
-          originalError: err
-        }
-      }));
-      return;
-    }
-
-    analytics.sendEvent(client, 'web.unionpay.enrollment-succeeded');
-    callback(null, {unionPayEnrollmentId: response.unionPayEnrollmentId});
-  });
-};
-
-/**
- * @typedef {object} UnionPay~tokenizePayload
- * @property {string} nonce The payment method nonce
- * @property {string} type Always <code>CreditCard</code>
- * @property {object} details Additional account details
- * @property {string} details.cardType Type of card, ex: Visa, MasterCard
- * @property {string} details.lastTwo Last two digits of card number
- * @property {string} description A human-readable description
- */
-
-/**
- * Tokenizes a UnionPay card, returning a nonce payload!
- * @public
- * @param {object} options UnionPay tokenization options
- * @param {object} options.card The card to enroll
- * @param {string} options.card.number Card number
- * @param {string} options.card.expirationMonth The card's expiration month
- * @param {string} options.card.expirationYear The card's expiration year
- * @param {string} options.card.cvv The card's security number
- * @param {object} options.options Additional options
- * @param {string} options.options.id The enrollment id if {@link UnionPay#enroll} was required
- * @param {string} options.options.smsCode The SMS code recieved from the user if {@link UnionPay#enroll} was required
- * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}
- * @returns {void}
- */
-UnionPay.prototype.tokenize = function (options, callback) {
-  var tokenizedCard;
-  var client = this._options.client;
-
-  client.request({
-    method: 'post',
-    endpoint: 'payment_methods/credit_cards',
-    data: {
-      _meta: {source: 'unionpay'},
-      creditCard: {
-        number: options.card.number,
-        expirationMonth: options.card.expirationMonth,
-        expirationYear: options.card.expirationYear,
-        cvv: options.card.cvv
-      },
-      options: options.options
-    }
-  }, function (err, response) {
-    if (err) {
-      analytics.sendEvent(client, 'web.unionpay.nonce-failed');
-      // TODO: We cannot get response codes, so we can't know whose "fault" this error is.
-      // This requires a new feature of braintree-request which we are waiting on.
-      callback(new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        message: 'Tokenization network error',
-        details: {
-          originalError: err
-        }
-      }));
-      return;
-    }
-
-    tokenizedCard = response.creditCards[0];
-    delete tokenizedCard.consumed;
-    delete tokenizedCard.threeDSecureInfo;
-    delete tokenizedCard.type;
-
-    analytics.sendEvent(client, 'web.unionpay.nonce-received');
-    callback(null, tokenizedCard);
-  });
-};
-
-module.exports = UnionPay;
-
-},{"../../lib/analytics":2,"../../lib/error":6}],11:[function(_dereq_,module,exports){
-'use strict';
-/** @module braintree-web/unionpay */
-
-var create = _dereq_('./external/create');
-var packageVersion = "3.0.0-beta.5";
-
 module.exports = {
   /**
    * @static
    * @function
-   * @param {object} options Object containing configuration options for this module
-   * @param {Client} options.client A {@link Client} instance
+   * @param {object} options Object containing configuration options for this module.
+   * @param {Client} options.client A {@link Client} instance.
+   * @example
+   * braintree.unionpay.create({ client: clientInstance }, function (err, unionpayInstance) {
+   *   if (err) {
+   *     console.error(err);
+   *     return;
+   *   }
+   *   // ...
+   * });
    * @returns {@link UnionPay}
    */
   create: create,
@@ -535,5 +1697,536 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"./external/create":9}]},{},[11])(11)
+},{"../lib/analytics":31,"../lib/error":39,"./shared/unionpay":46}],45:[function(_dereq_,module,exports){
+'use strict';
+
+var enumerate = _dereq_('../../lib/enumerate');
+
+module.exports = {
+  events: enumerate([
+    'HOSTED_FIELDS_FETCH_CAPABILITIES',
+    'HOSTED_FIELDS_ENROLL',
+    'HOSTED_FIELDS_TOKENIZE'
+  ], 'union-pay:'),
+  HOSTED_FIELDS_FRAME_NAME: 'braintreeunionpayhostedfields',
+  INVALID_HOSTED_FIELDS_ERROR_MESSAGE: 'Found an invalid Hosted Fields instance. Please use a valid Hosted Fields instance.',
+  CARD_OR_HOSTED_FIELDS_REQUIRED_ERROR_MESSAGE: 'A card or a Hosted Fields instance is required. Please supply a card or a Hosted Fields instance.',
+  CARD_AND_HOSTED_FIELDS_ERROR_MESSAGE: 'Please supply either a card or a Hosted Fields instance, not both.',
+  NO_HOSTED_FIELDS_ERROR_MESSAGE: 'Could not find the Hosted Fields instance.'
+};
+
+},{"../../lib/enumerate":38}],46:[function(_dereq_,module,exports){
+'use strict';
+
+var BraintreeError = _dereq_('../../lib/error');
+var Bus = _dereq_('../../lib/bus');
+var analytics = _dereq_('../../lib/analytics');
+var iFramer = _dereq_('iframer');
+var uuid = _dereq_('../../lib/uuid');
+var methods = _dereq_('../../lib/methods');
+var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
+var VERSION = "3.0.0-beta.6";
+var constants = _dereq_('./constants');
+var events = constants.events;
+
+/**
+ * @class
+ * @param {object} options See {@link module:braintree-web/unionpay.create|unionpay.create}.
+ * @description <strong>You cannot use this constructor directly. Use {@link module:braintree-web/unionpay.create|braintree-web.unionpay.create} instead.</strong>
+ * @classdesc This class represents a UnionPay component. Instances of this class have methods for {@link UnionPay#fetchCapabilities fetching capabilities} of UnionPay cards, {@link UnionPay#enroll enrolling} a UnionPay card, and {@link UnionPay#tokenize tokenizing} a UnionPay card.
+ */
+function UnionPay(options) {
+  this._options = options;
+}
+
+/**
+ * @typedef {object} UnionPay~fetchCapabilitiesPayload
+ * @property {boolean} isUnionPay Determines if this card is a UnionPay card.
+ * @property {boolean} isDebit Determines if this card is a debit card. This property is only present if `isUnionPay` is `true`.
+ * @property {object} unionPay UnionPay specific properties. This property is only present if `isUnionPay` is `true`.
+ * @property {boolean} unionPay.supportsTwoStepAuthAndCapture Determines if the card allows for an authorization, but settling the transaction later.
+ * @property {boolean} unionPay.isUnionPayEnrollmentRequired Notifies if {@link UnionPay#enroll|enrollment} should be completed.
+ */
+
+/**
+ * Fetches the capabilities of a card, including whether or not the card needs to be enrolled before use. If the card needs to be enrolled, use {@link UnionPay#enroll|enroll}.
+ * @public
+ * @param {object} options UnionPay {@link UnionPay#fetchCapabilities fetchCapabilities} options
+ * @param {object} [options.card] The card from which to fetch capabilities. Note that this will only have one property, `number`. Required if you are not using the `hostedFields` option.
+ * @param {string} options.card.number Card number.
+ * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
+ * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}.
+ * @example <caption>With raw card data</caption>
+ * unionpayInstance.fetchCapabilities({
+ *   card: {
+ *     number: '4111111111111111'
+ *   }
+ * }, function (err, cardCapabilities) {
+ *   if (err) {
+ *     console.error(err);
+ *     return;
+ *   }
+ *
+ *   if (cardCapabilities.isUnionPay) {
+ *     if (cardCapabilities.isDebit) {
+ *       // CVV and expiration date are not required
+ *     } else {
+ *       // CVV and expiration date are required
+ *     }
+ *   }
+ *
+ *   if (cardCapabilities.unionPay && cardCapabilities.unionPay.isUnionPayEnrollmentRequired) {
+ *     // Show mobile phone number field for enrollment
+ *   }
+ * });
+ * @example <caption>With Hosted Fields</caption>
+ * // Fetch capabilities on `fieldStateChange` inside of the Hosted Fields `create` callback
+ * hostedFieldsInstance.on('fieldEvent', function (event) {
+ *   // Only attempt to fetch capabilities when a valid card number has been entered
+ *   if (event.type === 'fieldStateChange' && event.target.fieldKey === 'number' && event.isValid) {
+ *     unionpayInstance.fetchCapabilities({
+ *       hostedFields: hostedFieldsInstance
+ *     }, function (err, cardCapabilities) {
+ *       if (err) {
+ *         console.error(err);
+ *         return;
+ *       }
+ *
+ *       if (cardCapabilities.isUnionPay) {
+ *         if (cardCapabilities.isDebit) {
+ *           // CVV and expiration date are not required
+ *           // Hide the containers with your `cvv` and `expirationDate` fields
+ *         } else {
+ *           // CVV and expiration date are required
+ *         }
+ *       } else {
+ *         // Not a UnionPay card
+ *         // When form is complete, tokenize using your Hosted Fields instance
+ *       }
+ *
+ *       if (cardCapabilities.unionPay && cardCapabilities.unionPay.isUnionPayEnrollmentRequired) {
+ *         // Show your own mobile country code and phone number inputs for enrollment
+ *       }
+ *     });
+ *   });
+ * });
+ * @returns {void}
+ */
+UnionPay.prototype.fetchCapabilities = function (options, callback) {
+  var client = this._options.client;
+  var cardNumber = options.card ? options.card.number : null;
+  var hostedFields = options.hostedFields;
+
+  if (cardNumber && hostedFields) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: constants.CARD_AND_HOSTED_FIELDS_ERROR_MESSAGE
+    }));
+    return;
+  } else if (cardNumber) {
+    client.request({
+      method: 'get',
+      endpoint: 'payment_methods/credit_cards/capabilities',
+      data: {
+        _meta: {source: 'unionpay'},
+        creditCard: {
+          number: cardNumber
+        }
+      }
+    }, function (err, response) {
+      if (err) {
+        callback(new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          message: 'Fetch capabilities network error.',
+          details: {
+            originalError: err
+          }
+        }));
+        analytics.sendEvent(client, 'web.unionpay.capabilities-failed');
+        return;
+      }
+
+      analytics.sendEvent(client, 'web.unionpay.capabilities-received');
+      callback(null, response);
+    });
+  } else if (hostedFields) {
+    if (!hostedFields._bus) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: constants.INVALID_HOSTED_FIELDS_ERROR_MESSAGE
+      }));
+      return;
+    }
+    this._initializeHostedFields(function () {
+      this._bus.emit(events.HOSTED_FIELDS_FETCH_CAPABILITIES, {hostedFields: hostedFields}, function (response) {
+        if (response.err) {
+          callback(new BraintreeError(response.err));
+          return;
+        }
+
+        callback(null, response.payload);
+      });
+    }.bind(this));
+  } else {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: constants.CARD_OR_HOSTED_FIELDS_REQUIRED_ERROR_MESSAGE
+    }));
+    return;
+  }
+};
+
+/**
+ * @typedef {object} UnionPay~enrollPayload
+ * @property {string} enrollmentId UnionPay enrollment ID. This value should be passed to `tokenize`.
+ */
+
+/**
+ * Enrolls a UnionPay card. Only call this method if the card needs to be enrolled. Use {@link UnionPay#fetchCapabilities|fetchCapabilities} to determine if the user's card needs to be enrolled.
+ * @public
+ * @param {object} options UnionPay enrollment options:
+ * @param {object} [options.card] The card to enroll. Required if you are not using the `hostedFields` option.
+ * @param {string} options.card.number The card number.
+ * @param {string} options.card.expirationMonth The card's expiration month.
+ * @param {string} options.card.expirationYear The card's expiration year.
+ * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
+ * @param {object} options.mobile The mobile information collected from the customer.
+ * @param {string} options.mobile.countryCode The country code of the customer's mobile phone number.
+ * @param {string} options.mobile.number The customer's mobile phone number.
+ * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay~enrollPayload|enrollPayload}.
+ * @example <caption>With raw card data</caption>
+ * unionpayInstance.enroll({
+ *   card: {
+ *     number: '4111111111111111',
+ *     expirationMonth: '12',
+ *     expirationYear: '2038'
+ *   },
+ *   mobile: {
+ *     countryCode: '62',
+ *     number: '111111111111'
+ *   }
+ * }, function (err, response) {
+ *   if (err) {
+ *      console.error(err);
+ *      return;
+ *   }
+ *
+ *   // Wait for SMS auth code from customer
+ *   // Then use response.enrollmentId in tokenization
+ * });
+ * @example <caption>With Hosted Fields</caption>
+ * unionpayInstance.enroll({
+ *   hostedFields: hostedFields,
+ *   mobile: {
+ *     countryCode: '62',
+ *     number: '111111111111'
+ *   }
+ * }, function (err, response) {
+ *   if (err) {
+ *     console.error(err);
+ *     return;
+ *   }
+ *
+ *   // Wait for SMS auth code from customer
+ *   // Then use response.enrollmentId in tokenization
+ * });
+ * @returns {void}
+ */
+UnionPay.prototype.enroll = function (options, callback) {
+  var client = this._options.client;
+  var card = options.card;
+  var mobile = options.mobile;
+  var hostedFields = options.hostedFields;
+  var data;
+
+  if (!mobile) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'A `mobile` with `countryCode` and `number` is required.'
+    }));
+    return;
+  }
+
+  if (hostedFields) {
+    if (!hostedFields._bus) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: constants.INVALID_HOSTED_FIELDS_ERROR_MESSAGE
+      }));
+      return;
+    } else if (card) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: constants.CARD_AND_HOSTED_FIELDS_ERROR_MESSAGE
+      }));
+      return;
+    }
+
+    this._initializeHostedFields(function () {
+      this._bus.emit(events.HOSTED_FIELDS_ENROLL, {hostedFields: hostedFields, mobile: mobile}, function (response) {
+        if (response.err) {
+          callback(new BraintreeError(response.err));
+          return;
+        }
+
+        callback(null, response.payload);
+      });
+    }.bind(this));
+  } else if (card && card.number) {
+    data = {
+      _meta: {source: 'unionpay'},
+      unionPayEnrollment: {
+        number: card.number,
+        mobileCountryCode: mobile.countryCode,
+        mobileNumber: mobile.number
+      }
+    };
+
+    if (card.expirationMonth || card.expirationYear) {
+      if (card.expirationMonth && card.expirationYear) {
+        data.unionPayEnrollment.expirationYear = card.expirationYear;
+        data.unionPayEnrollment.expirationMonth = card.expirationMonth;
+      } else {
+        callback(new BraintreeError({
+          type: BraintreeError.types.MERCHANT,
+          message: 'You must supply expiration month and year or neither.'
+        }));
+        return;
+      }
+    }
+
+    client.request({
+      method: 'post',
+      endpoint: 'union_pay_enrollments',
+      data: data
+    }, function (err, response) {
+      var message;
+
+      if (err) {
+        // TODO: We cannot get response codes, so we can't know whose "fault" this error is.
+        // This requires a new feature of braintree-request which we are waiting on.
+        if (err.type === BraintreeError.types.CUSTOMER) {
+          message = 'Enrollment invalid due to customer input error.';
+        } else {
+          err.type = BraintreeError.types.NETWORK;
+          message = 'An enrollment network error occurred.';
+        }
+
+        analytics.sendEvent(client, 'web.unionpay.enrollment-failed');
+        callback(new BraintreeError({
+          type: err.type,
+          message: message,
+          details: {
+            originalError: err
+          }
+        }));
+        return;
+      }
+
+      analytics.sendEvent(client, 'web.unionpay.enrollment-succeeded');
+      callback(null, {enrollmentId: response.unionPayEnrollmentId});
+    });
+  } else {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: constants.CARD_OR_HOSTED_FIELDS_REQUIRED_ERROR_MESSAGE
+    }));
+    return;
+  }
+};
+
+/**
+ * @typedef {object} UnionPay~tokenizePayload
+ * @property {string} nonce The payment method nonce.
+ * @property {string} type Always <code>CreditCard</code>.
+ * @property {object} details Additional account details:
+ * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastTwo Last two digits of card number.
+ * @property {string} description A human-readable description.
+ */
+
+/**
+ * Tokenizes a UnionPay card and returns a nonce payload.
+ * @public
+ * @param {object} options UnionPay tokenization options:
+ * @param {object} options.card The card to enroll.
+ * @param {string} options.card.number The card number.
+ * @param {string} options.card.expirationMonth The card's expiration month.
+ * @param {string} options.card.expirationYear The card's expiration year.
+ * @param {string} options.card.cvv The card's security number.
+ * @param {object} options.options Additional options.
+ * @param {string} options.enrollmentId The enrollment ID if {@link UnionPay#enroll} was required.
+ * @param {string} options.smsCode The SMS code recieved from the user if {@link UnionPay#enroll} was required.
+ * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}.
+ * @example <caption>With raw card data</caption>
+ * unionpayInstance.tokenize({
+ *   card: {
+ *     number: '4111111111111111',
+ *     expirationMonth: '12',
+ *     expirationYear: '2038',
+ *     cvv: '123'
+ *   },
+ *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
+ *   smsCode: '11111' // Sent to customer's phone
+ * }, function (err, response) {
+ *   if (err) {
+ *     console.error(err);
+ *     return;
+ *   }
+ *
+ *   // Send response.nonce to your server
+ * });
+ * @example <caption>With Hosted Fields</caption>
+ * unionpayInstance.tokenize({
+ *   hostedFields: hostedFieldsInstance,
+ *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
+ *   smsCode: '11111' // Sent to customer's phone
+ * }, function (err, response) {
+ *   if (err) {
+ *     console.error(err);
+ *     return;
+ *   }
+ *
+ *   // Send response.nonce to your server
+ * });
+ * @returns {void}
+ */
+UnionPay.prototype.tokenize = function (options, callback) {
+  var tokenizedCard;
+  var client = this._options.client;
+  var card = options.card;
+  var hostedFields = options.hostedFields;
+
+  if (card && hostedFields) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: constants.CARD_AND_HOSTED_FIELDS_ERROR_MESSAGE
+    }));
+    return;
+  } else if (card) {
+    client.request({
+      method: 'post',
+      endpoint: 'payment_methods/credit_cards',
+      data: {
+        _meta: {source: 'unionpay'},
+        creditCard: {
+          number: options.card.number,
+          expirationMonth: options.card.expirationMonth,
+          expirationYear: options.card.expirationYear,
+          cvv: options.card.cvv
+        },
+        options: {
+          id: options.enrollmentId,
+          smsCode: options.smsCode
+        }
+      }
+    }, function (err, response) {
+      if (err) {
+        analytics.sendEvent(client, 'web.unionpay.nonce-failed');
+        // TODO: We cannot get response codes, so we can't know whose "fault" this error is.
+        // This requires a new feature of braintree-request which we are waiting on.
+        callback(new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          message: 'Tokenization network error',
+          details: {
+            originalError: err
+          }
+        }));
+        return;
+      }
+
+      tokenizedCard = response.creditCards[0];
+      delete tokenizedCard.consumed;
+      delete tokenizedCard.threeDSecureInfo;
+      delete tokenizedCard.type;
+
+      analytics.sendEvent(client, 'web.unionpay.nonce-received');
+      callback(null, tokenizedCard);
+    });
+  } else if (hostedFields) {
+    if (!hostedFields._bus) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: constants.INVALID_HOSTED_FIELDS_ERROR_MESSAGE
+      }));
+      return;
+    }
+
+    this._initializeHostedFields(function () {
+      this._bus.emit(events.HOSTED_FIELDS_TOKENIZE, {hostedFields: hostedFields, options: options}, function (response) {
+        if (response.err) {
+          callback(new BraintreeError(response.err));
+          return;
+        }
+
+        callback(null, response.payload);
+      });
+    }.bind(this));
+  } else {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: constants.CARD_OR_HOSTED_FIELDS_REQUIRED_ERROR_MESSAGE
+    }));
+    return;
+  }
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/unionpay.create|create}. This only needs to be called when using UnionPay with Hosted Fields.
+ * @public
+ * @param {errback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * unionpayInstance.teardown(function (err) {
+ *   if (err) {
+ *     console.error('Could not tear down UnionPay.');
+ *   } else {
+ *     console.log('UnionPay has been torn down.');
+ *   }
+ * });
+ * @returns {void}
+ */
+UnionPay.prototype.teardown = function (callback) {
+  if (this._bus) {
+    this._hostedFieldsFrame.parentNode.removeChild(this._hostedFieldsFrame);
+    this._bus.teardown();
+  }
+
+  convertMethodsToError(this, methods(UnionPay.prototype));
+
+  if (typeof callback === 'function') {
+    callback();
+  }
+};
+
+UnionPay.prototype._initializeHostedFields = function (callback) {
+  var componentId = uuid();
+
+  if (this._bus) {
+    callback();
+    return;
+  }
+
+  this._bus = new Bus({
+    channel: componentId,
+    merchantUrl: location.href
+  });
+  this._hostedFieldsFrame = iFramer({
+    name: constants.HOSTED_FIELDS_FRAME_NAME + '_' + componentId,
+    src: this._options.client.getConfiguration().gatewayConfiguration.assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame.html',
+    height: 0,
+    width: 0
+  });
+
+  this._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
+    reply(this._options.client);
+
+    callback();
+  }.bind(this));
+
+  document.body.appendChild(this._hostedFieldsFrame);
+};
+
+module.exports = UnionPay;
+
+},{"../../lib/analytics":31,"../../lib/bus":34,"../../lib/convert-methods-to-error":36,"../../lib/error":39,"../../lib/methods":41,"../../lib/uuid":43,"./constants":45,"iframer":2}]},{},[44])(44)
 });

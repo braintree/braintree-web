@@ -711,13 +711,13 @@ function _id(x) { return x; }
 /**
  * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
  * @typedef {object} Client~configuration
- * @property {object} client braintree-web/client parameters
- * @property {string} client.authorization A tokenizationKey or clientToken
- * @property {object} gatewayConfiguration Gateway-supplied configuration
- * @property {object} analyticsMetadata Analytics-specific data
- * @property {string} analyticsMetadata.sessionId Uniquely identifies a browsing session
- * @property {string} analyticsMetadata.sdkVersion The braintree.js version
- * @property {string} analyticsMetadata.merchantAppId Identifies the merchant's web app
+ * @property {object} client The braintree-web/client parameters.
+ * @property {string} client.authorization A tokenizationKey or clientToken.
+ * @property {object} gatewayConfiguration Gateway-supplied configuration.
+ * @property {object} analyticsMetadata Analytics-specific data.
+ * @property {string} analyticsMetadata.sessionId Uniquely identifies a browsing session.
+ * @property {string} analyticsMetadata.sdkVersion The braintree.js version.
+ * @property {string} analyticsMetadata.merchantAppId Identifies the merchant's web app.
  */
 
 /**
@@ -737,7 +737,7 @@ function Client(configuration) {
   if (!gatewayConfiguration) {
     throw new BraintreeError({
       type: BraintreeError.types.INTERNAL,
-      message: 'Missing gatewayConfiguration'
+      message: 'Missing gatewayConfiguration.'
     });
   }
 
@@ -749,13 +749,13 @@ function Client(configuration) {
     if (property in gatewayConfiguration && !utils.isWhitelistedDomain(gatewayConfiguration[property])) {
       throw new BraintreeError({
         type: BraintreeError.types.MERCHANT,
-        message: 'Invalid ' + property
+        message: 'Invalid ' + property + '.'
       });
     }
   });
 
   /**
-   * Returns a copy of the configuration values
+   * Returns a copy of the configuration values.
    * @public
    * @returns {Client~configuration} configuration
    */
@@ -773,12 +773,12 @@ function Client(configuration) {
 /**
  * Used by other modules to formulate all network requests to the Braintree gateway. It is also capable of being used directly from your own form to tokenize credit card information. However, be sure to satisfy PCI compliance if you use direct card tokenization.
  * @public
- * @param {object} options Request options
+ * @param {object} options Request options:
  * @param {string} options.method HTTP method. i.e. "get" or "post"
  * @param {string} options.endpoint Enpoint path. i.e. "payment_methods"
  * @param {object} options.data Data to send with the request
  * @param {string} [options.timeout=60000] Timeout limit
- * @param {errback} callback The second argument, <code>data</code>, is the returned server data
+ * @param {errback} callback The second argument, <code>data</code>, is the returned server data.
  * @example
  * <caption>Direct Credit Card Tokenization</caption>
  * var createClient = require('braintree-web/client').create;
@@ -817,9 +817,9 @@ Client.prototype.request = function (options, callback) {
   var errorMsg;
 
   if (!options.method) {
-    errorMsg = 'options.method is required';
+    errorMsg = 'options.method is required.';
   } else if (!options.endpoint) {
-    errorMsg = 'options.endpoint is required';
+    errorMsg = 'options.endpoint is required.';
   }
 
   if (errorMsg) {
@@ -913,16 +913,16 @@ module.exports = {
 var BraintreeError = _dereq_('../lib/error');
 var Client = _dereq_('./client');
 var getConfiguration = _dereq_('./get-configuration').getConfiguration;
-var packageVersion = "3.0.0-beta.5";
+var packageVersion = "3.0.0-beta.6";
 
 /** @module braintree-web/client */
 
 /**
  * @function
  * @description This function is the entry point for the <code>braintree.client</code> module. It is used for creating {@link Client} instances that service communication to Braintree servers.
- * @param {object} options Object containing all {@link Client} options
- * @param {string} options.authorization A tokenizationKey or clientToken
- * @param {errback} callback The second argument, <code>data</code>, is the {@link Client} instance
+ * @param {object} options Object containing all {@link Client} options:
+ * @param {string} options.authorization A tokenizationKey or clientToken.
+ * @param {errback} callback The second argument, <code>data</code>, is the {@link Client} instance.
  * @returns {void}
  * @example
  * var createClient = require('braintree-web/client').create;
@@ -938,12 +938,12 @@ function create(options, callback) {
   if (typeof callback !== 'function') {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'create must include a callback function'
+      message: 'create must include a callback function.'
     });
   } else if (!options.authorization) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'options.authorization is required'
+      message: 'options.authorization is required.'
     }));
     return;
   }
@@ -1023,7 +1023,7 @@ module.exports = addMetadata;
 },{"./constants":23,"./create-authorization-data":24,"./json-clone":27}],23:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.5";
+var VERSION = "3.0.0-beta.6";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1113,28 +1113,28 @@ var enumerate = _dereq_('./enumerate');
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
-    throw new Error(options.type + ' is not a valid type');
+    throw new Error(options.type + ' is not a valid type.');
   }
 
   if (!options.message) {
-    throw new Error('Error message required');
+    throw new Error('Error message required.');
   }
 
   /**
    * @type {string}
-   * @description A short description of the error
+   * @description A short description of the error.
    */
   this.message = options.message;
 
   /**
    * @type {BraintreeError.types}
-   * @description The type of error
+   * @description The type of error.
    */
   this.type = options.type;
 
   /**
    * @type {object=}
-   * @description Additional information about the error, such as an underlying network error response
+   * @description Additional information about the error, such as an underlying network error response.
    */
   this.details = options.details;
 }
@@ -1143,16 +1143,16 @@ BraintreeError.prototype = Object.create(Error.prototype);
 BraintreeError.prototype.constructor = BraintreeError;
 
 /**
- * Enum for {@link BraintreeError} types
+ * Enum for {@link BraintreeError} types.
  * @name BraintreeError.types
  * @enum
  * @readonly
  * @memberof BraintreeError
- * @property {string} CUSTOMER Error caused by the customer
- * @property {string} MERCHANT Error that is actionable by the merchant
- * @property {string} NETWORK Error due to a network problem
- * @property {string} INTERNAL Error caused by Braintree code
- * @property {string} UNKNOWN Error of unknown origin
+ * @property {string} CUSTOMER An error caused by the customer.
+ * @property {string} MERCHANT An error that is actionable by the merchant.
+ * @property {string} NETWORK An error due to a network problem.
+ * @property {string} INTERNAL An error caused by Braintree code.
+ * @property {string} UNKNOWN An error where the origin is unknown.
  */
 BraintreeError.types = enumerate([
   'CUSTOMER',
