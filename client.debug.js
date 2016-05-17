@@ -373,338 +373,11 @@ module.exports = {
 },{"./lib/ajax-driver":1,"./lib/choose-driver":2,"./lib/jsonp-driver":4,"./lib/util":8}],10:[function(_dereq_,module,exports){
 'use strict';
 
-var nativeIndexOf = Array.prototype.indexOf;
-
-var indexOf;
-if (nativeIndexOf) {
-  indexOf = function (haystack, needle) {
-    return haystack.indexOf(needle);
-  };
-} else {
-  indexOf = function indexOf(haystack, needle) {
-    for (var i = 0, len = haystack.length; i < len; i++) {
-      if (haystack[i] === needle) {
-        return i;
-      }
-    }
-    return -1;
-  };
-}
-
-module.exports = {
-  indexOf: indexOf
-};
-
-},{}],11:[function(_dereq_,module,exports){
-'use strict';
-
-function _escape(string) {
-  var i, hex;
-  var escaped = '';
-
-  for (i = 0; i < string.length; i++) {
-    escaped += '%';
-    hex = string[i].charCodeAt(0).toString(16).toUpperCase();
-
-    if (hex.length < 2) {
-      escaped += '0';
-    }
-
-    escaped += hex;
-  }
-
-  return escaped;
-}
-
-function decodeUtf8(b64) {
-  return decodeURIComponent(_escape(atob(b64)));
-}
-
-module.exports = {
-  decodeUtf8: decodeUtf8
-};
-
-},{}],12:[function(_dereq_,module,exports){
-'use strict';
-
-function normalizeElement (element, errorMessage) {
-  errorMessage = errorMessage || '[' + element + '] is not a valid DOM Element';
-
-  if (element && element.nodeType && element.nodeType === 1) {
-    return element;
-  }
-  if (element && window.jQuery && (element instanceof jQuery || 'jquery' in Object(element)) && element.length !== 0) {
-    return element[0];
-  }
-
-  if (typeof element === 'string' && document.getElementById(element)) {
-    return document.getElementById(element);
-  }
-
-  throw new Error(errorMessage);
-}
-
-module.exports = {
-  normalizeElement: normalizeElement
-};
-
-},{}],13:[function(_dereq_,module,exports){
-'use strict';
-
-function addEventListener(element, type, listener, useCapture) {
-  if (element.addEventListener) {
-    element.addEventListener(type, listener, useCapture || false);
-  } else if (element.attachEvent) {
-    element.attachEvent('on' + type, listener);
-  }
-}
-
-function removeEventListener(element, type, listener, useCapture) {
-  if (element.removeEventListener) {
-    element.removeEventListener(type, listener, useCapture || false);
-  } else if (element.detachEvent) {
-    element.detachEvent('on' + type, listener);
-  }
-}
-
-function preventDefault(event) {
-  if (event.preventDefault) {
-    event.preventDefault();
-  } else {
-    event.returnValue = false;
-  }
-}
-
-module.exports = {
-  addEventListener: addEventListener,
-  removeEventListener: removeEventListener,
-  preventDefault: preventDefault
-};
-
-},{}],14:[function(_dereq_,module,exports){
-'use strict';
-
-var toString = Object.prototype.toString;
-
-function isFunction(func) {
-  return toString.call(func) === '[object Function]';
-}
-
-function bind(func, context) {
-  return function () {
-    return func.apply(context, arguments);
-  };
-}
-
-module.exports = {
-  bind: bind,
-  isFunction: isFunction
-};
-
-},{}],15:[function(_dereq_,module,exports){
-'use strict';
-
-function getMaxCharLength(width) {
-  var max, i, range, len;
-  var ranges = [
-    { min: 0, max: 180, chars: 7 },
-    { min: 181, max: 620, chars: 14 },
-    { min: 621, max: 960, chars: 22 }
-  ];
-
-  len = ranges.length;
-
-  width = width || window.innerWidth;
-
-  for (i = 0; i < len; i++) {
-    range = ranges[i];
-
-    if (width >= range.min && width <= range.max) {
-      max = range.chars;
-    }
-  }
-
-  return max || 60;
-}
-
-function truncateEmail(email, maxLength) {
-  var address, domain;
-
-  if (email.indexOf('@') === -1) {
-    return email;
-  }
-
-  email = email.split('@');
-  address = email[0];
-  domain = email[1];
-
-  if (address.length > maxLength) {
-    address = address.slice(0, maxLength) + '...';
-  }
-
-  if (domain.length > maxLength) {
-    domain = '...' + domain.slice(-maxLength);
-  }
-
-  return address + '@' + domain;
-}
-
-module.exports = {
-  truncateEmail: truncateEmail,
-  getMaxCharLength: getMaxCharLength
-};
-
-},{}],16:[function(_dereq_,module,exports){
-'use strict';
-
-var array = _dereq_('./array');
-
-function isBrowserHttps() {
-  return window.location.protocol === 'https:';
-}
-
-function encode(str) {
-  switch (str) {
-    case null:
-    case undefined:
-      return '';
-    case true:
-      return '1';
-    case false:
-      return '0';
-    default:
-      return encodeURIComponent(str);
-  }
-}
-
-function makeQueryString(params, namespace) {
-  var query = [], k, p;
-  for (p in params) {
-    if (params.hasOwnProperty(p)) {
-      var v = params[p];
-      if (namespace) {
-        k = namespace + '[' + p + ']';
-      } else {
-        k = p;
-      }
-      if (typeof v === 'object') {
-        query.push(makeQueryString(v, k));
-      } else if (v !== undefined && v !== null) {
-        query.push(encode(k) + '=' + encode(v));
-      }
-    }
-  }
-  return query.join('&');
-}
-
-function decodeQueryString(queryString) {
-  var params = {},
-  paramPairs = queryString.split('&');
-
-  for (var i = 0; i < paramPairs.length; i++) {
-    var paramPair = paramPairs[i].split('=');
-    var key = paramPair[0];
-    var value = decodeURIComponent(paramPair[1]);
-    params[key] = value;
-  }
-
-  return params;
-}
-
-function getParams(url) {
-  var urlSegments = url.split('?');
-
-  if (urlSegments.length !== 2) {
-    return {};
-  }
-
-  return decodeQueryString(urlSegments[1]);
-}
-
-var parser = document.createElement('a');
-var legalHosts = [
-  'paypal.com',
-  'braintreepayments.com',
-  'braintreegateway.com',
-  'localhost'
-];
-
-function isWhitelistedDomain(url) {
-  url = url.toLowerCase();
-
-  if (!/^http/.test(url)) {
-    return false;
-  }
-
-  parser.href = url;
-
-  var pieces = parser.hostname.split('.');
-  var topLevelDomain = pieces.slice(-2).join('.');
-
-  if (array.indexOf(legalHosts, topLevelDomain) === -1) {
-    return false;
-  }
-
-  return true;
-}
-
-module.exports = {
-  isBrowserHttps: isBrowserHttps,
-  makeQueryString: makeQueryString,
-  decodeQueryString: decodeQueryString,
-  getParams: getParams,
-  isWhitelistedDomain: isWhitelistedDomain
-};
-
-},{"./array":10}],17:[function(_dereq_,module,exports){
-'use strict';
-
-// RFC 4122 v4 (pseudo-random) UUID
-function generate() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0;
-    var v = c === 'x' ? r : r & 0x3 | 0x8;
-    return v.toString(16);
-  });
-}
-
-module.exports = generate;
-
-},{}],18:[function(_dereq_,module,exports){
-var dom = _dereq_('./lib/dom');
-var url = _dereq_('./lib/url');
-var fn = _dereq_('./lib/fn');
-var events = _dereq_('./lib/events');
-var string = _dereq_('./lib/string');
-var array = _dereq_('./lib/array');
-var base64 = _dereq_('./lib/base64');
-var uuid = _dereq_('./lib/uuid');
-
-module.exports = {
-  string: string,
-  array: array,
-  normalizeElement: dom.normalizeElement,
-  isBrowserHttps: url.isBrowserHttps,
-  makeQueryString: url.makeQueryString,
-  decodeQueryString: url.decodeQueryString,
-  getParams: url.getParams,
-  isWhitelistedDomain: url.isWhitelistedDomain,
-  removeEventListener: events.removeEventListener,
-  addEventListener: events.addEventListener,
-  preventDefault: events.preventDefault,
-  bind: fn.bind,
-  isFunction: fn.isFunction,
-  base64ToUtf8: base64.decodeUtf8,
-  uuid: uuid
-};
-
-},{"./lib/array":10,"./lib/base64":11,"./lib/dom":12,"./lib/events":13,"./lib/fn":14,"./lib/string":15,"./lib/url":16,"./lib/uuid":17}],19:[function(_dereq_,module,exports){
-'use strict';
-
 var chooseDriver = _dereq_('braintree-request').chooseDriver;
-var utils = _dereq_('braintree-utilities');
+var isWhitelistedDomain = _dereq_('../lib/is-whitelisted-domain');
 var BraintreeError = _dereq_('../lib/error');
 var addMetadata = _dereq_('../lib/add-metadata');
+var deferred = _dereq_('../lib/deferred');
 
 function _id(x) { return x; }
 
@@ -746,7 +419,7 @@ function Client(configuration) {
     'clientApiUrl',
     'configUrl'
   ].forEach(function (property) {
-    if (property in gatewayConfiguration && !utils.isWhitelistedDomain(gatewayConfiguration[property])) {
+    if (property in gatewayConfiguration && !isWhitelistedDomain(gatewayConfiguration[property])) {
       throw new BraintreeError({
         type: BraintreeError.types.MERCHANT,
         message: 'Invalid ' + property + '.'
@@ -778,7 +451,7 @@ function Client(configuration) {
  * @param {string} options.endpoint Enpoint path. i.e. "payment_methods"
  * @param {object} options.data Data to send with the request
  * @param {string} [options.timeout=60000] Timeout limit
- * @param {errback} callback The second argument, <code>data</code>, is the returned server data.
+ * @param {callback} callback The second argument, <code>data</code>, is the returned server data.
  * @example
  * <caption>Direct Credit Card Tokenization</caption>
  * var createClient = require('braintree-web/client').create;
@@ -823,10 +496,12 @@ Client.prototype.request = function (options, callback) {
   }
 
   if (errorMsg) {
-    throw new BraintreeError({
+    callback = deferred(callback);
+    callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
       message: errorMsg
-    });
+    }));
+    return;
   }
 
   this._driver[options.method](
@@ -840,7 +515,7 @@ Client.prototype.request = function (options, callback) {
 
 module.exports = Client;
 
-},{"../lib/add-metadata":22,"../lib/error":26,"braintree-request":9,"braintree-utilities":18}],20:[function(_dereq_,module,exports){
+},{"../lib/add-metadata":13,"../lib/deferred":16,"../lib/error":18,"../lib/is-whitelisted-domain":19,"braintree-request":9}],11:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -907,13 +582,14 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../lib/constants":23,"../lib/create-authorization-data":24,"../lib/error":26,"../lib/uuid":29,"braintree-request":9}],21:[function(_dereq_,module,exports){
+},{"../lib/constants":14,"../lib/create-authorization-data":15,"../lib/error":18,"../lib/uuid":22,"braintree-request":9}],12:[function(_dereq_,module,exports){
 'use strict';
 
 var BraintreeError = _dereq_('../lib/error');
 var Client = _dereq_('./client');
 var getConfiguration = _dereq_('./get-configuration').getConfiguration;
-var packageVersion = "3.0.0-beta.6";
+var packageVersion = "3.0.0-beta.7";
+var deferred = _dereq_('../lib/deferred');
 
 /** @module braintree-web/client */
 
@@ -922,7 +598,7 @@ var packageVersion = "3.0.0-beta.6";
  * @description This function is the entry point for the <code>braintree.client</code> module. It is used for creating {@link Client} instances that service communication to Braintree servers.
  * @param {object} options Object containing all {@link Client} options:
  * @param {string} options.authorization A tokenizationKey or clientToken.
- * @param {errback} callback The second argument, <code>data</code>, is the {@link Client} instance.
+ * @param {callback} callback The second argument, <code>data</code>, is the {@link Client} instance.
  * @returns {void}
  * @example
  * var createClient = require('braintree-web/client').create;
@@ -940,7 +616,11 @@ function create(options, callback) {
       type: BraintreeError.types.MERCHANT,
       message: 'create must include a callback function.'
     });
-  } else if (!options.authorization) {
+  }
+
+  callback = deferred(callback);
+
+  if (!options.authorization) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
       message: 'options.authorization is required.'
@@ -986,7 +666,7 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"../lib/error":26,"./client":19,"./get-configuration":20}],22:[function(_dereq_,module,exports){
+},{"../lib/deferred":16,"../lib/error":18,"./client":10,"./get-configuration":11}],13:[function(_dereq_,module,exports){
 'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
@@ -1020,10 +700,10 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":23,"./create-authorization-data":24,"./json-clone":27}],23:[function(_dereq_,module,exports){
+},{"./constants":14,"./create-authorization-data":15,"./json-clone":20}],14:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.6";
+var VERSION = "3.0.0-beta.7";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1036,7 +716,7 @@ module.exports = {
   BRAINTREE_LIBRARY_VERSION: 'braintree/' + PLATFORM + '/' + VERSION
 };
 
-},{}],24:[function(_dereq_,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -1085,7 +765,21 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":28}],25:[function(_dereq_,module,exports){
+},{"../lib/polyfill":21}],16:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (fn) {
+  return function () {
+    // IE9 doesn't support passing arguments to setTimeout so we have to emulate it.
+    var args = arguments;
+
+    setTimeout(function () {
+      fn.apply(null, args);
+    }, 1);
+  };
+};
+
+},{}],17:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -1099,7 +793,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],26:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -1109,7 +803,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link callback callbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
@@ -1164,14 +858,43 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":25}],27:[function(_dereq_,module,exports){
+},{"./enumerate":17}],19:[function(_dereq_,module,exports){
+'use strict';
+
+var parser = document.createElement('a');
+var legalHosts = {
+  'paypal.com': 1,
+  'braintreepayments.com': 1,
+  'braintreegateway.com': 1,
+  localhost: 1
+};
+
+function isWhitelistedDomain(url) {
+  var pieces, topLevelDomain;
+
+  url = url.toLowerCase();
+
+  if (!/^http/.test(url)) {
+    return false;
+  }
+
+  parser.href = url;
+  pieces = parser.hostname.split('.');
+  topLevelDomain = pieces.slice(-2).join('.');
+
+  return legalHosts.hasOwnProperty(topLevelDomain);
+}
+
+module.exports = isWhitelistedDomain;
+
+},{}],20:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],28:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1210,7 +933,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],29:[function(_dereq_,module,exports){
+},{}],22:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
@@ -1224,5 +947,5 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}]},{},[21])(21)
+},{}]},{},[12])(12)
 });

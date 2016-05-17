@@ -2,6 +2,7 @@
 'use strict';
 
 var BraintreeError = _dereq_('../lib/error');
+var deferred = _dereq_('../lib/deferred');
 
 /**
  * @class
@@ -18,7 +19,7 @@ function AmericanExpress(options) {
  * @public
  * @param {object} options Request options
  * @param {string} options.nonce An existing Braintree nonce.
- * @param {errback} callback The second argument, <code>data</code>, is the returned server data.
+ * @param {callback} callback The second argument, <code>data</code>, is the returned server data.
  * @returns {void}
  * @example
  * var americanExpress = require('braintree-web/american-express');
@@ -42,6 +43,8 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
       message: 'getRewardsBalance must include a callback function.'
     });
   }
+
+  callback = deferred(callback);
 
   if (!options.nonce) {
     callback(new BraintreeError({
@@ -78,7 +81,7 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
  * @public
  * @param {object} options Request options
  * @param {string} options.nonce An existing nonce from American Express (note that this is <em>not</em> a nonce from Braintree).
- * @param {errback} callback The second argument, <code>data</code>, is the returned server data.
+ * @param {callback} callback The second argument, <code>data</code>, is the returned server data.
  * @returns {void}
  * @example
  * var americanExpress = require('braintree-web/american-express');
@@ -102,6 +105,8 @@ AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callbac
       message: 'getExpressCheckoutProfile must include a callback function.'
     });
   }
+
+  callback = deferred(callback);
 
   if (!options.nonce) {
     callback(new BraintreeError({
@@ -135,22 +140,23 @@ AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callbac
 
 module.exports = AmericanExpress;
 
-},{"../lib/error":4}],2:[function(_dereq_,module,exports){
+},{"../lib/deferred":3,"../lib/error":5}],2:[function(_dereq_,module,exports){
 'use strict';
 /**
  * @module braintree-web/american-express
  * @description This module is for use with Amex Express Checkout. To accept American Express cards, use Hosted Fields.
  */
 
-var VERSION = "3.0.0-beta.6";
+var VERSION = "3.0.0-beta.7";
 var BraintreeError = _dereq_('../lib/error');
 var AmericanExpress = _dereq_('./american-express');
+var deferred = _dereq_('../lib/deferred');
 
 /**
  * @function
  * @param {object} options Object containing all {@link AmericanExpress} options:
  * @param {Client} options.client A {@link Client} instance.
- * @param {errback} callback The second argument, <code>data</code>, is the {@link AmericanExpress} instance.
+ * @param {callback} callback The second argument, <code>data</code>, is the {@link AmericanExpress} instance.
  * @returns {void}
  * @static
  */
@@ -161,6 +167,8 @@ function create(options, callback) {
       message: 'create must include a callback function.'
     });
   }
+
+  callback = deferred(callback);
 
   if (options.client == null) {
     callback(new BraintreeError({
@@ -190,7 +198,21 @@ module.exports = {
   VERSION: VERSION
 };
 
-},{"../lib/error":4,"./american-express":1}],3:[function(_dereq_,module,exports){
+},{"../lib/deferred":3,"../lib/error":5,"./american-express":1}],3:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (fn) {
+  return function () {
+    // IE9 doesn't support passing arguments to setTimeout so we have to emulate it.
+    var args = arguments;
+
+    setTimeout(function () {
+      fn.apply(null, args);
+    }, 1);
+  };
+};
+
+},{}],4:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -204,7 +226,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],4:[function(_dereq_,module,exports){
+},{}],5:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -214,7 +236,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link callback callbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
@@ -269,5 +291,5 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":3}]},{},[2])(2)
+},{"./enumerate":4}]},{},[2])(2)
 });

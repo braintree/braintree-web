@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.7
+
+* Hosted Fields
+  * Add `inputSubmitRequest` event which is called when the user presses the Enter key (or equivalent) in a Hosted Fields input.
+
+__BREAKING CHANGES__
+* Make all callbacks consistently called asynchronously
+* Hosted Fields
+  * The `fieldStateChange` event is now 4 events: `empty`, `notEmpty`, `validityChange`, and `cardTypeChange`
+  * Change event payloads to always return the full state of the form and all possible card types
+* Data Collector
+  * A `client` option is now required
+
 ## 3.0.0-beta.6
 
 * Hosted Fields

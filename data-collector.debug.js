@@ -169,7 +169,8 @@ var fraudnet = _dereq_('./fraudnet');
 var BraintreeError = _dereq_('../lib/error');
 var methods = _dereq_('../lib/methods');
 var convertMethodsToError = _dereq_('../lib/convert-methods-to-error');
-var packageVersion = "3.0.0-beta.6";
+var packageVersion = "3.0.0-beta.7";
+var deferred = _dereq_('../lib/deferred');
 
 /**
  * @class
@@ -192,7 +193,7 @@ var packageVersion = "3.0.0-beta.6";
  * @name teardown
  * @function
  * @description Cleanly remove all event handlers and DOM nodes that were added.
- * @param {errback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @instance
  * @returns {void}
  */
@@ -200,17 +201,20 @@ var packageVersion = "3.0.0-beta.6";
 /**
  * @function
  * @param {object} options Object containing all {@link DataCollector} options:
+ * @param {client} options.client A {@link Client} instance.
  * @param {object} [options.kount] If supplied, Kount fraud capabilities are enabled:
  * @param {string} options.kount.environment Which Kount environment to operate in. Options are "sandbox" or "production".
  * @param {string} [options.kount.merchantId] If using a direct Kount integration, your Kount-provided merchantId.
  * @param {boolean} [options.paypal] If true, PayPal fraud capabilities are enabled.
- * @param {errback} callback The second argument, <code>data</code>, is the {@link DataCollector} instance.
+ * @param {callback} callback The second argument, <code>data</code>, is the {@link DataCollector} instance.
  * @returns {void}
  * @static
  */
 function create(options, callback) {
-  var data, kountInstance, fraudnetInstance, result;
+  var data, kountInstance, fraudnetInstance, result, config;
   var instances = [];
+
+  callback = deferred(callback);
 
   function teardown(cb) {
     var i;
@@ -222,13 +226,35 @@ function create(options, callback) {
     convertMethodsToError(result, methods(result));
 
     if (cb) {
+      cb = deferred(cb);
       cb();
     }
   }
 
+  if (options.client == null) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'options.client is required when instantiating Data Collector.'
+    }));
+    return;
+  }
+
   if (options.kount != null) {
+    config = options.client.getConfiguration().gatewayConfiguration;
+
+    if (!(config.kount && config.kount.enabled)) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: 'Kount is not enabled for this merchant.'
+      }));
+      return;
+    }
+
     try {
-      kountInstance = kount.setup(options.kount);
+      kountInstance = kount.setup({
+        environment: options.kount.environment,
+        merchantId: options.kount.merchantId || config.kount.kountMerchantId
+      });
     } catch (err) {
       callback(new BraintreeError({
         message: err.message,
@@ -274,7 +300,7 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"../lib/convert-methods-to-error":6,"../lib/error":8,"../lib/methods":9,"./fraudnet":3,"./kount":5}],5:[function(_dereq_,module,exports){
+},{"../lib/convert-methods-to-error":6,"../lib/deferred":7,"../lib/error":9,"../lib/methods":10,"./fraudnet":3,"./kount":5}],5:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable camelcase */
 
@@ -392,7 +418,21 @@ module.exports = function (instance, methodNames) {
   });
 };
 
-},{"./error":8}],7:[function(_dereq_,module,exports){
+},{"./error":9}],7:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (fn) {
+  return function () {
+    // IE9 doesn't support passing arguments to setTimeout so we have to emulate it.
+    var args = arguments;
+
+    setTimeout(function () {
+      fn.apply(null, args);
+    }, 1);
+  };
+};
+
+},{}],8:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -406,7 +446,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],8:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -416,7 +456,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link callback callbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
@@ -471,7 +511,7 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":7}],9:[function(_dereq_,module,exports){
+},{"./enumerate":8}],10:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (obj) {

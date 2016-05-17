@@ -1,478 +1,6 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.braintree || (g.braintree = {})).hostedFields = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
 
-var nativeIndexOf = Array.prototype.indexOf;
-
-var indexOf;
-if (nativeIndexOf) {
-  indexOf = function (haystack, needle) {
-    return haystack.indexOf(needle);
-  };
-} else {
-  indexOf = function indexOf(haystack, needle) {
-    for (var i = 0, len = haystack.length; i < len; i++) {
-      if (haystack[i] === needle) {
-        return i;
-      }
-    }
-    return -1;
-  };
-}
-
-module.exports = {
-  indexOf: indexOf
-};
-
-},{}],2:[function(_dereq_,module,exports){
-'use strict';
-
-function _escape(string) {
-  var i, hex;
-  var escaped = '';
-
-  for (i = 0; i < string.length; i++) {
-    escaped += '%';
-    hex = string[i].charCodeAt(0).toString(16).toUpperCase();
-
-    if (hex.length < 2) {
-      escaped += '0';
-    }
-
-    escaped += hex;
-  }
-
-  return escaped;
-}
-
-function decodeUtf8(b64) {
-  return decodeURIComponent(_escape(atob(b64)));
-}
-
-module.exports = {
-  decodeUtf8: decodeUtf8
-};
-
-},{}],3:[function(_dereq_,module,exports){
-'use strict';
-
-function normalizeElement (element, errorMessage) {
-  errorMessage = errorMessage || '[' + element + '] is not a valid DOM Element';
-
-  if (element && element.nodeType && element.nodeType === 1) {
-    return element;
-  }
-  if (element && window.jQuery && (element instanceof jQuery || 'jquery' in Object(element)) && element.length !== 0) {
-    return element[0];
-  }
-
-  if (typeof element === 'string' && document.getElementById(element)) {
-    return document.getElementById(element);
-  }
-
-  throw new Error(errorMessage);
-}
-
-module.exports = {
-  normalizeElement: normalizeElement
-};
-
-},{}],4:[function(_dereq_,module,exports){
-'use strict';
-
-function addEventListener(element, type, listener, useCapture) {
-  if (element.addEventListener) {
-    element.addEventListener(type, listener, useCapture || false);
-  } else if (element.attachEvent) {
-    element.attachEvent('on' + type, listener);
-  }
-}
-
-function removeEventListener(element, type, listener, useCapture) {
-  if (element.removeEventListener) {
-    element.removeEventListener(type, listener, useCapture || false);
-  } else if (element.detachEvent) {
-    element.detachEvent('on' + type, listener);
-  }
-}
-
-function preventDefault(event) {
-  if (event.preventDefault) {
-    event.preventDefault();
-  } else {
-    event.returnValue = false;
-  }
-}
-
-module.exports = {
-  addEventListener: addEventListener,
-  removeEventListener: removeEventListener,
-  preventDefault: preventDefault
-};
-
-},{}],5:[function(_dereq_,module,exports){
-'use strict';
-
-var toString = Object.prototype.toString;
-
-function isFunction(func) {
-  return toString.call(func) === '[object Function]';
-}
-
-function bind(func, context) {
-  return function () {
-    return func.apply(context, arguments);
-  };
-}
-
-module.exports = {
-  bind: bind,
-  isFunction: isFunction
-};
-
-},{}],6:[function(_dereq_,module,exports){
-'use strict';
-
-function getMaxCharLength(width) {
-  var max, i, range, len;
-  var ranges = [
-    { min: 0, max: 180, chars: 7 },
-    { min: 181, max: 620, chars: 14 },
-    { min: 621, max: 960, chars: 22 }
-  ];
-
-  len = ranges.length;
-
-  width = width || window.innerWidth;
-
-  for (i = 0; i < len; i++) {
-    range = ranges[i];
-
-    if (width >= range.min && width <= range.max) {
-      max = range.chars;
-    }
-  }
-
-  return max || 60;
-}
-
-function truncateEmail(email, maxLength) {
-  var address, domain;
-
-  if (email.indexOf('@') === -1) {
-    return email;
-  }
-
-  email = email.split('@');
-  address = email[0];
-  domain = email[1];
-
-  if (address.length > maxLength) {
-    address = address.slice(0, maxLength) + '...';
-  }
-
-  if (domain.length > maxLength) {
-    domain = '...' + domain.slice(-maxLength);
-  }
-
-  return address + '@' + domain;
-}
-
-module.exports = {
-  truncateEmail: truncateEmail,
-  getMaxCharLength: getMaxCharLength
-};
-
-},{}],7:[function(_dereq_,module,exports){
-'use strict';
-
-var array = _dereq_('./array');
-
-function isBrowserHttps() {
-  return window.location.protocol === 'https:';
-}
-
-function encode(str) {
-  switch (str) {
-    case null:
-    case undefined:
-      return '';
-    case true:
-      return '1';
-    case false:
-      return '0';
-    default:
-      return encodeURIComponent(str);
-  }
-}
-
-function makeQueryString(params, namespace) {
-  var query = [], k, p;
-  for (p in params) {
-    if (params.hasOwnProperty(p)) {
-      var v = params[p];
-      if (namespace) {
-        k = namespace + '[' + p + ']';
-      } else {
-        k = p;
-      }
-      if (typeof v === 'object') {
-        query.push(makeQueryString(v, k));
-      } else if (v !== undefined && v !== null) {
-        query.push(encode(k) + '=' + encode(v));
-      }
-    }
-  }
-  return query.join('&');
-}
-
-function decodeQueryString(queryString) {
-  var params = {},
-  paramPairs = queryString.split('&');
-
-  for (var i = 0; i < paramPairs.length; i++) {
-    var paramPair = paramPairs[i].split('=');
-    var key = paramPair[0];
-    var value = decodeURIComponent(paramPair[1]);
-    params[key] = value;
-  }
-
-  return params;
-}
-
-function getParams(url) {
-  var urlSegments = url.split('?');
-
-  if (urlSegments.length !== 2) {
-    return {};
-  }
-
-  return decodeQueryString(urlSegments[1]);
-}
-
-var parser = document.createElement('a');
-var legalHosts = [
-  'paypal.com',
-  'braintreepayments.com',
-  'braintreegateway.com',
-  'localhost'
-];
-
-function isWhitelistedDomain(url) {
-  url = url.toLowerCase();
-
-  if (!/^http/.test(url)) {
-    return false;
-  }
-
-  parser.href = url;
-
-  var pieces = parser.hostname.split('.');
-  var topLevelDomain = pieces.slice(-2).join('.');
-
-  if (array.indexOf(legalHosts, topLevelDomain) === -1) {
-    return false;
-  }
-
-  return true;
-}
-
-module.exports = {
-  isBrowserHttps: isBrowserHttps,
-  makeQueryString: makeQueryString,
-  decodeQueryString: decodeQueryString,
-  getParams: getParams,
-  isWhitelistedDomain: isWhitelistedDomain
-};
-
-},{"./array":1}],8:[function(_dereq_,module,exports){
-'use strict';
-
-// RFC 4122 v4 (pseudo-random) UUID
-function generate() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0;
-    var v = c === 'x' ? r : r & 0x3 | 0x8;
-    return v.toString(16);
-  });
-}
-
-module.exports = generate;
-
-},{}],9:[function(_dereq_,module,exports){
-var dom = _dereq_('./lib/dom');
-var url = _dereq_('./lib/url');
-var fn = _dereq_('./lib/fn');
-var events = _dereq_('./lib/events');
-var string = _dereq_('./lib/string');
-var array = _dereq_('./lib/array');
-var base64 = _dereq_('./lib/base64');
-var uuid = _dereq_('./lib/uuid');
-
-module.exports = {
-  string: string,
-  array: array,
-  normalizeElement: dom.normalizeElement,
-  isBrowserHttps: url.isBrowserHttps,
-  makeQueryString: url.makeQueryString,
-  decodeQueryString: url.decodeQueryString,
-  getParams: url.getParams,
-  isWhitelistedDomain: url.isWhitelistedDomain,
-  removeEventListener: events.removeEventListener,
-  addEventListener: events.addEventListener,
-  preventDefault: events.preventDefault,
-  bind: fn.bind,
-  isFunction: fn.isFunction,
-  base64ToUtf8: base64.decodeUtf8,
-  uuid: uuid
-};
-
-},{"./lib/array":1,"./lib/base64":2,"./lib/dom":3,"./lib/events":4,"./lib/fn":5,"./lib/string":6,"./lib/url":7,"./lib/uuid":8}],10:[function(_dereq_,module,exports){
-'use strict';
-
-module.exports = ClassList
-
-var indexOf = _dereq_('component-indexof'),
-    trim = _dereq_('trim'),
-    arr = Array.prototype
-
-/**
- * ClassList(elem) is kind of like Element#classList.
- *
- * @param {Element} elem
- * @return {ClassList}
- */
-function ClassList (elem) {
-  if (!(this instanceof ClassList))
-    return new ClassList(elem)
-
-  var classes = trim(elem.className).split(/\s+/),
-      i
-
-  this._elem = elem
-
-  this.length = 0
-
-  for (i = 0; i < classes.length; i += 1) {
-    if (classes[i])
-      arr.push.call(this, classes[i])
-  }
-}
-
-/**
- * add(class1 [, class2 [, ...]]) adds the given class(es) to the
- * element.
- *
- * @param {String} ...
- * @return {Context}
- */
-ClassList.prototype.add = function () {
-  var name,
-      i
-
-  for (i = 0; i < arguments.length; i += 1) {
-    name = '' + arguments[i]
-
-    if (indexOf(this, name) >= 0)
-      continue
-
-    arr.push.call(this, name)
-  }
-
-  this._elem.className = this.toString()
-
-  return this
-}
-
-/**
- * remove(class1 [, class2 [, ...]]) removes the given class(es) from
- * the element.
- *
- * @param {String} ...
- * @return {Context}
- */
-ClassList.prototype.remove = function () {
-  var index,
-      name,
-      i
-
-  for (i = 0; i < arguments.length; i += 1) {
-    name = '' + arguments[i]
-    index = indexOf(this, name)
-
-    if (index < 0) continue
-
-    arr.splice.call(this, index, 1)
-  }
-
-  this._elem.className = this.toString()
-
-  return this
-}
-
-/**
- * contains(name) determines if the element has a given class.
- *
- * @param {String} name
- * @return {Boolean}
- */
-ClassList.prototype.contains = function (name) {
-  name += ''
-  return indexOf(this, name) >= 0
-}
-
-/**
- * toggle(name [, force]) toggles a class. If force is a boolean,
- * this method is basically just an alias for add/remove.
- *
- * @param {String} name
- * @param {Boolean} force
- * @return {Context}
- */
-ClassList.prototype.toggle = function (name, force) {
-  name += ''
-
-  if (force === true) return this.add(name)
-  if (force === false) return this.remove(name)
-
-  return this[this.contains(name) ? 'remove' : 'add'](name)
-}
-
-/**
- * toString() returns the className of the element.
- *
- * @return {String}
- */
-ClassList.prototype.toString = function () {
-  return arr.join.call(this, ' ')
-}
-
-},{"component-indexof":11,"trim":12}],11:[function(_dereq_,module,exports){
-module.exports = function(arr, obj){
-  if (arr.indexOf) return arr.indexOf(obj);
-  for (var i = 0; i < arr.length; ++i) {
-    if (arr[i] === obj) return i;
-  }
-  return -1;
-};
-},{}],12:[function(_dereq_,module,exports){
-
-exports = module.exports = trim;
-
-function trim(str){
-  return str.replace(/^\s*|\s*$/g, '');
-}
-
-exports.left = function(str){
-  return str.replace(/^\s*/, '');
-};
-
-exports.right = function(str){
-  return str.replace(/\s*$/, '');
-};
-
-},{}],13:[function(_dereq_,module,exports){
-'use strict';
-
 var batchExecuteFunctions = _dereq_('batch-execute-functions');
 // Reach into lib for isFunction. This lib requires a DOM and cannot be
 // tested otherwise
@@ -500,7 +28,7 @@ Destructor.prototype.teardown = function (callback) {
 
 module.exports = Destructor;
 
-},{"batch-execute-functions":14,"braintree-utilities/lib/fn":15}],14:[function(_dereq_,module,exports){
+},{"batch-execute-functions":2,"braintree-utilities/lib/fn":3}],2:[function(_dereq_,module,exports){
 'use strict';
 
 function call(fn, callback) {
@@ -550,9 +78,27 @@ module.exports = function (functions, callback) {
   }
 };
 
-},{}],15:[function(_dereq_,module,exports){
-arguments[4][5][0].apply(exports,arguments)
-},{"dup":5}],16:[function(_dereq_,module,exports){
+},{}],3:[function(_dereq_,module,exports){
+'use strict';
+
+var toString = Object.prototype.toString;
+
+function isFunction(func) {
+  return toString.call(func) === '[object Function]';
+}
+
+function bind(func, context) {
+  return function () {
+    return func.apply(context, arguments);
+  };
+}
+
+module.exports = {
+  bind: bind,
+  isFunction: isFunction
+};
+
+},{}],4:[function(_dereq_,module,exports){
 'use strict';
 (function (root, factory) {
   if (typeof exports === 'object' && typeof module !== 'undefined') {
@@ -828,7 +374,7 @@ arguments[4][5][0].apply(exports,arguments)
   return framebus;
 });
 
-},{}],17:[function(_dereq_,module,exports){
+},{}],5:[function(_dereq_,module,exports){
 'use strict';
 
 var assign = _dereq_('lodash/object/assign');
@@ -854,7 +400,7 @@ module.exports = function createFrame(options) {
   return iframe;
 };
 
-},{"./lib/default-attributes":18,"lodash/lang/isString":39,"lodash/object/assign":40,"setattributes":44}],18:[function(_dereq_,module,exports){
+},{"./lib/default-attributes":6,"lodash/lang/isString":27,"lodash/object/assign":28,"setattributes":32}],6:[function(_dereq_,module,exports){
 module.exports={
   "src": "about:blank",
   "frameBorder": 0,
@@ -862,7 +408,7 @@ module.exports={
   "scrolling": "no"
 }
 
-},{}],19:[function(_dereq_,module,exports){
+},{}],7:[function(_dereq_,module,exports){
 /** Used as the `TypeError` message for "Functions" methods. */
 var FUNC_ERROR_TEXT = 'Expected a function';
 
@@ -922,7 +468,7 @@ function restParam(func, start) {
 
 module.exports = restParam;
 
-},{}],20:[function(_dereq_,module,exports){
+},{}],8:[function(_dereq_,module,exports){
 var keys = _dereq_('../object/keys');
 
 /**
@@ -956,7 +502,7 @@ function assignWith(object, source, customizer) {
 
 module.exports = assignWith;
 
-},{"../object/keys":41}],21:[function(_dereq_,module,exports){
+},{"../object/keys":29}],9:[function(_dereq_,module,exports){
 var baseCopy = _dereq_('./baseCopy'),
     keys = _dereq_('../object/keys');
 
@@ -977,7 +523,7 @@ function baseAssign(object, source) {
 
 module.exports = baseAssign;
 
-},{"../object/keys":41,"./baseCopy":22}],22:[function(_dereq_,module,exports){
+},{"../object/keys":29,"./baseCopy":10}],10:[function(_dereq_,module,exports){
 /**
  * Copies properties of `source` to `object`.
  *
@@ -1002,7 +548,7 @@ function baseCopy(source, props, object) {
 
 module.exports = baseCopy;
 
-},{}],23:[function(_dereq_,module,exports){
+},{}],11:[function(_dereq_,module,exports){
 /**
  * The base implementation of `_.property` without support for deep paths.
  *
@@ -1018,7 +564,7 @@ function baseProperty(key) {
 
 module.exports = baseProperty;
 
-},{}],24:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 var identity = _dereq_('../utility/identity');
 
 /**
@@ -1059,7 +605,7 @@ function bindCallback(func, thisArg, argCount) {
 
 module.exports = bindCallback;
 
-},{"../utility/identity":43}],25:[function(_dereq_,module,exports){
+},{"../utility/identity":31}],13:[function(_dereq_,module,exports){
 var bindCallback = _dereq_('./bindCallback'),
     isIterateeCall = _dereq_('./isIterateeCall'),
     restParam = _dereq_('../function/restParam');
@@ -1102,7 +648,7 @@ function createAssigner(assigner) {
 
 module.exports = createAssigner;
 
-},{"../function/restParam":19,"./bindCallback":24,"./isIterateeCall":30}],26:[function(_dereq_,module,exports){
+},{"../function/restParam":7,"./bindCallback":12,"./isIterateeCall":18}],14:[function(_dereq_,module,exports){
 var baseProperty = _dereq_('./baseProperty');
 
 /**
@@ -1119,7 +665,7 @@ var getLength = baseProperty('length');
 
 module.exports = getLength;
 
-},{"./baseProperty":23}],27:[function(_dereq_,module,exports){
+},{"./baseProperty":11}],15:[function(_dereq_,module,exports){
 var isNative = _dereq_('../lang/isNative');
 
 /**
@@ -1137,7 +683,7 @@ function getNative(object, key) {
 
 module.exports = getNative;
 
-},{"../lang/isNative":37}],28:[function(_dereq_,module,exports){
+},{"../lang/isNative":25}],16:[function(_dereq_,module,exports){
 var getLength = _dereq_('./getLength'),
     isLength = _dereq_('./isLength');
 
@@ -1154,7 +700,7 @@ function isArrayLike(value) {
 
 module.exports = isArrayLike;
 
-},{"./getLength":26,"./isLength":31}],29:[function(_dereq_,module,exports){
+},{"./getLength":14,"./isLength":19}],17:[function(_dereq_,module,exports){
 /** Used to detect unsigned integer values. */
 var reIsUint = /^\d+$/;
 
@@ -1180,7 +726,7 @@ function isIndex(value, length) {
 
 module.exports = isIndex;
 
-},{}],30:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 var isArrayLike = _dereq_('./isArrayLike'),
     isIndex = _dereq_('./isIndex'),
     isObject = _dereq_('../lang/isObject');
@@ -1210,7 +756,7 @@ function isIterateeCall(value, index, object) {
 
 module.exports = isIterateeCall;
 
-},{"../lang/isObject":38,"./isArrayLike":28,"./isIndex":29}],31:[function(_dereq_,module,exports){
+},{"../lang/isObject":26,"./isArrayLike":16,"./isIndex":17}],19:[function(_dereq_,module,exports){
 /**
  * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
  * of an array-like value.
@@ -1232,7 +778,7 @@ function isLength(value) {
 
 module.exports = isLength;
 
-},{}],32:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is object-like.
  *
@@ -1246,7 +792,7 @@ function isObjectLike(value) {
 
 module.exports = isObjectLike;
 
-},{}],33:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 var isArguments = _dereq_('../lang/isArguments'),
     isArray = _dereq_('../lang/isArray'),
     isIndex = _dereq_('./isIndex'),
@@ -1289,7 +835,7 @@ function shimKeys(object) {
 
 module.exports = shimKeys;
 
-},{"../lang/isArguments":34,"../lang/isArray":35,"../object/keysIn":42,"./isIndex":29,"./isLength":31}],34:[function(_dereq_,module,exports){
+},{"../lang/isArguments":22,"../lang/isArray":23,"../object/keysIn":30,"./isIndex":17,"./isLength":19}],22:[function(_dereq_,module,exports){
 var isArrayLike = _dereq_('../internal/isArrayLike'),
     isObjectLike = _dereq_('../internal/isObjectLike');
 
@@ -1325,7 +871,7 @@ function isArguments(value) {
 
 module.exports = isArguments;
 
-},{"../internal/isArrayLike":28,"../internal/isObjectLike":32}],35:[function(_dereq_,module,exports){
+},{"../internal/isArrayLike":16,"../internal/isObjectLike":20}],23:[function(_dereq_,module,exports){
 var getNative = _dereq_('../internal/getNative'),
     isLength = _dereq_('../internal/isLength'),
     isObjectLike = _dereq_('../internal/isObjectLike');
@@ -1367,7 +913,7 @@ var isArray = nativeIsArray || function(value) {
 
 module.exports = isArray;
 
-},{"../internal/getNative":27,"../internal/isLength":31,"../internal/isObjectLike":32}],36:[function(_dereq_,module,exports){
+},{"../internal/getNative":15,"../internal/isLength":19,"../internal/isObjectLike":20}],24:[function(_dereq_,module,exports){
 var isObject = _dereq_('./isObject');
 
 /** `Object#toString` result references. */
@@ -1407,7 +953,7 @@ function isFunction(value) {
 
 module.exports = isFunction;
 
-},{"./isObject":38}],37:[function(_dereq_,module,exports){
+},{"./isObject":26}],25:[function(_dereq_,module,exports){
 var isFunction = _dereq_('./isFunction'),
     isObjectLike = _dereq_('../internal/isObjectLike');
 
@@ -1457,7 +1003,7 @@ function isNative(value) {
 
 module.exports = isNative;
 
-},{"../internal/isObjectLike":32,"./isFunction":36}],38:[function(_dereq_,module,exports){
+},{"../internal/isObjectLike":20,"./isFunction":24}],26:[function(_dereq_,module,exports){
 /**
  * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
  * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
@@ -1487,7 +1033,7 @@ function isObject(value) {
 
 module.exports = isObject;
 
-},{}],39:[function(_dereq_,module,exports){
+},{}],27:[function(_dereq_,module,exports){
 var isObjectLike = _dereq_('../internal/isObjectLike');
 
 /** `Object#toString` result references. */
@@ -1524,7 +1070,7 @@ function isString(value) {
 
 module.exports = isString;
 
-},{"../internal/isObjectLike":32}],40:[function(_dereq_,module,exports){
+},{"../internal/isObjectLike":20}],28:[function(_dereq_,module,exports){
 var assignWith = _dereq_('../internal/assignWith'),
     baseAssign = _dereq_('../internal/baseAssign'),
     createAssigner = _dereq_('../internal/createAssigner');
@@ -1569,7 +1115,7 @@ var assign = createAssigner(function(object, source, customizer) {
 
 module.exports = assign;
 
-},{"../internal/assignWith":20,"../internal/baseAssign":21,"../internal/createAssigner":25}],41:[function(_dereq_,module,exports){
+},{"../internal/assignWith":8,"../internal/baseAssign":9,"../internal/createAssigner":13}],29:[function(_dereq_,module,exports){
 var getNative = _dereq_('../internal/getNative'),
     isArrayLike = _dereq_('../internal/isArrayLike'),
     isObject = _dereq_('../lang/isObject'),
@@ -1616,7 +1162,7 @@ var keys = !nativeKeys ? shimKeys : function(object) {
 
 module.exports = keys;
 
-},{"../internal/getNative":27,"../internal/isArrayLike":28,"../internal/shimKeys":33,"../lang/isObject":38}],42:[function(_dereq_,module,exports){
+},{"../internal/getNative":15,"../internal/isArrayLike":16,"../internal/shimKeys":21,"../lang/isObject":26}],30:[function(_dereq_,module,exports){
 var isArguments = _dereq_('../lang/isArguments'),
     isArray = _dereq_('../lang/isArray'),
     isIndex = _dereq_('../internal/isIndex'),
@@ -1682,7 +1228,7 @@ function keysIn(object) {
 
 module.exports = keysIn;
 
-},{"../internal/isIndex":29,"../internal/isLength":31,"../lang/isArguments":34,"../lang/isArray":35,"../lang/isObject":38}],43:[function(_dereq_,module,exports){
+},{"../internal/isIndex":17,"../internal/isLength":19,"../lang/isArguments":22,"../lang/isArray":23,"../lang/isObject":26}],31:[function(_dereq_,module,exports){
 /**
  * This method returns the first argument provided to it.
  *
@@ -1704,7 +1250,7 @@ function identity(value) {
 
 module.exports = identity;
 
-},{}],44:[function(_dereq_,module,exports){
+},{}],32:[function(_dereq_,module,exports){
 module.exports = function setAttributes(element, attributes) {
   var value;
 
@@ -1721,24 +1267,7 @@ module.exports = function setAttributes(element, attributes) {
   }
 };
 
-},{}],45:[function(_dereq_,module,exports){
-function nodeListToArray(nodeList) {
-  try {
-    return Array.prototype.slice.call(nodeList);
-  } catch (err) {
-    var result = [];
-    for (var i = 0; i < nodeList.length; i++) {
-      result.push(nodeList[i]);
-    }
-    return result;
-  }
-}
-
-if (typeof module !== 'undefined') {
-  module.exports = nodeListToArray;
-}
-
-},{}],46:[function(_dereq_,module,exports){
+},{}],33:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('../shared/constants');
@@ -1751,19 +1280,17 @@ module.exports = function composeUrl(assetsUrl, componentId) {
     componentId;
 };
 
-},{"../shared/constants":50}],47:[function(_dereq_,module,exports){
+},{"../shared/constants":37}],34:[function(_dereq_,module,exports){
 'use strict';
 
 var Destructor = _dereq_('destructor');
-var classListManager = _dereq_('classlist');
+var classlist = _dereq_('../../lib/classlist');
 var iFramer = _dereq_('iframer');
 var Bus = _dereq_('../../lib/bus');
 var BraintreeError = _dereq_('../../lib/error');
 var composeUrl = _dereq_('./compose-url');
 var constants = _dereq_('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = _dereq_('../../lib/constants').INTEGRATION_TIMEOUT_MS;
-var nodeListToArray = _dereq_('nodelist-to-array');
-var utils = _dereq_('braintree-utilities');
 var uuid = _dereq_('../../lib/uuid');
 var findParentTags = _dereq_('../shared/find-parent-tags');
 var isIos = _dereq_('../../lib/is-ios');
@@ -1772,9 +1299,10 @@ var EventEmitter = _dereq_('../../lib/event-emitter');
 var injectFrame = _dereq_('./inject-frame');
 var analytics = _dereq_('../../lib/analytics');
 var whitelistedFields = constants.whitelistedFields;
-var VERSION = "3.0.0-beta.6";
+var VERSION = "3.0.0-beta.7";
 var methods = _dereq_('../../lib/methods');
 var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
+var deferred = _dereq_('../../lib/deferred');
 
 /**
  * @typedef {object} HostedFields~tokenizePayload
@@ -1786,56 +1314,11 @@ var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
  */
 
 /**
- * @name HostedFields#on
- * @function
- * @param {string} event The name of the event to which you are subscribing.
- * @param {function} handler A callback to handle the event.
- * @description Subscribes a handler function to a named event, such as {@link HostedFields#event:fieldEvent|fieldEvent}.
- * @example
- * <caption>Listening to a fieldEvent</caption>
- * var hostedFields = require('braintree-web/hosted-fields');
- *
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('fieldEvent', function (event) {
- *     if (event.card != null) {
- *       console.log(event.card.type);
- *     } else {
- *       console.log('Type of card not yet known');
- *     }
- *   });
- * });
- * @returns {void}
- */
-
-/**
- * This event is emitted when activity within one or more inputs has resulted in a change of state, such as
- * a field attaining focus, an input becoming empty, or the user entering enough information for us to guess the type of card.
- * @event HostedFields#fieldEvent
- * @type {object}
- * @example
- * <caption>Listening to a fieldEvent</caption>
- * var hostedFields = require('braintree-web/hosted-fields');
- *
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('fieldEvent', function (event) {
- *     console.log('fieldEvent', event.type', triggered on "', event.target.fieldKey, '" field');
- *
- *     if (event.card != null) {
- *       console.log(event.card.type);
- *     } else {
- *       console.log('Type of card not yet known');
- *     }
- *   });
- * });
- * @property {string} type
- * <table>
- * <tr><th>Value</th><th>Meaning</th></tr>
- * <tr><td><code>focus</code></td><td>The input has gained focus.</td></tr>
- * <tr><td><code>blur</code></td><td> The input has lost focus.</td></tr>
- * <tr><td><code>fieldStateChange</code></td><td> Some state has changed within an input including: validation, focus, card type detection, etc.</td></tr>
- * </table>
- * @property {boolean} isEmpty Whether or not the user has entered a value in the input.
+ * @typedef {object} HostedFields~hostedFieldsEventFieldData
+ * @description Data about Hosted Fields fields, sent in {@link HostedFields~hostedFieldsEvent|hostedFieldEvent} objects.
+ * @property {HTMLElement} container Reference to the container DOM element on your page associated with the current event.
  * @property {boolean} isFocused Whether or not the input is currently focused.
+ * @property {boolean} isEmpty Whether or not the user has entered a value in the input.
  * @property {boolean} isPotentiallyValid
  * A determination based on the future validity of the input value.
  * This is helpful when a user is entering a card number and types <code>"41"</code>.
@@ -1844,66 +1327,205 @@ var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
  * it is clear that the card number can never become valid and isPotentiallyValid will
  * return false.
  * @property {boolean} isValid Whether or not the value of the associated input is <i>fully</i> qualified for submission.
- * @property {object} target
- * @property {object} target.container Reference to the container DOM element on your page associated with the current event.
- * @property {string} target.fieldKey
- * The name of the currently associated field. Examples:<br>
- * <code>"number"</code><br>
- * <code>"cvv"</code><br>
- * <code>"expirationDate"</code><br>
- * <code>"expirationMonth"</code><br>
- * <code>"expirationYear"</code><br>
- * <code>"postalCode"</code>
- * @property {?object} card
- * If not enough information is available, or if there is invalid data, this value will be <code>null</code>.
- * Internally, Hosted Fields uses <a href="https://github.com/braintree/credit-card-type">credit-card-type</a>,
- * an open-source detection library to determine card type.
- * @property {string} card.type The code-friendly representation of the card type:
- * <code>visa</code>
- * <code>discover</code>
- * <code>master-card</code>
- * <code>american-express</code>
- * etc.
- * @property {string} card.niceType The pretty-printed card type:
- * <code>Visa</code>
- * <code>Discover</code>
- * <code>MasterCard</code>
- * <code>American Express</code>
- * etc.
- * @property {object} card.code
+ */
+
+/**
+ * @typedef {object} HostedFields~hostedFieldsEventCard
+ * @description Information about the card type, sent in {@link HostedFields~hostedFieldsEvent|hostedFieldEvent} objects.
+ * @property {string} type The code-friendly representation of the card type. It will be one of the following strings:
+ * - `american-express`
+ * - `diners-club`
+ * - `discover`
+ * - `jcb`
+ * - `maestro`
+ * - `master-card`
+ * - `unionpay`
+ * - `visa`
+ * @property {string} niceType The pretty-printed card type. It will be one of the following strings:
+ * - `American Express`
+ * - `Diners Club`
+ * - `Discover`
+ * - `JCB`
+ * - `Maestro`
+ * - `MasterCard`
+ * - `UnionPay`
+ * - `Visa`
+ * @property {object} code
  * This object contains data relevant to the security code requirements of the card brand.
- * For example, on a Visa card there will be a <code>cvv</code> of 3 digits, whereas an
- * American Express card requires a 4-digit <code>cid</code>.
- * @property {string} card.code.name <code>"CVV"</code> <code>"CID"</code> <code>"CVC"</code>
- * @property {number} card.code.size The expected length of the security code. Typically, this is 3 or 4
- * @property {number[]} card.lengths
- * An array of integers of expected lengths of the card number excluding spaces, dashes, etc.
- * (Maestro and UnionPay are card types with several possible lengths)
+ * For example, on a Visa card there will be a <code>CVV</code> of 3 digits, whereas an
+ * American Express card requires a 4-digit <code>CID</code>.
+ * @property {string} code.name <code>"CVV"</code> <code>"CID"</code> <code>"CVC"</code>
+ * @property {number} code.size The expected length of the security code. Typically, this is 3 or 4.
+ */
+
+/**
+ * @typedef {object} HostedFields~hostedFieldsEvent
+ * @description The event payload sent from {@link HostedFields#on|on}.
+ * @property {string} emittedBy
+ * The name of the field associated with this event. It will be one of the following strings:<br>
+ * - `"number"`
+ * - `"cvv"`
+ * - `"expirationDate"`
+ * - `"expirationMonth"`
+ * - `"expirationYear"`
+ * - `"postalCode"`
+ * @property {object} fields
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.number {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the number field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.cvv {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the CVV field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationDate {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration date field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationMonth {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration month field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationYear {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration year field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.postalCode {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the postal code field, if it is present.
+ * @property {HostedFields~hostedFieldsEventCard[]} cards
+ * This will return an array of potential {@link HostedFields~hostedFieldsEventFieldCard|cards}. If the card type has been determined, the array will contain only one card.
+ * Internally, Hosted Fields uses <a href="https://github.com/braintree/credit-card-type">credit-card-type</a>,
+ * an open-source card detection library.
+ */
+
+/**
+ * @name HostedFields#on
+ * @function
+ * @param {string} event The name of the event to which you are subscribing.
+ * @param {function} handler A callback to handle the event.
+ * @description Subscribes a handler function to a named {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent}. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, or {@link HostedFields#event:validityChange|validityChange}.
+ * @example
+ * <caption>Listening to a Hosted Field event, in this case 'focus'</caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('focus', function (event) {
+ *     console.log(event.emittedBy, 'has been focused');
+ *   });
+ * });
+ * @returns {void}
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when the user requests submission of an input field, such as by pressing the Enter or Return key on their keyboard, or mobile equivalent.
+ * @event HostedFields#inputSubmitRequest
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * <caption>Clicking a submit button upon hitting Enter (or equivalent) within a Hosted Field</caption>
+ * var hostedFields = require('braintree-web/hosted-fields');
+ * var submitButton = document.querySelector('input[type="submit"]');
+ *
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('inputSubmitRequest', function () {
+ *     // User requested submission, e.g. by pressing Enter or equivalent
+ *     submitButton.click();
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field transitions from having data to being empty.
+ * @event HostedFields#empty
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * <caption>Listening to an empty event</caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('empty', function (event) {
+ *     console.log(event.emittedBy, 'is now empty');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field transitions from being empty to having data.
+ * @event HostedFields#notEmpty
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * <caption>Listening to an notEmpty event</caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('notEmpty', function (event) {
+ *     console.log(event.emittedBy, 'is now not empty');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field loses focus.
+ * @event HostedFields#blur
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * <caption>Listening to a blur event</caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('blur', function (event) {
+ *     console.log(event.emittedBy, 'lost focus');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field gains focus.
+ * @event HostedFields#focus
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * <caption>Listening to a focus event</caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('focus', function (event) {
+ *     console.log(event.emittedBy, 'gained focus');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when activity within the number field has changed such that the possible card type has changed.
+ * @event HostedFields#cardTypeChange
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * <caption>Listening to a cardTypeChange event</caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('cardTypeChange', function (event) {
+ *     if (event.cards.length === 1) {
+ *       console.log(event.cards[0].type);
+ *     } else {
+ *       console.log('Type of card not yet known');
+ *     }
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when the validity of a field has changed. Validity is represented in the {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} as two booleans: `isValid` and `isPotentiallyValid`.
+ * @event HostedFields#validityChange
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * <caption>Listening to a validityChange event</caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('validityChange', function (event) {
+ *     if (event.isValid) {
+ *       console.log(event.emittedBy, 'is fully valid');
+ *     } else if (event.isPotentiallyValid) {
+ *       console.log(event.emittedBy, 'is potentially valid');
+ *     } else {
+ *       console.log(event.emittedBy, 'is not valid');
+ *     }
+ *   });
+ * });
  */
 
 function inputEventHandler(fields) {
   return function (eventData) {
-    var container = fields[eventData.fieldKey].containerElement;
-    var classList = classListManager(container);
+    var field;
+    var merchantPayload = eventData.merchantPayload;
+    var emittedBy = merchantPayload.emittedBy;
+    var container = fields[emittedBy].containerElement;
 
-    classList
-      .toggle(constants.externalClasses.FOCUSED, eventData.isFocused)
-      .toggle(constants.externalClasses.VALID, eventData.isValid);
-    if (eventData.isStrictlyValidating) {
-      classList.toggle(constants.externalClasses.INVALID, !eventData.isValid);
+    Object.keys(merchantPayload.fields).forEach(function (key) {
+      merchantPayload.fields[key].container = fields[key].containerElement;
+    });
+
+    field = merchantPayload.fields[emittedBy];
+
+    classlist.toggle(container, constants.externalClasses.FOCUSED, field.isFocused);
+    classlist.toggle(container, constants.externalClasses.VALID, field.isValid);
+
+    if (field.isStrictlyValidating) {
+      classlist.toggle(container, constants.externalClasses.INVALID, !field.isValid);
     } else {
-      classList.toggle(constants.externalClasses.INVALID, !eventData.isPotentiallyValid);
+      classlist.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
     }
 
-    eventData.target = {
-      fieldKey: eventData.fieldKey,
-      container: container
-    };
-
-    delete eventData.fieldKey;
-    delete eventData.isStrictlyValidating;
-
-    this._emit('fieldEvent', eventData); // eslint-disable-line no-invalid-this
+    this._emit(eventData.type, merchantPayload); // eslint-disable-line no-invalid-this
   };
 }
 
@@ -2043,7 +1665,8 @@ function HostedFields(options) {
 
       parent.removeChild(node);
 
-      classListManager(parent).remove(
+      classlist.remove(
+        parent,
         constants.externalClasses.FOCUSED,
         constants.externalClasses.INVALID,
         constants.externalClasses.VALID
@@ -2074,16 +1697,16 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
     bus.emit(events.TRIGGER_INPUT_FOCUS, type);
   }
 
-  labels = nodeListToArray(document.querySelectorAll('label[for="' + container.id + '"]'));
+  labels = Array.prototype.slice.call(document.querySelectorAll('label[for="' + container.id + '"]'));
   labels = labels.concat(findParentTags(container, 'label'));
 
   for (i = 0; i < labels.length; i++) {
-    utils.addEventListener(labels[i], 'click', triggerFocus, false);
+    labels[i].addEventListener('click', triggerFocus, false);
   }
 
   this._destructor.registerFunctionForTeardown(function () {
     for (i = 0; i < labels.length; i++) {
-      utils.removeEventListener(labels[i], 'click', triggerFocus, false);
+      labels[i].removeEventListener('click', triggerFocus, false);
     }
   });
 };
@@ -2091,7 +1714,7 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/hosted-fields.create|create}
  * @public
- * @param {errback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if teardown completes successfully.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if teardown completes successfully.
  * @example
  * hostedFieldsInstance.teardown(function (err) {
  *   if (err) {
@@ -2108,14 +1731,17 @@ HostedFields.prototype.teardown = function (callback) {
   this._destructor.teardown(function (err) {
     analytics.sendEvent(client, 'web.custom.hosted-fields.teardown-completed');
 
-    callback(err);
+    if (typeof callback === 'function') {
+      callback = deferred(callback);
+      callback(err);
+    }
   });
 };
 
 /**
  * Tokenizes fields and returns a nonce payload.
  * @public
- * @param {errback} callback The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
+ * @param {callback} callback The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
  * @example
  * hostedFieldsInstance.tokenize(function (err, payload) {
  *   if (err) {
@@ -2144,7 +1770,7 @@ HostedFields.prototype.tokenize = function (callback) {
  * @public
  * @param {string} field The field whose placeholder you wish to change. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
- * @param {errback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
  *
  * @example
  * hostedFieldsInstance.setPlaceholder('number', '4111 1111 1111 1111', function (err) {
@@ -2154,16 +1780,12 @@ HostedFields.prototype.tokenize = function (callback) {
  * });
  *
  * @example <caption>Update CVV field on card type change</caption>
- * var cvvPlaceholder = 'CVV'; // Create a default value
- *
- * hostedFieldsInstance.on('fieldEvent', function (event) {
- *   if (event.target.fieldKey !== 'number') { return; } // Ignore all non-number field events
- *
- *   // Update the placeholder value if the card code name has changed
- *   if (event.card && event.card.code.name !== cvvPlaceholder) {
- *     cvvPlaceholder = event.card.code.name;
- *     hostedFields.setPlaceholder('cvv', cvvPlaceholder, function (err) {
+ * hostedFieldsInstance.on('cardTypeChange', function (event) {
+ *   // Update the placeholder value if there is only one possible card type
+ *   if (event.cards.length === 1) {
+ *     hostedFields.setPlaceholder('cvv', event.cards[0].code.name, function (err) {
  *       if (err) {
+ *         // Handle errors, such as invalid field name
  *         console.error(err);
  *       }
  *     });
@@ -2189,6 +1811,7 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
   }
 
   if (typeof callback === 'function') {
+    callback = deferred(callback);
     callback(err);
   }
 };
@@ -2197,7 +1820,7 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
  * Clear the value of a {@link module:braintree-web/hosted-fields~field field}.
  * @public
  * @param {string} field The field whose placeholder you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
- * @param {errback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
  * @returns {void}
  * @example
  * hostedFieldsInstance.clear('number', function (err) {
@@ -2229,13 +1852,14 @@ HostedFields.prototype.clear = function (field, callback) {
   }
 
   if (typeof callback === 'function') {
+    callback = deferred(callback);
     callback(err);
   }
 };
 
 module.exports = HostedFields;
 
-},{"../../lib/analytics":53,"../../lib/bus":56,"../../lib/constants":57,"../../lib/convert-methods-to-error":58,"../../lib/error":61,"../../lib/event-emitter":62,"../../lib/is-ios":63,"../../lib/methods":65,"../../lib/uuid":67,"../shared/constants":50,"../shared/find-parent-tags":51,"./compose-url":46,"./inject-frame":48,"braintree-utilities":9,"classlist":10,"destructor":13,"iframer":17,"nodelist-to-array":45}],48:[function(_dereq_,module,exports){
+},{"../../lib/analytics":40,"../../lib/bus":43,"../../lib/classlist":44,"../../lib/constants":45,"../../lib/convert-methods-to-error":46,"../../lib/deferred":48,"../../lib/error":50,"../../lib/event-emitter":51,"../../lib/is-ios":52,"../../lib/methods":54,"../../lib/uuid":56,"../shared/constants":37,"../shared/find-parent-tags":38,"./compose-url":33,"./inject-frame":35,"destructor":1,"iframer":5}],35:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function injectFrame(frame, container) {
@@ -2252,11 +1876,12 @@ module.exports = function injectFrame(frame, container) {
   return [frame, clearboth];
 };
 
-},{}],49:[function(_dereq_,module,exports){
+},{}],36:[function(_dereq_,module,exports){
 'use strict';
 
 var HostedFields = _dereq_('./external/hosted-fields');
-var packageVersion = "3.0.0-beta.6";
+var packageVersion = "3.0.0-beta.7";
+var deferred = _dereq_('../lib/deferred');
 
 /** @module braintree-web/hosted-fields */
 
@@ -2296,7 +1921,7 @@ module.exports = {
    * @param {client} options.client A {@link Client} instance.
    * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}.
    * @param {styleOptions} options.styles {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
-   * @param {errback} callback The second argument, `data`, is the {@link HostedFields} instance.
+   * @param {callback} callback The second argument, `data`, is the {@link HostedFields} instance.
    * @returns {void}
    * @example
    * braintree.hostedFields.create({
@@ -2332,6 +1957,7 @@ module.exports = {
     try {
       integration = new HostedFields(options);
     } catch (err) {
+      callback = deferred(callback);
       callback(err);
       return;
     }
@@ -2347,19 +1973,22 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"./external/hosted-fields":47}],50:[function(_dereq_,module,exports){
+},{"../lib/deferred":48,"./external/hosted-fields":34}],37:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable no-reserved-keys */
 
 var enumerate = _dereq_('../../lib/enumerate');
-var VERSION = "3.0.0-beta.6";
+var VERSION = "3.0.0-beta.7";
 
 var constants = {
   VERSION: VERSION,
   externalEvents: {
     FOCUS: 'focus',
     BLUR: 'blur',
-    FIELD_STATE_CHANGE: 'fieldStateChange'
+    EMPTY: 'empty',
+    NOT_EMPTY: 'notEmpty',
+    VALIDITY_CHANGE: 'validityChange',
+    CARD_TYPE_CHANGE: 'cardTypeChange'
   },
   defaultMaxLengths: {
     number: 19,
@@ -2448,7 +2077,7 @@ constants.events = enumerate([
 
 module.exports = constants;
 
-},{"../../lib/enumerate":60}],51:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":49}],38:[function(_dereq_,module,exports){
 'use strict';
 
 function findParentTags(element, tag) {
@@ -2468,7 +2097,7 @@ function findParentTags(element, tag) {
 
 module.exports = findParentTags;
 
-},{}],52:[function(_dereq_,module,exports){
+},{}],39:[function(_dereq_,module,exports){
 'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
@@ -2502,7 +2131,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":57,"./create-authorization-data":59,"./json-clone":64}],53:[function(_dereq_,module,exports){
+},{"./constants":45,"./create-authorization-data":47,"./json-clone":53}],40:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -2536,7 +2165,7 @@ module.exports = {
   sendEvent: sendAnalyticsEvent
 };
 
-},{"./add-metadata":52,"./constants":57}],54:[function(_dereq_,module,exports){
+},{"./add-metadata":39,"./constants":45}],41:[function(_dereq_,module,exports){
 'use strict';
 
 var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
@@ -2564,7 +2193,7 @@ module.exports = {
   checkOrigin: checkOrigin
 };
 
-},{}],55:[function(_dereq_,module,exports){
+},{}],42:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('../enumerate');
@@ -2573,7 +2202,7 @@ module.exports = enumerate([
   'CONFIGURATION_REQUEST'
 ], 'bus:');
 
-},{"../enumerate":60}],56:[function(_dereq_,module,exports){
+},{"../enumerate":49}],43:[function(_dereq_,module,exports){
 'use strict';
 
 var bus = _dereq_('framebus');
@@ -2703,10 +2332,49 @@ BraintreeBus.events = events;
 
 module.exports = BraintreeBus;
 
-},{"../error":61,"./check-origin":54,"./events":55,"framebus":16}],57:[function(_dereq_,module,exports){
+},{"../error":50,"./check-origin":41,"./events":42,"framebus":4}],44:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.6";
+function _classesOf(element) {
+  return element.className.trim().split(/\s+/);
+}
+
+function add(element) {
+  var toAdd = Array.prototype.slice.call(arguments, 1);
+  var className = _classesOf(element).filter(function (classname) {
+    return toAdd.indexOf(classname) === -1;
+  }).concat(toAdd).join(' ');
+
+  element.className = className;
+}
+
+function remove(element) {
+  var toRemove = Array.prototype.slice.call(arguments, 1);
+  var className = _classesOf(element).filter(function (classname) {
+    return toRemove.indexOf(classname) === -1;
+  }).join(' ');
+
+  element.className = className;
+}
+
+function toggle(element, clazz, adding) {
+  if (adding) {
+    add(element, clazz);
+  } else {
+    remove(element, clazz);
+  }
+}
+
+module.exports = {
+  add: add,
+  remove: remove,
+  toggle: toggle
+};
+
+},{}],45:[function(_dereq_,module,exports){
+'use strict';
+
+var VERSION = "3.0.0-beta.7";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -2719,7 +2387,7 @@ module.exports = {
   BRAINTREE_LIBRARY_VERSION: 'braintree/' + PLATFORM + '/' + VERSION
 };
 
-},{}],58:[function(_dereq_,module,exports){
+},{}],46:[function(_dereq_,module,exports){
 'use strict';
 
 var BraintreeError = _dereq_('./error');
@@ -2735,7 +2403,7 @@ module.exports = function (instance, methodNames) {
   });
 };
 
-},{"./error":61}],59:[function(_dereq_,module,exports){
+},{"./error":50}],47:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -2784,7 +2452,21 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":66}],60:[function(_dereq_,module,exports){
+},{"../lib/polyfill":55}],48:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (fn) {
+  return function () {
+    // IE9 doesn't support passing arguments to setTimeout so we have to emulate it.
+    var args = arguments;
+
+    setTimeout(function () {
+      fn.apply(null, args);
+    }, 1);
+  };
+};
+
+},{}],49:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -2798,7 +2480,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],61:[function(_dereq_,module,exports){
+},{}],50:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -2808,7 +2490,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link callback callbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
@@ -2863,7 +2545,7 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":60}],62:[function(_dereq_,module,exports){
+},{"./enumerate":49}],51:[function(_dereq_,module,exports){
 'use strict';
 
 function EventEmitter() {
@@ -2893,7 +2575,7 @@ EventEmitter.prototype._emit = function (event) {
 
 module.exports = EventEmitter;
 
-},{}],63:[function(_dereq_,module,exports){
+},{}],52:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function isIos(userAgent) {
@@ -2901,14 +2583,14 @@ module.exports = function isIos(userAgent) {
   return /(iPad|iPhone|iPod)/i.test(userAgent);
 };
 
-},{}],64:[function(_dereq_,module,exports){
+},{}],53:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],65:[function(_dereq_,module,exports){
+},{}],54:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (obj) {
@@ -2917,7 +2599,7 @@ module.exports = function (obj) {
   });
 };
 
-},{}],66:[function(_dereq_,module,exports){
+},{}],55:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -2956,7 +2638,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],67:[function(_dereq_,module,exports){
+},{}],56:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
@@ -2970,5 +2652,5 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}]},{},[49])(49)
+},{}]},{},[36])(36)
 });

@@ -1201,7 +1201,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":35,"./create-authorization-data":37,"./json-clone":40}],31:[function(_dereq_,module,exports){
+},{"./constants":35,"./create-authorization-data":37,"./json-clone":41}],31:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -1272,7 +1272,7 @@ module.exports = enumerate([
   'CONFIGURATION_REQUEST'
 ], 'bus:');
 
-},{"../enumerate":38}],34:[function(_dereq_,module,exports){
+},{"../enumerate":39}],34:[function(_dereq_,module,exports){
 'use strict';
 
 var bus = _dereq_('framebus');
@@ -1402,10 +1402,10 @@ BraintreeBus.events = events;
 
 module.exports = BraintreeBus;
 
-},{"../error":39,"./check-origin":32,"./events":33,"framebus":1}],35:[function(_dereq_,module,exports){
+},{"../error":40,"./check-origin":32,"./events":33,"framebus":1}],35:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.6";
+var VERSION = "3.0.0-beta.7";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1434,7 +1434,7 @@ module.exports = function (instance, methodNames) {
   });
 };
 
-},{"./error":39}],37:[function(_dereq_,module,exports){
+},{"./error":40}],37:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -1483,7 +1483,21 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":42}],38:[function(_dereq_,module,exports){
+},{"../lib/polyfill":43}],38:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (fn) {
+  return function () {
+    // IE9 doesn't support passing arguments to setTimeout so we have to emulate it.
+    var args = arguments;
+
+    setTimeout(function () {
+      fn.apply(null, args);
+    }, 1);
+  };
+};
+
+},{}],39:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -1497,7 +1511,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],39:[function(_dereq_,module,exports){
+},{}],40:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -1507,7 +1521,7 @@ var enumerate = _dereq_('./enumerate');
  * @global
  * @param {object} options Construction options
  * @classdesc This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.
- * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link errback errbacks}.</strong>
+ * @description <strong>You cannot use this constructor directly. Interact with instances of this class through {@link callback callbacks}.</strong>
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
@@ -1562,14 +1576,14 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":38}],40:[function(_dereq_,module,exports){
+},{"./enumerate":39}],41:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],41:[function(_dereq_,module,exports){
+},{}],42:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (obj) {
@@ -1578,7 +1592,7 @@ module.exports = function (obj) {
   });
 };
 
-},{}],42:[function(_dereq_,module,exports){
+},{}],43:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1617,7 +1631,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],43:[function(_dereq_,module,exports){
+},{}],44:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
@@ -1631,14 +1645,15 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}],44:[function(_dereq_,module,exports){
+},{}],45:[function(_dereq_,module,exports){
 'use strict';
 /** @module braintree-web/unionpay */
 
-var packageVersion = "3.0.0-beta.6";
+var packageVersion = "3.0.0-beta.7";
 var UnionPay = _dereq_('./shared/unionpay');
 var BraintreeError = _dereq_('../lib/error');
 var analytics = _dereq_('../lib/analytics');
+var deferred = _dereq_('../lib/deferred');
 
 function create(options, callback) {
   var config;
@@ -1649,6 +1664,8 @@ function create(options, callback) {
       message: 'UnionPay creation requires a callback.'
     });
   }
+
+  callback = deferred(callback);
 
   if (options.client == null) {
     callback(new BraintreeError({
@@ -1697,7 +1714,7 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"../lib/analytics":31,"../lib/error":39,"./shared/unionpay":46}],45:[function(_dereq_,module,exports){
+},{"../lib/analytics":31,"../lib/deferred":38,"../lib/error":40,"./shared/unionpay":47}],46:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('../../lib/enumerate');
@@ -1715,7 +1732,7 @@ module.exports = {
   NO_HOSTED_FIELDS_ERROR_MESSAGE: 'Could not find the Hosted Fields instance.'
 };
 
-},{"../../lib/enumerate":38}],46:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":39}],47:[function(_dereq_,module,exports){
 'use strict';
 
 var BraintreeError = _dereq_('../../lib/error');
@@ -1724,8 +1741,9 @@ var analytics = _dereq_('../../lib/analytics');
 var iFramer = _dereq_('iframer');
 var uuid = _dereq_('../../lib/uuid');
 var methods = _dereq_('../../lib/methods');
+var deferred = _dereq_('../../lib/deferred');
 var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
-var VERSION = "3.0.0-beta.6";
+var VERSION = "3.0.0-beta.7";
 var constants = _dereq_('./constants');
 var events = constants.events;
 
@@ -1755,7 +1773,7 @@ function UnionPay(options) {
  * @param {object} [options.card] The card from which to fetch capabilities. Note that this will only have one property, `number`. Required if you are not using the `hostedFields` option.
  * @param {string} options.card.number Card number.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
- * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}.
+ * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}.
  * @example <caption>With raw card data</caption>
  * unionpayInstance.fetchCapabilities({
  *   card: {
@@ -1780,10 +1798,10 @@ function UnionPay(options) {
  *   }
  * });
  * @example <caption>With Hosted Fields</caption>
- * // Fetch capabilities on `fieldStateChange` inside of the Hosted Fields `create` callback
- * hostedFieldsInstance.on('fieldEvent', function (event) {
+ * // Fetch capabilities on `blur` inside of the Hosted Fields `create` callback
+ * hostedFieldsInstance.on('blur', function (event) {
  *   // Only attempt to fetch capabilities when a valid card number has been entered
- *   if (event.type === 'fieldStateChange' && event.target.fieldKey === 'number' && event.isValid) {
+ *   if (event.emittedBy === 'number' && event.fields.number.isValid) {
  *     unionpayInstance.fetchCapabilities({
  *       hostedFields: hostedFieldsInstance
  *     }, function (err, cardCapabilities) {
@@ -1816,6 +1834,8 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
   var client = this._options.client;
   var cardNumber = options.card ? options.card.number : null;
   var hostedFields = options.hostedFields;
+
+  callback = deferred(callback);
 
   if (cardNumber && hostedFields) {
     callback(new BraintreeError({
@@ -1893,7 +1913,7 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  * @param {object} options.mobile The mobile information collected from the customer.
  * @param {string} options.mobile.countryCode The country code of the customer's mobile phone number.
  * @param {string} options.mobile.number The customer's mobile phone number.
- * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay~enrollPayload|enrollPayload}.
+ * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay~enrollPayload|enrollPayload}.
  * @example <caption>With raw card data</caption>
  * unionpayInstance.enroll({
  *   card: {
@@ -1938,6 +1958,8 @@ UnionPay.prototype.enroll = function (options, callback) {
   var mobile = options.mobile;
   var hostedFields = options.hostedFields;
   var data;
+
+  callback = deferred(callback);
 
   if (!mobile) {
     callback(new BraintreeError({
@@ -2049,15 +2071,15 @@ UnionPay.prototype.enroll = function (options, callback) {
  * Tokenizes a UnionPay card and returns a nonce payload.
  * @public
  * @param {object} options UnionPay tokenization options:
- * @param {object} options.card The card to enroll.
+ * @param {object} [options.card] The card to enroll. Required if you are not using the `hostedFields` option.
  * @param {string} options.card.number The card number.
  * @param {string} options.card.expirationMonth The card's expiration month.
  * @param {string} options.card.expirationYear The card's expiration year.
- * @param {string} options.card.cvv The card's security number.
- * @param {object} options.options Additional options.
+ * @param {string} [options.card.cvv] The card's security number.
+ * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
  * @param {string} options.enrollmentId The enrollment ID if {@link UnionPay#enroll} was required.
  * @param {string} options.smsCode The SMS code recieved from the user if {@link UnionPay#enroll} was required.
- * @param {errback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}.
+ * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}.
  * @example <caption>With raw card data</caption>
  * unionpayInstance.tokenize({
  *   card: {
@@ -2092,10 +2114,12 @@ UnionPay.prototype.enroll = function (options, callback) {
  * @returns {void}
  */
 UnionPay.prototype.tokenize = function (options, callback) {
-  var tokenizedCard;
+  var data, tokenizedCard;
   var client = this._options.client;
   var card = options.card;
   var hostedFields = options.hostedFields;
+
+  callback = deferred(callback);
 
   if (card && hostedFields) {
     callback(new BraintreeError({
@@ -2104,22 +2128,27 @@ UnionPay.prototype.tokenize = function (options, callback) {
     }));
     return;
   } else if (card) {
+    data = {
+      _meta: {source: 'unionpay'},
+      creditCard: {
+        number: options.card.number,
+        expirationMonth: options.card.expirationMonth,
+        expirationYear: options.card.expirationYear
+      },
+      options: {
+        id: options.enrollmentId,
+        smsCode: options.smsCode
+      }
+    };
+
+    if (options.card.cvv) {
+      data.creditCard.cvv = options.card.cvv;
+    }
+
     client.request({
       method: 'post',
       endpoint: 'payment_methods/credit_cards',
-      data: {
-        _meta: {source: 'unionpay'},
-        creditCard: {
-          number: options.card.number,
-          expirationMonth: options.card.expirationMonth,
-          expirationYear: options.card.expirationYear,
-          cvv: options.card.cvv
-        },
-        options: {
-          id: options.enrollmentId,
-          smsCode: options.smsCode
-        }
-      }
+      data: data
     }, function (err, response) {
       if (err) {
         analytics.sendEvent(client, 'web.unionpay.nonce-failed');
@@ -2174,7 +2203,7 @@ UnionPay.prototype.tokenize = function (options, callback) {
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/unionpay.create|create}. This only needs to be called when using UnionPay with Hosted Fields.
  * @public
- * @param {errback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @example
  * unionpayInstance.teardown(function (err) {
  *   if (err) {
@@ -2194,6 +2223,7 @@ UnionPay.prototype.teardown = function (callback) {
   convertMethodsToError(this, methods(UnionPay.prototype));
 
   if (typeof callback === 'function') {
+    callback = deferred(callback);
     callback();
   }
 };
@@ -2228,5 +2258,5 @@ UnionPay.prototype._initializeHostedFields = function (callback) {
 
 module.exports = UnionPay;
 
-},{"../../lib/analytics":31,"../../lib/bus":34,"../../lib/convert-methods-to-error":36,"../../lib/error":39,"../../lib/methods":41,"../../lib/uuid":43,"./constants":45,"iframer":2}]},{},[44])(44)
+},{"../../lib/analytics":31,"../../lib/bus":34,"../../lib/convert-methods-to-error":36,"../../lib/deferred":38,"../../lib/error":40,"../../lib/methods":42,"../../lib/uuid":44,"./constants":46,"iframer":2}]},{},[45])(45)
 });
