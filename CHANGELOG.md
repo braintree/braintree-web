@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+## 2.24.1
+
+* PayPal
+  * Adds support for additional currencies in Checkout with PayPal flow
+    - `CZK`
+    - `JPY`
+    - `RUB`
+* Hosted Fields
+  * `postalCode` field now has a maximum length of 10 characters
+
 ## 2.24.0
 
 * PayPal
