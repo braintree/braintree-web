@@ -147,7 +147,7 @@ module.exports = AmericanExpress;
  * @description This module is for use with Amex Express Checkout. To accept American Express cards, use Hosted Fields.
  */
 
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 var BraintreeError = _dereq_('../lib/error');
 var AmericanExpress = _dereq_('./american-express');
 var deferred = _dereq_('../lib/deferred');
@@ -161,6 +161,8 @@ var deferred = _dereq_('../lib/deferred');
  * @static
  */
 function create(options, callback) {
+  var clientVersion;
+
   if (typeof callback !== 'function') {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
@@ -178,10 +180,11 @@ function create(options, callback) {
     return;
   }
 
-  if (options.client.getConfiguration().analyticsMetadata.sdkVersion !== VERSION) {
+  clientVersion = options.client.getConfiguration().analyticsMetadata.sdkVersion;
+  if (clientVersion !== VERSION) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'Client and American Express components must be from the same SDK version.'
+      message: 'Client (version ' + clientVersion + ') and American Express (version ' + VERSION + ') components must be from the same SDK version.'
     }));
     return;
   }

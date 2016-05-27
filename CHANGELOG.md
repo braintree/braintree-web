@@ -1,6 +1,29 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.8
+
+* Hosted Fields
+  * Update `card-validator` to `2.2.8`
+  * Throw a proper error when creating without a callback
+* UnionPay
+  * Fix tokenization bugs
+* Data Collector
+  * Throw a proper error when creating without a callback
+* Improved error messaging when two components' versions do not match one another.
+
+__BREAKING CHANGES__
+* Data Collector
+  * The `create` API has changed. `options.kount` for `dataCollector.create` is now a simple boolean:
+
+    ```
+    dataCollector.create({
+      client: clientInstance,
+      kount: true,
+      paypal: true
+    }, function (err, collector) {});
+    ```
+
 ## 3.0.0-beta.7
 
 * Hosted Fields

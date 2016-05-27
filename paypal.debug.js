@@ -277,16 +277,15 @@
 },{}],2:[function(_dereq_,module,exports){
 'use strict';
 
-var assign = _dereq_('lodash/object/assign');
-var isString = _dereq_('lodash/lang/isString');
-var setAttributes = _dereq_('setattributes');
+var setAttributes = _dereq_('./lib/set-attributes');
 var defaultAttributes = _dereq_('./lib/default-attributes');
+var assign = _dereq_('./lib/assign');
 
 module.exports = function createFrame(options) {
   var iframe = document.createElement('iframe');
   var config = assign({}, defaultAttributes, options);
 
-  if (config.style && !isString(config.style)) {
+  if (config.style && typeof config.style !== 'string') {
     assign(iframe.style, config.style);
     delete config.style;
   }
@@ -300,7 +299,24 @@ module.exports = function createFrame(options) {
   return iframe;
 };
 
-},{"./lib/default-attributes":3,"lodash/lang/isString":24,"lodash/object/assign":25,"setattributes":29}],3:[function(_dereq_,module,exports){
+},{"./lib/assign":3,"./lib/default-attributes":4,"./lib/set-attributes":5}],3:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function assign(target) {
+  var objs = Array.prototype.slice.call(arguments, 1);
+
+  objs.forEach(function (obj) {
+    if (typeof obj !== 'object') { return; }
+
+    Object.keys(obj).forEach(function (key) {
+      target[key] = obj[key];
+    });
+  });
+
+  return target;
+}
+
+},{}],4:[function(_dereq_,module,exports){
 module.exports={
   "src": "about:blank",
   "frameBorder": 0,
@@ -308,849 +324,9 @@ module.exports={
   "scrolling": "no"
 }
 
-},{}],4:[function(_dereq_,module,exports){
-/** Used as the `TypeError` message for "Functions" methods. */
-var FUNC_ERROR_TEXT = 'Expected a function';
-
-/* Native method references for those with the same name as other `lodash` methods. */
-var nativeMax = Math.max;
-
-/**
- * Creates a function that invokes `func` with the `this` binding of the
- * created function and arguments from `start` and beyond provided as an array.
- *
- * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/Web/JavaScript/Reference/Functions/rest_parameters).
- *
- * @static
- * @memberOf _
- * @category Function
- * @param {Function} func The function to apply a rest parameter to.
- * @param {number} [start=func.length-1] The start position of the rest parameter.
- * @returns {Function} Returns the new function.
- * @example
- *
- * var say = _.restParam(function(what, names) {
- *   return what + ' ' + _.initial(names).join(', ') +
- *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
- * });
- *
- * say('hello', 'fred', 'barney', 'pebbles');
- * // => 'hello fred, barney, & pebbles'
- */
-function restParam(func, start) {
-  if (typeof func != 'function') {
-    throw new TypeError(FUNC_ERROR_TEXT);
-  }
-  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
-  return function() {
-    var args = arguments,
-        index = -1,
-        length = nativeMax(args.length - start, 0),
-        rest = Array(length);
-
-    while (++index < length) {
-      rest[index] = args[start + index];
-    }
-    switch (start) {
-      case 0: return func.call(this, rest);
-      case 1: return func.call(this, args[0], rest);
-      case 2: return func.call(this, args[0], args[1], rest);
-    }
-    var otherArgs = Array(start + 1);
-    index = -1;
-    while (++index < start) {
-      otherArgs[index] = args[index];
-    }
-    otherArgs[start] = rest;
-    return func.apply(this, otherArgs);
-  };
-}
-
-module.exports = restParam;
-
 },{}],5:[function(_dereq_,module,exports){
-var keys = _dereq_('../object/keys');
+'use strict';
 
-/**
- * A specialized version of `_.assign` for customizing assigned values without
- * support for argument juggling, multiple sources, and `this` binding `customizer`
- * functions.
- *
- * @private
- * @param {Object} object The destination object.
- * @param {Object} source The source object.
- * @param {Function} customizer The function to customize assigned values.
- * @returns {Object} Returns `object`.
- */
-function assignWith(object, source, customizer) {
-  var index = -1,
-      props = keys(source),
-      length = props.length;
-
-  while (++index < length) {
-    var key = props[index],
-        value = object[key],
-        result = customizer(value, source[key], key, object, source);
-
-    if ((result === result ? (result !== value) : (value === value)) ||
-        (value === undefined && !(key in object))) {
-      object[key] = result;
-    }
-  }
-  return object;
-}
-
-module.exports = assignWith;
-
-},{"../object/keys":26}],6:[function(_dereq_,module,exports){
-var baseCopy = _dereq_('./baseCopy'),
-    keys = _dereq_('../object/keys');
-
-/**
- * The base implementation of `_.assign` without support for argument juggling,
- * multiple sources, and `customizer` functions.
- *
- * @private
- * @param {Object} object The destination object.
- * @param {Object} source The source object.
- * @returns {Object} Returns `object`.
- */
-function baseAssign(object, source) {
-  return source == null
-    ? object
-    : baseCopy(source, keys(source), object);
-}
-
-module.exports = baseAssign;
-
-},{"../object/keys":26,"./baseCopy":7}],7:[function(_dereq_,module,exports){
-/**
- * Copies properties of `source` to `object`.
- *
- * @private
- * @param {Object} source The object to copy properties from.
- * @param {Array} props The property names to copy.
- * @param {Object} [object={}] The object to copy properties to.
- * @returns {Object} Returns `object`.
- */
-function baseCopy(source, props, object) {
-  object || (object = {});
-
-  var index = -1,
-      length = props.length;
-
-  while (++index < length) {
-    var key = props[index];
-    object[key] = source[key];
-  }
-  return object;
-}
-
-module.exports = baseCopy;
-
-},{}],8:[function(_dereq_,module,exports){
-/**
- * The base implementation of `_.property` without support for deep paths.
- *
- * @private
- * @param {string} key The key of the property to get.
- * @returns {Function} Returns the new function.
- */
-function baseProperty(key) {
-  return function(object) {
-    return object == null ? undefined : object[key];
-  };
-}
-
-module.exports = baseProperty;
-
-},{}],9:[function(_dereq_,module,exports){
-var identity = _dereq_('../utility/identity');
-
-/**
- * A specialized version of `baseCallback` which only supports `this` binding
- * and specifying the number of arguments to provide to `func`.
- *
- * @private
- * @param {Function} func The function to bind.
- * @param {*} thisArg The `this` binding of `func`.
- * @param {number} [argCount] The number of arguments to provide to `func`.
- * @returns {Function} Returns the callback.
- */
-function bindCallback(func, thisArg, argCount) {
-  if (typeof func != 'function') {
-    return identity;
-  }
-  if (thisArg === undefined) {
-    return func;
-  }
-  switch (argCount) {
-    case 1: return function(value) {
-      return func.call(thisArg, value);
-    };
-    case 3: return function(value, index, collection) {
-      return func.call(thisArg, value, index, collection);
-    };
-    case 4: return function(accumulator, value, index, collection) {
-      return func.call(thisArg, accumulator, value, index, collection);
-    };
-    case 5: return function(value, other, key, object, source) {
-      return func.call(thisArg, value, other, key, object, source);
-    };
-  }
-  return function() {
-    return func.apply(thisArg, arguments);
-  };
-}
-
-module.exports = bindCallback;
-
-},{"../utility/identity":28}],10:[function(_dereq_,module,exports){
-var bindCallback = _dereq_('./bindCallback'),
-    isIterateeCall = _dereq_('./isIterateeCall'),
-    restParam = _dereq_('../function/restParam');
-
-/**
- * Creates a `_.assign`, `_.defaults`, or `_.merge` function.
- *
- * @private
- * @param {Function} assigner The function to assign values.
- * @returns {Function} Returns the new assigner function.
- */
-function createAssigner(assigner) {
-  return restParam(function(object, sources) {
-    var index = -1,
-        length = object == null ? 0 : sources.length,
-        customizer = length > 2 ? sources[length - 2] : undefined,
-        guard = length > 2 ? sources[2] : undefined,
-        thisArg = length > 1 ? sources[length - 1] : undefined;
-
-    if (typeof customizer == 'function') {
-      customizer = bindCallback(customizer, thisArg, 5);
-      length -= 2;
-    } else {
-      customizer = typeof thisArg == 'function' ? thisArg : undefined;
-      length -= (customizer ? 1 : 0);
-    }
-    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
-      customizer = length < 3 ? undefined : customizer;
-      length = 1;
-    }
-    while (++index < length) {
-      var source = sources[index];
-      if (source) {
-        assigner(object, source, customizer);
-      }
-    }
-    return object;
-  });
-}
-
-module.exports = createAssigner;
-
-},{"../function/restParam":4,"./bindCallback":9,"./isIterateeCall":15}],11:[function(_dereq_,module,exports){
-var baseProperty = _dereq_('./baseProperty');
-
-/**
- * Gets the "length" property value of `object`.
- *
- * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
- * that affects Safari on at least iOS 8.1-8.3 ARM64.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {*} Returns the "length" value.
- */
-var getLength = baseProperty('length');
-
-module.exports = getLength;
-
-},{"./baseProperty":8}],12:[function(_dereq_,module,exports){
-var isNative = _dereq_('../lang/isNative');
-
-/**
- * Gets the native function at `key` of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @param {string} key The key of the method to get.
- * @returns {*} Returns the function if it's native, else `undefined`.
- */
-function getNative(object, key) {
-  var value = object == null ? undefined : object[key];
-  return isNative(value) ? value : undefined;
-}
-
-module.exports = getNative;
-
-},{"../lang/isNative":22}],13:[function(_dereq_,module,exports){
-var getLength = _dereq_('./getLength'),
-    isLength = _dereq_('./isLength');
-
-/**
- * Checks if `value` is array-like.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
- */
-function isArrayLike(value) {
-  return value != null && isLength(getLength(value));
-}
-
-module.exports = isArrayLike;
-
-},{"./getLength":11,"./isLength":16}],14:[function(_dereq_,module,exports){
-/** Used to detect unsigned integer values. */
-var reIsUint = /^\d+$/;
-
-/**
- * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
- * of an array-like value.
- */
-var MAX_SAFE_INTEGER = 9007199254740991;
-
-/**
- * Checks if `value` is a valid array-like index.
- *
- * @private
- * @param {*} value The value to check.
- * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
- * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
- */
-function isIndex(value, length) {
-  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
-  length = length == null ? MAX_SAFE_INTEGER : length;
-  return value > -1 && value % 1 == 0 && value < length;
-}
-
-module.exports = isIndex;
-
-},{}],15:[function(_dereq_,module,exports){
-var isArrayLike = _dereq_('./isArrayLike'),
-    isIndex = _dereq_('./isIndex'),
-    isObject = _dereq_('../lang/isObject');
-
-/**
- * Checks if the provided arguments are from an iteratee call.
- *
- * @private
- * @param {*} value The potential iteratee value argument.
- * @param {*} index The potential iteratee index or key argument.
- * @param {*} object The potential iteratee object argument.
- * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
- */
-function isIterateeCall(value, index, object) {
-  if (!isObject(object)) {
-    return false;
-  }
-  var type = typeof index;
-  if (type == 'number'
-      ? (isArrayLike(object) && isIndex(index, object.length))
-      : (type == 'string' && index in object)) {
-    var other = object[index];
-    return value === value ? (value === other) : (other !== other);
-  }
-  return false;
-}
-
-module.exports = isIterateeCall;
-
-},{"../lang/isObject":23,"./isArrayLike":13,"./isIndex":14}],16:[function(_dereq_,module,exports){
-/**
- * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
- * of an array-like value.
- */
-var MAX_SAFE_INTEGER = 9007199254740991;
-
-/**
- * Checks if `value` is a valid array-like length.
- *
- * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
- */
-function isLength(value) {
-  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-}
-
-module.exports = isLength;
-
-},{}],17:[function(_dereq_,module,exports){
-/**
- * Checks if `value` is object-like.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- */
-function isObjectLike(value) {
-  return !!value && typeof value == 'object';
-}
-
-module.exports = isObjectLike;
-
-},{}],18:[function(_dereq_,module,exports){
-var isArguments = _dereq_('../lang/isArguments'),
-    isArray = _dereq_('../lang/isArray'),
-    isIndex = _dereq_('./isIndex'),
-    isLength = _dereq_('./isLength'),
-    keysIn = _dereq_('../object/keysIn');
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * A fallback implementation of `Object.keys` which creates an array of the
- * own enumerable property names of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- */
-function shimKeys(object) {
-  var props = keysIn(object),
-      propsLength = props.length,
-      length = propsLength && object.length;
-
-  var allowIndexes = !!length && isLength(length) &&
-    (isArray(object) || isArguments(object));
-
-  var index = -1,
-      result = [];
-
-  while (++index < propsLength) {
-    var key = props[index];
-    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-module.exports = shimKeys;
-
-},{"../lang/isArguments":19,"../lang/isArray":20,"../object/keysIn":27,"./isIndex":14,"./isLength":16}],19:[function(_dereq_,module,exports){
-var isArrayLike = _dereq_('../internal/isArrayLike'),
-    isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Native method references. */
-var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-
-/**
- * Checks if `value` is classified as an `arguments` object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isArguments(function() { return arguments; }());
- * // => true
- *
- * _.isArguments([1, 2, 3]);
- * // => false
- */
-function isArguments(value) {
-  return isObjectLike(value) && isArrayLike(value) &&
-    hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
-}
-
-module.exports = isArguments;
-
-},{"../internal/isArrayLike":13,"../internal/isObjectLike":17}],20:[function(_dereq_,module,exports){
-var getNative = _dereq_('../internal/getNative'),
-    isLength = _dereq_('../internal/isLength'),
-    isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** `Object#toString` result references. */
-var arrayTag = '[object Array]';
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objToString = objectProto.toString;
-
-/* Native method references for those with the same name as other `lodash` methods. */
-var nativeIsArray = getNative(Array, 'isArray');
-
-/**
- * Checks if `value` is classified as an `Array` object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isArray([1, 2, 3]);
- * // => true
- *
- * _.isArray(function() { return arguments; }());
- * // => false
- */
-var isArray = nativeIsArray || function(value) {
-  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
-};
-
-module.exports = isArray;
-
-},{"../internal/getNative":12,"../internal/isLength":16,"../internal/isObjectLike":17}],21:[function(_dereq_,module,exports){
-var isObject = _dereq_('./isObject');
-
-/** `Object#toString` result references. */
-var funcTag = '[object Function]';
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objToString = objectProto.toString;
-
-/**
- * Checks if `value` is classified as a `Function` object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isFunction(_);
- * // => true
- *
- * _.isFunction(/abc/);
- * // => false
- */
-function isFunction(value) {
-  // The use of `Object#toString` avoids issues with the `typeof` operator
-  // in older versions of Chrome and Safari which return 'function' for regexes
-  // and Safari 8 which returns 'object' for typed array constructors.
-  return isObject(value) && objToString.call(value) == funcTag;
-}
-
-module.exports = isFunction;
-
-},{"./isObject":23}],22:[function(_dereq_,module,exports){
-var isFunction = _dereq_('./isFunction'),
-    isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** Used to detect host constructors (Safari > 5). */
-var reIsHostCtor = /^\[object .+?Constructor\]$/;
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var fnToString = Function.prototype.toString;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Used to detect if a method is native. */
-var reIsNative = RegExp('^' +
-  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
-  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-);
-
-/**
- * Checks if `value` is a native function.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
- * @example
- *
- * _.isNative(Array.prototype.push);
- * // => true
- *
- * _.isNative(_);
- * // => false
- */
-function isNative(value) {
-  if (value == null) {
-    return false;
-  }
-  if (isFunction(value)) {
-    return reIsNative.test(fnToString.call(value));
-  }
-  return isObjectLike(value) && reIsHostCtor.test(value);
-}
-
-module.exports = isNative;
-
-},{"../internal/isObjectLike":17,"./isFunction":21}],23:[function(_dereq_,module,exports){
-/**
- * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
- * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(1);
- * // => false
- */
-function isObject(value) {
-  // Avoid a V8 JIT bug in Chrome 19-20.
-  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-  var type = typeof value;
-  return !!value && (type == 'object' || type == 'function');
-}
-
-module.exports = isObject;
-
-},{}],24:[function(_dereq_,module,exports){
-var isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** `Object#toString` result references. */
-var stringTag = '[object String]';
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objToString = objectProto.toString;
-
-/**
- * Checks if `value` is classified as a `String` primitive or object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isString('abc');
- * // => true
- *
- * _.isString(1);
- * // => false
- */
-function isString(value) {
-  return typeof value == 'string' || (isObjectLike(value) && objToString.call(value) == stringTag);
-}
-
-module.exports = isString;
-
-},{"../internal/isObjectLike":17}],25:[function(_dereq_,module,exports){
-var assignWith = _dereq_('../internal/assignWith'),
-    baseAssign = _dereq_('../internal/baseAssign'),
-    createAssigner = _dereq_('../internal/createAssigner');
-
-/**
- * Assigns own enumerable properties of source object(s) to the destination
- * object. Subsequent sources overwrite property assignments of previous sources.
- * If `customizer` is provided it's invoked to produce the assigned values.
- * The `customizer` is bound to `thisArg` and invoked with five arguments:
- * (objectValue, sourceValue, key, object, source).
- *
- * **Note:** This method mutates `object` and is based on
- * [`Object.assign`](http://ecma-international.org/ecma-262/6.0/#sec-object.assign).
- *
- * @static
- * @memberOf _
- * @alias extend
- * @category Object
- * @param {Object} object The destination object.
- * @param {...Object} [sources] The source objects.
- * @param {Function} [customizer] The function to customize assigned values.
- * @param {*} [thisArg] The `this` binding of `customizer`.
- * @returns {Object} Returns `object`.
- * @example
- *
- * _.assign({ 'user': 'barney' }, { 'age': 40 }, { 'user': 'fred' });
- * // => { 'user': 'fred', 'age': 40 }
- *
- * // using a customizer callback
- * var defaults = _.partialRight(_.assign, function(value, other) {
- *   return _.isUndefined(value) ? other : value;
- * });
- *
- * defaults({ 'user': 'barney' }, { 'age': 36 }, { 'user': 'fred' });
- * // => { 'user': 'barney', 'age': 36 }
- */
-var assign = createAssigner(function(object, source, customizer) {
-  return customizer
-    ? assignWith(object, source, customizer)
-    : baseAssign(object, source);
-});
-
-module.exports = assign;
-
-},{"../internal/assignWith":5,"../internal/baseAssign":6,"../internal/createAssigner":10}],26:[function(_dereq_,module,exports){
-var getNative = _dereq_('../internal/getNative'),
-    isArrayLike = _dereq_('../internal/isArrayLike'),
-    isObject = _dereq_('../lang/isObject'),
-    shimKeys = _dereq_('../internal/shimKeys');
-
-/* Native method references for those with the same name as other `lodash` methods. */
-var nativeKeys = getNative(Object, 'keys');
-
-/**
- * Creates an array of the own enumerable property names of `object`.
- *
- * **Note:** Non-object values are coerced to objects. See the
- * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
- * for more details.
- *
- * @static
- * @memberOf _
- * @category Object
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- *   this.b = 2;
- * }
- *
- * Foo.prototype.c = 3;
- *
- * _.keys(new Foo);
- * // => ['a', 'b'] (iteration order is not guaranteed)
- *
- * _.keys('hi');
- * // => ['0', '1']
- */
-var keys = !nativeKeys ? shimKeys : function(object) {
-  var Ctor = object == null ? undefined : object.constructor;
-  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
-      (typeof object != 'function' && isArrayLike(object))) {
-    return shimKeys(object);
-  }
-  return isObject(object) ? nativeKeys(object) : [];
-};
-
-module.exports = keys;
-
-},{"../internal/getNative":12,"../internal/isArrayLike":13,"../internal/shimKeys":18,"../lang/isObject":23}],27:[function(_dereq_,module,exports){
-var isArguments = _dereq_('../lang/isArguments'),
-    isArray = _dereq_('../lang/isArray'),
-    isIndex = _dereq_('../internal/isIndex'),
-    isLength = _dereq_('../internal/isLength'),
-    isObject = _dereq_('../lang/isObject');
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * Creates an array of the own and inherited enumerable property names of `object`.
- *
- * **Note:** Non-object values are coerced to objects.
- *
- * @static
- * @memberOf _
- * @category Object
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- *   this.b = 2;
- * }
- *
- * Foo.prototype.c = 3;
- *
- * _.keysIn(new Foo);
- * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
- */
-function keysIn(object) {
-  if (object == null) {
-    return [];
-  }
-  if (!isObject(object)) {
-    object = Object(object);
-  }
-  var length = object.length;
-  length = (length && isLength(length) &&
-    (isArray(object) || isArguments(object)) && length) || 0;
-
-  var Ctor = object.constructor,
-      index = -1,
-      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
-      result = Array(length),
-      skipIndexes = length > 0;
-
-  while (++index < length) {
-    result[index] = (index + '');
-  }
-  for (var key in object) {
-    if (!(skipIndexes && isIndex(key, length)) &&
-        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-module.exports = keysIn;
-
-},{"../internal/isIndex":14,"../internal/isLength":16,"../lang/isArguments":19,"../lang/isArray":20,"../lang/isObject":23}],28:[function(_dereq_,module,exports){
-/**
- * This method returns the first argument provided to it.
- *
- * @static
- * @memberOf _
- * @category Utility
- * @param {*} value Any value.
- * @returns {*} Returns `value`.
- * @example
- *
- * var object = { 'user': 'fred' };
- *
- * _.identity(object) === object;
- * // => true
- */
-function identity(value) {
-  return value;
-}
-
-module.exports = identity;
-
-},{}],29:[function(_dereq_,module,exports){
 module.exports = function setAttributes(element, attributes) {
   var value;
 
@@ -1167,7 +343,7 @@ module.exports = function setAttributes(element, attributes) {
   }
 };
 
-},{}],30:[function(_dereq_,module,exports){
+},{}],6:[function(_dereq_,module,exports){
 'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
@@ -1190,8 +366,8 @@ function addMetadata(configuration, data) {
 
   attrs._meta = _meta;
 
-  if (authAttrs.clientKey) {
-    attrs.clientKey = authAttrs.clientKey;
+  if (authAttrs.tokenizationKey) {
+    attrs.tokenizationKey = authAttrs.tokenizationKey;
   } else {
     attrs.authorizationFingerprint = authAttrs.authorizationFingerprint;
   }
@@ -1201,7 +377,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":36,"./create-authorization-data":38,"./json-clone":50}],31:[function(_dereq_,module,exports){
+},{"./constants":12,"./create-authorization-data":14,"./json-clone":26}],7:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -1211,31 +387,28 @@ function _millisToSeconds(millis) {
   return Math.floor(millis / 1000);
 }
 
-function _id(x) { return x; }
-
 function sendAnalyticsEvent(client, kind, callback) {
   var configuration = client.getConfiguration();
-  var driver = client._driver;
+  var request = client._request;
   var timestamp = _millisToSeconds(Date.now());
   var url = configuration.gatewayConfiguration.analytics.url;
   var data = {
     analytics: [{kind: kind, timestamp: timestamp}]
   };
 
-  driver.post(
-    url,
-    addMetadata(configuration, data),
-    _id,
-    callback,
-    constants.ANALYTICS_REQUEST_TIMEOUT_MS
-  );
+  request({
+    url: url,
+    method: 'post',
+    data: addMetadata(configuration, data),
+    timeout: constants.ANALYTICS_REQUEST_TIMEOUT_MS
+  }, callback);
 }
 
 module.exports = {
   sendEvent: sendAnalyticsEvent
 };
 
-},{"./add-metadata":30,"./constants":36}],32:[function(_dereq_,module,exports){
+},{"./add-metadata":6,"./constants":12}],8:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1269,7 +442,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],33:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 'use strict';
 
 var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
@@ -1297,7 +470,7 @@ module.exports = {
   checkOrigin: checkOrigin
 };
 
-},{}],34:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('../enumerate');
@@ -1306,7 +479,7 @@ module.exports = enumerate([
   'CONFIGURATION_REQUEST'
 ], 'bus:');
 
-},{"../enumerate":40}],35:[function(_dereq_,module,exports){
+},{"../enumerate":16}],11:[function(_dereq_,module,exports){
 'use strict';
 
 var bus = _dereq_('framebus');
@@ -1436,10 +609,10 @@ BraintreeBus.events = events;
 
 module.exports = BraintreeBus;
 
-},{"../error":41,"./check-origin":33,"./events":34,"framebus":1}],36:[function(_dereq_,module,exports){
+},{"../error":17,"./check-origin":9,"./events":10,"framebus":1}],12:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1452,7 +625,7 @@ module.exports = {
   BRAINTREE_LIBRARY_VERSION: 'braintree/' + PLATFORM + '/' + VERSION
 };
 
-},{}],37:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 'use strict';
 
 var BraintreeError = _dereq_('./error');
@@ -1468,7 +641,7 @@ module.exports = function (instance, methodNames) {
   });
 };
 
-},{"./error":41}],38:[function(_dereq_,module,exports){
+},{"./error":17}],14:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -1504,7 +677,7 @@ function createAuthorizationData(authorization) {
 
   if (_isTokenizationKey(authorization)) {
     parsedTokenizationKey = _parseTokenizationKey(authorization);
-    data.attrs.clientKey = authorization;
+    data.attrs.tokenizationKey = authorization;
     data.configUrl = apiUrls[parsedTokenizationKey.environment] + '/merchants/' + parsedTokenizationKey.merchantId + '/client_api/v1/configuration';
   } else {
     parsedClientToken = JSON.parse(atob(authorization));
@@ -1517,7 +690,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":52}],39:[function(_dereq_,module,exports){
+},{"../lib/polyfill":28}],15:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (fn) {
@@ -1531,7 +704,7 @@ module.exports = function (fn) {
   };
 };
 
-},{}],40:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -1545,7 +718,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],41:[function(_dereq_,module,exports){
+},{}],17:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -1610,7 +783,7 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":40}],42:[function(_dereq_,module,exports){
+},{"./enumerate":16}],18:[function(_dereq_,module,exports){
 'use strict';
 
 var popup = _dereq_('./popup');
@@ -1756,7 +929,7 @@ FrameService.prototype._pollForPopupClose = function () {
 
 module.exports = FrameService;
 
-},{"../../bus":35,"../../error":41,"../../uuid":53,"../shared/constants":48,"../shared/events":49,"./popup":45,"iframer":2}],43:[function(_dereq_,module,exports){
+},{"../../bus":11,"../../error":17,"../../uuid":29,"../shared/constants":24,"../shared/events":25,"./popup":21,"iframer":2}],19:[function(_dereq_,module,exports){
 'use strict';
 
 var FrameService = _dereq_('./frame-service');
@@ -1771,7 +944,7 @@ module.exports = {
   }
 };
 
-},{"./frame-service":42}],44:[function(_dereq_,module,exports){
+},{"./frame-service":18}],20:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('../../shared/constants');
@@ -1785,14 +958,14 @@ module.exports = function composePopupOptions() {
   ].join(',');
 };
 
-},{"../../shared/constants":48,"./position":47}],45:[function(_dereq_,module,exports){
+},{"../../shared/constants":24,"./position":23}],21:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = {
   open: _dereq_('./open')
 };
 
-},{"./open":46}],46:[function(_dereq_,module,exports){
+},{"./open":22}],22:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1807,7 +980,7 @@ module.exports = function openPopup(frameConfiguration) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./compose-options":44}],47:[function(_dereq_,module,exports){
+},{"./compose-options":20}],23:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1838,7 +1011,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../shared/constants":48}],48:[function(_dereq_,module,exports){
+},{"../../shared/constants":24}],24:[function(_dereq_,module,exports){
 'use strict';
 
 // TODO: May be dependent on payment method in the future
@@ -1855,7 +1028,7 @@ module.exports = {
   POPUP_CLOSE_TIMEOUT: 100
 };
 
-},{}],49:[function(_dereq_,module,exports){
+},{}],25:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('../../enumerate');
@@ -1865,14 +1038,14 @@ module.exports = enumerate([
   'DISPATCH_FRAME_REPORT'
 ], 'frameService:');
 
-},{"../../enumerate":40}],50:[function(_dereq_,module,exports){
+},{"../../enumerate":16}],26:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],51:[function(_dereq_,module,exports){
+},{}],27:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (obj) {
@@ -1881,7 +1054,7 @@ module.exports = function (obj) {
   });
 };
 
-},{}],52:[function(_dereq_,module,exports){
+},{}],28:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1920,7 +1093,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],53:[function(_dereq_,module,exports){
+},{}],29:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
@@ -1934,12 +1107,12 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}],54:[function(_dereq_,module,exports){
+},{}],30:[function(_dereq_,module,exports){
 'use strict';
 
 var frameService = _dereq_('../../lib/frame-service/external');
 var BraintreeError = _dereq_('../../lib/error');
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 var constants = _dereq_('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = _dereq_('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = _dereq_('../../lib/analytics');
@@ -2041,7 +1214,6 @@ PayPal.prototype.tokenize = function (callback) {
         if (err.message === constants.FRAME_CLOSED_ERROR_MESSAGE) {
           analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-user');
         } else {
-          // TODO: consider sending a more explicit error to analytics
           analytics.sendEvent(client, 'web.paypal.tokenization.failed');
         }
       } else {
@@ -2083,31 +1255,13 @@ PayPal.prototype.teardown = function (callback) {
 
 module.exports = PayPal;
 
-},{"../../lib/analytics":31,"../../lib/constants":36,"../../lib/convert-methods-to-error":37,"../../lib/deferred":39,"../../lib/error":41,"../../lib/frame-service/external":43,"../../lib/methods":51,"../shared/constants":56}],55:[function(_dereq_,module,exports){
+},{"../../lib/analytics":7,"../../lib/constants":12,"../../lib/convert-methods-to-error":13,"../../lib/deferred":15,"../../lib/error":17,"../../lib/frame-service/external":19,"../../lib/methods":27,"../shared/constants":32}],31:[function(_dereq_,module,exports){
 'use strict';
 /** @module braintree-web/paypal */
 
 /**
  * Options for {@link module:braintree-web/paypal.create|create}
  * @typedef {object} createOptions
- * @property {Client} client A {@link Client} instance.
- * @property {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow.
- * @property {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
- * @property {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
- * @property {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
- * @property {string} [options.locale=en_us] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
- * @property {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
- * @property {object=} options.shippingAddressOverride Allows you to pass a shipping address you have already collected into the PayPal payment flow.
- * @property {string} options.shippingAddressOverride.line1 Street address.
- * @property {string=} options.shippingAddressOverride.line2 Street address (extended).
- * @property {string} options.shippingAddressOverride.city City.
- * @property {string} options.shippingAddressOverride.state State.
- * @property {string} options.shippingAddressOverride.postalCode Postal code.
- * @property {string} options.shippingAddressOverride.countryCode Country.
- * @property {string=} options.shippingAddressOverride.phone Phone number.
- * @property {string=} options.shippingAddressOverride.recipientName Recipient's name.
- * @property {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
- * @property {boolean} [options.billingAgreementsDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile. Max 255 characters.
  */
 
 var PayPal = _dereq_('./external/paypal');
@@ -2115,10 +1269,10 @@ var browserDetection = _dereq_('../lib/browser-detection');
 var BraintreeError = _dereq_('../lib/error');
 var analytics = _dereq_('../lib/analytics');
 var deferred = _dereq_('../lib/deferred');
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 
 function create(options, callback) {
-  var config, pp;
+  var config, pp, clientVersion;
 
   callback = deferred(callback);
 
@@ -2131,11 +1285,12 @@ function create(options, callback) {
   }
 
   config = options.client.getConfiguration();
+  clientVersion = config.analyticsMetadata.sdkVersion;
 
-  if (config.analyticsMetadata.sdkVersion !== VERSION) {
+  if (clientVersion !== VERSION) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'Client and PayPal components must be from the same SDK version.'
+      message: 'Client (version ' + clientVersion + ') and PayPal (version ' + VERSION + ') components must be from the same SDK version.'
     }));
     return;
   }
@@ -2180,7 +1335,25 @@ module.exports = {
   /**
    * @static
    * @function
-   * @param {module:braintree-web/paypal~createOptions} options Object containing configuration options for this module.
+   * @param {object} options All creation options for the PayPal component.
+   * @param {Client} options.client A {@link Client} instance.
+   * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow.
+   * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
+   * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
+   * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
+   * @param {string} [options.locale=en_us] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
+   * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
+   * @param {object=} options.shippingAddressOverride Allows you to pass a shipping address you have already collected into the PayPal payment flow.
+   * @param {string} options.shippingAddressOverride.line1 Street address.
+   * @param {string=} options.shippingAddressOverride.line2 Street address (extended).
+   * @param {string} options.shippingAddressOverride.city City.
+   * @param {string} options.shippingAddressOverride.state State.
+   * @param {string} options.shippingAddressOverride.postalCode Postal code.
+   * @param {string} options.shippingAddressOverride.countryCode Country.
+   * @param {string=} options.shippingAddressOverride.phone Phone number.
+   * @param {string=} options.shippingAddressOverride.recipientName Recipient's name.
+   * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
+   * @param {boolean} [options.billingAgreementsDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile. Max 255 characters.
    * @param {callback} callback The second argument, <code>data</code>, is the {@link PayPal} instance.
    * @returns {void}
    */
@@ -2192,14 +1365,14 @@ module.exports = {
   VERSION: VERSION
 };
 
-},{"../lib/analytics":31,"../lib/browser-detection":32,"../lib/deferred":39,"../lib/error":41,"./external/paypal":54}],56:[function(_dereq_,module,exports){
+},{"../lib/analytics":7,"../lib/browser-detection":8,"../lib/deferred":15,"../lib/error":17,"./external/paypal":30}],32:[function(_dereq_,module,exports){
 'use strict';
 
 var POPUP_HEIGHT = 535;
 var POPUP_WIDTH = 450;
 
 module.exports = {
-  AUTH_INIT_ERROR_MESSSAGE: 'Could not initialize PayPal flow',
+  AUTH_INIT_ERROR_MESSSAGE: 'Could not initialize PayPal flow.',
   LANDING_FRAME_NAME: 'braintreepaypallanding',
   POPUP_BASE_OPTIONS: 'resizable,scrollbars,height=' + POPUP_HEIGHT + ',width=' + POPUP_WIDTH,
   POPUP_WIDTH: POPUP_WIDTH,
@@ -2207,5 +1380,5 @@ module.exports = {
   POPUP_POLL_INTERVAL: 100
 };
 
-},{}]},{},[55])(55)
+},{}]},{},[31])(31)
 });

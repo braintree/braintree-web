@@ -169,7 +169,7 @@ var fraudnet = _dereq_('./fraudnet');
 var BraintreeError = _dereq_('../lib/error');
 var methods = _dereq_('../lib/methods');
 var convertMethodsToError = _dereq_('../lib/convert-methods-to-error');
-var packageVersion = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 var deferred = _dereq_('../lib/deferred');
 
 /**
@@ -202,17 +202,22 @@ var deferred = _dereq_('../lib/deferred');
  * @function
  * @param {object} options Object containing all {@link DataCollector} options:
  * @param {client} options.client A {@link Client} instance.
- * @param {object} [options.kount] If supplied, Kount fraud capabilities are enabled:
- * @param {string} options.kount.environment Which Kount environment to operate in. Options are "sandbox" or "production".
- * @param {string} [options.kount.merchantId] If using a direct Kount integration, your Kount-provided merchantId.
- * @param {boolean} [options.paypal] If true, PayPal fraud capabilities are enabled.
+ * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled.
+ * @param {boolean} [options.paypal] If true, PayPal fraud data collection is enabled.
  * @param {callback} callback The second argument, <code>data</code>, is the {@link DataCollector} instance.
  * @returns {void}
  * @static
  */
 function create(options, callback) {
-  var data, kountInstance, fraudnetInstance, result, config;
+  var data, kountInstance, fraudnetInstance, result, config, clientVersion;
   var instances = [];
+
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'create must include a callback function.'
+    });
+  }
 
   callback = deferred(callback);
 
@@ -239,10 +244,19 @@ function create(options, callback) {
     return;
   }
 
-  if (options.kount != null) {
-    config = options.client.getConfiguration().gatewayConfiguration;
+  config = options.client.getConfiguration();
+  clientVersion = config.analyticsMetadata.sdkVersion;
 
-    if (!(config.kount && config.kount.enabled)) {
+  if (clientVersion !== VERSION) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Client (version ' + clientVersion + ') and Data Collector (version ' + VERSION + ') components must be from the same SDK version.'
+    }));
+    return;
+  }
+
+  if (options.kount === true) {
+    if (!config.gatewayConfiguration.kount) {
       callback(new BraintreeError({
         type: BraintreeError.types.MERCHANT,
         message: 'Kount is not enabled for this merchant.'
@@ -252,8 +266,8 @@ function create(options, callback) {
 
     try {
       kountInstance = kount.setup({
-        environment: options.kount.environment,
-        merchantId: options.kount.merchantId || config.kount.kountMerchantId
+        environment: config.gatewayConfiguration.environment,
+        merchantId: config.gatewayConfiguration.kount.kountMerchantId
       });
     } catch (err) {
       callback(new BraintreeError({
@@ -270,6 +284,14 @@ function create(options, callback) {
   }
 
   if (options.paypal === true) {
+    if (config.gatewayConfiguration.paypalEnabled !== true) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: 'PayPal is not enabled for this merchant.'
+      }));
+      return;
+    }
+
     fraudnetInstance = fraudnet.setup();
     data.correlation_id = fraudnetInstance.sessionId;
     instances.push(fraudnetInstance);
@@ -297,7 +319,7 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: packageVersion
+  VERSION: VERSION
 };
 
 },{"../lib/convert-methods-to-error":6,"../lib/deferred":7,"../lib/error":9,"../lib/methods":10,"./fraudnet":3,"./kount":5}],5:[function(_dereq_,module,exports){
@@ -306,10 +328,11 @@ module.exports = {
 
 var sjcl = _dereq_('sjcl');
 
+var QA_URL = 'https://assets.qa.braintreepayments.com/data';
 var IFRAME_ID = 'braintreeDataFrame';
-var BRAINTREE_KOUNT_ID = '600000';
 var environmentUrls = {
-  qa: 'https://assets.qa.braintreepayments.com/data',
+  development: QA_URL,
+  qa: QA_URL,
   sandbox: 'https://assets.braintreegateway.com/sandbox/data',
   production: 'https://assets.braintreegateway.com/data'
 };
@@ -392,7 +415,7 @@ Kount.prototype._initializeEnvironment = function (options) {
   return {
     url: url,
     name: options.environment,
-    id: options.merchantId == null ? BRAINTREE_KOUNT_ID : options.merchantId
+    id: options.merchantId
   };
 };
 

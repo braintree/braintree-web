@@ -1,385 +1,11 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.braintree || (g.braintree = {})).client = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-(function (global){
 'use strict';
 
-var util = _dereq_('./util');
-var prepBody = _dereq_('./prep-body');
-var parseBody = _dereq_('./parse-body');
-var constants = _dereq_('./constants');
-var isXHRAvailable = global.XMLHttpRequest && 'withCredentials' in new global.XMLHttpRequest();
-
-function getRequestObject() {
-  return isXHRAvailable ? new XMLHttpRequest() : new XDomainRequest();
-}
-
-function get(url, attrs, deserializer, callback, timeout) {
-  var urlParams = util.createURLParams(url, attrs);
-  makeRequest('GET', urlParams, null, deserializer, callback, timeout);
-}
-
-function post(url, attrs, deserializer, callback, timeout) {
-  makeRequest('POST', url, attrs, deserializer, callback, timeout);
-}
-
-function makeRequest(method, url, body, deserializer, callback, timeout) {
-  var status, resBody;
-  var req = getRequestObject();
-
-  callback = callback || function () {};
-
-  if (isXHRAvailable) {
-    req.onreadystatechange = function () {
-      if (req.readyState !== 4) { return; }
-
-      status = req.status;
-      resBody = parseBody(req.responseText);
-
-      if (status >= 400 || status === 0) {
-        callback.call(null, resBody || {errors: constants.errors.UNKNOWN_ERROR}, null);
-      } else if (status > 0) {
-        callback.call(null, null, deserializer(resBody));
-      }
-    };
-  } else {
-    req.onload = function () {
-      callback.call(null, null, deserializer(parseBody(req.responseText)));
-    };
-
-    req.onerror = function () {
-      callback.call(null, req.responseText, null);
-    };
-
-    // This must remain for IE9 to work
-    req.onprogress = function() {};
-
-    req.ontimeout = function () {
-      callback.call(null, {errors: constants.errors.UNKNOWN_ERROR}, null);
-    };
-  }
-
-  req.open(method, url, true);
-  req.timeout = timeout == null ? 60000 : timeout;
-
-  if (isXHRAvailable && method === 'POST') {
-    req.setRequestHeader('Content-Type', 'application/json');
-  }
-
-  setTimeout(function () {
-    req.send(prepBody(method, body));
-  }, 0);
-}
-
-module.exports = {
-  get: get,
-  post: post
-};
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./constants":3,"./parse-body":6,"./prep-body":7,"./util":8}],2:[function(_dereq_,module,exports){
-'use strict';
-
-var JSONPDriver = _dereq_('./jsonp-driver');
-var AJAXDriver = _dereq_('./ajax-driver');
-var util = _dereq_('./util');
-
-function chooseRequestDriver(options) {
-  var ua = util.getUserAgent();
-  var isAJAXAvailable = !(util.isHTTP() && /(MSIE\s(8|9))|(Phantom)/.test(ua));
-
-  options = options || {};
-
-  if (options.enableCORS && isAJAXAvailable) {
-    return AJAXDriver;
-  } else {
-    return JSONPDriver;
-  }
-}
-
-module.exports = chooseRequestDriver;
-
-},{"./ajax-driver":1,"./jsonp-driver":4,"./util":8}],3:[function(_dereq_,module,exports){
-module.exports={
-  "errors": {
-    "UNKNOWN_ERROR": "Unknown error",
-    "INVALID_TIMEOUT": "Timeout must be a number"
-  }
-};
-
-},{}],4:[function(_dereq_,module,exports){
-'use strict';
-
-var JSONP = _dereq_('./jsonp');
-var constants = _dereq_('./constants');
-var timeoutWatchers = [];
-
-function deserialize(response, mapper) {
-  if (response.status >= 400) {
-    return [response, null];
-  } else {
-    return [null, mapper(response)];
-  }
-}
-
-function noop() {}
-
-function requestWithTimeout(url, attrs, deserializer, method, callback, timeout) {
-  var uniqueName;
-
-  callback = callback || noop;
-
-  if (timeout == null) {
-    timeout = 60000;
-  }
-
-  uniqueName = method(url, attrs, function (err, data, name) {
-    if (timeoutWatchers[name]) {
-      clearTimeout(timeoutWatchers[name]);
-
-      if (err) {
-        callback.call(null, err);
-      } else {
-        callback.apply(null, deserialize(data, function (d) { return deserializer(d); }));
-      }
-    }
-  });
-
-  if (typeof timeout === 'number') {
-    timeoutWatchers[uniqueName] = setTimeout(function () {
-      timeoutWatchers[uniqueName] = null;
-      callback.apply(null, [{errors: constants.errors.UNKNOWN_ERROR}, null]);
-    }, timeout);
-  } else {
-    callback.apply(null, [{errors: constants.errors.INVALID_TIMEOUT}, null]);
-  }
-}
-
-function post(url, attrs, deserializer, callback, timeout) {
-  attrs._method = 'POST';
-  requestWithTimeout(url, attrs, deserializer, JSONP.get, callback, timeout);
-}
-
-function get(url, attrs, deserializer, callback, timeout) {
-  requestWithTimeout(url, attrs, deserializer, JSONP.get, callback, timeout);
-}
-
-module.exports = {
-  get: get,
-  post: post
-};
-
-},{"./constants":3,"./jsonp":5}],5:[function(_dereq_,module,exports){
-(function (global){
-'use strict';
-
-var util = _dereq_('./util');
-
-/*
-* Lightweight JSONP fetcher
-* Copyright 2010-2012 Erik Karlsson. All rights reserved.
-* BSD licensed
-*/
-var head,
-    window = global,
-    config = {};
-
-function load(url, pfnError) {
-  var script = document.createElement('script'),
-  done = false;
-  script.src = url;
-  script.async = true;
-
-  var errorHandler = pfnError || config.error;
-  if ( typeof errorHandler === 'function' ) {
-    script.onerror = function (ex){
-      errorHandler({url: url, event: ex});
-    };
-  }
-
-  script.onload = script.onreadystatechange = function () {
-    if ( !done && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") ) {
-      done = true;
-      script.onload = script.onreadystatechange = null;
-      if ( script && script.parentNode ) {
-        script.parentNode.removeChild( script );
-      }
-    }
-  };
-
-  if ( !head ) {
-    head = document.getElementsByTagName('head')[0];
-  }
-  head.appendChild( script );
-}
-
-function jsonp(url, params, callback, callbackName) {
-  var urlParams, key, uniqueName;
-
-  callbackName = (callbackName||config['callbackName']||'callback');
-  uniqueName = callbackName + "_json" + util.generateUUID();
-  params[callbackName] = uniqueName;
-  urlParams = util.createURLParams(url, params)
-
-  window[ uniqueName ] = function (data){
-    callback(null, data, uniqueName);
-    try {
-      delete window[ uniqueName ];
-    } catch (e) {}
-    window[ uniqueName ] = null;
-  };
-
-  load(urlParams, function (err) {
-    callback(err, null, uniqueName);
-  });
-  return uniqueName;
-}
-
-function setDefaults(obj){
-  config = obj;
-}
-
-module.exports = {
-  get: jsonp,
-  init: setDefaults
-};
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./util":8}],6:[function(_dereq_,module,exports){
-'use strict';
-
-module.exports = function (body) {
-  try {
-    body = JSON.parse(body);
-  } catch (e) {}
-
-  return body;
-};
-
-},{}],7:[function(_dereq_,module,exports){
-'use strict';
-
-module.exports = function (method, body) {
-  if (typeof method !== 'string') {
-    throw new Error('Method must be a string');
-  }
-
-  if (method.toLowerCase() !== 'get' && body != null) {
-    body = typeof body === 'string' ? body : JSON.stringify(body);
-  }
-
-  return body;
-};
-
-},{}],8:[function(_dereq_,module,exports){
-(function (global){
-'use strict';
-
-function notEmpty(obj) {
-  var key;
-
-  for (key in obj) {
-    if (obj.hasOwnProperty(key)) { return true; }
-  }
-
-  return false;
-}
-
-function isArray(value) {
-  return value && typeof value === 'object' && typeof value.length === 'number' &&
-    Object.prototype.toString.call(value) === '[object Array]' || false;
-}
-
-function stringify(params, namespace) {
-  var query = [], k, v, p;
-
-  for (p in params) {
-    if (!params.hasOwnProperty(p)) {
-      continue;
-    }
-
-    v = params[p];
-
-    if (namespace) {
-      if (isArray(params)) {
-        k = namespace + '[]';
-      } else {
-        k = namespace + '[' + p + ']';
-      }
-    } else {
-      k = p;
-    }
-    if (typeof v === 'object') {
-      query.push(stringify(v, k));
-    } else {
-      query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
-    }
-  }
-
-  return query.join('&');
-}
-
-function generateUUID() { // RFC 4122 v4 (pseudo-random) UUID without hyphens
-  return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function (xORy) {
-    var randomHex = Math.floor(Math.random() * 16);
-    var uuidHex = xORy === 'x' ? randomHex : randomHex & 0x3 | 0x8; // jshint ignore:line
-    return uuidHex.toString(16);
-  });
-}
-
-function createURLParams(url, params) {
-  url = url || '';
-
-  if (params != null && typeof params === 'object' && notEmpty(params)) {
-    url += url.indexOf('?') === -1 ? '?' : '';
-    url += url.indexOf('=') !== -1 ? '&' : '';
-    url += stringify(params);
-  }
-
-  return url;
-}
-
-function getUserAgent() {
-  return global.navigator.userAgent;
-}
-
-function isHTTP() {
-  return global.location.protocol === 'http:';
-}
-
-module.exports = {
-  isArray: isArray,
-  generateUUID: generateUUID,
-  stringify: stringify,
-  createURLParams: createURLParams,
-  getUserAgent: getUserAgent,
-  isHTTP: isHTTP
-};
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],9:[function(_dereq_,module,exports){
-'use strict';
-
-var AJAXDriver = _dereq_('./lib/ajax-driver');
-var JSONPDriver = _dereq_('./lib/jsonp-driver');
-var chooseDriver = _dereq_('./lib/choose-driver');
-var util = _dereq_('./lib/util');
-
-module.exports = {
-  AJAXDriver: AJAXDriver,
-  JSONPDriver: JSONPDriver,
-  chooseDriver: chooseDriver,
-  util: util
-};
-
-},{"./lib/ajax-driver":1,"./lib/choose-driver":2,"./lib/jsonp-driver":4,"./lib/util":8}],10:[function(_dereq_,module,exports){
-'use strict';
-
-var chooseDriver = _dereq_('braintree-request').chooseDriver;
+var request = _dereq_('./request');
 var isWhitelistedDomain = _dereq_('../lib/is-whitelisted-domain');
 var BraintreeError = _dereq_('../lib/error');
 var addMetadata = _dereq_('../lib/add-metadata');
 var deferred = _dereq_('../lib/deferred');
-
-function _id(x) { return x; }
 
 /**
  * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
@@ -436,7 +62,7 @@ function Client(configuration) {
     return JSON.parse(configurationJSON);
   };
 
-  this._driver = chooseDriver({enableCORS: true});
+  this._request = request;
   this._baseUrl = configuration.gatewayConfiguration.clientApiUrl + '/v1/';
   this._configuration = this.getConfiguration();
 
@@ -504,23 +130,22 @@ Client.prototype.request = function (options, callback) {
     return;
   }
 
-  this._driver[options.method](
-    this._baseUrl + options.endpoint,
-    addMetadata(this._configuration, options.data),
-    _id,
-    callback,
-    options.timeout
-  );
+  this._request({
+    url: this._baseUrl + options.endpoint,
+    method: options.method,
+    data: addMetadata(this._configuration, options.data),
+    timeout: options.timeout
+  }, callback);
 };
 
 module.exports = Client;
 
-},{"../lib/add-metadata":13,"../lib/deferred":16,"../lib/error":18,"../lib/is-whitelisted-domain":19,"braintree-request":9}],11:[function(_dereq_,module,exports){
+},{"../lib/add-metadata":12,"../lib/deferred":15,"../lib/error":17,"../lib/is-whitelisted-domain":18,"./request":7}],2:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
 var BraintreeError = _dereq_('../lib/error');
-var chooseDriver = _dereq_('braintree-request').chooseDriver;
+var request = _dereq_('./request');
 var uuid = _dereq_('../lib/uuid');
 var constants = _dereq_('../lib/constants');
 var createAuthorizationData = _dereq_('../lib/create-authorization-data');
@@ -553,28 +178,28 @@ function getConfiguration(options, callback) {
   attrs._meta = analyticsMetadata;
   attrs.braintreeLibraryVersion = constants.BRAINTREE_LIBRARY_VERSION;
 
-  chooseDriver({enableCORS: true}).get(
-    configUrl,
-    attrs,
-    function (d) {
-      return d;
-    },
-    function (err, response) {
-      // TODO: We will refactor this when braintree-request has better error handling.
-      if (err) {
-        callback(err);
-        return;
-      }
-
-      configuration = {
-        authorization: options.authorization,
-        analyticsMetadata: analyticsMetadata,
-        gatewayConfiguration: response
-      };
-
-      callback(null, configuration);
+  request({
+    url: configUrl,
+    method: 'GET',
+    data: attrs
+  }, function (err, response) {
+    if (err) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        message: 'Cannot contact the gateway at this time.',
+        details: err
+      }));
+      return;
     }
-  );
+
+    configuration = {
+      authorization: options.authorization,
+      analyticsMetadata: analyticsMetadata,
+      gatewayConfiguration: response
+    };
+
+    callback(null, configuration);
+  });
 }
 
 module.exports = {
@@ -582,13 +207,13 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../lib/constants":14,"../lib/create-authorization-data":15,"../lib/error":18,"../lib/uuid":22,"braintree-request":9}],12:[function(_dereq_,module,exports){
+},{"../lib/constants":13,"../lib/create-authorization-data":14,"../lib/error":17,"../lib/uuid":22,"./request":7}],3:[function(_dereq_,module,exports){
 'use strict';
 
 var BraintreeError = _dereq_('../lib/error');
 var Client = _dereq_('./client');
 var getConfiguration = _dereq_('./get-configuration').getConfiguration;
-var packageVersion = "3.0.0-beta.7";
+var packageVersion = "3.0.0-beta.8";
 var deferred = _dereq_('../lib/deferred');
 
 /** @module braintree-web/client */
@@ -631,18 +256,8 @@ function create(options, callback) {
   getConfiguration(options, function (err, configuration) {
     var client;
 
-    if (err != null) {
-      // TODO: We will refactor this when braintree-request has better error handling.
-      if (err.errors === 'Unknown error') {
-        callback(new BraintreeError({
-          type: BraintreeError.types.NETWORK,
-          message: 'Cannot contact the gateway at this time.'
-        }));
-      } else {
-        // TODO: This is not a BraintreeError; blocked by braintree-request refactor.
-        callback(err);
-      }
-
+    if (err) {
+      callback(err);
       return;
     }
 
@@ -666,7 +281,272 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"../lib/deferred":16,"../lib/error":18,"./client":10,"./get-configuration":11}],13:[function(_dereq_,module,exports){
+},{"../lib/deferred":15,"../lib/error":17,"./client":1,"./get-configuration":2}],4:[function(_dereq_,module,exports){
+(function (global){
+'use strict';
+
+var querystring = _dereq_('../../lib/querystring');
+var prepBody = _dereq_('./prep-body');
+var parseBody = _dereq_('./parse-body');
+var constants = _dereq_('./constants');
+var isXHRAvailable = global.XMLHttpRequest && 'withCredentials' in new global.XMLHttpRequest();
+
+function getRequestObject() {
+  return isXHRAvailable ? new XMLHttpRequest() : new XDomainRequest();
+}
+
+function request(options, callback) {
+  var status, resBody;
+  var method = (options.method || 'GET').toUpperCase();
+  var url = options.url;
+  var body = options.data || {};
+  var timeout = options.timeout == null ? 60000 : options.timeout;
+  var req = getRequestObject();
+
+  callback = callback || function () {};
+
+  if (method === 'GET') {
+    url = querystring.queryify(url, body);
+    body = null;
+  }
+
+  if (isXHRAvailable) {
+    req.onreadystatechange = function () {
+      if (req.readyState !== 4) { return; }
+
+      status = req.status;
+      resBody = parseBody(req.responseText);
+
+      if (status >= 400 || status === 0) {
+        callback(resBody || {errors: constants.errors.UNKNOWN_ERROR}, null, 500);
+      } else if (status > 0) {
+        callback(null, resBody, status);
+      }
+    };
+  } else {
+    req.onload = function () {
+      callback(null, parseBody(req.responseText), req.status);
+    };
+
+    req.onerror = function () {
+      callback(req.responseText, null, req.status);
+    };
+
+    // This must remain for IE9 to work
+    req.onprogress = function () {};
+
+    req.ontimeout = function () {
+      callback(constants.errors.TIMEOUT_ERROR, null, 500);
+    };
+  }
+
+  req.open(method, url, true);
+  req.timeout = timeout;
+
+  if (isXHRAvailable && method === 'POST') {
+    req.setRequestHeader('Content-Type', 'application/json');
+  }
+
+  setTimeout(function () {
+    req.send(prepBody(method, body));
+  }, 1);
+}
+
+module.exports = {
+  request: request
+};
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"../../lib/querystring":21,"./constants":5,"./parse-body":10,"./prep-body":11}],5:[function(_dereq_,module,exports){
+module.exports={
+  "errors": {
+    "UNKNOWN_ERROR": "Unknown error",
+    "TIMEOUT_ERROR": "Request timed out waiting for a reply",
+    "INVALID_TIMEOUT": "Timeout must be a number"
+  }
+};
+
+},{}],6:[function(_dereq_,module,exports){
+(function (global){
+'use strict';
+
+module.exports = function getUserAgent() {
+  return global.navigator.userAgent;
+};
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],7:[function(_dereq_,module,exports){
+'use strict';
+
+var JSONPDriver = _dereq_('./jsonp-driver');
+var AJAXDriver = _dereq_('./ajax-driver');
+var getUserAgent = _dereq_('./get-user-agent');
+var isHTTP = _dereq_('./is-http');
+var ajaxIsAvaliable = !(isHTTP() && /MSIE\s(8|9)/.test(getUserAgent()));
+
+if (ajaxIsAvaliable) {
+  module.exports = function () {
+    AJAXDriver.request.apply(null, arguments);
+  };
+} else {
+  module.exports = function () {
+    JSONPDriver.request.apply(null, arguments);
+  };
+}
+
+},{"./ajax-driver":4,"./get-user-agent":6,"./is-http":8,"./jsonp-driver":9}],8:[function(_dereq_,module,exports){
+(function (global){
+'use strict';
+
+module.exports = function () {
+  return global.location.protocol === 'http:';
+};
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],9:[function(_dereq_,module,exports){
+(function (global){
+'use strict';
+
+var head;
+var constants = _dereq_('./constants');
+var uuid = _dereq_('../../lib/uuid');
+var querystring = _dereq_('../../lib/querystring');
+var timeouts = {};
+
+function _noop() {}
+
+function _removeScript(script) {
+  if (script && script.parentNode) {
+    script.parentNode.removeChild(script);
+  }
+}
+
+function _createScriptTag(url, callbackName) {
+  var script = document.createElement('script');
+  var done = false;
+
+  script.src = url;
+  script.async = true;
+  script.onerror = function () {
+    global[callbackName]({message: constants.errors.UNKNOWN_ERROR, status: 500});
+  };
+
+  script.onload = script.onreadystatechange = function () {
+    if (done) { return; }
+
+    if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
+      done = true;
+      script.onload = script.onreadystatechange = null;
+    }
+  };
+
+  return script;
+}
+
+function _cleanupGlobal(callbackName) {
+  try {
+    delete global[callbackName];
+  } catch (_) {
+    global[callbackName] = null;
+  }
+}
+
+function _setupTimeout(timeout, callbackName) {
+  timeouts[callbackName] = setTimeout(function () {
+    timeouts[callbackName] = null;
+
+    global[callbackName]({
+      error: constants.errors.TIMEOUT_ERROR,
+      status: 500
+    });
+
+    global[callbackName] = function () {
+      _cleanupGlobal(callbackName);
+    };
+  }, timeout);
+}
+
+function _setupGlobalCallback(script, callback, callbackName) {
+  callback = callback || _noop;
+
+  global[callbackName] = function (response) {
+    var status = response.status || 500;
+    var err = null;
+    var data = null;
+
+    delete response.status;
+
+    if (status >= 400) {
+      err = response;
+    } else {
+      data = response;
+    }
+
+    _cleanupGlobal(callbackName);
+    _removeScript(script);
+
+    clearTimeout(timeouts[callbackName]);
+    callback(err, data, status);
+  };
+}
+
+function request(options, callback) {
+  var script;
+  var callbackName = 'callback_json_' + uuid().replace(/-/g, '');
+  var url = options.url;
+  var attrs = options.data;
+  var method = (options.method || 'GET').toUpperCase();
+  var timeout = options.timeout == null ? 60000 : options.timeout;
+
+  url = querystring.queryify(url, attrs);
+  url = querystring.queryify(url, {
+    _method: method,
+    callback: callbackName
+  });
+
+  script = _createScriptTag(url, callbackName);
+  _setupGlobalCallback(script, callback, callbackName);
+  _setupTimeout(timeout, callbackName);
+
+  if (!head) {
+    head = document.getElementsByTagName('head')[0];
+  }
+
+  head.appendChild(script);
+}
+
+module.exports = {
+  request: request
+};
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"../../lib/querystring":21,"../../lib/uuid":22,"./constants":5}],10:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (body) {
+  try {
+    body = JSON.parse(body);
+  } catch (e) { /* ignored */ }
+
+  return body;
+};
+
+},{}],11:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function (method, body) {
+  if (typeof method !== 'string') {
+    throw new Error('Method must be a string');
+  }
+
+  if (method.toLowerCase() !== 'get' && body != null) {
+    body = typeof body === 'string' ? body : JSON.stringify(body);
+  }
+
+  return body;
+};
+
+},{}],12:[function(_dereq_,module,exports){
 'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
@@ -689,8 +569,8 @@ function addMetadata(configuration, data) {
 
   attrs._meta = _meta;
 
-  if (authAttrs.clientKey) {
-    attrs.clientKey = authAttrs.clientKey;
+  if (authAttrs.tokenizationKey) {
+    attrs.tokenizationKey = authAttrs.tokenizationKey;
   } else {
     attrs.authorizationFingerprint = authAttrs.authorizationFingerprint;
   }
@@ -700,10 +580,10 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":14,"./create-authorization-data":15,"./json-clone":20}],14:[function(_dereq_,module,exports){
+},{"./constants":13,"./create-authorization-data":14,"./json-clone":19}],13:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -716,7 +596,7 @@ module.exports = {
   BRAINTREE_LIBRARY_VERSION: 'braintree/' + PLATFORM + '/' + VERSION
 };
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],14:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -752,7 +632,7 @@ function createAuthorizationData(authorization) {
 
   if (_isTokenizationKey(authorization)) {
     parsedTokenizationKey = _parseTokenizationKey(authorization);
-    data.attrs.clientKey = authorization;
+    data.attrs.tokenizationKey = authorization;
     data.configUrl = apiUrls[parsedTokenizationKey.environment] + '/merchants/' + parsedTokenizationKey.merchantId + '/client_api/v1/configuration';
   } else {
     parsedClientToken = JSON.parse(atob(authorization));
@@ -765,7 +645,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":21}],16:[function(_dereq_,module,exports){
+},{"../lib/polyfill":20}],15:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (fn) {
@@ -779,7 +659,7 @@ module.exports = function (fn) {
   };
 };
 
-},{}],17:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -793,7 +673,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],18:[function(_dereq_,module,exports){
+},{}],17:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -858,7 +738,7 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":17}],19:[function(_dereq_,module,exports){
+},{"./enumerate":16}],18:[function(_dereq_,module,exports){
 'use strict';
 
 var parser = document.createElement('a');
@@ -874,7 +754,7 @@ function isWhitelistedDomain(url) {
 
   url = url.toLowerCase();
 
-  if (!/^http/.test(url)) {
+  if (!/^https:/.test(url)) {
     return false;
   }
 
@@ -887,14 +767,14 @@ function isWhitelistedDomain(url) {
 
 module.exports = isWhitelistedDomain;
 
-},{}],20:[function(_dereq_,module,exports){
+},{}],19:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],21:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -933,6 +813,97 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],21:[function(_dereq_,module,exports){
+(function (global){
+'use strict';
+
+function _notEmpty(obj) {
+  var key;
+
+  for (key in obj) {
+    if (obj.hasOwnProperty(key)) { return true; }
+  }
+
+  return false;
+}
+
+function _isArray(value) {
+  return value && typeof value === 'object' && typeof value.length === 'number' &&
+    Object.prototype.toString.call(value) === '[object Array]' || false;
+}
+
+function parse(url) {
+  var query, params;
+
+  url = url || global.location.href;
+
+  if (!/\?/.test(url)) {
+    return {};
+  }
+
+  query = url.replace(/#.*$/, '').replace(/^.*\?/, '').split('&');
+
+  params = query.reduce(function (toReturn, keyValue) {
+    var parts = keyValue.split('=');
+    var key = decodeURIComponent(parts[0]);
+    var value = decodeURIComponent(parts[1]);
+
+    toReturn[key] = value;
+    return toReturn;
+  }, {});
+
+  return params;
+}
+
+function stringify(params, namespace) {
+  var k, v, p;
+  var query = [];
+
+  for (p in params) {
+    if (!params.hasOwnProperty(p)) {
+      continue;
+    }
+
+    v = params[p];
+
+    if (namespace) {
+      if (_isArray(params)) {
+        k = namespace + '[]';
+      } else {
+        k = namespace + '[' + p + ']';
+      }
+    } else {
+      k = p;
+    }
+    if (typeof v === 'object') {
+      query.push(stringify(v, k));
+    } else {
+      query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+    }
+  }
+
+  return query.join('&');
+}
+
+function queryify(url, params) {
+  url = url || '';
+
+  if (params != null && typeof params === 'object' && _notEmpty(params)) {
+    url += url.indexOf('?') === -1 ? '?' : '';
+    url += url.indexOf('=') !== -1 ? '&' : '';
+    url += stringify(params);
+  }
+
+  return url;
+}
+
+module.exports = {
+  parse: parse,
+  stringify: stringify,
+  queryify: queryify
+};
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],22:[function(_dereq_,module,exports){
 'use strict';
 
@@ -947,5 +918,5 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}]},{},[12])(12)
+},{}]},{},[3])(3)
 });

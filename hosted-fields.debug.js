@@ -1,105 +1,5 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.braintree || (g.braintree = {})).hostedFields = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
-
-var batchExecuteFunctions = _dereq_('batch-execute-functions');
-// Reach into lib for isFunction. This lib requires a DOM and cannot be
-// tested otherwise
-var fnUtil = _dereq_('braintree-utilities/lib/fn');
-
-function Destructor() {
-  this._teardownRegistry = [];
-}
-
-Destructor.prototype.registerFunctionForTeardown = function (fn) {
-  if (fnUtil.isFunction(fn)) {
-    this._teardownRegistry.push(fn);
-  }
-};
-
-Destructor.prototype.teardown = function (callback) {
-  batchExecuteFunctions(this._teardownRegistry, fnUtil.bind(function (err) {
-    this._teardownRegistry = [];
-
-    if (fnUtil.isFunction(callback)) {
-      callback(err);
-    }
-  }, this));
-};
-
-module.exports = Destructor;
-
-},{"batch-execute-functions":2,"braintree-utilities/lib/fn":3}],2:[function(_dereq_,module,exports){
-'use strict';
-
-function call(fn, callback) {
-  var isSync = fn.length === 0;
-  var wrappedCallback;
-
-  if (isSync) {
-    fn();
-    callback(null);
-  } else {
-    wrappedCallback = once(callback);
-    fn(wrappedCallback);
-  }
-}
-
-function once(fn) {
-  var called = false;
-  return function () {
-    if (!called) {
-      called = true;
-      fn.apply(this, arguments);
-    }
-  };
-}
-
-module.exports = function (functions, callback) {
-  var length = functions.length;
-  var remaining = length;
-
-  if (length === 0) {
-    callback(null);
-    return;
-  }
-
-  for (var i = 0; i < length; i++) {
-    call(functions[i], function (err) {
-      if (err) {
-        callback(err);
-        return;
-      }
-
-      remaining -= 1;
-      if (remaining === 0) {
-        callback(null);
-      }
-    });
-  }
-};
-
-},{}],3:[function(_dereq_,module,exports){
-'use strict';
-
-var toString = Object.prototype.toString;
-
-function isFunction(func) {
-  return toString.call(func) === '[object Function]';
-}
-
-function bind(func, context) {
-  return function () {
-    return func.apply(context, arguments);
-  };
-}
-
-module.exports = {
-  bind: bind,
-  isFunction: isFunction
-};
-
-},{}],4:[function(_dereq_,module,exports){
-'use strict';
 (function (root, factory) {
   if (typeof exports === 'object' && typeof module !== 'undefined') {
     module.exports = factory();
@@ -374,19 +274,18 @@ module.exports = {
   return framebus;
 });
 
-},{}],5:[function(_dereq_,module,exports){
+},{}],2:[function(_dereq_,module,exports){
 'use strict';
 
-var assign = _dereq_('lodash/object/assign');
-var isString = _dereq_('lodash/lang/isString');
-var setAttributes = _dereq_('setattributes');
+var setAttributes = _dereq_('./lib/set-attributes');
 var defaultAttributes = _dereq_('./lib/default-attributes');
+var assign = _dereq_('./lib/assign');
 
 module.exports = function createFrame(options) {
   var iframe = document.createElement('iframe');
   var config = assign({}, defaultAttributes, options);
 
-  if (config.style && !isString(config.style)) {
+  if (config.style && typeof config.style !== 'string') {
     assign(iframe.style, config.style);
     delete config.style;
   }
@@ -400,7 +299,24 @@ module.exports = function createFrame(options) {
   return iframe;
 };
 
-},{"./lib/default-attributes":6,"lodash/lang/isString":27,"lodash/object/assign":28,"setattributes":32}],6:[function(_dereq_,module,exports){
+},{"./lib/assign":3,"./lib/default-attributes":4,"./lib/set-attributes":5}],3:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function assign(target) {
+  var objs = Array.prototype.slice.call(arguments, 1);
+
+  objs.forEach(function (obj) {
+    if (typeof obj !== 'object') { return; }
+
+    Object.keys(obj).forEach(function (key) {
+      target[key] = obj[key];
+    });
+  });
+
+  return target;
+}
+
+},{}],4:[function(_dereq_,module,exports){
 module.exports={
   "src": "about:blank",
   "frameBorder": 0,
@@ -408,849 +324,9 @@ module.exports={
   "scrolling": "no"
 }
 
-},{}],7:[function(_dereq_,module,exports){
-/** Used as the `TypeError` message for "Functions" methods. */
-var FUNC_ERROR_TEXT = 'Expected a function';
+},{}],5:[function(_dereq_,module,exports){
+'use strict';
 
-/* Native method references for those with the same name as other `lodash` methods. */
-var nativeMax = Math.max;
-
-/**
- * Creates a function that invokes `func` with the `this` binding of the
- * created function and arguments from `start` and beyond provided as an array.
- *
- * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/Web/JavaScript/Reference/Functions/rest_parameters).
- *
- * @static
- * @memberOf _
- * @category Function
- * @param {Function} func The function to apply a rest parameter to.
- * @param {number} [start=func.length-1] The start position of the rest parameter.
- * @returns {Function} Returns the new function.
- * @example
- *
- * var say = _.restParam(function(what, names) {
- *   return what + ' ' + _.initial(names).join(', ') +
- *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
- * });
- *
- * say('hello', 'fred', 'barney', 'pebbles');
- * // => 'hello fred, barney, & pebbles'
- */
-function restParam(func, start) {
-  if (typeof func != 'function') {
-    throw new TypeError(FUNC_ERROR_TEXT);
-  }
-  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
-  return function() {
-    var args = arguments,
-        index = -1,
-        length = nativeMax(args.length - start, 0),
-        rest = Array(length);
-
-    while (++index < length) {
-      rest[index] = args[start + index];
-    }
-    switch (start) {
-      case 0: return func.call(this, rest);
-      case 1: return func.call(this, args[0], rest);
-      case 2: return func.call(this, args[0], args[1], rest);
-    }
-    var otherArgs = Array(start + 1);
-    index = -1;
-    while (++index < start) {
-      otherArgs[index] = args[index];
-    }
-    otherArgs[start] = rest;
-    return func.apply(this, otherArgs);
-  };
-}
-
-module.exports = restParam;
-
-},{}],8:[function(_dereq_,module,exports){
-var keys = _dereq_('../object/keys');
-
-/**
- * A specialized version of `_.assign` for customizing assigned values without
- * support for argument juggling, multiple sources, and `this` binding `customizer`
- * functions.
- *
- * @private
- * @param {Object} object The destination object.
- * @param {Object} source The source object.
- * @param {Function} customizer The function to customize assigned values.
- * @returns {Object} Returns `object`.
- */
-function assignWith(object, source, customizer) {
-  var index = -1,
-      props = keys(source),
-      length = props.length;
-
-  while (++index < length) {
-    var key = props[index],
-        value = object[key],
-        result = customizer(value, source[key], key, object, source);
-
-    if ((result === result ? (result !== value) : (value === value)) ||
-        (value === undefined && !(key in object))) {
-      object[key] = result;
-    }
-  }
-  return object;
-}
-
-module.exports = assignWith;
-
-},{"../object/keys":29}],9:[function(_dereq_,module,exports){
-var baseCopy = _dereq_('./baseCopy'),
-    keys = _dereq_('../object/keys');
-
-/**
- * The base implementation of `_.assign` without support for argument juggling,
- * multiple sources, and `customizer` functions.
- *
- * @private
- * @param {Object} object The destination object.
- * @param {Object} source The source object.
- * @returns {Object} Returns `object`.
- */
-function baseAssign(object, source) {
-  return source == null
-    ? object
-    : baseCopy(source, keys(source), object);
-}
-
-module.exports = baseAssign;
-
-},{"../object/keys":29,"./baseCopy":10}],10:[function(_dereq_,module,exports){
-/**
- * Copies properties of `source` to `object`.
- *
- * @private
- * @param {Object} source The object to copy properties from.
- * @param {Array} props The property names to copy.
- * @param {Object} [object={}] The object to copy properties to.
- * @returns {Object} Returns `object`.
- */
-function baseCopy(source, props, object) {
-  object || (object = {});
-
-  var index = -1,
-      length = props.length;
-
-  while (++index < length) {
-    var key = props[index];
-    object[key] = source[key];
-  }
-  return object;
-}
-
-module.exports = baseCopy;
-
-},{}],11:[function(_dereq_,module,exports){
-/**
- * The base implementation of `_.property` without support for deep paths.
- *
- * @private
- * @param {string} key The key of the property to get.
- * @returns {Function} Returns the new function.
- */
-function baseProperty(key) {
-  return function(object) {
-    return object == null ? undefined : object[key];
-  };
-}
-
-module.exports = baseProperty;
-
-},{}],12:[function(_dereq_,module,exports){
-var identity = _dereq_('../utility/identity');
-
-/**
- * A specialized version of `baseCallback` which only supports `this` binding
- * and specifying the number of arguments to provide to `func`.
- *
- * @private
- * @param {Function} func The function to bind.
- * @param {*} thisArg The `this` binding of `func`.
- * @param {number} [argCount] The number of arguments to provide to `func`.
- * @returns {Function} Returns the callback.
- */
-function bindCallback(func, thisArg, argCount) {
-  if (typeof func != 'function') {
-    return identity;
-  }
-  if (thisArg === undefined) {
-    return func;
-  }
-  switch (argCount) {
-    case 1: return function(value) {
-      return func.call(thisArg, value);
-    };
-    case 3: return function(value, index, collection) {
-      return func.call(thisArg, value, index, collection);
-    };
-    case 4: return function(accumulator, value, index, collection) {
-      return func.call(thisArg, accumulator, value, index, collection);
-    };
-    case 5: return function(value, other, key, object, source) {
-      return func.call(thisArg, value, other, key, object, source);
-    };
-  }
-  return function() {
-    return func.apply(thisArg, arguments);
-  };
-}
-
-module.exports = bindCallback;
-
-},{"../utility/identity":31}],13:[function(_dereq_,module,exports){
-var bindCallback = _dereq_('./bindCallback'),
-    isIterateeCall = _dereq_('./isIterateeCall'),
-    restParam = _dereq_('../function/restParam');
-
-/**
- * Creates a `_.assign`, `_.defaults`, or `_.merge` function.
- *
- * @private
- * @param {Function} assigner The function to assign values.
- * @returns {Function} Returns the new assigner function.
- */
-function createAssigner(assigner) {
-  return restParam(function(object, sources) {
-    var index = -1,
-        length = object == null ? 0 : sources.length,
-        customizer = length > 2 ? sources[length - 2] : undefined,
-        guard = length > 2 ? sources[2] : undefined,
-        thisArg = length > 1 ? sources[length - 1] : undefined;
-
-    if (typeof customizer == 'function') {
-      customizer = bindCallback(customizer, thisArg, 5);
-      length -= 2;
-    } else {
-      customizer = typeof thisArg == 'function' ? thisArg : undefined;
-      length -= (customizer ? 1 : 0);
-    }
-    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
-      customizer = length < 3 ? undefined : customizer;
-      length = 1;
-    }
-    while (++index < length) {
-      var source = sources[index];
-      if (source) {
-        assigner(object, source, customizer);
-      }
-    }
-    return object;
-  });
-}
-
-module.exports = createAssigner;
-
-},{"../function/restParam":7,"./bindCallback":12,"./isIterateeCall":18}],14:[function(_dereq_,module,exports){
-var baseProperty = _dereq_('./baseProperty');
-
-/**
- * Gets the "length" property value of `object`.
- *
- * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
- * that affects Safari on at least iOS 8.1-8.3 ARM64.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {*} Returns the "length" value.
- */
-var getLength = baseProperty('length');
-
-module.exports = getLength;
-
-},{"./baseProperty":11}],15:[function(_dereq_,module,exports){
-var isNative = _dereq_('../lang/isNative');
-
-/**
- * Gets the native function at `key` of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @param {string} key The key of the method to get.
- * @returns {*} Returns the function if it's native, else `undefined`.
- */
-function getNative(object, key) {
-  var value = object == null ? undefined : object[key];
-  return isNative(value) ? value : undefined;
-}
-
-module.exports = getNative;
-
-},{"../lang/isNative":25}],16:[function(_dereq_,module,exports){
-var getLength = _dereq_('./getLength'),
-    isLength = _dereq_('./isLength');
-
-/**
- * Checks if `value` is array-like.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
- */
-function isArrayLike(value) {
-  return value != null && isLength(getLength(value));
-}
-
-module.exports = isArrayLike;
-
-},{"./getLength":14,"./isLength":19}],17:[function(_dereq_,module,exports){
-/** Used to detect unsigned integer values. */
-var reIsUint = /^\d+$/;
-
-/**
- * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
- * of an array-like value.
- */
-var MAX_SAFE_INTEGER = 9007199254740991;
-
-/**
- * Checks if `value` is a valid array-like index.
- *
- * @private
- * @param {*} value The value to check.
- * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
- * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
- */
-function isIndex(value, length) {
-  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
-  length = length == null ? MAX_SAFE_INTEGER : length;
-  return value > -1 && value % 1 == 0 && value < length;
-}
-
-module.exports = isIndex;
-
-},{}],18:[function(_dereq_,module,exports){
-var isArrayLike = _dereq_('./isArrayLike'),
-    isIndex = _dereq_('./isIndex'),
-    isObject = _dereq_('../lang/isObject');
-
-/**
- * Checks if the provided arguments are from an iteratee call.
- *
- * @private
- * @param {*} value The potential iteratee value argument.
- * @param {*} index The potential iteratee index or key argument.
- * @param {*} object The potential iteratee object argument.
- * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
- */
-function isIterateeCall(value, index, object) {
-  if (!isObject(object)) {
-    return false;
-  }
-  var type = typeof index;
-  if (type == 'number'
-      ? (isArrayLike(object) && isIndex(index, object.length))
-      : (type == 'string' && index in object)) {
-    var other = object[index];
-    return value === value ? (value === other) : (other !== other);
-  }
-  return false;
-}
-
-module.exports = isIterateeCall;
-
-},{"../lang/isObject":26,"./isArrayLike":16,"./isIndex":17}],19:[function(_dereq_,module,exports){
-/**
- * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
- * of an array-like value.
- */
-var MAX_SAFE_INTEGER = 9007199254740991;
-
-/**
- * Checks if `value` is a valid array-like length.
- *
- * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
- */
-function isLength(value) {
-  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-}
-
-module.exports = isLength;
-
-},{}],20:[function(_dereq_,module,exports){
-/**
- * Checks if `value` is object-like.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- */
-function isObjectLike(value) {
-  return !!value && typeof value == 'object';
-}
-
-module.exports = isObjectLike;
-
-},{}],21:[function(_dereq_,module,exports){
-var isArguments = _dereq_('../lang/isArguments'),
-    isArray = _dereq_('../lang/isArray'),
-    isIndex = _dereq_('./isIndex'),
-    isLength = _dereq_('./isLength'),
-    keysIn = _dereq_('../object/keysIn');
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * A fallback implementation of `Object.keys` which creates an array of the
- * own enumerable property names of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- */
-function shimKeys(object) {
-  var props = keysIn(object),
-      propsLength = props.length,
-      length = propsLength && object.length;
-
-  var allowIndexes = !!length && isLength(length) &&
-    (isArray(object) || isArguments(object));
-
-  var index = -1,
-      result = [];
-
-  while (++index < propsLength) {
-    var key = props[index];
-    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-module.exports = shimKeys;
-
-},{"../lang/isArguments":22,"../lang/isArray":23,"../object/keysIn":30,"./isIndex":17,"./isLength":19}],22:[function(_dereq_,module,exports){
-var isArrayLike = _dereq_('../internal/isArrayLike'),
-    isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Native method references. */
-var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-
-/**
- * Checks if `value` is classified as an `arguments` object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isArguments(function() { return arguments; }());
- * // => true
- *
- * _.isArguments([1, 2, 3]);
- * // => false
- */
-function isArguments(value) {
-  return isObjectLike(value) && isArrayLike(value) &&
-    hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee');
-}
-
-module.exports = isArguments;
-
-},{"../internal/isArrayLike":16,"../internal/isObjectLike":20}],23:[function(_dereq_,module,exports){
-var getNative = _dereq_('../internal/getNative'),
-    isLength = _dereq_('../internal/isLength'),
-    isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** `Object#toString` result references. */
-var arrayTag = '[object Array]';
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objToString = objectProto.toString;
-
-/* Native method references for those with the same name as other `lodash` methods. */
-var nativeIsArray = getNative(Array, 'isArray');
-
-/**
- * Checks if `value` is classified as an `Array` object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isArray([1, 2, 3]);
- * // => true
- *
- * _.isArray(function() { return arguments; }());
- * // => false
- */
-var isArray = nativeIsArray || function(value) {
-  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
-};
-
-module.exports = isArray;
-
-},{"../internal/getNative":15,"../internal/isLength":19,"../internal/isObjectLike":20}],24:[function(_dereq_,module,exports){
-var isObject = _dereq_('./isObject');
-
-/** `Object#toString` result references. */
-var funcTag = '[object Function]';
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objToString = objectProto.toString;
-
-/**
- * Checks if `value` is classified as a `Function` object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isFunction(_);
- * // => true
- *
- * _.isFunction(/abc/);
- * // => false
- */
-function isFunction(value) {
-  // The use of `Object#toString` avoids issues with the `typeof` operator
-  // in older versions of Chrome and Safari which return 'function' for regexes
-  // and Safari 8 which returns 'object' for typed array constructors.
-  return isObject(value) && objToString.call(value) == funcTag;
-}
-
-module.exports = isFunction;
-
-},{"./isObject":26}],25:[function(_dereq_,module,exports){
-var isFunction = _dereq_('./isFunction'),
-    isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** Used to detect host constructors (Safari > 5). */
-var reIsHostCtor = /^\[object .+?Constructor\]$/;
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var fnToString = Function.prototype.toString;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Used to detect if a method is native. */
-var reIsNative = RegExp('^' +
-  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
-  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-);
-
-/**
- * Checks if `value` is a native function.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
- * @example
- *
- * _.isNative(Array.prototype.push);
- * // => true
- *
- * _.isNative(_);
- * // => false
- */
-function isNative(value) {
-  if (value == null) {
-    return false;
-  }
-  if (isFunction(value)) {
-    return reIsNative.test(fnToString.call(value));
-  }
-  return isObjectLike(value) && reIsHostCtor.test(value);
-}
-
-module.exports = isNative;
-
-},{"../internal/isObjectLike":20,"./isFunction":24}],26:[function(_dereq_,module,exports){
-/**
- * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
- * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(1);
- * // => false
- */
-function isObject(value) {
-  // Avoid a V8 JIT bug in Chrome 19-20.
-  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-  var type = typeof value;
-  return !!value && (type == 'object' || type == 'function');
-}
-
-module.exports = isObject;
-
-},{}],27:[function(_dereq_,module,exports){
-var isObjectLike = _dereq_('../internal/isObjectLike');
-
-/** `Object#toString` result references. */
-var stringTag = '[object String]';
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objToString = objectProto.toString;
-
-/**
- * Checks if `value` is classified as a `String` primitive or object.
- *
- * @static
- * @memberOf _
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
- * @example
- *
- * _.isString('abc');
- * // => true
- *
- * _.isString(1);
- * // => false
- */
-function isString(value) {
-  return typeof value == 'string' || (isObjectLike(value) && objToString.call(value) == stringTag);
-}
-
-module.exports = isString;
-
-},{"../internal/isObjectLike":20}],28:[function(_dereq_,module,exports){
-var assignWith = _dereq_('../internal/assignWith'),
-    baseAssign = _dereq_('../internal/baseAssign'),
-    createAssigner = _dereq_('../internal/createAssigner');
-
-/**
- * Assigns own enumerable properties of source object(s) to the destination
- * object. Subsequent sources overwrite property assignments of previous sources.
- * If `customizer` is provided it's invoked to produce the assigned values.
- * The `customizer` is bound to `thisArg` and invoked with five arguments:
- * (objectValue, sourceValue, key, object, source).
- *
- * **Note:** This method mutates `object` and is based on
- * [`Object.assign`](http://ecma-international.org/ecma-262/6.0/#sec-object.assign).
- *
- * @static
- * @memberOf _
- * @alias extend
- * @category Object
- * @param {Object} object The destination object.
- * @param {...Object} [sources] The source objects.
- * @param {Function} [customizer] The function to customize assigned values.
- * @param {*} [thisArg] The `this` binding of `customizer`.
- * @returns {Object} Returns `object`.
- * @example
- *
- * _.assign({ 'user': 'barney' }, { 'age': 40 }, { 'user': 'fred' });
- * // => { 'user': 'fred', 'age': 40 }
- *
- * // using a customizer callback
- * var defaults = _.partialRight(_.assign, function(value, other) {
- *   return _.isUndefined(value) ? other : value;
- * });
- *
- * defaults({ 'user': 'barney' }, { 'age': 36 }, { 'user': 'fred' });
- * // => { 'user': 'barney', 'age': 36 }
- */
-var assign = createAssigner(function(object, source, customizer) {
-  return customizer
-    ? assignWith(object, source, customizer)
-    : baseAssign(object, source);
-});
-
-module.exports = assign;
-
-},{"../internal/assignWith":8,"../internal/baseAssign":9,"../internal/createAssigner":13}],29:[function(_dereq_,module,exports){
-var getNative = _dereq_('../internal/getNative'),
-    isArrayLike = _dereq_('../internal/isArrayLike'),
-    isObject = _dereq_('../lang/isObject'),
-    shimKeys = _dereq_('../internal/shimKeys');
-
-/* Native method references for those with the same name as other `lodash` methods. */
-var nativeKeys = getNative(Object, 'keys');
-
-/**
- * Creates an array of the own enumerable property names of `object`.
- *
- * **Note:** Non-object values are coerced to objects. See the
- * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
- * for more details.
- *
- * @static
- * @memberOf _
- * @category Object
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- *   this.b = 2;
- * }
- *
- * Foo.prototype.c = 3;
- *
- * _.keys(new Foo);
- * // => ['a', 'b'] (iteration order is not guaranteed)
- *
- * _.keys('hi');
- * // => ['0', '1']
- */
-var keys = !nativeKeys ? shimKeys : function(object) {
-  var Ctor = object == null ? undefined : object.constructor;
-  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
-      (typeof object != 'function' && isArrayLike(object))) {
-    return shimKeys(object);
-  }
-  return isObject(object) ? nativeKeys(object) : [];
-};
-
-module.exports = keys;
-
-},{"../internal/getNative":15,"../internal/isArrayLike":16,"../internal/shimKeys":21,"../lang/isObject":26}],30:[function(_dereq_,module,exports){
-var isArguments = _dereq_('../lang/isArguments'),
-    isArray = _dereq_('../lang/isArray'),
-    isIndex = _dereq_('../internal/isIndex'),
-    isLength = _dereq_('../internal/isLength'),
-    isObject = _dereq_('../lang/isObject');
-
-/** Used for native method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * Creates an array of the own and inherited enumerable property names of `object`.
- *
- * **Note:** Non-object values are coerced to objects.
- *
- * @static
- * @memberOf _
- * @category Object
- * @param {Object} object The object to query.
- * @returns {Array} Returns the array of property names.
- * @example
- *
- * function Foo() {
- *   this.a = 1;
- *   this.b = 2;
- * }
- *
- * Foo.prototype.c = 3;
- *
- * _.keysIn(new Foo);
- * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
- */
-function keysIn(object) {
-  if (object == null) {
-    return [];
-  }
-  if (!isObject(object)) {
-    object = Object(object);
-  }
-  var length = object.length;
-  length = (length && isLength(length) &&
-    (isArray(object) || isArguments(object)) && length) || 0;
-
-  var Ctor = object.constructor,
-      index = -1,
-      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
-      result = Array(length),
-      skipIndexes = length > 0;
-
-  while (++index < length) {
-    result[index] = (index + '');
-  }
-  for (var key in object) {
-    if (!(skipIndexes && isIndex(key, length)) &&
-        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
-      result.push(key);
-    }
-  }
-  return result;
-}
-
-module.exports = keysIn;
-
-},{"../internal/isIndex":17,"../internal/isLength":19,"../lang/isArguments":22,"../lang/isArray":23,"../lang/isObject":26}],31:[function(_dereq_,module,exports){
-/**
- * This method returns the first argument provided to it.
- *
- * @static
- * @memberOf _
- * @category Utility
- * @param {*} value Any value.
- * @returns {*} Returns `value`.
- * @example
- *
- * var object = { 'user': 'fred' };
- *
- * _.identity(object) === object;
- * // => true
- */
-function identity(value) {
-  return value;
-}
-
-module.exports = identity;
-
-},{}],32:[function(_dereq_,module,exports){
 module.exports = function setAttributes(element, attributes) {
   var value;
 
@@ -1267,7 +343,7 @@ module.exports = function setAttributes(element, attributes) {
   }
 };
 
-},{}],33:[function(_dereq_,module,exports){
+},{}],6:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('../shared/constants');
@@ -1280,10 +356,10 @@ module.exports = function composeUrl(assetsUrl, componentId) {
     componentId;
 };
 
-},{"../shared/constants":37}],34:[function(_dereq_,module,exports){
+},{"../shared/constants":10}],7:[function(_dereq_,module,exports){
 'use strict';
 
-var Destructor = _dereq_('destructor');
+var Destructor = _dereq_('../../lib/destructor');
 var classlist = _dereq_('../../lib/classlist');
 var iFramer = _dereq_('iframer');
 var Bus = _dereq_('../../lib/bus');
@@ -1299,7 +375,7 @@ var EventEmitter = _dereq_('../../lib/event-emitter');
 var injectFrame = _dereq_('./inject-frame');
 var analytics = _dereq_('../../lib/analytics');
 var whitelistedFields = constants.whitelistedFields;
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 var methods = _dereq_('../../lib/methods');
 var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
 var deferred = _dereq_('../../lib/deferred');
@@ -1492,9 +568,11 @@ var deferred = _dereq_('../../lib/deferred');
  * <caption>Listening to a validityChange event</caption>
  * hostedFields.create({ ... }, function (err, instance) {
  *   instance.on('validityChange', function (event) {
- *     if (event.isValid) {
+ *     var field = event.fields[event.emittedBy];
+ *
+ *     if (field.isValid) {
  *       console.log(event.emittedBy, 'is fully valid');
- *     } else if (event.isPotentiallyValid) {
+ *     } else if (field.isPotentiallyValid) {
  *       console.log(event.emittedBy, 'is potentially valid');
  *     } else {
  *       console.log(event.emittedBy, 'is not valid');
@@ -1536,7 +614,7 @@ function inputEventHandler(fields) {
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
 function HostedFields(options) {
-  var field, container, frame, key, failureTimeout, config;
+  var field, container, frame, key, failureTimeout, clientVersion;
   var self = this;
   var fields = {};
   var fieldCount = 0;
@@ -1549,12 +627,11 @@ function HostedFields(options) {
     });
   }
 
-  config = options.client.getConfiguration();
-
-  if (config.analyticsMetadata.sdkVersion !== VERSION) {
+  clientVersion = options.client.getConfiguration().analyticsMetadata.sdkVersion;
+  if (clientVersion !== VERSION) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'Client and Hosted Fields components must be from the same SDK version.'
+      message: 'Client (version ' + clientVersion + ') and Hosted Fields (version ' + VERSION + ') components must be from the same SDK version.'
     });
   }
 
@@ -1859,7 +936,7 @@ HostedFields.prototype.clear = function (field, callback) {
 
 module.exports = HostedFields;
 
-},{"../../lib/analytics":40,"../../lib/bus":43,"../../lib/classlist":44,"../../lib/constants":45,"../../lib/convert-methods-to-error":46,"../../lib/deferred":48,"../../lib/error":50,"../../lib/event-emitter":51,"../../lib/is-ios":52,"../../lib/methods":54,"../../lib/uuid":56,"../shared/constants":37,"../shared/find-parent-tags":38,"./compose-url":33,"./inject-frame":35,"destructor":1,"iframer":5}],35:[function(_dereq_,module,exports){
+},{"../../lib/analytics":13,"../../lib/bus":17,"../../lib/classlist":18,"../../lib/constants":19,"../../lib/convert-methods-to-error":20,"../../lib/deferred":22,"../../lib/destructor":23,"../../lib/error":25,"../../lib/event-emitter":26,"../../lib/is-ios":27,"../../lib/methods":29,"../../lib/uuid":31,"../shared/constants":10,"../shared/find-parent-tags":11,"./compose-url":6,"./inject-frame":8,"iframer":2}],8:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function injectFrame(frame, container) {
@@ -1876,12 +953,13 @@ module.exports = function injectFrame(frame, container) {
   return [frame, clearboth];
 };
 
-},{}],36:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 'use strict';
 
 var HostedFields = _dereq_('./external/hosted-fields');
-var packageVersion = "3.0.0-beta.7";
+var packageVersion = "3.0.0-beta.8";
 var deferred = _dereq_('../lib/deferred');
+var BraintreeError = _dereq_('../lib/error');
 
 /** @module braintree-web/hosted-fields */
 
@@ -1954,6 +1032,13 @@ module.exports = {
   create: function (options, callback) {
     var integration;
 
+    if (typeof callback !== 'function') {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: 'create must include a callback function.'
+      });
+    }
+
     try {
       integration = new HostedFields(options);
     } catch (err) {
@@ -1973,12 +1058,12 @@ module.exports = {
   VERSION: packageVersion
 };
 
-},{"../lib/deferred":48,"./external/hosted-fields":34}],37:[function(_dereq_,module,exports){
+},{"../lib/deferred":22,"../lib/error":25,"./external/hosted-fields":7}],10:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable no-reserved-keys */
 
 var enumerate = _dereq_('../../lib/enumerate');
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 
 var constants = {
   VERSION: VERSION,
@@ -2077,7 +1162,7 @@ constants.events = enumerate([
 
 module.exports = constants;
 
-},{"../../lib/enumerate":49}],38:[function(_dereq_,module,exports){
+},{"../../lib/enumerate":24}],11:[function(_dereq_,module,exports){
 'use strict';
 
 function findParentTags(element, tag) {
@@ -2097,7 +1182,7 @@ function findParentTags(element, tag) {
 
 module.exports = findParentTags;
 
-},{}],39:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 'use strict';
 
 var createAuthorizationData = _dereq_('./create-authorization-data');
@@ -2120,8 +1205,8 @@ function addMetadata(configuration, data) {
 
   attrs._meta = _meta;
 
-  if (authAttrs.clientKey) {
-    attrs.clientKey = authAttrs.clientKey;
+  if (authAttrs.tokenizationKey) {
+    attrs.tokenizationKey = authAttrs.tokenizationKey;
   } else {
     attrs.authorizationFingerprint = authAttrs.authorizationFingerprint;
   }
@@ -2131,7 +1216,7 @@ function addMetadata(configuration, data) {
 
 module.exports = addMetadata;
 
-},{"./constants":45,"./create-authorization-data":47,"./json-clone":53}],40:[function(_dereq_,module,exports){
+},{"./constants":19,"./create-authorization-data":21,"./json-clone":28}],13:[function(_dereq_,module,exports){
 'use strict';
 
 var constants = _dereq_('./constants');
@@ -2141,31 +1226,81 @@ function _millisToSeconds(millis) {
   return Math.floor(millis / 1000);
 }
 
-function _id(x) { return x; }
-
 function sendAnalyticsEvent(client, kind, callback) {
   var configuration = client.getConfiguration();
-  var driver = client._driver;
+  var request = client._request;
   var timestamp = _millisToSeconds(Date.now());
   var url = configuration.gatewayConfiguration.analytics.url;
   var data = {
     analytics: [{kind: kind, timestamp: timestamp}]
   };
 
-  driver.post(
-    url,
-    addMetadata(configuration, data),
-    _id,
-    callback,
-    constants.ANALYTICS_REQUEST_TIMEOUT_MS
-  );
+  request({
+    url: url,
+    method: 'post',
+    data: addMetadata(configuration, data),
+    timeout: constants.ANALYTICS_REQUEST_TIMEOUT_MS
+  }, callback);
 }
 
 module.exports = {
   sendEvent: sendAnalyticsEvent
 };
 
-},{"./add-metadata":39,"./constants":45}],41:[function(_dereq_,module,exports){
+},{"./add-metadata":12,"./constants":19}],14:[function(_dereq_,module,exports){
+'use strict';
+
+function call(fn, callback) {
+  var isSync = fn.length === 0;
+
+  if (isSync) {
+    fn();
+    callback(null);
+  } else {
+    fn(callback);
+  }
+}
+
+function once(fn) {
+  var called = false;
+
+  return function () {
+    if (!called) {
+      called = true;
+      fn.apply(null, arguments);
+    }
+  };
+}
+
+module.exports = function (functions, cb) {
+  var i;
+  var length = functions.length;
+  var remaining = length;
+  var callback = once(cb);
+
+  if (length === 0) {
+    callback(null);
+    return;
+  }
+
+  function finish(err) {
+    if (err) {
+      callback(err);
+      return;
+    }
+
+    remaining -= 1;
+    if (remaining === 0) {
+      callback(null);
+    }
+  }
+
+  for (i = 0; i < length; i++) {
+    call(functions[i], finish);
+  }
+};
+
+},{}],15:[function(_dereq_,module,exports){
 'use strict';
 
 var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
@@ -2193,7 +1328,7 @@ module.exports = {
   checkOrigin: checkOrigin
 };
 
-},{}],42:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('../enumerate');
@@ -2202,7 +1337,7 @@ module.exports = enumerate([
   'CONFIGURATION_REQUEST'
 ], 'bus:');
 
-},{"../enumerate":49}],43:[function(_dereq_,module,exports){
+},{"../enumerate":24}],17:[function(_dereq_,module,exports){
 'use strict';
 
 var bus = _dereq_('framebus');
@@ -2332,7 +1467,7 @@ BraintreeBus.events = events;
 
 module.exports = BraintreeBus;
 
-},{"../error":50,"./check-origin":41,"./events":42,"framebus":4}],44:[function(_dereq_,module,exports){
+},{"../error":25,"./check-origin":15,"./events":16,"framebus":1}],18:[function(_dereq_,module,exports){
 'use strict';
 
 function _classesOf(element) {
@@ -2371,10 +1506,10 @@ module.exports = {
   toggle: toggle
 };
 
-},{}],45:[function(_dereq_,module,exports){
+},{}],19:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.7";
+var VERSION = "3.0.0-beta.8";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -2387,7 +1522,7 @@ module.exports = {
   BRAINTREE_LIBRARY_VERSION: 'braintree/' + PLATFORM + '/' + VERSION
 };
 
-},{}],46:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 'use strict';
 
 var BraintreeError = _dereq_('./error');
@@ -2403,7 +1538,7 @@ module.exports = function (instance, methodNames) {
   });
 };
 
-},{"./error":50}],47:[function(_dereq_,module,exports){
+},{"./error":25}],21:[function(_dereq_,module,exports){
 'use strict';
 
 var atob = _dereq_('../lib/polyfill').atob;
@@ -2439,7 +1574,7 @@ function createAuthorizationData(authorization) {
 
   if (_isTokenizationKey(authorization)) {
     parsedTokenizationKey = _parseTokenizationKey(authorization);
-    data.attrs.clientKey = authorization;
+    data.attrs.tokenizationKey = authorization;
     data.configUrl = apiUrls[parsedTokenizationKey.environment] + '/merchants/' + parsedTokenizationKey.merchantId + '/client_api/v1/configuration';
   } else {
     parsedClientToken = JSON.parse(atob(authorization));
@@ -2452,7 +1587,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":55}],48:[function(_dereq_,module,exports){
+},{"../lib/polyfill":30}],22:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (fn) {
@@ -2466,7 +1601,44 @@ module.exports = function (fn) {
   };
 };
 
-},{}],49:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
+'use strict';
+
+var batchExecuteFunctions = _dereq_('./batch-execute-functions');
+
+function Destructor() {
+  this._teardownRegistry = [];
+
+  this._isTearingDown = false;
+}
+
+Destructor.prototype.registerFunctionForTeardown = function (fn) {
+  if (typeof fn === 'function') {
+    this._teardownRegistry.push(fn);
+  }
+};
+
+Destructor.prototype.teardown = function (callback) {
+  if (this._isTearingDown) {
+    callback(new Error('Destructor is already tearing down'));
+    return;
+  }
+
+  this._isTearingDown = true;
+
+  batchExecuteFunctions(this._teardownRegistry, function (err) {
+    this._teardownRegistry = [];
+    this._isTearingDown = false;
+
+    if (typeof callback === 'function') {
+      callback(err);
+    }
+  }.bind(this));
+};
+
+module.exports = Destructor;
+
+},{"./batch-execute-functions":14}],24:[function(_dereq_,module,exports){
 'use strict';
 
 function enumerate(values, prefix) {
@@ -2480,7 +1652,7 @@ function enumerate(values, prefix) {
 
 module.exports = enumerate;
 
-},{}],50:[function(_dereq_,module,exports){
+},{}],25:[function(_dereq_,module,exports){
 'use strict';
 
 var enumerate = _dereq_('./enumerate');
@@ -2545,7 +1717,7 @@ BraintreeError.types = enumerate([
 
 module.exports = BraintreeError;
 
-},{"./enumerate":49}],51:[function(_dereq_,module,exports){
+},{"./enumerate":24}],26:[function(_dereq_,module,exports){
 'use strict';
 
 function EventEmitter() {
@@ -2575,7 +1747,7 @@ EventEmitter.prototype._emit = function (event) {
 
 module.exports = EventEmitter;
 
-},{}],52:[function(_dereq_,module,exports){
+},{}],27:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function isIos(userAgent) {
@@ -2583,14 +1755,14 @@ module.exports = function isIos(userAgent) {
   return /(iPad|iPhone|iPod)/i.test(userAgent);
 };
 
-},{}],53:[function(_dereq_,module,exports){
+},{}],28:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (value) {
   return JSON.parse(JSON.stringify(value));
 };
 
-},{}],54:[function(_dereq_,module,exports){
+},{}],29:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (obj) {
@@ -2599,7 +1771,7 @@ module.exports = function (obj) {
   });
 };
 
-},{}],55:[function(_dereq_,module,exports){
+},{}],30:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -2638,7 +1810,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],56:[function(_dereq_,module,exports){
+},{}],31:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
@@ -2652,5 +1824,5 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}]},{},[36])(36)
+},{}]},{},[9])(9)
 });
