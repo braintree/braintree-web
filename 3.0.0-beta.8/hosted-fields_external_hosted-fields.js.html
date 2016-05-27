@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>hosted-fields/external/hosted-fields.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">hosted-fields/external/hosted-fields.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+var Destructor = require('../../lib/destructor');
+var classlist = require('../../lib/classlist');
+var iFramer = require('iframer');
+var Bus = require('../../lib/bus');
+var BraintreeError = require('../../lib/error');
+var composeUrl = require('./compose-url');
+var constants = require('../shared/constants');
+var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
+var uuid = require('../../lib/uuid');
+var findParentTags = require('../shared/find-parent-tags');
+var isIos = require('../../lib/is-ios');
+var events = constants.events;
+var EventEmitter = require('../../lib/event-emitter');
+var injectFrame = require('./inject-frame');
+var analytics = require('../../lib/analytics');
+var whitelistedFields = constants.whitelistedFields;
+var VERSION = require('package.version');
+var methods = require('../../lib/methods');
+var convertMethodsToError = require('../../lib/convert-methods-to-error');
+var deferred = require('../../lib/deferred');
+
+/**
+ * @typedef {object} HostedFields~tokenizePayload
+ * @property {string} nonce The payment method nonce.
+ * @property {object} details Additional account details.
+ * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastTwo Last two digits of card number.
+ * @property {string} description A human-readable description.
+ */
+
+/**
+ * @typedef {object} HostedFields~hostedFieldsEventFieldData
+ * @description Data about Hosted Fields fields, sent in {@link HostedFields~hostedFieldsEvent|hostedFieldEvent} objects.
+ * @property {HTMLElement} container Reference to the container DOM element on your page associated with the current event.
+ * @property {boolean} isFocused Whether or not the input is currently focused.
+ * @property {boolean} isEmpty Whether or not the user has entered a value in the input.
+ * @property {boolean} isPotentiallyValid
+ * A determination based on the future validity of the input value.
+ * This is helpful when a user is entering a card number and types &lt;code>"41"&lt;/code>.
+ * While that value is not valid for submission, it is still possible for
+ * it to become a fully qualified entry. However, if the user enters &lt;code>"4x"&lt;/code>
+ * it is clear that the card number can never become valid and isPotentiallyValid will
+ * return false.
+ * @property {boolean} isValid Whether or not the value of the associated input is &lt;i>fully&lt;/i> qualified for submission.
+ */
+
+/**
+ * @typedef {object} HostedFields~hostedFieldsEventCard
+ * @description Information about the card type, sent in {@link HostedFields~hostedFieldsEvent|hostedFieldEvent} objects.
+ * @property {string} type The code-friendly representation of the card type. It will be one of the following strings:
+ * - `american-express`
+ * - `diners-club`
+ * - `discover`
+ * - `jcb`
+ * - `maestro`
+ * - `master-card`
+ * - `unionpay`
+ * - `visa`
+ * @property {string} niceType The pretty-printed card type. It will be one of the following strings:
+ * - `American Express`
+ * - `Diners Club`
+ * - `Discover`
+ * - `JCB`
+ * - `Maestro`
+ * - `MasterCard`
+ * - `UnionPay`
+ * - `Visa`
+ * @property {object} code
+ * This object contains data relevant to the security code requirements of the card brand.
+ * For example, on a Visa card there will be a &lt;code>CVV&lt;/code> of 3 digits, whereas an
+ * American Express card requires a 4-digit &lt;code>CID&lt;/code>.
+ * @property {string} code.name &lt;code>"CVV"&lt;/code> &lt;code>"CID"&lt;/code> &lt;code>"CVC"&lt;/code>
+ * @property {number} code.size The expected length of the security code. Typically, this is 3 or 4.
+ */
+
+/**
+ * @typedef {object} HostedFields~hostedFieldsEvent
+ * @description The event payload sent from {@link HostedFields#on|on}.
+ * @property {string} emittedBy
+ * The name of the field associated with this event. It will be one of the following strings:&lt;br>
+ * - `"number"`
+ * - `"cvv"`
+ * - `"expirationDate"`
+ * - `"expirationMonth"`
+ * - `"expirationYear"`
+ * - `"postalCode"`
+ * @property {object} fields
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.number {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the number field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.cvv {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the CVV field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationDate {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration date field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationMonth {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration month field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationYear {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration year field, if it is present.
+ * @property {?HostedFields~hostedFieldsEventFieldData} fields.postalCode {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the postal code field, if it is present.
+ * @property {HostedFields~hostedFieldsEventCard[]} cards
+ * This will return an array of potential {@link HostedFields~hostedFieldsEventFieldCard|cards}. If the card type has been determined, the array will contain only one card.
+ * Internally, Hosted Fields uses &lt;a href="https://github.com/braintree/credit-card-type">credit-card-type&lt;/a>,
+ * an open-source card detection library.
+ */
+
+/**
+ * @name HostedFields#on
+ * @function
+ * @param {string} event The name of the event to which you are subscribing.
+ * @param {function} handler A callback to handle the event.
+ * @description Subscribes a handler function to a named {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent}. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, or {@link HostedFields#event:validityChange|validityChange}.
+ * @example
+ * &lt;caption>Listening to a Hosted Field event, in this case 'focus'&lt;/caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('focus', function (event) {
+ *     console.log(event.emittedBy, 'has been focused');
+ *   });
+ * });
+ * @returns {void}
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when the user requests submission of an input field, such as by pressing the Enter or Return key on their keyboard, or mobile equivalent.
+ * @event HostedFields#inputSubmitRequest
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * &lt;caption>Clicking a submit button upon hitting Enter (or equivalent) within a Hosted Field&lt;/caption>
+ * var hostedFields = require('braintree-web/hosted-fields');
+ * var submitButton = document.querySelector('input[type="submit"]');
+ *
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('inputSubmitRequest', function () {
+ *     // User requested submission, e.g. by pressing Enter or equivalent
+ *     submitButton.click();
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field transitions from having data to being empty.
+ * @event HostedFields#empty
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * &lt;caption>Listening to an empty event&lt;/caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('empty', function (event) {
+ *     console.log(event.emittedBy, 'is now empty');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field transitions from being empty to having data.
+ * @event HostedFields#notEmpty
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * &lt;caption>Listening to an notEmpty event&lt;/caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('notEmpty', function (event) {
+ *     console.log(event.emittedBy, 'is now not empty');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field loses focus.
+ * @event HostedFields#blur
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * &lt;caption>Listening to a blur event&lt;/caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('blur', function (event) {
+ *     console.log(event.emittedBy, 'lost focus');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field gains focus.
+ * @event HostedFields#focus
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * &lt;caption>Listening to a focus event&lt;/caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('focus', function (event) {
+ *     console.log(event.emittedBy, 'gained focus');
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when activity within the number field has changed such that the possible card type has changed.
+ * @event HostedFields#cardTypeChange
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * &lt;caption>Listening to a cardTypeChange event&lt;/caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('cardTypeChange', function (event) {
+ *     if (event.cards.length === 1) {
+ *       console.log(event.cards[0].type);
+ *     } else {
+ *       console.log('Type of card not yet known');
+ *     }
+ *   });
+ * });
+ */
+
+/**
+ * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when the validity of a field has changed. Validity is represented in the {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} as two booleans: `isValid` and `isPotentiallyValid`.
+ * @event HostedFields#validityChange
+ * @type {HostedFields~hostedFieldsEvent}
+ * @example
+ * &lt;caption>Listening to a validityChange event&lt;/caption>
+ * hostedFields.create({ ... }, function (err, instance) {
+ *   instance.on('validityChange', function (event) {
+ *     var field = event.fields[event.emittedBy];
+ *
+ *     if (field.isValid) {
+ *       console.log(event.emittedBy, 'is fully valid');
+ *     } else if (field.isPotentiallyValid) {
+ *       console.log(event.emittedBy, 'is potentially valid');
+ *     } else {
+ *       console.log(event.emittedBy, 'is not valid');
+ *     }
+ *   });
+ * });
+ */
+
+function inputEventHandler(fields) {
+  return function (eventData) {
+    var field;
+    var merchantPayload = eventData.merchantPayload;
+    var emittedBy = merchantPayload.emittedBy;
+    var container = fields[emittedBy].containerElement;
+
+    Object.keys(merchantPayload.fields).forEach(function (key) {
+      merchantPayload.fields[key].container = fields[key].containerElement;
+    });
+
+    field = merchantPayload.fields[emittedBy];
+
+    classlist.toggle(container, constants.externalClasses.FOCUSED, field.isFocused);
+    classlist.toggle(container, constants.externalClasses.VALID, field.isValid);
+
+    if (field.isStrictlyValidating) {
+      classlist.toggle(container, constants.externalClasses.INVALID, !field.isValid);
+    } else {
+      classlist.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
+    }
+
+    this._emit(eventData.type, merchantPayload); // eslint-disable-line no-invalid-this
+  };
+}
+
+/**
+ * @class HostedFields
+ * @param {object} options The Hosted Fields {@link module:braintree-web/hosted-fields.create create} options.
+ * @description &lt;strong>Do not use this constructor directly. Use {@link module:braintree-web/hosted-fields.create|braintree-web.hosted-fields.create} instead.&lt;/strong>
+ * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
+ */
+function HostedFields(options) {
+  var field, container, frame, key, failureTimeout, clientVersion;
+  var self = this;
+  var fields = {};
+  var fieldCount = 0;
+  var componentId = uuid();
+
+  if (!options.client) {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'You must specify a client when initializing Hosted Fields.'
+    });
+  }
+
+  clientVersion = options.client.getConfiguration().analyticsMetadata.sdkVersion;
+  if (clientVersion !== VERSION) {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Client (version ' + clientVersion + ') and Hosted Fields (version ' + VERSION + ') components must be from the same SDK version.'
+    });
+  }
+
+  if (!options.fields) {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'You must specify fields when initializing Hosted Fields.'
+    });
+  }
+
+  EventEmitter.call(this);
+
+  this._injectedNodes = [];
+  this._destructor = new Destructor();
+  this._fields = fields;
+
+  this._bus = new Bus({
+    channel: componentId,
+    merchantUrl: location.href
+  });
+
+  this._destructor.registerFunctionForTeardown(function () {
+    self._bus.teardown();
+  });
+
+  this._client = options.client;
+
+  analytics.sendEvent(this._client, 'web.custom.hosted-fields.initialized');
+
+  for (key in constants.whitelistedFields) {
+    if (constants.whitelistedFields.hasOwnProperty(key)) {
+      field = options.fields[key];
+
+      if (!field) { continue; }
+
+      container = document.querySelector(field.selector);
+
+      if (!container) {
+        throw new BraintreeError({
+          type: BraintreeError.types.MERCHANT,
+          message: 'Selector does not reference a valid DOM node.',
+          details: {
+            fieldSelector: field.selector,
+            fieldKey: key
+          }
+        });
+      } else if (container.querySelector('iframe[name^="braintree-"]')) {
+        throw new BraintreeError({
+          type: BraintreeError.types.MERCHANT,
+          message: 'Element already contains a Braintree iframe.',
+          details: {
+            fieldSelector: field.selector,
+            fieldKey: key
+          }
+        });
+      }
+
+      frame = iFramer({
+        type: key,
+        name: 'braintree-hosted-field-' + key,
+        style: constants.defaultIFrameStyle
+      });
+
+      this._injectedNodes = this._injectedNodes.concat(injectFrame(frame, container));
+      this._setupLabelFocus(key, container);
+      fields[key] = {
+        frameElement: frame,
+        containerElement: container
+      };
+      fieldCount++;
+
+      /* eslint-disable no-loop-func */
+      setTimeout((function (f) {
+        return function () {
+          f.src = composeUrl(
+            self._client.getConfiguration().gatewayConfiguration.assetsUrl,
+            componentId
+          );
+        };
+      })(frame), 0);
+    }
+  } /* eslint-enable no-loop-func */
+
+  failureTimeout = setTimeout(function () {
+    analytics.sendEvent(self._client, 'web.custom.hosted-fields.load.timed-out');
+  }, INTEGRATION_TIMEOUT_MS);
+
+  this._bus.on(events.FRAME_READY, function (reply) {
+    fieldCount--;
+    if (fieldCount === 0) {
+      clearTimeout(failureTimeout);
+      reply(options);
+      self._emit('ready');
+    }
+  });
+
+  this._bus.on(
+    events.INPUT_EVENT,
+    inputEventHandler(fields).bind(this)
+  );
+
+  this._destructor.registerFunctionForTeardown(function () {
+    var j, node, parent;
+
+    for (j = 0; j &lt; self._injectedNodes.length; j++) {
+      node = self._injectedNodes[j];
+      parent = node.parentNode;
+
+      parent.removeChild(node);
+
+      classlist.remove(
+        parent,
+        constants.externalClasses.FOCUSED,
+        constants.externalClasses.INVALID,
+        constants.externalClasses.VALID
+      );
+    }
+  });
+
+  this._destructor.registerFunctionForTeardown(function () {
+    var methodNames = methods(HostedFields.prototype).concat(methods(EventEmitter.prototype));
+
+    convertMethodsToError(self, methodNames);
+  });
+}
+
+HostedFields.prototype = Object.create(EventEmitter.prototype, {
+  constructor: HostedFields
+});
+
+HostedFields.prototype._setupLabelFocus = function (type, container) {
+  var labels, i;
+  var shouldSkipLabelFocus = isIos();
+  var bus = this._bus;
+
+  if (shouldSkipLabelFocus) { return; }
+  if (container.id == null) { return; }
+
+  function triggerFocus() {
+    bus.emit(events.TRIGGER_INPUT_FOCUS, type);
+  }
+
+  labels = Array.prototype.slice.call(document.querySelectorAll('label[for="' + container.id + '"]'));
+  labels = labels.concat(findParentTags(container, 'label'));
+
+  for (i = 0; i &lt; labels.length; i++) {
+    labels[i].addEventListener('click', triggerFocus, false);
+  }
+
+  this._destructor.registerFunctionForTeardown(function () {
+    for (i = 0; i &lt; labels.length; i++) {
+      labels[i].removeEventListener('click', triggerFocus, false);
+    }
+  });
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/hosted-fields.create|create}
+ * @public
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if teardown completes successfully.
+ * @example
+ * hostedFieldsInstance.teardown(function (err) {
+ *   if (err) {
+ *     console.error('Could not tear down Hosted Fields!');
+ *   } else {
+ *     console.info('Hosted Fields has been torn down!');
+ *   }
+ * });
+ * @returns {void}
+ */
+HostedFields.prototype.teardown = function (callback) {
+  var client = this._client;
+
+  this._destructor.teardown(function (err) {
+    analytics.sendEvent(client, 'web.custom.hosted-fields.teardown-completed');
+
+    if (typeof callback === 'function') {
+      callback = deferred(callback);
+      callback(err);
+    }
+  });
+};
+
+/**
+ * Tokenizes fields and returns a nonce payload.
+ * @public
+ * @param {callback} callback The second argument, &lt;code>data&lt;/code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
+ * @example
+ * hostedFieldsInstance.tokenize(function (err, payload) {
+ *   if (err) {
+ *     console.error(err);
+ *   } else {
+ *     console.log('Got nonce:', payload.nonce);
+ *   }
+ * });
+ * @returns {void}
+ */
+HostedFields.prototype.tokenize = function (callback) {
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'tokenize must include a callback function.'
+    });
+  }
+
+  this._bus.emit(events.TOKENIZATION_REQUEST, function (response) {
+    callback.apply(null, response);
+  });
+};
+
+/**
+ * Sets the placeholder of a {@link module:braintree-web/hosted-fields~field field}.
+ * @public
+ * @param {string} field The field whose placeholder you wish to change. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
+ *
+ * @example
+ * hostedFieldsInstance.setPlaceholder('number', '4111 1111 1111 1111', function (err) {
+ *   if (err) {
+ *     console.error(err);
+ *   }
+ * });
+ *
+ * @example &lt;caption>Update CVV field on card type change&lt;/caption>
+ * hostedFieldsInstance.on('cardTypeChange', function (event) {
+ *   // Update the placeholder value if there is only one possible card type
+ *   if (event.cards.length === 1) {
+ *     hostedFields.setPlaceholder('cvv', event.cards[0].code.name, function (err) {
+ *       if (err) {
+ *         // Handle errors, such as invalid field name
+ *         console.error(err);
+ *       }
+ *     });
+ *   }
+ * });
+ * @returns {void}
+ */
+HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) {
+  var err;
+
+  if (!whitelistedFields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: '"' + field + '" is not a valid field. You must use a valid field option when setting a placeholder.'
+    });
+  } else if (!this._fields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Cannot set placeholder for "' + field + '" field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    this._bus.emit(events.SET_PLACEHOLDER, field, placeholder);
+  }
+
+  if (typeof callback === 'function') {
+    callback = deferred(callback);
+    callback(err);
+  }
+};
+
+/**
+ * Clear the value of a {@link module:braintree-web/hosted-fields~field field}.
+ * @public
+ * @param {string} field The field whose placeholder you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
+ * @returns {void}
+ * @example
+ * hostedFieldsInstance.clear('number', function (err) {
+ *   if (err) {
+ *     console.error(err);
+ *   }
+ * });
+ *
+ * @example &lt;caption>Clear several fields&lt;/caption>
+ * hostedFieldsInstance.clear('number');
+ * hostedFieldsInstance.clear('cvv');
+ * hostedFieldsInstance.clear('expirationDate');
+ */
+HostedFields.prototype.clear = function (field, callback) {
+  var err;
+
+  if (!whitelistedFields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: '"' + field + '" is not a valid field. You must use a valid field option when clearing a field.'
+    });
+  } else if (!this._fields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Cannot clear "' + field + '" field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    this._bus.emit(events.CLEAR_FIELD, field);
+  }
+
+  if (typeof callback === 'function') {
+    callback = deferred(callback);
+    callback(err);
+  }
+};
+
+module.exports = HostedFields;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

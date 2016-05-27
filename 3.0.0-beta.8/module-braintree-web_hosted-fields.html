@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>braintree-web/hosted-fields - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">braintree-web/hosted-fields</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".VERSION"><span class="type-signature">(static) </span>VERSION<span class="type-signature"> :string</span></h4>
+
+
+
+
+<div class="description">
+    <p>The current version of the SDK, i.e. <code>3.0.0-beta.8</code>.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line102">line 102</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id=".create"><span class="type-signature">(static) </span>create<span class="signature">(options, callback)</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Creation options:</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>client</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">client</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>A <a href="Client.html">Client</a> instance.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fields</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">fieldOptions</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>A <a href="module-braintree-web_hosted-fields.html#~fieldOptions">set of options for each field</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>styles</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">styleOptions</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p><a href="module-braintree-web_hosted-fields.html#~styleOptions">Styles</a> applied to each field.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#callback">callback</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The second argument, <code>data</code>, is the <a href="HostedFields.html">HostedFields</a> instance.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line39">line 39</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>braintree.hostedFields.create({
+  client: client,
+  styles: {
+    'input': {
+      'font-size': '16pt',
+      'color': '#3A3A3A'
+    },
+    '.number': {
+      'font-family': 'monospace'
+    },
+    '.valid': {
+      'color': 'green'
+    }
+  },
+  fields: {
+    number: {
+      selector: '#card-number'
+    },
+    cvv: {
+      selector: '#cvv'
+    },
+    expirationDate: {
+      selector: '#expiration-date'
+    }
+  }
+}, callback);</code></pre>
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Type Definitions</h3>
+
+        
+                
+
+    
+
+    <h4 class="name" id="~field"><span class="type-signature"></span>field<span class="type-signature"> :object</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Fields used in <a href="module-braintree-web_hosted-fields.html#~fieldOptions">fields options</a></p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>selector</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>A CSS selector to find the container where the hosted field will be inserted.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>placeholder</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>Will be used as the <code>placeholder</code> attribute of the input. If <code>placeholder</code> is not natively supported by the browser, it will be polyfilled.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>formatInput</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    true
+                
+                </td>
+            
+
+            <td class="description last"><p>Enable or disable automatic formatting on this field.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line10">line 10</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+                
+
+    
+
+    <h4 class="name" id="~fieldOptions"><span class="type-signature"></span>fieldOptions<span class="type-signature"> :object</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>An object that has <a href="module-braintree-web_hosted-fields.html#~field">field objects</a> for each field. Used in create.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>number</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">field</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>A field for card number.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationDate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">field</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>A field for expiration date in <code>MM/YYYY</code> format. This should not be used with the <code>expirationMonth</code> and <code>expirationYear</code> properties.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationMonth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">field</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>A field for expiration month in <code>MM</code> format. This should be used with the <code>expirationYear</code> property.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationYear</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">field</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>A field for expiration year in <code>YYYY</code> format. This should be used with the <code>expirationMonth</code> property.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>cvv</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">field</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>A field for 3 or 4 digit CVV or CID.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>postalCode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">field</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>A field for postal or region code.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line18">line 18</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+                
+
+    
+
+    <h4 class="name" id="~styleOptions"><span class="type-signature"></span>styleOptions<span class="type-signature"> :object</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>An object that represents CSS that will be applied in each hosted field. This object looks similar to CSS. Typically, these styles involve fonts (such as <code>font-family</code> or <code>color</code>).</p>
+<p>These are the CSS properties that Hosted Fields supports. Any other CSS should be specified on your page and outside of any Braintree configuration. Trying to set unsupported properties will fail and put a warning in the console.</p>
+<p><code>color</code> <code>font-family</code> <code>font-size-adjust</code> <code>font-size</code> <code>font-stretch</code> <code>font-style</code> <code>font-variant-alternates</code> <code>font-variant-caps</code> <code>font-variant-east-asian</code> <code>font-variant-ligatures</code> <code>font-variant-numeric</code> <code>font-variant</code> <code>font-weight</code> <code>font</code> <code>line-height</code> <code>opacity</code> <code>outline</code> <code>text-shadow</code> <code>transition</code> <code>-moz-osx-font-smoothing</code> <code>-moz-tap-highlight-color</code> <code>-moz-transition</code> <code>-webkit-font-smoothing</code> <code>-webkit-tap-highlight-color</code> <code>-webkit-transition</code></p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line29">line 29</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

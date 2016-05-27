@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>paypal/external/paypal.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">paypal/external/paypal.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+var frameService = require('../../lib/frame-service/external');
+var BraintreeError = require('../../lib/error');
+var VERSION = require('package.version');
+var constants = require('../shared/constants');
+var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
+var analytics = require('../../lib/analytics');
+var methods = require('../../lib/methods');
+var deferred = require('../../lib/deferred');
+var convertMethodsToError = require('../../lib/convert-methods-to-error');
+
+/**
+ * @typedef {object} PayPal~tokenizePayload
+ * @property {string} nonce The payment method nonce.
+ * @property {object} details Additional PayPal account details.
+ * @property {string} details.email User's email address.
+ * @property {string} details.payerId User's payer ID, the unique identifier for each PayPal account.
+ * @property {string} details.firstName User's given name.
+ * @property {string} details.lastName User's surname.
+ * @property {?string} details.countryCode User's 2 character country code.
+ * @property {?string} details.phone User's phone number (e.g. 555-867-5309).
+ * @property {?object} details.shippingAddress User's shipping address details, only available if shipping address is enabled.
+ * @property {string} details.shippingAddress.recipientName Recipient of postage.
+ * @property {string} details.shippingAddress.line1 Street number and name.
+ * @property {string} details.shippingAddress.line2 Extended address.
+ * @property {string} details.shippingAddress.city City or locality.
+ * @property {string} details.shippingAddress.state State or region.
+ * @property {string} details.shippingAddress.postalCode Postal code.
+ * @property {string} details.shippingAddress.countryCode 2 character country code (e.g. US).
+ */
+
+/**
+ * @typedef {object} PayPal~tokenizeReturn
+ * @property {Function} close A handle to close the PayPal checkout flow.
+ */
+
+/**
+ * @class
+ * @param {module:braintree-web/paypal~createOptions} options see {@link module:braintree-web/paypal.create|paypal.create}
+ * @classdesc This class represents a PayPal component. Instances of this class have methods for launching auth dialogs and other programmatic interactions with the PayPal component.
+ */
+function PayPal(options) {
+  this._options = options;
+  this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION;
+  this._authorizationInProgress = false;
+}
+
+PayPal.prototype._initialize = function (callback) {
+  var options = this._options;
+  var failureTimeout = setTimeout(function () {
+    analytics.sendEvent(options.client, 'web.paypal.load.timed-out');
+  }, INTEGRATION_TIMEOUT_MS);
+
+  frameService.create(
+    this._options,
+    {
+      name: constants.LANDING_FRAME_NAME,
+      url: this._assetsUrl,
+      landingFrameHTML: '/html/paypal-landing-frame@DOT_MIN.html'
+    },
+    function (service) {
+      this._frameService = service;
+      clearTimeout(failureTimeout);
+      analytics.sendEvent(options.client, 'web.paypal.load.succeeded');
+      callback();
+    }.bind(this)
+  );
+};
+
+/**
+ * Launches the PayPal login flow and returns a nonce payload.
+ * @public
+ * @param {callback} callback The second argument, &lt;code>data&lt;/code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
+ * @returns {PayPal~tokenizeReturn} A handle to close the PayPal checkout frame.
+ */
+PayPal.prototype.tokenize = function (callback) {
+  var client;
+
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'tokenize must include a callback function.'
+    });
+  }
+
+  client = this._options.client;
+  callback = deferred(callback);
+
+  if (this._authorizationInProgress) {
+    analytics.sendEvent(client, 'web.paypal.tokenization.error.already-opened');
+
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Another tokenization request is active.'
+    }));
+  } else {
+    this._authorizationInProgress = true;
+
+    analytics.sendEvent(client, 'web.paypal.tokenization.opened');
+
+    this._frameService.open(function (err) {
+      if (err) {
+        if (err.message === constants.FRAME_CLOSED_ERROR_MESSAGE) {
+          analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-user');
+        } else {
+          analytics.sendEvent(client, 'web.paypal.tokenization.failed');
+        }
+      } else {
+        analytics.sendEvent(client, 'web.paypal.tokenization.success');
+      }
+
+      this._authorizationInProgress = false;
+
+      callback.apply(null, arguments);
+    }.bind(this));
+  }
+
+  return {
+    close: function () {
+      analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-merchant');
+      this._frameService.close();
+    }.bind(this)
+  };
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/paypal.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @returns {void}
+ */
+PayPal.prototype.teardown = function (callback) {
+  this._frameService.teardown();
+
+  convertMethodsToError(this, methods(PayPal.prototype));
+
+  analytics.sendEvent(this._options.client, 'web.paypal.teardown-completed');
+
+  if (typeof callback === 'function') {
+    callback = deferred(callback);
+    callback();
+  }
+};
+
+module.exports = PayPal;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>paypal/index.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">paypal/index.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/** @module braintree-web/paypal */
+
+/**
+ * Options for {@link module:braintree-web/paypal.create|create}
+ * @typedef {object} createOptions
+ */
+
+var PayPal = require('./external/paypal');
+var browserDetection = require('../lib/browser-detection');
+var BraintreeError = require('../lib/error');
+var analytics = require('../lib/analytics');
+var deferred = require('../lib/deferred');
+var VERSION = require('package.version');
+
+function create(options, callback) {
+  var config, pp, clientVersion;
+
+  callback = deferred(callback);
+
+  if (options.client == null) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'options.client is required when instantiating PayPal.'
+    }));
+    return;
+  }
+
+  config = options.client.getConfiguration();
+  clientVersion = config.analyticsMetadata.sdkVersion;
+
+  if (clientVersion !== VERSION) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'Client (version ' + clientVersion + ') and PayPal (version ' + VERSION + ') components must be from the same SDK version.'
+    }));
+    return;
+  }
+
+  if (config.gatewayConfiguration.paypalEnabled !== true) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'PayPal is not enabled for this merchant.'
+    }));
+    return;
+  }
+
+  if (!_isBrowserSupported()) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.CUSTOMER,
+      message: 'Browser is not supported.'
+    }));
+    return;
+  }
+
+  if (!browserDetection.isHTTPS()) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'PayPal requires HTTPS.'
+    }));
+    return;
+  }
+
+  analytics.sendEvent(options.client, 'web.paypal.initialized');
+
+  pp = new PayPal(options);
+  pp._initialize(function () {
+    callback(null, pp);
+  });
+}
+
+function _isBrowserSupported() {
+  return !browserDetection.isOperaMini();
+}
+
+module.exports = {
+  /**
+   * @static
+   * @function
+   * @param {object} options All creation options for the PayPal component.
+   * @param {Client} options.client A {@link Client} instance.
+   * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow.
+   * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
+   * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
+   * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
+   * @param {string} [options.locale=en_us] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
+   * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
+   * @param {object=} options.shippingAddressOverride Allows you to pass a shipping address you have already collected into the PayPal payment flow.
+   * @param {string} options.shippingAddressOverride.line1 Street address.
+   * @param {string=} options.shippingAddressOverride.line2 Street address (extended).
+   * @param {string} options.shippingAddressOverride.city City.
+   * @param {string} options.shippingAddressOverride.state State.
+   * @param {string} options.shippingAddressOverride.postalCode Postal code.
+   * @param {string} options.shippingAddressOverride.countryCode Country.
+   * @param {string=} options.shippingAddressOverride.phone Phone number.
+   * @param {string=} options.shippingAddressOverride.recipientName Recipient's name.
+   * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
+   * @param {boolean} [options.billingAgreementsDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile. Max 255 characters.
+   * @param {callback} callback The second argument, &lt;code>data&lt;/code>, is the {@link PayPal} instance.
+   * @returns {void}
+   */
+  create: create,
+  /**
+   * @description The current version of the SDK, i.e. `{@pkg version}`.
+   * @type {string}
+   */
+  VERSION: VERSION
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

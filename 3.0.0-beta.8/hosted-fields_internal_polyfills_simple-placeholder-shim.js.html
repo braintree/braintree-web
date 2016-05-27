@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>hosted-fields/internal/polyfills/simple-placeholder-shim.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">hosted-fields/internal/polyfills/simple-placeholder-shim.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+/**
+ * standalone placeholder shim
+ * ===========================
+ * There are [a bunch of placeholder polyfills](https://github.com/Modernizr/Modernizr/wiki/HTML5-Cross-browser-Polyfills#web-forms--input-placeholder) out there, but this one is different because:
+ * - it has no dependencies
+ * - it doesn't change the `value`
+ * - it works with weirdly-positioned elements (like `position: fixed`)
+ * - it can be manually triggered
+ * - the placeholder can be styled
+ * - it's made for IE8 and IE9 and no other browsers
+ */
+
+var CSS_PROPERTIES_TO_STEAL = [
+  'border-width',
+  'font',
+  'fontFamily',
+  'fontSize',
+  'fontSizeAdjust',
+  'fontStretch',
+  'fontStyle',
+  'fontVariant',
+  'fontVariantAlternates',
+  'fontVariantCaps',
+  'fontVariantEastAsian',
+  'fontVariantLigatures',
+  'fontVariantNumeric',
+  'fontWeight',
+  'lineHeight',
+  'padding',
+  'textAlign',
+  'textShadow'
+];
+
+var hasAddedGlobalStyles = false;
+
+// the big kahuna
+function placeholderShim(inputEl) {
+  var placeholderEl, displayShow;
+  var testInput = document.createElement('input');
+  var isNativelySupported = testInput.placeholder !== void 0; // eslint-disable-line no-void
+
+  if (isNativelySupported) {
+    // This browser supports placeholders natively, so do nothing.
+    return {};
+  }
+
+  addGlobalStyles();
+
+  placeholderEl = createPlaceholderFor(inputEl);
+  inputEl.parentNode.appendChild(placeholderEl);
+
+  displayShow = getStyle(inputEl, 'display') || 'block';
+  function update(force) {
+    var shouldShow = force == null ? !inputEl.value : force;
+
+    placeholderEl.style.display = shouldShow ? displayShow : 'none';
+  }
+
+  update();
+
+  if (inputEl.attachEvent) {
+    inputEl.attachEvent('onfocus', function () { update(false); });
+    inputEl.attachEvent('onblur', function () { update(); });
+    placeholderEl.attachEvent('onclick', function () { inputEl.focus(); });
+  }
+
+  return new Placeholder();
+}
+
+function Placeholder() {}
+
+// TODO
+extend(Placeholder.prototype, {
+  redraw: noop,
+  destroy: noop
+});
+
+// the private methods
+
+function noop() {}
+
+function extend(dest, source) {
+  var prop;
+
+  for (prop in source) {
+    if (source.hasOwnProperty(prop) &amp;&amp; source[prop] != null) {
+      dest[prop] = source[prop];
+    }
+  }
+}
+
+function addGlobalStyles() {
+  var sheet, head, style;
+
+  if (hasAddedGlobalStyles) { return; }
+
+  sheet = document.styleSheets &amp;&amp; document.styleSheets[0];
+
+  if (!sheet) {
+    head = document.head || document.getElementsByTagName('head')[0];
+    style = document.createElement('style');
+    head.appendChild(style);
+    sheet = style.sheet;
+  }
+
+  sheet.addRule('.placeholder-shim', 'color: #999;', 0);
+
+  hasAddedGlobalStyles = true;
+}
+
+function createPlaceholderFor(el) {
+  var result = document.createElement('div');
+
+  updateParentPositionFor(el);
+  addProperties(result);
+  stealStyles(el, result);
+  addStyles(result);
+  stealPlaceholder(el, result);
+  return result;
+}
+
+function addProperties(result) {
+  result.setAttribute('unselectable', 'on');
+}
+
+function stealStyles(src, dest) {
+  var newStyles = {
+    width: src.offsetWidth + 'px',
+    height: src.offsetHeight + 'px'
+  };
+  var i, property, zIndex, borderTop, borderLeft;
+
+  for (i = 0; i &lt; CSS_PROPERTIES_TO_STEAL.length; i++) {
+    property = CSS_PROPERTIES_TO_STEAL[i];
+    newStyles[property] = getStyle(src, property);
+  }
+
+  zIndex = getStyle(src, 'zIndex');
+  newStyles.zIndex = typeof zIndex === 'number' ? zIndex + 1 : 999;
+
+  if (getStyle(src, 'position') === 'fixed') {
+    extend(newStyles, {
+      position: 'fixed',
+      margin: getStyle(src, 'margin'),
+      top: getStyle(src, 'top'),
+      left: getStyle(src, 'left'),
+      bottom: getStyle(src, 'bottom'),
+      right: getStyle(src, 'right')
+    });
+  } else {
+    borderTop = parseFloat(getStyle(src, 'borderTopWidth')) || 0;
+    borderLeft = parseFloat(getStyle(src, 'borderLeftWidth')) || 0;
+
+    extend(newStyles, {
+      position: 'absolute',
+      top: src.offsetTop + borderTop + 'px',
+      left: src.offsetLeft + borderLeft + 'px'
+    });
+  }
+
+  extend(dest.style, newStyles);
+}
+
+function addStyles(dest) {
+  dest.className = 'placeholder-shim';
+
+  extend(dest.style, {
+    boxSizing: 'border-box',
+    borderColor: 'transparent',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap'
+  });
+}
+
+function updateParentPositionFor(el) {
+  var parent = el.offsetParent;
+
+  if (parent &amp;&amp; getStyle(parent, 'position') === 'static') {
+    parent.style.position = 'relative';
+  }
+}
+
+function stealPlaceholder(src, dest) {
+  var result = src.getAttribute('placeholder') ||
+    src.attributes.placeholder &amp;&amp; src.attributes.placeholder.nodeValue ||
+      '';
+
+  result = result.replace(/&amp;/g, '&amp;amp;')
+  .replace(/&lt;/g, '&amp;lt;')
+  .replace(/>/g, '&amp;gt;');
+  dest.innerHTML = result;
+}
+
+function getStyle(elem, prop) {
+  if (elem.currentStyle) {
+    return elem.currentStyle[prop];
+  } else if (window.getComputedStyle &amp;&amp; elem instanceof HTMLElement) {
+    return document.defaultView.getComputedStyle(elem, null)[prop];
+  } else if (prop in elem.style) {
+    return elem.style[prop];
+  }
+  return null;
+}
+
+module.exports = placeholderShim;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

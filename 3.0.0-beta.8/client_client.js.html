@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>client/client.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">client/client.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+var request = require('./request');
+var isWhitelistedDomain = require('../lib/is-whitelisted-domain');
+var BraintreeError = require('../lib/error');
+var addMetadata = require('../lib/add-metadata');
+var deferred = require('../lib/deferred');
+
+/**
+ * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
+ * @typedef {object} Client~configuration
+ * @property {object} client The braintree-web/client parameters.
+ * @property {string} client.authorization A tokenizationKey or clientToken.
+ * @property {object} gatewayConfiguration Gateway-supplied configuration.
+ * @property {object} analyticsMetadata Analytics-specific data.
+ * @property {string} analyticsMetadata.sessionId Uniquely identifies a browsing session.
+ * @property {string} analyticsMetadata.sdkVersion The braintree.js version.
+ * @property {string} analyticsMetadata.merchantAppId Identifies the merchant's web app.
+ */
+
+/**
+ * @class
+ * @param {Client~configuration} configuration Options
+ * @description &lt;strong>Do not use this constructor directly. Use {@link module:braintree-web/client.create|braintree.client.create} instead.&lt;/strong>
+ * @classdesc This class is required by many other Braintree components. It serves as the base API layer that communicates with our servers. It is also capable of being used to formulate direct calls to our servers, such as direct credit card tokenization. See {@link Client#request}.
+ */
+function Client(configuration) {
+  var configurationJSON, gatewayConfiguration;
+
+  configuration = configuration || {};
+
+  configurationJSON = JSON.stringify(configuration);
+  gatewayConfiguration = configuration.gatewayConfiguration;
+
+  if (!gatewayConfiguration) {
+    throw new BraintreeError({
+      type: BraintreeError.types.INTERNAL,
+      message: 'Missing gatewayConfiguration.'
+    });
+  }
+
+  [
+    'assetsUrl',
+    'clientApiUrl',
+    'configUrl'
+  ].forEach(function (property) {
+    if (property in gatewayConfiguration &amp;&amp; !isWhitelistedDomain(gatewayConfiguration[property])) {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: 'Invalid ' + property + '.'
+      });
+    }
+  });
+
+  /**
+   * Returns a copy of the configuration values.
+   * @public
+   * @returns {Client~configuration} configuration
+   */
+  this.getConfiguration = function () {
+    return JSON.parse(configurationJSON);
+  };
+
+  this._request = request;
+  this._baseUrl = configuration.gatewayConfiguration.clientApiUrl + '/v1/';
+  this._configuration = this.getConfiguration();
+
+  this.toJSON = this.getConfiguration;
+}
+
+/**
+ * Used by other modules to formulate all network requests to the Braintree gateway. It is also capable of being used directly from your own form to tokenize credit card information. However, be sure to satisfy PCI compliance if you use direct card tokenization.
+ * @public
+ * @param {object} options Request options:
+ * @param {string} options.method HTTP method. i.e. "get" or "post"
+ * @param {string} options.endpoint Enpoint path. i.e. "payment_methods"
+ * @param {object} options.data Data to send with the request
+ * @param {string} [options.timeout=60000] Timeout limit
+ * @param {callback} callback The second argument, &lt;code>data&lt;/code>, is the returned server data.
+ * @example
+ * &lt;caption>Direct Credit Card Tokenization&lt;/caption>
+ * var createClient = require('braintree-web/client').create;
+ *
+ * createClient({
+ *   authorization: CLIENT_TOKEN
+ * }, function (err, client) {
+ *   var form = document.getElementById('my-form-id');
+ *   var data = {
+ *     creditCard: {
+ *       number: form['cc-number'].value,
+ *       cvv: form['cc-cvv'].value,
+ *       expirationDate: form['cc-date'].value,
+ *       billingAddress: {
+ *         postalCode: form['cc-postal'].value
+ *       }
+ *     }
+ *   };
+ *
+ *   // Warning: For a merchant to be eligible for the easiest level of PCI compliance (SAQ A),
+ *   // payment fields cannot be hosted on your checkout page.
+ *   // For an alternative to the following, use Hosted Fields.
+ *   client.request({
+ *     endpoint: 'payment_methods/credit_cards',
+ *     method: 'post',
+ *     data: data
+ *   }, function (err, response) {
+ *     if (err) { throw new Error(err); }
+ *
+ *     console.log('Got nonce:', response.creditCards[0].nonce);
+ *   });
+ * });
+ * @returns {void}
+ */
+Client.prototype.request = function (options, callback) {
+  var errorMsg;
+
+  if (!options.method) {
+    errorMsg = 'options.method is required.';
+  } else if (!options.endpoint) {
+    errorMsg = 'options.endpoint is required.';
+  }
+
+  if (errorMsg) {
+    callback = deferred(callback);
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: errorMsg
+    }));
+    return;
+  }
+
+  this._request({
+    url: this._baseUrl + options.endpoint,
+    method: options.method,
+    data: addMetadata(this._configuration, options.data),
+    timeout: options.timeout
+  }, callback);
+};
+
+module.exports = Client;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

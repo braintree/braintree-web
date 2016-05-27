@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>index.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">index.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/**
+ * @module braintree-web
+ * @description This is the top-level module exported by the Braintree JavaScript SDK. In a browser environment, this will be the global &lt;code>braintree&lt;/code> object. In a CommonJS environment (like Browserify or Webpack), it will be the default export of the &lt;code>braintree-web&lt;/code> package. In AMD environments (like RequireJS), it can be `require`d like other modules.
+ * @example
+ * &lt;caption>CommonJS&lt;/caption>
+ * var braintree = require('braintree-web');
+ *
+ * braintree.client.create(...);
+ * @example
+ * &lt;caption>In the browser&lt;/caption>
+ * &lt;script href="https://js.braintreegateway.com/web/{@pkg version}/js/client.min.js">&lt;/script>
+ * &lt;script>
+ *   window.braintree.client.create(...);
+ * &lt;/script>
+ * @example
+ * &lt;caption>AMD&lt;/caption>
+ * // main.js
+ * require.config({
+ *   paths: {
+ *     braintreeClient: 'https://js.braintreegateway.com/web/{@pkg version}/js/client.min.js'
+ *   }
+ * });
+ *
+ * require(['braintreeClient'], function (braintreeClient) {
+ *   braintreeClient.create(...);
+ * });
+ */
+
+/**
+ * @global
+ * @callback callback
+ * @param {?BraintreeError} [err] `null` or `undefined` if there was no error
+ * @param {?any} [data] The successful result of the asynchronous function call (if data exists).
+ * @description The Node.js-style callback pattern used throughout the SDK.
+ * @returns {void}
+ */
+
+var client = require('./client');
+var paypal = require('./paypal');
+var hostedFields = require('./hosted-fields');
+var dataCollector = require('./data-collector');
+var americanExpress = require('./american-express');
+var unionpay = require('./unionpay');
+var packageVersion = require('package.version');
+
+module.exports = {
+  /** @type {module:braintree-web/client} */
+  client: client,
+  /** @type {module:braintree-web/paypal} */
+  paypal: paypal,
+  /** @type {module:braintree-web/hosted-fields} */
+  hostedFields: hostedFields,
+  /** @type {module:braintree-web/data-collector} */
+  dataCollector: dataCollector,
+  /** @type {module:braintree-web/american-express} */
+  americanExpress: americanExpress,
+  /** @type {module:braintree-web/unionpay} */
+  unionpay: unionpay,
+  /**
+   * @description The current version of the SDK, i.e. `{@pkg version}`.
+   * @type {string}
+   */
+  VERSION: packageVersion
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

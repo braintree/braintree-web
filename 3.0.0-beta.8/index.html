@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Home - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    
+
+
+    <section class="readme">
+        <article><h1>JavaScript Client Reference <span>v3.0.0-beta.8</span></h1><p><span class="rule"></span></p>
+<ul>
+<li><a href="#overview">Overview</a><ul>
+<li><a href="#module-hierarchy">Module Hierarchy</a></li>
+<li><a href="#callbacks">Callbacks</a></li>
+</ul>
+</li>
+<li><a href="#browser-support">Browser Support</a><ul>
+<li><a href="#browser-support-desktop">Desktop</a></li>
+<li><a href="#browser-support-mobile">Mobile</a></li>
+<li><a href="#browser-support-webviews">Webviews</a></li>
+</ul>
+</li>
+</ul>
+<p><span class="rule"></span></p>
+<p><a id="overview"></a></p>
+<h2>Overview</h2><p>The Braintree JavaScript SDK is split up into several <strong>modules</strong>. Each module is also represented by a <strong>class</strong> encapsulating the actions that module can perform. In general, each SDK feature is represented by its own standalone module. You can include as many or as few of these modules in your page depending on the Braintree features you will be using.</p>
+<p>Each module exports a <code>create</code> function which is responsible for returning an instance of that module's class. For instance, the <code>braintree-web/paypal</code> module's <code>create</code> method will return an instance of the <code>PayPal</code> class.</p>
+<p><a id="module-hierarchy"></a></p>
+<h3>Module hierarchy</h3><p>Many modules of this SDK require an instance of our <code>Client</code> for communicating to our servers. In these cases, a single <code>Client</code> instance can be used for the creation of several other module instances.</p>
+<pre class="prettyprint source"><code>braintree.client.create(...) --------> Client ─┐
+                         ┌─────────────────────┤
+braintree.paypal.create(...) --------> PayPal  │
+                               ┌───────────────┘
+braintree.hostedFields.create(...) --> HostedFields</code></pre><p><a id="callbacks"></a></p>
+<h3>Callbacks</h3><p>This SDK uses the Node.js callback style, with callbacks passed as the last argument to a function. Callbacks are expected to receive possible errors as the first parameter, and any returned data as the second:</p>
+<pre class="prettyprint source lang-javascript"><code>braintree.client.create({...}, callback);
+
+function callback(err, clientInstance) { ... }</code></pre><p>While we do not directly support promises, many promise libraries such as <a href="http://bluebirdjs.com/docs/working-with-callbacks.html#working-with-callback-apis-using-the-node-convention">bluebird</a> allow for automatic conversion of APIs that follow this callback style.</p>
+<p><a id="browser-support"></a></p>
+<h2>Browser support</h2><p><code>braintree.js</code> provides support for numerous browsers and devices. There are, however, caveats with certain integrations and browser combinations.</p>
+<p>While <code>braintree.js</code> will work in browsers other than the ones below, these represent the platforms against which we actively test. If you have problems with a specific browser or device, contact <a href="mailto:support@braintreepayments.com">our Support team</a>.</p>
+<p><a id="browser-support-desktop"></a></p>
+<h3>Desktop</h3><ul>
+<li>Internet Explorer 9+</li>
+<li>Microsoft Edge</li>
+<li>Firefox latest</li>
+<li>Chrome latest</li>
+<li>Safari 8+</li>
+</ul>
+<h4>Internet Explorer Quirks Mode</h4><p>Quirks Mode is not supported for any version of IE. See our <a href="https://developers.braintreepayments.com/reference/general/best-practices#internet-explorer-quirks-mode">general best practices</a> to learn more.</p>
+<p><a id="browser-support-mobile"></a></p>
+<h3>Mobile</h3><h4>iOS</h4><ul>
+<li>Safari 8+</li>
+<li>Chrome 48+ (iOS 9+)</li>
+</ul>
+<h4>Android</h4><ul>
+<li>Native browser 4.4+</li>
+<li>Chrome</li>
+<li>Firefox</li>
+</ul>
+<p><a id="browser-support-webviews"></a></p>
+<h3>Webviews</h3><p>Webviews on iOS and Android will be supported in the final release of the SDK but are not supported during the beta. PayPal is not supported in webviews on Android versions lower than 4.4 and will not be.</p>
+<p>Additionally, <code>braintree.js</code> is neither tested nor developed for compile-to-native runtimes such as Cordova and PhoneGap. While some success may be had in such environments, our SDK is optimized for the browser and its security policies and may not function correctly outside of them.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>american-express/american-express.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#CSS_PROPERTIES_TO_STEAL">CSS_PROPERTIES_TO_STEAL</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">american-express/american-express.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+
+var BraintreeError = require('../lib/error');
+var deferred = require('../lib/deferred');
+
+/**
+ * @class
+ * @param {object} options Options
+ * @description &lt;strong>You cannot use this constructor directly. Use {@link module:braintree-web/american-express.create|braintree.american-express.create} instead.&lt;/strong>
+ * @classdesc This class allows you use a nonce to interact with American Express Checkout.
+ */
+function AmericanExpress(options) {
+  this._client = options.client;
+}
+
+/**
+ * Gets the rewards balance associated with a Braintree nonce.
+ * @public
+ * @param {object} options Request options
+ * @param {string} options.nonce An existing Braintree nonce.
+ * @param {callback} callback The second argument, &lt;code>data&lt;/code>, is the returned server data.
+ * @returns {void}
+ * @example
+ * var americanExpress = require('braintree-web/american-express');
+ *
+ * americanExpress.create({client: client}, function (err, instance) {
+ *   var options = {nonce: existingBraintreeNonce};
+ *   instance.getRewardsBalance(options, function (err, payload) {
+ *     if (err || payload.error) {
+ *       // Handle error
+ *       return;
+ *     }
+ *
+ *     console.log('Rewards amount: ' + payload.rewardsAmount);
+ *   });
+ * });
+ */
+AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'getRewardsBalance must include a callback function.'
+    });
+  }
+
+  callback = deferred(callback);
+
+  if (!options.nonce) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'getRewardsBalance must be called with a nonce.'
+    }));
+    return;
+  }
+
+  this._client.request({
+    method: 'get',
+    endpoint: 'payment_methods/amex_rewards_balance',
+    data: {
+      _meta: {source: 'american-express'},
+      paymentMethodNonce: options.nonce
+    }
+  }, function (err, response) {
+    if (err) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        message: 'A network error occured when getting the American Express rewards balance.',
+        details: {
+          originalError: err
+        }
+      }));
+    } else {
+      callback(null, response);
+    }
+  });
+};
+
+/**
+ * Gets the Express Checkout nonce profile given a nonce from American Express.
+ * @public
+ * @param {object} options Request options
+ * @param {string} options.nonce An existing nonce from American Express (note that this is &lt;em>not&lt;/em> a nonce from Braintree).
+ * @param {callback} callback The second argument, &lt;code>data&lt;/code>, is the returned server data.
+ * @returns {void}
+ * @example
+ * var americanExpress = require('braintree-web/american-express');
+ *
+ * americanExpress.create({client: client}, function (err, instance) {
+ *   var options = {nonce: existingAmericanExpressNonce};
+ *   instance.getExpressCheckoutProfile(options, function (err, payload) {
+ *     if (err) {
+ *       // Handle error
+ *       return;
+ *     }
+ *
+ *     console.log('Number of cards: ' + payload.amexExpressCheckoutCards.length);
+ *   });
+ * });
+ */
+AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callback) {
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'getExpressCheckoutProfile must include a callback function.'
+    });
+  }
+
+  callback = deferred(callback);
+
+  if (!options.nonce) {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'getExpressCheckoutProfile must be called with a nonce.'
+    }));
+    return;
+  }
+
+  this._client.request({
+    method: 'get',
+    endpoint: 'payment_methods/amex_express_checkout_cards/' + options.nonce,
+    data: {
+      _meta: {source: 'american-express'},
+      paymentMethodNonce: options.nonce
+    }
+  }, function (err, response) {
+    if (err) {
+      callback(new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        message: 'A network error occured when getting the American Express Checkout nonce profile.',
+        details: {
+          originalError: err
+        }
+      }));
+    } else {
+      callback(null, response);
+    }
+  });
+};
+
+module.exports = AmericanExpress;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
