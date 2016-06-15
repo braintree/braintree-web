@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 2.25.0
+
+* PayPal
+  * A new option, `intent`, has been added.
+* Data Collector
+  * Uses Kount configuration from the gateway if available
+
 ## 2.24.1
 
 * PayPal
