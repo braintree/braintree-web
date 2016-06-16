@@ -6,7 +6,6 @@ var hostedFields = require('./hosted-fields');
 var dataCollector = require('./data-collector');
 var americanExpress = require('./american-express');
 var unionpay = require('./unionpay');
-var packageVersion = require('./package.json').version;
 
 module.exports = {
   client: client,
@@ -15,5 +14,5 @@ module.exports = {
   dataCollector: dataCollector,
   americanExpress: americanExpress,
   unionpay: unionpay,
-  VERSION: packageVersion
+  VERSION: "3.0.0-beta.9"
 };

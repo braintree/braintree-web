@@ -1,14 +1,15 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.braintree || (g.braintree = {})).hostedFields = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function (global){
 'use strict';
 (function (root, factory) {
   if (typeof exports === 'object' && typeof module !== 'undefined') {
-    module.exports = factory();
+    module.exports = factory(typeof global === 'undefined' ? root : global);
   } else if (typeof define === 'function' && define.amd) {
-    define([], factory);
+    define([], function () { return factory(root); });
   } else {
-    root.framebus = factory();
+    root.framebus = factory(root);
   }
-})(this, function () { // eslint-disable-line no-invalid-this
+})(this, function (root) { // eslint-disable-line no-invalid-this
   var win, framebus;
   var popups = [];
   var subscribers = {};
@@ -149,7 +150,7 @@
 
   function _attach(w) {
     if (win) { return; }
-    win = w || window;
+    win = w || root;
 
     if (win.addEventListener) {
       win.addEventListener('message', _onmessage, false);
@@ -274,6 +275,7 @@
   return framebus;
 });
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],2:[function(_dereq_,module,exports){
 'use strict';
 
@@ -375,7 +377,7 @@ var EventEmitter = _dereq_('../../lib/event-emitter');
 var injectFrame = _dereq_('./inject-frame');
 var analytics = _dereq_('../../lib/analytics');
 var whitelistedFields = constants.whitelistedFields;
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var methods = _dereq_('../../lib/methods');
 var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
 var deferred = _dereq_('../../lib/deferred');
@@ -466,8 +468,8 @@ var deferred = _dereq_('../../lib/deferred');
  * @description Subscribes a handler function to a named {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent}. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, or {@link HostedFields#event:validityChange|validityChange}.
  * @example
  * <caption>Listening to a Hosted Field event, in this case 'focus'</caption>
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('focus', function (event) {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('focus', function (event) {
  *     console.log(event.emittedBy, 'has been focused');
  *   });
  * });
@@ -483,8 +485,8 @@ var deferred = _dereq_('../../lib/deferred');
  * var hostedFields = require('braintree-web/hosted-fields');
  * var submitButton = document.querySelector('input[type="submit"]');
  *
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('inputSubmitRequest', function () {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('inputSubmitRequest', function () {
  *     // User requested submission, e.g. by pressing Enter or equivalent
  *     submitButton.click();
  *   });
@@ -497,8 +499,8 @@ var deferred = _dereq_('../../lib/deferred');
  * @type {HostedFields~hostedFieldsEvent}
  * @example
  * <caption>Listening to an empty event</caption>
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('empty', function (event) {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('empty', function (event) {
  *     console.log(event.emittedBy, 'is now empty');
  *   });
  * });
@@ -510,8 +512,8 @@ var deferred = _dereq_('../../lib/deferred');
  * @type {HostedFields~hostedFieldsEvent}
  * @example
  * <caption>Listening to an notEmpty event</caption>
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('notEmpty', function (event) {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('notEmpty', function (event) {
  *     console.log(event.emittedBy, 'is now not empty');
  *   });
  * });
@@ -523,8 +525,8 @@ var deferred = _dereq_('../../lib/deferred');
  * @type {HostedFields~hostedFieldsEvent}
  * @example
  * <caption>Listening to a blur event</caption>
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('blur', function (event) {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('blur', function (event) {
  *     console.log(event.emittedBy, 'lost focus');
  *   });
  * });
@@ -536,8 +538,8 @@ var deferred = _dereq_('../../lib/deferred');
  * @type {HostedFields~hostedFieldsEvent}
  * @example
  * <caption>Listening to a focus event</caption>
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('focus', function (event) {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('focus', function (event) {
  *     console.log(event.emittedBy, 'gained focus');
  *   });
  * });
@@ -549,8 +551,8 @@ var deferred = _dereq_('../../lib/deferred');
  * @type {HostedFields~hostedFieldsEvent}
  * @example
  * <caption>Listening to a cardTypeChange event</caption>
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('cardTypeChange', function (event) {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hosteFieldsInstance.on('cardTypeChange', function (event) {
  *     if (event.cards.length === 1) {
  *       console.log(event.cards[0].type);
  *     } else {
@@ -566,8 +568,8 @@ var deferred = _dereq_('../../lib/deferred');
  * @type {HostedFields~hostedFieldsEvent}
  * @example
  * <caption>Listening to a validityChange event</caption>
- * hostedFields.create({ ... }, function (err, instance) {
- *   instance.on('validityChange', function (event) {
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('validityChange', function (event) {
  *     var field = event.fields[event.emittedBy];
  *
  *     if (field.isValid) {
@@ -793,8 +795,8 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
  * @public
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if teardown completes successfully.
  * @example
- * hostedFieldsInstance.teardown(function (err) {
- *   if (err) {
+ * hostedFieldsInstance.teardown(function (teardownErr) {
+ *   if (teardownErr) {
  *     console.error('Could not tear down Hosted Fields!');
  *   } else {
  *     console.info('Hosted Fields has been torn down!');
@@ -820,9 +822,9 @@ HostedFields.prototype.teardown = function (callback) {
  * @public
  * @param {callback} callback The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
  * @example
- * hostedFieldsInstance.tokenize(function (err, payload) {
- *   if (err) {
- *     console.error(err);
+ * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
+ *   if (tokenizeErr) {
+ *     console.error(tokenizeErr);
  *   } else {
  *     console.log('Got nonce:', payload.nonce);
  *   }
@@ -850,9 +852,9 @@ HostedFields.prototype.tokenize = function (callback) {
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
  *
  * @example
- * hostedFieldsInstance.setPlaceholder('number', '4111 1111 1111 1111', function (err) {
- *   if (err) {
- *     console.error(err);
+ * hostedFieldsInstance.setPlaceholder('number', '4111 1111 1111 1111', function (placeholderErr) {
+ *   if (placeholderErr) {
+ *     console.error(placeholderErr);
  *   }
  * });
  *
@@ -860,10 +862,10 @@ HostedFields.prototype.tokenize = function (callback) {
  * hostedFieldsInstance.on('cardTypeChange', function (event) {
  *   // Update the placeholder value if there is only one possible card type
  *   if (event.cards.length === 1) {
- *     hostedFields.setPlaceholder('cvv', event.cards[0].code.name, function (err) {
- *       if (err) {
+ *     hostedFields.setPlaceholder('cvv', event.cards[0].code.name, function (placeholderErr) {
+ *       if (placeholderErr) {
  *         // Handle errors, such as invalid field name
- *         console.error(err);
+ *         console.error(placeholderErr);
  *       }
  *     });
  *   }
@@ -900,9 +902,9 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
  * @returns {void}
  * @example
- * hostedFieldsInstance.clear('number', function (err) {
- *   if (err) {
- *     console.error(err);
+ * hostedFieldsInstance.clear('number', function (clearErr) {
+ *   if (clearErr) {
+ *     console.error(clearErr);
  *   }
  * });
  *
@@ -936,7 +938,7 @@ HostedFields.prototype.clear = function (field, callback) {
 
 module.exports = HostedFields;
 
-},{"../../lib/analytics":13,"../../lib/bus":17,"../../lib/classlist":18,"../../lib/constants":19,"../../lib/convert-methods-to-error":20,"../../lib/deferred":22,"../../lib/destructor":23,"../../lib/error":25,"../../lib/event-emitter":26,"../../lib/is-ios":27,"../../lib/methods":29,"../../lib/uuid":31,"../shared/constants":10,"../shared/find-parent-tags":11,"./compose-url":6,"./inject-frame":8,"iframer":2}],8:[function(_dereq_,module,exports){
+},{"../../lib/analytics":13,"../../lib/bus":17,"../../lib/classlist":18,"../../lib/constants":19,"../../lib/convert-methods-to-error":20,"../../lib/deferred":22,"../../lib/destructor":23,"../../lib/error":25,"../../lib/event-emitter":26,"../../lib/is-ios":27,"../../lib/methods":29,"../../lib/uuid":32,"../shared/constants":10,"../shared/find-parent-tags":11,"./compose-url":6,"./inject-frame":8,"iframer":2}],8:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function injectFrame(frame, container) {
@@ -957,7 +959,7 @@ module.exports = function injectFrame(frame, container) {
 'use strict';
 
 var HostedFields = _dereq_('./external/hosted-fields');
-var packageVersion = "3.0.0-beta.8";
+var packageVersion = "3.0.0-beta.9";
 var deferred = _dereq_('../lib/deferred');
 var BraintreeError = _dereq_('../lib/error');
 
@@ -1003,7 +1005,7 @@ module.exports = {
    * @returns {void}
    * @example
    * braintree.hostedFields.create({
-   *   client: client,
+   *   client: clientInstance,
    *   styles: {
    *     'input': {
    *       'font-size': '16pt',
@@ -1063,7 +1065,7 @@ module.exports = {
 /* eslint-disable no-reserved-keys */
 
 var enumerate = _dereq_('../../lib/enumerate');
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 
 var constants = {
   VERSION: VERSION,
@@ -1250,6 +1252,8 @@ module.exports = {
 },{"./add-metadata":12,"./constants":19}],14:[function(_dereq_,module,exports){
 'use strict';
 
+var once = _dereq_('./once');
+
 function call(fn, callback) {
   var isSync = fn.length === 0;
 
@@ -1259,17 +1263,6 @@ function call(fn, callback) {
   } else {
     fn(callback);
   }
-}
-
-function once(fn) {
-  var called = false;
-
-  return function () {
-    if (!called) {
-      called = true;
-      fn.apply(null, arguments);
-    }
-  };
 }
 
 module.exports = function (functions, cb) {
@@ -1300,7 +1293,7 @@ module.exports = function (functions, cb) {
   }
 };
 
-},{}],15:[function(_dereq_,module,exports){
+},{"./once":30}],15:[function(_dereq_,module,exports){
 'use strict';
 
 var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
@@ -1509,7 +1502,7 @@ module.exports = {
 },{}],19:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -1587,7 +1580,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":30}],22:[function(_dereq_,module,exports){
+},{"../lib/polyfill":31}],22:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (fn) {
@@ -1772,6 +1765,22 @@ module.exports = function (obj) {
 };
 
 },{}],30:[function(_dereq_,module,exports){
+'use strict';
+
+function once(fn) {
+  var called = false;
+
+  return function () {
+    if (!called) {
+      called = true;
+      fn.apply(null, arguments);
+    }
+  };
+}
+
+module.exports = once;
+
+},{}],31:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1810,7 +1819,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],31:[function(_dereq_,module,exports){
+},{}],32:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {

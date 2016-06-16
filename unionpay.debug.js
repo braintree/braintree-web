@@ -1,14 +1,15 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.braintree || (g.braintree = {})).unionpay = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function (global){
 'use strict';
 (function (root, factory) {
   if (typeof exports === 'object' && typeof module !== 'undefined') {
-    module.exports = factory();
+    module.exports = factory(typeof global === 'undefined' ? root : global);
   } else if (typeof define === 'function' && define.amd) {
-    define([], factory);
+    define([], function () { return factory(root); });
   } else {
-    root.framebus = factory();
+    root.framebus = factory(root);
   }
-})(this, function () { // eslint-disable-line no-invalid-this
+})(this, function (root) { // eslint-disable-line no-invalid-this
   var win, framebus;
   var popups = [];
   var subscribers = {};
@@ -149,7 +150,7 @@
 
   function _attach(w) {
     if (win) { return; }
-    win = w || window;
+    win = w || root;
 
     if (win.addEventListener) {
       win.addEventListener('message', _onmessage, false);
@@ -274,6 +275,7 @@
   return framebus;
 });
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],2:[function(_dereq_,module,exports){
 'use strict';
 
@@ -578,7 +580,7 @@ module.exports = BraintreeBus;
 },{"../error":16,"./check-origin":8,"./events":9,"framebus":1}],11:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -822,7 +824,7 @@ module.exports = uuid;
 'use strict';
 /** @module braintree-web/unionpay */
 
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var UnionPay = _dereq_('./shared/unionpay');
 var BraintreeError = _dereq_('../lib/error');
 var analytics = _dereq_('../lib/analytics');
@@ -879,9 +881,9 @@ module.exports = {
    * @param {object} options Object containing configuration options for this module.
    * @param {Client} options.client A {@link Client} instance.
    * @example
-   * braintree.unionpay.create({ client: clientInstance }, function (err, unionpayInstance) {
-   *   if (err) {
-   *     console.error(err);
+   * braintree.unionpay.create({ client: clientInstance }, function (createErr, unionpayInstance) {
+   *   if (createErr) {
+   *     console.error(createErr);
    *     return;
    *   }
    *   // ...
@@ -925,7 +927,7 @@ var uuid = _dereq_('../../lib/uuid');
 var methods = _dereq_('../../lib/methods');
 var deferred = _dereq_('../../lib/deferred');
 var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var constants = _dereq_('./constants');
 var events = constants.events;
 
@@ -961,9 +963,9 @@ function UnionPay(options) {
  *   card: {
  *     number: '4111111111111111'
  *   }
- * }, function (err, cardCapabilities) {
- *   if (err) {
- *     console.error(err);
+ * }, function (fetchErr, cardCapabilities) {
+ *   if (fetchErr) {
+ *     console.error(fetchErr);
  *     return;
  *   }
  *
@@ -986,9 +988,9 @@ function UnionPay(options) {
  *   if (event.emittedBy === 'number' && event.fields.number.isValid) {
  *     unionpayInstance.fetchCapabilities({
  *       hostedFields: hostedFieldsInstance
- *     }, function (err, cardCapabilities) {
- *       if (err) {
- *         console.error(err);
+ *     }, function (fetchErr, cardCapabilities) {
+ *       if (fetchErr) {
+ *         console.error(fetchErr);
  *         return;
  *       }
  *
@@ -1089,8 +1091,9 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  * @param {object} options UnionPay enrollment options:
  * @param {object} [options.card] The card to enroll. Required if you are not using the `hostedFields` option.
  * @param {string} options.card.number The card number.
- * @param {string} options.card.expirationMonth The card's expiration month.
- * @param {string} options.card.expirationYear The card's expiration year.
+ * @param {string} [options.card.expirationDate] The card's expiration date. May be in the form `MM/YY` or `MM/YYYY`. When defined `expirationMonth` and `expirationYear` are ignored.
+ * @param {string} [options.card.expirationMonth] The card's expiration month. This should be used with the `expirationYear` parameter. When `expirationDate` is defined this parameter is ignored.
+ * @param {string} [options.card.expirationYear] The card's expiration year. This should be used with the `expirationMonth` parameter. When `expirationDate` is defined this parameter is ignored.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
  * @param {object} options.mobile The mobile information collected from the customer.
  * @param {string} options.mobile.countryCode The country code of the customer's mobile phone number.
@@ -1107,9 +1110,9 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  *     countryCode: '62',
  *     number: '111111111111'
  *   }
- * }, function (err, response) {
- *   if (err) {
- *      console.error(err);
+ * }, function (enrollErr, response) {
+ *   if (enrollErr) {
+ *      console.error(enrollErr);
  *      return;
  *   }
  *
@@ -1123,9 +1126,9 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  *     countryCode: '62',
  *     number: '111111111111'
  *   }
- * }, function (err, response) {
- *   if (err) {
- *     console.error(err);
+ * }, function (enrollErr, response) {
+ *   if (enrollErr) {
+ *     console.error(enrollErr);
  *     return;
  *   }
  *
@@ -1186,7 +1189,9 @@ UnionPay.prototype.enroll = function (options, callback) {
       }
     };
 
-    if (card.expirationMonth || card.expirationYear) {
+    if (card.expirationDate) {
+      data.unionPayEnrollment.expirationDate = card.expirationDate;
+    } else if (card.expirationMonth || card.expirationYear) {
       if (card.expirationMonth && card.expirationYear) {
         data.unionPayEnrollment.expirationYear = card.expirationYear;
         data.unionPayEnrollment.expirationMonth = card.expirationMonth;
@@ -1254,8 +1259,9 @@ UnionPay.prototype.enroll = function (options, callback) {
  * @param {object} options UnionPay tokenization options:
  * @param {object} [options.card] The card to enroll. Required if you are not using the `hostedFields` option.
  * @param {string} options.card.number The card number.
- * @param {string} options.card.expirationMonth The card's expiration month.
- * @param {string} options.card.expirationYear The card's expiration year.
+ * @param {string} [options.card.expirationDate] The card's expiration date. May be in the form `MM/YY` or `MM/YYYY`. When defined `expirationMonth` and `expirationYear` are ignored.
+ * @param {string} [options.card.expirationMonth] The card's expiration month. This should be used with the `expirationYear` parameter. When `expirationDate` is defined this parameter is ignored.
+ * @param {string} [options.card.expirationYear] The card's expiration year. This should be used with the `expirationMonth` parameter. When `expirationDate` is defined this parameter is ignored.
  * @param {string} [options.card.cvv] The card's security number.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
  * @param {string} options.enrollmentId The enrollment ID if {@link UnionPay#enroll} was required.
@@ -1271,9 +1277,9 @@ UnionPay.prototype.enroll = function (options, callback) {
  *   },
  *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
  *   smsCode: '11111' // Sent to customer's phone
- * }, function (err, response) {
- *   if (err) {
- *     console.error(err);
+ * }, function (tokenizeErr, response) {
+ *   if (tokenizeErr) {
+ *     console.error(tokenizeErr);
  *     return;
  *   }
  *
@@ -1284,9 +1290,9 @@ UnionPay.prototype.enroll = function (options, callback) {
  *   hostedFields: hostedFieldsInstance,
  *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
  *   smsCode: '11111' // Sent to customer's phone
- * }, function (err, response) {
- *   if (err) {
- *     console.error(err);
+ * }, function (tokenizeErr, response) {
+ *   if (tokenizeErr) {
+ *     console.error(tokenizeErr);
  *     return;
  *   }
  *
@@ -1313,8 +1319,6 @@ UnionPay.prototype.tokenize = function (options, callback) {
       _meta: {source: 'unionpay'},
       creditCard: {
         number: options.card.number,
-        expirationMonth: options.card.expirationMonth,
-        expirationYear: options.card.expirationYear,
         options: {
           unionPayEnrollment: {
             id: options.enrollmentId,
@@ -1323,6 +1327,13 @@ UnionPay.prototype.tokenize = function (options, callback) {
         }
       }
     };
+
+    if (card.expirationDate) {
+      data.creditCard.expirationDate = card.expirationDate;
+    } else if (card.expirationMonth && card.expirationYear) {
+      data.creditCard.expirationYear = card.expirationYear;
+      data.creditCard.expirationMonth = card.expirationMonth;
+    }
 
     if (options.card.cvv) {
       data.creditCard.cvv = options.card.cvv;
@@ -1398,8 +1409,8 @@ UnionPay.prototype.tokenize = function (options, callback) {
  * @public
  * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @example
- * unionpayInstance.teardown(function (err) {
- *   if (err) {
+ * unionpayInstance.teardown(function (teardownErr) {
+ *   if (teardownErr) {
  *     console.error('Could not tear down UnionPay.');
  *   } else {
  *     console.log('UnionPay has been torn down.');

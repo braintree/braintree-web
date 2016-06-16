@@ -1,14 +1,15 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.braintree || (g.braintree = {})).paypal = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function (global){
 'use strict';
 (function (root, factory) {
   if (typeof exports === 'object' && typeof module !== 'undefined') {
-    module.exports = factory();
+    module.exports = factory(typeof global === 'undefined' ? root : global);
   } else if (typeof define === 'function' && define.amd) {
-    define([], factory);
+    define([], function () { return factory(root); });
   } else {
-    root.framebus = factory();
+    root.framebus = factory(root);
   }
-})(this, function () { // eslint-disable-line no-invalid-this
+})(this, function (root) { // eslint-disable-line no-invalid-this
   var win, framebus;
   var popups = [];
   var subscribers = {};
@@ -149,7 +150,7 @@
 
   function _attach(w) {
     if (win) { return; }
-    win = w || window;
+    win = w || root;
 
     if (win.addEventListener) {
       win.addEventListener('message', _onmessage, false);
@@ -274,6 +275,7 @@
   return framebus;
 });
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],2:[function(_dereq_,module,exports){
 'use strict';
 
@@ -429,16 +431,9 @@ function getIEVersion(ua) {
   return null;
 }
 
-function isHTTPS(protocol) {
-  protocol = protocol || global.location.protocol;
-
-  return protocol === 'https:';
-}
-
 module.exports = {
   isOperaMini: isOperaMini,
-  getIEVersion: getIEVersion,
-  isHTTPS: isHTTPS
+  getIEVersion: getIEVersion
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
@@ -612,7 +607,7 @@ module.exports = BraintreeBus;
 },{"../error":17,"./check-origin":9,"./events":10,"framebus":1}],12:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -690,7 +685,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":28}],15:[function(_dereq_,module,exports){
+},{"../lib/polyfill":29}],15:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (fn) {
@@ -796,37 +791,37 @@ var BraintreeError = _dereq_('../../error');
 
 var REQUIRED_CONFIG_KEYS = [
   'name',
-  'url',
-  'landingFrameHTML'
+  'dispatchFrameUrl',
+  'openFrameUrl'
 ];
 
-function _validateFrameConfiguration(frameConfiguration) {
-  if (!frameConfiguration) {
+function _validateFrameConfiguration(options) {
+  if (!options) {
     throw new Error('Valid configuration is required');
   }
 
   REQUIRED_CONFIG_KEYS.forEach(function (key) {
-    if (!frameConfiguration.hasOwnProperty(key)) {
+    if (!options.hasOwnProperty(key)) {
       throw new Error('A valid frame ' + key + ' must be provided');
     }
   });
 
-  if (!(/^[\w_]+$/.test(frameConfiguration.name))) { // eslint-disable-line
+  if (!(/^[\w_]+$/.test(options.name))) { // eslint-disable-line
     throw new Error('A valid frame name must be provided');
   }
 }
 
-function FrameService(componentConfiguration, frameConfiguration) {
-  _validateFrameConfiguration(frameConfiguration);
+function FrameService(options) {
+  _validateFrameConfiguration(options);
 
   this._serviceId = uuid().replace(/-/g, '');
 
-  this._frameConfiguration = {
-    name: frameConfiguration.name + '_' + this._serviceId,
-    url: frameConfiguration.url,
-    landingFrameHTML: frameConfiguration.landingFrameHTML
+  this._options = {
+    name: options.name + '_' + this._serviceId,
+    dispatchFrameUrl: options.dispatchFrameUrl,
+    openFrameUrl: options.openFrameUrl
   };
-  this._componentConfiguration = componentConfiguration;
+  this._state = options.state;
 
   this._bus = new Bus({channel: this._serviceId});
   this._setBusEvents();
@@ -844,7 +839,7 @@ FrameService.prototype.initialize = function (callback) {
 
 FrameService.prototype._writeDispatchFrame = function () {
   var frameName = constants.DISPATCH_FRAME_NAME + '_' + this._serviceId;
-  var frameSrc = this._frameConfiguration.url + '/html/dispatch-frame.html';
+  var frameSrc = this._options.dispatchFrameUrl;
 
   this._dispatchFrame = iFramer({
     name: frameName,
@@ -868,21 +863,21 @@ FrameService.prototype._setBusEvents = function () {
   }.bind(this));
 
   this._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
-    reply(this._componentConfiguration);
+    reply(this._state);
   }.bind(this));
 };
 
 FrameService.prototype.open = function (callback) {
   this._onCompleteCallback = callback;
 
-  this._frame = popup.open(this._frameConfiguration);
+  this._frame = popup.open(this._options);
   this._pollForPopupClose();
+};
 
-  return {
-    close: function () {
-      this._frame.close();
-    }.bind(this)
-  };
+FrameService.prototype.redirect = function (url) {
+  if (this._frame && !this.isFrameClosed()) {
+    this._frame.location.href = url;
+  }
 };
 
 FrameService.prototype.close = function () {
@@ -896,9 +891,6 @@ FrameService.prototype.teardown = function () {
   this._dispatchFrame.parentNode.removeChild(this._dispatchFrame);
   this._dispatchFrame = null;
   this._cleanupFrame();
-  if (this._onCompleteCallback) {
-    this._onCompleteCallback();
-  }
 };
 
 FrameService.prototype.isFrameClosed = function () {
@@ -929,14 +921,14 @@ FrameService.prototype._pollForPopupClose = function () {
 
 module.exports = FrameService;
 
-},{"../../bus":11,"../../error":17,"../../uuid":29,"../shared/constants":24,"../shared/events":25,"./popup":21,"iframer":2}],19:[function(_dereq_,module,exports){
+},{"../../bus":11,"../../error":17,"../../uuid":30,"../shared/constants":24,"../shared/events":25,"./popup":21,"iframer":2}],19:[function(_dereq_,module,exports){
 'use strict';
 
 var FrameService = _dereq_('./frame-service');
 
 module.exports = {
-  create: function createFrameService(componentConfiguration, frameConfiguration, callback) {
-    var frameService = new FrameService(componentConfiguration, frameConfiguration);
+  create: function createFrameService(options, callback) {
+    var frameService = new FrameService(options);
 
     frameService.initialize(function () {
       callback(frameService);
@@ -971,10 +963,10 @@ module.exports = {
 
 var composeOptions = _dereq_('./compose-options');
 
-module.exports = function openPopup(frameConfiguration) {
+module.exports = function openPopup(options) {
   return global.open(
-    frameConfiguration.url + frameConfiguration.landingFrameHTML,
-    frameConfiguration.name,
+    options.openFrameUrl,
+    options.name,
     composeOptions()
   );
 };
@@ -1055,6 +1047,22 @@ module.exports = function (obj) {
 };
 
 },{}],28:[function(_dereq_,module,exports){
+'use strict';
+
+function once(fn) {
+  var called = false;
+
+  return function () {
+    if (!called) {
+      called = true;
+      fn.apply(null, arguments);
+    }
+  };
+}
+
+module.exports = once;
+
+},{}],29:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -1093,7 +1101,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],29:[function(_dereq_,module,exports){
+},{}],30:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
@@ -1107,17 +1115,19 @@ function uuid() {
 
 module.exports = uuid;
 
-},{}],30:[function(_dereq_,module,exports){
+},{}],31:[function(_dereq_,module,exports){
 'use strict';
 
 var frameService = _dereq_('../../lib/frame-service/external');
 var BraintreeError = _dereq_('../../lib/error');
-var VERSION = "3.0.0-beta.8";
+var once = _dereq_('../../lib/once');
+var VERSION = "3.0.0-beta.9";
 var constants = _dereq_('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = _dereq_('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = _dereq_('../../lib/analytics');
 var methods = _dereq_('../../lib/methods');
 var deferred = _dereq_('../../lib/deferred');
+var getCountry = _dereq_('../shared/get-country');
 var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
 
 /**
@@ -1147,45 +1157,64 @@ var convertMethodsToError = _dereq_('../../lib/convert-methods-to-error');
 
 /**
  * @class
- * @param {module:braintree-web/paypal~createOptions} options see {@link module:braintree-web/paypal.create|paypal.create}
+ * @param {object} options see {@link module:braintree-web/paypal.create|paypal.create}
  * @classdesc This class represents a PayPal component. Instances of this class have methods for launching auth dialogs and other programmatic interactions with the PayPal component.
  */
 function PayPal(options) {
-  this._options = options;
+  this._client = options.client;
   this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION;
   this._authorizationInProgress = false;
 }
 
 PayPal.prototype._initialize = function (callback) {
-  var options = this._options;
+  var client = this._client;
   var failureTimeout = setTimeout(function () {
-    analytics.sendEvent(options.client, 'web.paypal.load.timed-out');
+    analytics.sendEvent(client, 'web.paypal.load.timed-out');
   }, INTEGRATION_TIMEOUT_MS);
 
-  frameService.create(
-    this._options,
-    {
-      name: constants.LANDING_FRAME_NAME,
-      url: this._assetsUrl,
-      landingFrameHTML: '/html/paypal-landing-frame.html'
-    },
-    function (service) {
-      this._frameService = service;
-      clearTimeout(failureTimeout);
-      analytics.sendEvent(options.client, 'web.paypal.load.succeeded');
-      callback();
-    }.bind(this)
-  );
+  frameService.create({
+    name: constants.LANDING_FRAME_NAME,
+    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame.html',
+    openFrameUrl: this._assetsUrl + '/html/paypal-landing-frame.html'
+  }, function (service) {
+    this._frameService = service;
+    clearTimeout(failureTimeout);
+    analytics.sendEvent(client, 'web.paypal.load.succeeded');
+    callback();
+  }.bind(this));
 };
 
 /**
  * Launches the PayPal login flow and returns a nonce payload.
  * @public
+ * @param {object} options All tokenization options for the PayPal component.
+ * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow.
+ * @param {string} [options.intent=authorize]
+ * Checkout flows only.
+ * * `authorize` - Submits the transaction for authorization but not settlement.
+ * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
+ * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify. Checkout flows only.
+ * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
+ * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
+ * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
+ * @param {string} [options.locale=en_us] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
+ * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
+ * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
+ * @param {string} options.shippingAddressOverride.line1 Street address.
+ * @param {string} [options.shippingAddressOverride.line2] Street address (extended).
+ * @param {string} options.shippingAddressOverride.city City.
+ * @param {string} options.shippingAddressOverride.state State.
+ * @param {string} options.shippingAddressOverride.postalCode Postal code.
+ * @param {string} options.shippingAddressOverride.countryCode Country.
+ * @param {string} [options.shippingAddressOverride.phone] Phone number.
+ * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
+ * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
+ * @param {boolean} [options.billingAgreementsDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile. Max 255 characters.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
  * @returns {PayPal~tokenizeReturn} A handle to close the PayPal checkout frame.
  */
-PayPal.prototype.tokenize = function (callback) {
-  var client;
+PayPal.prototype.tokenize = function (options, callback) {
+  var client = this._client;
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
@@ -1194,8 +1223,7 @@ PayPal.prototype.tokenize = function (callback) {
     });
   }
 
-  client = this._options.client;
-  callback = deferred(callback);
+  callback = once(deferred(callback));
 
   if (this._authorizationInProgress) {
     analytics.sendEvent(client, 'web.paypal.tokenization.error.already-opened');
@@ -1208,22 +1236,9 @@ PayPal.prototype.tokenize = function (callback) {
     this._authorizationInProgress = true;
 
     analytics.sendEvent(client, 'web.paypal.tokenization.opened');
-
-    this._frameService.open(function (err) {
-      if (err) {
-        if (err.message === constants.FRAME_CLOSED_ERROR_MESSAGE) {
-          analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-user');
-        } else {
-          analytics.sendEvent(client, 'web.paypal.tokenization.failed');
-        }
-      } else {
-        analytics.sendEvent(client, 'web.paypal.tokenization.success');
-      }
-
-      this._authorizationInProgress = false;
-
-      callback.apply(null, arguments);
-    }.bind(this));
+    this._navigateFrameToAuth(options, callback);
+    // This MUST happen after _navigateFrameToAuth for Metro browsers to work.
+    this._frameService.open(this._createFrameServiceCallback(options, callback));
   }
 
   return {
@@ -1232,6 +1247,169 @@ PayPal.prototype.tokenize = function (callback) {
       this._frameService.close();
     }.bind(this)
   };
+};
+
+PayPal.prototype._createFrameServiceCallback = function (options, callback) {
+  var client = this._client;
+
+  return function (err, params) {
+    this._authorizationInProgress = false;
+
+    if (err) {
+      if (err.message === constants.FRAME_CLOSED_ERROR_MESSAGE) {
+        analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-user');
+      }
+      callback(err);
+    } else {
+      this._tokenizePayPal(options, params, callback);
+    }
+  }.bind(this);
+};
+
+PayPal.prototype._tokenizePayPal = function (options, params, callback) {
+  var client = this._client;
+
+  client.request({
+    endpoint: 'payment_methods/paypal_accounts',
+    method: 'post',
+    data: this._formatTokenizeData(options, params)
+  }, function (err, response) {
+    if (err) {
+      analytics.sendEvent(client, 'web.paypal.tokenization.failed');
+      callback(err instanceof BraintreeError ? err : new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        message: 'Could not tokenize user\'s PayPal account.',
+        details: err
+      }));
+    } else {
+      analytics.sendEvent(client, 'web.paypal.tokenization.success');
+      callback(null, this._formatTokenizePayload(response));
+    }
+  }.bind(this));
+};
+
+PayPal.prototype._formatTokenizePayload = function (response) {
+  var payload;
+  var account = {};
+
+  if (response.paypalAccounts) {
+    account = response.paypalAccounts[0];
+  }
+
+  payload = {
+    nonce: account.nonce,
+    details: {}
+  };
+
+  if (account.details && account.details.payerInfo) {
+    payload.details = account.details.payerInfo;
+  }
+
+  return payload;
+};
+
+PayPal.prototype._formatTokenizeData = function (options, params) {
+  var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
+  var data = {
+    paypalAccount: {correlationId: this._frameService._serviceId}
+  };
+
+  if (params.ba_token) {
+    data.paypalAccount.billingAgreementToken = params.ba_token;
+  } else {
+    data.paypalAccount.paymentToken = params.paymentId;
+    data.paypalAccount.payerId = params.PayerID;
+    data.paypalAccount.unilateral = gatewayConfiguration.paypal.unvettedMerchant;
+
+    if (options.hasOwnProperty('intent')) {
+      data.paypalAccount.intent = options.intent;
+    }
+  }
+
+  return data;
+};
+
+PayPal.prototype._navigateFrameToAuth = function (options, callback) {
+  var client = this._client;
+  var endpoint = 'paypal_hermes/';
+
+  if (options.flow === 'checkout') {
+    endpoint += 'create_payment_resource';
+  } else if (options.flow === 'vault') {
+    endpoint += 'setup_billing_agreement';
+  } else {
+    callback(new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'PayPal flow property is invalid or missing.'
+    }));
+    return;
+  }
+
+  client.request({
+    endpoint: endpoint,
+    method: 'post',
+    data: this._formatPaymentResourceData(options)
+  }, function (err, response) {
+    var redirectUrl;
+
+    if (err) {
+      callback(err instanceof BraintreeError ? err : new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        message: constants.AUTH_INIT_ERROR_MESSSAGE,
+        details: err
+      }));
+      this._frameService.close();
+    } else {
+      if (options.flow === 'checkout') {
+        redirectUrl = response.paymentResource.redirectUrl;
+      } else {
+        redirectUrl = response.agreementSetup.approvalUrl;
+      }
+
+      this._frameService.redirect(redirectUrl);
+    }
+  }.bind(this));
+};
+
+PayPal.prototype._formatPaymentResourceData = function (options) {
+  var key;
+  var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
+  var serviceId = this._frameService._serviceId;
+  var paymentResource = {
+    returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-redirect-frame.html?channel=' + serviceId,
+    cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-cancel-frame.html?channel=' + serviceId,
+    correlationId: serviceId,
+    experienceProfile: {
+      brandName: options.displayName || gatewayConfiguration.paypal.displayName,
+      localeCode: getCountry(options.locale),
+      noShipping: (!options.enableShippingAddress).toString(),
+      addressOverride: options.shippingAddressEditable === false
+    }
+  };
+
+  if (options.flow === 'checkout') {
+    paymentResource.amount = parseFloat(options.amount).toFixed(2);
+    paymentResource.currencyIsoCode = options.currency;
+    paymentResource.offerPaypalCredit = options.offerCredit === true;
+
+    if (options.hasOwnProperty('intent')) {
+      paymentResource.intent = options.intent;
+    }
+
+    for (key in options.shippingAddressOverride) {
+      if (options.shippingAddressOverride.hasOwnProperty(key)) {
+        paymentResource[key] = options.shippingAddressOverride[key];
+      }
+    }
+  } else {
+    paymentResource.shippingAddress = options.shippingAddressOverride;
+
+    if (options.billingAgreementDescription) {
+      paymentResource.description = options.billingAgreementDescription;
+    }
+  }
+
+  return paymentResource;
 };
 
 /**
@@ -1245,7 +1423,7 @@ PayPal.prototype.teardown = function (callback) {
 
   convertMethodsToError(this, methods(PayPal.prototype));
 
-  analytics.sendEvent(this._options.client, 'web.paypal.teardown-completed');
+  analytics.sendEvent(this._client, 'web.paypal.teardown-completed');
 
   if (typeof callback === 'function') {
     callback = deferred(callback);
@@ -1255,24 +1433,26 @@ PayPal.prototype.teardown = function (callback) {
 
 module.exports = PayPal;
 
-},{"../../lib/analytics":7,"../../lib/constants":12,"../../lib/convert-methods-to-error":13,"../../lib/deferred":15,"../../lib/error":17,"../../lib/frame-service/external":19,"../../lib/methods":27,"../shared/constants":32}],31:[function(_dereq_,module,exports){
+},{"../../lib/analytics":7,"../../lib/constants":12,"../../lib/convert-methods-to-error":13,"../../lib/deferred":15,"../../lib/error":17,"../../lib/frame-service/external":19,"../../lib/methods":27,"../../lib/once":28,"../shared/constants":33,"../shared/get-country":34}],32:[function(_dereq_,module,exports){
 'use strict';
 /** @module braintree-web/paypal */
-
-/**
- * Options for {@link module:braintree-web/paypal.create|create}
- * @typedef {object} createOptions
- */
 
 var PayPal = _dereq_('./external/paypal');
 var browserDetection = _dereq_('../lib/browser-detection');
 var BraintreeError = _dereq_('../lib/error');
 var analytics = _dereq_('../lib/analytics');
 var deferred = _dereq_('../lib/deferred');
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 
 function create(options, callback) {
   var config, pp, clientVersion;
+
+  if (!callback) {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'create must include a callback function.'
+    });
+  }
 
   callback = deferred(callback);
 
@@ -1311,14 +1491,6 @@ function create(options, callback) {
     return;
   }
 
-  if (!browserDetection.isHTTPS()) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'PayPal requires HTTPS.'
-    }));
-    return;
-  }
-
   analytics.sendEvent(options.client, 'web.paypal.initialized');
 
   pp = new PayPal(options);
@@ -1337,23 +1509,6 @@ module.exports = {
    * @function
    * @param {object} options All creation options for the PayPal component.
    * @param {Client} options.client A {@link Client} instance.
-   * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow.
-   * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
-   * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
-   * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
-   * @param {string} [options.locale=en_us] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
-   * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
-   * @param {object=} options.shippingAddressOverride Allows you to pass a shipping address you have already collected into the PayPal payment flow.
-   * @param {string} options.shippingAddressOverride.line1 Street address.
-   * @param {string=} options.shippingAddressOverride.line2 Street address (extended).
-   * @param {string} options.shippingAddressOverride.city City.
-   * @param {string} options.shippingAddressOverride.state State.
-   * @param {string} options.shippingAddressOverride.postalCode Postal code.
-   * @param {string} options.shippingAddressOverride.countryCode Country.
-   * @param {string=} options.shippingAddressOverride.phone Phone number.
-   * @param {string=} options.shippingAddressOverride.recipientName Recipient's name.
-   * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
-   * @param {boolean} [options.billingAgreementsDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile. Max 255 characters.
    * @param {callback} callback The second argument, <code>data</code>, is the {@link PayPal} instance.
    * @returns {void}
    */
@@ -1365,7 +1520,7 @@ module.exports = {
   VERSION: VERSION
 };
 
-},{"../lib/analytics":7,"../lib/browser-detection":8,"../lib/deferred":15,"../lib/error":17,"./external/paypal":30}],32:[function(_dereq_,module,exports){
+},{"../lib/analytics":7,"../lib/browser-detection":8,"../lib/deferred":15,"../lib/error":17,"./external/paypal":31}],33:[function(_dereq_,module,exports){
 'use strict';
 
 var POPUP_HEIGHT = 535;
@@ -1380,5 +1535,55 @@ module.exports = {
   POPUP_POLL_INTERVAL: 100
 };
 
-},{}]},{},[31])(31)
+},{}],34:[function(_dereq_,module,exports){
+'use strict';
+
+var lookupTable = {
+  us: 'en_us',
+  gb: 'en_uk',
+  uk: 'en_uk',
+  de: 'de_de',
+  fr: 'fr_fr',
+  it: 'it_it',
+  es: 'es_es',
+  ca: 'en_ca',
+  au: 'en_au',
+  at: 'de_de',
+  be: 'en_us',
+  ch: 'de_de',
+  dk: 'da_dk',
+  nl: 'nl_nl',
+  no: 'no_no',
+  pl: 'pl_pl',
+  se: 'sv_se',
+  tr: 'tr_tr',
+  bg: 'en_us',
+  cy: 'en_us',
+  hr: 'en_us',
+  is: 'en_us',
+  kh: 'en_us',
+  mt: 'en_us',
+  my: 'en_us',
+  ru: 'ru_ru'
+};
+
+function getCountry(code) {
+  var country = code ? code.toLowerCase().replace(/-/g, '_') : 'us';
+
+  if (country.indexOf('_') !== -1) {
+    country = country.split('_')[1];
+  }
+
+  country = lookupTable[country] ? country : 'us';
+
+  if (country === 'uk') {
+    country = 'gb';
+  }
+
+  return country;
+}
+
+module.exports = getCountry;
+
+},{}]},{},[32])(32)
 });

@@ -24,10 +24,10 @@ function AmericanExpress(options) {
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
- * americanExpress.create({client: client}, function (err, instance) {
+ * americanExpress.create({client: clientInstance}, function (createErr, americanExpressInstance) {
  *   var options = {nonce: existingBraintreeNonce};
- *   instance.getRewardsBalance(options, function (err, payload) {
- *     if (err || payload.error) {
+ *   americanExpressInstance.getRewardsBalance(options, function (getErr, payload) {
+ *     if (getErr || payload.error) {
  *       // Handle error
  *       return;
  *     }
@@ -86,10 +86,10 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
- * americanExpress.create({client: client}, function (err, instance) {
+ * americanExpress.create({client: clientInstance}, function (createErr, americanExpressInstance) {
  *   var options = {nonce: existingAmericanExpressNonce};
- *   instance.getExpressCheckoutProfile(options, function (err, payload) {
- *     if (err) {
+ *   americanExpressInstance.getExpressCheckoutProfile(options, function (getErr, payload) {
+ *     if (getErr) {
  *       // Handle error
  *       return;
  *     }
@@ -147,7 +147,7 @@ module.exports = AmericanExpress;
  * @description This module is for use with Amex Express Checkout. To accept American Express cards, use Hosted Fields.
  */
 
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var BraintreeError = _dereq_('../lib/error');
 var AmericanExpress = _dereq_('./american-express');
 var deferred = _dereq_('../lib/deferred');

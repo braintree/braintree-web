@@ -1,6 +1,36 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.9
+
+* No longer throws exceptions when using `require('braintree-web')` during server-side rendering with libraries such as React.js.
+* `index.js` and `debug.js` in the npm/bower modules no longer reference `package.json`.
+* Ajax errors in IE9 now report as general error instead of an empty string. It is impossible to get details additional about network errors in IE9 XDomainRequests.
+* UnionPay
+  * Expiration date or month/year together are now optional as some UnionPay cards do not have expiration dates.
+* PayPal
+  * All `create` options aside from `client` have now moved to `tokenize`. See __BREAKING CHANGES__.
+  * For one-time checkout, add `intent` option which can be `sale` or `authorize`
+  * HTTPS is no longer required
+  * Add `offerCredit` as an option to `tokenize` for offering customers PayPal Credit as a form of payment
+
+__BREAKING CHANGES__
+* PayPal's `create` options have moved to `tokenize`. Deferring these options to tokenization time allows greater flexibility in your checkout experience.
+
+   ```
+   braintree.paypal.create({
+     client: clientInstance
+   }, function (err, paypalInstance) {
+     paypalInstance.tokenize({
+       flow: 'checkout',
+       amount: '10.00',
+       currency: 'USD'
+     }, function (tokenizeErr, payload) {
+       // ...
+     });
+   });
+   ```
+
 ## 3.0.0-beta.8
 
 * Hosted Fields

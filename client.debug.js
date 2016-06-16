@@ -83,8 +83,8 @@ function Client(configuration) {
  * var createClient = require('braintree-web/client').create;
  *
  * createClient({
- *   authorization: CLIENT_TOKEN
- * }, function (err, client) {
+ *   authorization: CLIENT_AUTHORIZATION
+ * }, function (createErr, clientInstance) {
  *   var form = document.getElementById('my-form-id');
  *   var data = {
  *     creditCard: {
@@ -100,12 +100,12 @@ function Client(configuration) {
  *   // Warning: For a merchant to be eligible for the easiest level of PCI compliance (SAQ A),
  *   // payment fields cannot be hosted on your checkout page.
  *   // For an alternative to the following, use Hosted Fields.
- *   client.request({
+ *   clientInstance.request({
  *     endpoint: 'payment_methods/credit_cards',
  *     method: 'post',
  *     data: data
- *   }, function (err, response) {
- *     if (err) { throw new Error(err); }
+ *   }, function (requestErr, response) {
+ *     if (requestErr) { throw new Error(requestErr); }
  *
  *     console.log('Got nonce:', response.creditCards[0].nonce);
  *   });
@@ -207,13 +207,13 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../lib/constants":13,"../lib/create-authorization-data":14,"../lib/error":17,"../lib/uuid":22,"./request":7}],3:[function(_dereq_,module,exports){
+},{"../lib/constants":13,"../lib/create-authorization-data":14,"../lib/error":17,"../lib/uuid":23,"./request":7}],3:[function(_dereq_,module,exports){
 'use strict';
 
 var BraintreeError = _dereq_('../lib/error');
 var Client = _dereq_('./client');
 var getConfiguration = _dereq_('./get-configuration').getConfiguration;
-var packageVersion = "3.0.0-beta.8";
+var packageVersion = "3.0.0-beta.9";
 var deferred = _dereq_('../lib/deferred');
 
 /** @module braintree-web/client */
@@ -229,8 +229,8 @@ var deferred = _dereq_('../lib/deferred');
  * var createClient = require('braintree-web/client').create;
  *
  * createClient({
- *   authorization: CLIENT_TOKEN
- * }, function (err, client) {
+ *   authorization: CLIENT_AUTHORIZATION
+ * }, function (createErr, clientInstance) {
  *   ...
  * });
  * @static
@@ -286,6 +286,7 @@ module.exports = {
 'use strict';
 
 var querystring = _dereq_('../../lib/querystring');
+var once = _dereq_('../../lib/once');
 var prepBody = _dereq_('./prep-body');
 var parseBody = _dereq_('./parse-body');
 var constants = _dereq_('./constants');
@@ -295,15 +296,14 @@ function getRequestObject() {
   return isXHRAvailable ? new XMLHttpRequest() : new XDomainRequest();
 }
 
-function request(options, callback) {
+function request(options, cb) {
   var status, resBody;
   var method = (options.method || 'GET').toUpperCase();
   var url = options.url;
   var body = options.data || {};
   var timeout = options.timeout == null ? 60000 : options.timeout;
   var req = getRequestObject();
-
-  callback = callback || function () {};
+  var callback = once(cb || Function.prototype);
 
   if (method === 'GET') {
     url = querystring.queryify(url, body);
@@ -329,7 +329,7 @@ function request(options, callback) {
     };
 
     req.onerror = function () {
-      callback(req.responseText, null, req.status);
+      callback(constants.errors.UNKNOWN_ERROR, null, req.status);
     };
 
     // This must remain for IE9 to work
@@ -347,9 +347,9 @@ function request(options, callback) {
     req.setRequestHeader('Content-Type', 'application/json');
   }
 
-  setTimeout(function () {
+  try {
     req.send(prepBody(method, body));
-  }, 1);
+  } catch (e) { /* ignored */ }
 }
 
 module.exports = {
@@ -357,14 +357,14 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../lib/querystring":21,"./constants":5,"./parse-body":10,"./prep-body":11}],5:[function(_dereq_,module,exports){
+},{"../../lib/once":20,"../../lib/querystring":22,"./constants":5,"./parse-body":10,"./prep-body":11}],5:[function(_dereq_,module,exports){
 module.exports={
   "errors": {
     "UNKNOWN_ERROR": "Unknown error",
     "TIMEOUT_ERROR": "Request timed out waiting for a reply",
     "INVALID_TIMEOUT": "Timeout must be a number"
   }
-};
+}
 
 },{}],6:[function(_dereq_,module,exports){
 (function (global){
@@ -378,21 +378,25 @@ module.exports = function getUserAgent() {
 },{}],7:[function(_dereq_,module,exports){
 'use strict';
 
+var ajaxIsAvaliable;
 var JSONPDriver = _dereq_('./jsonp-driver');
 var AJAXDriver = _dereq_('./ajax-driver');
 var getUserAgent = _dereq_('./get-user-agent');
 var isHTTP = _dereq_('./is-http');
-var ajaxIsAvaliable = !(isHTTP() && /MSIE\s(8|9)/.test(getUserAgent()));
 
-if (ajaxIsAvaliable) {
-  module.exports = function () {
-    AJAXDriver.request.apply(null, arguments);
-  };
-} else {
-  module.exports = function () {
-    JSONPDriver.request.apply(null, arguments);
-  };
+function isAjaxAvailable() {
+  if (ajaxIsAvaliable == null) {
+    ajaxIsAvaliable = !(isHTTP() && /MSIE\s(8|9)/.test(getUserAgent()));
+  }
+
+  return ajaxIsAvaliable;
 }
+
+module.exports = function () {
+  var request = isAjaxAvailable() ? AJAXDriver.request : JSONPDriver.request;
+
+  request.apply(null, arguments);
+};
 
 },{"./ajax-driver":4,"./get-user-agent":6,"./is-http":8,"./jsonp-driver":9}],8:[function(_dereq_,module,exports){
 (function (global){
@@ -520,7 +524,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../../lib/querystring":21,"../../lib/uuid":22,"./constants":5}],10:[function(_dereq_,module,exports){
+},{"../../lib/querystring":22,"../../lib/uuid":23,"./constants":5}],10:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (body) {
@@ -583,7 +587,7 @@ module.exports = addMetadata;
 },{"./constants":13,"./create-authorization-data":14,"./json-clone":19}],13:[function(_dereq_,module,exports){
 'use strict';
 
-var VERSION = "3.0.0-beta.8";
+var VERSION = "3.0.0-beta.9";
 var PLATFORM = 'web';
 
 module.exports = {
@@ -645,7 +649,7 @@ function createAuthorizationData(authorization) {
 
 module.exports = createAuthorizationData;
 
-},{"../lib/polyfill":20}],15:[function(_dereq_,module,exports){
+},{"../lib/polyfill":21}],15:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = function (fn) {
@@ -741,7 +745,7 @@ module.exports = BraintreeError;
 },{"./enumerate":16}],18:[function(_dereq_,module,exports){
 'use strict';
 
-var parser = document.createElement('a');
+var parser;
 var legalHosts = {
   'paypal.com': 1,
   'braintreepayments.com': 1,
@@ -758,6 +762,7 @@ function isWhitelistedDomain(url) {
     return false;
   }
 
+  parser = parser || document.createElement('a');
   parser.href = url;
   pieces = parser.hostname.split('.');
   topLevelDomain = pieces.slice(-2).join('.');
@@ -775,6 +780,22 @@ module.exports = function (value) {
 };
 
 },{}],20:[function(_dereq_,module,exports){
+'use strict';
+
+function once(fn) {
+  var called = false;
+
+  return function () {
+    if (!called) {
+      called = true;
+      fn.apply(null, arguments);
+    }
+  };
+}
+
+module.exports = once;
+
+},{}],21:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -813,7 +834,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],21:[function(_dereq_,module,exports){
+},{}],22:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -904,7 +925,7 @@ module.exports = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],22:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 'use strict';
 
 function uuid() {
