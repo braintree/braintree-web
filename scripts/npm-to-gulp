@@ -1,0 +1,17 @@
+#!/bin/sh
+
+TASK="$1"
+TASKLIST=""
+
+shift
+
+if [ -z "$1" ]; then
+  TASKLIST="$TASK"
+else
+  while [ -n "$1" ]; do
+    TASKLIST="$TASKLIST ${TASK}:${1}"
+    shift
+  done
+fi
+
+env BRAINTREE_JS_ENV=development gulp $TASKLIST

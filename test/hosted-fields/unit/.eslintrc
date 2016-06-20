@@ -1,0 +1,4 @@
+---
+  globals:
+    triggerEvent: false
+    helpers: false
