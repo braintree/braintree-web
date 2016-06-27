@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 2.26.0
+
+* PayPal
+  * Bugfix - Remove styling that broke iOS UIWebViews
+  * Adds support for `pt_BR` and `es_XC` locale codes
+
 ## 2.25.0
 
 * PayPal
