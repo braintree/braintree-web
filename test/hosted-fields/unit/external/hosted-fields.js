@@ -120,6 +120,22 @@ describe('HostedFields', function () {
         }
       });
 
+      it('throws an error if passed an invalid field key', function () {
+        var configuration = this.defaultConfiguration;
+
+        configuration.fields.goober = {selector: 'body'};
+
+        try {
+          new HostedFields(configuration);  // eslint-disable-line no-new
+          throw new Error('we should never reach this point');
+        } catch (err) {
+          expect(err).to.be.an.instanceOf(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.message).to.equal('"goober" is not a valid field.');
+          expect(err.details).not.to.exist;
+        }
+      });
+
       it('throws an error if field container does not exist', function () {
         var configuration = this.defaultConfiguration;
 

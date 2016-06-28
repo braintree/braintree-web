@@ -29,14 +29,17 @@ describe('client.create', function () {
   });
 
   it('throws an error if no callback is provided', function () {
-    var expectedError = new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'create must include a callback function'
-    });
+    var err;
 
-    expect(function () {
+    try {
       client.create({authorization: fake.tokenizationKey});
-    }).to.throw(BraintreeError, expectedError);
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).to.be.an.instanceOf(BraintreeError);
+    expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+    expect(err.message).to.equal('create must include a callback function.');
   });
 
   it('accepts a tokenizationKey', function (done) {

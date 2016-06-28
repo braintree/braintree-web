@@ -23,12 +23,20 @@ describe('isWhitelistedDomain', function () {
     expect(isWhitelistedDomain('https://www.BraintreePayments.com')).to.equal(true);
   });
 
-  it('returns true if a braintree or paypal domain is used', function () {
+  it('returns true if a braintree is used', function () {
     expect(isWhitelistedDomain('https://www.braintreepayments.com')).to.equal(true);
+  });
+
+  it('returns true if a paypal is used', function () {
+    expect(isWhitelistedDomain('https://www.paypal.com')).to.equal(true);
   });
 
   it('returns true if a braintree domain with a port is used', function () {
     expect(isWhitelistedDomain('https://www.braintreepayments.com:3000')).to.equal(true);
+  });
+
+  it('returns true if a braintree domain with multiple subdomains is used', function () {
+    expect(isWhitelistedDomain('https://foo.bar.baz.braintreepayments.com')).to.equal(true);
   });
 
   it('returns false if a braintree domain over http is used', function () {

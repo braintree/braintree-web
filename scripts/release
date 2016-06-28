@@ -106,20 +106,17 @@ confirm_version() {
 
 release_source() {
   set +e
-  git branch -D braintree-web >/dev/null 2>&1
-  exists="$(git remote -v | awk '$1 == "braintree-web" && $2 == "git@github.com:braintree/braintree-web.git"' || echo "no")"
+  echo -n "What was the last source release tag? "
+  read tag
 
-  if [ "no" = "$exists" ]; then
-    echo "Setting up remote braintree-web branch..."
-    git remote add braintree-web git@github.com:braintree/braintree-web.git
+  if [ -z "$tag" ]; then
+    >&2 echo -e "${RED}A tag is required. Aborting...$RESET"
+    exit 1
   fi
 
-  git config user.name Braintree
-  git config user.email code@getbraintree.com
-  git checkout -b braintree-web --track braintree-web/master
-  git merge --squash master
-
-  echo "Review and commit the squashed code changes"
+  git diff ${tag}.. | git -C "$BRAINTREE_JS_SOURCE_DEST" apply -
+  echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
+  exit 0
   set -e
 }
 
@@ -131,23 +128,34 @@ main() {
   dotenv
 
   case "$TASK" in
-    hosted) confirm_destination "$BRAINTREE_JS_HOSTED_DEST" ;;
-    bower) confirm_destination "$BRAINTREE_JS_BOWER_DEST" ;;
-    jsdoc) ./scripts/deploy-jsdoc; exit $? ;;
-    source) release_source; exit $? ;;
+    hosted)
+      confirm_destination "$BRAINTREE_JS_HOSTED_DEST"
+      reinstall_dependencies
+      confirm_version
+      env BRAINTREE_JS_ENV=production gulp release:hosted
+      ;;
+    published)
+      confirm_destination "$BRAINTREE_JS_BOWER_DEST"
+      reinstall_dependencies
+      confirm_version
+      env BRAINTREE_JS_ENV=production gulp release:bower
+      ;;
+    jsdoc)
+      ./scripts/deploy-jsdoc
+      ;;
+    source)
+      confirm_destination "$BRAINTREE_JS_SOURCE_DEST"
+      release_source
+      ;;
     *)
       echo "${YELLOW}${TASK}${RED} is not a valid option. Choose from the following:${RESET}"
       echo "* hosted"
-      echo "* bower"
+      echo "* published"
       echo "* jsdoc"
       echo "* source"
       exit 1
       ;;
   esac
-
-  reinstall_dependencies
-  confirm_version
-  env BRAINTREE_JS_ENV=production gulp release:$TASK
 }
 
 main "$@"

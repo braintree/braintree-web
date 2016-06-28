@@ -35,18 +35,35 @@ describe('Expiration Date Input', function () {
       });
     });
 
-    it('uses a 1 digit month when the date is greater than one', function () {
-      this.input.model.set('expirationDate.value', '7');
-      expect(this.input.formatter.pattern).to.equal('0{{9}} / {{9999}}');
+    describe('uses a 2 digit month when the date starts with one', function () {
+      var expDates = ['1', '122', '1222'];
+
+      expDates.forEach(function (date) {
+        it(' for date ' + date, function () {
+          this.input.model.set('expirationDate.value', date);
+          expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
+        });
+      });
     });
 
-    describe('uses a 1 digit month for valid 3 digit dates starting with 1', function () {
-      var expDates = ['121', '122', '220', '221', '222'];
+    describe('uses a 1 digit month when the date is greater than one', function () {
+      var expDates = ['2', '3', '4', '5', '6', '7', '8', '9'];
 
       expDates.forEach(function (date) {
         it(' for date ' + date, function () {
           this.input.model.set('expirationDate.value', date);
           expect(this.input.formatter.pattern).to.equal('0{{9}} / {{9999}}');
+        });
+      });
+    });
+
+    describe('uses a 2 digit month for valid 3 digit dates starting with 1', function () {
+      var expDates = ['121', '122'];
+
+      expDates.forEach(function (date) {
+        it(' for date ' + date, function () {
+          this.input.model.set('expirationDate.value', date);
+          expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
         });
       });
     });
@@ -63,8 +80,10 @@ describe('Expiration Date Input', function () {
     });
 
     it('handles changes in ambiguous dates, for date 122', function () {
-      this.input.model.set('expirationDate.value', '122');
+      this.input.model.set('expirationDate.value', '22');
       expect(this.input.formatter.pattern).to.equal('0{{9}} / {{9999}}');
+      this.input.model.set('expirationDate.value', '122');
+      expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
     });
 
     describe('handles changes in ambiguous dates', function () {

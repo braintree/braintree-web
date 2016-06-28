@@ -50,6 +50,7 @@ gulp.task('build:published:mins', function () {
     JS_PATH + 'data-collector.min.js',
     JS_PATH + 'hosted-fields.min.js',
     JS_PATH + 'paypal.min.js',
+    JS_PATH + 'three-d-secure.min.js',
     JS_PATH + 'unionpay.min.js'
   ]).pipe(rename(function (path) {
     path.basename = path.basename.replace(/\.min$/, '');
@@ -63,6 +64,7 @@ gulp.task('build:published:debugs', function () {
     JS_PATH + 'data-collector.js',
     JS_PATH + 'hosted-fields.js',
     JS_PATH + 'paypal.js',
+    JS_PATH + 'three-d-secure.js',
     JS_PATH + 'unionpay.js'
   ]).pipe(rename({
     extname: '.debug.js'
@@ -99,6 +101,7 @@ gulp.task('build:link-latest', function (done) {
 gulp.task('build:hosted', [
   'build:client',
   'build:paypal',
+  'build:three-d-secure',
   'build:hosted-fields',
   'build:data-collector',
   'build:frame-service',

@@ -237,7 +237,7 @@ PayPal.prototype._navigateFrameToAuth = function (options, callback) {
     if (err) {
       callback(err instanceof BraintreeError ? err : new BraintreeError({
         type: BraintreeError.types.NETWORK,
-        message: constants.AUTH_INIT_ERROR_MESSSAGE,
+        message: constants.AUTH_INIT_ERROR_MESSAGE,
         details: err
       }));
       this._frameService.close();

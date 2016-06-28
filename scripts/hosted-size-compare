@@ -196,10 +196,10 @@ function main() {
         deltaColored = data.deltas.regular < 0 ? chalk.green(data.deltas.regular.toLocaleString()) : chalk.red('+' + data.deltas.regular.toLocaleString());
 
         if (data.left.exists && data.right.exists !== true) {
-          readline.question(`${chalk.yellow(data.basename)} ${chalk.red('was removed')} (enter) `, {hideEchoBack: true, mask: ''});
+          readline.question(`${chalk.yellow(data.basename + data.extension)} ${chalk.red('was removed')} (enter) `, {hideEchoBack: true, mask: ''});
           return;
         } else if (data.left.exists === false && data.right.exists === true) {
-          readline.question(`${chalk.blue(data.basename)} ${chalk.green('was added')} (enter) `, {hideEchoBack: true, mask: ''});
+          readline.question(`${chalk.blue(data.basename + data.extension)} ${chalk.green('was added')} (enter) `, {hideEchoBack: true, mask: ''});
           return;
         } else if (data.deltas.regular < 0) {
           response = readline.question(chalk.blue(data.basename + data.extension) + ' shrunk by ' + deltaColored + ' bytes. View diff? (Y/n) ');

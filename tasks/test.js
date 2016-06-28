@@ -16,6 +16,7 @@ var KARMA_SUITES = [
   'hosted-fields',
   'data-collector',
   'american-express',
+  'three-d-secure',
   'unionpay'
 ];
 var NEEDS_BUILD_FOR_TEST = [

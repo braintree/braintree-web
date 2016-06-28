@@ -8,6 +8,7 @@ var hostedFields = require('../../../dist/published/hosted-fields.debug');
 var paypal = require('../../../dist/published/paypal.debug');
 var americanExpress = require('../../../dist/published/american-express.debug');
 var unionpay = require('../../../dist/published/unionpay.debug');
+var threeDSecure = require('../../../dist/published/three-d-secure.debug');
 
 describe('braintree.debug', function () {
   it('only exports certain properties', function () {
@@ -18,7 +19,8 @@ describe('braintree.debug', function () {
       'hostedFields',
       'paypal',
       'americanExpress',
-      'unionpay'
+      'unionpay',
+      'threeDSecure'
     ]);
   });
 
@@ -44,6 +46,10 @@ describe('braintree.debug', function () {
 
   it('exports unionpay', function () {
     expect(braintree.unionpay).to.equal(unionpay);
+  });
+
+  it('exports threeDSecure', function () {
+    expect(braintree.threeDSecure).to.equal(threeDSecure);
   });
 
   it('exports VERSION', function () {

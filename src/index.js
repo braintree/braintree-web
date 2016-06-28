@@ -30,7 +30,7 @@
 /**
  * @global
  * @callback callback
- * @param {?BraintreeError} [err] `null` or `undefined` if there was no error
+ * @param {?BraintreeError} [err] `null` or `undefined` if there was no error.
  * @param {?any} [data] The successful result of the asynchronous function call (if data exists).
  * @description The Node.js-style callback pattern used throughout the SDK.
  * @returns {void}
@@ -42,6 +42,7 @@ var hostedFields = require('./hosted-fields@EXT');
 var dataCollector = require('./data-collector@EXT');
 var americanExpress = require('./american-express@EXT');
 var unionpay = require('./unionpay@EXT');
+var threeDSecure = require('./three-d-secure@EXT');
 
 module.exports = {
   /** @type {module:braintree-web/client} */
@@ -50,6 +51,8 @@ module.exports = {
   paypal: paypal,
   /** @type {module:braintree-web/hosted-fields} */
   hostedFields: hostedFields,
+  /** @type {module:braintree-web/three-d-secure} */
+  threeDSecure: threeDSecure,
   /** @type {module:braintree-web/data-collector} */
   dataCollector: dataCollector,
   /** @type {module:braintree-web/american-express} */

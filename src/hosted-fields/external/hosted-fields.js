@@ -255,7 +255,7 @@ function inputEventHandler(fields) {
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
 function HostedFields(options) {
-  var field, container, frame, key, failureTimeout, clientVersion;
+  var failureTimeout, clientVersion;
   var self = this;
   var fields = {};
   var fieldCount = 0;
@@ -302,59 +302,58 @@ function HostedFields(options) {
 
   analytics.sendEvent(this._client, 'web.custom.hosted-fields.initialized');
 
-  for (key in constants.whitelistedFields) {
-    if (constants.whitelistedFields.hasOwnProperty(key)) {
-      field = options.fields[key];
+  Object.keys(options.fields).forEach(function (key) {
+    var field, container, frame;
 
-      if (!field) { continue; }
-
-      container = document.querySelector(field.selector);
-
-      if (!container) {
-        throw new BraintreeError({
-          type: BraintreeError.types.MERCHANT,
-          message: 'Selector does not reference a valid DOM node.',
-          details: {
-            fieldSelector: field.selector,
-            fieldKey: key
-          }
-        });
-      } else if (container.querySelector('iframe[name^="braintree-"]')) {
-        throw new BraintreeError({
-          type: BraintreeError.types.MERCHANT,
-          message: 'Element already contains a Braintree iframe.',
-          details: {
-            fieldSelector: field.selector,
-            fieldKey: key
-          }
-        });
-      }
-
-      frame = iFramer({
-        type: key,
-        name: 'braintree-hosted-field-' + key,
-        style: constants.defaultIFrameStyle
+    if (!constants.whitelistedFields.hasOwnProperty(key)) {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: '"' + key + '" is not a valid field.'
       });
-
-      this._injectedNodes = this._injectedNodes.concat(injectFrame(frame, container));
-      this._setupLabelFocus(key, container);
-      fields[key] = {
-        frameElement: frame,
-        containerElement: container
-      };
-      fieldCount++;
-
-      /* eslint-disable no-loop-func */
-      setTimeout((function (f) {
-        return function () {
-          f.src = composeUrl(
-            self._client.getConfiguration().gatewayConfiguration.assetsUrl,
-            componentId
-          );
-        };
-      })(frame), 0);
     }
-  } /* eslint-enable no-loop-func */
+
+    field = options.fields[key];
+
+    container = document.querySelector(field.selector);
+
+    if (!container) {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: 'Selector does not reference a valid DOM node.',
+        details: {
+          fieldSelector: field.selector,
+          fieldKey: key
+        }
+      });
+    } else if (container.querySelector('iframe[name^="braintree-"]')) {
+      throw new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        message: 'Element already contains a Braintree iframe.',
+        details: {
+          fieldSelector: field.selector,
+          fieldKey: key
+        }
+      });
+    }
+
+    frame = iFramer({
+      type: key,
+      name: 'braintree-hosted-field-' + key,
+      style: constants.defaultIFrameStyle
+    });
+
+    this._injectedNodes = this._injectedNodes.concat(injectFrame(frame, container));
+    this._setupLabelFocus(key, container);
+    fields[key] = {
+      frameElement: frame,
+      containerElement: container
+    };
+    fieldCount++;
+
+    setTimeout(function () {
+      frame.src = composeUrl(self._client.getConfiguration().gatewayConfiguration.assetsUrl, componentId);
+    }, 0);
+  }.bind(this));
 
   failureTimeout = setTimeout(function () {
     analytics.sendEvent(self._client, 'web.custom.hosted-fields.load.timed-out');

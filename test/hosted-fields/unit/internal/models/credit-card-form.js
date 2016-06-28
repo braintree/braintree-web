@@ -436,15 +436,15 @@ describe('credit card model', function () {
       expect(cardData.expirationMonth).to.equal('10');
       expect(cardData.expirationYear).to.equal(nextYear);
 
-      this.card.set('expirationDate.value', '01 / ' + nextYear);
+      this.card.set('expirationDate.value', '01' + nextYear);
       cardData = this.card.getCardData();
       expect(cardData.expirationMonth).to.equal('01');
       expect(cardData.expirationYear).to.equal(nextYear);
 
       this.card.set('expirationDate.value', '');
       cardData = this.card.getCardData();
-      expect(cardData.expirationMonth).to.equal(null);
-      expect(cardData.expirationYear).to.equal(null);
+      expect(cardData.expirationMonth).to.equal('');
+      expect(cardData.expirationYear).to.equal('');
     });
 
     it('skips expiration if neither are in the config', function () {
@@ -554,7 +554,7 @@ describe('credit card model', function () {
     it('returns false when fields are filled', function () {
       this.card.set('number.value', '4111111111111111');
       this.card.set('cvv.value', '123');
-      this.card.set('expirationDate.value', '07/' + nextYear);
+      this.card.set('expirationDate.value', '07' + nextYear);
       this.card.set('postalCode.value', '30303');
 
       expect(this.card.isEmpty()).to.equal(false);
@@ -563,7 +563,7 @@ describe('credit card model', function () {
     it('returns false when some fields are empty', function () {
       this.card.set('number.value', '');
       this.card.set('cvv.value', '');
-      this.card.set('expirationDate.value', '07/' + nextYear);
+      this.card.set('expirationDate.value', '07' + nextYear);
       this.card.set('postalCode.value', '30303');
 
       expect(this.card.isEmpty()).to.equal(false);
@@ -574,7 +574,7 @@ describe('credit card model', function () {
     it('returns invalid keys when all fields are invalid', function () {
       this.card.set('number.value', 'not-a-card-number');
       this.card.set('cvv.value', 'not-a-cvv');
-      this.card.set('expirationDate.value', '04/1789');
+      this.card.set('expirationDate.value', '041789');
       this.card.set('postalCode.value', '');
 
       expect(this.card.invalidFieldKeys()).to.contain('number');
@@ -586,7 +586,7 @@ describe('credit card model', function () {
     it('returns only invalid keys when some keys are invalid', function () {
       this.card.set('number.value', '4111111111111111');
       this.card.set('cvv.value', '123');
-      this.card.set('expirationDate.value', '04/1789');
+      this.card.set('expirationDate.value', '041789');
       this.card.set('postalCode.value', '');
 
       expect(this.card.invalidFieldKeys()).to.not.contain('number');
@@ -598,7 +598,7 @@ describe('credit card model', function () {
     it('returns an empty array when all keys are valid', function () {
       this.card.set('number.value', '4111111111111111');
       this.card.set('cvv.value', '123');
-      this.card.set('expirationDate.value', '07/' + nextYear);
+      this.card.set('expirationDate.value', '07' + nextYear);
       this.card.set('postalCode.value', '30305');
 
       expect(this.card.invalidFieldKeys()).to.be.empty;

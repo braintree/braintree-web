@@ -32,9 +32,13 @@ function request(options, cb) {
       status = req.status;
       resBody = parseBody(req.responseText);
 
-      if (status >= 400 || status === 0) {
-        callback(resBody || {errors: constants.errors.UNKNOWN_ERROR}, null, 500);
-      } else if (status > 0) {
+      if (status === 429) {
+        callback(constants.errors.RATE_LIMIT_ERROR, null, 429);
+      } else if (status >= 400) {
+        callback(resBody || constants.errors.UNKNOWN_ERROR, null, status);
+      } else if (status <= 0) {
+        callback(resBody || constants.errors.UNKNOWN_ERROR, null, 500);
+      } else {
         callback(null, resBody, status);
       }
     };

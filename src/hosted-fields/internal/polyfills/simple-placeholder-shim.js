@@ -1,5 +1,7 @@
 'use strict';
 
+var assign = require('../../../lib/assign').assign;
+
 var CSS_PROPERTIES_TO_STEAL = [
   'border-width',
   'font',
@@ -29,10 +31,7 @@ function placeholderShim(inputEl) {
   var testInput = document.createElement('input');
   var isNativelySupported = testInput.placeholder !== void 0; // eslint-disable-line no-void
 
-  if (isNativelySupported) {
-    // This browser supports placeholders natively, so do nothing.
-    return {};
-  }
+  if (isNativelySupported) { return; }
 
   addGlobalStyles();
 
@@ -53,31 +52,9 @@ function placeholderShim(inputEl) {
     inputEl.attachEvent('onblur', function () { update(); });
     placeholderEl.attachEvent('onclick', function () { inputEl.focus(); });
   }
-
-  return new Placeholder();
 }
-
-function Placeholder() {}
-
-// TODO
-extend(Placeholder.prototype, {
-  redraw: noop,
-  destroy: noop
-});
 
 // the private methods
-
-function noop() {}
-
-function extend(dest, source) {
-  var prop;
-
-  for (prop in source) {
-    if (source.hasOwnProperty(prop) && source[prop] != null) {
-      dest[prop] = source[prop];
-    }
-  }
-}
 
 function addGlobalStyles() {
   var sheet, head, style;
@@ -129,7 +106,7 @@ function stealStyles(src, dest) {
   newStyles.zIndex = typeof zIndex === 'number' ? zIndex + 1 : 999;
 
   if (getStyle(src, 'position') === 'fixed') {
-    extend(newStyles, {
+    assign(newStyles, {
       position: 'fixed',
       margin: getStyle(src, 'margin'),
       top: getStyle(src, 'top'),
@@ -141,20 +118,20 @@ function stealStyles(src, dest) {
     borderTop = parseFloat(getStyle(src, 'borderTopWidth')) || 0;
     borderLeft = parseFloat(getStyle(src, 'borderLeftWidth')) || 0;
 
-    extend(newStyles, {
+    assign(newStyles, {
       position: 'absolute',
       top: src.offsetTop + borderTop + 'px',
       left: src.offsetLeft + borderLeft + 'px'
     });
   }
 
-  extend(dest.style, newStyles);
+  assign(dest.style, newStyles);
 }
 
 function addStyles(dest) {
   dest.className = 'placeholder-shim';
 
-  extend(dest.style, {
+  assign(dest.style, {
     boxSizing: 'border-box',
     borderColor: 'transparent',
     overflow: 'hidden',

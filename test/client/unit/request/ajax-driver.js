@@ -1,6 +1,7 @@
 'use strict';
 
 var AJAXDriver = require('../../../../src/client/request/ajax-driver');
+var constants = require('../../../../src/client/request/constants');
 var TEST_SERVER_URL = 'http://localhost/ajax';
 
 describe('AJAXDriver', function () {
@@ -57,6 +58,20 @@ describe('AJAXDriver', function () {
         method: 'GET'
       }, function callback(err) {
         expect(err).to.not.eql(null);
+        done();
+      });
+    });
+
+    it('calls callback with error if request is rate limited', function (done) {
+      this.server.respondWith([429, {'Content-Type': 'text/html'}, '<!doctype html><html></html>']);
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL,
+        method: 'GET'
+      }, function callback(err, res, status) {
+        expect(status).to.equal(429);
+        expect(res).to.be.null;
+        expect(err).to.eql(constants.errors.RATE_LIMIT_ERROR);
         done();
       });
     });

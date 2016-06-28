@@ -423,7 +423,7 @@ describe('PayPal', function () {
 
       expect(callbackSpy).to.have.been.calledWith(sinon.match({
         type: BraintreeError.types.NETWORK,
-        message: constants.AUTH_INIT_ERROR_MESSSAGE,
+        message: constants.AUTH_INIT_ERROR_MESSAGE,
         details: fakeError
       }));
     });

@@ -17,7 +17,14 @@ function getIEVersion(ua) {
   return null;
 }
 
+function isHTTPS(protocol) {
+  protocol = protocol || global.location.protocol;
+
+  return protocol === 'https:';
+}
+
 module.exports = {
   isOperaMini: isOperaMini,
-  getIEVersion: getIEVersion
+  getIEVersion: getIEVersion,
+  isHTTPS: isHTTPS
 };

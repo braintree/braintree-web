@@ -119,20 +119,14 @@ CreditCardForm.prototype._onNumberChange = function (number) {
 };
 
 CreditCardForm.prototype._validateField = function (fieldKey) {
-  var validationResult, cvvSize;
+  var validationResult;
   var value = this.get(fieldKey + '.value');
   var validate = validator[fieldKey];
 
   if (fieldKey === 'cvv') {
-    if (this._fieldKeys.indexOf('number') === -1) { // CVV only
-      validationResult = validate(value, [3, 4]);
-    } else {
-      cvvSize = this.get('possibleCardTypes').reduce(function (accum, type) {
-        return Math.max(type.code.size, accum);
-      }, 3);
-
-      validationResult = validate(value, cvvSize);
-    }
+    validationResult = this._validateCvv(value);
+  } else if (fieldKey === 'expirationDate') {
+    validationResult = this._validateDate(value);
   } else {
     validationResult = validate(value);
   }
@@ -145,6 +139,31 @@ CreditCardForm.prototype._validateField = function (fieldKey) {
   }
 
   this.set(fieldKey + '.isStrictlyValidating', false);
+};
+
+CreditCardForm.prototype._validateCvv = function (value) {
+  var cvvSize;
+
+  if (this._fieldKeys.indexOf('number') === -1) { // CVV only
+    return validator.cvv(value, [3, 4]);
+  }
+
+  cvvSize = this.get('possibleCardTypes').reduce(function (accum, type) {
+    return Math.max(type.code.size, accum);
+  }, 3);
+
+  return validator.cvv(value, cvvSize);
+};
+
+CreditCardForm.prototype._validateDate = function (value) {
+  var date = splitDate(value);
+  var monthValidation = validator.expirationMonth(date.month);
+  var yearValidation = validator.expirationYear(date.year);
+
+  return {
+    isValid: monthValidation.isValid && yearValidation.isValid,
+    isPotentiallyValid: monthValidation.isPotentiallyValid && yearValidation.isPotentiallyValid
+  };
 };
 
 CreditCardForm.prototype.getCardData = function () {
@@ -173,7 +192,7 @@ CreditCardForm.prototype.getCardData = function () {
   }
 
   if (this._fieldKeys.indexOf('expirationDate') !== -1) {
-    expirationData = validator.expirationDate(this.get('expirationDate.value'));
+    expirationData = splitDate(this.get('expirationDate.value'));
 
     result.expirationMonth = expirationData.month;
     result.expirationYear = expirationData.year;
@@ -242,6 +261,23 @@ function onFieldStateChange(form, field) {
   return function () {
     form.emitEvent(field, externalEvents.VALIDITY_CHANGE);
   };
+}
+
+function splitDate(date) {
+  var month, year;
+  var leadingDigit = date.charAt(0);
+
+  if (date.length === 0) {
+    month = year = '';
+  } else if (leadingDigit === '0' || leadingDigit === '1') {
+    month = date.slice(0, 2);
+    year = date.slice(2);
+  } else {
+    month = '0' + leadingDigit;
+    year = date.slice(1);
+  }
+
+  return {month: month, year: year};
 }
 
 module.exports = {

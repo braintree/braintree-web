@@ -1,11 +1,23 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.10
+
+* Return a human readable error message when requests are rate-limited.
+* Add 3D Secure component.
+* Hosted Fields
+  * Throw an error when initializing with an invalid field key. See __BREAKING CHANGES__.
+  * The formatting for expiration dates no longer inserts a leading `0` if the date begins with `1`. This prevents the numbers from jumping around for dates beginning `01`, `10`, `11`, or `12`.
+
+__BREAKING CHANGES__
+* An error is now returned when initializing Hosted Fields with an invalid field; it is no longer silently ignored.
+
 ## 3.0.0-beta.9
 
 * No longer throws exceptions when using `require('braintree-web')` during server-side rendering with libraries such as React.js.
 * `index.js` and `debug.js` in the npm/bower modules no longer reference `package.json`.
 * Ajax errors in IE9 now report as general error instead of an empty string. It is impossible to get details additional about network errors in IE9 XDomainRequests.
+* Add 3D Secure component
 * UnionPay
   * Expiration date or month/year together are now optional as some UnionPay cards do not have expiration dates.
 * PayPal

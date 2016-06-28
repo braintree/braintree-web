@@ -3,6 +3,7 @@
 require('dotenv').config();
 require('./tasks/client');
 require('./tasks/paypal');
+require('./tasks/three-d-secure');
 require('./tasks/hosted-fields');
 require('./tasks/data-collector');
 require('./tasks/american-express');
