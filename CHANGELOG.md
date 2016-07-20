@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 2.27.0
+
+* Bugfix - Fixes an issue that prevented PayPal flows from working within the iOS Google Search app
+* Hosted Fields
+  * Support for MasterCard 2-series BIN ranges
+* PayPal
+  * A new option, `intent`, has been added.
+  * Add PayPal Credit support
+
 ## 2.26.0
 
 * PayPal
@@ -9,8 +18,6 @@ CHANGELOG
 
 ## 2.25.0
 
-* PayPal
-  * A new option, `intent`, has been added.
 * Data Collector
   * Uses Kount configuration from the gateway if available
 
