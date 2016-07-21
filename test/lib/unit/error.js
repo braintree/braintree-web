@@ -11,6 +11,7 @@ describe('BraintreeError', function () {
 
     var e = new BraintreeError(options);
 
+    expect(e.name).to.equal('BraintreeError');
     expect(e.type).to.equal(options.type);
     expect(e.message).to.equal(options.message);
   });

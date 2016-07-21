@@ -12,8 +12,8 @@ var VERSION = require('package.version');
  * @static
  * @function create
  * @param {object} options Creation options:
- * @param {client} options.client A {@link Client} instance.
- * @param {errback} callback The second argument, `data`, is the {@link ThreeDSecure} instance.
+ * @param {Client} options.client A {@link Client} instance.
+ * @param {callback} callback The second argument, `data`, is the {@link ThreeDSecure} instance.
  * @returns {void}
  * @example
  * braintree.threeDSecure.create({
@@ -21,7 +21,7 @@ var VERSION = require('package.version');
  * }, callback);
  */
 function create(options, callback) {
-  var config, threeDSecure, merchantErrorMessage;
+  var config, threeDSecure, merchantErrorMessage, clientVersion;
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
@@ -41,11 +41,12 @@ function create(options, callback) {
   }
 
   config = options.client.getConfiguration();
+  clientVersion = config.analyticsMetadata.sdkVersion;
 
   if (!config.gatewayConfiguration.threeDSecureEnabled) {
     merchantErrorMessage = '3D Secure is not enabled for this merchant.';
   } else if (config.analyticsMetadata.sdkVersion !== VERSION) {
-    merchantErrorMessage = 'Client and 3D Secure components must be from the same SDK version.';
+    merchantErrorMessage = 'Client (version ' + clientVersion + ') and 3D Secure (version ' + VERSION + ') components must be from the same SDK version.';
   } else if (!browserDetection.isHTTPS()) {
     merchantErrorMessage = '3D Secure requires HTTPS.';
   }

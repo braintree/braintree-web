@@ -37,7 +37,7 @@ describe('americanExpress', function () {
 
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.message).to.equal('A Client is required when instantiating American Express.');
+        expect(err.message).to.equal('options.client is required when instantiating American Express.');
 
         done();
       });

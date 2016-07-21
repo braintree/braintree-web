@@ -18,6 +18,8 @@ function BraintreeError(options) {
     throw new Error('Error message required.');
   }
 
+  this.name = 'BraintreeError';
+
   /**
    * @type {string}
    * @description A short description of the error.

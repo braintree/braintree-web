@@ -1,6 +1,25 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.11
+
+* Update create error messages to be more consistent
+* Add `type` to Hosted Fields and PayPal tokenize payloads
+* Hosted Fields
+  * Add `getState` method that returns the state of all fields and possible card types
+  * Fixes a regression where expiration dates with a past month within the current year were treated as valid
+* PayPal
+  * Add `useraction` option to `paypal.tokenize`
+
+__BREAKING CHANGES__
+* UnionPay improvements.
+  * Card capabilities
+    * Renamed `isUnionPayEnrollmentRequired` to `isSupported`.
+    * When `isSupported` is false, Braintree cannot process UnionPay card. Customer would need to use a different card.
+  * Enrollment response has `smsCodeRequired` flag.
+    * If `true`, customer will receive an SMS code, that is required for tokenization.
+    * If `false`, SMS code should not be passed during tokenization. Tokenization can be done immediately.
+
 ## 3.0.0-beta.10
 
 * Return a human readable error message when requests are rate-limited.

@@ -11,7 +11,7 @@ YES="^(y|yes|yas)$"
 
 dotenv() {
   if [ ! -f .env ]; then
-    echo "${RED}Please create a .env file first. See the README for details.${RESET}"
+    echo "${RED}Please create a .env file first. See DEVELOPMENT.md for details.${RESET}"
     exit 1
   else
     set -o allexport

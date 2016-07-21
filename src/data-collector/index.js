@@ -7,8 +7,8 @@ var fraudnet = require('./fraudnet');
 var BraintreeError = require('../lib/error');
 var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
-var VERSION = require('package.version');
 var deferred = require('../lib/deferred');
+var VERSION = require('package.version');
 
 /**
  * @class
@@ -37,14 +37,14 @@ var deferred = require('../lib/deferred');
  */
 
 /**
- * @function
- * @param {object} options Object containing all {@link DataCollector} options:
- * @param {client} options.client A {@link Client} instance.
+ * @static
+ * @function create
+ * @param {object} options Creation options:
+ * @param {Client} options.client A {@link Client} instance.
  * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled.
  * @param {boolean} [options.paypal] If true, PayPal fraud data collection is enabled.
- * @param {callback} callback The second argument, <code>data</code>, is the {@link DataCollector} instance.
+ * @param {callback} callback The second argument, `data`, is the {@link DataCollector} instance.
  * @returns {void}
- * @static
  */
 function create(options, callback) {
   var data, kountInstance, fraudnetInstance, result, config, clientVersion;

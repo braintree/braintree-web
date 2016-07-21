@@ -103,7 +103,6 @@ function createTokenizationHandler(client, cardForm) {
 
         delete tokenizedCard.consumed;
         delete tokenizedCard.threeDSecureInfo;
-        delete tokenizedCard.type;
 
         reply([null, tokenizedCard]);
 

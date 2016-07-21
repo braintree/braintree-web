@@ -4,18 +4,18 @@
  * @description This module is for use with Amex Express Checkout. To accept American Express cards, use Hosted Fields.
  */
 
-var VERSION = require('package.version');
 var BraintreeError = require('../lib/error');
 var AmericanExpress = require('./american-express');
 var deferred = require('../lib/deferred');
+var VERSION = require('package.version');
 
 /**
- * @function
- * @param {object} options Object containing all {@link AmericanExpress} options:
- * @param {Client} options.client A {@link Client} instance.
- * @param {callback} callback The second argument, <code>data</code>, is the {@link AmericanExpress} instance.
- * @returns {void}
  * @static
+ * @function create
+ * @param {object} options Creation options:
+ * @param {Client} options.client A {@link Client} instance.
+ * @param {callback} callback The second argument, `data`, is the {@link AmericanExpress} instance.
+ * @returns {void}
  */
 function create(options, callback) {
   var clientVersion;
@@ -32,7 +32,7 @@ function create(options, callback) {
   if (options.client == null) {
     callback(new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'A Client is required when instantiating American Express.'
+      message: 'options.client is required when instantiating American Express.'
     }));
     return;
   }

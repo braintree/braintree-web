@@ -11,10 +11,12 @@ var methods = require('../../lib/methods');
 var deferred = require('../../lib/deferred');
 var getCountry = require('../shared/get-country');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
+var querystring = require('../../lib/querystring');
 
 /**
  * @typedef {object} PayPal~tokenizePayload
  * @property {string} nonce The payment method nonce.
+ * @property {string} type The payment method type, always `PayPalAccount`.
  * @property {object} details Additional PayPal account details.
  * @property {string} details.email User's email address.
  * @property {string} details.payerId User's payer ID, the unique identifier for each PayPal account.
@@ -76,6 +78,12 @@ PayPal.prototype._initialize = function (callback) {
  * * `authorize` - Submits the transaction for authorization but not settlement.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
  * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify. Checkout flows only.
+ * @param {string} [options.useraction]
+ * Changes the call-to-action in the PayPal flow. By default the final button will show the localized
+ * word for "Continue" and implies that the final amount billed is not yet known.
+ *
+ * Setting this option to `commit` changes the button text to "Pay Now" and page text will convey to
+ * the user that billing will take place immediately.
  * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
@@ -91,7 +99,7 @@ PayPal.prototype._initialize = function (callback) {
  * @param {string} [options.shippingAddressOverride.phone] Phone number.
  * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
- * @param {boolean} [options.billingAgreementsDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile. Max 255 characters.
+ * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
  * @returns {PayPal~tokenizeReturn} A handle to close the PayPal checkout frame.
  */
@@ -180,7 +188,8 @@ PayPal.prototype._formatTokenizePayload = function (response) {
 
   payload = {
     nonce: account.nonce,
-    details: {}
+    details: {},
+    type: account.type
   };
 
   if (account.details && account.details.payerInfo) {
@@ -246,6 +255,10 @@ PayPal.prototype._navigateFrameToAuth = function (options, callback) {
         redirectUrl = response.paymentResource.redirectUrl;
       } else {
         redirectUrl = response.agreementSetup.approvalUrl;
+      }
+
+      if (options.useraction === 'commit') {
+        redirectUrl = querystring.queryify(redirectUrl, {useraction: 'commit'});
       }
 
       this._frameService.redirect(redirectUrl);

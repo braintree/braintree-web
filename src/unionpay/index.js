@@ -1,12 +1,28 @@
 'use strict';
 /** @module braintree-web/unionpay */
 
-var VERSION = require('package.version');
 var UnionPay = require('./shared/unionpay');
 var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
+var VERSION = require('package.version');
 
+/**
+* @static
+* @function create
+* @param {object} options Creation options:
+* @param {Client} options.client A {@link Client} instance.
+* @param {callback} callback The second argument, `data`, is the {@link UnionPay} instance.
+* @returns {void}
+* @example
+* braintree.unionpay.create({ client: clientInstance }, function (createErr, unionpayInstance) {
+*   if (createErr) {
+*     console.error(createErr);
+*     return;
+*   }
+*   // ...
+* });
+*/
 function create(options, callback) {
   var config, clientVersion;
 
@@ -52,21 +68,6 @@ function create(options, callback) {
 }
 
 module.exports = {
-  /**
-   * @static
-   * @function
-   * @param {object} options Object containing configuration options for this module.
-   * @param {Client} options.client A {@link Client} instance.
-   * @example
-   * braintree.unionpay.create({ client: clientInstance }, function (createErr, unionpayInstance) {
-   *   if (createErr) {
-   *     console.error(createErr);
-   *     return;
-   *   }
-   *   // ...
-   * });
-   * @returns {@link UnionPay}
-   */
   create: create,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.

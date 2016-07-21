@@ -20,6 +20,7 @@ var VERSION = require('package.version');
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var deferred = require('../../lib/deferred');
+var getCardTypes = require('credit-card-type');
 
 /**
  * @typedef {object} HostedFields~tokenizePayload
@@ -28,11 +29,36 @@ var deferred = require('../../lib/deferred');
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
  * @property {string} details.lastTwo Last two digits of card number.
  * @property {string} description A human-readable description.
+ * @property {string} type The payment method type, always `CreditCard`.
  */
 
 /**
- * @typedef {object} HostedFields~hostedFieldsEventFieldData
- * @description Data about Hosted Fields fields, sent in {@link HostedFields~hostedFieldsEvent|hostedFieldEvent} objects.
+ * @typedef {object} HostedFields~stateObject
+ * @description The event payload sent from {@link HostedFields#on|on} or {@link HostedFields#getState|getState}.
+ * @property {HostedFields~hostedFieldsCard[]} cards
+ * This will return an array of potential {@link HostedFields~hostedFieldsCard|cards}. If the card type has been determined, the array will contain only one card.
+ * Internally, Hosted Fields uses <a href="https://github.com/braintree/credit-card-type">credit-card-type</a>,
+ * an open-source card detection library.
+ * @property {string} emittedBy
+ * The name of the field associated with an event. This will not be included if returned by {@link HostedFields#getState|getState}. It will be one of the following strings:<br>
+ * - `"number"`
+ * - `"cvv"`
+ * - `"expirationDate"`
+ * - `"expirationMonth"`
+ * - `"expirationYear"`
+ * - `"postalCode"`
+ * @property {object} fields
+ * @property {?HostedFields~hostedFieldsFieldData} fields.number {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the number field, if it is present.
+ * @property {?HostedFields~hostedFieldsFieldData} fields.cvv {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the CVV field, if it is present.
+ * @property {?HostedFields~hostedFieldsFieldData} fields.expirationDate {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the expiration date field, if it is present.
+ * @property {?HostedFields~hostedFieldsFieldData} fields.expirationMonth {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the expiration month field, if it is present.
+ * @property {?HostedFields~hostedFieldsFieldData} fields.expirationYear {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the expiration year field, if it is present.
+ * @property {?HostedFields~hostedFieldsFieldData} fields.postalCode {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the postal code field, if it is present.
+ */
+
+/**
+ * @typedef {object} HostedFields~hostedFieldsFieldData
+ * @description Data about Hosted Fields fields, sent in {@link HostedFields~stateObject|stateObjects}.
  * @property {HTMLElement} container Reference to the container DOM element on your page associated with the current event.
  * @property {boolean} isFocused Whether or not the input is currently focused.
  * @property {boolean} isEmpty Whether or not the user has entered a value in the input.
@@ -47,8 +73,8 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * @typedef {object} HostedFields~hostedFieldsEventCard
- * @description Information about the card type, sent in {@link HostedFields~hostedFieldsEvent|hostedFieldEvent} objects.
+ * @typedef {object} HostedFields~hostedFieldsCard
+ * @description Information about the card type, sent in {@link HostedFields~stateObject|stateObjects}.
  * @property {string} type The code-friendly representation of the card type. It will be one of the following strings:
  * - `american-express`
  * - `diners-club`
@@ -76,35 +102,11 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * @typedef {object} HostedFields~hostedFieldsEvent
- * @description The event payload sent from {@link HostedFields#on|on}.
- * @property {string} emittedBy
- * The name of the field associated with this event. It will be one of the following strings:<br>
- * - `"number"`
- * - `"cvv"`
- * - `"expirationDate"`
- * - `"expirationMonth"`
- * - `"expirationYear"`
- * - `"postalCode"`
- * @property {object} fields
- * @property {?HostedFields~hostedFieldsEventFieldData} fields.number {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the number field, if it is present.
- * @property {?HostedFields~hostedFieldsEventFieldData} fields.cvv {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the CVV field, if it is present.
- * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationDate {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration date field, if it is present.
- * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationMonth {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration month field, if it is present.
- * @property {?HostedFields~hostedFieldsEventFieldData} fields.expirationYear {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the expiration year field, if it is present.
- * @property {?HostedFields~hostedFieldsEventFieldData} fields.postalCode {@link HostedFields~hostedFieldsEventFieldData|hostedFieldsEventFieldData} for the postal code field, if it is present.
- * @property {HostedFields~hostedFieldsEventCard[]} cards
- * This will return an array of potential {@link HostedFields~hostedFieldsEventFieldCard|cards}. If the card type has been determined, the array will contain only one card.
- * Internally, Hosted Fields uses <a href="https://github.com/braintree/credit-card-type">credit-card-type</a>,
- * an open-source card detection library.
- */
-
-/**
  * @name HostedFields#on
  * @function
  * @param {string} event The name of the event to which you are subscribing.
  * @param {function} handler A callback to handle the event.
- * @description Subscribes a handler function to a named {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent}. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, or {@link HostedFields#event:validityChange|validityChange}.
+ * @description Subscribes a handler function to a named event. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, or {@link HostedFields#event:validityChange|validityChange}. Events will emit a {@link HostedFields~stateObject|stateObject}.
  * @example
  * <caption>Listening to a Hosted Field event, in this case 'focus'</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -116,9 +118,9 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when the user requests submission of an input field, such as by pressing the Enter or Return key on their keyboard, or mobile equivalent.
+ * This event is emitted when the user requests submission of an input field, such as by pressing the Enter or Return key on their keyboard, or mobile equivalent.
  * @event HostedFields#inputSubmitRequest
- * @type {HostedFields~hostedFieldsEvent}
+ * @type {HostedFields~stateObject}
  * @example
  * <caption>Clicking a submit button upon hitting Enter (or equivalent) within a Hosted Field</caption>
  * var hostedFields = require('braintree-web/hosted-fields');
@@ -133,9 +135,9 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field transitions from having data to being empty.
+ * This event is emitted when a field transitions from having data to being empty.
  * @event HostedFields#empty
- * @type {HostedFields~hostedFieldsEvent}
+ * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to an empty event</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -146,9 +148,9 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field transitions from being empty to having data.
+ * This event is emitted when a field transitions from being empty to having data.
  * @event HostedFields#notEmpty
- * @type {HostedFields~hostedFieldsEvent}
+ * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to an notEmpty event</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -159,9 +161,9 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field loses focus.
+ * This event is emitted when a field loses focus.
  * @event HostedFields#blur
- * @type {HostedFields~hostedFieldsEvent}
+ * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a blur event</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -172,9 +174,9 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when a field gains focus.
+ * This event is emitted when a field gains focus.
  * @event HostedFields#focus
- * @type {HostedFields~hostedFieldsEvent}
+ * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a focus event</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -185,9 +187,9 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when activity within the number field has changed such that the possible card type has changed.
+ * This event is emitted when activity within the number field has changed such that the possible card type has changed.
  * @event HostedFields#cardTypeChange
- * @type {HostedFields~hostedFieldsEvent}
+ * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a cardTypeChange event</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -202,9 +204,9 @@ var deferred = require('../../lib/deferred');
  */
 
 /**
- * This {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} is emitted when the validity of a field has changed. Validity is represented in the {@link HostedFields~hostedFieldsEvent|hostedFieldsEvent} as two booleans: `isValid` and `isPotentiallyValid`.
+ * This event is emitted when the validity of a field has changed. Validity is represented in the {@link HostedFields~stateObject|stateObject} as two booleans: `isValid` and `isPotentiallyValid`.
  * @event HostedFields#validityChange
- * @type {HostedFields~hostedFieldsEvent}
+ * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a validityChange event</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -244,6 +246,11 @@ function inputEventHandler(fields) {
       classlist.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
     }
 
+    this._state = { // eslint-disable-line no-invalid-this
+      cards: merchantPayload.cards,
+      fields: merchantPayload.fields
+    };
+
     this._emit(eventData.type, merchantPayload); // eslint-disable-line no-invalid-this
   };
 }
@@ -264,7 +271,7 @@ function HostedFields(options) {
   if (!options.client) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'You must specify a client when initializing Hosted Fields.'
+      message: 'options.client is required when instantiating Hosted Fields.'
     });
   }
 
@@ -279,7 +286,7 @@ function HostedFields(options) {
   if (!options.fields) {
     throw new BraintreeError({
       type: BraintreeError.types.MERCHANT,
-      message: 'You must specify fields when initializing Hosted Fields.'
+      message: 'options.fields is required when instantiating Hosted Fields.'
     });
   }
 
@@ -288,6 +295,10 @@ function HostedFields(options) {
   this._injectedNodes = [];
   this._destructor = new Destructor();
   this._fields = fields;
+  this._state = {
+    fields: {},
+    cards: getCardTypes('')
+  };
 
   this._bus = new Bus({
     channel: componentId,
@@ -349,6 +360,14 @@ function HostedFields(options) {
       containerElement: container
     };
     fieldCount++;
+
+    this._state.fields[key] = {
+      isEmpty: true,
+      isValid: false,
+      isPotentiallyValid: true,
+      isFocused: false,
+      container: container
+    };
 
     setTimeout(function () {
       frame.src = composeUrl(self._client.getConfiguration().gatewayConfiguration.assetsUrl, componentId);
@@ -572,6 +591,21 @@ HostedFields.prototype.clear = function (field, callback) {
     callback = deferred(callback);
     callback(err);
   }
+};
+
+/**
+ * Returns an {@link HostedFields~stateObject|object} that includes the state of all fields and possible card types.
+ * @public
+ * @returns {object} {@link HostedFields~stateObject|stateObject}
+ * @example <caption>Check if all fields are valid</caption>
+ * var state = hostedFields.getState();
+ *
+ * var formValid = Object.keys(state.fields).every(function (key) {
+ *   return state.fields[key].isValid;
+ * });
+ */
+HostedFields.prototype.getState = function () {
+  return this._state;
 };
 
 module.exports = HostedFields;

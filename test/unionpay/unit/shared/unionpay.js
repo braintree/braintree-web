@@ -112,7 +112,7 @@ describe('UnionPay', function () {
           isDebit: false,
           unionPay: {
             supportsTwoStepAuthAndCapture: true,
-            isUnionPayEnrollmentRequired: false
+            isSupported: false
           }
         };
         var client = {
@@ -140,7 +140,7 @@ describe('UnionPay', function () {
           isDebit: false,
           unionPay: {
             supportsTwoStepAuthAndCapture: true,
-            isUnionPayEnrollmentRequired: false
+            isSupported: false
           }
         };
         var client = {
@@ -627,7 +627,10 @@ describe('UnionPay', function () {
 
           var stubClient = {
             request: function (requestOptions, errback) {
-              errback(null, {unionPayEnrollmentId: 'enrollment-id'});
+              errback(null, {
+                unionPayEnrollmentId: 'enrollment-id',
+                smsCodeRequired: true
+              });
             }
           };
 
@@ -635,7 +638,10 @@ describe('UnionPay', function () {
             _options: {client: stubClient}
           }, options, function (err, data) {
             expect(err).to.equal(null);
-            expect(data).to.deep.equal({enrollmentId: 'enrollment-id'});
+            expect(data).to.deep.equal({
+              enrollmentId: 'enrollment-id',
+              smsCodeRequired: true
+            });
 
             done();
           });
@@ -656,7 +662,10 @@ describe('UnionPay', function () {
 
           var stubClient = {
             request: function (requestOptions, errback) {
-              errback(null, {unionPayEnrollmentId: 'enrollment-id'});
+              errback(null, {
+                unionPayEnrollmentId: 'enrollment-id',
+                smsCodeRequired: true
+              });
             }
           };
 
@@ -805,6 +814,26 @@ describe('UnionPay', function () {
               }
             }
           }
+        }));
+      });
+      it('does not pass smsCode if !smsCodeRequired', function () {
+        var mockClient = {request: this.sandbox.stub()};
+        var request = {
+          card: {
+            number: '6211111111111111',
+            expirationMonth: '12',
+            expirationYear: '2020',
+            cvv: '123'
+          },
+          enrollmentId: 'enrollment-id'
+        };
+
+        UnionPay.prototype.tokenize.call({
+          _options: {client: mockClient}
+        }, request, noop);
+
+        expect(mockClient.request).to.be.calledWith(sinon.match(function (value) {
+          return !value.data.creditCard.options.unionPayEnrollment.hasOwnProperty('smsCode');
         }));
       });
       it('accepts expirationDate if defined', function () {

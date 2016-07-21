@@ -10,6 +10,7 @@ var fake = require('../../../helpers/fake');
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
 var version = require('../../../../package.json').version;
+var getCardTypes = require('credit-card-type');
 
 describe('HostedFields', function () {
   beforeEach(function () {
@@ -78,7 +79,7 @@ describe('HostedFields', function () {
 
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.message).to.equal('You must specify a client when initializing Hosted Fields.');
+        expect(err.message).to.equal('options.client is required when instantiating Hosted Fields.');
         expect(err.details).not.to.exist;
       });
 
@@ -115,7 +116,7 @@ describe('HostedFields', function () {
         } catch (err) {
           expect(err).to.be.an.instanceOf(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.message).to.equal('You must specify fields when initializing Hosted Fields.');
+          expect(err.message).to.equal('options.fields is required when instantiating Hosted Fields.');
           expect(err.details).not.to.exist;
         }
       });
@@ -309,6 +310,50 @@ describe('HostedFields', function () {
       expect(instance._setupLabelFocus.callCount).to.equal(3);
       expect(instance._setupLabelFocus.lastCall.args[0]).to.equal('expirationDate');
       expect(instance._setupLabelFocus.lastCall.args[1]).to.equal(expirationDateNode);
+    });
+
+    it('_state.fields is in default configuration on instantiation', function () {
+      var instance, fields;
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var cvvNode = document.createElement('div');
+      var expirationDateNode = document.createElement('div');
+
+      numberNode.id = 'number';
+      cvvNode.id = 'cvv';
+      expirationDateNode.id = 'expirationDate';
+
+      document.body.appendChild(numberNode);
+      document.body.appendChild(cvvNode);
+      document.body.appendChild(expirationDateNode);
+
+      configuration.fields = {
+        number: {selector: '#number'},
+        cvv: {selector: '#cvv'},
+        expirationDate: {selector: '#expirationDate'}
+      };
+
+      instance = new HostedFields(configuration);
+      fields = instance.getState().fields;
+
+      expect(fields).to.have.all.keys('number', 'cvv', 'expirationDate');
+
+      Object.keys(fields).forEach(function (key) {
+        expect(fields[key]).to.deep.equal({
+          isEmpty: true,
+          isValid: false,
+          isPotentiallyValid: true,
+          isFocused: false,
+          container: document.querySelector('#' + key)
+        });
+      });
+    });
+
+    it('_state.cards is correct on instantiation', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+      var state = instance.getState();
+
+      expect(state.cards).to.deep.equal(getCardTypes(''));
     });
   });
 
@@ -545,6 +590,15 @@ describe('HostedFields', function () {
         expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, sinon.match.string);
         done();
       });
+    });
+  });
+
+  describe('getState', function () {
+    it('returns the field state', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance._state = 'field state';
+      expect(instance.getState()).to.equal('field state');
     });
   });
 });

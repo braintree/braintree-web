@@ -41,6 +41,7 @@ Here's an example `.env` file:
 BRAINTREE_JS_HOST=development.gateway.hostname
 BRAINTREE_JS_HOSTED_DEST=/absolute/path/to/assets/directory
 BRAINTREE_JS_BOWER_DEST=/absolute/path/to/braintree-web-bower/repository
+BRAINTREE_SOURCE_DEST=/absolute/path/to/braintree-web/repository
 ```
 
 * __BRAINTREE_JS_HOST__ identifies the host where a development gateway is running.

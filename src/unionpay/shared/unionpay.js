@@ -28,11 +28,11 @@ function UnionPay(options) {
  * @property {boolean} isDebit Determines if this card is a debit card. This property is only present if `isUnionPay` is `true`.
  * @property {object} unionPay UnionPay specific properties. This property is only present if `isUnionPay` is `true`.
  * @property {boolean} unionPay.supportsTwoStepAuthAndCapture Determines if the card allows for an authorization, but settling the transaction later.
- * @property {boolean} unionPay.isUnionPayEnrollmentRequired Notifies if {@link UnionPay#enroll|enrollment} should be completed.
+ * @property {boolean} unionPay.isSupported Determines if Braintree can process this UnionPay card. When false, Braintree cannot process this card and the user should use a different card.
  */
 
 /**
- * Fetches the capabilities of a card, including whether or not the card needs to be enrolled before use. If the card needs to be enrolled, use {@link UnionPay#enroll|enroll}.
+ * Fetches the capabilities of a card, including whether or not the SMS enrollment process is required.
  * @public
  * @param {object} options UnionPay {@link UnionPay#fetchCapabilities fetchCapabilities} options
  * @param {object} [options.card] The card from which to fetch capabilities. Note that this will only have one property, `number`. Required if you are not using the `hostedFields` option.
@@ -51,14 +51,18 @@ function UnionPay(options) {
  *   }
  *
  *   if (cardCapabilities.isUnionPay) {
+ *     if (cardCapabilities.unionPay && !cardCapabilities.unionPay.isSupported) {
+ *       // Braintree cannot process this UnionPay card.
+ *       // Ask the user for a different card.
+ *       return;
+ *     }
+ *
  *     if (cardCapabilities.isDebit) {
  *       // CVV and expiration date are not required
  *     } else {
  *       // CVV and expiration date are required
  *     }
- *   }
  *
- *   if (cardCapabilities.unionPay && cardCapabilities.unionPay.isUnionPayEnrollmentRequired) {
  *     // Show mobile phone number field for enrollment
  *   }
  * });
@@ -76,6 +80,11 @@ function UnionPay(options) {
  *       }
  *
  *       if (cardCapabilities.isUnionPay) {
+ *         if (cardCapabilities.unionPay && !cardCapabilities.unionPay.isSupported) {
+ *           // Braintree cannot process this UnionPay card.
+ *           // Ask the user for a different card.
+ *           return;
+ *         }
  *         if (cardCapabilities.isDebit) {
  *           // CVV and expiration date are not required
  *           // Hide the containers with your `cvv` and `expirationDate` fields
@@ -87,9 +96,7 @@ function UnionPay(options) {
  *         // When form is complete, tokenize using your Hosted Fields instance
  *       }
  *
- *       if (cardCapabilities.unionPay && cardCapabilities.unionPay.isUnionPayEnrollmentRequired) {
- *         // Show your own mobile country code and phone number inputs for enrollment
- *       }
+ *       // Show your own mobile country code and phone number inputs for enrollment
  *     });
  *   });
  * });
@@ -164,10 +171,13 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
 /**
  * @typedef {object} UnionPay~enrollPayload
  * @property {string} enrollmentId UnionPay enrollment ID. This value should be passed to `tokenize`.
+ * @property {boolean} smsCodeRequired UnionPay `smsCodeRequired` flag.
+ * </p><b>true</b> - the user will receive an SMS code that needs to be supplied for tokenization.
+ * </p><b>false</b> - the card can be immediately tokenized.
  */
 
 /**
- * Enrolls a UnionPay card. Only call this method if the card needs to be enrolled. Use {@link UnionPay#fetchCapabilities|fetchCapabilities} to determine if the user's card needs to be enrolled.
+ * Enrolls a UnionPay card. Use {@link UnionPay#fetchCapabilities|fetchCapabilities} to determine if the SMS enrollment process is required.
  * @public
  * @param {object} options UnionPay enrollment options:
  * @param {object} [options.card] The card to enroll. Required if you are not using the `hostedFields` option.
@@ -197,8 +207,12 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  *      return;
  *   }
  *
- *   // Wait for SMS auth code from customer
- *   // Then use response.enrollmentId in tokenization
+ *   if (response.smsCodeRequired) {
+ *     // If smsCodeRequired, wait for SMS auth code from customer
+ *     // Then use response.enrollmentId during {@link UnionPay#tokenize}
+ *   } else {
+ *     // SMS code is not required from the user.
+ *     // {@link UnionPay#tokenize} can be called immediately
  * });
  * @example <caption>With Hosted Fields</caption>
  * unionpayInstance.enroll({
@@ -213,8 +227,13 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  *     return;
  *   }
  *
- *   // Wait for SMS auth code from customer
- *   // Then use response.enrollmentId in tokenization
+ *   if (response.smsCodeRequired) {
+ *     // If smsCodeRequired, wait for SMS auth code from customer
+ *     // Then use response.enrollmentId during {@link UnionPay#tokenize}
+ *   } else {
+ *     // SMS code is not required from the user.
+ *     // {@link UnionPay#tokenize} can be called immediately
+ *   }
  * });
  * @returns {void}
  */
@@ -313,7 +332,10 @@ UnionPay.prototype.enroll = function (options, callback) {
       }
 
       analytics.sendEvent(client, 'web.unionpay.enrollment-succeeded');
-      callback(null, {enrollmentId: response.unionPayEnrollmentId});
+      callback(null, {
+        enrollmentId: response.unionPayEnrollmentId,
+        smsCodeRequired: response.smsCodeRequired
+      });
     });
   } else {
     callback(new BraintreeError({
@@ -345,8 +367,8 @@ UnionPay.prototype.enroll = function (options, callback) {
  * @param {string} [options.card.expirationYear] The card's expiration year. This should be used with the `expirationMonth` parameter. When `expirationDate` is defined this parameter is ignored.
  * @param {string} [options.card.cvv] The card's security number.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
- * @param {string} options.enrollmentId The enrollment ID if {@link UnionPay#enroll} was required.
- * @param {string} options.smsCode The SMS code recieved from the user if {@link UnionPay#enroll} was required.
+ * @param {string} options.enrollmentId The enrollment ID from {@link UnionPay#enroll}.
+ * @param {string} [options.smsCode] The SMS code received from the user if {@link UnionPay#enroll} payload have `smsCodeRequired`. if `smsCodeRequired` is false, smsCode should not be passed.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}.
  * @example <caption>With raw card data</caption>
  * unionpayInstance.tokenize({
@@ -357,7 +379,7 @@ UnionPay.prototype.enroll = function (options, callback) {
  *     cvv: '123'
  *   },
  *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
- *   smsCode: '11111' // Sent to customer's phone
+ *   smsCode: '11111' // Received by customer's phone, if SMS enrollment was required. Otherwise it should be omitted
  * }, function (tokenizeErr, response) {
  *   if (tokenizeErr) {
  *     console.error(tokenizeErr);
@@ -370,7 +392,7 @@ UnionPay.prototype.enroll = function (options, callback) {
  * unionpayInstance.tokenize({
  *   hostedFields: hostedFieldsInstance,
  *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
- *   smsCode: '11111' // Sent to customer's phone
+ *   smsCode: '11111' // Received by customer's phone, if SMS enrollment was required. Otherwise it should be omitted
  * }, function (tokenizeErr, response) {
  *   if (tokenizeErr) {
  *     console.error(tokenizeErr);
@@ -402,12 +424,15 @@ UnionPay.prototype.tokenize = function (options, callback) {
         number: options.card.number,
         options: {
           unionPayEnrollment: {
-            id: options.enrollmentId,
-            smsCode: options.smsCode
+            id: options.enrollmentId
           }
         }
       }
     };
+
+    if (options.smsCode) {
+      data.creditCard.options.unionPayEnrollment.smsCode = options.smsCode;
+    }
 
     if (card.expirationDate) {
       data.creditCard.expirationDate = card.expirationDate;

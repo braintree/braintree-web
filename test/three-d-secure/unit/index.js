@@ -6,6 +6,7 @@ var fake = require('../../helpers/fake');
 var threeDSecure = require('../../../src/three-d-secure');
 var ThreeDSecure = require('../../../src/three-d-secure/external/three-d-secure');
 var BraintreeError = require('../../../src/lib/error');
+var version = require('../../../package.json').version;
 
 describe('three-d-secure.create', function () {
   beforeEach(function () {
@@ -63,7 +64,7 @@ describe('three-d-secure.create', function () {
     threeDSecure.create({client: this.client}, function (err, thingy) {
       expect(err).to.be.an.instanceOf(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('Client and 3D Secure components must be from the same SDK version.');
+      expect(err.message).to.equal('Client (version 1.2.3) and 3D Secure (version ' + version + ') components must be from the same SDK version.');
       expect(thingy).not.to.exist;
       done();
     });

@@ -1,11 +1,10 @@
 'use strict';
+/** @module braintree-web/hosted-fields */
 
 var HostedFields = require('./external/hosted-fields');
-var packageVersion = require('package.version');
 var deferred = require('../lib/deferred');
 var BraintreeError = require('../lib/error');
-
-/** @module braintree-web/hosted-fields */
+var VERSION = require('package.version');
 
 /**
  * Fields used in {@link module:braintree-web/hosted-fields~fieldOptions fields options}
@@ -35,69 +34,71 @@ var BraintreeError = require('../lib/error');
  * @typedef {object} styleOptions
  */
 
-module.exports = {
-  /**
-   * @static
-   * @function create
-   * @param {object} options Creation options:
-   * @param {client} options.client A {@link Client} instance.
-   * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}.
-   * @param {styleOptions} options.styles {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
-   * @param {callback} callback The second argument, `data`, is the {@link HostedFields} instance.
-   * @returns {void}
-   * @example
-   * braintree.hostedFields.create({
-   *   client: clientInstance,
-   *   styles: {
-   *     'input': {
-   *       'font-size': '16pt',
-   *       'color': '#3A3A3A'
-   *     },
-   *     '.number': {
-   *       'font-family': 'monospace'
-   *     },
-   *     '.valid': {
-   *       'color': 'green'
-   *     }
-   *   },
-   *   fields: {
-   *     number: {
-   *       selector: '#card-number'
-   *     },
-   *     cvv: {
-   *       selector: '#cvv'
-   *     },
-   *     expirationDate: {
-   *       selector: '#expiration-date'
-   *     }
-   *   }
-   * }, callback);
-   */
-  create: function (options, callback) {
-    var integration;
+/**
+ * @static
+ * @function create
+ * @param {object} options Creation options:
+ * @param {Client} options.client A {@link Client} instance.
+ * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}.
+ * @param {styleOptions} options.styles {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
+ * @param {callback} callback The second argument, `data`, is the {@link HostedFields} instance.
+ * @returns {void}
+ * @example
+ * braintree.hostedFields.create({
+ *   client: clientInstance,
+ *   styles: {
+ *     'input': {
+ *       'font-size': '16pt',
+ *       'color': '#3A3A3A'
+ *     },
+ *     '.number': {
+ *       'font-family': 'monospace'
+ *     },
+ *     '.valid': {
+ *       'color': 'green'
+ *     }
+ *   },
+ *   fields: {
+ *     number: {
+ *       selector: '#card-number'
+ *     },
+ *     cvv: {
+ *       selector: '#cvv'
+ *     },
+ *     expirationDate: {
+ *       selector: '#expiration-date'
+ *     }
+ *   }
+ * }, callback);
+ */
+function create(options, callback) {
+  var integration;
 
-    if (typeof callback !== 'function') {
-      throw new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        message: 'create must include a callback function.'
-      });
-    }
-
-    try {
-      integration = new HostedFields(options);
-    } catch (err) {
-      callback = deferred(callback);
-      callback(err);
-      return;
-    }
-
-    integration.on('ready', function () {
-      callback(null, integration);
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: BraintreeError.types.MERCHANT,
+      message: 'create must include a callback function.'
     });
-  },
+  }
+
+  try {
+    integration = new HostedFields(options);
+  } catch (err) {
+    callback = deferred(callback);
+    callback(err);
+    return;
+  }
+
+  integration.on('ready', function () {
+    callback(null, integration);
+  });
+}
+
+module.exports = {
+  create: create,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: packageVersion
+  VERSION: VERSION
 };

@@ -452,6 +452,33 @@ describe('PayPal', function () {
 
       expect(this.context._frameService.redirect).to.have.been.calledWith('approval-url');
     });
+
+    it('appends useraction to an approvalUrl', function () {
+      this.context._client.request = function (config, callback) {
+        callback(null, {
+          agreementSetup: {approvalUrl: 'approval-url'}
+        });
+      };
+
+      this.options.flow = 'vault';
+      this.options.useraction = 'commit';
+      PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
+
+      expect(this.context._frameService.redirect).to.have.been.calledWith('approval-url?useraction=commit');
+    });
+
+    it('appends useraction to a redirectUrl', function () {
+      this.context._client.request = function (config, callback) {
+        callback(null, {
+          paymentResource: {redirectUrl: 'redirect-url'}
+        });
+      };
+
+      this.options.useraction = 'commit';
+      PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
+
+      expect(this.context._frameService.redirect).to.have.been.calledWith('redirect-url?useraction=commit');
+    });
   });
 
   describe('teardown', function () {
@@ -699,6 +726,7 @@ describe('PayPal', function () {
       PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, callbackSpy);
 
       expect(callbackSpy).to.have.been.calledWith({
+        name: 'BraintreeError',
         type: BraintreeError.types.NETWORK,
         message: 'Could not tokenize user\'s PayPal account.',
         details: fakeError
@@ -737,14 +765,16 @@ describe('PayPal', function () {
   });
 
   describe('_formatTokenizePayload', function () {
-    it('returns nonce', function () {
+    it('returns nonce and type', function () {
       var actual = PayPal.prototype._formatTokenizePayload({
         paypalAccounts: [{
-          nonce: 'nonce'
+          nonce: 'nonce',
+          type: 'PayPalAccount'
         }]
       });
 
       expect(actual.nonce).to.equal('nonce');
+      expect(actual.type).to.equal('PayPalAccount');
     });
 
     it('returns payerInfo as details', function () {

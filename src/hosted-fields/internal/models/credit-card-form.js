@@ -126,7 +126,7 @@ CreditCardForm.prototype._validateField = function (fieldKey) {
   if (fieldKey === 'cvv') {
     validationResult = this._validateCvv(value);
   } else if (fieldKey === 'expirationDate') {
-    validationResult = this._validateDate(value);
+    validationResult = validate(splitDate(value));
   } else {
     validationResult = validate(value);
   }
@@ -153,17 +153,6 @@ CreditCardForm.prototype._validateCvv = function (value) {
   }, 3);
 
   return validator.cvv(value, cvvSize);
-};
-
-CreditCardForm.prototype._validateDate = function (value) {
-  var date = splitDate(value);
-  var monthValidation = validator.expirationMonth(date.month);
-  var yearValidation = validator.expirationYear(date.year);
-
-  return {
-    isValid: monthValidation.isValid && yearValidation.isValid,
-    isPotentiallyValid: monthValidation.isPotentiallyValid && yearValidation.isPotentiallyValid
-  };
 };
 
 CreditCardForm.prototype.getCardData = function () {

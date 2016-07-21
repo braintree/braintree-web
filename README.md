@@ -46,7 +46,7 @@ var submitBtn = document.getElementById('my-submit');
 var form = document.getElementById('my-sample-form');
 
 braintree.client.create({
-  authorization: 'YOUR_CLIENT_TOKEN'
+  authorization: CLIENT_AUTHORIZATION
 }, clientDidCreate);
 
 function clientDidCreate(err, client) {
@@ -105,7 +105,7 @@ function submitHandler(hostedFields, event) {
 
 ```javascript
 braintree.client.create({
-  authorization: 'YOUR_CLIENT_TOKEN'
+  authorization: CLIENT_AUTHORIZATION
 }, function (err, client) {
   client.request({
     endpoint: 'payment_methods/credit_cards',
@@ -113,7 +113,11 @@ braintree.client.create({
     data: {
       creditCard: {
         number: '4111111111111111',
-        expirationDate: '10/20'
+        expirationDate: '10/20',
+        cvv: '123',
+        billingAddress: {
+          postalCode: '12345'
+        }
       }
     }
   }, function (err, response) {

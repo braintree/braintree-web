@@ -8,6 +8,14 @@ var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
 var VERSION = require('package.version');
 
+/**
+ * @static
+ * @function create
+ * @param {object} options Creation options:
+ * @param {Client} options.client A {@link Client} instance.
+ * @param {callback} callback The second argument, `data`, is the {@link PayPal} instance.
+ * @returns {void}
+ */
 function create(options, callback) {
   var config, pp, clientVersion;
 
@@ -68,14 +76,6 @@ function _isBrowserSupported() {
 }
 
 module.exports = {
-  /**
-   * @static
-   * @function
-   * @param {object} options All creation options for the PayPal component.
-   * @param {Client} options.client A {@link Client} instance.
-   * @param {callback} callback The second argument, <code>data</code>, is the {@link PayPal} instance.
-   * @returns {void}
-   */
   create: create,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
