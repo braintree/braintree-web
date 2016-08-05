@@ -130,6 +130,8 @@ describe('internal', function () {
       this.fakeNonce = 'nonce homeboy';
       this.fakeDetails = 'yas';
       this.fakeType = 'YASS';
+      this.fakeDescription = 'fake description';
+      this.fakeOptions = {foo: 'bar'};
 
       this.goodClient = {
         request: function (_, callback) {
@@ -137,7 +139,9 @@ describe('internal', function () {
             creditCards: [{
               nonce: self.fakeNonce,
               details: self.fakeDetails,
-              type: self.fakeType
+              description: self.fakeDescription,
+              type: self.fakeType,
+              foo: 'bar'
             }]
           });
         }
@@ -166,11 +170,12 @@ describe('internal', function () {
     });
 
     it('replies with an error if tokenization fails due to network', function (done) {
-      create(this.badClient, this.validCardForm)(function (response) {
+      create(this.badClient, this.validCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
 
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('TOKENIZATION_NETWORK_ERROR');
         expect(err.message).to.equal('A tokenization network error occurred.');
         expect(err.details.originalError.message).to.equal('you done goofed');
         expect(err.details.originalError.errors).to.equal(fakeError.errors);
@@ -184,11 +189,12 @@ describe('internal', function () {
         callback(fakeError, null, 422);
       };
 
-      create(this.badClient, this.validCardForm)(function (response) {
+      create(this.badClient, this.validCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
 
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
+        expect(err.code).to.equal('FAILED_HOSTED_FIELDS_TOKENIZATION');
         expect(err.message).to.equal('The supplied card data failed tokenization.');
         expect(err.details.originalError.message).to.equal('you done goofed');
         expect(err.details.originalError.errors).to.equal(fakeError.errors);
@@ -198,7 +204,7 @@ describe('internal', function () {
     });
 
     it('sends an analytics event if tokenization fails', function () {
-      create(this.badClient, this.validCardForm)(function () {});
+      create(this.badClient, this.validCardForm)(this.fakeOptions, function () {});
 
       expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'web.custom.hosted-fields.tokenization.failed');
     });
@@ -206,26 +212,29 @@ describe('internal', function () {
     it('replies with data if tokenization succeeds', function () {
       var reply = this.sandbox.spy();
 
-      create(this.goodClient, this.validCardForm)(reply);
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, reply);
 
-      expect(reply).to.have.been.calledWith(this.sandbox.match([null, this.sandbox.match({
+      expect(reply).to.have.been.calledWith([null, {
         nonce: this.fakeNonce,
-        details: this.fakeDetails
-      })]));
+        details: this.fakeDetails,
+        description: this.fakeDescription,
+        type: this.fakeType
+      }]);
     });
 
     it('sends an analytics event if tokenization succeeds', function () {
-      create(this.goodClient, this.validCardForm)(function () {});
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
 
       expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'web.custom.hosted-fields.tokenization.succeeded');
     });
 
     it('replies with an error if all fields are empty', function (done) {
-      create(this.goodClient, this.emptyCardForm)(function (response) {
+      create(this.goodClient, this.emptyCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
 
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
+        expect(err.code).to.equal('FIELDS_EMPTY');
         expect(err.message).to.equal('All fields are empty. Cannot tokenize empty card fields.');
         expect(err.details).not.to.exist;
 
@@ -234,17 +243,54 @@ describe('internal', function () {
     });
 
     it('replies with an error when some fields are invalid', function (done) {
-      create(this.goodClient, this.invalidCardForm)(function (response) {
+      create(this.goodClient, this.invalidCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
 
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
+        expect(err.code).to.equal('FIELDS_INVALID');
         expect(err.message).to.equal('Some payment input fields are invalid. Cannot tokenize invalid card fields.');
         expect(err.details).to.deep.equal({
           invalidFieldKeys: ['cvv']
         });
 
         done();
+      });
+    });
+
+    it('makes a client request with validate false if the vault option is not provided', function () {
+      var reply = this.sandbox.spy();
+
+      this.goodClient.request = this.sandbox.stub();
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, reply);
+
+      expect(this.goodClient.request).to.be.calledWithMatch({
+        data: {
+          creditCard: {
+            options: {
+              validate: false
+            }
+          }
+        }
+      });
+    });
+
+    it('makes a client request without validate false if the vault option is not provided', function () {
+      var reply = this.sandbox.spy();
+
+      this.goodClient.request = this.sandbox.stub();
+
+      create(this.goodClient, this.validCardForm)({vault: true}, reply);
+
+      expect(this.goodClient.request).not.to.be.calledWithMatch({
+        data: {
+          creditCard: {
+            options: {
+              validate: false
+            }
+          }
+        }
       });
     });
   });

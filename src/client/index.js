@@ -5,6 +5,7 @@ var Client = require('./client');
 var getConfiguration = require('./get-configuration').getConfiguration;
 var packageVersion = require('package.version');
 var deferred = require('../lib/deferred');
+var sharedErrors = require('../errors');
 
 /** @module braintree-web/client */
 
@@ -28,7 +29,8 @@ var deferred = require('../lib/deferred');
 function create(options, callback) {
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'create must include a callback function.'
     });
   }
@@ -37,8 +39,9 @@ function create(options, callback) {
 
   if (!options.authorization) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'options.authorization is required.'
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
+      message: 'options.authorization is required when instantiating a client.'
     }));
     return;
   }

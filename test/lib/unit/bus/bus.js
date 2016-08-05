@@ -25,9 +25,42 @@ describe('braintree bus', function () {
 
   it('throws an error when instantiated without a channel', function () {
     /* eslint-disable no-new */
-    expect(function () { new Bus(); }).to.throw(BraintreeError, 'Channel ID must be specified');
-    expect(function () { new Bus({}); }).to.throw(BraintreeError, 'Channel ID must be specified');
-    expect(function () { new Bus({channel: null}); }).to.throw(BraintreeError, 'Channel ID must be specified');
+    var err;
+
+    try {
+      new Bus();
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).to.be.an.instanceof(BraintreeError);
+    expect(err.type).to.equal('INTERNAL');
+    expect(err.code).to.equal('MISSING_CHANNEL_ID');
+    expect(err.message).to.equal('Channel ID must be specified.');
+
+    err = null;
+
+    try {
+      new Bus({});
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).to.be.an.instanceof(BraintreeError);
+    expect(err.type).to.equal('INTERNAL');
+    expect(err.code).to.equal('MISSING_CHANNEL_ID');
+    expect(err.message).to.equal('Channel ID must be specified.');
+
+    try {
+      new Bus({channel: null});
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).to.be.an.instanceof(BraintreeError);
+    expect(err.type).to.equal('INTERNAL');
+    expect(err.code).to.equal('MISSING_CHANNEL_ID');
+    expect(err.message).to.equal('Channel ID must be specified.');
     /* eslint-enable no-new */
   });
 

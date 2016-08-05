@@ -7,6 +7,7 @@ require('./tasks/three-d-secure');
 require('./tasks/hosted-fields');
 require('./tasks/data-collector');
 require('./tasks/american-express');
+require('./tasks/apple-pay');
 require('./tasks/frame-service');
 require('./tasks/unionpay');
 require('./tasks/build');

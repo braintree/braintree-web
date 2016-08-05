@@ -24,8 +24,9 @@ describe('unionPay.create', function () {
 
   it('errors out if no client given', function (done) {
     create({}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
       expect(err.message).to.equal('options.client is required when instantiating UnionPay.');
       expect(thingy).not.to.exist;
       done();
@@ -36,36 +37,48 @@ describe('unionPay.create', function () {
     this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
 
     create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
       expect(err.message).to.equal('Client (version 1.2.3) and UnionPay (version ' + version + ') components must be from the same SDK version.');
       expect(thingy).not.to.exist;
       done();
     });
   });
 
-  it('throws error if callback was not defined', function () {
-    var client = this.client;
+  it('throws error if callback was not defined', function (done) {
+    try {
+      create({client: this.client}, null);
+    } catch (err) {
+      expect(err).to.be.an.instanceof(BraintreeError);
+      expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
+      expect(err.message).to.equal('create must include a callback function.');
 
-    expect(function () {
-      create({client: client}, null);
-    }).to.throw('UnionPay creation requires a callback');
+      done();
+    }
   });
 
-  it('throws error if callback was not a function', function () {
-    var client = this.client;
+  it('throws error if callback was not a function', function (done) {
+    try {
+      create({client: this.client}, 'callback');
+    } catch (err) {
+      expect(err).to.be.an.instanceof(BraintreeError);
+      expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
+      expect(err.message).to.equal('create must include a callback function.');
 
-    expect(function () {
-      create({client: client}, 'callback');
-    }).to.throw('UnionPay creation requires a callback');
+      done();
+    }
   });
 
   it('errors out if unionpay is not enabled for the merchant', function (done) {
     this.configuration.gatewayConfiguration.unionPay.enabled = false;
 
     create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('UNIONPAY_NOT_ENABLED');
       expect(err.message).to.equal('UnionPay is not enabled for this merchant.');
       expect(thingy).not.to.exist;
       done();
@@ -76,8 +89,9 @@ describe('unionPay.create', function () {
     delete this.configuration.gatewayConfiguration.unionPay;
 
     create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('UNIONPAY_NOT_ENABLED');
       expect(err.message).to.equal('UnionPay is not enabled for this merchant.');
       expect(thingy).not.to.exist;
       done();
@@ -102,7 +116,7 @@ describe('unionPay.create', function () {
 
     create({client: this.client}, function (err, unionpay) {
       expect(err).not.to.exist;
-      expect(unionpay).to.be.an.instanceOf(UnionPay);
+      expect(unionpay).to.be.an.instanceof(UnionPay);
 
       done();
     });

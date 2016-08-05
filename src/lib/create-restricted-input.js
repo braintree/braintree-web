@@ -2,9 +2,11 @@
 
 var RestrictedInput = require('restricted-input');
 var FakeRestrictedInput = require('./fake-restricted-input');
+var browserDetection = require('./browser-detection');
 
 module.exports = function (options) {
-  var Klass = options.shouldFormat ? RestrictedInput : FakeRestrictedInput;
+  var shouldFormat = options.shouldFormat && !browserDetection.isAndroidFirefox();
+  var Klass = shouldFormat ? RestrictedInput : FakeRestrictedInput;
 
   return new Klass(options);
 };

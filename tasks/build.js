@@ -46,6 +46,7 @@ gulp.task('build:published:statics', function () {
 gulp.task('build:published:mins', function () {
   return gulp.src([
     JS_PATH + 'american-express.min.js',
+    JS_PATH + 'apple-pay.min.js',
     JS_PATH + 'client.min.js',
     JS_PATH + 'data-collector.min.js',
     JS_PATH + 'hosted-fields.min.js',
@@ -60,6 +61,7 @@ gulp.task('build:published:mins', function () {
 gulp.task('build:published:debugs', function () {
   return gulp.src([
     JS_PATH + 'american-express.js',
+    JS_PATH + 'apple-pay.js',
     JS_PATH + 'client.js',
     JS_PATH + 'data-collector.js',
     JS_PATH + 'hosted-fields.js',
@@ -99,6 +101,7 @@ gulp.task('build:link-latest', function (done) {
 });
 
 gulp.task('build:hosted', [
+  'build:apple-pay',
   'build:client',
   'build:paypal',
   'build:three-d-secure',

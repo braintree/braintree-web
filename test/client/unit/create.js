@@ -20,9 +20,10 @@ describe('client.create', function () {
 
   it('errors out if no authorization given', function (done) {
     client.create({}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('options.authorization is required.');
+      expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
+      expect(err.message).to.equal('options.authorization is required when instantiating a client.');
       expect(thingy).not.to.exist;
       done();
     });
@@ -37,8 +38,9 @@ describe('client.create', function () {
       err = e;
     }
 
-    expect(err).to.be.an.instanceOf(BraintreeError);
+    expect(err).to.be.an.instanceof(BraintreeError);
     expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+    expect(err.code).to.equal('CALLBACK_REQUIRED');
     expect(err.message).to.equal('create must include a callback function.');
   });
 
@@ -87,8 +89,9 @@ describe('client.create', function () {
     });
 
     client.create({authorization: fake.tokenizationKey}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('NETWORK');
+      expect(err.code).to.equal('GATEWAY_NETWORK');
       expect(err.message).to.equal('Cannot contact the gateway at this time.');
       expect(thingy).not.to.exist;
       done();
@@ -102,8 +105,9 @@ describe('client.create', function () {
     });
 
     client.create({authorization: fake.tokenizationKey}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('INTERNAL');
+      expect(err.code).to.equal('MISSING_GATEWAY_CONFIGURATION');
       expect(err.message).to.equal('Missing gatewayConfiguration.');
       expect(thingy).not.to.exist;
       done();

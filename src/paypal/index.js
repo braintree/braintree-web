@@ -1,11 +1,13 @@
 'use strict';
 /** @module braintree-web/paypal */
 
-var PayPal = require('./external/paypal');
-var browserDetection = require('../lib/browser-detection');
-var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
+var BraintreeError = require('../lib/error');
+var browserDetection = require('../lib/browser-detection');
 var deferred = require('../lib/deferred');
+var errors = require('./shared/errors');
+var PayPal = require('./external/paypal');
+var sharedErrors = require('../errors');
 var VERSION = require('package.version');
 
 /**
@@ -14,6 +16,14 @@ var VERSION = require('package.version');
  * @param {object} options Creation options:
  * @param {Client} options.client A {@link Client} instance.
  * @param {callback} callback The second argument, `data`, is the {@link PayPal} instance.
+ * @example
+ * braintree.paypal.create(
+ *   client: clientInstance
+ * }, function (createErr, paypalInstance) {
+ *   if (createErr) {
+ *     // Handle any creation errors here
+ *   }
+ * }
  * @returns {void}
  */
 function create(options, callback) {
@@ -21,7 +31,8 @@ function create(options, callback) {
 
   if (!callback) {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'create must include a callback function.'
     });
   }
@@ -30,7 +41,8 @@ function create(options, callback) {
 
   if (options.client == null) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating PayPal.'
     }));
     return;
@@ -41,25 +53,20 @@ function create(options, callback) {
 
   if (clientVersion !== VERSION) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
       message: 'Client (version ' + clientVersion + ') and PayPal (version ' + VERSION + ') components must be from the same SDK version.'
     }));
     return;
   }
 
   if (config.gatewayConfiguration.paypalEnabled !== true) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'PayPal is not enabled for this merchant.'
-    }));
+    callback(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
     return;
   }
 
   if (!_isBrowserSupported()) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.CUSTOMER,
-      message: 'Browser is not supported.'
-    }));
+    callback(new BraintreeError(errors.BROWSER_NOT_SUPPORTED));
     return;
   }
 

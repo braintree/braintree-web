@@ -9,19 +9,15 @@ var spawn = require('child_process').spawn;
 
 var TEST_DIR = path.resolve(__dirname, '..', 'test') + '/';
 var KARMA_SUITES = [
-  'paypal',
-  'client',
-  'lib',
-  'publishing',
-  'hosted-fields',
-  'data-collector',
   'american-express',
+  'apple-pay',
+  'client',
+  'data-collector',
+  'hosted-fields',
+  'lib',
+  'paypal',
   'three-d-secure',
   'unionpay'
-];
-var NEEDS_BUILD_FOR_TEST = [
-  'publishing',
-  'node-parsing'
 ];
 var TEST_TASKS = [
   'test:environment',

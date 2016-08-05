@@ -9,6 +9,8 @@ var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var deferred = require('../lib/deferred');
 var VERSION = require('package.version');
+var sharedErrors = require('../errors');
+var errors = require('./errors');
 
 /**
  * @class
@@ -52,7 +54,8 @@ function create(options, callback) {
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'create must include a callback function.'
     });
   }
@@ -76,7 +79,8 @@ function create(options, callback) {
 
   if (options.client == null) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating Data Collector.'
     }));
     return;
@@ -87,7 +91,8 @@ function create(options, callback) {
 
   if (clientVersion !== VERSION) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
       message: 'Client (version ' + clientVersion + ') and Data Collector (version ' + VERSION + ') components must be from the same SDK version.'
     }));
     return;
@@ -95,10 +100,7 @@ function create(options, callback) {
 
   if (options.kount === true) {
     if (!config.gatewayConfiguration.kount) {
-      callback(new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        message: 'Kount is not enabled for this merchant.'
-      }));
+      callback(new BraintreeError(errors.KOUNT_NOT_ENABLED));
       return;
     }
 
@@ -109,8 +111,9 @@ function create(options, callback) {
       });
     } catch (err) {
       callback(new BraintreeError({
-        message: err.message,
-        type: BraintreeError.types.MERCHANT
+        type: errors.KOUNT_ERROR.type,
+        code: errors.KOUNT_ERROR.code,
+        message: err.message
       }));
       return;
     }
@@ -123,10 +126,7 @@ function create(options, callback) {
 
   if (options.paypal === true) {
     if (config.gatewayConfiguration.paypalEnabled !== true) {
-      callback(new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        message: 'PayPal is not enabled for this merchant.'
-      }));
+      callback(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
       return;
     }
 
@@ -136,10 +136,7 @@ function create(options, callback) {
   }
 
   if (instances.length === 0) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'Data Collector must be created with Kount and/or PayPal.'
-    }));
+    callback(new BraintreeError(errors.REQUIRES_CREATE_OPTIONS));
     return;
   }
 

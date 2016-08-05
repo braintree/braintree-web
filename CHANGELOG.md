@@ -1,6 +1,32 @@
 CHANGELOG
 =========
 
+## 3.0.0-beta.12
+
+* Some error messages have been changed to be more consistent across components
+* Update `BraintreeError` to include a `code`, which can be used to check for specific errors:
+
+   ```
+   hostedFieldsInstance.tokenize(function (err, payload) {
+     if (err && err.code === 'FIELDS_EMPTY') {
+       // Handle user input error
+     }
+   });
+   ```
+
+* Fix an incorrect `<script>` tag example in API docs
+* Fix an error in Require.js API docs
+* Hosted Fields
+  * Automatic input formatting disabled for Android Firefox
+  * Add `vault` as an option to `tokenize` which allows cards to be vaulted on tokenization
+  * Add `addClass` and `removeClass` for updating classes on fields
+  * Stop applying `invalid` CSS classes to `potentiallyValid` fields on tokenization attempts
+* PayPal
+  * Consistently return `BraintreeError` objects when the PayPal flow is cancelled
+* UnionPay
+  * Add `type` to tokenize payload
+* Add Apple Pay component.
+
 ## 3.0.0-beta.11
 
 * Update create error messages to be more consistent

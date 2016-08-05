@@ -12,6 +12,7 @@ function BraintreeBus(options) {
   if (!this.channel) {
     throw new BraintreeError({
       type: BraintreeError.types.INTERNAL,
+      code: 'MISSING_CHANNEL_ID',
       message: 'Channel ID must be specified.'
     });
   }

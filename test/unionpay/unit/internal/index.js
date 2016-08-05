@@ -104,8 +104,9 @@ describe('internal', function () {
         this.sandbox.stub(UnionPay.prototype, 'fetchCapabilities');
 
         fetchHandler({hostedFields: fakeHostedFields}, function (options) {
-          expect(options.err).to.be.an.instanceOf(BraintreeError);
+          expect(options.err).to.be.an.instanceof(BraintreeError);
           expect(options.err.type).to.equal('MERCHANT');
+          expect(options.err.code).to.equal('HOSTED_FIELDS_INSTANCE_REQUIRED');
           expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
 
           expect(options.payload).not.to.exist;
@@ -203,8 +204,9 @@ describe('internal', function () {
             number: '11111111111'
           }
         }, function (options) {
-          expect(options.err).to.be.an.instanceOf(BraintreeError);
+          expect(options.err).to.be.an.instanceof(BraintreeError);
           expect(options.err.type).to.equal('MERCHANT');
+          expect(options.err.code).to.equal('HOSTED_FIELDS_INSTANCE_REQUIRED');
           expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
 
           expect(options.payload).not.to.exist;
@@ -301,8 +303,9 @@ describe('internal', function () {
             smsCode: '1234'
           }
         }, function (options) {
-          expect(options.err).to.be.an.instanceOf(BraintreeError);
+          expect(options.err).to.be.an.instanceof(BraintreeError);
           expect(options.err.type).to.equal('MERCHANT');
+          expect(options.err.code).to.equal('HOSTED_FIELDS_INSTANCE_REQUIRED');
           expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
 
           expect(options.payload).not.to.exist;

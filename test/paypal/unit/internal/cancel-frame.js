@@ -10,7 +10,8 @@ describe('cancel-frame', function () {
     it('reports an error to frameService', function () {
       var err = {
         type: BraintreeError.types.CUSTOMER,
-        message: constants.FRAME_CLOSED_ERROR_MESSAGE
+        code: 'FRAME_CLOSED',
+        message: 'Frame closed before tokenization could occur.'
       };
 
       this.sandbox.stub(frameService, 'report');

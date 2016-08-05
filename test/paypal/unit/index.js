@@ -27,8 +27,9 @@ describe('paypal.create', function () {
     try {
       create({client: this.client});
     } catch (err) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
       expect(err.message).to.equal('create must include a callback function.');
 
       done();
@@ -37,8 +38,9 @@ describe('paypal.create', function () {
 
   it('errors out if no client given', function (done) {
     create({}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
       expect(err.message).to.equal('options.client is required when instantiating PayPal.');
       expect(thingy).not.to.exist;
       done();
@@ -49,8 +51,9 @@ describe('paypal.create', function () {
     this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
 
     create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
       expect(err.message).to.equal('Client (version 1.2.3) and PayPal (version ' + version + ') components must be from the same SDK version.');
       expect(thingy).not.to.exist;
       done();
@@ -61,8 +64,9 @@ describe('paypal.create', function () {
     this.configuration.gatewayConfiguration.paypalEnabled = false;
 
     create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('PAYPAL_NOT_ENABLED');
       expect(err.message).to.equal('PayPal is not enabled for this merchant.');
       expect(thingy).not.to.exist;
       done();
@@ -90,8 +94,9 @@ describe('paypal.create', function () {
       this.sandbox.stub(browserDetection, 'isOperaMini', function () { return true; });
 
       create({client: this.client}, function (err, thingy) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
+        expect(err.code).to.equal('BROWSER_NOT_SUPPORTED');
         expect(err.message).to.equal('Browser is not supported.');
         expect(thingy).not.to.exist;
 

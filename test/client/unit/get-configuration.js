@@ -47,7 +47,7 @@ describe('getConfiguration', function () {
   describe('error handling', function () {
     it('returns an error with bad authorization', function (done) {
       getConfiguration({authorization: 'bogus'}, function (err, result) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.message).to.equal('Authorization is invalid. Make sure your client token or tokenization key is valid.');
         expect(result).not.to.exist;

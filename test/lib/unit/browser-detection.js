@@ -17,6 +17,28 @@ describe('browser-detection', function () {
     });
   });
 
+  describe('isAndroidFirefox', function () {
+    it('returns true for an Android Firefox user agent', function () {
+      var phone = browserDetection.isAndroidFirefox('Mozilla/5.0 (Android; Mobile; rv:40.0) Gecko/40.0 Firefox/40.0');
+      var tablet = browserDetection.isAndroidFirefox('Mozilla/5.0 (Android; Tablet; rv:40.0) Gecko/40.0 Firefox/40.0');
+
+      expect(phone).to.be.true;
+      expect(tablet).to.be.true;
+    });
+
+    it('returns false for any other Firefox browser', function () {
+      var ios = browserDetection.isAndroidFirefox('Mozilla/5.0 (iPhone; CPU iPhone OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) FxiOS/1.0 Mobile/12F69 Safari/600.1.4');
+      var mac = browserDetection.isAndroidFirefox('Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:10.0) Gecko/20100101 Firefox/10.0');
+      var pc = browserDetection.isAndroidFirefox('Mozilla/5.0 (Windows NT x.y; Win64; x64; rv:10.0) Gecko/20100101 Firefox/10.0');
+      var linux = browserDetection.isAndroidFirefox('Mozilla/5.0 (Maemo; Linux armv7l; rv:10.0) Gecko/20100101 Firefox/10.0 Fennec/10.0');
+
+      expect(ios).to.be.false;
+      expect(mac).to.be.false;
+      expect(pc).to.be.false;
+      expect(linux).to.be.false;
+    });
+  });
+
   describe('getIEVersion', function () {
     it('returns null if not IE', function () {
       var actual = browserDetection.getIEVersion('Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36');

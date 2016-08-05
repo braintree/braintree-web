@@ -82,11 +82,11 @@ Quirks Mode is not supported for any version of IE. See our [general best practi
 - Firefox
 
 <a id="browser-support-webviews"></a>
-### Webviews
+### Webviews and hybrid environments
 
-Webviews on iOS and Android will be supported in the final release of the SDK but are not supported during the beta. PayPal is not supported in webviews on Android versions lower than 4.4 and will not be.
+Webviews on iOS and Android are supported for all integrations except PayPal. PayPal is not supported in any webview for [security reasons](https://developer.paypal.com/docs/classic/lifecycle/info-security-guidelines/#secure-applications).
 
-Additionally, `braintree.js` is neither tested nor developed for compile-to-native runtimes such as Cordova and PhoneGap. While some success may be had in such environments, our SDK is optimized for the browser and its security policies and may not function correctly outside of them.
+Additionally, `braintree.js` is neither tested nor developed for hybrid runtimes such as Cordova, PhoneGap, Ionic, React Native, and Electron. While some success may be had in such environments, our SDK is optimized for the browser and its security policies and may not function correctly outside of them.
 
 <a id="teardown"></a>
 ## Teardown

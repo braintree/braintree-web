@@ -9,7 +9,7 @@ describe('Postal Code Input', function () {
 
   describe('inheritance', function () {
     it('extends BaseInput', function () {
-      expect(this.input).to.be.an.instanceOf(BaseInput);
+      expect(this.input).to.be.an.instanceof(BaseInput);
     });
   });
 

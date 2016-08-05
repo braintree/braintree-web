@@ -11,6 +11,8 @@ var normalizeCreditCardFields = require('../../lib/normalize-credit-card-fields'
 var analytics = require('../../lib/analytics');
 var BraintreeError = require('../../lib/error');
 var constants = require('../shared/constants');
+var errors = require('../shared/errors');
+var assign = require('../../lib/assign').assign;
 var events = constants.events;
 var whitelistedStyles = constants.whitelistedStyles;
 
@@ -46,22 +48,20 @@ function create() {
 }
 
 function createTokenizationHandler(client, cardForm) {
-  return function (reply) {
-    var creditCardDetails;
+  return function (options, reply) {
+    var creditCardDetails, error;
     var isEmpty = cardForm.isEmpty();
     var invalidFieldKeys = cardForm.invalidFieldKeys();
     var isValid = invalidFieldKeys.length === 0;
 
     if (isEmpty) {
-      reply([new BraintreeError({
-        type: BraintreeError.types.CUSTOMER,
-        message: 'All fields are empty. Cannot tokenize empty card fields.'
-      })]);
+      reply([new BraintreeError(errors.FIELDS_EMPTY)]);
     } else if (isValid) {
       creditCardDetails = normalizeCreditCardFields(cardForm.getCardData());
 
+      options = options || {};
       creditCardDetails.options = {
-        validate: false
+        validate: options.vault === true
       };
 
       client.request({
@@ -78,45 +78,37 @@ function createTokenizationHandler(client, cardForm) {
 
         if (err) {
           if (status < 500) {
-            reply([new BraintreeError({
-              type: BraintreeError.types.CUSTOMER,
-              message: 'The supplied card data failed tokenization.',
-              details: {
-                originalError: err
-              }
-            })]);
+            error = errors.FAILED_HOSTED_FIELDS_TOKENIZATION;
           } else {
-            reply([new BraintreeError({
-              type: BraintreeError.types.NETWORK,
-              message: 'A tokenization network error occurred.',
-              details: {
-                originalError: err
-              }
-            })]);
+            error = errors.TOKENIZATION_NETWORK_ERROR;
           }
+          error = assign({}, error, {
+            details: {originalError: err}
+          });
+
+          reply([new BraintreeError(error)]);
 
           analytics.sendEvent(client, 'web.custom.hosted-fields.tokenization.failed');
           return;
         }
 
-        tokenizedCard = response.creditCards[0];
-
-        delete tokenizedCard.consumed;
-        delete tokenizedCard.threeDSecureInfo;
+        tokenizedCard = {
+          nonce: response.creditCards[0].nonce,
+          details: response.creditCards[0].details,
+          description: response.creditCards[0].description,
+          type: response.creditCards[0].type
+        };
 
         reply([null, tokenizedCard]);
 
         analytics.sendEvent(client, 'web.custom.hosted-fields.tokenization.succeeded');
       });
     } else {
-      cardForm.strictValidate();
-
       reply([new BraintreeError({
-        type: BraintreeError.types.CUSTOMER,
-        message: 'Some payment input fields are invalid. Cannot tokenize invalid card fields.',
-        details: {
-          invalidFieldKeys: invalidFieldKeys
-        }
+        type: errors.FIELDS_INVALID.type,
+        code: errors.FIELDS_INVALID.code,
+        message: errors.FIELDS_INVALID.message,
+        details: {invalidFieldKeys: invalidFieldKeys}
       })]);
     }
   };
@@ -133,9 +125,10 @@ function orchestrate(configuration) {
 
   analytics.sendEvent(client, 'web.custom.hosted-fields.load.succeeded');
 
-  global.bus.on(events.TOKENIZATION_REQUEST, createTokenizationHandler(client, cardForm));
-  global.bus.on(events.VALIDATE_STRICT, function () {
-    cardForm.strictValidate();
+  global.bus.on(events.TOKENIZATION_REQUEST, function (options, reply) {
+    var tokenizationHandler = createTokenizationHandler(client, cardForm);
+
+    tokenizationHandler(options, reply);
   });
 
   // Globalize cardForm is global so other components (UnionPay) can access it

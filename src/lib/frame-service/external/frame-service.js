@@ -3,6 +3,7 @@
 var popup = require('./popup');
 var Bus = require('../../bus');
 var events = require('../shared/events');
+var errors = require('../shared/errors');
 var constants = require('../shared/constants');
 var uuid = require('../../uuid');
 var iFramer = require('iframer');
@@ -127,10 +128,7 @@ FrameService.prototype._pollForPopupClose = function () {
     if (this.isFrameClosed()) {
       this._cleanupFrame();
       if (this._onCompleteCallback) {
-        this._onCompleteCallback(new BraintreeError({
-          type: BraintreeError.types.CUSTOMER,
-          message: constants.FRAME_CLOSED_ERROR_MESSAGE
-        }));
+        this._onCompleteCallback(new BraintreeError(errors.FRAME_CLOSED));
       }
     }
   }.bind(this), constants.POPUP_POLL_INTERVAL);

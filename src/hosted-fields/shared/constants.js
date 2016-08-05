@@ -95,6 +95,8 @@ constants.events = enumerate([
   'TOKENIZATION_REQUEST',
   'INPUT_EVENT',
   'TRIGGER_INPUT_FOCUS',
+  'ADD_CLASS',
+  'REMOVE_CLASS',
   'SET_PLACEHOLDER',
   'CLEAR_FIELD'
 ], 'hosted-fields:');

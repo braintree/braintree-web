@@ -41,7 +41,8 @@ describe('frameApi', function () {
 
     it('emits an error when client creation fails', function () {
       var err = new BraintreeError({
-        type: 'UNKNOWN',
+        type: BraintreeError.types.UNKNOWN,
+        code: 'YOU_DONE_GOOFED',
         message: 'you done goofed'
       });
       var requestCallback = this.sandbox.stub();

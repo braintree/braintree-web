@@ -30,7 +30,8 @@ describe('three-d-secure.create', function () {
     } catch (err) {
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.eql('MERCHANT');
-      expect(err.message).to.eql('threeDSecure.create must include a callback function.');
+      expect(err.code).to.eql('CALLBACK_REQUIRED');
+      expect(err.message).to.eql('create must include a callback function.');
 
       done();
     }
@@ -38,8 +39,9 @@ describe('three-d-secure.create', function () {
 
   it('errors out if no client given', function (done) {
     threeDSecure.create({}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.eql('INSTANTIATION_OPTION_REQUIRED');
       expect(err.message).to.equal('options.client is required when instantiating 3D Secure.');
       expect(thingy).not.to.exist;
       done();
@@ -50,8 +52,9 @@ describe('three-d-secure.create', function () {
     this.configuration.gatewayConfiguration.threeDSecureEnabled = false;
 
     threeDSecure.create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.eql('THREEDS_NOT_ENABLED');
       expect(err.message).to.equal('3D Secure is not enabled for this merchant.');
       expect(thingy).not.to.exist;
       done();
@@ -62,8 +65,9 @@ describe('three-d-secure.create', function () {
     this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
 
     threeDSecure.create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.eql('INCOMPATIBLE_VERSIONS');
       expect(err.message).to.equal('Client (version 1.2.3) and 3D Secure (version ' + version + ') components must be from the same SDK version.');
       expect(thingy).not.to.exist;
       done();
@@ -75,8 +79,9 @@ describe('three-d-secure.create', function () {
     this.sandbox.stub(browserDetection, 'isHTTPS', function () { return false; });
 
     threeDSecure.create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.eql('THREEDS_HTTPS_REQUIRED');
       expect(err.message).to.equal('3D Secure requires HTTPS.');
       expect(thingy).not.to.exist;
       done();
@@ -101,7 +106,7 @@ describe('three-d-secure.create', function () {
 
     threeDSecure.create({client: this.client}, function (err, foo) {
       expect(err).not.to.exist;
-      expect(foo).to.be.an.instanceOf(ThreeDSecure);
+      expect(foo).to.be.an.instanceof(ThreeDSecure);
 
       done();
     });

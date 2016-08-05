@@ -24,18 +24,18 @@ describe('classlist', function () {
     });
 
     it('does not double-add the class', function () {
-      var occurrances = 0;
+      var occurrences = 0;
 
       this.element.classList.add('existing');
       this.element.classList.add('added');
 
       classlist.add(this.element, 'added');
 
-      this.element.className.trim().split(/\s+/).forEach(function (clazz) {
-        if (clazz === 'added') { occurrances++; }
+      this.element.className.trim().split(/\s+/).forEach(function (classname) {
+        if (classname === 'added') { occurrences++; }
       });
 
-      expect(occurrances).to.equal(1);
+      expect(occurrences).to.equal(1);
       expect(this.element.classList.contains('existing')).to.be.true;
     });
   });
@@ -59,18 +59,18 @@ describe('classlist', function () {
       expect(this.element.classList.contains('existing')).to.be.true;
     });
 
-    it('removes all occurrances of the class', function () {
-      var occurrances = 0;
+    it('removes all occurrences of the class', function () {
+      var occurrences = 0;
 
       this.element.className = 'removed existing removed';
 
       classlist.remove(this.element, 'removed');
 
-      this.element.className.trim().split(/\s+/).forEach(function (clazz) {
-        if (clazz === 'removed') { occurrances++; }
+      this.element.className.trim().split(/\s+/).forEach(function (classname) {
+        if (classname === 'removed') { occurrences++; }
       });
 
-      expect(occurrances).to.equal(0);
+      expect(occurrences).to.equal(0);
       expect(this.element.classList.contains('existing')).to.be.true;
     });
   });
@@ -93,18 +93,18 @@ describe('classlist', function () {
       });
 
       it('does not double-add the class', function () {
-        var occurrances = 0;
+        var occurrences = 0;
 
         this.element.classList.add('existing');
         this.element.classList.add('added');
 
         classlist.toggle(this.element, 'added', true);
 
-        this.element.className.trim().split(/\s+/).forEach(function (clazz) {
-          if (clazz === 'added') { occurrances++; }
+        this.element.className.trim().split(/\s+/).forEach(function (classname) {
+          if (classname === 'added') { occurrences++; }
         });
 
-        expect(occurrances).to.equal(1);
+        expect(occurrences).to.equal(1);
         expect(this.element.classList.contains('existing')).to.be.true;
       });
     });
@@ -128,18 +128,18 @@ describe('classlist', function () {
         expect(this.element.classList.contains('existing')).to.be.true;
       });
 
-      it('removes all occurrances of the class', function () {
-        var occurrances = 0;
+      it('removes all occurrences of the class', function () {
+        var occurrences = 0;
 
         this.element.className = 'removed existing removed';
 
         classlist.toggle(this.element, 'removed', false);
 
-        this.element.className.trim().split(/\s+/).forEach(function (clazz) {
-          if (clazz === 'removed') { occurrances++; }
+        this.element.className.trim().split(/\s+/).forEach(function (classname) {
+          if (classname === 'removed') { occurrences++; }
         });
 
-        expect(occurrances).to.equal(0);
+        expect(occurrences).to.equal(0);
         expect(this.element.classList.contains('existing')).to.be.true;
       });
     });

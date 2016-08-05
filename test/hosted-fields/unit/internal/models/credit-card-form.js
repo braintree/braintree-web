@@ -60,22 +60,22 @@ describe('credit card model', function () {
 
       // CVV is the only field by default
       expect(cardForm.on.getCall(0).args[0]).to.equal('change:cvv.value');
-      expect(cardForm.on.getCall(0).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(0).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(1).args[0]).to.equal('change:cvv.isFocused');
-      expect(cardForm.on.getCall(1).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(1).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(2).args[0]).to.equal('change:cvv.isEmpty');
-      expect(cardForm.on.getCall(2).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(2).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(3).args[0]).to.equal('change:cvv.isValid');
-      expect(cardForm.on.getCall(3).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(3).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(4).args[0]).to.equal('change:cvv.isPotentiallyValid');
-      expect(cardForm.on.getCall(4).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(4).args[1]).to.be.an.instanceof(Function);
 
       expect(cardForm.on.getCall(5).args[0]).to.equal('change:number.value');
-      expect(cardForm.on.getCall(5).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(5).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(6).args[0]).to.equal('change:possibleCardTypes');
-      expect(cardForm.on.getCall(6).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(6).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(7).args[0]).to.equal('change:possibleCardTypes');
-      expect(cardForm.on.getCall(7).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(7).args[1]).to.be.an.instanceof(Function);
     });
 
     it('attaches change events for each field', function () {
@@ -89,44 +89,44 @@ describe('credit card model', function () {
       expect(cardForm.on.callCount).to.equal(18);
 
       expect(cardForm.on.getCall(0).args[0]).to.equal('change:number.value');
-      expect(cardForm.on.getCall(0).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(0).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(1).args[0]).to.equal('change:number.isFocused');
-      expect(cardForm.on.getCall(1).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(1).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(2).args[0]).to.equal('change:number.isEmpty');
-      expect(cardForm.on.getCall(2).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(2).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(3).args[0]).to.equal('change:number.isValid');
-      expect(cardForm.on.getCall(3).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(3).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(4).args[0]).to.equal('change:number.isPotentiallyValid');
-      expect(cardForm.on.getCall(4).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(4).args[1]).to.be.an.instanceof(Function);
 
       expect(cardForm.on.getCall(5).args[0]).to.equal('change:cvv.value');
-      expect(cardForm.on.getCall(5).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(5).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(6).args[0]).to.equal('change:cvv.isFocused');
-      expect(cardForm.on.getCall(6).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(6).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(7).args[0]).to.equal('change:cvv.isEmpty');
-      expect(cardForm.on.getCall(7).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(7).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(8).args[0]).to.equal('change:cvv.isValid');
-      expect(cardForm.on.getCall(8).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(8).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(9).args[0]).to.equal('change:cvv.isPotentiallyValid');
-      expect(cardForm.on.getCall(9).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(9).args[1]).to.be.an.instanceof(Function);
 
       expect(cardForm.on.getCall(10).args[0]).to.equal('change:expirationDate.value');
-      expect(cardForm.on.getCall(10).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(10).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(11).args[0]).to.equal('change:expirationDate.isFocused');
-      expect(cardForm.on.getCall(11).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(11).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(12).args[0]).to.equal('change:expirationDate.isEmpty');
-      expect(cardForm.on.getCall(12).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(12).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(13).args[0]).to.equal('change:expirationDate.isValid');
-      expect(cardForm.on.getCall(13).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(13).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(14).args[0]).to.equal('change:expirationDate.isPotentiallyValid');
-      expect(cardForm.on.getCall(14).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(14).args[1]).to.be.an.instanceof(Function);
 
       expect(cardForm.on.getCall(15).args[0]).to.equal('change:number.value');
-      expect(cardForm.on.getCall(15).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(15).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(16).args[0]).to.equal('change:possibleCardTypes');
-      expect(cardForm.on.getCall(16).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(16).args[1]).to.be.an.instanceof(Function);
       expect(cardForm.on.getCall(17).args[0]).to.equal('change:possibleCardTypes');
-      expect(cardForm.on.getCall(17).args[1]).to.be.an.instanceOf(Function);
+      expect(cardForm.on.getCall(17).args[1]).to.be.an.instanceof(Function);
     });
   });
 
@@ -137,7 +137,6 @@ describe('credit card model', function () {
         isFocused: false,
         isValid: false,
         isPotentiallyValid: true,
-        isStrictlyValidating: false,
         isEmpty: true
       };
 
@@ -160,24 +159,21 @@ describe('credit card model', function () {
           isEmpty: true,
           isValid: false,
           isPotentiallyValid: true,
-          isFocused: false,
-          isStrictlyValidating: false
+          isFocused: false
         },
         cvv: {
           value: '123',
           isEmpty: false,
           isValid: true,
           isPotentiallyValid: true,
-          isFocused: false,
-          isStrictlyValidating: false
+          isFocused: false
         },
         expirationDate: {
           value: 'bad',
           isEmpty: false,
           isValid: false,
           isPotentiallyValid: false,
-          isFocused: true,
-          isStrictlyValidating: false
+          isFocused: true
         }
       };
 
@@ -215,65 +211,6 @@ describe('credit card model', function () {
             }
           }
         },
-        isStrictlyValidating: false,
-        type: 'foo'
-      }));
-    });
-
-    it('sends isStrictlyValidating: true when strictly validating', function () {
-      var fakeData = {
-        possibleCardTypes: [],
-        number: {
-          value: '',
-          isEmpty: true,
-          isValid: false,
-          isPotentiallyValid: true,
-          isFocused: false,
-          isStrictlyValidating: true
-        },
-        cvv: {
-          value: '123',
-          isEmpty: false,
-          isValid: true,
-          isPotentiallyValid: true,
-          isFocused: false,
-          isStrictlyValidating: true
-        }
-      };
-
-      CreditCardForm.prototype.emitEvent.call({
-        get: function (property) { return fakeData[property]; },
-        _fieldKeys: [
-          'number',
-          'cvv'
-        ]
-      }, 'number', 'foo');
-
-      expect(global.bus.emit).to.have.been.calledWith(events.INPUT_EVENT, this.sandbox.match({
-        merchantPayload: {
-          cards: [],
-          emittedBy: 'number',
-          fields: this.sandbox.match.object
-        },
-        isStrictlyValidating: true,
-        type: 'foo'
-      }));
-
-      CreditCardForm.prototype.emitEvent.call({
-        get: function (property) { return fakeData[property]; },
-        _fieldKeys: [
-          'number',
-          'cvv'
-        ]
-      }, 'cvv', 'foo');
-
-      expect(global.bus.emit).to.have.been.calledWith(events.INPUT_EVENT, this.sandbox.match({
-        merchantPayload: {
-          cards: [],
-          emittedBy: 'cvv',
-          fields: this.sandbox.match.object
-        },
-        isStrictlyValidating: true,
         type: 'foo'
       }));
     });
@@ -282,7 +219,7 @@ describe('credit card model', function () {
       CreditCardForm.prototype.emitEvent.call({
         get: function (property) {
           if (property === 'possibleCardTypes') { return []; }
-          return {isStrictlyValidating: false};
+          return {};
         },
         _fieldKeys: []
       }, 'number', 'foo');
@@ -293,7 +230,6 @@ describe('credit card model', function () {
           emittedBy: 'number',
           fields: {}
         },
-        isStrictlyValidating: false,
         type: 'foo'
       }));
     });
@@ -323,7 +259,7 @@ describe('credit card model', function () {
       CreditCardForm.prototype.emitEvent.call({
         get: function (property) {
           if (property === 'possibleCardTypes') { return cards; }
-          return {isStrictlyValidating: false};
+          return {};
         },
         _fieldKeys: []
       }, 'number', 'foo');
@@ -340,7 +276,6 @@ describe('credit card model', function () {
           emittedBy: 'number',
           fields: {}
         },
-        isStrictlyValidating: false,
         type: 'foo'
       }));
     });
@@ -359,7 +294,7 @@ describe('credit card model', function () {
               gaps: [3, 7, 11]
             }];
           }
-          return {isStrictlyValidating: false};
+          return {};
         },
         _fieldKeys: []
       }, 'number', 'foo');
@@ -377,7 +312,6 @@ describe('credit card model', function () {
           emittedBy: 'number',
           fields: {}
         },
-        isStrictlyValidating: false,
         type: 'foo'
       }));
     });
@@ -603,33 +537,6 @@ describe('credit card model', function () {
 
       expect(this.card.invalidFieldKeys()).to.be.empty;
       expect(this.card.invalidFieldKeys()).to.be.instanceOf(Array);
-    });
-  });
-
-  describe('strictValidate', function () {
-    it('sets strictlyValid keys to strictlyValid', function () {
-      this.card.strictValidate();
-
-      expect(this.card.get('number.isStrictlyValidating')).to.equal(true);
-      expect(this.card.get('cvv.isStrictlyValidating')).to.equal(true);
-      expect(this.card.get('expirationDate.isStrictlyValidating')).to.equal(true);
-      expect(this.card.get('postalCode.isStrictlyValidating')).to.equal(true);
-    });
-
-    it('emits a VALIDITY_CHANGE event for each field key', function () {
-      var card = new CreditCardForm(helpers.getModelConfig([
-        'number',
-        'cvv',
-        'expirationDate'
-      ]));
-
-      this.sandbox.stub(card, 'emitEvent');
-
-      card.strictValidate();
-
-      expect(card.emitEvent).to.have.been.calledWith('number', externalEvents.VALIDITY_CHANGE);
-      expect(card.emitEvent).to.have.been.calledWith('cvv', externalEvents.VALIDITY_CHANGE);
-      expect(card.emitEvent).to.have.been.calledWith('expirationDate', externalEvents.VALIDITY_CHANGE);
     });
   });
 

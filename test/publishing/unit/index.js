@@ -16,6 +16,7 @@ describe('braintree', function () {
       'VERSION',
       'client',
       'dataCollector',
+      'applePay',
       'hostedFields',
       'paypal',
       'americanExpress',

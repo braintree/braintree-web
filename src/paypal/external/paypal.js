@@ -1,6 +1,7 @@
 'use strict';
 
 var frameService = require('../../lib/frame-service/external');
+var frameServiceErrors = require('../../lib/frame-service/shared/errors');
 var BraintreeError = require('../../lib/error');
 var once = require('../../lib/once');
 var VERSION = require('package.version');
@@ -9,9 +10,11 @@ var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_
 var analytics = require('../../lib/analytics');
 var methods = require('../../lib/methods');
 var deferred = require('../../lib/deferred');
+var errors = require('../shared/errors');
 var getCountry = require('../shared/get-country');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var querystring = require('../../lib/querystring');
+var sharedErrors = require('../../errors');
 
 /**
  * @typedef {object} PayPal~tokenizePayload
@@ -32,6 +35,15 @@ var querystring = require('../../lib/querystring');
  * @property {string} details.shippingAddress.state State or region.
  * @property {string} details.shippingAddress.postalCode Postal code.
  * @property {string} details.shippingAddress.countryCode 2 character country code (e.g. US).
+ * @property {?object} details.billingAddress User's billing address details.
+ * You will also need to enable the PayPal Billing Address Request feature in your PayPal account.
+ * To enable this feature, [contact PayPal](https://developers.braintreepayments.com/support/guides/paypal/setup-guide#contacting-paypal-support).
+ * @property {string} details.billingAddress.line1 Street number and name.
+ * @property {string} details.billingAddress.line2 Extended address.
+ * @property {string} details.billingAddress.city City or locality.
+ * @property {string} details.billingAddress.state State or region.
+ * @property {string} details.billingAddress.postalCode Postal code.
+ * @property {string} details.billingAddress.countryCode 2 character country code (e.g. US).
  */
 
 /**
@@ -101,6 +113,21 @@ PayPal.prototype._initialize = function (callback) {
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
+ * @example
+ * button.addEventListener('click', function () {
+ *   // Because PayPal tokenization opens a popup, this must be called
+ *   // as a result of a user action, such as a button click.
+ *   paypalInstance.tokenize({
+ *     flow: 'vault' // Required
+ *     // Any other tokenization options
+ *   }, function (tokenizeErr, payload) {
+ *     if (tokenizeErr) {
+ *       // Handle tokenization errors or premature flow closure
+ *       return;
+ *     }
+ *     // Submit payload.nonce to your server
+ *   });
+ * });
  * @returns {PayPal~tokenizeReturn} A handle to close the PayPal checkout frame.
  */
 PayPal.prototype.tokenize = function (options, callback) {
@@ -108,7 +135,8 @@ PayPal.prototype.tokenize = function (options, callback) {
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'tokenize must include a callback function.'
     });
   }
@@ -118,10 +146,7 @@ PayPal.prototype.tokenize = function (options, callback) {
   if (this._authorizationInProgress) {
     analytics.sendEvent(client, 'web.paypal.tokenization.error.already-opened');
 
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'Another tokenization request is active.'
-    }));
+    callback(new BraintreeError(errors.TOKENIZATION_REQUEST_ACTIVE));
   } else {
     this._authorizationInProgress = true;
 
@@ -146,10 +171,11 @@ PayPal.prototype._createFrameServiceCallback = function (options, callback) {
     this._authorizationInProgress = false;
 
     if (err) {
-      if (err.message === constants.FRAME_CLOSED_ERROR_MESSAGE) {
+      if (err.code === frameServiceErrors.FRAME_CLOSED.code) {
         analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-user');
       }
-      callback(err);
+
+      callback(new BraintreeError(err));
     } else {
       this._tokenizePayPal(options, params, callback);
     }
@@ -167,8 +193,9 @@ PayPal.prototype._tokenizePayPal = function (options, params, callback) {
     if (err) {
       analytics.sendEvent(client, 'web.paypal.tokenization.failed');
       callback(err instanceof BraintreeError ? err : new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        message: 'Could not tokenize user\'s PayPal account.',
+        type: errors.ACCOUNT_TOKENIZATION_FAILED.type,
+        code: errors.ACCOUNT_TOKENIZATION_FAILED.code,
+        message: errors.ACCOUNT_TOKENIZATION_FAILED.message,
         details: err
       }));
     } else {
@@ -229,10 +256,7 @@ PayPal.prototype._navigateFrameToAuth = function (options, callback) {
   } else if (options.flow === 'vault') {
     endpoint += 'setup_billing_agreement';
   } else {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'PayPal flow property is invalid or missing.'
-    }));
+    callback(new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED));
     return;
   }
 
@@ -245,8 +269,9 @@ PayPal.prototype._navigateFrameToAuth = function (options, callback) {
 
     if (err) {
       callback(err instanceof BraintreeError ? err : new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        message: constants.AUTH_INIT_ERROR_MESSAGE,
+        type: errors.PAYPAL_FLOW_FAILED.type,
+        code: errors.PAYPAL_FLOW_FAILED.code,
+        message: errors.PAYPAL_FLOW_FAILED.message,
         details: err
       }));
       this._frameService.close();

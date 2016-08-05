@@ -4,6 +4,7 @@
 var HostedFields = require('./external/hosted-fields');
 var deferred = require('../lib/deferred');
 var BraintreeError = require('../lib/error');
+var sharedErrors = require('../errors');
 var VERSION = require('package.version');
 
 /**
@@ -11,7 +12,7 @@ var VERSION = require('package.version');
  * @typedef {object} field
  * @property {string} selector A CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
- * @property {boolean} [formatInput=true] - Enable or disable automatic formatting on this field.
+ * @property {boolean} [formatInput=true] - Enable or disable automatic formatting on this field. Note: Input formatting does not work in Android Firefox, so input formatting is automatically disabled in that browser.
  */
 
 /**
@@ -76,7 +77,8 @@ function create(options, callback) {
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'create must include a callback function.'
     });
   }

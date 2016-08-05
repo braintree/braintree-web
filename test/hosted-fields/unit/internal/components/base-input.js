@@ -38,7 +38,7 @@ describe('Base Input', function () {
 
       describe('formatter', function () {
         it('creates a RestrictedInput formatter by default', function () {
-          expect(this.instance.formatter).to.be.an.instanceOf(RestrictedInput);
+          expect(this.instance.formatter).to.be.an.instanceof(RestrictedInput);
         });
 
         it('creates a FakeRestrictedInput formatter if formatting is disabled', function () {
@@ -54,13 +54,13 @@ describe('Base Input', function () {
             type: this.type
           });
 
-          expect(instance.formatter).to.be.an.instanceOf(FakeRestrictedInput);
+          expect(instance.formatter).to.be.an.instanceof(FakeRestrictedInput);
         });
       });
 
       describe('element', function () {
         it('is an input', function () {
-          expect(this.instance.element).to.be.an.instanceOf(HTMLInputElement);
+          expect(this.instance.element).to.be.an.instanceof(HTMLInputElement);
         });
 
         describe('attributes', function () {

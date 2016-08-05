@@ -132,7 +132,6 @@ BaseInput.prototype._addDOMFocusListeners = function () {
 BaseInput.prototype.addModelEventListeners = function () {
   this.modelOnChange('isValid', this.render);
   this.modelOnChange('isPotentiallyValid', this.render);
-  this.modelOnChange('isStrictlyValidating', this.render);
 };
 
 BaseInput.prototype.addBusEventListeners = function () {
@@ -142,6 +141,14 @@ BaseInput.prototype.addBusEventListeners = function () {
 
   global.bus.on(events.SET_PLACEHOLDER, function (type, placeholder) {
     if (type === this.type) { this.element.setAttribute('placeholder', placeholder); }
+  }.bind(this));
+
+  global.bus.on(events.ADD_CLASS, function (type, classname) {
+    if (type === this.type) { classlist.add(this.element, classname); }
+  }.bind(this));
+
+  global.bus.on(events.REMOVE_CLASS, function (type, classname) {
+    if (type === this.type) { classlist.remove(this.element, classname); }
   }.bind(this));
 
   global.bus.on(events.CLEAR_FIELD, function (type) {
@@ -156,15 +163,9 @@ BaseInput.prototype.render = function () {
   var modelData = this.model.get(this.type);
   var isValid = modelData.isValid;
   var isPotentiallyValid = modelData.isPotentiallyValid;
-  var isStrictlyValidating = modelData.isStrictlyValidating;
 
   classlist.toggle(this.element, 'valid', isValid);
-
-  if (isStrictlyValidating) {
-    classlist.toggle(this.element, 'invalid', !isValid);
-  } else {
-    classlist.toggle(this.element, 'invalid', !isPotentiallyValid);
-  }
+  classlist.toggle(this.element, 'invalid', !isPotentiallyValid);
 
   if (this.maxLength) {
     this.element.setAttribute('maxlength', this.maxLength);

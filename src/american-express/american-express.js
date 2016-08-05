@@ -2,6 +2,8 @@
 
 var BraintreeError = require('../lib/error');
 var deferred = require('../lib/deferred');
+var errors = require('./errors');
+var sharedErrors = require('../errors');
 
 /**
  * @class
@@ -38,7 +40,8 @@ function AmericanExpress(options) {
 AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'getRewardsBalance must include a callback function.'
     });
   }
@@ -47,7 +50,8 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
 
   if (!options.nonce) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: errors.NONCE_REQUIRED.type,
+      code: errors.NONCE_REQUIRED.code,
       message: 'getRewardsBalance must be called with a nonce.'
     }));
     return;
@@ -63,8 +67,9 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
   }, function (err, response) {
     if (err) {
       callback(new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        message: 'A network error occured when getting the American Express rewards balance.',
+        type: errors.AMEX_NETWORK_ERROR.type,
+        code: errors.AMEX_NETWORK_ERROR.code,
+        message: 'A network error occurred when getting the American Express rewards balance.',
         details: {
           originalError: err
         }
@@ -100,7 +105,8 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
 AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callback) {
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'getExpressCheckoutProfile must include a callback function.'
     });
   }
@@ -109,7 +115,8 @@ AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callbac
 
   if (!options.nonce) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: errors.NONCE_REQUIRED.type,
+      code: errors.NONCE_REQUIRED.code,
       message: 'getExpressCheckoutProfile must be called with a nonce.'
     }));
     return;
@@ -125,8 +132,9 @@ AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callbac
   }, function (err, response) {
     if (err) {
       callback(new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        message: 'A network error occured when getting the American Express Checkout nonce profile.',
+        type: errors.AMEX_NETWORK_ERROR.type,
+        code: errors.AMEX_NETWORK_ERROR.code,
+        message: 'A network error occurred when getting the American Express Checkout nonce profile.',
         details: {
           originalError: err
         }

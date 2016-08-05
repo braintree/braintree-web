@@ -17,7 +17,7 @@ describe('injectFrame', function () {
     var container = document.createElement('div');
     var result = injectFrame(frame, container);
 
-    expect(container.children[1]).to.be.an.instanceOf(HTMLDivElement);
+    expect(container.children[1]).to.be.an.instanceof(HTMLDivElement);
     expect(result[1].style.clear).to.equal('both');
     expect(container.children[1]).to.equal(result[1]);
   });

@@ -1,10 +1,15 @@
 'use strict';
-/** @module braintree-web/unionpay */
+/**
+ * @module braintree-web/unionpay
+ * @description This module allows you to accept UnionPay payments. *It is currently in beta and is subject to change.*
+ */
 
 var UnionPay = require('./shared/unionpay');
 var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
+var errors = require('./shared/errors');
+var sharedErrors = require('../errors');
 var VERSION = require('package.version');
 
 /**
@@ -28,8 +33,9 @@ function create(options, callback) {
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'UnionPay creation requires a callback.'
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
+      message: 'create must include a callback function.'
     });
   }
 
@@ -37,7 +43,8 @@ function create(options, callback) {
 
   if (options.client == null) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating UnionPay.'
     }));
     return;
@@ -48,17 +55,15 @@ function create(options, callback) {
 
   if (clientVersion !== VERSION) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
       message: 'Client (version ' + clientVersion + ') and UnionPay (version ' + VERSION + ') components must be from the same SDK version.'
     }));
     return;
   }
 
   if (!config.gatewayConfiguration.unionPay || config.gatewayConfiguration.unionPay.enabled !== true) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'UnionPay is not enabled for this merchant.'
-    }));
+    callback(new BraintreeError(errors.UNIONPAY_NOT_ENABLED));
     return;
   }
 

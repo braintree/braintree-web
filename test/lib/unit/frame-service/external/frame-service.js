@@ -658,7 +658,8 @@ describe('FrameService', function () {
 
       expect(onCompleteCallbackStub).to.have.been.calledWith(sinon.match({
         type: BraintreeError.types.CUSTOMER,
-        message: constants.FRAME_CLOSED_ERROR_MESSAGE
+        code: 'FRAME_CLOSED',
+        message: 'Frame closed before tokenization could occur.'
       }));
 
       clock.restore();

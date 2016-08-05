@@ -26,7 +26,7 @@ describe('hostedFields', function () {
         }
       }, function (err, thingy) {
         expect(err).not.to.exist;
-        expect(thingy).to.be.an.instanceOf(HostedFields);
+        expect(thingy).to.be.an.instanceof(HostedFields);
 
         done();
       });
@@ -62,8 +62,9 @@ describe('hostedFields', function () {
         err = e;
       }
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
       expect(err.message).to.equal('create must include a callback function.');
     });
 

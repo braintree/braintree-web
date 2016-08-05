@@ -22,11 +22,11 @@ function remove(element) {
   element.className = className;
 }
 
-function toggle(element, clazz, adding) {
+function toggle(element, classname, adding) {
   if (adding) {
-    add(element, clazz);
+    add(element, classname);
   } else {
-    remove(element, clazz);
+    remove(element, classname);
   }
 }
 

@@ -8,9 +8,11 @@ var constants = require('../shared/constants.json');
 var Bus = require('../../lib/bus');
 var uuid = require('../../lib/uuid');
 var deferred = require('../../lib/deferred');
+var errors = require('../shared/errors');
 var events = require('../shared/events');
 var version = require('package.version');
 var iFramer = require('iframer');
+var sharedErrors = require('../../errors');
 
 var IFRAME_HEIGHT = 400;
 var IFRAME_WIDTH = 400;
@@ -98,11 +100,12 @@ function ThreeDSecure(options) {
  * });
  */
 ThreeDSecure.prototype.verifyCard = function (options, callback) {
-  var url, merchantErrorMsg, addFrame, removeFrame;
+  var url, addFrame, removeFrame, error, errorOption;
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'verifyCard must include a callback function.'
     });
   }
@@ -111,22 +114,27 @@ ThreeDSecure.prototype.verifyCard = function (options, callback) {
   callback = deferred(callback);
 
   if (this._verifyCardInProgress === true) {
-    merchantErrorMsg = 'Cannot call verifyCard while existing authentication is in progress.';
+    error = errors.AUTHENTICATION_IN_PROGRESS;
   } else if (!options.nonce) {
-    merchantErrorMsg = 'verifyCard options must include a nonce.';
+    errorOption = 'a nonce';
   } else if (!options.amount) {
-    merchantErrorMsg = 'verifyCard options must include an amount.';
+    errorOption = 'an amount';
   } else if (typeof options.addFrame !== 'function') {
-    merchantErrorMsg = 'verifyCard options must include an addFrame function.';
+    errorOption = 'an addFrame function';
   } else if (typeof options.removeFrame !== 'function') {
-    merchantErrorMsg = 'verifyCard options must include a removeFrame function.';
+    errorOption = 'a removeFrame function';
   }
 
-  if (merchantErrorMsg) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: merchantErrorMsg
-    }));
+  if (errorOption) {
+    error = {
+      type: errors.MISSING_VERIFY_CARD_OPTION.type,
+      code: errors.MISSING_VERIFY_CARD_OPTION.code,
+      message: 'verifyCard options must include ' + errorOption + '.'
+    };
+  }
+
+  if (error) {
+    callback(new BraintreeError(error));
     return;
   }
 
@@ -187,10 +195,7 @@ ThreeDSecure.prototype.cancelVerifyCard = function (callback) {
 
   if (typeof callback === 'function') {
     if (!this._lookupPaymentMethod) {
-      error = new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        message: 'No verification payload available.'
-      });
+      error = new BraintreeError(errors.NO_VERIFICATION_PAYLOAD);
     }
 
     callback(error, this._lookupPaymentMethod);
@@ -271,6 +276,7 @@ ThreeDSecure.prototype._handleAuthResponse = function (data, options) {
     } else {
       this._verifyCardCallback(new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
+        code: 'UNKNOWN_AUTH_RESPONSE',
         message: authResponse.error.message
       }));
     }

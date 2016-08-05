@@ -7,6 +7,7 @@ var Bus = require('../../lib/bus');
 var BraintreeError = require('../../lib/error');
 var composeUrl = require('./compose-url');
 var constants = require('../shared/constants');
+var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var uuid = require('../../lib/uuid');
 var findParentTags = require('../shared/find-parent-tags');
@@ -20,6 +21,7 @@ var VERSION = require('package.version');
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var deferred = require('../../lib/deferred');
+var sharedErrors = require('../../errors');
 var getCardTypes = require('credit-card-type');
 
 /**
@@ -224,7 +226,7 @@ var getCardTypes = require('credit-card-type');
  * });
  */
 
-function inputEventHandler(fields) {
+function createInputEventHandler(fields) {
   return function (eventData) {
     var field;
     var merchantPayload = eventData.merchantPayload;
@@ -239,12 +241,7 @@ function inputEventHandler(fields) {
 
     classlist.toggle(container, constants.externalClasses.FOCUSED, field.isFocused);
     classlist.toggle(container, constants.externalClasses.VALID, field.isValid);
-
-    if (field.isStrictlyValidating) {
-      classlist.toggle(container, constants.externalClasses.INVALID, !field.isValid);
-    } else {
-      classlist.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
-    }
+    classlist.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
 
     this._state = { // eslint-disable-line no-invalid-this
       cards: merchantPayload.cards,
@@ -270,7 +267,8 @@ function HostedFields(options) {
 
   if (!options.client) {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating Hosted Fields.'
     });
   }
@@ -278,14 +276,16 @@ function HostedFields(options) {
   clientVersion = options.client.getConfiguration().analyticsMetadata.sdkVersion;
   if (clientVersion !== VERSION) {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
       message: 'Client (version ' + clientVersion + ') and Hosted Fields (version ' + VERSION + ') components must be from the same SDK version.'
     });
   }
 
   if (!options.fields) {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.fields is required when instantiating Hosted Fields.'
     });
   }
@@ -318,7 +318,8 @@ function HostedFields(options) {
 
     if (!constants.whitelistedFields.hasOwnProperty(key)) {
       throw new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
+        type: errors.INVALID_FIELD_KEY.type,
+        code: errors.INVALID_FIELD_KEY.code,
         message: '"' + key + '" is not a valid field.'
       });
     }
@@ -329,8 +330,9 @@ function HostedFields(options) {
 
     if (!container) {
       throw new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        message: 'Selector does not reference a valid DOM node.',
+        type: errors.INVALID_FIELD_SELECTOR.type,
+        code: errors.INVALID_FIELD_SELECTOR.code,
+        message: errors.INVALID_FIELD_SELECTOR.message,
         details: {
           fieldSelector: field.selector,
           fieldKey: key
@@ -338,8 +340,9 @@ function HostedFields(options) {
       });
     } else if (container.querySelector('iframe[name^="braintree-"]')) {
       throw new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        message: 'Element already contains a Braintree iframe.',
+        type: errors.FIELD_DUPLICATE_IFRAME.type,
+        code: errors.FIELD_DUPLICATE_IFRAME.code,
+        message: errors.FIELD_DUPLICATE_IFRAME.message,
         details: {
           fieldSelector: field.selector,
           fieldKey: key
@@ -389,7 +392,7 @@ function HostedFields(options) {
 
   this._bus.on(
     events.INPUT_EVENT,
-    inputEventHandler(fields).bind(this)
+    createInputEventHandler(fields).bind(this)
   );
 
   this._destructor.registerFunctionForTeardown(function () {
@@ -477,9 +480,21 @@ HostedFields.prototype.teardown = function (callback) {
 /**
  * Tokenizes fields and returns a nonce payload.
  * @public
+ * @param {object} [options] All tokenization options for the Hosted Fields component.
+ * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
- * @example
+ * @example <caption>Tokenize a card</caption>
  * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
+ *   if (tokenizeErr) {
+ *     console.error(tokenizeErr);
+ *   } else {
+ *     console.log('Got nonce:', payload.nonce);
+ *   }
+ * });
+ * @example <caption>Tokenize and vault a card</caption>
+ * hostedFieldsInstance.tokenize({
+ *   vault: true
+ * }, function (tokenizeErr, payload) {
  *   if (tokenizeErr) {
  *     console.error(tokenizeErr);
  *   } else {
@@ -488,17 +503,107 @@ HostedFields.prototype.teardown = function (callback) {
  * });
  * @returns {void}
  */
-HostedFields.prototype.tokenize = function (callback) {
+HostedFields.prototype.tokenize = function (options, callback) {
+  if (!callback) {
+    callback = options;
+    options = {};
+  }
+
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
       message: 'tokenize must include a callback function.'
     });
   }
 
-  this._bus.emit(events.TOKENIZATION_REQUEST, function (response) {
+  this._bus.emit(events.TOKENIZATION_REQUEST, options, function (response) {
     callback.apply(null, response);
   });
+};
+
+/**
+ * Add a class to a {@link module:braintree-web/hosted-fields~field field}. Useful for updating field styles when events occur elsewhere in your checkout.
+ * @public
+ * @param {string} field The field you wish to add a class to. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {string} classname The class to be added.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the class is added successfully.
+ *
+ * @example
+ * hostedFieldsInstance.addClass('number', 'custom-class', function (addClassErr) {
+ *   if (addClassErr) {
+ *     console.error(addClassErr);
+ *   }
+ * });
+ * @returns {void}
+ */
+HostedFields.prototype.addClass = function (field, classname, callback) {
+  var err;
+
+  if (!whitelistedFields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: errors.INVALID_FIELD.type,
+      code: errors.INVALID_FIELD.code,
+      message: '"' + field + '" is not a valid field. You must use a valid field option when adding a class.'
+    });
+  } else if (!this._fields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: errors.FIELD_NOT_PRESENT.type,
+      code: errors.FIELD_NOT_PRESENT.code,
+      message: 'Cannot add class to "' + field + '" field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    this._bus.emit(events.ADD_CLASS, field, classname);
+  }
+
+  if (typeof callback === 'function') {
+    callback = deferred(callback);
+    callback(err);
+  }
+};
+
+/**
+ * Removes a class to a {@link module:braintree-web/hosted-fields~field field}. Useful for updating field styles when events occur elsewhere in your checkout.
+ * @public
+ * @param {string} field The field you wish to remove a class from. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {string} classname The class to be removed.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the class is removed successfully.
+ *
+ * @example
+ * hostedFieldsInstance.addClass('number', 'custom-class', function (addClassErr) {
+ *   if (addClassErr) {
+ *     console.error(addClassErr);
+ *     return;
+ *   }
+ *
+ *   // some time later...
+ *   hostedFieldsInstance.removeClass('number', 'custom-class');
+ * });
+ * @returns {void}
+ */
+HostedFields.prototype.removeClass = function (field, classname, callback) {
+  var err;
+
+  if (!whitelistedFields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: errors.INVALID_FIELD.type,
+      code: errors.INVALID_FIELD.code,
+      message: '"' + field + '" is not a valid field. You must use a valid field option when removing a class.'
+    });
+  } else if (!this._fields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: errors.FIELD_NOT_PRESENT.type,
+      code: errors.FIELD_NOT_PRESENT.code,
+      message: 'Cannot remove class from "' + field + '" field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    this._bus.emit(events.REMOVE_CLASS, field, classname);
+  }
+
+  if (typeof callback === 'function') {
+    callback = deferred(callback);
+    callback(err);
+  }
 };
 
 /**
@@ -534,12 +639,14 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
 
   if (!whitelistedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: errors.INVALID_FIELD.type,
+      code: errors.INVALID_FIELD.code,
       message: '"' + field + '" is not a valid field. You must use a valid field option when setting a placeholder.'
     });
   } else if (!this._fields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: errors.FIELD_NOT_PRESENT.type,
+      code: errors.FIELD_NOT_PRESENT.code,
       message: 'Cannot set placeholder for "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
@@ -575,12 +682,14 @@ HostedFields.prototype.clear = function (field, callback) {
 
   if (!whitelistedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: errors.INVALID_FIELD.type,
+      code: errors.INVALID_FIELD.code,
       message: '"' + field + '" is not a valid field. You must use a valid field option when clearing a field.'
     });
   } else if (!this._fields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: errors.FIELD_NOT_PRESENT.type,
+      code: errors.FIELD_NOT_PRESENT.code,
       message: 'Cannot clear "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {

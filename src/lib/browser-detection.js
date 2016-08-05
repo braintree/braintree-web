@@ -5,6 +5,11 @@ function isOperaMini(ua) {
   return ua.indexOf('Opera Mini') > -1;
 }
 
+function isAndroidFirefox(ua) {
+  ua = ua || global.navigator.userAgent;
+  return ua.indexOf('Android') > -1 && ua.indexOf('Firefox') > -1;
+}
+
 function getIEVersion(ua) {
   ua = ua || global.navigator.userAgent;
 
@@ -25,6 +30,7 @@ function isHTTPS(protocol) {
 
 module.exports = {
   isOperaMini: isOperaMini,
+  isAndroidFirefox: isAndroidFirefox,
   getIEVersion: getIEVersion,
   isHTTPS: isHTTPS
 };

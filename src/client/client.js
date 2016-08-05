@@ -5,6 +5,7 @@ var isWhitelistedDomain = require('../lib/is-whitelisted-domain');
 var BraintreeError = require('../lib/error');
 var addMetadata = require('../lib/add-metadata');
 var deferred = require('../lib/deferred');
+var errors = require('./errors');
 
 /**
  * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
@@ -33,10 +34,7 @@ function Client(configuration) {
   gatewayConfiguration = configuration.gatewayConfiguration;
 
   if (!gatewayConfiguration) {
-    throw new BraintreeError({
-      type: BraintreeError.types.INTERNAL,
-      message: 'Missing gatewayConfiguration.'
-    });
+    throw new BraintreeError(errors.MISSING_GATEWAY_CONFIGURATION);
   }
 
   [
@@ -46,8 +44,9 @@ function Client(configuration) {
   ].forEach(function (property) {
     if (property in gatewayConfiguration && !isWhitelistedDomain(gatewayConfiguration[property])) {
       throw new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        message: 'Invalid ' + property + '.'
+        type: errors.GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
+        code: errors.GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
+        message: property + ' property is on an invalid domain.'
       });
     }
   });
@@ -112,19 +111,20 @@ function Client(configuration) {
  * @returns {void}
  */
 Client.prototype.request = function (options, callback) {
-  var errorMsg;
+  var optionName;
 
   if (!options.method) {
-    errorMsg = 'options.method is required.';
+    optionName = 'options.method';
   } else if (!options.endpoint) {
-    errorMsg = 'options.endpoint is required.';
+    optionName = 'options.endpoint';
   }
 
-  if (errorMsg) {
+  if (optionName) {
     callback = deferred(callback);
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: errorMsg
+      type: errors.OPTION_REQUIRED.type,
+      code: errors.OPTION_REQUIRED.code,
+      message: optionName + ' is required when making a request.'
     }));
     return;
   }

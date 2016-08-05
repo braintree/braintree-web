@@ -45,8 +45,9 @@ describe('initializeBankFrame', function () {
         termUrl: 'https://malicious.domain.com'
       });
     } catch (err) {
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal(BraintreeError.types.INTERNAL);
+      expect(err.code).to.equal('TERM_URL_REQUIRES_BRAINTREE_DOMAIN');
       expect(err.message).to.equal('Term Url must be on a Braintree domain.');
 
       done();

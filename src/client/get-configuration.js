@@ -5,6 +5,7 @@ var request = require('./request');
 var uuid = require('../lib/uuid');
 var constants = require('../lib/constants');
 var createAuthorizationData = require('../lib/create-authorization-data');
+var errors = require('./errors');
 
 function getConfiguration(options, callback) {
   var configuration, authData, attrs, configUrl;
@@ -22,10 +23,7 @@ function getConfiguration(options, callback) {
   try {
     authData = createAuthorizationData(options.authorization);
   } catch (err) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'Authorization is invalid. Make sure your client token or tokenization key is valid.'
-    }));
+    callback(new BraintreeError(errors.INVALID_AUTHORIZATION));
     return;
   }
   attrs = authData.attrs;
@@ -41,8 +39,9 @@ function getConfiguration(options, callback) {
   }, function (err, response) {
     if (err) {
       callback(new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        message: 'Cannot contact the gateway at this time.',
+        type: errors.GATEWAY_NETWORK.type,
+        code: errors.GATEWAY_NETWORK.code,
+        message: errors.GATEWAY_NETWORK.message,
         details: err
       }));
       return;

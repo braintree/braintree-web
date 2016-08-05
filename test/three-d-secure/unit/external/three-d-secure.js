@@ -54,6 +54,7 @@ describe('ThreeDSecure', function () {
       } catch (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
+        expect(err.code).to.eql('CALLBACK_REQUIRED');
         expect(err.message).to.eql('verifyCard must include a callback function.');
 
         done();
@@ -104,6 +105,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
+        expect(err.code).to.eql('AUTHENTICATION_IN_PROGRESS');
         expect(err.message).to.eql('Cannot call verifyCard while existing authentication is in progress.');
 
         done();
@@ -169,6 +171,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
+        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include a nonce.');
 
         done();
@@ -185,6 +188,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
+        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include an amount.');
 
         done();
@@ -201,6 +205,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
+        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include an addFrame function.');
 
         done();
@@ -217,6 +222,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
+        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include a removeFrame function.');
 
         done();
@@ -331,7 +337,7 @@ describe('ThreeDSecure', function () {
           addFrame: function (err, iframe) {
             var url = parseUrl(iframe.src);
 
-            expect(iframe).to.be.an.instanceOf(HTMLIFrameElement);
+            expect(iframe).to.be.an.instanceof(HTMLIFrameElement);
             expect(iframe.width).to.equal('400');
             expect(iframe.height).to.equal('400');
             expect(url.host).to.equal('example.com');
@@ -591,7 +597,7 @@ describe('ThreeDSecure', function () {
           }, function (err, data) {
             expect(data).not.to.exist;
 
-            expect(err).to.be.an.instanceOf(BraintreeError);
+            expect(err).to.be.an.instanceof(BraintreeError);
             expect(err.type).to.eql(BraintreeError.types.UNKNOWN);
             expect(err.message).to.eql('an error');
 
@@ -625,8 +631,9 @@ describe('ThreeDSecure', function () {
 
     it('passes back an error if there is no _lookupPaymentMethod', function (done) {
       this.threeDS.cancelVerifyCard(function (err) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+        expect(err.code).to.eql('NO_VERIFICATION_PAYLOAD');
         expect(err.message).to.equal('No verification payload available.');
 
         done();
@@ -677,10 +684,17 @@ describe('ThreeDSecure', function () {
 
       threeDS.teardown(function () {
         methods(ThreeDSecure.prototype).forEach(function (method) {
-          expect(threeDS[method]).to.throw(BraintreeError, method + ' cannot be called after teardown.');
-        });
+          try {
+            threeDS[method]();
+          } catch (err) {
+            expect(err).to.be.an.instanceof(BraintreeError);
+            expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+            expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(err.message).to.equal(method + ' cannot be called after teardown.');
+          }
 
-        done();
+          done();
+        });
       });
     });
 

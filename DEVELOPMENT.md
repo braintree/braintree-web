@@ -41,13 +41,13 @@ Here's an example `.env` file:
 BRAINTREE_JS_HOST=development.gateway.hostname
 BRAINTREE_JS_HOSTED_DEST=/absolute/path/to/assets/directory
 BRAINTREE_JS_BOWER_DEST=/absolute/path/to/braintree-web-bower/repository
-BRAINTREE_SOURCE_DEST=/absolute/path/to/braintree-web/repository
+BRAINTREE_JS_SOURCE_DEST=/absolute/path/to/braintree-web/repository
 ```
 
 * __BRAINTREE_JS_HOST__ identifies the host where a development gateway is running.
-* __BRAINTREE_HOSTED_DEST__ identifies where to copy `dist/hosted` assets for release.
-* __BRAINTREE_BOWER_DEST__ identifies where to copy `dist/published` assets for bower release.
-* __BRAINTREE_SOURCE_DEST__ identifies where to patch code deltas as a source release.
+* __BRAINTREE_JS_HOSTED_DEST__ identifies where to copy `dist/hosted` assets for release.
+* __BRAINTREE_JS_BOWER_DEST__ identifies where to copy `dist/published` assets for bower release.
+* __BRAINTREE_JS_SOURCE_DEST__ identifies where to patch code deltas as a source release.
 
 ## Building
 

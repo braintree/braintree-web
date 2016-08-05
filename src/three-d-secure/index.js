@@ -6,6 +6,8 @@ var browserDetection = require('../lib/browser-detection');
 var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
+var errors = require('./shared/errors');
+var sharedErrors = require('../errors');
 var VERSION = require('package.version');
 
 /**
@@ -21,12 +23,13 @@ var VERSION = require('package.version');
  * }, callback);
  */
 function create(options, callback) {
-  var config, threeDSecure, merchantErrorMessage, clientVersion;
+  var config, threeDSecure, error, clientVersion;
 
   if (typeof callback !== 'function') {
     throw new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: 'threeDSecure.create must include a callback function.'
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
+      message: 'create must include a callback function.'
     });
   }
 
@@ -34,7 +37,8 @@ function create(options, callback) {
 
   if (options.client == null) {
     callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating 3D Secure.'
     }));
     return;
@@ -44,18 +48,19 @@ function create(options, callback) {
   clientVersion = config.analyticsMetadata.sdkVersion;
 
   if (!config.gatewayConfiguration.threeDSecureEnabled) {
-    merchantErrorMessage = '3D Secure is not enabled for this merchant.';
+    error = errors.THREEDS_NOT_ENABLED;
   } else if (config.analyticsMetadata.sdkVersion !== VERSION) {
-    merchantErrorMessage = 'Client (version ' + clientVersion + ') and 3D Secure (version ' + VERSION + ') components must be from the same SDK version.';
+    error = {
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
+      message: 'Client (version ' + clientVersion + ') and 3D Secure (version ' + VERSION + ') components must be from the same SDK version.'
+    };
   } else if (!browserDetection.isHTTPS()) {
-    merchantErrorMessage = '3D Secure requires HTTPS.';
+    error = errors.THREEDS_HTTPS_REQUIRED;
   }
 
-  if (merchantErrorMessage) {
-    callback(new BraintreeError({
-      type: BraintreeError.types.MERCHANT,
-      message: merchantErrorMessage
-    }));
+  if (error) {
+    callback(new BraintreeError(error));
     return;
   }
 

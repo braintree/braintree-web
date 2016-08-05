@@ -44,7 +44,6 @@ CreditCardForm.prototype.resetAttributes = function () {
       isFocused: false,
       isValid: false,
       isPotentiallyValid: true,
-      isStrictlyValidating: false,
       isEmpty: true
     };
     return result;
@@ -80,7 +79,6 @@ CreditCardForm.prototype.emitEvent = function (fieldKey, eventType) {
       emittedBy: fieldKey,
       fields: fields
     },
-    isStrictlyValidating: this.get(fieldKey).isStrictlyValidating,
     type: eventType
   });
 };
@@ -137,8 +135,6 @@ CreditCardForm.prototype._validateField = function (fieldKey) {
     this.set(fieldKey + '.isValid', validationResult.isValid);
     this.set(fieldKey + '.isPotentiallyValid', validationResult.isPotentiallyValid);
   }
-
-  this.set(fieldKey + '.isStrictlyValidating', false);
 };
 
 CreditCardForm.prototype._validateCvv = function (value) {
@@ -204,13 +200,6 @@ CreditCardForm.prototype.isEmpty = function () {
 CreditCardForm.prototype.invalidFieldKeys = function () {
   return this._fieldKeys.filter(function (key) {
     return !this.get(key).isValid;
-  }.bind(this));
-};
-
-CreditCardForm.prototype.strictValidate = function () {
-  this._fieldKeys.forEach(function (key) {
-    this.set(key + '.isStrictlyValidating', true);
-    this.emitEvent(key, externalEvents.VALIDITY_CHANGE);
   }.bind(this));
 };
 

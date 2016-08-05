@@ -2,11 +2,12 @@
 
 var BraintreeError = require('../../lib/error');
 var Bus = require('../../lib/bus');
-var getHostedFieldsCardForm = require('./get-hosted-fields-cardform');
 var Client = require('../../client/client');
-var UnionPay = require('../shared/unionpay');
 var constants = require('../shared/constants');
+var errors = require('../shared/errors');
 var events = constants.events;
+var getHostedFieldsCardForm = require('./get-hosted-fields-cardform');
+var UnionPay = require('../shared/unionpay');
 
 function create() {
   global.bus = new Bus({
@@ -39,10 +40,7 @@ function initialize(clientConfiguration) {
       });
     } else {
       reply({
-        err: new BraintreeError({
-          type: BraintreeError.types.MERCHANT,
-          message: constants.NO_HOSTED_FIELDS_ERROR_MESSAGE
-        })
+        err: new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_REQUIRED)
       });
     }
   });
@@ -72,10 +70,7 @@ function initialize(clientConfiguration) {
       });
     } else {
       reply({
-        err: new BraintreeError({
-          type: BraintreeError.types.MERCHANT,
-          message: constants.NO_HOSTED_FIELDS_ERROR_MESSAGE
-        })
+        err: new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_REQUIRED)
       });
     }
   });
@@ -104,10 +99,7 @@ function initialize(clientConfiguration) {
       });
     } else {
       reply({
-        err: new BraintreeError({
-          type: BraintreeError.types.MERCHANT,
-          message: constants.NO_HOSTED_FIELDS_ERROR_MESSAGE
-        })
+        err: new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_REQUIRED)
       });
     }
   });

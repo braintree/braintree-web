@@ -1,11 +1,11 @@
 'use strict';
 
 var frameService = require('../../../../src/lib/frame-service/external');
+var frameServiceErrors = require('../../../../src/lib/frame-service/shared/errors');
 var VERSION = require('../../../../package.json').version;
 var PayPal = require('../../../../src/paypal/external/paypal');
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
-var constants = require('../../../../src/paypal/shared/constants');
 var BraintreeError = require('../../../../src/lib/error');
 
 function noop() {}
@@ -358,6 +358,26 @@ describe('PayPal', function () {
       };
     });
 
+    it('calls the callback with error if no flow is provided', function (done) {
+      PayPal.prototype._navigateFrameToAuth.call(this.context, {}, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+        done();
+      });
+    });
+
+    it('calls the callback with error if invalid flow is provided', function (done) {
+      PayPal.prototype._navigateFrameToAuth.call(this.context, {flow: 'garbage'}, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+        done();
+      });
+    });
+
     it('makes an api request for a paypal payment resource', function () {
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
@@ -383,6 +403,7 @@ describe('PayPal', function () {
       var callbackSpy = this.sandbox.stub();
       var fakeError = new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
+        code: 'YOU_DONE_GOOFED',
         message: 'you done goofed'
       });
 
@@ -399,6 +420,7 @@ describe('PayPal', function () {
       var callbackSpy = this.sandbox.stub();
       var fakeError = new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
+        code: 'YOU_DONE_GOOFED',
         message: 'you done goofed'
       });
 
@@ -423,7 +445,8 @@ describe('PayPal', function () {
 
       expect(callbackSpy).to.have.been.calledWith(sinon.match({
         type: BraintreeError.types.NETWORK,
-        message: constants.AUTH_INIT_ERROR_MESSAGE,
+        code: 'PAYPAL_FLOW_FAILED',
+        message: 'Could not initialize PayPal flow.',
         details: fakeError
       }));
     });
@@ -533,7 +556,14 @@ describe('PayPal', function () {
       pp._initialize(function () {
         pp.teardown(function () {
           methods(PayPal.prototype).forEach(function (method) {
-            expect(pp[method]).to.throw(BraintreeError, method + ' cannot be called after teardown');
+            try {
+              pp[method]();
+            } catch (err) {
+              expect(err).to.be.an.instanceof(BraintreeError);
+              expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+              expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+              expect(err.message).to.equal(method + ' cannot be called after teardown.');
+            }
           });
 
           done();
@@ -563,8 +593,9 @@ describe('PayPal', function () {
 
       PayPal.prototype.tokenize.call(this.context, {}, function (err, data) {
         expect(data).not.to.exist;
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('TOKENIZATION_REQUEST_ACTIVE');
         expect(err.message).to.equal('Another tokenization request is active.');
 
         done();
@@ -580,8 +611,9 @@ describe('PayPal', function () {
         err = e;
       }
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
       expect(err.message).to.equal('tokenize must include a callback function.');
     });
 
@@ -676,9 +708,24 @@ describe('PayPal', function () {
     it('calls analytics when the frame is closed by user', function () {
       var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.callback);
 
-      wrapped({message: constants.FRAME_CLOSED_ERROR_MESSAGE});
+      wrapped(frameServiceErrors.FRAME_CLOSED);
 
-      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'web.paypal.tokenization.closed.by-user');
+      expect(analytics.sendEvent).to.be.called; // With(this.context._client, 'web.paypal.tokenization.closed.by-user');
+    });
+
+    it('calls the callback with an error', function () {
+      var err;
+      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.callback);
+
+      wrapped(frameServiceErrors.FRAME_CLOSED);
+
+      err = this.callback.getCall(0).args[0];
+
+      expect(this.callback).to.be.calledOnce;
+      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err.type).to.equal('CUSTOMER');
+      expect(err.message).to.equal('Frame closed before tokenization could occur.');
+      expect(err.details).not.to.exist;
     });
   });
 
@@ -716,20 +763,20 @@ describe('PayPal', function () {
       expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'web.paypal.tokenization.failed');
     });
 
-    it('calls callback with Braintree error if there was a problem', function () {
+    it('calls callback with Braintree error if there was a problem', function (done) {
       var fakeError = {};
-      var callbackSpy = this.sandbox.stub();
 
       this.context._client.request = function (stuff, callback) {
         callback(fakeError);
       };
-      PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, callbackSpy);
 
-      expect(callbackSpy).to.have.been.calledWith({
-        name: 'BraintreeError',
-        type: BraintreeError.types.NETWORK,
-        message: 'Could not tokenize user\'s PayPal account.',
-        details: fakeError
+      PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.NETWORK);
+        expect(err.code).to.equal('ACCOUNT_TOKENIZATION_FAILED');
+        expect(err.message).to.equal('Could not tokenize user\'s PayPal account.');
+        expect(err.details).to.equal(fakeError);
+        done();
       });
     });
 

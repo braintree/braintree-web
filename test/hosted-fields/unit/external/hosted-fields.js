@@ -2,7 +2,8 @@
 
 var Bus = require('../../../../src/lib/bus');
 var HostedFields = require('../../../../src/hosted-fields/external/hosted-fields');
-var events = require('../../../../src/hosted-fields/shared/constants').events;
+var constants = require('../../../../src/hosted-fields/shared/constants');
+var events = constants.events;
 var Destructor = require('../../../../src/lib/destructor');
 var EventEmitter = require('../../../../src/lib/event-emitter');
 var BraintreeError = require('../../../../src/lib/error');
@@ -27,19 +28,19 @@ describe('HostedFields', function () {
     it('inherits from EventEmitter', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      expect(instance).to.be.an.instanceOf(EventEmitter);
+      expect(instance).to.be.an.instanceof(EventEmitter);
     });
 
     it('creates a Destructor instance', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      expect(instance._destructor).to.be.an.instanceOf(Destructor);
+      expect(instance._destructor).to.be.an.instanceof(Destructor);
     });
 
     it('creates a bus instance', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      expect(instance._bus).to.be.an.instanceOf(Bus);
+      expect(instance._bus).to.be.an.instanceof(Bus);
     });
 
     it('sends an analytics event', function () {
@@ -77,8 +78,9 @@ describe('HostedFields', function () {
           err = e;
         }
 
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
         expect(err.message).to.equal('options.client is required when instantiating Hosted Fields.');
         expect(err.details).not.to.exist;
       });
@@ -99,8 +101,9 @@ describe('HostedFields', function () {
           err = e;
         }
 
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
         expect(err.message).to.equal('Client (version 1.2.3) and Hosted Fields (version ' + version + ') components must be from the same SDK version.');
         expect(err.details).not.to.exist;
       });
@@ -114,8 +117,9 @@ describe('HostedFields', function () {
           new HostedFields(configuration);  // eslint-disable-line no-new
           throw new Error('we should never reach this point');
         } catch (err) {
-          expect(err).to.be.an.instanceOf(BraintreeError);
+          expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
           expect(err.message).to.equal('options.fields is required when instantiating Hosted Fields.');
           expect(err.details).not.to.exist;
         }
@@ -130,8 +134,9 @@ describe('HostedFields', function () {
           new HostedFields(configuration);  // eslint-disable-line no-new
           throw new Error('we should never reach this point');
         } catch (err) {
-          expect(err).to.be.an.instanceOf(BraintreeError);
+          expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('INVALID_FIELD_KEY');
           expect(err.message).to.equal('"goober" is not a valid field.');
           expect(err.details).not.to.exist;
         }
@@ -148,8 +153,9 @@ describe('HostedFields', function () {
           new HostedFields(configuration);  // eslint-disable-line no-new
           throw new Error('we should never reach this point');
         } catch (err) {
-          expect(err).to.be.an.instanceOf(BraintreeError);
+          expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('INVALID_FIELD_SELECTOR');
           expect(err.message).to.equal('Selector does not reference a valid DOM node.');
           expect(err.details).to.deep.equal({
             fieldSelector: '#foo',
@@ -177,8 +183,9 @@ describe('HostedFields', function () {
           new HostedFields(configuration);  // eslint-disable-line no-new
           throw new Error('we should never reach this point');
         } catch (err) {
-          expect(err).to.be.an.instanceOf(BraintreeError);
+          expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('FIELD_DUPLICATE_IFRAME');
           expect(err.message).to.equal('Element already contains a Braintree iframe.');
           expect(err.details).to.deep.equal({
             fieldSelector: '#foo',
@@ -357,23 +364,152 @@ describe('HostedFields', function () {
     });
   });
 
+  describe('input event handler', function () {
+    beforeEach(function () {
+      var configuration = this.defaultConfiguration;
+
+      this.fakeContainer = document.createElement('div');
+      this.fakeContainer.id = 'fakenumbercontainer';
+      document.body.appendChild(this.fakeContainer);
+      configuration.fields.number = {
+        selector: '#' + this.fakeContainer.id
+      };
+
+      this.instance = new HostedFields(configuration);
+
+      this.sandbox.stub(this.instance, '_emit');
+
+      this.inputEventHandler = this.instance._bus.on.args.reduce(function (result, args) {
+        if (args[0] === events.INPUT_EVENT) {
+          return args[1];
+        }
+        return result;
+      });
+
+      this.eventData = {
+        type: 'foo',
+        merchantPayload: {
+          emittedBy: 'number',
+          cards: [],
+          fields: {
+            number: {
+              isFocused: false,
+              isValid: false,
+              isPotentiallyValid: true
+            }
+          }
+        }
+      };
+    });
+
+    afterEach(function () {
+      document.body.removeChild(this.fakeContainer);
+    });
+
+    it('applies no focused class if the field is not focused', function () {
+      this.eventData.merchantPayload.fields.number.isFocused = false;
+      this.inputEventHandler(this.eventData);
+
+      expect(this.fakeContainer.className).not.to.contain('braintree-hosted-fields-focused');
+    });
+
+    it('applies the focused class if the field is focused', function () {
+      this.eventData.merchantPayload.fields.number.isFocused = true;
+      this.inputEventHandler(this.eventData);
+
+      expect(this.fakeContainer.className).to.contain('braintree-hosted-fields-focused');
+    });
+
+    it('applies no valid class if field is invalid', function () {
+      this.eventData.merchantPayload.fields.number.isValid = false;
+      this.inputEventHandler(this.eventData);
+
+      expect(this.fakeContainer.className).not.to.contain('braintree-hosted-fields-valid');
+    });
+
+    it('applies the valid class if field is valid', function () {
+      this.eventData.merchantPayload.fields.number.isValid = true;
+      this.inputEventHandler(this.eventData);
+
+      expect(this.fakeContainer.className).to.contain('braintree-hosted-fields-valid');
+    });
+
+    it('applies the invalid class if the field is not potentially valid', function () {
+      this.eventData.merchantPayload.fields.number.isPotentiallyValid = false;
+      this.inputEventHandler(this.eventData);
+
+      expect(this.fakeContainer.className).to.contain('braintree-hosted-fields-invalid');
+    });
+
+    it('applies no invalid class if the field is potentially valid', function () {
+      this.eventData.merchantPayload.fields.number.isPotentiallyValid = true;
+      this.inputEventHandler(this.eventData);
+
+      expect(this.fakeContainer.className).not.to.contain('braintree-hosted-fields-invalid');
+    });
+
+    it('sets internal state based on merchant payload', function () {
+      this.inputEventHandler(this.eventData);
+
+      expect(this.instance._state.cards).to.equal(this.eventData.merchantPayload.cards);
+      expect(this.instance._state.fields).to.equal(this.eventData.merchantPayload.fields);
+    });
+
+    it('calls emit with the type and merchant payload', function () {
+      this.inputEventHandler(this.eventData);
+
+      expect(this.instance._emit).to.have.been.calledOnce;
+      expect(this.instance._emit).to.have.been.calledWith('foo', this.eventData.merchantPayload);
+    });
+  });
+
   describe('tokenize', function () {
-    it('emits TOKENIZATION_REQUEST', function () {
+    it('does not require options', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance._bus.emit.yields();
+
+      instance.tokenize(function (err) {
+        expect(err).to.not.exist;
+        done();
+      });
+    });
+
+    it('emits TOKENIZATION_REQUEST with empty options', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.tokenize(this.sandbox.stub());
-      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, sinon.match.func);
+      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, {}, sinon.match.func);
     });
 
-    it('calls the callback', function () {
+    it('emits TOKENIZATION_REQUEST with options', function () {
       var instance = new HostedFields(this.defaultConfiguration);
-      var callback = this.sandbox.stub();
+      var options = {foo: 'bar'};
+
+      instance.tokenize(options, this.sandbox.stub());
+      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, options, sinon.match.func);
+    });
+
+    it('calls the callback when options are not provided', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance._bus.emit.yields(['foo']);
 
-      instance.tokenize(callback);
+      instance.tokenize(function (data) {
+        expect(data).to.equal('foo');
+        done();
+      });
+    });
 
-      expect(callback).to.have.been.calledWith('foo');
+    it('calls the callback when options are provided', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance._bus.emit.yields(['foo']);
+
+      instance.tokenize({foo: 'bar'}, function (data) {
+        expect(data).to.equal('foo');
+        done();
+      });
     });
 
     it('requires a callback', function () {
@@ -388,8 +524,9 @@ describe('HostedFields', function () {
         err = e;
       }
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
       expect(err.message).to.equal('tokenize must include a callback function.');
     });
   });
@@ -461,13 +598,118 @@ describe('HostedFields', function () {
       instance.teardown(function () {
         methods(HostedFields.prototype).concat(methods(EventEmitter.prototype))
         .forEach(function (method) {
-          expect(instance[method]).to.throw(BraintreeError, method + ' cannot be called after teardown');
+          try {
+            instance[method]();
+          } catch (err) {
+            expect(err).to.be.an.instanceof(BraintreeError);
+            expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+            expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(err.message).to.equal(method + ' cannot be called after teardown.');
+          }
         });
 
         document.body.removeChild(numberNode);
 
         done();
       });
+    });
+  });
+
+  describe('addClass', function () {
+    beforeEach(function () {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+
+      this.instance = new HostedFields(configuration);
+    });
+
+    it('emits ADD_CLASS event', function () {
+      this.instance.addClass('number', 'my-class');
+      expect(this.instance._bus.emit).to.be.calledWith(events.ADD_CLASS, 'number', 'my-class');
+    });
+
+    it('calls callback if provided', function (done) {
+      this.instance.addClass('number', 'my-class', done);
+    });
+
+    it('calls errback when given non-whitelisted field', function (done) {
+      this.instance.addClass('rogue-field', 'my-class', function (err) {
+        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INVALID_FIELD');
+        expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when adding a class.');
+        expect(err.details).not.to.exist;
+        expect(this.instance._bus.emit).to.not.be.calledWith(events.ADD_CLASS);
+        done();
+      }.bind(this));
+    });
+
+    it('calls errback when given field not supplied by merchant', function (done) {
+      this.instance.addClass('cvv', 'my-class', function (err) {
+        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('FIELD_NOT_PRESENT');
+        expect(err.message).to.equal('Cannot add class to "cvv" field because it is not part of the current Hosted Fields options.');
+        expect(err.details).not.to.exist;
+        expect(this.instance._bus.emit).to.not.be.calledWith(events.ADD_CLASS);
+        done();
+      }.bind(this));
+    });
+  });
+
+  describe('removeClass', function () {
+    beforeEach(function () {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+
+      this.instance = new HostedFields(configuration);
+    });
+
+    it('emits REMOVE_CLASS event', function () {
+      this.instance.removeClass('number', 'my-class');
+      expect(this.instance._bus.emit).to.be.calledWith(events.REMOVE_CLASS, 'number', 'my-class');
+    });
+
+    it('calls callback if provided', function (done) {
+      this.instance.removeClass('number', 'my-class', done);
+    });
+
+    it('calls errback when given non-whitelisted field', function (done) {
+      this.instance.removeClass('rogue-field', 'my-class', function (err) {
+        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INVALID_FIELD');
+        expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when removing a class.');
+        expect(err.details).not.to.exist;
+        expect(this.instance._bus.emit).to.not.be.calledWith(events.REMOVE_CLASS);
+        done();
+      }.bind(this));
+    });
+
+    it('calls errback when given field not supplied by merchant', function (done) {
+      this.instance.removeClass('cvv', 'my-class', function (err) {
+        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('FIELD_NOT_PRESENT');
+        expect(err.message).to.equal('Cannot remove class from "cvv" field because it is not part of the current Hosted Fields options.');
+        expect(err.details).not.to.exist;
+        expect(this.instance._bus.emit).to.not.be.calledWith(events.REMOVE_CLASS);
+        done();
+      }.bind(this));
     });
   });
 
@@ -509,8 +751,9 @@ describe('HostedFields', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('rogue-field', 'rogue-placeholder', function (err) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INVALID_FIELD');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting a placeholder.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, sinon.match.string, sinon.match.string);
@@ -522,8 +765,9 @@ describe('HostedFields', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('cvv', 'great-placeholder', function (err) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot set placeholder for "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, sinon.match.string, sinon.match.string);
@@ -570,8 +814,9 @@ describe('HostedFields', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.clear('rogue-field', function (err) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INVALID_FIELD');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when clearing a field.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, sinon.match.string);
@@ -583,8 +828,9 @@ describe('HostedFields', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.clear('cvv', function (err) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot clear "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, sinon.match.string);

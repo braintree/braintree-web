@@ -8,6 +8,7 @@ MAGENTA="$(tput setaf 5)"
 CYAN="$(tput setaf 6)"
 RESET="$(tput sgr0)"
 YES="^(y|yes|yas)$"
+SOURCE_IGNORES="jenkins_grove.groovy Drakefile Dockerfile"
 
 dotenv() {
   if [ ! -f .env ]; then
@@ -104,17 +105,16 @@ confirm_version() {
   fi
 }
 
+join() {
+  # IFS is used as the separator for $* printing
+  local IFS="$1"
+  shift
+  echo "$*"
+}
+
 release_source() {
   set +e
-  echo -n "What was the last source release tag? "
-  read tag
-
-  if [ -z "$tag" ]; then
-    >&2 echo -e "${RED}A tag is required. Aborting...$RESET"
-    exit 1
-  fi
-
-  git diff ${tag}.. | git -C "$BRAINTREE_JS_SOURCE_DEST" apply -
+  git ls-files | egrep -v "$(join '|' $SOURCE_IGNORES)" | xargs cp --parents -t "$BRAINTREE_JS_SOURCE_DEST"
   echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
   exit 0
   set -e

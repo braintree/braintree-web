@@ -7,46 +7,73 @@ var BraintreeError = require('../../../src/lib/error');
 
 describe('Client', function () {
   describe('bad instantiation', function () {
-    it('throws an error when instantiated with no arguments', function () {
-      expect(function () {
+    it('throws an error when instantiated with no arguments', function (done) {
+      try {
         new Client(); // eslint-disable-line no-new
-      }).to.throw(BraintreeError);
+      } catch (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        done();
+      }
     });
 
-    it('throws an error when instantiated with no gatewayConfiguration', function () {
-      expect(function () {
-        new Client({}); // eslint-disable-line no-new
-      }).to.throw(BraintreeError, 'Missing gatewayConfiguration');
+    it('throws an error when instantiated with no gatewayConfiguration', function (done) {
+      try {
+        new Client(); // eslint-disable-line no-new
+      } catch (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.INTERNAL);
+        expect(err.code).to.equal('MISSING_GATEWAY_CONFIGURATION');
+        expect(err.message).to.equal('Missing gatewayConfiguration.');
+        done();
+      }
     });
 
-    it('throws an error when instantiated with invalid assetsUrl', function () {
-      expect(function () {
+    it('throws an error when instantiated with invalid assetsUrl', function (done) {
+      try {
         new Client({ // eslint-disable-line no-new
           gatewayConfiguration: {
             assetsUrl: 'http://example.com'
           }
         });
-      }).to.throw(BraintreeError, 'Invalid assetsUrl');
+      } catch (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+        expect(err.code).to.equal('GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.message).to.equal('assetsUrl property is on an invalid domain.');
+        done();
+      }
     });
 
-    it('throws an error when instantiated with invalid clientApiUrl', function () {
-      expect(function () {
+    it('throws an error when instantiated with invalid clientApiUrl', function (done) {
+      try {
         new Client({ // eslint-disable-line no-new
           gatewayConfiguration: {
             clientApiUrl: 'http://example.com'
           }
         });
-      }).to.throw(BraintreeError, 'Invalid clientApiUrl');
+      } catch (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+        expect(err.code).to.equal('GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.message).to.equal('clientApiUrl property is on an invalid domain.');
+        done();
+      }
     });
 
-    it('throws an error when instantiated with invalid configUrl', function () {
-      expect(function () {
+    it('throws an error when instantiated with invalid configUrl', function (done) {
+      try {
         new Client({ // eslint-disable-line no-new
           gatewayConfiguration: {
             configUrl: 'http://example.com'
           }
         });
-      }).to.throw(BraintreeError, 'Invalid configUrl');
+      } catch (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+        expect(err.code).to.equal('GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.message).to.equal('configUrl property is on an invalid domain.');
+        done();
+      }
     });
   });
 
@@ -88,9 +115,10 @@ describe('Client', function () {
       client.request({
         endpoint: 'payment_methods'
       }, function (err, data) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.message).to.equal('options.method is required.');
+        expect(err.code).to.equal('OPTION_REQUIRED');
+        expect(err.message).to.equal('options.method is required when making a request.');
         expect(data).not.to.exist;
 
         done();
@@ -103,9 +131,10 @@ describe('Client', function () {
       client.request({
         method: 'get'
       }, function (err, data) {
-        expect(err).to.be.an.instanceOf(BraintreeError);
+        expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.message).to.equal('options.endpoint is required.');
+        expect(err.code).to.equal('OPTION_REQUIRED');
+        expect(err.message).to.equal('options.endpoint is required when making a request.');
         expect(data).not.to.exist;
 
         done();

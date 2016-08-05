@@ -3,6 +3,7 @@
 var Bus = require('../../lib/bus');
 var isWhitelistedDomain = require('../../lib/is-whitelisted-domain');
 var BraintreeError = require('../../lib/error');
+var errors = require('../shared/errors');
 
 module.exports = function () {
   var bus = new Bus({
@@ -18,10 +19,7 @@ function handleConfiguration(configuration) {
   var form = document.createElement('form');
 
   if (!isWhitelistedDomain(configuration.termUrl)) {
-    throw new BraintreeError({
-      type: BraintreeError.types.INTERNAL,
-      message: 'Term Url must be on a Braintree domain.'
-    });
+    throw new BraintreeError(errors.TERM_URL_REQUIRES_BRAINTREE_DOMAIN);
   }
 
   form.action = configuration.acsUrl;

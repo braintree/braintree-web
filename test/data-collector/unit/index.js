@@ -33,8 +33,9 @@ describe('dataCollector', function () {
       err = e;
     }
 
-    expect(err).to.be.an.instanceOf(BraintreeError);
+    expect(err).to.be.an.instanceof(BraintreeError);
     expect(err.message).to.equal('create must include a callback function.');
+    expect(err.code).to.equal('CALLBACK_REQUIRED');
     expect(err.type).to.equal('MERCHANT');
   });
 
@@ -42,8 +43,9 @@ describe('dataCollector', function () {
     dataCollector.create({kount: true}, function (err, actual) {
       expect(actual).not.to.exist;
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('options.client is required when instantiating Data Collector.');
+      expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
       expect(err.type).to.equal('MERCHANT');
 
       done();
@@ -59,8 +61,9 @@ describe('dataCollector', function () {
     }, function (err, actual) {
       expect(actual).not.to.exist;
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
       expect(err.message).to.equal('Client (version 1.2.3) and Data Collector (version ' + version + ') components must be from the same SDK version.');
 
       done();
@@ -72,8 +75,9 @@ describe('dataCollector', function () {
     dataCollector.create({client: this.client, paypal: true}, function (err, actual) {
       expect(actual).not.to.exist;
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('PayPal is not enabled for this merchant.');
+      expect(err.code).to.equal('PAYPAL_NOT_ENABLED');
       expect(err.type).to.equal('MERCHANT');
 
       done();
@@ -86,8 +90,9 @@ describe('dataCollector', function () {
     dataCollector.create({client: this.client, kount: true}, function (err, actual) {
       expect(actual).not.to.exist;
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('Kount is not enabled for this merchant.');
+      expect(err.code).to.equal('KOUNT_NOT_ENABLED');
       expect(err.type).to.equal('MERCHANT');
 
       done();
@@ -98,8 +103,9 @@ describe('dataCollector', function () {
     dataCollector.create({client: this.client}, function (err, actual) {
       expect(actual).not.to.exist;
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('Data Collector must be created with Kount and/or PayPal.');
+      expect(err.code).to.equal('REQUIRES_CREATE_OPTIONS');
       expect(err.type).to.equal('MERCHANT');
 
       done();
@@ -115,9 +121,10 @@ describe('dataCollector', function () {
     }, function (err, actual) {
       expect(actual).not.to.exist;
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('foo boo');
       expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('KOUNT_ERROR');
 
       done();
     });
@@ -331,6 +338,8 @@ describe('dataCollector', function () {
     });
 
     it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var error;
+
       kount.setup.returns({
         deviceData: {},
         teardown: function () {}
@@ -347,7 +356,16 @@ describe('dataCollector', function () {
       }, function (err, data) {
         data.teardown(function () {
           methods(data).forEach(function (method) {
-            expect(data[method]).to.throw(BraintreeError, method + ' cannot be called after teardown');
+            try {
+              data[method]();
+            } catch (e) {
+              error = e;
+            }
+
+            expect(error).to.be.an.instanceof(BraintreeError);
+            expect(error.type).to.equal('MERCHANT');
+            expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(error.message).to.equal(method + ' cannot be called after teardown.');
           });
 
           done();

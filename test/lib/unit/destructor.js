@@ -1,6 +1,6 @@
 'use strict';
 
-var async = require('async');
+var parallel = require('async/parallel');
 var Destructor = require('../../../src/lib/destructor');
 
 describe('Destructor', function () {
@@ -79,7 +79,7 @@ describe('Destructor', function () {
       ];
 
       destructor.teardown(function (err) {
-        expect(err).to.be.an.instanceOf(Error);
+        expect(err).to.be.an.instanceof(Error);
       });
     });
 
@@ -90,7 +90,7 @@ describe('Destructor', function () {
         setTimeout(cb, 10);
       });
 
-      async.parallel([
+      parallel([
         function (next) {
           destructor.teardown(function (err) {
             expect(err).to.equal(null);
