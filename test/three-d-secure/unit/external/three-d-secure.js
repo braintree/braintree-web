@@ -105,7 +105,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
-        expect(err.code).to.eql('AUTHENTICATION_IN_PROGRESS');
+        expect(err.code).to.eql('THREEDS_AUTHENTICATION_IN_PROGRESS');
         expect(err.message).to.eql('Cannot call verifyCard while existing authentication is in progress.');
 
         done();
@@ -171,7 +171,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
-        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
+        expect(err.code).to.eql('THREEDS_MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include a nonce.');
 
         done();
@@ -188,7 +188,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
-        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
+        expect(err.code).to.eql('THREEDS_MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include an amount.');
 
         done();
@@ -205,7 +205,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
-        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
+        expect(err.code).to.eql('THREEDS_MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include an addFrame function.');
 
         done();
@@ -222,7 +222,7 @@ describe('ThreeDSecure', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.eql('MERCHANT');
-        expect(err.code).to.eql('MISSING_VERIFY_CARD_OPTION');
+        expect(err.code).to.eql('THREEDS_MISSING_VERIFY_CARD_OPTION');
         expect(err.message).to.eql('verifyCard options must include a removeFrame function.');
 
         done();
@@ -633,7 +633,7 @@ describe('ThreeDSecure', function () {
       this.threeDS.cancelVerifyCard(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.eql('NO_VERIFICATION_PAYLOAD');
+        expect(err.code).to.eql('THREEDS_NO_VERIFICATION_PAYLOAD');
         expect(err.message).to.equal('No verification payload available.');
 
         done();

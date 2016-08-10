@@ -318,8 +318,8 @@ function HostedFields(options) {
 
     if (!constants.whitelistedFields.hasOwnProperty(key)) {
       throw new BraintreeError({
-        type: errors.INVALID_FIELD_KEY.type,
-        code: errors.INVALID_FIELD_KEY.code,
+        type: errors.HOSTED_FIELDS_INVALID_FIELD_KEY.type,
+        code: errors.HOSTED_FIELDS_INVALID_FIELD_KEY.code,
         message: '"' + key + '" is not a valid field.'
       });
     }
@@ -330,9 +330,9 @@ function HostedFields(options) {
 
     if (!container) {
       throw new BraintreeError({
-        type: errors.INVALID_FIELD_SELECTOR.type,
-        code: errors.INVALID_FIELD_SELECTOR.code,
-        message: errors.INVALID_FIELD_SELECTOR.message,
+        type: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.type,
+        code: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.code,
+        message: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.message,
         details: {
           fieldSelector: field.selector,
           fieldKey: key
@@ -340,9 +340,9 @@ function HostedFields(options) {
       });
     } else if (container.querySelector('iframe[name^="braintree-"]')) {
       throw new BraintreeError({
-        type: errors.FIELD_DUPLICATE_IFRAME.type,
-        code: errors.FIELD_DUPLICATE_IFRAME.code,
-        message: errors.FIELD_DUPLICATE_IFRAME.message,
+        type: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.type,
+        code: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.code,
+        message: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.message,
         details: {
           fieldSelector: field.selector,
           fieldKey: key
@@ -486,7 +486,22 @@ HostedFields.prototype.teardown = function (callback) {
  * @example <caption>Tokenize a card</caption>
  * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
  *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
+ *     switch (tokenizeErr.code) {
+ *       case 'HOSTED_FIELDS_FIELDS_EMPTY':
+ *         console.error('All fields are empty! Please fill out the form.');
+ *         break;
+ *       case 'HOSTED_FIELDS_FIELDS_INVALID':
+ *         console.error('Some fields are invalid:', tokenizeErr.details.invalidFieldKeys);
+ *         break;
+ *       case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
+ *         console.error('Tokenization failed server side. Is the card valid?');
+ *         break;
+ *       case 'HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR':
+ *         console.error('Network error occurred when tokenizing.');
+ *         break;
+ *       default:
+ *         console.error('Something bad happened!', tokenizeErr);
+ *     }
  *   } else {
  *     console.log('Got nonce:', payload.nonce);
  *   }
@@ -542,14 +557,14 @@ HostedFields.prototype.addClass = function (field, classname, callback) {
 
   if (!whitelistedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.INVALID_FIELD.type,
-      code: errors.INVALID_FIELD.code,
+      type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
+      code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
       message: '"' + field + '" is not a valid field. You must use a valid field option when adding a class.'
     });
   } else if (!this._fields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.FIELD_NOT_PRESENT.type,
-      code: errors.FIELD_NOT_PRESENT.code,
+      type: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.type,
+      code: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.code,
       message: 'Cannot add class to "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
@@ -586,14 +601,14 @@ HostedFields.prototype.removeClass = function (field, classname, callback) {
 
   if (!whitelistedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.INVALID_FIELD.type,
-      code: errors.INVALID_FIELD.code,
+      type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
+      code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
       message: '"' + field + '" is not a valid field. You must use a valid field option when removing a class.'
     });
   } else if (!this._fields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.FIELD_NOT_PRESENT.type,
-      code: errors.FIELD_NOT_PRESENT.code,
+      type: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.type,
+      code: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.code,
       message: 'Cannot remove class from "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
@@ -639,14 +654,14 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
 
   if (!whitelistedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.INVALID_FIELD.type,
-      code: errors.INVALID_FIELD.code,
+      type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
+      code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
       message: '"' + field + '" is not a valid field. You must use a valid field option when setting a placeholder.'
     });
   } else if (!this._fields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.FIELD_NOT_PRESENT.type,
-      code: errors.FIELD_NOT_PRESENT.code,
+      type: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.type,
+      code: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.code,
       message: 'Cannot set placeholder for "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
@@ -682,14 +697,14 @@ HostedFields.prototype.clear = function (field, callback) {
 
   if (!whitelistedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.INVALID_FIELD.type,
-      code: errors.INVALID_FIELD.code,
+      type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
+      code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
       message: '"' + field + '" is not a valid field. You must use a valid field option when clearing a field.'
     });
   } else if (!this._fields.hasOwnProperty(field)) {
     err = new BraintreeError({
-      type: errors.FIELD_NOT_PRESENT.type,
-      code: errors.FIELD_NOT_PRESENT.code,
+      type: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.type,
+      code: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.code,
       message: 'Cannot clear "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {

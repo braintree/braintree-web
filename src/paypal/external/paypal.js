@@ -1,7 +1,6 @@
 'use strict';
 
 var frameService = require('../../lib/frame-service/external');
-var frameServiceErrors = require('../../lib/frame-service/shared/errors');
 var BraintreeError = require('../../lib/error');
 var once = require('../../lib/once');
 var VERSION = require('package.version');
@@ -11,7 +10,6 @@ var analytics = require('../../lib/analytics');
 var methods = require('../../lib/methods');
 var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
-var getCountry = require('../shared/get-country');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var querystring = require('../../lib/querystring');
 var sharedErrors = require('../../errors');
@@ -81,10 +79,10 @@ PayPal.prototype._initialize = function (callback) {
 };
 
 /**
- * Launches the PayPal login flow and returns a nonce payload.
+ * Launches the PayPal login flow and returns a nonce payload. Only one PayPal login flow should be active at a time. One way to achieve this is to disable your PayPal button while the flow is open.
  * @public
  * @param {object} options All tokenization options for the PayPal component.
- * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow.
+ * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow. If 'vault' is used with a client token generated with a customer id, the PayPal account will be added to that customer as a saved payment method.
  * @param {string} [options.intent=authorize]
  * Checkout flows only.
  * * `authorize` - Submits the transaction for authorization but not settlement.
@@ -99,7 +97,7 @@ PayPal.prototype._initialize = function (callback) {
  * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
- * @param {string} [options.locale=en_us] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
+ * @param {string} [options.locale=en_US] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
  * @param {string} options.shippingAddressOverride.line1 Street address.
@@ -115,17 +113,36 @@ PayPal.prototype._initialize = function (callback) {
  * @param {callback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
  * @example
  * button.addEventListener('click', function () {
+ *   // Disable the button so that we don't attempt to open multiple popups.
+ *   button.setAttribute('disabled', 'disabled');
+ *
  *   // Because PayPal tokenization opens a popup, this must be called
  *   // as a result of a user action, such as a button click.
  *   paypalInstance.tokenize({
  *     flow: 'vault' // Required
  *     // Any other tokenization options
  *   }, function (tokenizeErr, payload) {
+ *     button.removeAttribute('disabled');
+ *
  *     if (tokenizeErr) {
  *       // Handle tokenization errors or premature flow closure
- *       return;
+ *
+ *       switch (tokenizeErr.code) {
+ *         case 'PAYPAL_POPUP_CLOSED':
+ *           console.error('Customer closed PayPal popup.');
+ *           break;
+ *         case 'PAYPAL_ACCOUNT_TOKENIZATION_FAILED':
+ *           console.error('PayPal tokenization failed. See details:', tokenizeErr.details);
+ *           break;
+ *         case 'PAYPAL_FLOW_FAILED':
+ *           console.error('Unable to initialize PayPal flow. Are your options correct?', tokenizeErr.details);
+ *           break;
+ *         default:
+ *           console.error('Error!', tokenizeErr);
+ *       }
+ *     } else {
+ *       // Submit payload.nonce to your server
  *     }
- *     // Submit payload.nonce to your server
  *   });
  * });
  * @returns {PayPal~tokenizeReturn} A handle to close the PayPal checkout frame.
@@ -146,7 +163,7 @@ PayPal.prototype.tokenize = function (options, callback) {
   if (this._authorizationInProgress) {
     analytics.sendEvent(client, 'web.paypal.tokenization.error.already-opened');
 
-    callback(new BraintreeError(errors.TOKENIZATION_REQUEST_ACTIVE));
+    callback(new BraintreeError(errors.PAYPAL_TOKENIZATION_REQUEST_ACTIVE));
   } else {
     this._authorizationInProgress = true;
 
@@ -171,11 +188,11 @@ PayPal.prototype._createFrameServiceCallback = function (options, callback) {
     this._authorizationInProgress = false;
 
     if (err) {
-      if (err.code === frameServiceErrors.FRAME_CLOSED.code) {
+      if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
         analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-user');
       }
 
-      callback(new BraintreeError(err));
+      callback(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
     } else {
       this._tokenizePayPal(options, params, callback);
     }
@@ -193,10 +210,12 @@ PayPal.prototype._tokenizePayPal = function (options, params, callback) {
     if (err) {
       analytics.sendEvent(client, 'web.paypal.tokenization.failed');
       callback(err instanceof BraintreeError ? err : new BraintreeError({
-        type: errors.ACCOUNT_TOKENIZATION_FAILED.type,
-        code: errors.ACCOUNT_TOKENIZATION_FAILED.code,
-        message: errors.ACCOUNT_TOKENIZATION_FAILED.message,
-        details: err
+        type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
+        code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
+        message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message,
+        details: {
+          originalError: err
+        }
       }));
     } else {
       analytics.sendEvent(client, 'web.paypal.tokenization.success');
@@ -229,7 +248,12 @@ PayPal.prototype._formatTokenizePayload = function (response) {
 PayPal.prototype._formatTokenizeData = function (options, params) {
   var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
   var data = {
-    paypalAccount: {correlationId: this._frameService._serviceId}
+    paypalAccount: {
+      correlationId: this._frameService._serviceId,
+      options: {
+        validate: options.flow === 'vault'
+      }
+    }
   };
 
   if (params.ba_token) {
@@ -264,16 +288,29 @@ PayPal.prototype._navigateFrameToAuth = function (options, callback) {
     endpoint: endpoint,
     method: 'post',
     data: this._formatPaymentResourceData(options)
-  }, function (err, response) {
+  }, function (err, response, status) {
     var redirectUrl;
 
     if (err) {
-      callback(err instanceof BraintreeError ? err : new BraintreeError({
-        type: errors.PAYPAL_FLOW_FAILED.type,
-        code: errors.PAYPAL_FLOW_FAILED.code,
-        message: errors.PAYPAL_FLOW_FAILED.message,
-        details: err
-      }));
+      if (status === 422) {
+        callback(new BraintreeError({
+          type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+          code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+          message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+          details: {
+            originalError: err
+          }
+        }));
+      } else {
+        callback(err instanceof BraintreeError ? err : new BraintreeError({
+          type: errors.PAYPAL_FLOW_FAILED.type,
+          code: errors.PAYPAL_FLOW_FAILED.code,
+          message: errors.PAYPAL_FLOW_FAILED.message,
+          details: {
+            originalError: err
+          }
+        }));
+      }
       this._frameService.close();
     } else {
       if (options.flow === 'checkout') {
@@ -301,14 +338,14 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
     correlationId: serviceId,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
-      localeCode: getCountry(options.locale),
+      localeCode: options.locale,
       noShipping: (!options.enableShippingAddress).toString(),
       addressOverride: options.shippingAddressEditable === false
     }
   };
 
   if (options.flow === 'checkout') {
-    paymentResource.amount = parseFloat(options.amount).toFixed(2);
+    paymentResource.amount = options.amount;
     paymentResource.currencyIsoCode = options.currency;
     paymentResource.offerPaypalCredit = options.offerCredit === true;
 

@@ -128,7 +128,7 @@ FrameService.prototype._pollForPopupClose = function () {
     if (this.isFrameClosed()) {
       this._cleanupFrame();
       if (this._onCompleteCallback) {
-        this._onCompleteCallback(new BraintreeError(errors.FRAME_CLOSED));
+        this._onCompleteCallback(new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED));
       }
     }
   }.bind(this), constants.POPUP_POLL_INTERVAL);

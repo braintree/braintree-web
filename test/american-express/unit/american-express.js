@@ -34,7 +34,7 @@ describe('AmericanExpress', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('NONCE_REQUIRED');
+        expect(err.code).to.equal('AMEX_NONCE_REQUIRED');
         expect(err.message).to.equal('getRewardsBalance must be called with a nonce.');
 
         expect(this.client.request).not.to.have.beenCalled;
@@ -122,7 +122,7 @@ describe('AmericanExpress', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('NONCE_REQUIRED');
+        expect(err.code).to.equal('AMEX_NONCE_REQUIRED');
         expect(err.message).to.equal('getExpressCheckoutProfile must be called with a nonce.');
 
         expect(this.client.request).not.to.have.beenCalled;

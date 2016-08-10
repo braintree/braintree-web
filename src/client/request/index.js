@@ -1,6 +1,7 @@
 'use strict';
 
 var ajaxIsAvaliable;
+var once = require('../../lib/once');
 var JSONPDriver = require('./jsonp-driver');
 var AJAXDriver = require('./ajax-driver');
 var getUserAgent = require('./get-user-agent');
@@ -14,8 +15,15 @@ function isAjaxAvailable() {
   return ajaxIsAvaliable;
 }
 
-module.exports = function () {
-  var request = isAjaxAvailable() ? AJAXDriver.request : JSONPDriver.request;
+module.exports = function (options, cb) {
+  cb = once(cb || Function.prototype);
+  options.method = (options.method || 'GET').toUpperCase();
+  options.timeout = options.timeout == null ? 60000 : options.timeout;
+  options.data = options.data || {};
 
-  request.apply(null, arguments);
+  if (isAjaxAvailable()) {
+    AJAXDriver.request(options, cb);
+  } else {
+    JSONPDriver.request(options, cb);
+  }
 };

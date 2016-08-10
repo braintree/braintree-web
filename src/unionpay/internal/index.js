@@ -40,7 +40,7 @@ function initialize(clientConfiguration) {
       });
     } else {
       reply({
-        err: new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_REQUIRED)
+        err: new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED)
       });
     }
   });
@@ -70,7 +70,7 @@ function initialize(clientConfiguration) {
       });
     } else {
       reply({
-        err: new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_REQUIRED)
+        err: new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED)
       });
     }
   });
@@ -90,7 +90,8 @@ function initialize(clientConfiguration) {
           cvv: hostedFieldsCardData.cvv
         },
         enrollmentId: options.enrollmentId,
-        smsCode: options.smsCode
+        smsCode: options.smsCode,
+        vault: options.vault === true
       }, function (err, payload) {
         reply({
           err: err,
@@ -99,7 +100,7 @@ function initialize(clientConfiguration) {
       });
     } else {
       reply({
-        err: new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_REQUIRED)
+        err: new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED)
       });
     }
   });

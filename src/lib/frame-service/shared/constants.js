@@ -1,6 +1,5 @@
 'use strict';
 
-// TODO: May be dependent on payment method in the future
 var POPUP_HEIGHT = 535;
 var POPUP_WIDTH = 450;
 

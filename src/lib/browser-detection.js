@@ -7,7 +7,7 @@ function isOperaMini(ua) {
 
 function isAndroidFirefox(ua) {
   ua = ua || global.navigator.userAgent;
-  return ua.indexOf('Android') > -1 && ua.indexOf('Firefox') > -1;
+  return isAndroid(ua) && ua.indexOf('Firefox') > -1;
 }
 
 function getIEVersion(ua) {
@@ -24,13 +24,56 @@ function getIEVersion(ua) {
 
 function isHTTPS(protocol) {
   protocol = protocol || global.location.protocol;
-
   return protocol === 'https:';
+}
+
+function isIos(ua) {
+  ua = ua || global.navigator.userAgent;
+  return /iPhone|iPod|iPad/.test(ua);
+}
+
+function isAndroid(ua) {
+  ua = ua || global.navigator.userAgent;
+  return /Android/.test(ua);
+}
+
+function supportsPopups(ua) {
+  ua = ua || global.navigator.userAgent;
+  return !(isIosWebview(ua) || isAndroidWebview(ua) || isOperaMini(ua));
+}
+
+// The Google Search iOS app is technically a webview and doesn't support popups.
+function isGoogleSearchApp(ua) {
+  return /\bGSA\b/.test(ua);
+}
+
+function isIosWebview(ua) {
+  ua = ua || global.navigator.userAgent;
+  if (isIos(ua)) {
+    if (isGoogleSearchApp(ua)) {
+      return true;
+    }
+    return /.+AppleWebKit(?!.*Safari)/.test(ua);
+  }
+  return false;
+}
+
+function isAndroidWebview(ua) {
+  var androidWebviewRegExp = /Version\/[\d\.]+/;
+
+  ua = ua || global.navigator.userAgent;
+  if (isAndroid(ua)) {
+    return androidWebviewRegExp.test(ua) && !isOperaMini(ua);
+  }
+  return false;
 }
 
 module.exports = {
   isOperaMini: isOperaMini,
   isAndroidFirefox: isAndroidFirefox,
   getIEVersion: getIEVersion,
-  isHTTPS: isHTTPS
+  isHTTPS: isHTTPS,
+  isIos: isIos,
+  isAndroid: isAndroid,
+  supportsPopups: supportsPopups
 };

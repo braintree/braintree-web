@@ -175,7 +175,7 @@ describe('internal', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('TOKENIZATION_NETWORK_ERROR');
+        expect(err.code).to.equal('HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR');
         expect(err.message).to.equal('A tokenization network error occurred.');
         expect(err.details.originalError.message).to.equal('you done goofed');
         expect(err.details.originalError.errors).to.equal(fakeError.errors);
@@ -194,7 +194,7 @@ describe('internal', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
-        expect(err.code).to.equal('FAILED_HOSTED_FIELDS_TOKENIZATION');
+        expect(err.code).to.equal('HOSTED_FIELDS_FAILED_TOKENIZATION');
         expect(err.message).to.equal('The supplied card data failed tokenization.');
         expect(err.details.originalError.message).to.equal('you done goofed');
         expect(err.details.originalError.errors).to.equal(fakeError.errors);
@@ -234,7 +234,7 @@ describe('internal', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
-        expect(err.code).to.equal('FIELDS_EMPTY');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELDS_EMPTY');
         expect(err.message).to.equal('All fields are empty. Cannot tokenize empty card fields.');
         expect(err.details).not.to.exist;
 
@@ -248,7 +248,7 @@ describe('internal', function () {
 
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
-        expect(err.code).to.equal('FIELDS_INVALID');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELDS_INVALID');
         expect(err.message).to.equal('Some payment input fields are invalid. Cannot tokenize invalid card fields.');
         expect(err.details).to.deep.equal({
           invalidFieldKeys: ['cvv']

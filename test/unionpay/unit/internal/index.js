@@ -106,7 +106,7 @@ describe('internal', function () {
         fetchHandler({hostedFields: fakeHostedFields}, function (options) {
           expect(options.err).to.be.an.instanceof(BraintreeError);
           expect(options.err.type).to.equal('MERCHANT');
-          expect(options.err.code).to.equal('HOSTED_FIELDS_INSTANCE_REQUIRED');
+          expect(options.err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
           expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
 
           expect(options.payload).not.to.exist;
@@ -206,7 +206,7 @@ describe('internal', function () {
         }, function (options) {
           expect(options.err).to.be.an.instanceof(BraintreeError);
           expect(options.err.type).to.equal('MERCHANT');
-          expect(options.err.code).to.equal('HOSTED_FIELDS_INSTANCE_REQUIRED');
+          expect(options.err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
           expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
 
           expect(options.payload).not.to.exist;
@@ -259,7 +259,8 @@ describe('internal', function () {
               expirationMonth: '10',
               expirationYear: '2020',
               cvv: '123'
-            }
+            },
+            vault: false
           });
 
           callback(fakeError, fakePayload);
@@ -269,6 +270,60 @@ describe('internal', function () {
           hostedFields: {},
           enrollmentId: 'enrollmentId62',
           smsCode: '1234'
+        }, function (options) {
+          expect(options.err).to.equal(fakeError);
+          expect(options.payload).to.equal(fakePayload);
+
+          done();
+        });
+      });
+
+      it('can vault tokenized unionpay card', function (done) {
+        var tokenizeHandler, i;
+        var fakeError = new Error('you goofed!');
+        var fakePayload = {nonce: 'abc123'};
+
+        this.initialize(this.configuration);
+
+        for (i = 0; i < Bus.prototype.on.callCount; i++) {
+          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_TOKENIZE) {
+            tokenizeHandler = Bus.prototype.on.getCall(i).args[1];
+            break;
+          }
+        }
+
+        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns({
+          getCardData: function () {
+            return {
+              number: '4111111111111111',
+              expirationMonth: '10',
+              expirationYear: '2020',
+              cvv: '123'
+            };
+          }
+        });
+
+        this.sandbox.stub(UnionPay.prototype, 'tokenize', function (options, callback) {
+          expect(options).to.deep.equal({
+            enrollmentId: 'enrollmentId62',
+            smsCode: '1234',
+            card: {
+              number: '4111111111111111',
+              expirationMonth: '10',
+              expirationYear: '2020',
+              cvv: '123'
+            },
+            vault: true
+          });
+
+          callback(fakeError, fakePayload);
+        });
+
+        tokenizeHandler({
+          hostedFields: {},
+          enrollmentId: 'enrollmentId62',
+          smsCode: '1234',
+          vault: true
         }, function (options) {
           expect(options.err).to.equal(fakeError);
           expect(options.payload).to.equal(fakePayload);
@@ -305,7 +360,7 @@ describe('internal', function () {
         }, function (options) {
           expect(options.err).to.be.an.instanceof(BraintreeError);
           expect(options.err.type).to.equal('MERCHANT');
-          expect(options.err.code).to.equal('HOSTED_FIELDS_INSTANCE_REQUIRED');
+          expect(options.err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
           expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
 
           expect(options.payload).not.to.exist;

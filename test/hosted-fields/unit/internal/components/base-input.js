@@ -4,6 +4,7 @@ var BaseInput = require('../../../../../src/hosted-fields/internal/components/ba
 var constants = require('../../../../../src/hosted-fields/shared/constants');
 var RestrictedInput = require('restricted-input');
 var FakeRestrictedInput = require('../../../../../src/lib/fake-restricted-input');
+var browserDetection = require('../../../../../src/lib/browser-detection');
 
 describe('Base Input', function () {
   Object.keys(constants.whitelistedFields).forEach(function (key) {
@@ -48,6 +49,32 @@ describe('Base Input', function () {
           this.sandbox.stub(BaseInput.prototype, 'getConfiguration', function () {
             return {formatInput: false};
           });
+
+          instance = new BaseInput({
+            model: this.model,
+            type: this.type
+          });
+
+          expect(instance.formatter).to.be.an.instanceof(FakeRestrictedInput);
+        });
+
+        it("creates a FakeRestrictedInput on Android, even if the merchant hasn't disabled it", function () {
+          var instance;
+
+          this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
+
+          instance = new BaseInput({
+            model: this.model,
+            type: this.type
+          });
+
+          expect(instance.formatter).to.be.an.instanceof(FakeRestrictedInput);
+        });
+
+        it("creates a FakeRestrictedInput on iOS, even if the merchant hasn't disabled it", function () {
+          var instance;
+
+          this.sandbox.stub(browserDetection, 'isIos').returns(true);
 
           instance = new BaseInput({
             model: this.model,

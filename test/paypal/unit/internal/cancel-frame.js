@@ -9,8 +9,8 @@ describe('cancel-frame', function () {
   describe('start', function () {
     it('reports an error to frameService', function () {
       var err = {
-        type: BraintreeError.types.CUSTOMER,
-        code: 'FRAME_CLOSED',
+        type: BraintreeError.types.INTERNAL,
+        code: 'FRAME_SERVICE_FRAME_CLOSED',
         message: 'Frame closed before tokenization could occur.'
       };
 

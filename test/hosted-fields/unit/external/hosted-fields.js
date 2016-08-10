@@ -136,7 +136,7 @@ describe('HostedFields', function () {
         } catch (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INVALID_FIELD_KEY');
+          expect(err.code).to.equal('HOSTED_FIELDS_INVALID_FIELD_KEY');
           expect(err.message).to.equal('"goober" is not a valid field.');
           expect(err.details).not.to.exist;
         }
@@ -155,7 +155,7 @@ describe('HostedFields', function () {
         } catch (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INVALID_FIELD_SELECTOR');
+          expect(err.code).to.equal('HOSTED_FIELDS_INVALID_FIELD_SELECTOR');
           expect(err.message).to.equal('Selector does not reference a valid DOM node.');
           expect(err.details).to.deep.equal({
             fieldSelector: '#foo',
@@ -185,7 +185,7 @@ describe('HostedFields', function () {
         } catch (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('FIELD_DUPLICATE_IFRAME');
+          expect(err.code).to.equal('HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME');
           expect(err.message).to.equal('Element already contains a Braintree iframe.');
           expect(err.details).to.deep.equal({
             fieldSelector: '#foo',
@@ -643,7 +643,7 @@ describe('HostedFields', function () {
       this.instance.addClass('rogue-field', 'my-class', function (err) {
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INVALID_FIELD');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when adding a class.');
         expect(err.details).not.to.exist;
         expect(this.instance._bus.emit).to.not.be.calledWith(events.ADD_CLASS);
@@ -655,7 +655,7 @@ describe('HostedFields', function () {
       this.instance.addClass('cvv', 'my-class', function (err) {
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('FIELD_NOT_PRESENT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot add class to "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
         expect(this.instance._bus.emit).to.not.be.calledWith(events.ADD_CLASS);
@@ -692,7 +692,7 @@ describe('HostedFields', function () {
       this.instance.removeClass('rogue-field', 'my-class', function (err) {
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INVALID_FIELD');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when removing a class.');
         expect(err.details).not.to.exist;
         expect(this.instance._bus.emit).to.not.be.calledWith(events.REMOVE_CLASS);
@@ -704,7 +704,7 @@ describe('HostedFields', function () {
       this.instance.removeClass('cvv', 'my-class', function (err) {
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('FIELD_NOT_PRESENT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot remove class from "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
         expect(this.instance._bus.emit).to.not.be.calledWith(events.REMOVE_CLASS);
@@ -753,7 +753,7 @@ describe('HostedFields', function () {
       instance.setPlaceholder('rogue-field', 'rogue-placeholder', function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INVALID_FIELD');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting a placeholder.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, sinon.match.string, sinon.match.string);
@@ -767,7 +767,7 @@ describe('HostedFields', function () {
       instance.setPlaceholder('cvv', 'great-placeholder', function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('FIELD_NOT_PRESENT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot set placeholder for "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, sinon.match.string, sinon.match.string);
@@ -816,7 +816,7 @@ describe('HostedFields', function () {
       instance.clear('rogue-field', function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INVALID_FIELD');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when clearing a field.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, sinon.match.string);
@@ -830,7 +830,7 @@ describe('HostedFields', function () {
       instance.clear('cvv', function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('FIELD_NOT_PRESENT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot clear "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, sinon.match.string);

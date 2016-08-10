@@ -3,46 +3,46 @@
 var BraintreeError = require('../../lib/error');
 
 module.exports = {
-  INVALID_FIELD_KEY: {
+  HOSTED_FIELDS_INVALID_FIELD_KEY: {
     type: BraintreeError.types.MERCHANT,
-    code: 'INVALID_FIELD_KEY'
+    code: 'HOSTED_FIELDS_INVALID_FIELD_KEY'
   },
-  INVALID_FIELD_SELECTOR: {
+  HOSTED_FIELDS_INVALID_FIELD_SELECTOR: {
     type: BraintreeError.types.MERCHANT,
-    code: 'INVALID_FIELD_SELECTOR',
+    code: 'HOSTED_FIELDS_INVALID_FIELD_SELECTOR',
     message: 'Selector does not reference a valid DOM node.'
   },
-  FIELD_DUPLICATE_IFRAME: {
+  HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME: {
     type: BraintreeError.types.MERCHANT,
-    code: 'FIELD_DUPLICATE_IFRAME',
+    code: 'HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME',
     message: 'Element already contains a Braintree iframe.'
   },
-  INVALID_FIELD: {
+  HOSTED_FIELDS_FIELD_INVALID: {
     type: BraintreeError.types.MERCHANT,
-    code: 'INVALID_FIELD'
+    code: 'HOSTED_FIELDS_FIELD_INVALID'
   },
-  FIELD_NOT_PRESENT: {
+  HOSTED_FIELDS_FIELD_NOT_PRESENT: {
     type: BraintreeError.types.MERCHANT,
-    code: 'FIELD_NOT_PRESENT'
+    code: 'HOSTED_FIELDS_FIELD_NOT_PRESENT'
   },
-  TOKENIZATION_NETWORK_ERROR: {
+  HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR: {
     type: BraintreeError.types.NETWORK,
-    code: 'TOKENIZATION_NETWORK_ERROR',
+    code: 'HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR',
     message: 'A tokenization network error occurred.'
   },
-  FAILED_HOSTED_FIELDS_TOKENIZATION: {
+  HOSTED_FIELDS_FAILED_TOKENIZATION: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'FAILED_HOSTED_FIELDS_TOKENIZATION',
+    code: 'HOSTED_FIELDS_FAILED_TOKENIZATION',
     message: 'The supplied card data failed tokenization.'
   },
-  FIELDS_EMPTY: {
+  HOSTED_FIELDS_FIELDS_EMPTY: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'FIELDS_EMPTY',
+    code: 'HOSTED_FIELDS_FIELDS_EMPTY',
     message: 'All fields are empty. Cannot tokenize empty card fields.'
   },
-  FIELDS_INVALID: {
+  HOSTED_FIELDS_FIELDS_INVALID: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'FIELDS_INVALID',
+    code: 'HOSTED_FIELDS_FIELDS_INVALID',
     message: 'Some payment input fields are invalid. Cannot tokenize invalid card fields.'
   }
 };

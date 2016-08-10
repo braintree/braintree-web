@@ -1,8 +1,6 @@
 braintree-web
 =============
 
-__NOTE: v3 of our JavaScript SDK is currently in beta. If you are interested in using this new major version [join our Google Group](https://groups.google.com/forum/#!forum/braintree-sdk-announce) for updates.__
-
 A suite of tools for integrating Braintree in the browser.
 
 This is the repo to submit issues if you have any problems or questions about any v.zero JavaScript integration.
@@ -11,11 +9,11 @@ Install
 =======
 
 ```
-npm install braintree-web@beta
+npm install braintree-web
 ```
 
 ```
-bower install braintree-web#3.x-beta
+bower install braintree-web
 ```
 
 Usage

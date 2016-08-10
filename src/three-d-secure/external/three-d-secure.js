@@ -114,7 +114,7 @@ ThreeDSecure.prototype.verifyCard = function (options, callback) {
   callback = deferred(callback);
 
   if (this._verifyCardInProgress === true) {
-    error = errors.AUTHENTICATION_IN_PROGRESS;
+    error = errors.THREEDS_AUTHENTICATION_IN_PROGRESS;
   } else if (!options.nonce) {
     errorOption = 'a nonce';
   } else if (!options.amount) {
@@ -127,8 +127,8 @@ ThreeDSecure.prototype.verifyCard = function (options, callback) {
 
   if (errorOption) {
     error = {
-      type: errors.MISSING_VERIFY_CARD_OPTION.type,
-      code: errors.MISSING_VERIFY_CARD_OPTION.code,
+      type: errors.THREEDS_MISSING_VERIFY_CARD_OPTION.type,
+      code: errors.THREEDS_MISSING_VERIFY_CARD_OPTION.code,
       message: 'verifyCard options must include ' + errorOption + '.'
     };
   }
@@ -195,7 +195,7 @@ ThreeDSecure.prototype.cancelVerifyCard = function (callback) {
 
   if (typeof callback === 'function') {
     if (!this._lookupPaymentMethod) {
-      error = new BraintreeError(errors.NO_VERIFICATION_PAYLOAD);
+      error = new BraintreeError(errors.THREEDS_NO_VERIFICATION_PAYLOAD);
     }
 
     callback(error, this._lookupPaymentMethod);

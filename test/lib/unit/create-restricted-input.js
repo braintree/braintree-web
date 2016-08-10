@@ -46,9 +46,21 @@ describe('createRestrictedInput', function () {
     });
   });
 
-  describe('Android Firefox', function () {
+  describe('Android', function () {
     it('returns a FakeRestrictedInput even if shouldFormat is true', function () {
-      this.sandbox.stub(browserDetection, 'isAndroidFirefox').returns(true);
+      this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
+
+      expect(createRestrictedInput({
+        shouldFormat: true,
+        element: this.element,
+        pattern: ' '
+      })).to.be.an.instanceOf(FakeRestrictedInput);
+    });
+  });
+
+  describe('iOS', function () {
+    it('returns a FakeRestrictedInput even if shouldFormat is true', function () {
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
 
       expect(createRestrictedInput({
         shouldFormat: true,

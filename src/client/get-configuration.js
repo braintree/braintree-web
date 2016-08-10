@@ -23,7 +23,7 @@ function getConfiguration(options, callback) {
   try {
     authData = createAuthorizationData(options.authorization);
   } catch (err) {
-    callback(new BraintreeError(errors.INVALID_AUTHORIZATION));
+    callback(new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION));
     return;
   }
   attrs = authData.attrs;
@@ -39,10 +39,12 @@ function getConfiguration(options, callback) {
   }, function (err, response) {
     if (err) {
       callback(new BraintreeError({
-        type: errors.GATEWAY_NETWORK.type,
-        code: errors.GATEWAY_NETWORK.code,
-        message: errors.GATEWAY_NETWORK.message,
-        details: err
+        type: errors.CLIENT_GATEWAY_NETWORK.type,
+        code: errors.CLIENT_GATEWAY_NETWORK.code,
+        message: errors.CLIENT_GATEWAY_NETWORK.message,
+        details: {
+          originalError: err
+        }
       }));
       return;
     }

@@ -12,7 +12,7 @@ var VERSION = require('package.version');
  * @typedef {object} field
  * @property {string} selector A CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
- * @property {boolean} [formatInput=true] - Enable or disable automatic formatting on this field. Note: Input formatting does not work in Android Firefox, so input formatting is automatically disabled in that browser.
+ * @property {boolean} [formatInput=true] - Enable or disable automatic formatting on this field. Note: Input formatting does not work properly on Android and iOS, so input formatting is automatically disabled on those browsers.
  */
 
 /**

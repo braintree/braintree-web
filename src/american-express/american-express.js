@@ -50,8 +50,8 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
 
   if (!options.nonce) {
     callback(new BraintreeError({
-      type: errors.NONCE_REQUIRED.type,
-      code: errors.NONCE_REQUIRED.code,
+      type: errors.AMEX_NONCE_REQUIRED.type,
+      code: errors.AMEX_NONCE_REQUIRED.code,
       message: 'getRewardsBalance must be called with a nonce.'
     }));
     return;
@@ -115,8 +115,8 @@ AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callbac
 
   if (!options.nonce) {
     callback(new BraintreeError({
-      type: errors.NONCE_REQUIRED.type,
-      code: errors.NONCE_REQUIRED.code,
+      type: errors.AMEX_NONCE_REQUIRED.type,
+      code: errors.AMEX_NONCE_REQUIRED.code,
       message: 'getExpressCheckoutProfile must be called with a nonce.'
     }));
     return;

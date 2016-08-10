@@ -433,6 +433,30 @@ describe('PayPal', function () {
       expect(this.context._frameService.close).to.have.been.called;
     });
 
+    it('reports a merchant BraintreeError on gateway 422 errors', function () {
+      var callbackSpy = this.sandbox.stub();
+      var gateway422Error = new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        code: 'CLIENT_REQUEST_ERROR',
+        message: 'There was a problem with your request.'
+      });
+
+      this.context._client.request = function (config, callback) {
+        callback(gateway422Error, null, 422);
+      };
+
+      PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, callbackSpy);
+
+      expect(callbackSpy).to.have.been.calledWith(sinon.match({
+        type: BraintreeError.types.MERCHANT,
+        code: 'PAYPAL_INVALID_PAYMENT_OPTION',
+        message: 'PayPal payment options are invalid.',
+        details: {
+          originalError: gateway422Error
+        }
+      }));
+    });
+
     it('reports an internally constructed BraintreeError', function () {
       var callbackSpy = this.sandbox.stub();
       var fakeError = {foo: 'bar'};
@@ -447,7 +471,9 @@ describe('PayPal', function () {
         type: BraintreeError.types.NETWORK,
         code: 'PAYPAL_FLOW_FAILED',
         message: 'Could not initialize PayPal flow.',
-        details: fakeError
+        details: {
+          originalError: fakeError
+        }
       }));
     });
 
@@ -595,7 +621,7 @@ describe('PayPal', function () {
         expect(data).not.to.exist;
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('TOKENIZATION_REQUEST_ACTIVE');
+        expect(err.code).to.equal('PAYPAL_TOKENIZATION_REQUEST_ACTIVE');
         expect(err.message).to.equal('Another tokenization request is active.');
 
         done();
@@ -641,6 +667,14 @@ describe('PayPal', function () {
       result.close();
 
       expect(this.context._frameService.close).to.have.been.called;
+    });
+
+    it('calls _navigateFrameToAuth', function () {
+      var options = {foo: 'boo'};
+
+      PayPal.prototype.tokenize.call(this.context, options, noop);
+
+      expect(this.context._navigateFrameToAuth).to.have.been.calledWith(options);
     });
 
     describe('analytics', function () {
@@ -708,7 +742,7 @@ describe('PayPal', function () {
     it('calls analytics when the frame is closed by user', function () {
       var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.callback);
 
-      wrapped(frameServiceErrors.FRAME_CLOSED);
+      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED);
 
       expect(analytics.sendEvent).to.be.called; // With(this.context._client, 'web.paypal.tokenization.closed.by-user');
     });
@@ -717,14 +751,15 @@ describe('PayPal', function () {
       var err;
       var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.callback);
 
-      wrapped(frameServiceErrors.FRAME_CLOSED);
+      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED);
 
       err = this.callback.getCall(0).args[0];
 
       expect(this.callback).to.be.calledOnce;
       expect(err).to.be.an.instanceOf(BraintreeError);
       expect(err.type).to.equal('CUSTOMER');
-      expect(err.message).to.equal('Frame closed before tokenization could occur.');
+      expect(err.code).to.equal('PAYPAL_POPUP_CLOSED');
+      expect(err.message).to.equal('Customer closed PayPal popup before authorizing.');
       expect(err.details).not.to.exist;
     });
   });
@@ -773,9 +808,9 @@ describe('PayPal', function () {
       PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.NETWORK);
-        expect(err.code).to.equal('ACCOUNT_TOKENIZATION_FAILED');
+        expect(err.code).to.equal('PAYPAL_ACCOUNT_TOKENIZATION_FAILED');
         expect(err.message).to.equal('Could not tokenize user\'s PayPal account.');
-        expect(err.details).to.equal(fakeError);
+        expect(err.details.originalError).to.equal(fakeError);
         done();
       });
     });
@@ -904,6 +939,26 @@ describe('PayPal', function () {
       });
 
       expect(actual.paypalAccount).to.not.have.property('intent');
+    });
+
+    it('defaults validate option to false', function () {
+      var actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+        intent: 'sale'
+      }, {
+        ba_token: 'ba_token' // eslint-disable-line
+      });
+
+      expect(actual.paypalAccount.options.validate).to.be.false;
+    });
+
+    it('can set validate to true by using the vault flow', function () {
+      var actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+        flow: 'vault'
+      }, {
+        ba_token: 'ba_token' // eslint-disable-line
+      });
+
+      expect(actual.paypalAccount.options.validate).to.be.true;
     });
 
     it('if ba_token present, passes proper data for tokenization', function () {

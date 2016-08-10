@@ -9,9 +9,7 @@ var apiUrls = {
 
 /* eslint-disable no-undef,block-scoped-var */
 if (process.env.BRAINTREE_JS_ENV === 'development') {
-  apiUrls.development = 'https://' + process.env.BRAINTREE_JS_HOST + ':3443';
-} else if (process.env.BRAINTREE_JS_ENV === 'ci') {
-  apiUrls.development = 'http://localhost:3000';
+  apiUrls.development = process.env.BRAINTREE_JS_API_PROTOCOL + '://' + process.env.BRAINTREE_JS_API_HOST + ':' + process.env.BRAINTREE_JS_API_PORT;
 }
 /* eslint-enable no-undef,block-scoped-var */
 

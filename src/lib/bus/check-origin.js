@@ -1,6 +1,6 @@
 'use strict';
 
-var BT_ORIGIN_REGEX = /^https:\/\/([a-zA-Z0-9-]+\.)*(braintreepayments|braintreegateway|paypal)\.com(:\d{1,5})?$/;
+var isWhitelistedDomain = require('../is-whitelisted-domain');
 
 function checkOrigin(postMessageOrigin, merchantUrl) {
   var merchantOrigin, merchantHost;
@@ -18,7 +18,11 @@ function checkOrigin(postMessageOrigin, merchantUrl) {
 
   merchantOrigin = a.protocol + '//' + merchantHost;
 
-  return merchantOrigin === postMessageOrigin || BT_ORIGIN_REGEX.test(postMessageOrigin);
+  if (merchantOrigin === postMessageOrigin) { return true; }
+
+  a.href = postMessageOrigin;
+
+  return isWhitelistedDomain(postMessageOrigin) && a.hostname !== 'localhost';
 }
 
 module.exports = {

@@ -8,14 +8,14 @@ module.exports = {
     code: 'PAYPAL_NOT_ENABLED',
     message: 'PayPal is not enabled for this merchant.'
   },
-  TOKENIZATION_REQUEST_ACTIVE: {
+  PAYPAL_TOKENIZATION_REQUEST_ACTIVE: {
     type: BraintreeError.types.MERCHANT,
-    code: 'TOKENIZATION_REQUEST_ACTIVE',
+    code: 'PAYPAL_TOKENIZATION_REQUEST_ACTIVE',
     message: 'Another tokenization request is active.'
   },
-  ACCOUNT_TOKENIZATION_FAILED: {
+  PAYPAL_ACCOUNT_TOKENIZATION_FAILED: {
     type: BraintreeError.types.NETWORK,
-    code: 'ACCOUNT_TOKENIZATION_FAILED',
+    code: 'PAYPAL_ACCOUNT_TOKENIZATION_FAILED',
     message: 'Could not tokenize user\'s PayPal account.'
   },
   PAYPAL_FLOW_FAILED: {
@@ -28,9 +28,19 @@ module.exports = {
     code: 'PAYPAL_FLOW_OPTION_REQUIRED',
     message: 'PayPal flow property is invalid or missing.'
   },
-  BROWSER_NOT_SUPPORTED: {
+  PAYPAL_BROWSER_NOT_SUPPORTED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'BROWSER_NOT_SUPPORTED',
+    code: 'PAYPAL_BROWSER_NOT_SUPPORTED',
     message: 'Browser is not supported.'
+  },
+  PAYPAL_POPUP_CLOSED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'PAYPAL_POPUP_CLOSED',
+    message: 'Customer closed PayPal popup before authorizing.'
+  },
+  PAYPAL_INVALID_PAYMENT_OPTION: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYPAL_INVALID_PAYMENT_OPTION',
+    message: 'PayPal payment options are invalid.'
   }
 };

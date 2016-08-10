@@ -1,10 +1,8 @@
 'use strict';
 
 var querystring = require('../../lib/querystring');
-var once = require('../../lib/once');
 var prepBody = require('./prep-body');
 var parseBody = require('./parse-body');
-var constants = require('./constants');
 var isXHRAvailable = global.XMLHttpRequest && 'withCredentials' in new global.XMLHttpRequest();
 
 function getRequestObject() {
@@ -13,12 +11,12 @@ function getRequestObject() {
 
 function request(options, cb) {
   var status, resBody;
-  var method = (options.method || 'GET').toUpperCase();
+  var method = options.method;
   var url = options.url;
-  var body = options.data || {};
-  var timeout = options.timeout == null ? 60000 : options.timeout;
+  var body = options.data;
+  var timeout = options.timeout;
   var req = getRequestObject();
-  var callback = once(cb || Function.prototype);
+  var callback = cb;
 
   if (method === 'GET') {
     url = querystring.queryify(url, body);
@@ -32,12 +30,8 @@ function request(options, cb) {
       status = req.status;
       resBody = parseBody(req.responseText);
 
-      if (status === 429) {
-        callback(constants.errors.RATE_LIMIT_ERROR, null, 429);
-      } else if (status >= 400) {
-        callback(resBody || constants.errors.UNKNOWN_ERROR, null, status);
-      } else if (status <= 0) {
-        callback(resBody || constants.errors.UNKNOWN_ERROR, null, 500);
+      if (status >= 400 || status < 200) {
+        callback(resBody || 'error', null, status || 500);
       } else {
         callback(null, resBody, status);
       }
@@ -48,14 +42,14 @@ function request(options, cb) {
     };
 
     req.onerror = function () {
-      callback(constants.errors.UNKNOWN_ERROR, null, req.status);
+      callback('error', null, req.status);
     };
 
     // This must remain for IE9 to work
     req.onprogress = function () {};
 
     req.ontimeout = function () {
-      callback(constants.errors.TIMEOUT_ERROR, null, 500);
+      callback('timeout', null, -1);
     };
   }
 

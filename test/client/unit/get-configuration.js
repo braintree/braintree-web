@@ -49,6 +49,7 @@ describe('getConfiguration', function () {
       getConfiguration({authorization: 'bogus'}, function (err, result) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CLIENT_INVALID_AUTHORIZATION');
         expect(err.message).to.equal('Authorization is invalid. Make sure your client token or tokenization key is valid.');
         expect(result).not.to.exist;
 

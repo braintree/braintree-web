@@ -47,13 +47,6 @@ describe('origin-restriction', function () {
         expect(actual).to.be.false;
       });
 
-      it('rejects an improper subdomain', function () {
-        var merchantOrigin = 'https://example.com:3443';
-        var actual = checkOrigin('https://sub..domain.braintreegateway.com', merchantOrigin);
-
-        expect(actual).to.be.false;
-      });
-
       it('rejects a localhost domain', function () {
         var merchantOrigin = 'https://example.com:3443';
         var actual = checkOrigin('https://localhost', merchantOrigin);

@@ -1,7 +1,6 @@
 'use strict';
 
 var JSONPDriver = require('../../../../src/client/request/jsonp-driver');
-var constants = require('../../../../src/client/request/constants');
 var TEST_SERVER_URL = 'http://localhost:6060/';
 var querystring = require('../../../../src/lib/querystring');
 
@@ -51,8 +50,8 @@ describe('JSONPDriver', function () {
       timeout: 50
     }, function (err, _, status) {
       expect(err).to.exist;
-      expect(err.error).to.equal(constants.errors.TIMEOUT_ERROR);
-      expect(status).to.equal(500);
+      expect(err.error).to.equal('timeout');
+      expect(status).to.equal(-1);
       done();
     });
   });

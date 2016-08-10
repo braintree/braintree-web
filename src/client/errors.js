@@ -3,27 +3,42 @@
 var BraintreeError = require('../lib/error');
 
 module.exports = {
-  GATEWAY_CONFIGURATION_INVALID_DOMAIN: {
+  CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN: {
     type: BraintreeError.types.MERCHANT,
-    code: 'GATEWAY_CONFIGURATION_INVALID_DOMAIN'
+    code: 'CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN'
   },
-  OPTION_REQUIRED: {
+  CLIENT_OPTION_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'OPTION_REQUIRED'
+    code: 'CLIENT_OPTION_REQUIRED'
   },
-  MISSING_GATEWAY_CONFIGURATION: {
+  CLIENT_MISSING_GATEWAY_CONFIGURATION: {
     type: BraintreeError.types.INTERNAL,
-    code: 'MISSING_GATEWAY_CONFIGURATION',
+    code: 'CLIENT_MISSING_GATEWAY_CONFIGURATION',
     message: 'Missing gatewayConfiguration.'
   },
-  INVALID_AUTHORIZATION: {
+  CLIENT_INVALID_AUTHORIZATION: {
     type: BraintreeError.types.MERCHANT,
-    code: 'INVALID_AUTHORIZATION',
+    code: 'CLIENT_INVALID_AUTHORIZATION',
     message: 'Authorization is invalid. Make sure your client token or tokenization key is valid.'
   },
-  GATEWAY_NETWORK: {
+  CLIENT_GATEWAY_NETWORK: {
     type: BraintreeError.types.NETWORK,
-    code: 'GATEWAY_NETWORK',
+    code: 'CLIENT_GATEWAY_NETWORK',
     message: 'Cannot contact the gateway at this time.'
+  },
+  CLIENT_REQUEST_TIMEOUT: {
+    type: BraintreeError.types.NETWORK,
+    code: 'CLIENT_REQUEST_TIMEOUT',
+    message: 'Request timed out waiting for a reply.'
+  },
+  CLIENT_REQUEST_ERROR: {
+    type: BraintreeError.types.NETWORK,
+    code: 'CLIENT_REQUEST_ERROR',
+    message: 'There was a problem with your request.'
+  },
+  CLIENT_RATE_LIMITED: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'CLIENT_RATE_LIMITED',
+    message: 'You are being rate-limited; please try again in a few minutes.'
   }
 };

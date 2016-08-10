@@ -21,7 +21,11 @@ var VERSION = require('package.version');
  *   client: clientInstance
  * }, function (createErr, paypalInstance) {
  *   if (createErr) {
- *     // Handle any creation errors here
+ *     if (createErr.code === 'PAYPAL_BROWSER_NOT_SUPPORTED') {
+ *       console.error('This browser is not supported.');
+ *     } else {
+ *       console.error('Error!', createErr);
+ *     }
  *   }
  * }
  * @returns {void}
@@ -65,8 +69,8 @@ function create(options, callback) {
     return;
   }
 
-  if (!_isBrowserSupported()) {
-    callback(new BraintreeError(errors.BROWSER_NOT_SUPPORTED));
+  if (!browserDetection.supportsPopups()) {
+    callback(new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED));
     return;
   }
 
@@ -76,10 +80,6 @@ function create(options, callback) {
   pp._initialize(function () {
     callback(null, pp);
   });
-}
-
-function _isBrowserSupported() {
-  return !browserDetection.isOperaMini();
 }
 
 module.exports = {

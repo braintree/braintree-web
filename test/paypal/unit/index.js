@@ -90,13 +90,13 @@ describe('paypal.create', function () {
   });
 
   describe('browser support', function () {
-    it('errors out if opera mini', function (done) {
-      this.sandbox.stub(browserDetection, 'isOperaMini', function () { return true; });
+    it('errors out if browser does not support popups', function (done) {
+      this.sandbox.stub(browserDetection, 'supportsPopups', function () { return false; });
 
       create({client: this.client}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
-        expect(err.code).to.equal('BROWSER_NOT_SUPPORTED');
+        expect(err.code).to.equal('PAYPAL_BROWSER_NOT_SUPPORTED');
         expect(err.message).to.equal('Browser is not supported.');
         expect(thingy).not.to.exist;
 

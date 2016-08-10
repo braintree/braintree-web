@@ -112,7 +112,7 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
   callback = deferred(callback);
 
   if (cardNumber && hostedFields) {
-    callback(new BraintreeError(errors.CARD_AND_HOSTED_FIELDS_INSTANCES));
+    callback(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
     return;
   } else if (cardNumber) {
     client.request({
@@ -127,9 +127,9 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
     }, function (err, response) {
       if (err) {
         callback(new BraintreeError({
-          type: errors.FETCH_CAPABILITIES_NETWORK_ERROR.type,
-          code: errors.FETCH_CAPABILITIES_NETWORK_ERROR.code,
-          message: errors.FETCH_CAPABILITIES_NETWORK_ERROR.message,
+          type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
+          code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
+          message: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.message,
           details: {
             originalError: err
           }
@@ -143,7 +143,7 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
     });
   } else if (hostedFields) {
     if (!hostedFields._bus) {
-      callback(new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_INVALID));
+      callback(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
       return;
     }
     this._initializeHostedFields(function () {
@@ -157,7 +157,7 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
       });
     }.bind(this));
   } else {
-    callback(new BraintreeError(errors.CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
+    callback(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
     return;
   }
 };
@@ -241,16 +241,16 @@ UnionPay.prototype.enroll = function (options, callback) {
   callback = deferred(callback);
 
   if (!mobile) {
-    callback(new BraintreeError(errors.MISSING_MOBILE_PHONE_DATA));
+    callback(new BraintreeError(errors.UNIONPAY_MISSING_MOBILE_PHONE_DATA));
     return;
   }
 
   if (hostedFields) {
     if (!hostedFields._bus) {
-      callback(new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_INVALID));
+      callback(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
       return;
     } else if (card) {
-      callback(new BraintreeError(errors.CARD_AND_HOSTED_FIELDS_INSTANCES));
+      callback(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
       return;
     }
 
@@ -281,7 +281,7 @@ UnionPay.prototype.enroll = function (options, callback) {
         data.unionPayEnrollment.expirationYear = card.expirationYear;
         data.unionPayEnrollment.expirationMonth = card.expirationMonth;
       } else {
-        callback(new BraintreeError(errors.EXPIRATION_DATE_INCOMPLETE));
+        callback(new BraintreeError(errors.UNIONPAY_EXPIRATION_DATE_INCOMPLETE));
         return;
       }
     }
@@ -295,9 +295,9 @@ UnionPay.prototype.enroll = function (options, callback) {
 
       if (err) {
         if (status < 500) {
-          error = errors.ENROLLMENT_CUSTOMER_INPUT_INVALID;
+          error = errors.UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID;
         } else {
-          error = errors.ENROLLMENT_NETWORK_ERROR;
+          error = errors.UNIONPAY_ENROLLMENT_NETWORK_ERROR;
         }
         error = assign({}, error, {
           details: {originalError: err}
@@ -315,7 +315,7 @@ UnionPay.prototype.enroll = function (options, callback) {
       });
     });
   } else {
-    callback(new BraintreeError(errors.CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
+    callback(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
     return;
   }
 };
@@ -342,6 +342,7 @@ UnionPay.prototype.enroll = function (options, callback) {
  * @param {string} [options.card.cvv] The card's security number.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
  * @param {string} options.enrollmentId The enrollment ID from {@link UnionPay#enroll}.
+ * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
  * @param {string} [options.smsCode] The SMS code received from the user if {@link UnionPay#enroll} payload have `smsCodeRequired`. if `smsCodeRequired` is false, smsCode should not be passed.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}.
  * @example <caption>With raw card data</caption>
@@ -386,7 +387,7 @@ UnionPay.prototype.tokenize = function (options, callback) {
   callback = deferred(callback);
 
   if (card && hostedFields) {
-    callback(new BraintreeError(errors.CARD_AND_HOSTED_FIELDS_INSTANCES));
+    callback(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
     return;
   } else if (card) {
     data = {
@@ -415,6 +416,8 @@ UnionPay.prototype.tokenize = function (options, callback) {
     if (options.card.cvv) {
       data.creditCard.cvv = options.card.cvv;
     }
+
+    data.creditCard.options.validate = options.vault === true;
 
     client.request({
       method: 'post',
@@ -445,7 +448,7 @@ UnionPay.prototype.tokenize = function (options, callback) {
     });
   } else if (hostedFields) {
     if (!hostedFields._bus) {
-      callback(new BraintreeError(errors.HOSTED_FIELDS_INSTANCE_INVALID));
+      callback(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
       return;
     }
 
@@ -460,7 +463,7 @@ UnionPay.prototype.tokenize = function (options, callback) {
       });
     }.bind(this));
   } else {
-    callback(new BraintreeError(errors.CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
+    callback(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
     return;
   }
 };

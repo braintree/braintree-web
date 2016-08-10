@@ -1,6 +1,25 @@
 CHANGELOG
 =========
 
+## 3.0.0
+
+* Add prefix to `BraintreeError` codes to prevent namespace collisions
+* PayPal
+  * Return a `PAYPAL_POPUP_CLOSED` error code when the customer closes the popup
+  * Return a `PAYPAL_INVALID_PAYMENT_OPTION` error code when PayPal options are invalid
+  * Fix a bug where some locale codes were not accepted
+  * Fix bug where JPY could not be used as PayPal currency
+  * vault flows will automatically vault PayPal accounts if client token was generated with a customer id
+* Hosted Fields
+  * Automatic input formatting disabled for iOS and Android
+* Apple Pay
+  * Use error codes
+* Some wrapped errors were inconsistently placed under the `err.details` property; they are now under `err.details.originalError`
+* Client
+  * Errors are now always instances of BraintreeError
+* UnionPay
+  * Add `vault` as an option to `tokenize` which allows cards to be vaulted on tokenization
+
 ## 3.0.0-beta.12
 
 * Some error messages have been changed to be more consistent across components
@@ -23,6 +42,7 @@ CHANGELOG
   * Stop applying `invalid` CSS classes to `potentiallyValid` fields on tokenization attempts
 * PayPal
   * Consistently return `BraintreeError` objects when the PayPal flow is cancelled
+  * Return error during `create` when using a webview
 * UnionPay
   * Add `type` to tokenize payload
 * Add Apple Pay component.

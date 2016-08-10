@@ -91,7 +91,7 @@ describe('client.create', function () {
     client.create({authorization: fake.tokenizationKey}, function (err, thingy) {
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('NETWORK');
-      expect(err.code).to.equal('GATEWAY_NETWORK');
+      expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
       expect(err.message).to.equal('Cannot contact the gateway at this time.');
       expect(thingy).not.to.exist;
       done();
@@ -107,7 +107,7 @@ describe('client.create', function () {
     client.create({authorization: fake.tokenizationKey}, function (err, thingy) {
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('INTERNAL');
-      expect(err.code).to.equal('MISSING_GATEWAY_CONFIGURATION');
+      expect(err.code).to.equal('CLIENT_MISSING_GATEWAY_CONFIGURATION');
       expect(err.message).to.equal('Missing gatewayConfiguration.');
       expect(thingy).not.to.exist;
       done();

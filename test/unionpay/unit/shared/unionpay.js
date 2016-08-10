@@ -8,7 +8,7 @@ var methods = require('../../../../src/lib/methods');
 
 function noop() {}
 
-describe.only('UnionPay', function () {
+describe('UnionPay', function () {
   beforeEach(function () {
     this.client = {
       getConfiguration: function () {
@@ -46,7 +46,7 @@ describe.only('UnionPay', function () {
           expect(data).not.to.exist;
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED');
+          expect(err.code).to.equal('UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED');
           expect(err.message).to.equal('A card or a Hosted Fields instance is required. Please supply a card or a Hosted Fields instance.');
 
           done();
@@ -100,7 +100,7 @@ describe.only('UnionPay', function () {
           expect(data).not.to.exist;
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('NETWORK');
-          expect(err.code).to.equal('FETCH_CAPABILITIES_NETWORK_ERROR');
+          expect(err.code).to.equal('UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR');
           expect(err.message).to.equal('Could not fetch card capabilities.');
           expect(err.details.originalError).to.equal(clientErr);
 
@@ -196,7 +196,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('HOSTED_FIELDS_INSTANCE_INVALID');
+          expect(err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID');
           expect(err.message).to.equal('Found an invalid Hosted Fields instance. Please use a valid Hosted Fields instance.');
           done();
         });
@@ -485,7 +485,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('EXPIRATION_DATE_INCOMPLETE');
+          expect(err.code).to.equal('UNIONPAY_EXPIRATION_DATE_INCOMPLETE');
           expect(err.message).to.equal('You must supply expiration month and year or neither.');
         });
       });
@@ -511,7 +511,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('EXPIRATION_DATE_INCOMPLETE');
+          expect(err.code).to.equal('UNIONPAY_EXPIRATION_DATE_INCOMPLETE');
           expect(err.message).to.equal('You must supply expiration month and year or neither.');
         });
       });
@@ -552,7 +552,7 @@ describe.only('UnionPay', function () {
           expect(analytics.sendEvent).to.be.calledWith(stubClient, 'web.unionpay.enrollment-failed');
         });
 
-        describe.only('with a 422', function () {
+        describe('with a 422', function () {
           it('calls the errback with a customer error', function (done) {
             clientErr = {
               type: BraintreeError.types.CUSTOMER,
@@ -573,7 +573,7 @@ describe.only('UnionPay', function () {
               expect(data).not.to.exist;
               expect(err).to.be.an.instanceof(BraintreeError);
               expect(err.type).to.equal('CUSTOMER');
-              expect(err.code).to.equal('ENROLLMENT_CUSTOMER_INPUT_INVALID');
+              expect(err.code).to.equal('UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID');
               expect(err.message).to.equal('Enrollment failed due to user input error.');
               expect(err.details.originalError).to.eql(clientErr);
 
@@ -608,7 +608,7 @@ describe.only('UnionPay', function () {
               expect(data).not.to.exist;
               expect(err).to.be.an.instanceof(BraintreeError);
               expect(err.type).to.equal('NETWORK');
-              expect(err.code).to.equal('ENROLLMENT_NETWORK_ERROR');
+              expect(err.code).to.equal('UNIONPAY_ENROLLMENT_NETWORK_ERROR');
               expect(err.message).to.equal('Could not enroll UnionPay card.');
               expect(err.details.originalError).to.equal(clientErr);
 
@@ -731,7 +731,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('HOSTED_FIELDS_INSTANCE_INVALID');
+          expect(err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID');
           expect(err.message).to.equal('Found an invalid Hosted Fields instance. Please use a valid Hosted Fields instance.');
           done();
         });
@@ -748,7 +748,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('MISSING_MOBILE_PHONE_DATA');
+          expect(err.code).to.equal('UNIONPAY_MISSING_MOBILE_PHONE_DATA');
           expect(err.message).to.equal('A `mobile` with `countryCode` and `number` is required.');
           done();
         });
@@ -769,7 +769,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('CARD_AND_HOSTED_FIELDS_INSTANCES');
+          expect(err.code).to.equal('UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES');
           expect(err.message).to.equal('Please supply either a card or a Hosted Fields instance, not both.');
           done();
         });
@@ -782,7 +782,7 @@ describe.only('UnionPay', function () {
       }, {mobile: {}}, function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED');
+        expect(err.code).to.equal('UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED');
         expect(err.message).to.equal('A card or a Hosted Fields instance is required. Please supply a card or a Hosted Fields instance.');
         done();
       });
@@ -975,7 +975,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('EXPIRATION_DATE_INCOMPLETE');
+          expect(err.code).to.equal('UNIONPAY_EXPIRATION_DATE_INCOMPLETE');
           expect(err.message).to.equal('You must supply expiration month and year or neither.');
         });
       });
@@ -1000,7 +1000,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('EXPIRATION_DATE_INCOMPLETE');
+          expect(err.code).to.equal('UNIONPAY_EXPIRATION_DATE_INCOMPLETE');
           expect(err.message).to.equal('You must supply expiration month and year or neither.');
         });
       });
@@ -1207,6 +1207,77 @@ describe.only('UnionPay', function () {
             done();
           });
         });
+
+        it('defaults vault option to false', function (done) {
+          var request = {
+            card: {
+              number: '6211111111111111',
+              expirationMonth: '12',
+              expirationYear: '2020',
+              cvv: '123'
+            },
+            enrollmentId: 'enrollment-id',
+            smsCode: '123456'
+          };
+          var expectedCardNonce = {
+            consumed: false,
+            description: 'ending in 11',
+            details: {
+              cardType: 'unionpay',
+              lastTwo: '11'
+            },
+            nonce: 'a-nonce',
+            type: 'CreditCard'
+          };
+          var stubClient = {
+            request: function (options, clientErrback) {
+              var data = options.data;
+
+              expect(data.creditCard.options.validate).to.be.false;
+              clientErrback(null, {creditCards: [expectedCardNonce]});
+            }
+          };
+
+          UnionPay.prototype.tokenize.call({
+            _options: {client: stubClient}
+          }, request, done);
+        });
+
+        it('can set vault to true', function (done) {
+          var request = {
+            card: {
+              number: '6211111111111111',
+              expirationMonth: '12',
+              expirationYear: '2020',
+              cvv: '123'
+            },
+            enrollmentId: 'enrollment-id',
+            smsCode: '123456',
+            vault: true
+          };
+          var expectedCardNonce = {
+            consumed: false,
+            description: 'ending in 11',
+            details: {
+              cardType: 'unionpay',
+              lastTwo: '11'
+            },
+            nonce: 'a-nonce',
+            type: 'CreditCard'
+          };
+          var stubClient = {
+            request: function (options, clientErrback) {
+              var data = options.data;
+
+              expect(data.creditCard.options.validate).to.be.true;
+              clientErrback(null, {creditCards: [expectedCardNonce]});
+            }
+          };
+
+          UnionPay.prototype.tokenize.call({
+            _options: {client: stubClient}
+          }, request, done);
+        });
       });
 
       describe('when tokenization fails', function () {
@@ -1351,7 +1422,7 @@ describe.only('UnionPay', function () {
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('HOSTED_FIELDS_INSTANCE_INVALID');
+          expect(err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID');
           expect(err.message).to.equal('Found an invalid Hosted Fields instance. Please use a valid Hosted Fields instance.');
           done();
         });
@@ -1364,7 +1435,7 @@ describe.only('UnionPay', function () {
       }, {}, function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED');
+        expect(err.code).to.equal('UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED');
         expect(err.message).to.equal('A card or a Hosted Fields instance is required. Please supply a card or a Hosted Fields instance.');
         done();
       });

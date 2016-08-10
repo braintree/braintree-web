@@ -8,8 +8,23 @@ var legalHosts = {
   localhost: 1
 };
 
+/* eslint-disable no-undef,block-scoped-var */
+if (process.env.BRAINTREE_JS_ENV === 'development') {
+  if (process.env.BRAINTREE_JS_API_HOST) {
+    legalHosts[stripSubdomains(process.env.BRAINTREE_JS_API_HOST)] = 1;
+  }
+  if (process.env.BT_DEV_HOST) {
+    legalHosts[stripSubdomains(process.env.BT_DEV_HOST)] = 1;
+  }
+}
+/* eslint-enable no-undef,block-scoped-var */
+
+function stripSubdomains(domain) {
+  return domain.split('.').slice(-2).join('.');
+}
+
 function isWhitelistedDomain(url) {
-  var pieces, topLevelDomain;
+  var mainDomain;
 
   url = url.toLowerCase();
 
@@ -19,10 +34,9 @@ function isWhitelistedDomain(url) {
 
   parser = parser || document.createElement('a');
   parser.href = url;
-  pieces = parser.hostname.split('.');
-  topLevelDomain = pieces.slice(-2).join('.');
+  mainDomain = stripSubdomains(parser.hostname);
 
-  return legalHosts.hasOwnProperty(topLevelDomain);
+  return legalHosts.hasOwnProperty(mainDomain);
 }
 
 module.exports = isWhitelistedDomain;

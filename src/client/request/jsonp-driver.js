@@ -1,12 +1,9 @@
 'use strict';
 
 var head;
-var constants = require('./constants');
 var uuid = require('../../lib/uuid');
 var querystring = require('../../lib/querystring');
 var timeouts = {};
-
-function _noop() {}
 
 function _removeScript(script) {
   if (script && script.parentNode) {
@@ -21,7 +18,7 @@ function _createScriptTag(url, callbackName) {
   script.src = url;
   script.async = true;
   script.onerror = function () {
-    global[callbackName]({message: constants.errors.UNKNOWN_ERROR, status: 500});
+    global[callbackName]({message: 'error', status: 500});
   };
 
   script.onload = script.onreadystatechange = function () {
@@ -49,8 +46,8 @@ function _setupTimeout(timeout, callbackName) {
     timeouts[callbackName] = null;
 
     global[callbackName]({
-      error: constants.errors.TIMEOUT_ERROR,
-      status: 500
+      error: 'timeout',
+      status: -1
     });
 
     global[callbackName] = function () {
@@ -60,8 +57,6 @@ function _setupTimeout(timeout, callbackName) {
 }
 
 function _setupGlobalCallback(script, callback, callbackName) {
-  callback = callback || _noop;
-
   global[callbackName] = function (response) {
     var status = response.status || 500;
     var err = null;
@@ -69,7 +64,7 @@ function _setupGlobalCallback(script, callback, callbackName) {
 
     delete response.status;
 
-    if (status >= 400) {
+    if (status >= 400 || status < 200) {
       err = response;
     } else {
       data = response;
@@ -88,8 +83,8 @@ function request(options, callback) {
   var callbackName = 'callback_json_' + uuid().replace(/-/g, '');
   var url = options.url;
   var attrs = options.data;
-  var method = (options.method || 'GET').toUpperCase();
-  var timeout = options.timeout == null ? 60000 : options.timeout;
+  var method = options.method;
+  var timeout = options.timeout;
 
   url = querystring.queryify(url, attrs);
   url = querystring.queryify(url, {

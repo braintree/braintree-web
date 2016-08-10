@@ -22,7 +22,7 @@ describe('Client', function () {
       } catch (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.INTERNAL);
-        expect(err.code).to.equal('MISSING_GATEWAY_CONFIGURATION');
+        expect(err.code).to.equal('CLIENT_MISSING_GATEWAY_CONFIGURATION');
         expect(err.message).to.equal('Missing gatewayConfiguration.');
         done();
       }
@@ -38,7 +38,7 @@ describe('Client', function () {
       } catch (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
         expect(err.message).to.equal('assetsUrl property is on an invalid domain.');
         done();
       }
@@ -54,7 +54,7 @@ describe('Client', function () {
       } catch (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
         expect(err.message).to.equal('clientApiUrl property is on an invalid domain.');
         done();
       }
@@ -70,7 +70,7 @@ describe('Client', function () {
       } catch (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
         expect(err.message).to.equal('configUrl property is on an invalid domain.');
         done();
       }
@@ -117,7 +117,7 @@ describe('Client', function () {
       }, function (err, data) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('OPTION_REQUIRED');
+        expect(err.code).to.equal('CLIENT_OPTION_REQUIRED');
         expect(err.message).to.equal('options.method is required when making a request.');
         expect(data).not.to.exist;
 
@@ -133,7 +133,7 @@ describe('Client', function () {
       }, function (err, data) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('OPTION_REQUIRED');
+        expect(err.code).to.equal('CLIENT_OPTION_REQUIRED');
         expect(err.message).to.equal('options.endpoint is required when making a request.');
         expect(data).not.to.exist;
 
@@ -267,21 +267,6 @@ describe('Client', function () {
       }));
     });
 
-    it('passes through callback to driver', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request', function () {});
-
-      function callback() {}
-
-      client.request({
-        endpoint: 'payment_methods',
-        method: 'get'
-      }, callback);
-
-      expect(client._request).to.have.been.calledWith(sinon.match.object, callback);
-    });
-
     it('passes through data to driver', function () {
       var client = new Client(fake.configuration());
 
@@ -296,6 +281,92 @@ describe('Client', function () {
       expect(client._request).to.have.been.calledWith(sinon.match({
         data: {some: 'stuffs'}
       }));
+    });
+
+    it('returns BraintreeError for rate limiting if driver has a 429', function (done) {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request', function (options, fn) {
+        fn('error', null, 429);
+      });
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function (err, data, status) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CLIENT_RATE_LIMITED');
+        expect(err.message).to.equal('You are being rate-limited; please try again in a few minutes.');
+        expect(data).to.be.null;
+        expect(status).to.equal(429);
+        done();
+      });
+    });
+
+    it('returns BraintreeError if driver times out', function (done) {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request', function (options, fn) {
+        fn('timeout', null, -1);
+      });
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function (err, data, status) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_REQUEST_TIMEOUT');
+        expect(err.message).to.equal('Request timed out waiting for a reply.');
+        expect(data).to.be.null;
+        expect(status).to.equal(-1);
+        done();
+      });
+    });
+
+    it('returns BraintreeError if driver has a 4xx', function (done) {
+      var errorDetails = {error: 'message'};
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request', function (options, fn) {
+        fn(errorDetails, null, 422);
+      });
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function (err, data, status) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_REQUEST_ERROR');
+        expect(err.message).to.equal('There was a problem with your request.');
+        expect(err.details.originalError).to.equal(errorDetails);
+        expect(data).to.be.null;
+        expect(status).to.equal(422);
+        done();
+      });
+    });
+
+    it('returns BraintreeError if driver has a 5xx', function (done) {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request', function (options, fn) {
+        fn('This is a network error message', null, 500);
+      });
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function (err, data, status) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
+        expect(err.message).to.equal('Cannot contact the gateway at this time.');
+        expect(data).to.be.null;
+        expect(status).to.equal(500);
+        done();
+      });
     });
   });
 });

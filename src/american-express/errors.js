@@ -3,9 +3,9 @@
 var BraintreeError = require('../lib/error');
 
 module.exports = {
-  NONCE_REQUIRED: {
+  AMEX_NONCE_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'NONCE_REQUIRED'
+    code: 'AMEX_NONCE_REQUIRED'
   },
   AMEX_NETWORK_ERROR: {
     type: BraintreeError.types.NETWORK,

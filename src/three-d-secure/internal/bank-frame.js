@@ -19,7 +19,7 @@ function handleConfiguration(configuration) {
   var form = document.createElement('form');
 
   if (!isWhitelistedDomain(configuration.termUrl)) {
-    throw new BraintreeError(errors.TERM_URL_REQUIRES_BRAINTREE_DOMAIN);
+    throw new BraintreeError(errors.THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN);
   }
 
   form.action = configuration.acsUrl;

@@ -77,7 +77,7 @@ describe('dataCollector', function () {
 
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('PayPal is not enabled for this merchant.');
-      expect(err.code).to.equal('PAYPAL_NOT_ENABLED');
+      expect(err.code).to.equal('DATA_COLLECTOR_PAYPAL_NOT_ENABLED');
       expect(err.type).to.equal('MERCHANT');
 
       done();
@@ -92,7 +92,7 @@ describe('dataCollector', function () {
 
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('Kount is not enabled for this merchant.');
-      expect(err.code).to.equal('KOUNT_NOT_ENABLED');
+      expect(err.code).to.equal('DATA_COLLECTOR_KOUNT_NOT_ENABLED');
       expect(err.type).to.equal('MERCHANT');
 
       done();
@@ -105,7 +105,7 @@ describe('dataCollector', function () {
 
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('Data Collector must be created with Kount and/or PayPal.');
-      expect(err.code).to.equal('REQUIRES_CREATE_OPTIONS');
+      expect(err.code).to.equal('DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS');
       expect(err.type).to.equal('MERCHANT');
 
       done();
@@ -124,7 +124,7 @@ describe('dataCollector', function () {
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.message).to.equal('foo boo');
       expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('KOUNT_ERROR');
+      expect(err.code).to.equal('DATA_COLLECTOR_KOUNT_ERROR');
 
       done();
     });

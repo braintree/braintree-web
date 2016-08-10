@@ -34,7 +34,7 @@ function Client(configuration) {
   gatewayConfiguration = configuration.gatewayConfiguration;
 
   if (!gatewayConfiguration) {
-    throw new BraintreeError(errors.MISSING_GATEWAY_CONFIGURATION);
+    throw new BraintreeError(errors.CLIENT_MISSING_GATEWAY_CONFIGURATION);
   }
 
   [
@@ -44,8 +44,8 @@ function Client(configuration) {
   ].forEach(function (property) {
     if (property in gatewayConfiguration && !isWhitelistedDomain(gatewayConfiguration[property])) {
       throw new BraintreeError({
-        type: errors.GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
-        code: errors.GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
+        type: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
+        code: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
         message: property + ' property is on an invalid domain.'
       });
     }
@@ -122,8 +122,8 @@ Client.prototype.request = function (options, callback) {
   if (optionName) {
     callback = deferred(callback);
     callback(new BraintreeError({
-      type: errors.OPTION_REQUIRED.type,
-      code: errors.OPTION_REQUIRED.code,
+      type: errors.CLIENT_OPTION_REQUIRED.type,
+      code: errors.CLIENT_OPTION_REQUIRED.code,
       message: optionName + ' is required when making a request.'
     }));
     return;
@@ -134,7 +134,24 @@ Client.prototype.request = function (options, callback) {
     method: options.method,
     data: addMetadata(this._configuration, options.data),
     timeout: options.timeout
-  }, callback);
+  }, function (err, data, status) {
+    if (status === -1) {
+      callback(new BraintreeError(errors.CLIENT_REQUEST_TIMEOUT), null, status);
+    } else if (status === 429) {
+      callback(new BraintreeError(errors.CLIENT_RATE_LIMITED), null, status);
+    } else if (status >= 500) {
+      callback(new BraintreeError(errors.CLIENT_GATEWAY_NETWORK), null, status);
+    } else if (status < 200 || status >= 400) {
+      callback(new BraintreeError({
+        type: errors.CLIENT_REQUEST_ERROR.type,
+        code: errors.CLIENT_REQUEST_ERROR.code,
+        message: errors.CLIENT_REQUEST_ERROR.message,
+        details: {originalError: err}
+      }), null, status);
+    } else {
+      callback(null, data, status);
+    }
+  });
 };
 
 module.exports = Client;

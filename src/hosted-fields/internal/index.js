@@ -55,7 +55,7 @@ function createTokenizationHandler(client, cardForm) {
     var isValid = invalidFieldKeys.length === 0;
 
     if (isEmpty) {
-      reply([new BraintreeError(errors.FIELDS_EMPTY)]);
+      reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
     } else if (isValid) {
       creditCardDetails = normalizeCreditCardFields(cardForm.getCardData());
 
@@ -78,9 +78,9 @@ function createTokenizationHandler(client, cardForm) {
 
         if (err) {
           if (status < 500) {
-            error = errors.FAILED_HOSTED_FIELDS_TOKENIZATION;
+            error = errors.HOSTED_FIELDS_FAILED_TOKENIZATION;
           } else {
-            error = errors.TOKENIZATION_NETWORK_ERROR;
+            error = errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR;
           }
           error = assign({}, error, {
             details: {originalError: err}
@@ -105,9 +105,9 @@ function createTokenizationHandler(client, cardForm) {
       });
     } else {
       reply([new BraintreeError({
-        type: errors.FIELDS_INVALID.type,
-        code: errors.FIELDS_INVALID.code,
-        message: errors.FIELDS_INVALID.message,
+        type: errors.HOSTED_FIELDS_FIELDS_INVALID.type,
+        code: errors.HOSTED_FIELDS_FIELDS_INVALID.code,
+        message: errors.HOSTED_FIELDS_FIELDS_INVALID.message,
         details: {invalidFieldKeys: invalidFieldKeys}
       })]);
     }
