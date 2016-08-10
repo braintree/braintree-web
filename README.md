@@ -1,7 +1,7 @@
 braintree-web
 =============
 
-__NOTE: v3 of our JavaScript SDK is currently in beta. If you are interested in using this new major version [join our Google Group](https://groups.google.com/forum/#!forum/braintree-sdk-announce) for updates.__
+__NOTE: v3 of our JavaScript SDK is now in general availability. This branch you are viewing right now is obsolete (it was for the beta). Please [use `master` instead](https://github.com/braintree/braintree-web)!__
 
 A suite of tools for integrating Braintree in the browser.
 
