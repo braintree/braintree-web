@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ApplePay - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type='method'><a href="ApplePay.html#decoratePaymentRequest">decoratePaymentRequest</a></li><li data-type='method'><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type='method'><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#addClass">addClass</a></li><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#getState">getState</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type='method'><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type='method'><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type='method'><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">ApplePay</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+        ApplePay
+        </h2>
+        
+            <div class="class-description"><p>This class represents an Apple Pay component. Instances of this class have methods for validating the merchant server and tokenizing payments.</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    <h4 class="name" id="ApplePay"><span class="type-signature"></span>new ApplePay<span class="signature">(options)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p><strong>You cannot use this constructor directly. Use <a href="module-braintree-web_apple-pay.html#.create">braintree.apple-pay.create</a> instead.</strong></p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Options</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="apple-pay_apple-pay.js.html">apple-pay/apple-pay.js</a>, <a href="apple-pay_apple-pay.js.html#line27">line 27</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="decoratePaymentRequest"><span class="type-signature"></span>decoratePaymentRequest<span class="signature">(paymentRequest)</span><span class="type-signature"> &rarr; {<a href="external-ApplePayPaymentRequest.html">external:ApplePayPaymentRequest</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Merges a payment request with Braintree defaults
+The following properties are assigned to <code>paymentRequest</code> if not already defined</p>
+<ul>
+<li>countryCode</li>
+<li>currencyCode</li>
+<li>merchantCapabilities</li>
+<li>supportedNetworks</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>paymentRequest</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="external-ApplePayPaymentRequest.html">external:ApplePayPaymentRequest</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The payment request details to apply on top of those from Braintree.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="apple-pay_apple-pay.js.html">apple-pay/apple-pay.js</a>, <a href="apple-pay_apple-pay.js.html#line56">line 56</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>var applePay = require('braintree-web/apple-pay');
+
+applePay.create({client: clientInstance}, function (createErr, applePayInstance) {
+  // ...
+  var paymentRequest = applePay.decoratePaymentRequest({
+   total: {
+     label: 'My Company',
+     amount: '19.99'
+  });
+
+  console.log(paymentRequest);
+  // { total: { }, countryCode: 'US', currencyCode: 'USD', merchantCapabilities: [ ], supportedNetworks: [ ] }</code></pre>
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="performValidation"><span class="type-signature"></span>performValidation<span class="signature">(options, callback)</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Validates the merchant website, as required by ApplePaySession before payment can be authorized.</p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Options</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>validationURL</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The validationURL fram an ApplePayValidateMerchantEvent.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>displayName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><ul>
+<li>The canonical name for your store.</li>
+<li>The system may display this name to the user.</li>
+<li>Use a 128-character or less, UTF-8 string.</li>
+<li>Do not localize the name.</li>
+</ul></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>merchantIdentifier</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Your Apple merchant identifier. This is the Apple Merchant ID created on the Apple Developer Portal.
+Defaults to the merchant identifier specified in the Braintree Control Panel.
+You can use this field to override the merchant identifier for this transaction.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#callback">callback</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The second argument, <code>data</code>, is the Apple Pay merchant session object.
+Pass the merchant session to your Apple Pay session's completeMerchantValidation method.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="apple-pay_apple-pay.js.html">apple-pay/apple-pay.js</a>, <a href="apple-pay_apple-pay.js.html#line119">line 119</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>var applePay = require('braintree-web/apple-pay');
+
+applePay.create({client: clientInstance}, function (createErr, applePayInstance) {
+  var session = new ApplePaySession(1, {
+    // This should be the payment request object that
+    // contains the information needed to display the payment sheet.
+  });
+
+  session.onvalidatemerchant = function (event) {
+    applePay.performValidation({
+      validationURL: event.validationURL
+    }, function(err, validationData) {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      session.completeMerchantValidation(validationData);
+    });
+  };
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="tokenize"><span class="type-signature"></span>tokenize<span class="signature">(options, callback)</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Tokenizes an Apple Pay payment.</p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Options</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>token</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The <code>payment.token</code> property of an <a href="external-ApplePayPaymentAuthorizedEvent.html">external:ApplePayPaymentAuthorizedEvent</a></p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#callback">callback</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The second argument, <code>data</code>, is the tokenized payload.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="apple-pay_apple-pay.js.html">apple-pay/apple-pay.js</a>, <a href="apple-pay_apple-pay.js.html#line200">line 200</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>var applePay = require('braintree-web/apple-pay');
+
+applePay.create({client: clientInstance}, function (createErr, applePayInstance) {
+  var session = new ApplePaySession(1, { });
+
+  session.onpaymentauthorized = function (event) {
+    applePay.tokenize({
+      token: event.payment.token
+    }, function (err, tokenizedPayload) {
+      if (err) {
+        session.completePayment(ApplePaySession.STATUS_FAILURE);
+        return;
+      }
+      session.completePayment(ApplePaySession.STATUS_SUCCESS);
+
+      // Send the tokenizedPayload to your server.
+    });
+ };
+});</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
