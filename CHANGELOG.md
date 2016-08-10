@@ -1,409 +1,241 @@
 CHANGELOG
 =========
 
-## 2.27.0
+## 3.0.0-beta.12
 
-* Bugfix - Fixes an issue that prevented PayPal flows from working within the iOS Google Search app
+* Some error messages have been changed to be more consistent across components
+* Update `BraintreeError` to include a `code`, which can be used to check for specific errors:
+
+   ```
+   hostedFieldsInstance.tokenize(function (err, payload) {
+     if (err && err.code === 'FIELDS_EMPTY') {
+       // Handle user input error
+     }
+   });
+   ```
+
+* Fix an incorrect `<script>` tag example in API docs
+* Fix an error in Require.js API docs
 * Hosted Fields
-  * Support for MasterCard 2-series BIN ranges
+  * Automatic input formatting disabled for Android Firefox
+  * Add `vault` as an option to `tokenize` which allows cards to be vaulted on tokenization
+  * Add `addClass` and `removeClass` for updating classes on fields
+  * Stop applying `invalid` CSS classes to `potentiallyValid` fields on tokenization attempts
 * PayPal
-  * A new option, `intent`, has been added.
-  * Add PayPal Credit support
+  * Consistently return `BraintreeError` objects when the PayPal flow is cancelled
+* UnionPay
+  * Add `type` to tokenize payload
+* Add Apple Pay component.
 
-## 2.26.0
+## 3.0.0-beta.11
 
+* Update create error messages to be more consistent
+* Add `type` to Hosted Fields and PayPal tokenize payloads
+* Hosted Fields
+  * Add `getState` method that returns the state of all fields and possible card types
+  * Fixes a regression where expiration dates with a past month within the current year were treated as valid
 * PayPal
-  * Bugfix - Remove styling that broke iOS UIWebViews
-  * Adds support for `pt_BR` and `es_XC` locale codes
+  * Add `useraction` option to `paypal.tokenize`
 
-## 2.25.0
+__BREAKING CHANGES__
+* UnionPay improvements.
+  * Card capabilities
+    * Renamed `isUnionPayEnrollmentRequired` to `isSupported`.
+    * When `isSupported` is false, Braintree cannot process UnionPay card. Customer would need to use a different card.
+  * Enrollment response has `smsCodeRequired` flag.
+    * If `true`, customer will receive an SMS code, that is required for tokenization.
+    * If `false`, SMS code should not be passed during tokenization. Tokenization can be done immediately.
 
+## 3.0.0-beta.10
+
+* Return a human readable error message when requests are rate-limited.
+* Add 3D Secure component.
+* Hosted Fields
+  * Throw an error when initializing with an invalid field key. See __BREAKING CHANGES__.
+  * The formatting for expiration dates no longer inserts a leading `0` if the date begins with `1`. This prevents the numbers from jumping around for dates beginning `01`, `10`, `11`, or `12`.
+
+__BREAKING CHANGES__
+* An error is now returned when initializing Hosted Fields with an invalid field; it is no longer silently ignored.
+
+## 3.0.0-beta.9
+
+* No longer throws exceptions when using `require('braintree-web')` during server-side rendering with libraries such as React.js.
+* `index.js` and `debug.js` in the npm/bower modules no longer reference `package.json`.
+* Ajax errors in IE9 now report as general error instead of an empty string. It is impossible to get details additional about network errors in IE9 XDomainRequests.
+* Add 3D Secure component
+* UnionPay
+  * Expiration date or month/year together are now optional as some UnionPay cards do not have expiration dates.
+* PayPal
+  * All `create` options aside from `client` have now moved to `tokenize`. See __BREAKING CHANGES__.
+  * For one-time checkout, add `intent` option which can be `sale` or `authorize`
+  * HTTPS is no longer required
+  * Add `offerCredit` as an option to `tokenize` for offering customers PayPal Credit as a form of payment
+
+__BREAKING CHANGES__
+* PayPal's `create` options have moved to `tokenize`. Deferring these options to tokenization time allows greater flexibility in your checkout experience.
+
+   ```
+   braintree.paypal.create({
+     client: clientInstance
+   }, function (err, paypalInstance) {
+     paypalInstance.tokenize({
+       flow: 'checkout',
+       amount: '10.00',
+       currency: 'USD'
+     }, function (tokenizeErr, payload) {
+       // ...
+     });
+   });
+   ```
+
+## 3.0.0-beta.8
+
+* Hosted Fields
+  * Update `card-validator` to `2.2.8`
+  * Throw a proper error when creating without a callback
+* UnionPay
+  * Fix tokenization bugs
 * Data Collector
-  * Uses Kount configuration from the gateway if available
+  * Throw a proper error when creating without a callback
+* Improved error messaging when two components' versions do not match one another.
 
-## 2.24.1
+__BREAKING CHANGES__
+* Data Collector
+  * The `create` API has changed. `options.kount` for `dataCollector.create` is now a simple boolean:
 
-* PayPal
-  * Adds support for additional currencies in Checkout with PayPal flow
-    - `CZK`
-    - `JPY`
-    - `RUB`
+    ```
+    dataCollector.create({
+      client: clientInstance,
+      kount: true,
+      paypal: true
+    }, function (err, collector) {});
+    ```
+
+## 3.0.0-beta.7
+
+* Hosted Fields
+  * Add `inputSubmitRequest` event which is called when the user presses the Enter key (or equivalent) in a Hosted Fields input.
+
+__BREAKING CHANGES__
+* Make all callbacks consistently called asynchronously
+* Hosted Fields
+  * The `fieldStateChange` event is now 4 events: `empty`, `notEmpty`, `validityChange`, and `cardTypeChange`
+  * Change event payloads to always return the full state of the form and all possible card types
+* Data Collector
+  * A `client` option is now required
+
+## 3.0.0-beta.6
+
 * Hosted Fields
   * `postalCode` field now has a maximum length of 10 characters
-
-## 2.24.0
-
+  * Fix issues when pasting into fields
+* UnionPay
+  * Added support for UnionPay and Hosted Fields
+  * Updated the API
+  * Added `teardown` to cleanly destroy a UnionPay instance
 * PayPal
-  * Bugfixes for popup flows in iOS9 Chrome
-  * Fixes recognition of Hong Kong and Swedish locales
-* Drop-in
-  * option `defaultFirst: true` added to list a customer's default payment method first
+  * Add support for `billingAgreementDescription`
 
-## 2.23.0
+__BREAKING CHANGES__
+* UnionPay
+  * `fetchCapabilities` now takes `card: {number: '4111'}` instead of `cardNumber: '4111'`
+  * `enroll` now takes mobile phone data under the `mobile` property instead of the `card` property
+  * `enroll` now returns a property called `enrollmentId` instead of `unionpayEnrollmentId`
+  * Removed the `options.options` property from `tokenize`; `smsCode` and `enrollmentId` are now top-level options
 
+## 3.0.0-beta.5
+
+* Improve documentation of callbacks
+* Hosted Fields
+  * Calling methods (such as `tokenize` or `setPlaceholder`) after Hosted Fields has been torn down throws an error
 * PayPal
-  * Bugfix - Change cancel button's `type` to `button` to keep it from "stealing" Enter keypresses (fixes [#150](https://github.com/braintree/braintree-web/issues/150))
-* Drop-in
-  * Call `onError` when server-side tokenization fails (fixes [#59](https://github.com/braintree/braintree-web/issues/59))
-
-## 2.22.2
-
-* PayPal
-  * Bugfix - Fixes some scrolling issues with PayPal auth flow dialogs (fixes [#143](https://github.com/braintree/braintree-web/issues/143))
+  * Calling methods (such as `tokenize`) after PayPal has been torn down throws an error
 * DataCollector
-  * Bugfix - Removes a non-critical error in IE8 (fixes [#141](https://github.com/braintree/braintree-web/issues/141))
+  * Throw an error when trying to tear down twice
+* American Express
+  * `getRewardsBalance` to get the rewards balance of a Braintree nonce
+  * `getExpressCheckoutProfile` to get the Express Checkout profile of an Amex nonce
+* UnionPay
+  * `fetchCapabilities` to fetch card capabilities, and determine if a card requires enrollment
+  * `enroll` to process enrollment for a card
+  * `tokenize` UnionPay cards
 
-## 2.22.1
+## 3.0.0-beta.4
 
-* Fixes an issue that prevented `2.22.0` from being `require`-able when installing through `npm`
-
-## 2.22.0
-
-* PayPal
-  * Adds support for additional currencies in Checkout with PayPal flow
-    - `SGD`
-    - `THB`
-    - `PHP`
-    - `NZD`
-    - `HKD`
-    - `MYR`
-
-## 2.21.0
-
-* PayPal
-  * Add `billingAgreementDescription` for Checkout with PayPal flow
-  * Update behavior of `shippingAddressOverride` in sandbox (fixes [#119](https://github.com/braintree/braintree-web/issues/119))
-  * Bugfixes
-
-## 2.20.0
-
-* Hosted-Fields/Drop-in
-  * Bump `card-validator` to `2.2.7`
-* PayPal
-  * Adds support for `MXN` and `ILS` currencies in Checkout with PayPal flow
-  * Translation updates
-
-## 2.19.0
-
-* Drop-in
-  * PayPal checkout button style changes
-* PayPal
-  * Add `onAuthorizationDismissed` callback to handle dismissal of the authorization flow
-
-## 2.18.0
-
-* Improve validation of tokenization keys
-* Drop-in
-  * Introduce PayPal checkout button option
+* Client
+  * `client` components no longer have a `teardown` function
 * Hosted Fields
-  * Support `-webkit-tap-highlight-color` and `-moz-tap-highlight-color` inner properties
+  * Add `setPlaceholder` to allow dynamic updating of field placeholders
+  * Client component version must match Hosted Fields' component version
+  * Throw `BraintreeError` if tokenize does not include a callback
+* PayPal
+  * Bugfixes in teardown
+  * Client component version must match PayPal's component version
+  * Make teardown callback optional
+  * Throw `BraintreeError` if tokenize does not include a callback
 
-## 2.17.6
+## 3.0.0-beta.3
 
-* Bugfix - Reduce time to report error if there is an unhandled error (SSL, gateway unreachable, etc) with the JSONP driver
-* Avoid exceptions caused by closed `window.opener`s in IE
-* Hosted Fields
-  * Bugfixes
-    * `onFieldEvent` wasn't being called when `isEmpty` changed (fixes [#110](https://github.com/braintree/braintree-web/issues/110))
-    * Teardown no longer injects empty `payment_method_nonce` input field
-    * Field locking no longer occurs on iOS
-    * 3-digit expiration month+date strings such as `2/20` are now valid
-    * Space separated expiration dates such as `1 2020` are now valid
-    * Potential validity of slashless expiration dates is now consistent
-    * Expiration dates that are too long are no longer considered valid
-    * CVV validation does not always validate 3-digit values as valid
-* Drop-in
-  * Bugfix - Fixes an error around deviceData being undefined (fixes [#114](https://github.com/braintree/braintree-web/issues/114))
+* npm packaging fixes
 
-## 2.17.5
-
-* Fixes use of jQuery or DOM objects specifying containers or buttons
-
-## 2.17.4
-
-* Drop-in
-  * Bugfix - Allow PayPal Vault flow to complete when no `paypal` options are given
-
-## 2.17.3
-
-* Drop-in
-  * Bugfix - IE8 now correctly accepts DOM nodes as containers (fixes [#105](https://github.com/braintree/braintree-web/issues/105))
-  * Bugfix - jQuery elements are properly accepted as containers (fixes [#105](https://github.com/braintree/braintree-web/issues/105))
-  * Bugfix - PayPal popups now properly open when `paypal` options are not given
-
-## 2.17.2
-
-* Bugfixes
-
-## 2.17.1
-
-* Bugfixes
-
-## 2.17.0
-
-* Added support for tokenization keys
-* Bugfix: Prevent unexpected mutation of configuration object passed to `.setup()`
-
-## 2.16.1
-
-* Bugfix: Fix [#98](https://github.com/braintree/braintree-web/issues/98)
-
-## 2.16.0
-
-* DataCollector
-  * bundles BraintreeData functionality into v.zero integrations
-
-## 2.15.4
-
-* Drop-in
-  * Bugfix: Properly complete card tokenization flow in IE8
-
-## 2.15.3
-
-* Deduped some internal dependencies for filesize reductions
+## 3.0.0-beta.2
 
 * Hosted Fields
-  * Fixes a bug where emptying a previously filled form would retain stale nonce
-  * Bugfix: correctly report `card.type` in `onFieldEvent`
-
-## 2.15.2
-
-* PayPal
-  * Fix a regression where `onCancelled` was no longer called
-
-## 2.15.1
-
-* Custom & Coinbase
-  * Bugfixes
-
-## 2.15.0
-
-* Hosted Fields
-  * Allow CVV-only integrations
-  * Contextually validate month based on current date when using split fields
-
-* PayPal
-  * Introduce `headless` merchant configuration option
-  * Introduce programmatic initialization and closing of PayPal auth flow
-  * Increase localization coverage
-
-* Coinbase
-  * Fix regression where button appeared in unsupported browsers
-
-## 2.14.4
-
-* Drop-in
-  * Fix spriting over text for Coinbase button
-
-## 2.14.3
-
-* Improve formatting of error handler if you don't specify an `onError` callback
-
-* Fix [an issue](https://github.com/braintree/braintree-web/issues/74) when handling credit card fields
-
-* Coinbase
-  * Update popup size to reflect new Coinbase design
-
-* PayPal
-  * BugFixes
-
-## 2.14.2
-
- * PayPal
-    * Bugfixes
-
-## 2.14.1
-
+  * Allow expiration dates with leading zeroes when formatting is enabled
 * PayPal
   * Bugfixes
 
-## 2.14.0
-
-* Introduce `hosted-fields`
-* Bugfixes
-
-## 2.13.0
-
-* Introduce `teardown`
-
+__BREAKING CHANGES__
 * PayPal
-  * Bugfixes
+  * Replace `shippingAddressOverride.editable` with `shippingAddressEditable`, which disables user editing of shipping address when set to false.
+  * Replace `singleUse` boolean property with `flow` string property. `singleUse: true` is now `flow: 'checkout'`. `flow` is required; use `flow: 'vault'` for Vault flow.
 
-## 2.12.2
+| Old | New |
+| --- | --- |
+| `singleUse` omitted | `flow: 'vault'` |
+| `singleUse: false` | `flow: 'vault'` |
+| `singleUse: true` | `flow: 'checkout'` |
 
-  * PayPal
-    * Bugfixes
+## 3.0.0-beta.1
 
-## 2.12.1
+This release contains a number of new features for developers and their users, the key benefits are listed below. This is a significant departure from our earlier versions of the JS SDK. It is a composable SDK instead of a collection of pre-defined integration patterns (better for more advanced developers):
 
-  * Api
-    * Timeout optimizations
+* Smaller File Size
 
-## 2.12.0
-  * Adds new features for partners
+  > Results in faster load times and improves performance of their web applications. A merchant has the choice to control the size by controlling the components they use. To illustrate the implications of this: a merchant who is only using PayPal does not need to include (and subsequently force their users to download) the code for Hosted Fields, DataCollector, etc. if they are not leveraging these features.
 
-## 2.11.4
-  * PayPal
-    * Bugfixes
+* Modular Architecture for Advanced Developers
 
-## 2.11.3
-  * Bugfixes
+  > Rebuilt with a module-first approach. Developers have the choice and control over the specific JS SDK components they’d like to use instead of using the full SDK. The value of this is that it results in a simpler integration and also has been something many advanced developers have requested.
 
+* Custom PayPal Button
 
-  * PayPal
-    * Adds indicator to app if mock data is being used
-    * onUnsupported errors console.log by default
+  > Developers have the option to customize the PayPal button that is displayed on their page. We provide only a bindable programmatic handler.
 
-## 2.11.2
- * Bugfixes
+* Hosted Fields Formatting
 
-## 2.11.1
- * iframe messaging bug fixes
+  > Many developers who use Hosted Fields have asked us for more robust abilities to format input into the Hosted Fields Form Fields for UX reasons. The new SDK allows fields to be formatted. One example of this is clean spacing between card numbers (4111 1111 1111 1111 instead of 4111111111111111).
 
-## 2.11.0
- * Add `enableCORS` as configuration option
+* No Dependency on Form Submissions
 
-## 2.10.1
-  * Coinbase
-    * Fixes a bug where the authorization popup did not close after clicking "Deny"
+  > Traditionally, our SDK has required developers to submit payment information in the context of a form. We no longer require developers to integrate with this pattern. Modern web applications tend to be built with richer client-side functionality (validation, multiple payment options, AJAX submission, etc.). Deferring the mechanics of tokenization to a simple API call in our SDK allows our libraries to be much less intrusive as far as developer experience goes.
 
-## 2.10.0
-  * Use CORS in favor of JSONP
+* CORS Support, as opposed to JSONP
 
-  * Drop-in
-    * Bugfixes
+  > CORS is a Web Security technology that allows developers tight control over which third party services can be rendered within their web page. This is now the default.
 
-  * PayPal
-    * Fixes a bug with the footer not persisting across views
+* Improved .NET Experience
 
-## 2.9.0
-  * Drop-in
-    * Contextually validate month based on current date
-    * Bugfix for Chrome auto-fill issue
+  > .NET developers who use the WebForms Technology have run into many issues with previous versions of our SDK related to competing form submission handling. Since we no longer rely on form submissions, native .NET form handling is left untouched.
 
-## 2.8.1
-  * PayPal
-    * Bugfixes
+* Improved Documentation
 
-## 2.8.0
-  * Drop-in
-    * Report client-side validation failures to `onError`
-    * Add support for valid cards over 16 digits (including Maestro)
-    * Fix missing background on error overlay in Internet Explorer 8
+  > By its very nature, this new release is more low-level and less opinionated about contextual integration. This means we can provide an API reference and simpler getting started guides.
 
-  * PayPal
-    * Bugfixes
+* Modern distribution
 
-## 2.7.4
-  * Bugfixes
+  > By focusing on npm and GitHub as release channels the SDK fits better with newer build pipelines and tooling.
 
-  * Drop-in
-    * Generate new nonce on each submit attempt when new payment method is available
+* Improved error messaging
 
-  * Coinbase
-    * Bugfixes related to popup logins not working in some Metro versions of IE
-
-  * PayPal
-    * Add billing address retrieval via `enableBillingAddress` client option
-
-## 2.7.3
-  * PayPal
-    * Render errors for failed two-factor auth logins
-    * Add modal support in webviews on iOS
-
-## 2.7.2
-  * Drop-in
-    * Refactor expiration validation to max out at 19 years in the future
-
-## 2.7.1
-  * Custom
-    * Ensures that nonces are written to the DOM immediately after they are generated
-
-## 2.7.0
-  * Add `onReady` callback
-  * Custom
-    * Credit card form is no longer required
-  * Drop-in
-    * Ensure only whitelisted payment methods are displayed (Credit cards, PayPal, Coinbase)
-    * Fix Safari autofill issue
-  * Coinbase
-    * Add iOS8/Lollipop completion page when popup cannot close
-    * Do not render button in ie8
-
-## 2.6.3
-  * Bugfixes
-
-## 2.6.2
-  * Bugfixes
-
-## 2.6.1
-  * Coinbase
-    * Prevent rendering Authorization state when user denies auth flow or closes popup
-
-## 2.6.0
-  * 3D Secure
-    * Add an `onUserClose` callback
-    * Fix modal repaint issues during orientation changes
-    * Minor style updates
-
-## 2.5.5
-  * Prevent Coinbase authorization from invoking callback in custom integration before form submit
-
-## 2.5.4
-  * PayPal
-    * Call `onUnsupported` callback when an invalid country is provided to the checkout flow
-
-## 2.5.3
-  * Drop-in
-    * Restrict input formatting to certain devices
-      * Blacklists Android < 4.4
-      * Blacklists Firefox on Android
-
-## 2.5.2
-  * Bugfixes
-
-## 2.5.1
-  * Bugfixes
-
-## 2.5.0
-  * Adds Coinbase
-  * Introduce unified callback `onPaymentMethodReceived` and `onError` across all integrations
-
-## 2.4.1
-  * Drop-in
-    * Add ability to autofill card form and format input values on paste
-    * Provide names to generated iframes
-
-## 2.4.0
-  * Adds 3D Secure
-  * Fix bug where JSONP callbacks were colliding
-
-## 2.3.3
-  * Expose `shippingAddress` in PayPal `onSuccess` callback
-
-## 2.3.2
-  * Bugfixes
-
-## 2.3.1
-  * Bugfixes
-
-## 2.3.0
-  * Custom Integrations
-    * Accepts `onPaymentMethodReceived` callback in top-level configuration
-  * Drop-in
-    * Fix input styling issues on Firefox for Android
-  * PayPal
-    * Application re-skin
-    * Accepts a `{boolean} enableShippingAddress` field in the options configuration
-    * Displays your account shipping address details (Future payment flow only)
-    * Additional locale translations added
-
-## 2.2.4
-  * Drop-in
-    * Bugfixes
-    * Remove PayPal monogram from PayPal button
-
-## 2.2.3
-  * Drop-in
-    * Bugfixes
-    * Remove PayPal monogram from PayPal button
+  > Better error handling and presentation everywhere, with clearer error messaging.

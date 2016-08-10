@@ -1,0 +1,25 @@
+#!/bin/bash
+if [ ! -f .env ]; then
+  echo "${RED}Please create a .env file first. See the README for details.${RESET}"
+  exit 1
+else
+  set -o allexport
+  . .env
+  set +o allexport
+fi
+
+VERSION="$(grep version package.json | cut -d: -f2 | cut -d'"' -f2)"
+for f in $BRAINTREE_JS_BOWER_DEST/*.debug.js
+do
+  file="${f%%.debug.js}"
+  file="$(basename $file)"
+  tput setaf 1
+  if diff $f $BRAINTREE_JS_HOSTED_DEST/web/$VERSION/js/$file.js
+  then
+    tput setaf 2
+    echo "✔ $file.js"
+  else
+    tput setaf 1
+    echo "X $file.js doesn't match"
+  fi
+done

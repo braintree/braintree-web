@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <meta charset="UTF-8">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+      border: none;
+      background-color: transparent;
+    }
+
+    body, form, input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    label {
+      position: absolute;
+      left: -9999px;
+    }
+
+    :focus {
+      outline: 0;
+    }
+  </style>
+
+</head>
+<body>
+
+<!--[if IE 9]><script src="../js/hosted-fields-internal-polyfills-ie9@DOT_MIN.js"></script><![endif]-->
+
+<script src="../js/hosted-fields-internal@DOT_MIN.js"></script>
+<script>braintree.hostedFields.create();</script>
+</body>
+</html>

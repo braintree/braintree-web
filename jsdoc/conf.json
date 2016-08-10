@@ -1,0 +1,8 @@
+{
+  "templates": {
+    "default": {
+      "includeDate": false
+    }
+  },
+  "plugins": ["version-interpolator-plugin", "plugins/markdown"]
+}

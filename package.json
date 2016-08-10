@@ -1,17 +1,80 @@
 {
   "name": "braintree-web",
-  "description": "A suite of tools for integrating Braintree in the browser",
-  "version": "2.27.0",
-  "main": "dist/braintree.js",
+  "version": "3.0.0-beta.12",
+  "license": "MIT",
+  "main": "src/index.js",
+  "private": true,
   "repository": {
     "type": "git",
-    "url": "git@github.com:braintree/braintree-web"
+    "url": "https://github.com/braintree/braintree-web.git"
   },
-  "keywords": [
-    "braintree",
-    "payments"
-  ],
-  "author": "braintree <code@getbraintree.com>",
-  "license": "MIT",
-  "homepage": "https://github.com/braintree/braintree-web"
+  "scripts": {
+    "jsdoc": "./scripts/npm-to-gulp jsdoc",
+    "build": "./scripts/npm-to-gulp build",
+    "lint": "./scripts/npm-to-gulp lint",
+    "release": "./scripts/release",
+    "test": "./scripts/npm-to-gulp test"
+  },
+  "dependencies": {
+    "card-validator": "2.3.0",
+    "credit-card-type": "4.0.3",
+    "framebus": "2.0.7",
+    "iframer": "braintree/iframer.git#1.0.0",
+    "inject-stylesheet": "1.0.0",
+    "restricted-input": "1.0.0",
+    "sjcl": "1.0.3"
+  },
+  "devDependencies": {
+    "async": "2.0.1",
+    "browserify": "12.0.1",
+    "browserify-derequire": "^0.9.4",
+    "chai": "3.4.1",
+    "chalk": "1.1.1",
+    "del": "2.2.0",
+    "dotenv": "2.0.0",
+    "envify": "3.4.0",
+    "eslint": "2.7.0",
+    "eslint-config-braintree": "1.0.1",
+    "gulp": "3.9.0",
+    "gulp-minifier": "0.1.1",
+    "gulp-rename": "1.2.2",
+    "gulp-replace": "0.5.4",
+    "gzip-size": "3.0.0",
+    "is-uuid": "1.0.2",
+    "jsdoc": "3.4.0",
+    "jsdoc-template": "braintree/jsdoc-template#1.2.6",
+    "karma": "0.13.22",
+    "karma-browserify": "5.0.5",
+    "karma-chai-sinon": "0.1.5",
+    "karma-mocha": "1.1.1",
+    "karma-mocha-reporter": "2.0.3",
+    "karma-phantomjs-launcher": "1.0.0",
+    "merge-stream": "1.0.0",
+    "mocha": "3.0.0",
+    "packageify": "0.2.3",
+    "phantomjs-prebuilt": "2.1.7",
+    "posix-getopt": "1.2.0",
+    "readline-sync": "1.4.2",
+    "requirejs": "2.2.0",
+    "run-sequence": "1.1.5",
+    "sinon": "1.17.4",
+    "sinon-chai": "2.8.0",
+    "table": "3.7.8",
+    "tmp": "0.0.28",
+    "uglify-js": "2.6.1",
+    "unreachable-branch-transform": "0.5.0",
+    "watchify": "3.7.0"
+  },
+  "browserify": {
+    "transform": [
+      "packageify",
+      [
+        "envify",
+        {
+          "_": "purge"
+        }
+      ],
+      "unreachable-branch-transform"
+    ]
+  }
 }

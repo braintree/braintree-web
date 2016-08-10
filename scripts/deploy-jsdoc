@@ -1,0 +1,47 @@
+#!/bin/bash
+
+set -u
+set -e
+
+run_ressh() {
+  source "$HOME/.aliases"
+  ressh
+}
+
+commit_and_push() {
+  set +e
+  git add .
+  git commit -m "Add version $npm_package_version"
+  run_ressh
+  git push origin gh-pages
+  set -e
+}
+
+BT_WEB_DIR=/tmp/braintree-web-public
+BT_JS_DIR=~/bt/braintree.js
+
+if [ -d "$BT_WEB_DIR" ]; then
+  rm -rf "$BT_WEB_DIR"
+fi
+
+echo -e "Cloning public braintree-web...\n"
+git clone git@github.com:braintree/braintree-web.git "$BT_WEB_DIR"
+
+echo -e "Building jsdoc...\n"
+cd "$BT_JS_DIR" && npm run jsdoc
+
+cd "$BT_WEB_DIR" && git co gh-pages
+git config user.name Braintree
+git config user.email code@getbraintree.com
+
+echo -e "Adding jsdoc to braintree-web and publishing...\n"
+cp -r ~/bt/braintree.js/dist/jsdoc/$npm_package_version .
+cp -r ~/bt/braintree.js/dist/jsdoc/current .
+cp -r ~/bt/braintree.js/dist/jsdoc/index.html .
+cp -r ~/bt/braintree.js/dist/jsdoc/.nojekyll .
+commit_and_push
+
+echo -e "Removing cloned braintree-web"
+rm -rf "$BT_WEB_DIR"
+
+echo "Finished, exiting."

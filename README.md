@@ -1,66 +1,33 @@
 braintree-web
-=================
+=============
+
+__NOTE: v3 of our JavaScript SDK is currently in beta. If you are interested in using this new major version [join our Google Group](https://groups.google.com/forum/#!forum/braintree-sdk-announce) for updates.__
 
 A suite of tools for integrating Braintree in the browser.
 
-This is the repo to submit issues if you have any problems or questions about any v.zero JS integration.
-
-> ### Note
-
-> This branch is for __v2__ of the Braintree JavaScript SDK.
-
-> Full source code for the Braintree JavaScript SDK __v3 beta__ is on the [3.x-beta](https://github.com/braintree/braintree-web/tree/3.x-beta) branch. Pull requests welcome.
+This is the repo to submit issues if you have any problems or questions about any v.zero JavaScript integration.
 
 Install
 =======
 
 ```
-npm install braintree-web
+npm install braintree-web@beta
 ```
 
 ```
-bower install braintree-web
+bower install braintree-web#3.x-beta
 ```
 
 Usage
 =====
 
-For more thorough documentation, visit [the JavaScript client SDK docs](https://developers.braintreepayments.com/guides/client-sdk/javascript/v2).
-
-#### Drop-in integration
-
-```html
-<form action="/your/server/endpoint" method="post">
-    <div id="dropin-container"></div>
-</form>
-```
-
-```javascript
-braintree.setup('your-client-token', 'dropin', {
-  container: 'dropin-container'
-});
-```
-
-#### Custom integration
-
-```html
-<form id="payment-form" action="/your/server/endpoint" method="post">
-  <input data-braintree-name="number" value="4111111111111111" />
-  <input data-braintree-name="expiration_date" value="10/20" />
-  <input type="submit" value="Purchase" />
-</form>
-```
-
-```javascript
-braintree.setup('your-client-token', 'custom', {
-  id: 'payment-form'
-});
-```
+For more thorough documentation, visit [the JavaScript client SDK docs](https://developers.braintreepayments.com/guides/client-sdk/javascript/v3).
 
 ####Hosted Fields integration
 
 ```html
 <form action="/" id="my-sample-form">
+  <input type="hidden" name="payment_method_nonce">
   <label for="card-number">Card Number</label>
   <div id="card-number"></div>
 
@@ -70,53 +37,91 @@ braintree.setup('your-client-token', 'custom', {
   <label for="expiration-date">Expiration Date</label>
   <div id="expiration-date"></div>
 
-  <input type="submit" value="Pay" />
+  <input id="my-submit" type="submit" value="Pay" disabled/>
 </form>
 ```
 
 ```javascript
-braintree.setup("YOUR_CLIENT_TOKEN", "custom", {
-  id: "my-sample-form",
-  hostedFields: {
+var submitBtn = document.getElementById('my-submit');
+var form = document.getElementById('my-sample-form');
+
+braintree.client.create({
+  authorization: CLIENT_AUTHORIZATION
+}, clientDidCreate);
+
+function clientDidCreate(err, client) {
+  braintree.hostedFields.create({
+    client: client,
     styles: {
-      "input": {
-        "font-size": "16pt",
-        "color": "#3A3A3A"
+      'input': {
+        'font-size': '16pt',
+        'color': '#3A3A3A'
       },
 
-      ".number": {
-        "font-family": "monospace"
+      '.number': {
+        'font-family': 'monospace'
       },
 
-      ".valid": {
-        "color": "green"
+      '.valid': {
+        'color': 'green'
       }
     },
-    number: {
-      selector: "#card-number"
-    },
-    cvv: {
-      selector: "#cvv"
-    },
-    expirationDate: {
-      selector: "#expiration-date"
+    fields: {
+      number: {
+        selector: '#card-number'
+      },
+      cvv: {
+        selector: '#cvv'
+      },
+      expirationDate: {
+        selector: '#expiration-date'
+      }
     }
-  }
+  }, hostedFieldsDidCreate);
 });
+
+function hostedFieldsDidCreate(err, hostedFields) {
+  submitBtn.addEventListener('click', submitHandler.bind(null, hostedFields));
+  submitBtn.removeAttribute('disabled');
+}
+
+function submitHandler(hostedFields, event) {
+  event.preventDefault();
+  submitBtn.setAttribute('disabled', 'disabled');
+
+  hostedFields.tokenize(function (err, payload) {
+    if (err) {
+      submitBtn.removeAttribute('disabled');
+      console.error(err);
+    } else {
+      form['payment_method_nonce'].value = payload.nonce;
+      form.submit();
+    }
+  });
+}
 ```
 
 #### Advanced integration
 
 ```javascript
-var client = new braintree.api.Client({
-  clientToken: 'your-client-token'
-});
-
-client.tokenizeCard({
-  number: '4111111111111111',
-  expirationDate: '10/20'
-}, function (err, nonce) {
-  // Send nonce to your server
+braintree.client.create({
+  authorization: CLIENT_AUTHORIZATION
+}, function (err, client) {
+  client.request({
+    endpoint: 'payment_methods/credit_cards',
+    method: 'post',
+    data: {
+      creditCard: {
+        number: '4111111111111111',
+        expirationDate: '10/20',
+        cvv: '123',
+        billingAddress: {
+          postalCode: '12345'
+        }
+      }
+    }
+  }, function (err, response) {
+    // Send response.creditCards[0].nonce to your server
+  });
 });
 ```
-

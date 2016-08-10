@@ -1,0 +1,161 @@
+#!/bin/bash
+
+RED="$(tput setaf 1)"
+GREEN="$(tput setaf 2)"
+YELLOW="$(tput setaf 3)"
+BLUE="$(tput setaf 4)"
+MAGENTA="$(tput setaf 5)"
+CYAN="$(tput setaf 6)"
+RESET="$(tput sgr0)"
+YES="^(y|yes|yas)$"
+SOURCE_IGNORES="jenkins_grove.groovy Drakefile Dockerfile"
+
+dotenv() {
+  if [ ! -f .env ]; then
+    echo "${RED}Please create a .env file first. See DEVELOPMENT.md for details.${RESET}"
+    exit 1
+  else
+    set -o allexport
+    . .env
+    set +o allexport
+  fi
+}
+
+set -e
+
+handle_abort() {
+  >&2 echo ''
+  >&2 echo -e "${RED}Aborting!${RESET}"
+  exit 1
+}
+
+get_package_json_version() {
+  grep version package.json | cut -d':' -f2- | tr -d '" ,'
+}
+
+get_version_for_prompt() {
+  local latest_commit
+  local latest_tag
+
+  latest_commit="$(git show --oneline | head -n 1 | awk '{print $1}')"
+  latest_tag="$(git describe --abbrev=0 --tags)"
+
+  set +e
+  git show-ref --tags --dereference | grep "$latest_commit" > /dev/null
+  if [ $? -eq 0 ]; then
+    local commit_or_tag="tag $latest_tag"
+  else
+    local commit_or_tag="$latest_commit"
+  fi
+  set -e
+  echo "$commit_or_tag"
+}
+
+confirm_destination() {
+  DEST="$1"
+
+  if [ -d "$DEST" ]; then
+    echo -e "${YELLOW}This is a beta version.$RESET"
+    echo -e "${YELLOW}Ensure that $DEST is set up correctly.$RESET"
+    echo -en "${BLUE}Is $DEST in the state you want (y/n)? $RESET"
+    read message
+    if [[ ! "$message" =~ $YES ]]; then
+      >&2 echo -e "${RED}You should do that before proceeding.$RESET"
+      exit 1
+    fi
+    echo
+  else
+    echo -e "${RED}$DEST does not exist!$RESET"
+    exit 1
+  fi
+}
+
+reinstall_dependencies() {
+  source ~/.nvm/nvm.sh
+  nvm install
+  nvm use
+
+  echo -en "${YELLOW}Reinstall${RESET} npm/bundle dependencies (y/n)? "
+  read message
+
+  if [[ "$message" =~ $YES ]]; then
+    npm cache clean
+    echo '✔ npm cache cleared'
+
+    rm -rf ./node_modules
+    echo '✔ npm modules removed'
+
+    npm install
+
+    if [ -e Gemfile ]; then
+      gem install bundler
+      bundle install
+    fi
+  fi
+}
+
+confirm_version() {
+  echo -en "Release ${MAGENTA}braintree.js $BLUE$(get_package_json_version)$RESET"
+  echo -en " at $YELLOW$(get_version_for_prompt)$RESET (y/n)? "
+  read message
+
+  if [[ ! "$message" =~ $YES ]]; then
+    >&2 echo -e "${RED}Aborting...$RESET"
+    exit 1
+  fi
+}
+
+join() {
+  # IFS is used as the separator for $* printing
+  local IFS="$1"
+  shift
+  echo "$*"
+}
+
+release_source() {
+  set +e
+  git ls-files | egrep -v "$(join '|' $SOURCE_IGNORES)" | xargs cp --parents -t "$BRAINTREE_JS_SOURCE_DEST"
+  echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
+  exit 0
+  set -e
+}
+
+main() {
+  TASK="$1"
+
+  trap 'handle_abort' SIGINT SIGTERM
+  cd "$(dirname "${BASH_SOURCE[0]}")/.."
+  dotenv
+
+  case "$TASK" in
+    hosted)
+      confirm_destination "$BRAINTREE_JS_HOSTED_DEST"
+      reinstall_dependencies
+      confirm_version
+      env BRAINTREE_JS_ENV=production gulp release:hosted
+      ;;
+    published)
+      confirm_destination "$BRAINTREE_JS_BOWER_DEST"
+      reinstall_dependencies
+      confirm_version
+      env BRAINTREE_JS_ENV=production gulp release:bower
+      ;;
+    jsdoc)
+      ./scripts/deploy-jsdoc
+      ;;
+    source)
+      confirm_destination "$BRAINTREE_JS_SOURCE_DEST"
+      release_source
+      ;;
+    *)
+      echo "${YELLOW}${TASK}${RED} is not a valid option. Choose from the following:${RESET}"
+      echo "* hosted"
+      echo "* published"
+      echo "* jsdoc"
+      echo "* source"
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

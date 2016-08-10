@@ -1,0 +1,220 @@
+#!/usr/bin/env node
+/* eslint-disable no-console */
+/* global Set */
+
+require('dotenv').config();
+
+var opt;
+var chalk = require('chalk');
+var table = require('table').default;
+var posixGetopt = require('posix-getopt');
+var fs = require('fs');
+var gs = require('gzip-size');
+var path = require('path');
+var spawn = require('child_process').spawnSync;
+var readline = require('readline-sync');
+var ADDED = chalk.bgGreen.black('  added  ');
+var REMOVED = chalk.bgRed.black(' removed ');
+
+function parseArgs() {
+  var parser = new posixGetopt.BasicParser('jh', process.argv);
+  var J_ARG, H_ARG, versions;
+
+  while ((opt = parser.getopt()) != null) { // eslint-disable-line no-cond-assign
+    switch (opt.option) { // eslint-disable-line default-case
+      case 'j':
+        J_ARG = true;
+        break;
+      case 'h':
+        H_ARG = true;
+        break;
+    }
+  }
+
+  if (!J_ARG && !H_ARG) {
+    J_ARG = H_ARG = true;
+  }
+
+  versions = process.argv.slice(parser.optind());
+
+  if (versions.length < 2) {
+    console.log('Usage: hosted-size-compare [-jh] VERSION1 VERSION2');
+    process.exit(1);
+  }
+
+  return {
+    j: J_ARG,
+    h: H_ARG,
+    v1: versions[0],
+    v2: versions[1]
+  };
+}
+
+function resolve(filepath) {
+  return path.join(process.env.BRAINTREE_JS_HOSTED_DEST, filepath);
+}
+
+function filesWithoutExtensions(v1, v2, subdirectory) {
+  var fileset = new Set();
+
+  function addToSet(version) {
+    var hostedPath = resolve(`web/${version}/${subdirectory}`);
+    var fileListing = fs.readdirSync(hostedPath);
+
+    fileListing.forEach(function (filename) {
+      fileset.add(filename.replace(/\..*$/, ''));
+    });
+  }
+
+  addToSet(v1);
+  addToSet(v2);
+
+  return fileset;
+}
+
+function gzipsize(filepath) {
+  return gs.sync(fs.readFileSync(resolve(filepath)));
+}
+
+function exists(filepath) {
+  return fs.existsSync(resolve(filepath));
+}
+
+function filesize(filepath) {
+  return fs.statSync(resolve(filepath)).size;
+}
+
+function colordiff(diff) {
+  if (diff < 0) {
+    diff = chalk.green(diff.toLocaleString());
+  } else if (diff > 0) {
+    diff = chalk.red('+' + diff.toLocaleString());
+  }
+
+  return diff.toLocaleString();
+}
+
+function compareAssets(deltas, v1, v2, directory) {
+  var files = filesWithoutExtensions(v1, v2, directory);
+  var extension = '.' + directory;
+  var rows = [
+    [directory + ' sizes (bytes)', 'regular', 'minified', 'gzipped'].map(function (item) {
+      return chalk.bold(item);
+    })
+  ];
+
+  files.forEach(function (file) {
+    var file1 = `web/${v1}/${directory}/${file}`;
+    var file2 = `web/${v2}/${directory}/${file}`;
+    var data = {
+      basename: file,
+      extension: extension,
+      left: {
+        path: file1 + extension,
+        size: 0,
+        exists: true
+      },
+      leftMin: {
+        path: file1 + '.min' + extension,
+        size: 0,
+        gzip: 0,
+        exists: true
+      },
+      right: {
+        path: file2 + extension,
+        size: 0,
+        exists: true
+      },
+      rightMin: {
+        path: file2 + '.min' + extension,
+        size: 0,
+        gzip: 0,
+        exists: true
+      },
+      deltas: {
+        min: 0,
+        gzip: 0,
+        regular: 0
+      }
+    };
+
+    data.left.exists = exists(data.left.path);
+    data.left.size = data.left.exists ? filesize(data.left.path) : 0;
+    data.leftMin.exists = exists(data.leftMin.path);
+    data.leftMin.size = data.leftMin.exists ? filesize(data.leftMin.path) : 0;
+    data.leftMin.gzip = data.leftMin.exists ? gzipsize(data.leftMin.path) : 0;
+
+    data.right.exists = exists(data.right.path);
+    data.right.size = data.right.exists ? filesize(data.right.path) : 0;
+    data.rightMin.exists = exists(data.rightMin.path);
+    data.rightMin.size = data.rightMin.exists ? filesize(data.rightMin.path) : 0;
+    data.rightMin.gzip = data.rightMin.exists ? gzipsize(data.rightMin.path) : 0;
+
+    data.deltas.regular = data.right.size - data.left.size;
+    data.deltas.min = data.rightMin.size - data.leftMin.size;
+    data.deltas.gzip = data.rightMin.gzip - data.leftMin.gzip;
+
+    deltas.push(data);
+
+    rows.push([
+      `${file} ${chalk.magenta(v1)}`,
+      data.left.exists ? data.left.size.toLocaleString() : ADDED,
+      data.leftMin.exists ? data.leftMin.size.toLocaleString() : ADDED,
+      data.leftMin.exists ? data.leftMin.gzip.toLocaleString() : ADDED
+    ]);
+    rows.push([
+      `${file} ${chalk.blue(v2)}`,
+      data.right.exists ? data.right.size.toLocaleString() : REMOVED,
+      data.rightMin.exists ? data.rightMin.size.toLocaleString() : REMOVED,
+      data.rightMin.exists ? data.rightMin.gzip.toLocaleString() : REMOVED
+    ]);
+    rows.push([
+      chalk.bold('+/-'),
+      colordiff(data.deltas.regular),
+      colordiff(data.deltas.min),
+      colordiff(data.deltas.gzip)
+    ]);
+  });
+
+  if (rows.length > 1) { console.log(table(rows)); }
+}
+
+function main() {
+  var deltas = [];
+  var cliArgs = parseArgs();
+
+  if (cliArgs.j) { compareAssets(deltas, cliArgs.v1, cliArgs.v2, 'js'); }
+  if (cliArgs.h) { compareAssets(deltas, cliArgs.v1, cliArgs.v2, 'html'); }
+
+  if (deltas.length > 0) {
+    setTimeout(function () {
+      deltas.forEach(function (data) {
+        var response, deltaColored;
+
+        if (data.deltas.regular === 0) { return; }
+
+        deltaColored = data.deltas.regular < 0 ? chalk.green(data.deltas.regular.toLocaleString()) : chalk.red('+' + data.deltas.regular.toLocaleString());
+
+        if (data.left.exists && data.right.exists !== true) {
+          readline.question(`${chalk.yellow(data.basename + data.extension)} ${chalk.red('was removed')} (enter) `, {hideEchoBack: true, mask: ''});
+          return;
+        } else if (data.left.exists === false && data.right.exists === true) {
+          readline.question(`${chalk.blue(data.basename + data.extension)} ${chalk.green('was added')} (enter) `, {hideEchoBack: true, mask: ''});
+          return;
+        } else if (data.deltas.regular < 0) {
+          response = readline.question(chalk.blue(data.basename + data.extension) + ' shrunk by ' + deltaColored + ' bytes. View diff? (Y/n) ');
+        } else {
+          response = readline.question(chalk.blue(data.basename + data.extension) + ' grew by ' + deltaColored + ' bytes. View diff? (Y/n) ');
+        }
+
+        if (/^(y|yes)?$/i.test(response)) {
+          spawn('vimdiff', [resolve(data.left.path), resolve(data.right.path)], {
+            stdio: 'inherit'
+          });
+        }
+      });
+    }, 1500);
+  }
+}
+
+main();

@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style>
+      .wrapper, .spinner {
+        box-sizing: border-box;
+        width: 46px;
+        height: 46px;
+      }
+
+      .wrapper {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin: -23px 0 0 -23px;
+      }
+
+      .spinner {
+        animation: rotation .7s infinite linear;
+        border: 8px solid rgba(0,0,0,.2);
+        border-top: 8px solid #2180c0;
+        border-radius: 100%;
+      }
+
+      @keyframes rotation {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="spinner"></div>
+    </div>
+  </body>
+</html>
