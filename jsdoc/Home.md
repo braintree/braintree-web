@@ -1,4 +1,4 @@
-# JavaScript Client Reference <span>v@VERSION</span>
+# Braintree.js Client Reference <span>v@VERSION</span>
 
 <span class="rule"></span>
 

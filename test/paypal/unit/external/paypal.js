@@ -19,7 +19,8 @@ describe('PayPal', function () {
     this.configuration = {
       gatewayConfiguration: {
         paypal: {assetsUrl: 'https://example.com:9292'}
-      }
+      },
+      authorizationType: 'CLIENT_TOKEN'
     };
     this.client = {
       request: this.sandbox.stub(),
@@ -951,14 +952,32 @@ describe('PayPal', function () {
       expect(actual.paypalAccount.options.validate).to.be.false;
     });
 
-    it('can set validate to true by using the vault flow', function () {
-      var actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+    it('sets validate to true when using the vault flow and a client token', function () {
+      var actual;
+
+      this.config.authorizationType = 'CLIENT_TOKEN';
+
+      actual = PayPal.prototype._formatTokenizeData.call(this.context, {
         flow: 'vault'
       }, {
         ba_token: 'ba_token' // eslint-disable-line
       });
 
       expect(actual.paypalAccount.options.validate).to.be.true;
+    });
+
+    it('sets validate to false when using the vault flow and a tokenization key', function () {
+      var actual;
+
+      this.config.authorizationType = 'TOKENIZATION_KEY';
+
+      actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+        flow: 'vault'
+      }, {
+        ba_token: 'ba_token' // eslint-disable-line
+      });
+
+      expect(actual.paypalAccount.options.validate).to.be.false;
     });
 
     it('if ba_token present, passes proper data for tokenization', function () {

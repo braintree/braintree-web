@@ -51,6 +51,7 @@ function getConfiguration(options, callback) {
 
     configuration = {
       authorization: options.authorization,
+      authorizationType: attrs.tokenizationKey ? 'TOKENIZATION_KEY' : 'CLIENT_TOKEN',
       analyticsMetadata: analyticsMetadata,
       gatewayConfiguration: response
     };

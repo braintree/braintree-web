@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.0.1
+
+* PayPal
+  * Fix a bug where vault flows that used a tokenization key could not tokenize
+
 ## 3.0.0
 
 * Add prefix to `BraintreeError` codes to prevent namespace collisions

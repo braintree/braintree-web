@@ -28,6 +28,45 @@ describe('getConfiguration', function () {
         url: 'https://api.sandbox.braintreegateway.com:443/merchants/sandbox_merchant_id/client_api/v1/configuration'
       }));
     });
+
+    it('passes back configuration on succesful request', function (done) {
+      var payload = {foo: 'bar'};
+
+      this.sandbox.stub(AJAXDriver, 'request').yields(null, payload);
+
+      getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
+        expect(err).to.not.exist;
+        expect(response.authorization).to.equal(fake.tokenizationKey);
+
+        expect(response.analyticsMetadata).to.have.all.keys('merchantAppId', 'platform', 'sdkVersion', 'source', 'integration', 'integrationType', 'sessionId');
+        Object.keys(response.analyticsMetadata).forEach(function (key) {
+          expect(response.analyticsMetadata[key]).to.be.a('string');
+        });
+
+        expect(response.gatewayConfiguration).to.equal(payload);
+        expect(response.authorizationType).to.equal('TOKENIZATION_KEY');
+
+        done();
+      });
+    });
+
+    it('calls the callback with a CLIENT_GATEWAY_NETWORK error if request fails', function (done) {
+      var fakeErr = new Error('you goofed!');
+
+      this.sandbox.stub(AJAXDriver, 'request').yields(fakeErr, null);
+
+      getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
+        expect(response).to.not.exist;
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
+        expect(err.message).to.equal('Cannot contact the gateway at this time.');
+        expect(err.details.originalError).to.equal(fakeErr);
+
+        done();
+      });
+    });
   });
 
   describe('client token', function () {
@@ -41,6 +80,45 @@ describe('getConfiguration', function () {
       expect(AJAXDriver.request).to.have.been.calledWith(sinon.match({
         url: configUrl
       }));
+    });
+
+    it('passes back configuration on succesful request', function (done) {
+      var payload = {foo: 'bar'};
+
+      this.sandbox.stub(AJAXDriver, 'request').yields(null, payload);
+
+      getConfiguration({authorization: fake.clientToken}, function (err, response) {
+        expect(err).to.not.exist;
+        expect(response.authorization).to.equal(fake.clientToken);
+
+        expect(response.analyticsMetadata).to.have.all.keys('merchantAppId', 'platform', 'sdkVersion', 'source', 'integration', 'integrationType', 'sessionId');
+        Object.keys(response.analyticsMetadata).forEach(function (key) {
+          expect(response.analyticsMetadata[key]).to.be.a('string');
+        });
+
+        expect(response.gatewayConfiguration).to.equal(payload);
+        expect(response.authorizationType).to.equal('CLIENT_TOKEN');
+
+        done();
+      });
+    });
+
+    it('calls the callback with a CLIENT_GATEWAY_NETWORK error if request fails', function (done) {
+      var fakeErr = new Error('you goofed!');
+
+      this.sandbox.stub(AJAXDriver, 'request').yields(fakeErr, null);
+
+      getConfiguration({authorization: fake.clientToken}, function (err, response) {
+        expect(response).to.not.exist;
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
+        expect(err.message).to.equal('Cannot contact the gateway at this time.');
+        expect(err.details.originalError).to.equal(fakeErr);
+
+        done();
+      });
     });
   });
 

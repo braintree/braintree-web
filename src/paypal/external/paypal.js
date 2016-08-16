@@ -246,12 +246,14 @@ PayPal.prototype._formatTokenizePayload = function (response) {
 };
 
 PayPal.prototype._formatTokenizeData = function (options, params) {
-  var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
+  var clientConfiguration = this._client.getConfiguration();
+  var gatewayConfiguration = clientConfiguration.gatewayConfiguration;
+  var isTokenizationKey = clientConfiguration.authorizationType === 'TOKENIZATION_KEY';
   var data = {
     paypalAccount: {
       correlationId: this._frameService._serviceId,
       options: {
-        validate: options.flow === 'vault'
+        validate: options.flow === 'vault' && !isTokenizationKey
       }
     }
   };
