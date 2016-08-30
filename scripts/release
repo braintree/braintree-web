@@ -8,7 +8,7 @@ MAGENTA="$(tput setaf 5)"
 CYAN="$(tput setaf 6)"
 RESET="$(tput sgr0)"
 YES="^(y|yes|yas)$"
-SOURCE_IGNORES="jenkins_grove.groovy Drakefile Dockerfile"
+SOURCE_IGNORES="jenkins_grove.groovy Drakefile Dockerfile .dockerignore"
 
 dotenv() {
   if [ ! -f .env ]; then
@@ -55,9 +55,7 @@ confirm_destination() {
   DEST="$1"
 
   if [ -d "$DEST" ]; then
-    echo -e "${YELLOW}This is a beta version.$RESET"
-    echo -e "${YELLOW}Ensure that $DEST is set up correctly.$RESET"
-    echo -en "${BLUE}Is $DEST in the state you want (y/n)? $RESET"
+    echo -en "${YELLOW}Is ${GREEN}$DEST${YELLOW} in the state you want (y/n)? $RESET"
     read message
     if [[ ! "$message" =~ $YES ]]; then
       >&2 echo -e "${RED}You should do that before proceeding.$RESET"
@@ -71,7 +69,9 @@ confirm_destination() {
 }
 
 reinstall_dependencies() {
+  set +e
   source ~/.nvm/nvm.sh
+  set -e
   nvm install
   nvm use
 

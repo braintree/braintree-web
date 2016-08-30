@@ -137,6 +137,8 @@ Client.prototype.request = function (options, callback) {
   }, function (err, data, status) {
     if (status === -1) {
       callback(new BraintreeError(errors.CLIENT_REQUEST_TIMEOUT), null, status);
+    } else if (status === 403) {
+      callback(new BraintreeError(errors.CLIENT_AUTHORIZATION_INSUFFICIENT), null, status);
     } else if (status === 429) {
       callback(new BraintreeError(errors.CLIENT_RATE_LIMITED), null, status);
     } else if (status >= 500) {

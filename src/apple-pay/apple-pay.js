@@ -3,6 +3,7 @@
 var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
+var assign = require('../lib/assign').assign;
 var sharedErrors = require('../errors');
 var errors = require('./errors');
 
@@ -26,6 +27,11 @@ var errors = require('./errors');
  */
 function ApplePay(options) {
   this._client = options.client;
+  Object.defineProperty(this, 'merchantIdentifier', {
+    value: this._client.getConfiguration().gatewayConfiguration.applePay.merchantIdentifier,
+    configurable: false,
+    writable: false
+  });
 }
 
 /**
@@ -43,7 +49,7 @@ function ApplePay(options) {
  *
  * applePay.create({client: clientInstance}, function (createErr, applePayInstance) {
  *   // ...
- *   var paymentRequest = applePay.decoratePaymentRequest({
+ *   var paymentRequest = applePay.createPaymentRequest({
  *    total: {
  *      label: 'My Company',
  *      amount: '19.99'
@@ -53,28 +59,18 @@ function ApplePay(options) {
  *   // { total: { }, countryCode: 'US', currencyCode: 'USD', merchantCapabilities: [ ], supportedNetworks: [ ] }
  *
  */
-ApplePay.prototype.decoratePaymentRequest = function (paymentRequest) {
+ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
   var applePay = this._client.getConfiguration().gatewayConfiguration.applePay;
-
-  if (!paymentRequest.countryCode) {
-    paymentRequest.countryCode = applePay.countryCode;
-  }
-
-  if (!paymentRequest.currencyCode) {
-    paymentRequest.currencyCode = applePay.currencyCode;
-  }
-
-  if (!paymentRequest.merchantCapabilities) {
-    paymentRequest.merchantCapabilities = applePay.merchantCapabilities;
-  }
-
-  if (!paymentRequest.supportedNetworks) {
-    paymentRequest.supportedNetworks = applePay.supportedNetworks.map(function (network) {
+  var defaults = {
+    countryCode: applePay.countryCode,
+    currencyCode: applePay.currencyCode,
+    merchantCapabilities: applePay.merchantCapabilities || ['supports3DS'],
+    supportedNetworks: applePay.supportedNetworks.map(function (network) {
       return network === 'mastercard' ? 'masterCard' : network;
-    });
-  }
+    })
+  };
 
-  return paymentRequest;
+  return assign({}, defaults, paymentRequest);
 };
 
 /**
@@ -109,6 +105,7 @@ ApplePay.prototype.decoratePaymentRequest = function (paymentRequest) {
  *     }, function(err, validationData) {
  *       if (err) {
  *         console.error(err);
+ *         session.abort();
  *         return;
  *       }
  *       session.completeMerchantValidation(validationData);
@@ -137,7 +134,7 @@ ApplePay.prototype.performValidation = function (options, callback) {
   applePayWebSession = {
     validationUrl: options.validationURL,
     domainName: options.domainName || global.location.hostname,
-    merchantIdentifier: options.merchantIdentifier || this._client.getConfiguration().gatewayConfiguration.applePay.merchantIdentifier
+    merchantIdentifier: options.merchantIdentifier || this.merchantIdentifier
   };
 
   if (options.displayName != null) {
@@ -153,14 +150,25 @@ ApplePay.prototype.performValidation = function (options, callback) {
     }
   }, function (err, response) {
     if (err) {
-      callback(new BraintreeError({
-        type: errors.APPLE_PAY_MERCHANT_VALIDATION.type,
-        code: errors.APPLE_PAY_MERCHANT_VALIDATION.code,
-        message: errors.APPLE_PAY_MERCHANT_VALIDATION.message,
-        details: {
-          originalError: err
-        }
-      }));
+      if (err.code === 'CLIENT_REQUEST_ERROR') {
+        callback(new BraintreeError({
+          type: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.type,
+          code: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.code,
+          message: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.message,
+          details: {
+            originalError: err.details.originalError
+          }
+        }));
+      } else {
+        callback(new BraintreeError({
+          type: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.type,
+          code: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.code,
+          message: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.message,
+          details: {
+            originalError: err
+          }
+        }));
+      }
       analytics.sendEvent(this._client, 'applepay.performValidation.failed');
     } else {
       callback(null, response);

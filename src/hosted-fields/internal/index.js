@@ -12,7 +12,6 @@ var analytics = require('../../lib/analytics');
 var BraintreeError = require('../../lib/error');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
-var assign = require('../../lib/assign').assign;
 var events = constants.events;
 var whitelistedStyles = constants.whitelistedStyles;
 
@@ -77,16 +76,17 @@ function createTokenizationHandler(client, cardForm) {
         var tokenizedCard;
 
         if (err) {
-          if (status < 500) {
-            error = errors.HOSTED_FIELDS_FAILED_TOKENIZATION;
+          if (status === 403) {
+            error = err;
+          } else if (status < 500) {
+            error = new BraintreeError(errors.HOSTED_FIELDS_FAILED_TOKENIZATION);
+            error.details = {originalError: err};
           } else {
-            error = errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR;
+            error = new BraintreeError(errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR);
+            error.details = {originalError: err};
           }
-          error = assign({}, error, {
-            details: {originalError: err}
-          });
 
-          reply([new BraintreeError(error)]);
+          reply([error]);
 
           analytics.sendEvent(client, 'web.custom.hosted-fields.tokenization.failed');
           return;

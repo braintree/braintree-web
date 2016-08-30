@@ -1,7 +1,6 @@
 'use strict';
 
 var analytics = require('../../lib/analytics');
-var assign = require('../../lib/assign').assign;
 var BraintreeError = require('../../lib/error');
 var Bus = require('../../lib/bus');
 var constants = require('./constants');
@@ -124,16 +123,21 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
           number: cardNumber
         }
       }
-    }, function (err, response) {
+    }, function (err, response, status) {
       if (err) {
-        callback(new BraintreeError({
-          type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
-          code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
-          message: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.message,
-          details: {
-            originalError: err
-          }
-        }));
+        if (status === 403) {
+          callback(err);
+        } else {
+          callback(new BraintreeError({
+            type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
+            code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
+            message: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.message,
+            details: {
+              originalError: err
+            }
+          }));
+        }
+
         analytics.sendEvent(client, 'web.unionpay.capabilities-failed');
         return;
       }
@@ -146,6 +150,7 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
       callback(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
       return;
     }
+
     this._initializeHostedFields(function () {
       this._bus.emit(events.HOSTED_FIELDS_FETCH_CAPABILITIES, {hostedFields: hostedFields}, function (response) {
         if (response.err) {
@@ -294,17 +299,18 @@ UnionPay.prototype.enroll = function (options, callback) {
       var error;
 
       if (err) {
-        if (status < 500) {
-          error = errors.UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID;
+        if (status === 403) {
+          error = err;
+        } else if (status < 500) {
+          error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID);
+          error.details = {originalError: err};
         } else {
-          error = errors.UNIONPAY_ENROLLMENT_NETWORK_ERROR;
+          error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_NETWORK_ERROR);
+          error.details = {originalError: err};
         }
-        error = assign({}, error, {
-          details: {originalError: err}
-        });
 
         analytics.sendEvent(client, 'web.unionpay.enrollment-failed');
-        callback(new BraintreeError(error));
+        callback(error);
         return;
       }
 
@@ -342,7 +348,6 @@ UnionPay.prototype.enroll = function (options, callback) {
  * @param {string} [options.card.cvv] The card's security number.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
  * @param {string} options.enrollmentId The enrollment ID from {@link UnionPay#enroll}.
- * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
  * @param {string} [options.smsCode] The SMS code received from the user if {@link UnionPay#enroll} payload have `smsCodeRequired`. if `smsCodeRequired` is false, smsCode should not be passed.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}.
  * @example <caption>With raw card data</caption>
@@ -417,8 +422,6 @@ UnionPay.prototype.tokenize = function (options, callback) {
       data.creditCard.cvv = options.card.cvv;
     }
 
-    data.creditCard.options.validate = options.vault === true;
-
     client.request({
       method: 'post',
       endpoint: 'payment_methods/credit_cards',
@@ -427,15 +430,17 @@ UnionPay.prototype.tokenize = function (options, callback) {
       if (err) {
         analytics.sendEvent(client, 'web.unionpay.nonce-failed');
 
-        if (status < 500) {
-          error = errors.UNIONPAY_FAILED_TOKENIZATION;
+        if (status === 403) {
+          error = err;
+        } else if (status < 500) {
+          error = new BraintreeError(errors.UNIONPAY_FAILED_TOKENIZATION);
+          error.details = {originalError: err};
         } else {
-          error = errors.UNIONPAY_TOKENIZATION_NETWORK_ERROR;
+          error = new BraintreeError(errors.UNIONPAY_TOKENIZATION_NETWORK_ERROR);
+          error.details = {originalError: err};
         }
-        error = assign({}, error, {
-          details: {originalError: err}
-        });
-        callback(new BraintreeError(error));
+
+        callback(error);
         return;
       }
 

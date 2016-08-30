@@ -4,12 +4,13 @@ var parser;
 var legalHosts = {
   'paypal.com': 1,
   'braintreepayments.com': 1,
-  'braintreegateway.com': 1,
-  localhost: 1
+  'braintreegateway.com': 1
 };
 
 /* eslint-disable no-undef,block-scoped-var */
 if (process.env.BRAINTREE_JS_ENV === 'development') {
+  legalHosts.localhost = 1;
+
   if (process.env.BRAINTREE_JS_API_HOST) {
     legalHosts[stripSubdomains(process.env.BRAINTREE_JS_API_HOST)] = 1;
   }

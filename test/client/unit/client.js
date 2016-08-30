@@ -144,7 +144,7 @@ describe('Client', function () {
     it('calls driver with client for source in _meta if source is not provided', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         endpoint: 'payment_methods',
@@ -159,7 +159,7 @@ describe('Client', function () {
     it('calls driver with full URL with GET if specified', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         endpoint: 'payment_methods',
@@ -175,7 +175,7 @@ describe('Client', function () {
     it('calls driver with full URL with POST if specified', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         endpoint: 'payment_methods',
@@ -191,7 +191,7 @@ describe('Client', function () {
     it('calls driver with library version', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         endpoint: 'payment_methods',
@@ -206,7 +206,7 @@ describe('Client', function () {
     it('calls driver with sessionId in _meta', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         endpoint: 'payment_methods',
@@ -283,12 +283,29 @@ describe('Client', function () {
       }));
     });
 
+    it('returns BraintreeError for authorization if driver has a 403', function (done) {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request').yields('error', null, 403);
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function (err, data, status) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CLIENT_AUTHORIZATION_INSUFFICIENT');
+        expect(err.message).to.equal('The authorization used has insufficient privileges.');
+        expect(data).to.be.null;
+        expect(status).to.equal(403);
+        done();
+      });
+    });
+
     it('returns BraintreeError for rate limiting if driver has a 429', function (done) {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function (options, fn) {
-        fn('error', null, 429);
-      });
+      this.sandbox.stub(client, '_request').yields('error', null, 429);
 
       client.request({
         endpoint: 'payment_methods',
@@ -307,9 +324,7 @@ describe('Client', function () {
     it('returns BraintreeError if driver times out', function (done) {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function (options, fn) {
-        fn('timeout', null, -1);
-      });
+      this.sandbox.stub(client, '_request').yields('timeout', null, -1);
 
       client.request({
         endpoint: 'payment_methods',
@@ -329,9 +344,7 @@ describe('Client', function () {
       var errorDetails = {error: 'message'};
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function (options, fn) {
-        fn(errorDetails, null, 422);
-      });
+      this.sandbox.stub(client, '_request').yields(errorDetails, null, 422);
 
       client.request({
         endpoint: 'payment_methods',
@@ -351,9 +364,7 @@ describe('Client', function () {
     it('returns BraintreeError if driver has a 5xx', function (done) {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function (options, fn) {
-        fn('This is a network error message', null, 500);
-      });
+      this.sandbox.stub(client, '_request').yields('This is a network error message', null, 500);
 
       client.request({
         endpoint: 'payment_methods',

@@ -22,7 +22,7 @@ function checkOrigin(postMessageOrigin, merchantUrl) {
 
   a.href = postMessageOrigin;
 
-  return isWhitelistedDomain(postMessageOrigin) && a.hostname !== 'localhost';
+  return isWhitelistedDomain(postMessageOrigin);
 }
 
 module.exports = {

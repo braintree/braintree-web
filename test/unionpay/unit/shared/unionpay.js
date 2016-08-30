@@ -80,7 +80,7 @@ describe('UnionPay', function () {
         }));
       });
 
-      it('calls the errback with an error when the call to the endpoint fails', function (done) {
+      it('calls the callback with an error when the call to the endpoint fails', function (done) {
         var clientErr = {
           type: BraintreeError.types.NETWORK,
           message: 'Your network request failed.'
@@ -104,6 +104,29 @@ describe('UnionPay', function () {
           expect(err.message).to.equal('Could not fetch card capabilities.');
           expect(err.details.originalError).to.equal(clientErr);
 
+          done();
+        });
+      });
+
+      it('calls the callback with an error when tokenization key is used', function (done) {
+        var clientErr = {
+          type: BraintreeError.types.NETWORK,
+          message: 'Your network request failed.'
+        };
+        var client = {
+          request: function (options, errback) {
+            errback(clientErr, null, 403);
+          }
+        };
+        var options = {
+          card: {number: '12345'}
+        };
+
+        UnionPay.prototype.fetchCapabilities.call({
+          _options: {client: client}
+        }, options, function (err, data) {
+          expect(data).not.to.exist;
+          expect(err).to.equal(clientErr);
           done();
         });
       });
@@ -577,6 +600,31 @@ describe('UnionPay', function () {
               expect(err.message).to.equal('Enrollment failed due to user input error.');
               expect(err.details.originalError).to.eql(clientErr);
 
+              done();
+            });
+          });
+        });
+
+        describe('with a 403', function () {
+          it('calls the errback with a client\'s error', function (done) {
+            clientErr = {
+              type: BraintreeError.types.MERCHANT,
+              message: 'error'
+            };
+            clientStatus = 403;
+
+            UnionPay.prototype.enroll.call({
+              _options: {client: stubClient}
+            }, {
+              card: {
+                number: '5'
+              },
+              mobile: {
+                number: '123'
+              }
+            }, function (err, data) {
+              expect(data).not.to.exist;
+              expect(err).to.equal(clientErr);
               done();
             });
           });
@@ -1207,77 +1255,6 @@ describe('UnionPay', function () {
             done();
           });
         });
-
-        it('defaults vault option to false', function (done) {
-          var request = {
-            card: {
-              number: '6211111111111111',
-              expirationMonth: '12',
-              expirationYear: '2020',
-              cvv: '123'
-            },
-            enrollmentId: 'enrollment-id',
-            smsCode: '123456'
-          };
-          var expectedCardNonce = {
-            consumed: false,
-            description: 'ending in 11',
-            details: {
-              cardType: 'unionpay',
-              lastTwo: '11'
-            },
-            nonce: 'a-nonce',
-            type: 'CreditCard'
-          };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              var data = options.data;
-
-              expect(data.creditCard.options.validate).to.be.false;
-              clientErrback(null, {creditCards: [expectedCardNonce]});
-            }
-          };
-
-          UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
-          }, request, done);
-        });
-
-        it('can set vault to true', function (done) {
-          var request = {
-            card: {
-              number: '6211111111111111',
-              expirationMonth: '12',
-              expirationYear: '2020',
-              cvv: '123'
-            },
-            enrollmentId: 'enrollment-id',
-            smsCode: '123456',
-            vault: true
-          };
-          var expectedCardNonce = {
-            consumed: false,
-            description: 'ending in 11',
-            details: {
-              cardType: 'unionpay',
-              lastTwo: '11'
-            },
-            nonce: 'a-nonce',
-            type: 'CreditCard'
-          };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              var data = options.data;
-
-              expect(data.creditCard.options.validate).to.be.true;
-              clientErrback(null, {creditCards: [expectedCardNonce]});
-            }
-          };
-
-          UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
-          }, request, done);
-        });
       });
 
       describe('when tokenization fails', function () {
@@ -1311,6 +1288,37 @@ describe('UnionPay', function () {
             expect(err.code).to.equal('UNIONPAY_TOKENIZATION_NETWORK_ERROR');
             expect(err.message).to.equal('A tokenization network error occurred.');
             expect(err.details.originalError).to.equal(stubError);
+
+            done();
+          });
+        });
+
+        it('calls the errback with an authorization error', function (done) {
+          var request = {
+            card: {
+              number: '6211111111111111',
+              expirationMonth: '12',
+              expirationYear: '2020',
+              cvv: '123'
+            },
+            enrollmentId: 'enrollment-id',
+            smsCode: '123456'
+          };
+          var stubError = {
+            type: BraintreeError.types.MERCHANT,
+            message: 'A client error occurred'
+          };
+          var stubClient = {
+            request: function (options, clientErrback) {
+              clientErrback(stubError, null, 403);
+            }
+          };
+
+          UnionPay.prototype.tokenize.call({
+            _options: {client: stubClient}
+          }, request, function (err, data) {
+            expect(data).not.to.exist;
+            expect(err).to.equal(stubError);
 
             done();
           });

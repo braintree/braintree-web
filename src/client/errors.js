@@ -40,5 +40,10 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'CLIENT_RATE_LIMITED',
     message: 'You are being rate-limited; please try again in a few minutes.'
+  },
+  CLIENT_AUTHORIZATION_INSUFFICIENT: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'CLIENT_AUTHORIZATION_INSUFFICIENT',
+    message: 'The authorization used has insufficient privileges.'
   }
 };

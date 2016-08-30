@@ -42,7 +42,9 @@ function request(options, cb) {
     };
 
     req.onerror = function () {
-      callback('error', null, req.status);
+      // XDomainRequest does not report a body or status for errors, so
+      // hardcode to 'error' and 500, respectively
+      callback('error', null, 500);
     };
 
     // This must remain for IE9 to work

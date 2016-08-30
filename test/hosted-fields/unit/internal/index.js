@@ -184,6 +184,20 @@ describe('internal', function () {
       });
     });
 
+    it('replies with client\'s error if tokenization fails due to authorization', function (done) {
+      this.badClient.request = function (_, callback) {
+        callback(fakeError, null, 403);
+      };
+
+      create(this.badClient, this.validCardForm)(this.fakeOptions, function (response) {
+        var err = response[0];
+
+        expect(err).to.equal(fakeError);
+
+        done();
+      });
+    });
+
     it('replies with an error if tokenization fails due to card data', function (done) {
       this.badClient.request = function (_, callback) {
         callback(fakeError, null, 422);

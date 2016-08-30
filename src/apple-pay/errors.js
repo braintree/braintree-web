@@ -13,10 +13,15 @@ module.exports = {
     code: 'APPLE_PAY_VALIDATION_URL_REQUIRED',
     message: 'performValidation must be called with a validationURL.'
   },
-  APPLE_PAY_MERCHANT_VALIDATION: {
+  APPLE_PAY_MERCHANT_VALIDATION_NETWORK: {
     type: BraintreeError.types.NETWORK,
-    code: 'APPLE_PAY_MERCHANT_VALIDATION',
+    code: 'APPLE_PAY_MERCHANT_VALIDATION_NETWORK',
     message: 'A network error occurred when validating the Apple Pay merchant.'
+  },
+  APPLE_PAY_MERCHANT_VALIDATION_FAILED: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'APPLE_PAY_MERCHANT_VALIDATION_FAILED',
+    message: 'Make sure you have registered your domain name in the Braintree Control Panel.'
   },
   APPLE_PAY_PAYMENT_TOKEN_REQUIRED: {
     type: BraintreeError.types.MERCHANT,

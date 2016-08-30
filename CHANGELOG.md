@@ -1,6 +1,25 @@
 CHANGELOG
 =========
 
+## 3.0.2
+
+* Client
+  * Provide better error messaging when actions that require a client token are attempted with a tokenization key
+* Hosted Fields
+  * Pass back client error when attempting to vault with an invalid authorization
+* UnionPay
+  * Pass back client error when attempting to vault with an invalid authorization
+  * Remove vault option from tokenization
+* Apple Pay
+  * Add `merchantIdentifier` property for use with `ApplePaySession.canMakePaymentsWithActiveCard`
+  * Fix a bug where `decoratePaymentRequest` (now called `createPaymentRequest`) failed to set `merchantCapabilities`. The default is now `['supports3DS']`, which is the most commonly used value.
+
+__BREAKING CHANGES__
+* Apple Pay
+  * `decoratePaymentRequest` has been renamed to `createPaymentRequest`. This method returns a new object and does not mutate the argument
+  * Return better error messages when Apple Pay merchant domain validation fails
+  * The error code `APPLE_PAY_MERCHANT_VALIDATION` has been replaced with `APPLE_PAY_MERCHANT_VALIDATION_FAILED` and `APPLE_PAY_MERCHANT_VALIDATION_NETWORK`
+
 ## 3.0.1
 
 * PayPal
