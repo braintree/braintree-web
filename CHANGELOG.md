@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+## 3.1.0
+
+* PayPal
+  * Add focus handle to tokenize method
+  * Move a utility iframe far out of view with `position: absolute`
+
+__BREAKING CHANGES__
+* Apple Pay
+  * Fix a bug with tokenization parameters—no more workaround required
+
 ## 3.0.2
 
 * Client

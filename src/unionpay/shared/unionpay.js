@@ -68,8 +68,8 @@ function UnionPay(options) {
  *   }
  * });
  * @example <caption>With Hosted Fields</caption>
- * // Fetch capabilities on `blur` inside of the Hosted Fields `create` callback
- * hostedFieldsInstance.on('blur', function (event) {
+ * // Fetch capabilities on `validityChange` inside of the Hosted Fields `create` callback
+ * hostedFieldsInstance.on('validityChange', function (event) {
  *   // Only attempt to fetch capabilities when a valid card number has been entered
  *   if (event.emittedBy === 'number' && event.fields.number.isValid) {
  *     unionpayInstance.fetchCapabilities({

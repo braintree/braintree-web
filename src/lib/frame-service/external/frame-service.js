@@ -65,7 +65,11 @@ FrameService.prototype._writeDispatchFrame = function () {
     name: frameName,
     src: frameSrc,
     height: 0,
-    width: 0
+    width: 0,
+    style: {
+      position: 'absolute',
+      left: '-9999px'
+    }
   });
 
   document.body.appendChild(this._dispatchFrame);
@@ -103,6 +107,12 @@ FrameService.prototype.redirect = function (url) {
 FrameService.prototype.close = function () {
   if (!this.isFrameClosed()) {
     this._frame.close();
+  }
+};
+
+FrameService.prototype.focus = function () {
+  if (!this.isFrameClosed()) {
+    this._frame.focus();
   }
 };
 

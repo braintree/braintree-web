@@ -265,6 +265,8 @@ describe('FrameService', function () {
       expect(frameService._dispatchFrame.getAttribute('name')).to.equal(
         constants.DISPATCH_FRAME_NAME + '_' + frameService._serviceId
       );
+      expect(frameService._dispatchFrame.style.position).to.equal('absolute');
+      expect(frameService._dispatchFrame.style.left).to.equal('-9999px');
     });
 
     it('writes iframe to body', function () {
@@ -494,6 +496,40 @@ describe('FrameService', function () {
       FrameService.prototype.close.call(context);
 
       expect(frameClosedStub).not.to.have.been.called;
+    });
+  });
+
+  describe('focus', function () {
+    it('focuses frame if its open', function () {
+      var frameFocusedStub = this.sandbox.stub();
+      var context = {
+        isFrameClosed: function () {
+          return false;
+        },
+        _frame: {
+          focus: frameFocusedStub
+        }
+      };
+
+      FrameService.prototype.focus.call(context);
+
+      expect(frameFocusedStub).to.have.been.called;
+    });
+
+    it('does not attempt to focus frame if already closed', function () {
+      var frameFocusedStub = this.sandbox.stub();
+      var context = {
+        isFrameClosed: function () {
+          return true;
+        },
+        _frame: {
+          focus: frameFocusedStub
+        }
+      };
+
+      FrameService.prototype.focus.call(context);
+
+      expect(frameFocusedStub).not.to.have.been.called;
     });
   });
 

@@ -610,7 +610,8 @@ describe('PayPal', function () {
         },
         _frameService: {
           open: this.sandbox.stub(),
-          close: this.sandbox.stub()
+          close: this.sandbox.stub(),
+          focus: this.sandbox.stub()
         }
       };
     });
@@ -656,18 +657,24 @@ describe('PayPal', function () {
       expect(this.context._frameService.open).to.have.been.calledWith(sinon.match.func);
     });
 
-    it('returns a close method', function () {
+    it('returns a close method that instructs the frame service to close', function () {
       var result = PayPal.prototype.tokenize.call(this.context, {}, noop);
 
       expect(result.close).to.be.a('function');
-    });
-
-    it('instructs frame service to close', function () {
-      var result = PayPal.prototype.tokenize.call(this.context, {}, noop);
 
       result.close();
 
       expect(this.context._frameService.close).to.have.been.called;
+    });
+
+    it('returns a focus method that instructs the frame service to focus', function () {
+      var result = PayPal.prototype.tokenize.call(this.context, {}, noop);
+
+      expect(result.focus).to.be.a('function');
+
+      result.focus();
+
+      expect(this.context._frameService.focus).to.have.been.called;
     });
 
     it('calls _navigateFrameToAuth', function () {

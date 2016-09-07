@@ -3,7 +3,6 @@
 var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
-var assign = require('../lib/assign').assign;
 var sharedErrors = require('../errors');
 var errors = require('./errors');
 
@@ -70,7 +69,7 @@ ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
     })
   };
 
-  return assign({}, defaults, paymentRequest);
+  return Object.assign({}, defaults, paymentRequest);
 };
 
 /**
@@ -228,7 +227,10 @@ ApplePay.prototype.tokenize = function (options, callback) {
       _meta: {
         source: 'apple-pay'
       },
-      applePaymentToken: options.token
+      applePaymentToken: Object.assign({}, options.token, {
+        // The gateway requires this key to be base64-encoded.
+        paymentData: btoa(JSON.stringify(options.token.paymentData))
+      })
     }
   }, function (err, response) {
     if (err) {

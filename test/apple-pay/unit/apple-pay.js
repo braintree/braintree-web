@@ -304,7 +304,12 @@ describe('ApplePay', function () {
 
     it('makes a request to the gateway and calls the callback if it fails', function (done) {
       var fakeResponseError = 'error';
-      var token = {};
+      var token = {
+        foo: 'boo',
+        paymentData: {
+          bar: 'yar'
+        }
+      };
 
       this.client.request = function (options, callback) {
         expect(options.method).to.equal('post');
@@ -313,7 +318,10 @@ describe('ApplePay', function () {
           _meta: {
             source: 'apple-pay'
           },
-          applePaymentToken: token
+          applePaymentToken: {
+            foo: 'boo',
+            paymentData: btoa('{"bar":"yar"}')
+          }
         });
 
         callback(fakeResponseError);
@@ -334,6 +342,7 @@ describe('ApplePay', function () {
     it('makes a request to the gateway and calls the callback if it succeeds', function (done) {
       var fakeResponseData = {applePayCards: [{}]};
       var token = {
+        foo: 'boo',
         paymentData: {
           data: 'encrypted-payment-data',
           signature: 'cryptographic-signature',
@@ -362,7 +371,10 @@ describe('ApplePay', function () {
           _meta: {
             source: 'apple-pay'
           },
-          applePaymentToken: token
+          applePaymentToken: {
+            foo: 'boo',
+            paymentData: btoa(JSON.stringify(token.paymentData))
+          }
         });
 
         callback(null, fakeResponseData);
