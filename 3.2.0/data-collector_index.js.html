@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>data-collector/index.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type='method'><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type='method'><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type='method'><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type='method'><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type='method'><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li><a href="BraintreeError.html">BraintreeError</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type='method'><a href="Client.html#request">request</a></li></ul></li><li><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type='method'><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type='method'><a href="HostedFields.html#addClass">addClass</a></li><li data-type='method'><a href="HostedFields.html#clear">clear</a></li><li data-type='method'><a href="HostedFields.html#getState">getState</a></li><li data-type='method'><a href="HostedFields.html#on">on</a></li><li data-type='method'><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type='method'><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type='method'><a href="HostedFields.html#teardown">teardown</a></li><li data-type='method'><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type='method'><a href="PayPal.html#teardown">teardown</a></li><li data-type='method'><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type='method'><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type='method'><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type='method'><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type='method'><a href="UnionPay.html#enroll">enroll</a></li><li data-type='method'><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type='method'><a href="UnionPay.html#teardown">teardown</a></li><li data-type='method'><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-braintree-web.html">braintree-web</a></li><li><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type='method'><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">data-collector/index.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict';
+/* eslint-disable camelcase */
+/** @module braintree-web/data-collector */
+
+var kount = require('./kount');
+var fraudnet = require('./fraudnet');
+var BraintreeError = require('../lib/error');
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
+var deferred = require('../lib/deferred');
+var VERSION = require('package.version');
+var sharedErrors = require('../errors');
+var errors = require('./errors');
+
+/**
+ * @class
+ * @global
+ * @name DataCollector
+ * @description &lt;strong>Do not use this constructor directly. Use {@link module:braintree-web/data-collector.create|braintree-web.data-collector.create} instead.&lt;/strong>
+ * @classdesc This class is used for advanced fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions.
+ */
+
+/**
+ * @memberof DataCollector
+ * @name deviceData
+ * @type string
+ * @description JSON string to pass with server transactions.
+ * @instance
+ */
+
+/**
+ * @memberof DataCollector
+ * @name teardown
+ * @function
+ * @description Cleanly remove all event handlers and DOM nodes that were added.
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @instance
+ * @returns {void}
+ */
+
+/**
+ * @static
+ * @function create
+ * @param {object} options Creation options:
+ * @param {Client} options.client A {@link Client} instance.
+ * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled.
+ * @param {boolean} [options.paypal] If true, PayPal fraud data collection is enabled.
+ * @param {callback} callback The second argument, `data`, is the {@link DataCollector} instance.
+ * @returns {void}
+ */
+function create(options, callback) {
+  var data, kountInstance, fraudnetInstance, result, config, clientVersion;
+  var instances = [];
+
+  if (typeof callback !== 'function') {
+    throw new BraintreeError({
+      type: sharedErrors.CALLBACK_REQUIRED.type,
+      code: sharedErrors.CALLBACK_REQUIRED.code,
+      message: 'create must include a callback function.'
+    });
+  }
+
+  callback = deferred(callback);
+
+  function teardown(cb) {
+    var i;
+
+    for (i = 0; i &lt; instances.length; i++) {
+      instances[i].teardown();
+    }
+
+    convertMethodsToError(result, methods(result));
+
+    if (cb) {
+      cb = deferred(cb);
+      cb();
+    }
+  }
+
+  if (options.client == null) {
+    callback(new BraintreeError({
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
+      message: 'options.client is required when instantiating Data Collector.'
+    }));
+    return;
+  }
+
+  config = options.client.getConfiguration();
+  clientVersion = config.analyticsMetadata.sdkVersion;
+
+  if (clientVersion !== VERSION) {
+    callback(new BraintreeError({
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
+      message: 'Client (version ' + clientVersion + ') and Data Collector (version ' + VERSION + ') components must be from the same SDK version.'
+    }));
+    return;
+  }
+
+  if (options.kount === true) {
+    if (!config.gatewayConfiguration.kount) {
+      callback(new BraintreeError(errors.DATA_COLLECTOR_KOUNT_NOT_ENABLED));
+      return;
+    }
+
+    try {
+      kountInstance = kount.setup({
+        environment: config.gatewayConfiguration.environment,
+        merchantId: config.gatewayConfiguration.kount.kountMerchantId
+      });
+    } catch (err) {
+      callback(new BraintreeError({
+        type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
+        code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
+        message: err.message
+      }));
+      return;
+    }
+
+    data = kountInstance.deviceData;
+    instances.push(kountInstance);
+  } else {
+    data = {};
+  }
+
+  if (options.paypal === true) {
+    if (config.gatewayConfiguration.paypalEnabled !== true) {
+      callback(new BraintreeError(errors.DATA_COLLECTOR_PAYPAL_NOT_ENABLED));
+      return;
+    }
+
+    fraudnetInstance = fraudnet.setup();
+    data.correlation_id = fraudnetInstance.sessionId;
+    instances.push(fraudnetInstance);
+  }
+
+  if (instances.length === 0) {
+    callback(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
+    return;
+  }
+
+  result = {
+    deviceData: JSON.stringify(data),
+    teardown: teardown
+  };
+
+  callback(null, result);
+}
+
+module.exports = {
+  create: create,
+  /**
+   * @description The current version of the SDK, i.e. `{@pkg version}`.
+   * @type {string}
+   */
+  VERSION: VERSION
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>, inspired by the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
