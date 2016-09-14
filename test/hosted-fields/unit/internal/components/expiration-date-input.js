@@ -1,6 +1,7 @@
 'use strict';
 
 var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
+var ExpirationDateInput = require('../../../../../src/hosted-fields/internal/components/expiration-date-input').ExpirationDateInput;
 
 describe('Expiration Date Input', function () {
   beforeEach(function () {
@@ -10,6 +11,28 @@ describe('Expiration Date Input', function () {
   describe('inheritance', function () {
     it('extends BaseInput', function () {
       expect(this.input).to.be.an.instanceof(BaseInput);
+    });
+  });
+
+  describe('getUnformattedValue', function () {
+    it('returns monthyear format for month input type', function () {
+      var context = {
+        element: {type: 'month'},
+        formatter: {getUnformattedValue: function () { return '2020-01'; }}
+      };
+      var value = ExpirationDateInput.prototype.getUnformattedValue.call(context);
+
+      expect(value).to.equal('012020');
+    });
+
+    it('returns empty value for emtpy month input type', function () {
+      var context = {
+        element: {type: 'month'},
+        formatter: {getUnformattedValue: function () { return ''; }}
+      };
+      var value = ExpirationDateInput.prototype.getUnformattedValue.call(context);
+
+      expect(value).to.equal('');
     });
   });
 

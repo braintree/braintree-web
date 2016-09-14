@@ -47,7 +47,7 @@ var sharedErrors = require('../../errors');
 /**
  * @typedef {object} PayPal~tokenizeReturn
  * @property {Function} close A handle to close the PayPal checkout flow.
- * @property {Function} focus A handle to focus the PayPal checkout flow. Note that some browsers (notably Firefox and iOS Safari) do not support focusing popups.
+ * @property {Function} focus A handle to focus the PayPal checkout flow. Note that some browsers (notably iOS Safari) do not support focusing popups. Firefox requires the focus call to occur as the result of a user interaction, such as a button click.
  */
 
 /**

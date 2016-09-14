@@ -10,13 +10,10 @@ describe('Base Input', function () {
   Object.keys(constants.whitelistedFields).forEach(function (key) {
     describe(key, function () {
       beforeEach(function () {
+        var config = {};
+
+        this.config = config;
         this.sandbox.stub(BaseInput.prototype, 'getConfiguration', function () {
-          var config = {};
-
-          if (this.type) {
-            config.placeholder = this.type.toUpperCase();
-          }
-
           return config;
         });
 
@@ -97,13 +94,31 @@ describe('Base Input', function () {
 
           describe('placeholder', function () {
             it('applies if provided', function () {
-              expect(this.instance.element.getAttribute('placeholder')).to.equal(key.toUpperCase());
+              var instance;
+
+              this.config.placeholder = key.toUpperCase();
+              instance = new BaseInput({model: this.model});
+
+              expect(instance.element.getAttribute('placeholder')).to.equal(key.toUpperCase());
             });
 
             it('does not apply if not defined', function () {
-              var instance = new BaseInput({model: this.model});
+              expect(this.instance.element.getAttribute('placeholder')).to.equal(null);
+            });
+          });
 
-              expect(instance.element.getAttribute('placeholder')).to.equal(null);
+          describe('type', function () {
+            it('applies if provided', function () {
+              var instance;
+
+              this.config.type = 'password';
+              instance = new BaseInput({model: this.model, type: 'cvv'});
+
+              expect(instance.element.getAttribute('type')).to.equal('password');
+            });
+
+            it('uses "tel" if not provided', function () {
+              expect(this.instance.element.getAttribute('type')).to.equal('tel');
             });
           });
 

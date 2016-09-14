@@ -12,7 +12,8 @@ var VERSION = require('package.version');
  * @typedef {object} field
  * @property {string} selector A CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
- * @property {boolean} [formatInput=true] - Enable or disable automatic formatting on this field. Note: Input formatting does not work properly on Android and iOS, so input formatting is automatically disabled on those browsers.
+ * @property {string} [type] Will be used as the `type` attribute of the input. To mask `cvv` input, for instance, `type: "password"` can be used.
+ * @property {boolean} [formatInput=true] Enable or disable automatic formatting on this field. Note: Input formatting does not work properly on Android and iOS, so input formatting is automatically disabled on those browsers.
  */
 
 /**
@@ -64,10 +65,12 @@ var VERSION = require('package.version');
  *       selector: '#card-number'
  *     },
  *     cvv: {
- *       selector: '#cvv'
+ *       selector: '#cvv',
+ *       placeholder: '•••'
  *     },
  *     expirationDate: {
- *       selector: '#expiration-date'
+ *       selector: '#expiration-date',
+ *       type: 'month'
  *     }
  *   }
  * }, callback);

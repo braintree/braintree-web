@@ -8,7 +8,7 @@ function PostalCodeInput() {
   BaseInput.apply(this, arguments);
 
   this.formatter.setPattern('{{**********}}');
-  this.element.setAttribute('type', 'text');
+  this.element.setAttribute('type', this.getConfiguration().type || 'text');
 }
 
 PostalCodeInput.prototype = Object.create(BaseInput.prototype);

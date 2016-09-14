@@ -64,6 +64,7 @@ FrameService.prototype._writeDispatchFrame = function () {
   this._dispatchFrame = iFramer({
     name: frameName,
     src: frameSrc,
+    'class': constants.DISPATCH_FRAME_CLASS,
     height: 0,
     width: 0,
     style: {

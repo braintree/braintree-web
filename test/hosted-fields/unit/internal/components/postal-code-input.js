@@ -1,6 +1,8 @@
 'use strict';
 
+var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
 var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
+var PostalCodeInput = require('../../../../../src/hosted-fields/internal/components/postal-code-input').PostalCodeInput;
 
 describe('Postal Code Input', function () {
   beforeEach(function () {
@@ -16,6 +18,18 @@ describe('Postal Code Input', function () {
   describe('element', function () {
     it('has type="text"', function () {
       expect(this.input.element.getAttribute('type')).to.equal('text');
+    });
+
+    it('handles a specific type being set', function () {
+      var config = helpers.getModelConfig('postalCode');
+
+      config.fields.postalCode = {type: 'tel'};
+
+      this.input = new PostalCodeInput({
+        model: new CreditCardForm(config),
+        type: 'postalCode'
+      });
+      expect(this.input.element.getAttribute('type')).to.equal('tel');
     });
 
     it('sets the maxLength to 10', function () {

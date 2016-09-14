@@ -267,6 +267,7 @@ describe('FrameService', function () {
       );
       expect(frameService._dispatchFrame.style.position).to.equal('absolute');
       expect(frameService._dispatchFrame.style.left).to.equal('-9999px');
+      expect(frameService._dispatchFrame.className).to.equal(constants.DISPATCH_FRAME_CLASS);
     });
 
     it('writes iframe to body', function () {

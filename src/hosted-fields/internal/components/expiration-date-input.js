@@ -23,6 +23,20 @@ function ExpirationDateInput() {
 ExpirationDateInput.prototype = Object.create(BaseInput.prototype);
 ExpirationDateInput.prototype.constructor = ExpirationDateInput;
 
+ExpirationDateInput.prototype.getUnformattedValue = function () {
+  var date, month, year;
+  var value = this.formatter.getUnformattedValue();
+
+  if (this.element.type === 'month') {
+    date = value.split('-');
+    month = date[1] || '';
+    year = date[0] || '';
+    value = month + year;
+  }
+
+  return value;
+};
+
 module.exports = {
   ExpirationDateInput: ExpirationDateInput
 };

@@ -26,6 +26,46 @@ describe('createRestrictedInput', function () {
         pattern: ' '
       }).inputElement).to.equal(this.element);
     });
+
+    it('returns a RestrictedInput for type that supports selections', function () {
+      this.element.type = 'tel';
+
+      expect(createRestrictedInput({
+        shouldFormat: true,
+        element: this.element,
+        pattern: ' '
+      })).to.be.an.instanceof(RestrictedInput);
+
+      this.element.type = 'url';
+
+      expect(createRestrictedInput({
+        shouldFormat: true,
+        element: this.element,
+        pattern: ' '
+      })).to.be.an.instanceof(RestrictedInput);
+
+      this.element.type = 'password';
+
+      expect(createRestrictedInput({
+        shouldFormat: true,
+        element: this.element,
+        pattern: ' '
+      })).to.be.an.instanceof(RestrictedInput);
+    });
+
+    it('returns a FakeRestrictedInput for type that does not support selections', function () {
+      expect(createRestrictedInput({
+        shouldFormat: true,
+        element: {type: 'date'},
+        pattern: ' '
+      })).to.be.an.instanceof(FakeRestrictedInput);
+
+      expect(createRestrictedInput({
+        shouldFormat: true,
+        element: {type: 'month'},
+        pattern: ' '
+      })).to.be.an.instanceof(FakeRestrictedInput);
+    });
   });
 
   describe('without formatting', function () {

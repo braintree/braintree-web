@@ -242,8 +242,10 @@ function onFieldStateChange(form, field) {
 }
 
 function splitDate(date) {
-  var month, year;
-  var leadingDigit = date.charAt(0);
+  var month, year, leadingDigit;
+
+  date = date.replace(/[\/\-\s]/g, '');
+  leadingDigit = date.charAt(0);
 
   if (date.length === 0) {
     month = year = '';

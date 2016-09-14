@@ -381,6 +381,31 @@ describe('credit card model', function () {
       expect(cardData.expirationYear).to.equal('');
     });
 
+    it('ignores spaces, slashes, and hyphens in expirationDate', function () {
+      var cardData;
+
+      this.card.set('expirationDate.value', '1 - 0 / ' + nextYear);
+      cardData = this.card.getCardData();
+      expect(cardData.expirationMonth).to.equal('10');
+      expect(cardData.expirationYear).to.equal(nextYear);
+
+      this.card.set('expirationDate.value', '  ---  0/-///1 ' + nextYear);
+      cardData = this.card.getCardData();
+      console.log(cardData);
+      expect(cardData.expirationMonth).to.equal('01');
+      expect(cardData.expirationYear).to.equal(nextYear);
+
+      this.card.set('expirationDate.value', '12 / ' + nextYear);
+      cardData = this.card.getCardData();
+      expect(cardData.expirationMonth).to.equal('12');
+      expect(cardData.expirationYear).to.equal(nextYear);
+
+      this.card.set('expirationDate.value', '2 - ' + nextYear);
+      cardData = this.card.getCardData();
+      expect(cardData.expirationMonth).to.equal('02');
+      expect(cardData.expirationYear).to.equal(nextYear);
+    });
+
     it('skips expiration if neither are in the config', function () {
       var card = new CreditCardForm(helpers.getModelConfig([
         'number'

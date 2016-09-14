@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.2.0
+
+* Hosted Fields
+  * Add `type` property for field configuration to allow things such as `type: "password"` for input masking of particular fields
+  * For browsers that support it, the `month` input type can be used for `expirationDate`
+  * Fix a bug where unformatted `expirationDate` inputs would fail validation if user typed in a space, hyphen or slash
+* PayPal
+  * Utility iframes are now annotated with the `braintree-dispatch-frame` class to assist with CSS targeting
+
 ## 3.1.0
 
 * PayPal

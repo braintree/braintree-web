@@ -5,6 +5,7 @@ var POPUP_WIDTH = 450;
 
 module.exports = {
   DISPATCH_FRAME_NAME: 'dispatch',
+  DISPATCH_FRAME_CLASS: 'braintree-dispatch-frame',
   POPUP_BASE_OPTIONS: 'resizable,scrollbars,height=' + POPUP_HEIGHT + ',width=' + POPUP_WIDTH,
   POPUP_WIDTH: POPUP_WIDTH,
   POPUP_HEIGHT: POPUP_HEIGHT,

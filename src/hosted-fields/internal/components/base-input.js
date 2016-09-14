@@ -45,6 +45,7 @@ BaseInput.prototype.modelOnChange = function (property, callback) {
 
 BaseInput.prototype.constructElement = function () {
   var type = this.type;
+  var inputType = this.getConfiguration().type || 'tel';
 
   var element = document.createElement('input');
 
@@ -52,7 +53,7 @@ BaseInput.prototype.constructElement = function () {
   var name = whitelistedFields[type] ? whitelistedFields[type].name : null;
 
   var attributes = {
-    type: 'tel',
+    type: inputType,
     autocomplete: 'off',
     autocorrect: 'off',
     autocapitalize: 'none',
@@ -78,6 +79,10 @@ BaseInput.prototype.constructElement = function () {
   return element;
 };
 
+BaseInput.prototype.getUnformattedValue = function () {
+  return this.formatter.getUnformattedValue();
+};
+
 BaseInput.prototype.addDOMEventListeners = function () {
   this._addDOMFocusListeners();
   this._addDOMInputListeners();
@@ -96,7 +101,7 @@ BaseInput.prototype._addDOMInputListeners = function () {
   var eventName = isIe9() ? 'keyup' : 'input';
 
   this.element.addEventListener(eventName, function () {
-    this.updateModel('value', this.formatter.getUnformattedValue());
+    this.updateModel('value', this.getUnformattedValue());
   }.bind(this), false);
 };
 

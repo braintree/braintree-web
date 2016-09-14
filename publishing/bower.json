@@ -1,6 +1,5 @@
 {
   "name": "braintree-web",
-  "version": "@VERSION",
   "authors": [
     "braintree <code@getbraintree.com>"
   ],
