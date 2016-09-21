@@ -19,14 +19,6 @@ describe('createRestrictedInput', function () {
       })).to.be.an.instanceof(RestrictedInput);
     });
 
-    it('has the "inputElement" property on the result', function () {
-      expect(createRestrictedInput({
-        shouldFormat: true,
-        element: this.element,
-        pattern: ' '
-      }).inputElement).to.equal(this.element);
-    });
-
     it('returns a RestrictedInput for type that supports selections', function () {
       this.element.type = 'tel';
 
@@ -76,31 +68,11 @@ describe('createRestrictedInput', function () {
         pattern: ' '
       })).to.be.an.instanceof(FakeRestrictedInput);
     });
-
-    it('has the "inputElement" property on the result', function () {
-      expect(createRestrictedInput({
-        shouldFormat: false,
-        element: this.element,
-        pattern: ' '
-      }).inputElement).to.equal(this.element);
-    });
   });
 
   describe('Android', function () {
     it('returns a FakeRestrictedInput even if shouldFormat is true', function () {
       this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
-
-      expect(createRestrictedInput({
-        shouldFormat: true,
-        element: this.element,
-        pattern: ' '
-      })).to.be.an.instanceOf(FakeRestrictedInput);
-    });
-  });
-
-  describe('iOS', function () {
-    it('returns a FakeRestrictedInput even if shouldFormat is true', function () {
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
 
       expect(createRestrictedInput({
         shouldFormat: true,

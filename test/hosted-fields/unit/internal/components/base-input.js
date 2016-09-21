@@ -67,19 +67,6 @@ describe('Base Input', function () {
 
           expect(instance.formatter).to.be.an.instanceof(FakeRestrictedInput);
         });
-
-        it("creates a FakeRestrictedInput on iOS, even if the merchant hasn't disabled it", function () {
-          var instance;
-
-          this.sandbox.stub(browserDetection, 'isIos').returns(true);
-
-          instance = new BaseInput({
-            model: this.model,
-            type: this.type
-          });
-
-          expect(instance.formatter).to.be.an.instanceof(FakeRestrictedInput);
-        });
       });
 
       describe('element', function () {

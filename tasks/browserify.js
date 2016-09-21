@@ -8,7 +8,7 @@ function forkBrowserify(options, done) {
   var PATH = path.resolve('./node_modules/.bin') + ':' + process.env.PATH;
   var standalone = options.standalone == null ? '' : `--standalone "${options.standalone}"`;
   var unminifiedFile = options.dist + '/' + options.out;
-  var minifiedFile = options.dist + '/' + options.out.replace(/\.js$/, '.min.js');
+  var minifiedFile = options.dist + '/' + (options.min || options.out.replace(/\.js$/, '.min.js'));
   var prependFiles = '';
   var appendFiles = '';
   var flags = options.flags || '';
@@ -28,7 +28,7 @@ function forkBrowserify(options, done) {
   }
 
   buildCmd = [
-    `browserify -p browserify-derequire ${flags} ${standalone} ${transforms} "${options.main}"`,
+    `browserify -p browserify-derequire --no-builtins ${flags} ${standalone} ${transforms} "${options.main}"`,
     `cat ${prependFiles} - ${appendFiles}`,
     `tee >(sed -e 's/@DOT_MIN//g' > "${unminifiedFile}")`,
     `uglifyjs -m -c`,

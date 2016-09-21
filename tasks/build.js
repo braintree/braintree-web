@@ -4,6 +4,7 @@ var gulp = require('gulp');
 var rename = require('gulp-rename');
 var replace = require('gulp-replace');
 var sequence = require('run-sequence');
+var browserify = require('./browserify');
 var VERSION = require('../package.json').version;
 var JS_PATH = 'dist/hosted/web/' + VERSION + '/js/';
 var HTML_PATH = 'dist/hosted/web/' + VERSION + '/html/';
@@ -11,23 +12,14 @@ var PUBLISHED_DIST = 'dist/published';
 var fs = require('fs');
 var JS_COMMENT_REGEX = /(\/\*[\s\S]*?\*\/\n*|\/\/.*?\n)/gm;
 
-gulp.task('build:published:debug', function () {
-  return gulp.src([
-    './src/index.js'
-  ]).pipe(replace('@VERSION', VERSION))
-    .pipe(replace('@EXT', '.debug'))
-    .pipe(rename('debug.js'))
-    .pipe(gulp.dest(PUBLISHED_DIST));
-});
-
-gulp.task('build:published:index', function () {
-  return gulp.src([
-    './src/index.js'
-  ]).pipe(replace('@VERSION', VERSION))
-    .pipe(replace('@EXT', ''))
-    .pipe(replace(JS_COMMENT_REGEX, ''))
-    .pipe(rename('index.js'))
-    .pipe(gulp.dest(PUBLISHED_DIST));
+gulp.task('build:published:index', function (done) {
+  browserify({
+    standalone: 'braintree',
+    main: './src/index.js',
+    dist: PUBLISHED_DIST,
+    out: 'debug.js',
+    min: 'index.js'
+  }, done);
 });
 
 gulp.task('build:published:statics', function () {
@@ -75,7 +67,6 @@ gulp.task('build:published:debugs', function () {
 
 gulp.task('build:published', [
   'build:published:index',
-  'build:published:debug',
   'build:published:mins',
   'build:published:debugs',
   'build:published:statics'

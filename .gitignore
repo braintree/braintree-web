@@ -1,6 +1,7 @@
 dist/
-node_modules/
+node_modules*/
 npm-debug.log
 .env
 
 .DS_Store
+src/dropin/

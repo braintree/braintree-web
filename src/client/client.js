@@ -133,6 +133,9 @@ Client.prototype.request = function (options, callback) {
     url: this._baseUrl + options.endpoint,
     method: options.method,
     data: addMetadata(this._configuration, options.data),
+    // TODO: change this to options.headers and document it
+    // when features that require headers are out of beta
+    headers: options._headers,
     timeout: options.timeout
   }, function (err, data, status) {
     if (status === -1) {

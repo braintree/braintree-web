@@ -9,7 +9,6 @@ gulp.task('build:data-collector', function (done) {
     standalone: 'braintree.dataCollector',
     main: 'src/data-collector/index.js',
     out: 'data-collector.js',
-    dist: 'dist/hosted/web/' + VERSION + '/js',
-    flags: '--ignore crypto'
+    dist: 'dist/hosted/web/' + VERSION + '/js'
   }, done);
 });

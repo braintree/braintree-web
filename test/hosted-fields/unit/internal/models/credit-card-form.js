@@ -391,7 +391,6 @@ describe('credit card model', function () {
 
       this.card.set('expirationDate.value', '  ---  0/-///1 ' + nextYear);
       cardData = this.card.getCardData();
-      console.log(cardData);
       expect(cardData.expirationMonth).to.equal('01');
       expect(cardData.expirationYear).to.equal(nextYear);
 

@@ -3,6 +3,7 @@
 var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
 var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
 var PostalCodeInput = require('../../../../../src/hosted-fields/internal/components/postal-code-input').PostalCodeInput;
+var RestrictedInput = require('restricted-input');
 
 describe('Postal Code Input', function () {
   beforeEach(function () {
@@ -39,7 +40,11 @@ describe('Postal Code Input', function () {
 
   describe('formatter', function () {
     it('sets the pattern to a 10-character pattern', function () {
-      expect(this.input.formatter.pattern).to.equal('{{**********}}');
+      this.sandbox.spy(RestrictedInput.prototype, 'setPattern');
+
+      helpers.createInput('postalCode');
+
+      expect(RestrictedInput.prototype.setPattern).to.be.calledWith('{{**********}}');
     });
   });
 });

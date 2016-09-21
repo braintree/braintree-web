@@ -31,6 +31,7 @@ function getConfiguration(options, callback) {
 
   attrs._meta = analyticsMetadata;
   attrs.braintreeLibraryVersion = constants.BRAINTREE_LIBRARY_VERSION;
+  attrs.configVersion = '3';
 
   request({
     url: configUrl,

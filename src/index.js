@@ -36,14 +36,15 @@
  * @returns {void}
  */
 
-var client = require('./client@EXT');
-var paypal = require('./paypal@EXT');
-var hostedFields = require('./hosted-fields@EXT');
-var dataCollector = require('./data-collector@EXT');
-var americanExpress = require('./american-express@EXT');
-var unionpay = require('./unionpay@EXT');
-var applePay = require('./apple-pay@EXT');
-var threeDSecure = require('./three-d-secure@EXT');
+var client = require('./client');
+var paypal = require('./paypal');
+var hostedFields = require('./hosted-fields');
+var dataCollector = require('./data-collector');
+var americanExpress = require('./american-express');
+var unionpay = require('./unionpay');
+var applePay = require('./apple-pay');
+var threeDSecure = require('./three-d-secure');
+var VERSION = require('package.version');
 
 module.exports = {
   /** @type {module:braintree-web/client} */
@@ -66,5 +67,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: '@VERSION'
+  VERSION: VERSION
 };

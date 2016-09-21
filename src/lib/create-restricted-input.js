@@ -10,8 +10,6 @@ module.exports = function (options) {
 
   if (browserDetection.isAndroid()) {
     shouldFormat = false;
-  } else if (browserDetection.isIos()) {
-    shouldFormat = false;
   } else if (SUPPORTED_INPUT_TYPES.indexOf(options.element.type) === -1) {
     shouldFormat = false;
   }

@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -16,13 +16,12 @@
     "test": "./scripts/npm-to-gulp test"
   },
   "dependencies": {
-    "card-validator": "2.3.0",
-    "credit-card-type": "4.0.3",
+    "card-validator": "3.0.0",
+    "credit-card-type": "5.0.0",
     "framebus": "2.0.7",
     "iframer": "braintree/iframer.git#1.0.0",
     "inject-stylesheet": "1.0.0",
-    "restricted-input": "1.0.1",
-    "sjcl": "1.0.3"
+    "restricted-input": "1.0.2"
   },
   "devDependencies": {
     "async": "2.0.1",

@@ -15,6 +15,7 @@ function request(options, cb) {
   var url = options.url;
   var body = options.data;
   var timeout = options.timeout;
+  var headers = options.headers || {};
   var req = getRequestObject();
   var callback = cb;
 
@@ -60,6 +61,19 @@ function request(options, cb) {
 
   if (isXHRAvailable && method === 'POST') {
     req.setRequestHeader('Content-Type', 'application/json');
+
+    // TODO: Make this work in IE9.
+    //
+    // To do this, we'll change these URL and headers...
+    // /my/endpoint
+    // Content-Type: text/plain
+    // Authorization: Bearer abc123
+    //
+    // ...to this URL:
+    // /my/endpoint?content_type=text%2Fplain&authorization:Bearer+abc123
+    Object.keys(headers).forEach(function (headerKey) {
+      req.setRequestHeader(headerKey, headers[headerKey]);
+    });
   }
 
   try {

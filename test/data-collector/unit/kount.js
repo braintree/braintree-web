@@ -2,7 +2,7 @@
 
 var kount = require('../../../src/data-collector/kount');
 var Kount = kount.Kount;
-var sjcl = require('sjcl');
+var sjcl = require('../../../src/data-collector/vendor/sjcl');
 
 function deleteAllIframes() {
   var i, iframe;

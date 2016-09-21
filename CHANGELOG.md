@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.3.0
+
+* The `index.js` and `debug.js` files are now full `braintree-web` bundles and can be safely loaded in non-CommonJS environments
+* Hosted Fields
+  * Add input formatting to browsers on iOS
+  * Maestro cards beginning with `6` are now correctly identified
+* Data Collector
+  * Use custom build of [SJCL](https://bitwiseshiftleft.github.io/sjcl/) to reduce file size
+
 ## 3.2.0
 
 * Hosted Fields

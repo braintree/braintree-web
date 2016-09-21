@@ -1,7 +1,7 @@
 'use strict';
 /* eslint-disable camelcase */
 
-var sjcl = require('sjcl');
+var sjcl = require('./vendor/sjcl');
 
 var QA_URL = 'https://assets.qa.braintreepayments.com/data';
 var IFRAME_ID = 'braintreeDataFrame';

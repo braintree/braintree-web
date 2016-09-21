@@ -103,6 +103,18 @@ https://assets.braintreegateway.com/
 
 The `web/dev` symlink will be a copy of one of the versioned directories, such as `web/3.0.0`. It will only be present during development and never deployed.
 
+### SJCL
+
+The Data Collector component uses a crypto library called [SJCL](https://github.com/bitwiseshiftleft/sjcl). We include a custom build that only includes the pieces we need.
+
+To do this build yourself, do the following:
+
+1. Clone [the SJCL repo](https://github.com/bitwiseshiftleft/sjcl) outside of any Braintree.js directory.
+1. Check out a stable version. For example, if the latest stable SJCL version is `1.0.6`, run `git checkout 1.0.6`. We are using `1.0.6`.
+1. Run `./configure --without-all --with-random --with-codecHex` to configure our special build.
+1. Run `make sjcl.js` to build and minify the file.
+1. Copy the newly-modified `sjcl.js` file into `/path/to/braintree.js/src/data-collector/vendor`.
+
 ## Linting
 
 For all code

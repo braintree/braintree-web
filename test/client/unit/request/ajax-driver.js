@@ -97,6 +97,35 @@ describe('AJAXDriver', function () {
       });
     });
 
+    it('sets the Content-Type header to application/json', function () {
+      this.sandbox.stub(XMLHttpRequest.prototype, 'setRequestHeader');
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL + 'marco',
+        data: {marco: 'polo'},
+        method: 'POST'
+      }, function () {});
+
+      expect(XMLHttpRequest.prototype.setRequestHeader).to.have.been.calledWith('Content-Type', 'application/json');
+    });
+
+    it('sets the headers if provided', function () {
+      this.sandbox.stub(XMLHttpRequest.prototype, 'setRequestHeader');
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL + 'marco',
+        data: {marco: 'polo'},
+        headers: {
+          Foo: 'foo',
+          Bar: 'bar'
+        },
+        method: 'POST'
+      }, function () {});
+
+      expect(XMLHttpRequest.prototype.setRequestHeader).to.have.been.calledWith('Foo', 'foo');
+      expect(XMLHttpRequest.prototype.setRequestHeader).to.have.been.calledWith('Bar', 'bar');
+    });
+
     it('calls callback with error if request is unsuccessful', function (done) {
       this.server.respondWith([500, {}, '']);
 

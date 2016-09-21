@@ -52,8 +52,9 @@ describe('Expiration Date Input', function () {
 
       expDates.forEach(function (date) {
         it(' for date ' + date, function () {
+          this.sandbox.spy(this.input.formatter, 'setPattern');
           this.input.model.set('expirationDate.value', date);
-          expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
+          expect(this.input.formatter.setPattern).to.be.calledWith('{{99}} / {{9999}}');
         });
       });
     });
@@ -63,8 +64,9 @@ describe('Expiration Date Input', function () {
 
       expDates.forEach(function (date) {
         it(' for date ' + date, function () {
+          this.sandbox.spy(this.input.formatter, 'setPattern');
           this.input.model.set('expirationDate.value', date);
-          expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
+          expect(this.input.formatter.setPattern).to.be.calledWith('{{99}} / {{9999}}');
         });
       });
     });
@@ -74,8 +76,9 @@ describe('Expiration Date Input', function () {
 
       expDates.forEach(function (date) {
         it(' for date ' + date, function () {
+          this.sandbox.spy(this.input.formatter, 'setPattern');
           this.input.model.set('expirationDate.value', date);
-          expect(this.input.formatter.pattern).to.equal('0{{9}} / {{9999}}');
+          expect(this.input.formatter.setPattern).to.be.calledWith('0{{9}} / {{9999}}');
         });
       });
     });
@@ -85,8 +88,9 @@ describe('Expiration Date Input', function () {
 
       expDates.forEach(function (date) {
         it(' for date ' + date, function () {
+          this.sandbox.spy(this.input.formatter, 'setPattern');
           this.input.model.set('expirationDate.value', date);
-          expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
+          expect(this.input.formatter.setPattern).to.be.calledWith('{{99}} / {{9999}}');
         });
       });
     });
@@ -96,17 +100,19 @@ describe('Expiration Date Input', function () {
 
       expDates.forEach(function (date) {
         it(' for date ' + date, function () {
+          this.sandbox.spy(this.input.formatter, 'setPattern');
           this.input.model.set('expirationDate.value', date);
-          expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
+          expect(this.input.formatter.setPattern).to.be.calledWith('{{99}} / {{9999}}');
         });
       });
     });
 
     it('handles changes in ambiguous dates, for date 122', function () {
+      this.sandbox.spy(this.input.formatter, 'setPattern');
       this.input.model.set('expirationDate.value', '22');
-      expect(this.input.formatter.pattern).to.equal('0{{9}} / {{9999}}');
+      expect(this.input.formatter.setPattern).to.be.calledWith('0{{9}} / {{9999}}');
       this.input.model.set('expirationDate.value', '122');
-      expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
+      expect(this.input.formatter.setPattern).to.be.calledWith('{{99}} / {{9999}}');
     });
 
     describe('handles changes in ambiguous dates', function () {
@@ -114,8 +120,9 @@ describe('Expiration Date Input', function () {
 
       expDates.forEach(function (date) {
         it(' for date ' + date, function () {
+          this.sandbox.spy(this.input.formatter, 'setPattern');
           this.input.model.set('expirationDate.value', date);
-          expect(this.input.formatter.pattern).to.equal('{{99}} / {{9999}}');
+          expect(this.input.formatter.setPattern).to.be.calledWith('{{99}} / {{9999}}');
         });
       });
     });

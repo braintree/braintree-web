@@ -379,5 +379,28 @@ describe('Client', function () {
         done();
       });
     });
+
+    it('sends headers if provided', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'post',
+        _headers: {
+          Foo: 'foo',
+          Bar: 'bar'
+        }
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(sinon.match({
+        headers: {
+          Foo: 'foo',
+          Bar: 'bar'
+        },
+        data: {_meta: {source: 'client'}}
+      }));
+    });
   });
 });

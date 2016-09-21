@@ -135,4 +135,15 @@ describe('getConfiguration', function () {
       });
     });
   });
+
+  describe('configVersion', function () {
+    it('is set with expected value when requesting configuration over AJAX', function (done) {
+      this.sandbox.stub(AJAXDriver, 'request', function (options) {
+        expect(options.data.configVersion).to.equal('3');
+        done();
+      });
+
+      getConfiguration({authorization: fake.clientToken});
+    });
+  });
 });
