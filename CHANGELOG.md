@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+## 3.4.0
+
+* Client
+  * More helpful error when a client token is generated with insufficient privileges
+* Hosted Fields
+  * Fix a bug where IE9 inputs would stutter when formatting 
+  * Enable input formatting on Android
+* Apple Pay
+  * Add support for Apple Pay integrations that are web-only
+* UnionPay
+  * Return a proper error when calling some functions without callbacks
+
 ## 3.3.0
 
 * The `index.js` and `debug.js` files are now full `braintree-web` bundles and can be safely loaded in non-CommonJS environments

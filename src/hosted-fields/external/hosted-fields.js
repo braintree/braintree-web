@@ -11,6 +11,7 @@ var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var uuid = require('../../lib/uuid');
 var findParentTags = require('../shared/find-parent-tags');
+var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 var isIos = require('../../lib/is-ios');
 var events = constants.events;
 var EventEmitter = require('../../lib/event-emitter');
@@ -524,13 +525,7 @@ HostedFields.prototype.tokenize = function (options, callback) {
     options = {};
   }
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'tokenize must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'tokenize');
 
   this._bus.emit(events.TOKENIZATION_REQUEST, options, function (response) {
     callback.apply(null, response);

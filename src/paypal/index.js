@@ -6,6 +6,7 @@ var BraintreeError = require('../lib/error');
 var browserDetection = require('../lib/browser-detection');
 var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var PayPal = require('./external/paypal');
 var sharedErrors = require('../errors');
 var VERSION = require('package.version');
@@ -33,13 +34,7 @@ var VERSION = require('package.version');
 function create(options, callback) {
   var config, pp, clientVersion;
 
-  if (!callback) {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'create must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'create');
 
   callback = deferred(callback);
 

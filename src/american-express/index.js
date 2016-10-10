@@ -9,6 +9,7 @@ var AmericanExpress = require('./american-express');
 var deferred = require('../lib/deferred');
 var sharedErrors = require('../errors');
 var VERSION = require('package.version');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 
 /**
  * @static
@@ -21,13 +22,7 @@ var VERSION = require('package.version');
 function create(options, callback) {
   var clientVersion;
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'create must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'create');
 
   callback = deferred(callback);
 

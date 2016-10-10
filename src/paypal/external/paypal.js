@@ -7,12 +7,12 @@ var VERSION = require('package.version');
 var constants = require('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = require('../../lib/analytics');
+var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 var methods = require('../../lib/methods');
 var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var querystring = require('../../lib/querystring');
-var sharedErrors = require('../../errors');
 
 /**
  * @typedef {object} PayPal~tokenizePayload
@@ -153,13 +153,7 @@ PayPal.prototype._initialize = function (callback) {
 PayPal.prototype.tokenize = function (options, callback) {
   var client = this._client;
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'tokenize must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'tokenize');
 
   callback = once(deferred(callback));
 

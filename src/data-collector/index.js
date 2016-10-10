@@ -6,6 +6,7 @@ var kount = require('./kount');
 var fraudnet = require('./fraudnet');
 var BraintreeError = require('../lib/error');
 var methods = require('../lib/methods');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var deferred = require('../lib/deferred');
 var VERSION = require('package.version');
@@ -52,13 +53,7 @@ function create(options, callback) {
   var data, kountInstance, fraudnetInstance, result, config, clientVersion;
   var instances = [];
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'create must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'create');
 
   callback = deferred(callback);
 

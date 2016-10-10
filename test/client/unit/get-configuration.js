@@ -50,6 +50,24 @@ describe('getConfiguration', function () {
       });
     });
 
+    it('calls the callback with a CLIENT_AUTHORIZATION_INSUFFICIENT error if request 403s', function (done) {
+      var fakeErr = new Error('you goofed!');
+
+      this.sandbox.stub(AJAXDriver, 'request').yields(fakeErr, null, 403);
+
+      getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
+        expect(response).to.not.exist;
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CLIENT_AUTHORIZATION_INSUFFICIENT');
+        expect(err.message).to.equal('The authorization used has insufficient privileges.');
+        expect(err.details.originalError).to.equal(fakeErr);
+
+        done();
+      });
+    });
+
     it('calls the callback with a CLIENT_GATEWAY_NETWORK error if request fails', function (done) {
       var fakeErr = new Error('you goofed!');
 

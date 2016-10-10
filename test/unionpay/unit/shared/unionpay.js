@@ -38,6 +38,25 @@ describe('UnionPay', function () {
   });
 
   describe('fetchCapabilities', function () {
+    it('throws an error when called without a callback', function () {
+      var err;
+
+      try {
+        UnionPay.prototype.fetchCapabilities.call({
+          _options: {}
+        }, {
+          card: {number: '1234'}
+        });
+      } catch (e) {
+        err = e;
+      }
+
+      expect(err).to.be.an.instanceof(BraintreeError);
+      expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
+      expect(err.message).to.equal('fetchCapabilities must include a callback function.');
+    });
+
     describe('when neither card number nor Hosted Fields are present', function () {
       it('calls the errback with an err', function (done) {
         UnionPay.prototype.fetchCapabilities.call({
@@ -264,6 +283,25 @@ describe('UnionPay', function () {
   });
 
   describe('enroll', function () {
+    it('throws an error when called without a callback', function () {
+      var err;
+
+      try {
+        UnionPay.prototype.enroll.call({
+          _options: {}
+        }, {
+          card: {number: '1234'}
+        });
+      } catch (e) {
+        err = e;
+      }
+
+      expect(err).to.be.an.instanceof(BraintreeError);
+      expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('CALLBACK_REQUIRED');
+      expect(err.message).to.equal('enroll must include a callback function.');
+    });
+
     describe('when a card is present', function () {
       it('calls the enrollment endpoint with the card', function () {
         var options = {
@@ -839,6 +877,31 @@ describe('UnionPay', function () {
 
   describe('tokenize', function () {
     describe('with raw card data', function () {
+      it('throws an error when called without a callback', function () {
+        var err;
+        var request = {
+          card: {
+            number: '6211111111111111',
+            expirationMonth: '12',
+            expirationYear: '2020',
+            cvv: '123'
+          },
+          enrollmentId: 'enrollment-id',
+          smsCode: '123456'
+        };
+
+        try {
+          UnionPay.prototype.tokenize.call({_options: {}}, request);
+        } catch (e) {
+          err = e;
+        }
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CALLBACK_REQUIRED');
+        expect(err.message).to.equal('tokenize must include a callback function.');
+      });
+
       it('calls the tokenization endpoint with the card and enrollment', function () {
         var mockClient = {request: this.sandbox.stub()};
         var request = {

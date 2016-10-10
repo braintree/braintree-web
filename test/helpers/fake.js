@@ -10,7 +10,7 @@ function configuration() {
       environment: 'development',
       configUrl: 'https://braintreegateway.com/config',
       clientApiUrl: 'https://braintreegateway.com',
-      applePay: {
+      applePayWeb: {
         merchantIdentifier: 'com.example.test-merchant-identifier',
         supportedNetworks: ['visa', 'amex', 'mastercard']
       },

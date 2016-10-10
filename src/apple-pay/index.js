@@ -9,6 +9,7 @@ var BraintreeError = require('../lib/error');
 var ApplePay = require('./apple-pay');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var sharedErrors = require('../errors');
 var errors = require('./errors');
 var VERSION = require('package.version');
@@ -24,13 +25,7 @@ var VERSION = require('package.version');
 function create(options, callback) {
   var clientVersion;
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'create must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'create');
 
   callback = deferred(callback);
 
@@ -53,7 +48,7 @@ function create(options, callback) {
     return;
   }
 
-  if (!options.client.getConfiguration().gatewayConfiguration.applePay) {
+  if (!options.client.getConfiguration().gatewayConfiguration.applePayWeb) {
     callback(new BraintreeError(errors.APPLE_PAY_NOT_ENABLED));
     return;
   }

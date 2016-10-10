@@ -50,7 +50,7 @@ describe('ApplePay', function () {
       };
 
       this.gatewayConfiguration = {
-        applePay: {
+        applePayWeb: {
           countryCode: 'decorated',
           currencyCode: 'decorated',
           merchantCapabilities: ['decorated'],
@@ -87,7 +87,7 @@ describe('ApplePay', function () {
     });
 
     it('applies default merchantCapabilities when not defined on argument and gateway', function () {
-      delete this.gatewayConfiguration.applePay.merchantCapabilities;
+      delete this.gatewayConfiguration.applePayWeb.merchantCapabilities;
 
       expect(this.applePay.createPaymentRequest({}).merchantCapabilities).to.deep.equal(['supports3DS']);
     });

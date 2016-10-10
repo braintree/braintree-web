@@ -10,7 +10,7 @@ describe('applePay.create', function () {
   beforeEach(function () {
     var configuration = fake.configuration();
 
-    configuration.gatewayConfiguration.applePay = {};
+    configuration.gatewayConfiguration.applePayWeb = {};
 
     this.configuration = configuration;
     this.client = {
@@ -64,7 +64,7 @@ describe('applePay.create', function () {
   });
 
   it('calls callback with an error when apple pay is not enabled in configuration', function (done) {
-    delete this.configuration.gatewayConfiguration.applePay;
+    delete this.configuration.gatewayConfiguration.applePayWeb;
 
     create({client: this.client}, function (err, applePayInstance) {
       expect(applePayInstance).not.to.exist;

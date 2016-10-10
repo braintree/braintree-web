@@ -12,6 +12,7 @@ var iFramer = require('iframer');
 var methods = require('../../lib/methods');
 var VERSION = require('package.version');
 var uuid = require('../../lib/uuid');
+var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 
 /**
  * @class
@@ -107,6 +108,8 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
   var client = this._options.client;
   var cardNumber = options.card ? options.card.number : null;
   var hostedFields = options.hostedFields;
+
+  throwIfNoCallback(callback, 'fetchCapabilities');
 
   callback = deferred(callback);
 
@@ -242,6 +245,8 @@ UnionPay.prototype.enroll = function (options, callback) {
   var mobile = options.mobile;
   var hostedFields = options.hostedFields;
   var data;
+
+  throwIfNoCallback(callback, 'enroll');
 
   callback = deferred(callback);
 
@@ -388,6 +393,8 @@ UnionPay.prototype.tokenize = function (options, callback) {
   var client = this._options.client;
   var card = options.card;
   var hostedFields = options.hostedFields;
+
+  throwIfNoCallback(callback, 'tokenize');
 
   callback = deferred(callback);
 

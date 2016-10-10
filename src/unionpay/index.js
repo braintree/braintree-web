@@ -8,6 +8,7 @@ var UnionPay = require('./shared/unionpay');
 var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var errors = require('./shared/errors');
 var sharedErrors = require('../errors');
 var VERSION = require('package.version');
@@ -31,13 +32,7 @@ var VERSION = require('package.version');
 function create(options, callback) {
   var config, clientVersion;
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'create must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'create');
 
   callback = deferred(callback);
 

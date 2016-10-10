@@ -77,7 +77,7 @@ gulp.task('test:publishing', function (done) {
 
 TEST_TASKS.push('karma:publishing');
 
-gulp.task('test:node-parsing', ['build'], function (done) {
+gulp.task('test:node-parsing', function (done) {
   var error, bt;
 
   try {
@@ -91,22 +91,26 @@ gulp.task('test:node-parsing', ['build'], function (done) {
 });
 
 gulp.task('test:environment', function (done) {
-  var nvmrcPath = path.resolve(__dirname, '..', '.nvmrc');
-  var expectedVersion = fs.readFileSync(nvmrcPath).toString().trim().replace(/^v/, '^').replace(/\./, '\\.');
-  var actualVersion = process.versions.node;
+  var projectRoot = path.resolve(__dirname, '..');
+  var mochaPath = path.resolve(projectRoot, 'node_modules', '.bin', 'mocha');
+  var testPath = path.resolve(projectRoot, 'test', 'environment');
 
-  if (new RegExp(expectedVersion).test(actualVersion)) {
-    done()
-  } else {
-    done('The current node version is not compatible with the one in .nvmrc');
-  }
+  spawn(mochaPath, [testPath], {
+    stdio: 'inherit'
+  }).on('exit', (code) => {
+    if (code === 0) {
+      done();
+    } else {
+      done('mocha exited with code ' + code);
+    }
+  });
 });
 
 gulp.task('lint', function(done) {
   _lint('', '', done);
 });
 
-gulp.task('test', function (done) {
+gulp.task('test', ['build'], function (done) {
   TEST_TASKS.push(done);
   run.apply(null, TEST_TASKS);
 });

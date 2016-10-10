@@ -29,7 +29,7 @@ var errors = require('./errors');
 function ApplePay(options) {
   this._client = options.client;
   Object.defineProperty(this, 'merchantIdentifier', {
-    value: this._client.getConfiguration().gatewayConfiguration.applePay.merchantIdentifier,
+    value: this._client.getConfiguration().gatewayConfiguration.applePayWeb.merchantIdentifier,
     configurable: false,
     writable: false
   });
@@ -67,7 +67,7 @@ function ApplePay(options) {
  *   // ...
  */
 ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
-  var applePay = this._client.getConfiguration().gatewayConfiguration.applePay;
+  var applePay = this._client.getConfiguration().gatewayConfiguration.applePayWeb;
   var defaults = {
     countryCode: applePay.countryCode,
     currencyCode: applePay.currencyCode,

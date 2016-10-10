@@ -5,6 +5,7 @@ var ThreeDSecure = require('./external/three-d-secure');
 var browserDetection = require('../lib/browser-detection');
 var BraintreeError = require('../lib/error');
 var analytics = require('../lib/analytics');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
 var sharedErrors = require('../errors');
@@ -25,13 +26,7 @@ var VERSION = require('package.version');
 function create(options, callback) {
   var config, threeDSecure, error, clientVersion;
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'create must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'create');
 
   callback = deferred(callback);
 

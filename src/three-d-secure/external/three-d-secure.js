@@ -9,10 +9,10 @@ var Bus = require('../../lib/bus');
 var uuid = require('../../lib/uuid');
 var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
+var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 var events = require('../shared/events');
 var version = require('package.version');
 var iFramer = require('iframer');
-var sharedErrors = require('../../errors');
 
 var IFRAME_HEIGHT = 400;
 var IFRAME_WIDTH = 400;
@@ -102,13 +102,7 @@ function ThreeDSecure(options) {
 ThreeDSecure.prototype.verifyCard = function (options, callback) {
   var url, addFrame, removeFrame, error, errorOption;
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'verifyCard must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'verifyCard');
 
   options = options || {};
   callback = deferred(callback);

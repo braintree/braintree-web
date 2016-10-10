@@ -3,8 +3,7 @@
 
 var HostedFields = require('./external/hosted-fields');
 var deferred = require('../lib/deferred');
-var BraintreeError = require('../lib/error');
-var sharedErrors = require('../errors');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var VERSION = require('package.version');
 
 /**
@@ -13,7 +12,7 @@ var VERSION = require('package.version');
  * @property {string} selector A CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
  * @property {string} [type] Will be used as the `type` attribute of the input. To mask `cvv` input, for instance, `type: "password"` can be used.
- * @property {boolean} [formatInput=true] Enable or disable automatic formatting on this field. Note: Input formatting does not work properly on Android and iOS, so input formatting is automatically disabled on those browsers.
+ * @property {boolean} [formatInput=true] Enable or disable automatic formatting on this field.
  */
 
 /**
@@ -78,13 +77,7 @@ var VERSION = require('package.version');
 function create(options, callback) {
   var integration;
 
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'create must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'create');
 
   try {
     integration = new HostedFields(options);

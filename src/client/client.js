@@ -137,7 +137,11 @@ Client.prototype.request = function (options, callback) {
     // when features that require headers are out of beta
     headers: options._headers,
     timeout: options.timeout
-  }, function (err, data, status) {
+  }, this._bindRequestCallback(callback));
+};
+
+Client.prototype._bindRequestCallback = function (callback) {
+  return function (err, data, status) {
     if (status === -1) {
       callback(new BraintreeError(errors.CLIENT_REQUEST_TIMEOUT), null, status);
     } else if (status === 403) {
@@ -156,7 +160,7 @@ Client.prototype.request = function (options, callback) {
     } else {
       callback(null, data, status);
     }
-  });
+  };
 };
 
 module.exports = Client;

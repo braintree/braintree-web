@@ -37,12 +37,20 @@ function getConfiguration(options, callback) {
     url: configUrl,
     method: 'GET',
     data: attrs
-  }, function (err, response) {
+  }, function (err, response, status) {
+    var errorTemplate;
+
     if (err) {
+      if (status === 403) {
+        errorTemplate = errors.CLIENT_AUTHORIZATION_INSUFFICIENT;
+      } else {
+        errorTemplate = errors.CLIENT_GATEWAY_NETWORK;
+      }
+
       callback(new BraintreeError({
-        type: errors.CLIENT_GATEWAY_NETWORK.type,
-        code: errors.CLIENT_GATEWAY_NETWORK.code,
-        message: errors.CLIENT_GATEWAY_NETWORK.message,
+        type: errorTemplate.type,
+        code: errorTemplate.code,
+        message: errorTemplate.message,
         details: {
           originalError: err
         }

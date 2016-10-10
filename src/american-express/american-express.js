@@ -3,7 +3,7 @@
 var BraintreeError = require('../lib/error');
 var deferred = require('../lib/deferred');
 var errors = require('./errors');
-var sharedErrors = require('../errors');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 
 /**
  * @class
@@ -38,13 +38,7 @@ function AmericanExpress(options) {
  * });
  */
 AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'getRewardsBalance must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'getRewardsBalance');
 
   callback = deferred(callback);
 
@@ -103,13 +97,7 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
  * });
  */
 AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callback) {
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'getExpressCheckoutProfile must include a callback function.'
-    });
-  }
+  throwIfNoCallback(callback, 'getExpressCheckoutProfile');
 
   callback = deferred(callback);
 
