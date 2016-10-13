@@ -14,6 +14,10 @@ function configuration() {
         merchantIdentifier: 'com.example.test-merchant-identifier',
         supportedNetworks: ['visa', 'amex', 'mastercard']
       },
+      braintreeApi: {
+        accessToken: 'fakeToken',
+        url: 'https://braintree-api-endpoint.com'
+      },
       analytics: {
         url: 'https://braintreegateway.com/analytics'
       }

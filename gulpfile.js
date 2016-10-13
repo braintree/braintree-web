@@ -10,6 +10,7 @@ require('./tasks/american-express');
 require('./tasks/apple-pay');
 require('./tasks/frame-service');
 require('./tasks/unionpay');
+require('./tasks/us-bank-account');
 require('./tasks/build');
 require('./tasks/release');
 require('./tasks/jsdoc');

@@ -17,7 +17,8 @@ var KARMA_SUITES = [
   'lib',
   'paypal',
   'three-d-secure',
-  'unionpay'
+  'unionpay',
+  'us-bank-account'
 ];
 var TEST_TASKS = [
   'test:environment',

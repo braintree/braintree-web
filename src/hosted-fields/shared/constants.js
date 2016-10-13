@@ -6,6 +6,7 @@ var VERSION = require('package.version');
 
 var constants = {
   VERSION: VERSION,
+  maxExpirationYearAge: 19,
   externalEvents: {
     FOCUS: 'focus',
     BLUR: 'blur',

@@ -196,7 +196,7 @@ var getCardTypes = require('credit-card-type');
  * @example
  * <caption>Listening to a cardTypeChange event</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
- *   hosteFieldsInstance.on('cardTypeChange', function (event) {
+ *   hostedFieldsInstance.on('cardTypeChange', function (event) {
  *     if (event.cards.length === 1) {
  *       console.log(event.cards[0].type);
  *     } else {

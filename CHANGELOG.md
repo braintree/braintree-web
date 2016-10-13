@@ -1,12 +1,17 @@
 CHANGELOG
 =========
 
+## 3.5.0
+
+* Hosted Fields
+  * Add dropdown support for expiration month and expiration year
+
 ## 3.4.0
 
 * Client
   * More helpful error when a client token is generated with insufficient privileges
 * Hosted Fields
-  * Fix a bug where IE9 inputs would stutter when formatting 
+  * Fix a bug where IE9 inputs would stutter when formatting
   * Enable input formatting on Android
 * Apple Pay
   * Add support for Apple Pay integrations that are web-only

@@ -9,13 +9,16 @@ var whitelistedFields = constants.whitelistedFields;
 var ENTER_KEY_CODE = 13;
 
 function BaseInput(options) {
+  var shouldFormat;
+
   this.model = options.model;
   this.type = options.type;
 
   this.element = this.constructElement();
 
+  shouldFormat = this.getConfiguration().formatInput !== false && this.element instanceof HTMLInputElement;
   this.formatter = createRestrictedInput({
-    shouldFormat: this.getConfiguration().formatInput !== false,
+    shouldFormat: shouldFormat,
     element: this.element,
     pattern: ' '
   });
@@ -98,11 +101,13 @@ BaseInput.prototype._addDOMKeypressListeners = function () {
 };
 
 BaseInput.prototype._addDOMInputListeners = function () {
-  var eventName = isIe9() ? 'keyup' : 'input';
-
-  this.element.addEventListener(eventName, function () {
+  this.element.addEventListener(this._getDOMChangeEvent(), function () {
     this.updateModel('value', this.getUnformattedValue());
   }.bind(this), false);
+};
+
+BaseInput.prototype._getDOMChangeEvent = function () {
+  return isIe9() ? 'keyup' : 'input';
 };
 
 BaseInput.prototype._addDOMFocusListeners = function () {
@@ -139,14 +144,16 @@ BaseInput.prototype.addModelEventListeners = function () {
   this.modelOnChange('isPotentiallyValid', this.render);
 };
 
+BaseInput.prototype.setPlaceholder = function (type, placeholder) {
+  if (type === this.type) { this.element.setAttribute('placeholder', placeholder); }
+};
+
 BaseInput.prototype.addBusEventListeners = function () {
   global.bus.on(events.TRIGGER_INPUT_FOCUS, function (type) {
     if (type === this.type) { this.element.focus(); }
   }.bind(this));
 
-  global.bus.on(events.SET_PLACEHOLDER, function (type, placeholder) {
-    if (type === this.type) { this.element.setAttribute('placeholder', placeholder); }
-  }.bind(this));
+  global.bus.on(events.SET_PLACEHOLDER, this.setPlaceholder.bind(this));
 
   global.bus.on(events.ADD_CLASS, function (type, classname) {
     if (type === this.type) { classlist.add(this.element, classname); }

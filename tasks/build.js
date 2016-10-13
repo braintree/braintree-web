@@ -44,7 +44,8 @@ gulp.task('build:published:mins', function () {
     JS_PATH + 'hosted-fields.min.js',
     JS_PATH + 'paypal.min.js',
     JS_PATH + 'three-d-secure.min.js',
-    JS_PATH + 'unionpay.min.js'
+    JS_PATH + 'unionpay.min.js',
+    JS_PATH + 'us-bank-account.min.js'
   ]).pipe(rename(function (path) {
     path.basename = path.basename.replace(/\.min$/, '');
   })).pipe(gulp.dest(PUBLISHED_DIST));
@@ -59,7 +60,8 @@ gulp.task('build:published:debugs', function () {
     JS_PATH + 'hosted-fields.js',
     JS_PATH + 'paypal.js',
     JS_PATH + 'three-d-secure.js',
-    JS_PATH + 'unionpay.js'
+    JS_PATH + 'unionpay.js',
+    JS_PATH + 'us-bank-account.js'
   ]).pipe(rename({
     extname: '.debug.js'
   })).pipe(gulp.dest(PUBLISHED_DIST));
@@ -100,7 +102,8 @@ gulp.task('build:hosted', [
   'build:data-collector',
   'build:frame-service',
   'build:american-express',
-  'build:unionpay'
+  'build:unionpay',
+  'build:us-bank-account'
 ]);
 
 gulp.task('build', function (done) {

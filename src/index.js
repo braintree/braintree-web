@@ -44,6 +44,7 @@ var americanExpress = require('./american-express');
 var unionpay = require('./unionpay');
 var applePay = require('./apple-pay');
 var threeDSecure = require('./three-d-secure');
+var usBankAccount = require('./us-bank-account');
 var VERSION = require('package.version');
 
 module.exports = {
@@ -63,6 +64,8 @@ module.exports = {
   unionpay: unionpay,
   /** @type {module:braintree-web/apple-pay} */
   applePay: applePay,
+  /** @type {module:braintree-web/us-bank-account} */
+  usBankAccount: usBankAccount,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

@@ -33,9 +33,14 @@ function initialize(cardForm) {
 }
 
 function shimPlaceholder() {
-  if (global.placeholderShim) {
-    global.placeholderShim(document.querySelector('input'));
-  }
+  var input;
+
+  if (!global.placeholderShim) { return; }
+
+  input = document.querySelector('input');
+  if (!input) { return; }
+
+  global.placeholderShim(input);
 }
 
 function create() {
