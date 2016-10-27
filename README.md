@@ -1,4 +1,4 @@
-braintree-web@2.x
+braintree-web
 =================
 
 A suite of tools for integrating Braintree in the browser.
