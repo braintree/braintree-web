@@ -178,10 +178,10 @@ ApplePay.prototype.performValidation = function (options, callback) {
           }
         }));
       }
-      analytics.sendEvent(this._client, 'web.applepay.performValidation.failed');
+      analytics.sendEvent(this._client, 'applepay.performValidation.failed');
     } else {
       callback(null, response);
-      analytics.sendEvent(this._client, 'web.applepay.performValidation.succeeded');
+      analytics.sendEvent(this._client, 'applepay.performValidation.succeeded');
     }
   }.bind(this));
 };
@@ -265,10 +265,10 @@ ApplePay.prototype.tokenize = function (options, callback) {
           originalError: err
         }
       }));
-      analytics.sendEvent(this._client, 'web.applepay.tokenize.failed');
+      analytics.sendEvent(this._client, 'applepay.tokenize.failed');
     } else {
       callback(null, response.applePayCards[0]);
-      analytics.sendEvent(this._client, 'web.applepay.tokenize.succeeded');
+      analytics.sendEvent(this._client, 'applepay.tokenize.succeeded');
     }
   }.bind(this));
 };

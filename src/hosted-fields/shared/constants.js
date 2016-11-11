@@ -55,6 +55,7 @@ var constants = {
     'font-variant-ligatures',
     'font-variant-numeric',
     'font-weight',
+    'letter-spacing',
     'line-height',
     'opacity',
     'outline',

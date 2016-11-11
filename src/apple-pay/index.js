@@ -53,7 +53,7 @@ function create(options, callback) {
     return;
   }
 
-  analytics.sendEvent(options.client, 'web.applepay.initialized');
+  analytics.sendEvent(options.client, 'applepay.initialized');
 
   callback(null, new ApplePay(options));
 }

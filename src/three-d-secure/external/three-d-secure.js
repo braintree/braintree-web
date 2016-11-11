@@ -298,7 +298,7 @@ ThreeDSecure.prototype.teardown = function (callback) {
 
   convertMethodsToError(this, methods(ThreeDSecure.prototype));
 
-  analytics.sendEvent(this._options.client, 'web.threedsecure.teardown-completed');
+  analytics.sendEvent(this._options.client, 'threedsecure.teardown-completed');
 
   if (this._bus) {
     this._bus.teardown();

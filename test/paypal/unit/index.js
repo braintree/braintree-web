@@ -83,7 +83,7 @@ describe('paypal.create', function () {
 
     create({client: client}, function (err) {
       expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'web.paypal.initialized');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.initialized');
 
       done();
     });

@@ -4,6 +4,7 @@ var VERSION = require('package.version');
 var PLATFORM = 'web';
 
 module.exports = {
+  ANALYTICS_PREFIX: 'web.',
   ANALYTICS_REQUEST_TIMEOUT_MS: 2000,
   INTEGRATION_TIMEOUT_MS: 60000,
   VERSION: VERSION,

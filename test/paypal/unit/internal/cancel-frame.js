@@ -18,7 +18,7 @@ describe('cancel-frame', function () {
       cancelFrame.start();
 
       expect(frameService.report).to.have.been.calledWith(
-        sinon.match(err)
+        this.sandbox.match(err)
       );
     });
 

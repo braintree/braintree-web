@@ -77,14 +77,16 @@ FrameService.prototype._writeDispatchFrame = function () {
 };
 
 FrameService.prototype._setBusEvents = function () {
-  this._bus.on(events.DISPATCH_FRAME_REPORT, function (res) {
-    this.close();
-
+  this._bus.on(events.DISPATCH_FRAME_REPORT, function (res, reply) {
     if (this._onCompleteCallback) {
       this._onCompleteCallback.call(null, res.err, res.payload);
     }
 
     this._onCompleteCallback = null;
+
+    if (reply) {
+      reply();
+    }
   }.bind(this));
 
   this._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
@@ -96,6 +98,13 @@ FrameService.prototype.open = function (callback) {
   this._onCompleteCallback = callback;
 
   this._frame = popup.open(this._options);
+  if (this.isFrameClosed()) {
+    this._cleanupFrame();
+    if (callback) {
+      callback(new BraintreeError(errors.FRAME_SERVICE_FRAME_OPEN_FAILED));
+    }
+    return;
+  }
   this._pollForPopupClose();
 };
 

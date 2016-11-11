@@ -13,7 +13,10 @@ function sendAnalyticsEvent(client, kind, callback) {
   var timestamp = _millisToSeconds(Date.now());
   var url = configuration.gatewayConfiguration.analytics.url;
   var data = {
-    analytics: [{kind: kind, timestamp: timestamp}]
+    analytics: [{
+      kind: constants.ANALYTICS_PREFIX + kind,
+      timestamp: timestamp
+    }]
   };
 
   request({

@@ -33,6 +33,11 @@ module.exports = {
     code: 'PAYPAL_BROWSER_NOT_SUPPORTED',
     message: 'Browser is not supported.'
   },
+  PAYPAL_POPUP_OPEN_FAILED: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYPAL_POPUP_OPEN_FAILED',
+    message: 'PayPal popup failed to open, make sure to tokenize in response to a user action.'
+  },
   PAYPAL_POPUP_CLOSED: {
     type: BraintreeError.types.CUSTOMER,
     code: 'PAYPAL_POPUP_CLOSED',

@@ -33,7 +33,33 @@ var VERSION = require('package.version');
  *
  * These are the CSS properties that Hosted Fields supports. Any other CSS should be specified on your page and outside of any Braintree configuration. Trying to set unsupported properties will fail and put a warning in the console.
  *
- * `color` `font-family` `font-size-adjust` `font-size` `font-stretch` `font-style` `font-variant-alternates` `font-variant-caps` `font-variant-east-asian` `font-variant-ligatures` `font-variant-numeric` `font-variant` `font-weight` `font` `line-height` `opacity` `outline` `text-shadow` `transition` `-moz-osx-font-smoothing` `-moz-tap-highlight-color` `-moz-transition` `-webkit-font-smoothing` `-webkit-tap-highlight-color` `-webkit-transition`
+ * Supported CSS properties are:
+ * `color`
+ * `font-family`
+ * `font-size-adjust`
+ * `font-size`
+ * `font-stretch`
+ * `font-style`
+ * `font-variant-alternates`
+ * `font-variant-caps`
+ * `font-variant-east-asian`
+ * `font-variant-ligatures`
+ * `font-variant-numeric`
+ * `font-variant`
+ * `font-weight`
+ * `font`
+ * `letter-spacing`
+ * `line-height`
+ * `opacity`
+ * `outline`
+ * `text-shadow`
+ * `transition`
+ * `-moz-osx-font-smoothing`
+ * `-moz-tap-highlight-color`
+ * `-moz-transition`
+ * `-webkit-font-smoothing`
+ * `-webkit-tap-highlight-color`
+ * `-webkit-transition`
  * @typedef {object} styleOptions
  */
 

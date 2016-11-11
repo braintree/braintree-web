@@ -95,7 +95,7 @@ describe('three-d-secure.create', function () {
 
     threeDSecure.create({client: client}, function (err) {
       expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'web.threedsecure.initialized');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'threedsecure.initialized');
 
       done();
     });

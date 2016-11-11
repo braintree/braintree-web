@@ -13,7 +13,7 @@ describe('getConfiguration', function () {
       this.sandbox.stub(AJAXDriver, 'request');
       getConfiguration(options);
 
-      expect(AJAXDriver.request).to.have.been.calledWith(sinon.match({
+      expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
         url: 'https://api.braintreegateway.com:443/merchants/prod_merchant_id/client_api/v1/configuration'
       }));
     });
@@ -24,7 +24,7 @@ describe('getConfiguration', function () {
       this.sandbox.stub(AJAXDriver, 'request');
       getConfiguration(options);
 
-      expect(AJAXDriver.request).to.have.been.calledWith(sinon.match({
+      expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
         url: 'https://api.sandbox.braintreegateway.com:443/merchants/sandbox_merchant_id/client_api/v1/configuration'
       }));
     });
@@ -95,7 +95,7 @@ describe('getConfiguration', function () {
       this.sandbox.stub(AJAXDriver, 'request');
       getConfiguration(options);
 
-      expect(AJAXDriver.request).to.have.been.calledWith(sinon.match({
+      expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
         url: configUrl
       }));
     });

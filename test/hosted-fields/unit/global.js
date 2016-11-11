@@ -2,6 +2,7 @@
 
 var Bus = require('../../../src/lib/bus');
 var chai = require('chai');
+var sinon = require('sinon');
 var sinonChai = require('sinon-chai');
 
 chai.use(sinonChai);
@@ -13,7 +14,6 @@ global.triggerEvent = function (name, target) {
   target.dispatchEvent(event);
 };
 
-global.sinon = require('sinon');
 global.expect = require('chai').expect;
 global.helpers = require('./helpers/index');
 

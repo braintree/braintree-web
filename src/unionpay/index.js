@@ -62,7 +62,7 @@ function create(options, callback) {
     return;
   }
 
-  analytics.sendEvent(options.client, 'web.unionpay.initialized');
+  analytics.sendEvent(options.client, 'unionpay.initialized');
 
   callback(null, new UnionPay(options));
 }

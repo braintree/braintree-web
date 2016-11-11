@@ -12,8 +12,8 @@ beforeEach(function () {
   this.sandbox.stub(Bus.prototype, 'emit');
 
   global.bus = {
-    on: sinon.stub(),
-    emit: sinon.stub()
+    on: this.sandbox.stub(),
+    emit: this.sandbox.stub()
   };
 });
 

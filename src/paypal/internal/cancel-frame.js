@@ -8,7 +8,7 @@ function start() {
   frameService.report(
     new BraintreeError(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED)
   );
-  // IE 11 metro mode needs this to close popup
+
   frameService.asyncClose();
 }
 

@@ -151,7 +151,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         data: {_meta: {source: 'client'}}
       }));
     });
@@ -166,7 +166,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         method: 'get',
         url: 'https://braintreegateway.com/v1/payment_methods'
       }));
@@ -182,7 +182,7 @@ describe('Client', function () {
         method: 'post'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         url: 'https://braintreegateway.com/v1/payment_methods',
         method: 'post'
       }));
@@ -198,7 +198,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
       }));
     });
@@ -213,7 +213,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         data: {_meta: {sessionId: client.getConfiguration().analyticsMetadata.sessionId}}
       }));
     });
@@ -228,7 +228,7 @@ describe('Client', function () {
         endpoint: 'payment_methods'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         data: {_meta: {source: 'client'}}
       }));
     });
@@ -246,7 +246,7 @@ describe('Client', function () {
         }
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         data: {_meta: {source: 'custom source'}}
       }));
     });
@@ -262,7 +262,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         timeout: 4000
       }));
     });
@@ -278,7 +278,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         data: {some: 'stuffs'}
       }));
     });
@@ -394,7 +394,7 @@ describe('Client', function () {
         }
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(sinon.match({
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
         headers: {
           Foo: 'foo',
           Bar: 'bar'

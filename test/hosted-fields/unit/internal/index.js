@@ -107,7 +107,7 @@ describe('internal', function () {
         }
       });
 
-      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'web.custom.hosted-fields.load.succeeded');
+      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'custom.hosted-fields.load.succeeded');
     });
   });
 
@@ -220,7 +220,7 @@ describe('internal', function () {
     it('sends an analytics event if tokenization fails', function () {
       create(this.badClient, this.validCardForm)(this.fakeOptions, function () {});
 
-      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'web.custom.hosted-fields.tokenization.failed');
+      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'custom.hosted-fields.tokenization.failed');
     });
 
     it('replies with data if tokenization succeeds', function () {
@@ -239,7 +239,7 @@ describe('internal', function () {
     it('sends an analytics event if tokenization succeeds', function () {
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
 
-      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'web.custom.hosted-fields.tokenization.succeeded');
+      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'custom.hosted-fields.tokenization.succeeded');
     });
 
     it('replies with an error if all fields are empty', function (done) {

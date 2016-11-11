@@ -93,7 +93,7 @@ function createTokenizationHandler(client, cardForm) {
 
           reply([error]);
 
-          analytics.sendEvent(client, 'web.custom.hosted-fields.tokenization.failed');
+          analytics.sendEvent(client, 'custom.hosted-fields.tokenization.failed');
           return;
         }
 
@@ -106,7 +106,7 @@ function createTokenizationHandler(client, cardForm) {
 
         reply([null, tokenizedCard]);
 
-        analytics.sendEvent(client, 'web.custom.hosted-fields.tokenization.succeeded');
+        analytics.sendEvent(client, 'custom.hosted-fields.tokenization.succeeded');
       });
     } else {
       reply([new BraintreeError({
@@ -128,7 +128,7 @@ function orchestrate(configuration) {
     iframe.braintree.hostedFields.initialize(cardForm);
   });
 
-  analytics.sendEvent(client, 'web.custom.hosted-fields.load.succeeded');
+  analytics.sendEvent(client, 'custom.hosted-fields.load.succeeded');
 
   global.bus.on(events.TOKENIZATION_REQUEST, function (options, reply) {
     var tokenizationHandler = createTokenizationHandler(client, cardForm);

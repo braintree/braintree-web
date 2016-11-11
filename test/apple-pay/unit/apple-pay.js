@@ -159,7 +159,7 @@ describe('ApplePay', function () {
         validationURL: 'something'
       }, function () {});
 
-      expect(this.client.request).to.have.been.calledWith(sinon.match({
+      expect(this.client.request).to.have.been.calledWith(this.sandbox.match({
         data: {
           applePayWebSession: {
             merchantIdentifier: 'override.merchant.identifier'
@@ -406,7 +406,7 @@ describe('ApplePay', function () {
           displayName: 'JS SDK Integration'
         }, function () {});
 
-        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'web.applepay.performValidation.succeeded');
+        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'applepay.performValidation.succeeded');
       });
 
       it('submits failed', function () {
@@ -421,7 +421,7 @@ describe('ApplePay', function () {
           displayName: 'JS SDK Integration'
         }, function () {});
 
-        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'web.applepay.performValidation.failed');
+        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'applepay.performValidation.failed');
       });
     });
 
@@ -439,7 +439,7 @@ describe('ApplePay', function () {
           token: 'token'
         }, function () {});
 
-        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'web.applepay.tokenize.succeeded');
+        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'applepay.tokenize.succeeded');
       });
 
       it('submits failed', function () {
@@ -453,7 +453,7 @@ describe('ApplePay', function () {
           token: 'token'
         }, function () {});
 
-        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'web.applepay.tokenize.failed');
+        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'applepay.tokenize.failed');
       });
     });
   });

@@ -6,14 +6,20 @@ var BraintreeError = require('../../../src/lib/error');
 var fake = require('../../helpers/fake');
 var version = require('../../../package.json').version;
 
-describe('usBankAccount', function () {
+describe('usBankAccount component', function () {
   beforeEach(function () {
     this.configuration = fake.configuration();
+    this.configuration.gatewayConfiguration.usBankAccount = {
+      plaid: {
+        publicKey: 'abc123'
+      }
+    };
 
     this.fakeClient = {
       getConfiguration: function () {
         return this.configuration;
-      }.bind(this)
+      }.bind(this),
+      _request: this.sandbox.stub()
     };
   });
 
@@ -71,6 +77,21 @@ describe('usBankAccount', function () {
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('BRAINTREE_API_ACCESS_RESTRICTED');
         expect(err.message).to.equal('Your access is restricted and cannot use this part of the Braintree API.');
+
+        done();
+      });
+    });
+
+    it('calls back with error when client does not have usBankAccount gateway configuration', function (done) {
+      delete this.configuration.gatewayConfiguration.usBankAccount;
+
+      create({client: this.fakeClient}, function (err, usb) {
+        expect(usb).not.to.exist;
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('US_BANK_ACCOUNT_NOT_ENABLED');
+        expect(err.message).to.equal('US bank account is not enabled.');
 
         done();
       });

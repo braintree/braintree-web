@@ -94,6 +94,15 @@ reinstall_dependencies() {
   fi
 }
 
+run_unit_tests() {
+  echo -en "${YELLOW}Run${RESET} unit tests (y/n)? "
+  read message
+
+  if [[ "$message" =~ $YES ]]; then
+    npm test
+  fi
+}
+
 confirm_version() {
   echo -en "Release ${MAGENTA}braintree.js $BLUE$(get_package_json_version)$RESET"
   echo -en " at $YELLOW$(get_version_for_prompt)$RESET (y/n)? "
@@ -131,6 +140,7 @@ main() {
     hosted)
       confirm_destination "$BRAINTREE_JS_HOSTED_DEST"
       reinstall_dependencies
+      run_unit_tests
       confirm_version
       env BRAINTREE_JS_ENV=production gulp release:hosted
       ;;

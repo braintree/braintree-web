@@ -155,7 +155,7 @@ describe('FrameService', function () {
 
       expect(context._bus.on).to.have.been.calledWith(
         events.DISPATCH_FRAME_READY,
-        sinon.match.func
+        this.sandbox.match.func
       );
     });
 
@@ -289,7 +289,7 @@ describe('FrameService', function () {
 
       FrameService.prototype._setBusEvents.call(context);
 
-      expect(context._bus.on).to.have.been.calledWith(events.DISPATCH_FRAME_REPORT, sinon.match.func);
+      expect(context._bus.on).to.have.been.calledWith(events.DISPATCH_FRAME_REPORT, this.sandbox.match.func);
     });
 
     it('listens for a configuration request', function () {
@@ -299,43 +299,7 @@ describe('FrameService', function () {
 
       FrameService.prototype._setBusEvents.call(context);
 
-      expect(context._bus.on).to.have.been.calledWith(BraintreeBus.events.CONFIGURATION_REQUEST, sinon.match.func);
-    });
-
-    it('calls to close the frame', function () {
-      var fakeBus = {
-        listeners: [],
-        on: function (eventName, callback) {
-          this.listeners.push({
-            eventName: eventName,
-            callback: callback
-          });
-        },
-        off: function (eventName) {
-          this.listeners.forEach(function (listener, i) {
-            if (listener.eventName === eventName) {
-              this.listeners.splice(i, 1);
-            }
-          }.bind(this));
-        },
-        emit: function (eventName) {
-          this.listeners.forEach(function (listener) {
-            if (listener.eventName === eventName) {
-              listener.callback();
-            }
-          });
-        }
-      };
-      var context = {
-        _bus: fakeBus,
-        close: this.sandbox.stub()
-      };
-
-      FrameService.prototype._setBusEvents.call(context);
-
-      context._bus.emit(events.DISPATCH_FRAME_REPORT);
-
-      expect(context.close).to.have.been.called;
+      expect(context._bus.on).to.have.been.calledWith(BraintreeBus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
     });
 
     it('calls _onCompleteCallback with provided arguments', function () {
@@ -452,13 +416,42 @@ describe('FrameService', function () {
       expect(frameService._frame).to.deep.equal(fakeFrame);
     });
 
+    it('calls the callback with error when popup fails to open', function () {
+      var frameService = new FrameService(this.options);
+      var fakeFrame = {closed: true};
+      var mockCallback = this.sandbox.stub();
+
+      this.sandbox.stub(popup, 'open').returns(fakeFrame);
+
+      frameService.open(mockCallback);
+
+      expect(mockCallback).to.have.been.calledWith(this.sandbox.match({
+        type: BraintreeError.types.INTERNAL,
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
+        message: 'Frame failed to open.'
+      }));
+    });
+
+    it('cleans up the frame when popup fails to open', function (done) {
+      var frameService = new FrameService(this.options);
+      var fakeFrame = {closed: true};
+
+      this.sandbox.stub(popup, 'open').returns(fakeFrame);
+
+      frameService.open(function () {
+        expect(frameService._frame).to.not.exist;
+        done();
+      });
+    });
+
     it('initiates polling', function () {
       var frameService;
       var callback = this.sandbox.stub();
+      var fakeFrame = {close: 'close'};
 
       this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
       frameService = new FrameService(this.options);
-      this.sandbox.stub(popup, 'open');
+      this.sandbox.stub(popup, 'open').returns(fakeFrame);
 
       frameService.open(callback);
 
@@ -693,7 +686,7 @@ describe('FrameService', function () {
 
       clock.tick(100);
 
-      expect(onCompleteCallbackStub).to.have.been.calledWith(sinon.match({
+      expect(onCompleteCallbackStub).to.have.been.calledWith(this.sandbox.match({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_CLOSED',
         message: 'Frame closed before tokenization could occur.'

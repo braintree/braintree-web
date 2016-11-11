@@ -59,7 +59,7 @@ function request(options, cb) {
   req.open(method, url, true);
   req.timeout = timeout;
 
-  if (isXHRAvailable && method === 'POST') {
+  if (isXHRAvailable) {
     req.setRequestHeader('Content-Type', 'application/json');
 
     // TODO: Make this work in IE9.

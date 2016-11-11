@@ -22,6 +22,7 @@ var KARMA_SUITES = [
 ];
 var TEST_TASKS = [
   'test:environment',
+  'test:publishing',
   'test:node-parsing',
   'lint'
 ];
@@ -48,6 +49,22 @@ function _karma(suite, done) {
   }, done).start();
 }
 
+function _mocha(suite, done) {
+  var projectRoot = path.resolve(__dirname, '..');
+  var mochaPath = path.resolve(projectRoot, 'node_modules', '.bin', 'mocha');
+  var testPath = path.resolve(projectRoot, 'test', suite);
+
+  spawn(mochaPath, [testPath], {
+    stdio: 'inherit'
+  }).on('exit', (code) => {
+    if (code === 0) {
+      done();
+    } else {
+      done('mocha exited with code ' + code);
+    }
+  });
+}
+
 KARMA_SUITES.forEach(function (suite) {
   var karmaTask = 'karma:' + suite;
   var lintTask = 'lint:' + suite;
@@ -66,17 +83,15 @@ KARMA_SUITES.forEach(function (suite) {
   });
 });
 
-gulp.task('karma:publishing', function (done) {
-  _karma('publishing', done);
+gulp.task('mocha:publishing', function (done) {
+  _mocha('publishing', done);
 });
 gulp.task('lint:publishing', function (done) {
   _lint('index.js', 'publishing', done);
 });
 gulp.task('test:publishing', function (done) {
-  run('build', 'lint:publishing', 'karma:publishing', done);
+  run('build', 'lint:publishing', 'mocha:publishing', done);
 });
-
-TEST_TASKS.push('karma:publishing');
 
 gulp.task('test:node-parsing', function (done) {
   var error, bt;
@@ -92,19 +107,7 @@ gulp.task('test:node-parsing', function (done) {
 });
 
 gulp.task('test:environment', function (done) {
-  var projectRoot = path.resolve(__dirname, '..');
-  var mochaPath = path.resolve(projectRoot, 'node_modules', '.bin', 'mocha');
-  var testPath = path.resolve(projectRoot, 'test', 'environment');
-
-  spawn(mochaPath, [testPath], {
-    stdio: 'inherit'
-  }).on('exit', (code) => {
-    if (code === 0) {
-      done();
-    } else {
-      done('mocha exited with code ' + code);
-    }
-  });
+  _mocha('environment', done);
 });
 
 gulp.task('lint', function(done) {

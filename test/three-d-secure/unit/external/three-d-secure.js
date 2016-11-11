@@ -230,9 +230,9 @@ describe('ThreeDSecure', function () {
     });
 
     it('makes a request to the 3DS lookup endpoint', function (done) {
-      var client = this.client;
+      var self = this;
 
-      client.request.yields(null, {paymentMethod: {}});
+      this.client.request.yields(null, {paymentMethod: {}});
 
       this.instance.verifyCard({
         nonce: 'abcdef',
@@ -240,12 +240,12 @@ describe('ThreeDSecure', function () {
         addFrame: noop,
         removeFrame: noop
       }, function () {
-        expect(client.request).to.be.calledOnce;
-        expect(client.request).to.be.calledWithMatch({
+        expect(self.client.request).to.be.calledOnce;
+        expect(self.client.request).to.be.calledWithMatch({
           endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
           method: 'post',
           data: {amount: 100}
-        }, sinon.match.func);
+        }, self.sandbox.match.func);
 
         done();
       });
@@ -666,7 +666,7 @@ describe('ThreeDSecure', function () {
       var threeDS = this.threeDS;
 
       threeDS.teardown(function () {
-        expect(analytics.sendEvent).to.have.been.calledWith(threeDS._options.client, 'web.threedsecure.teardown-completed');
+        expect(analytics.sendEvent).to.have.been.calledWith(threeDS._options.client, 'threedsecure.teardown-completed');
         done();
       });
     });

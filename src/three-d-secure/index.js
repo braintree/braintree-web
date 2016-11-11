@@ -59,7 +59,7 @@ function create(options, callback) {
     return;
   }
 
-  analytics.sendEvent(options.client, 'web.threedsecure.initialized');
+  analytics.sendEvent(options.client, 'threedsecure.initialized');
 
   try {
     threeDSecure = new ThreeDSecure(options);

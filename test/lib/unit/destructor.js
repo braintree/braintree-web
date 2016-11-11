@@ -39,8 +39,8 @@ describe('Destructor', function () {
     it('empties collection of teardown functions', function (done) {
       var destructor = new Destructor();
 
-      destructor.registerFunctionForTeardown(sinon.spy());
-      destructor.registerFunctionForTeardown(sinon.spy());
+      destructor.registerFunctionForTeardown(this.sandbox.spy());
+      destructor.registerFunctionForTeardown(this.sandbox.spy());
 
       destructor.teardown(function () {
         expect(destructor._teardownRegistry).to.deep.equal([]);

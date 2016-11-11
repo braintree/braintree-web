@@ -50,7 +50,7 @@ describe('client.create', function () {
     client.create({authorization: fake.tokenizationKey}, function (err, thingy) {
       expect(err).to.be.null;
       expect(thingy).to.be.an.instanceof(Client);
-      expect(self.getSpy).to.have.been.calledWith(sinon.match({
+      expect(self.getSpy).to.have.been.calledWith(self.sandbox.match({
         data: {tokenizationKey: fake.tokenizationKey}
       }));
       done();
@@ -64,7 +64,7 @@ describe('client.create', function () {
     client.create({authorization: fake.clientToken}, function (err, thingy) {
       expect(err).to.be.null;
       expect(thingy).to.be.an.instanceof(Client);
-      expect(self.getSpy).to.have.been.calledWith(sinon.match({
+      expect(self.getSpy).to.have.been.calledWith(self.sandbox.match({
         data: {authorizationFingerprint: fingerprint}
       }));
       done();
@@ -75,8 +75,8 @@ describe('client.create', function () {
     var self = this;
 
     client.create({authorization: fake.tokenizationKey}, function () {
-      expect(self.getSpy).to.have.been.calledWith(sinon.match({
-        url: sinon.match(/client_api\/v1\/configuration$/)
+      expect(self.getSpy).to.have.been.calledWith(self.sandbox.match({
+        url: self.sandbox.match(/client_api\/v1\/configuration$/)
       }));
       done();
     });

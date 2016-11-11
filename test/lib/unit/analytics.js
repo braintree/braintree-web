@@ -31,7 +31,7 @@ describe('analytics.sendEvent', function () {
 
     expect(postArgs[0].url).to.equal('https://example.com/analytics-url');
     expect(postArgs[0].method).to.equal('post');
-    expect(postArgs[0].data.analytics[0].kind).to.equal('test.event.kind');
+    expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
     expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
     expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
     currentTimestamp = Date.now() / 1000;
@@ -51,7 +51,7 @@ describe('analytics.sendEvent', function () {
 
     expect(postArgs[0].url).to.equal('https://example.com/analytics-url');
     expect(postArgs[0].method).to.equal('post');
-    expect(postArgs[0].data.analytics[0].kind).to.equal('test.event.kind');
+    expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
     expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
     expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
     currentTimestamp = Date.now() / 1000;

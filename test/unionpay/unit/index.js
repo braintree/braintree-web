@@ -105,7 +105,7 @@ describe('unionPay.create', function () {
 
     create({client: client}, function (err) {
       expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'web.unionpay.initialized');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'unionpay.initialized');
 
       done();
     });

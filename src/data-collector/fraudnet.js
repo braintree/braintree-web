@@ -59,7 +59,7 @@ function _createThirdPartyBlock() {
   iframe.src = 'about:blank';
   iframe.title = '';
   iframe.role = 'presentation'; // a11y
-  (iframe.frameElement || iframe).style.cssText = 'width: 0; height: 0; border: 0';
+  (iframe.frameElement || iframe).style.cssText = 'width: 0; height: 0; border: 0; position: absolute; z-index: -999';
   document.body.appendChild(iframe);
 
   try {

@@ -88,7 +88,7 @@ describe('UnionPay', function () {
           _options: {client: client}
         }, options, errback);
 
-        expect(client.request).to.be.calledWith(sinon.match({
+        expect(client.request).to.be.calledWith(this.sandbox.match({
           method: 'get',
           endpoint: 'payment_methods/credit_cards/capabilities',
           data: {
@@ -200,7 +200,7 @@ describe('UnionPay', function () {
           _options: {client: client}
         }, options, noop);
 
-        expect(analytics.sendEvent).to.have.been.calledWith(client, 'web.unionpay.capabilities-received');
+        expect(analytics.sendEvent).to.have.been.calledWith(client, 'unionpay.capabilities-received');
       });
     });
 
@@ -259,7 +259,7 @@ describe('UnionPay', function () {
         _options: {client: client}
       }, options, noop);
 
-      expect(analytics.sendEvent).to.have.been.calledWith(client, 'web.unionpay.capabilities-failed');
+      expect(analytics.sendEvent).to.have.been.calledWith(client, 'unionpay.capabilities-failed');
     });
 
     it('sends _meta source', function () {
@@ -276,7 +276,7 @@ describe('UnionPay', function () {
         _options: {client: client}
       }, options, errback);
 
-      expect(client.request).to.be.calledWith(sinon.match({
+      expect(client.request).to.be.calledWith(this.sandbox.match({
         data: {_meta: {source: 'unionpay'}}
       }));
     });
@@ -359,7 +359,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           data: {_meta: {source: 'unionpay'}}
         }));
       });
@@ -386,7 +386,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'union_pay_enrollments',
           data: {
@@ -422,7 +422,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'union_pay_enrollments',
           data: {
@@ -459,7 +459,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'union_pay_enrollments',
           data: {
@@ -492,7 +492,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match(function (value) {
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.unionPayEnrollment.hasOwnProperty('expirationMonth') &&
             !value.data.unionPayEnrollment.hasOwnProperty('expirationYear');
         }));
@@ -519,7 +519,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match(function (value) {
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.unionPayEnrollment.hasOwnProperty('expirationMonth') &&
             !value.data.unionPayEnrollment.hasOwnProperty('expirationYear');
         }));
@@ -610,7 +610,7 @@ describe('UnionPay', function () {
             _options: {client: stubClient}
           }, options, noop);
 
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'web.unionpay.enrollment-failed');
+          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.enrollment-failed');
         });
 
         describe('with a 422', function () {
@@ -766,7 +766,7 @@ describe('UnionPay', function () {
             _options: {client: stubClient}
           }, options, noop);
 
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'web.unionpay.enrollment-succeeded');
+          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.enrollment-succeeded');
         });
       });
     });
@@ -919,7 +919,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'payment_methods/credit_cards',
           data: {
@@ -955,7 +955,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match(function (value) {
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.creditCard.options.unionPayEnrollment.hasOwnProperty('smsCode');
         }));
       });
@@ -981,7 +981,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'payment_methods/credit_cards',
           data: {
@@ -1021,7 +1021,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'payment_methods/credit_cards',
           data: {
@@ -1060,7 +1060,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match(function (value) {
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.creditCard.hasOwnProperty('expirationMonth') &&
             !value.data.creditCard.hasOwnProperty('expirationYear');
         }));
@@ -1129,7 +1129,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'payment_methods/credit_cards',
           data: {
@@ -1151,7 +1151,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match(function (value) {
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.creditCard.hasOwnProperty('cvv');
         }));
       });
@@ -1168,7 +1168,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match(function (value) {
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.creditCard.hasOwnProperty('cvv');
         }));
       });
@@ -1190,7 +1190,7 @@ describe('UnionPay', function () {
           _options: {client: mockClient}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(sinon.match({
+        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
           data: {_meta: {source: 'unionpay'}}
         }));
       });
@@ -1228,7 +1228,7 @@ describe('UnionPay', function () {
             _options: {client: stubClient}
           }, request, errback);
 
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'web.unionpay.nonce-received');
+          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.nonce-received');
         });
 
         it('calls the errback with a nonce', function (done) {
@@ -1447,7 +1447,7 @@ describe('UnionPay', function () {
             _options: {client: stubClient}
           }, request, noop);
 
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'web.unionpay.nonce-failed');
+          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.nonce-failed');
         });
       });
     });

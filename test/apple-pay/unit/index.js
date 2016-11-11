@@ -88,7 +88,7 @@ describe('applePay.create', function () {
       displayName: 'Awesome Merchant'
     }, function (err) {
       expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'web.applepay.initialized');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'applepay.initialized');
 
       done();
     });

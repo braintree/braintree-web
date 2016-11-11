@@ -5,6 +5,7 @@
  */
 
 var BraintreeError = require('../lib/error');
+var errors = require('./errors');
 var USBankAccount = require('./us-bank-account');
 var deferred = require('../lib/deferred');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
@@ -20,7 +21,7 @@ var sharedErrors = require('../errors');
  * @returns {void}
  */
 function create(options, callback) {
-  var clientVersion, braintreeApi;
+  var clientVersion, braintreeApi, usBankAccount;
 
   throwIfNoCallback(callback, 'create');
 
@@ -48,6 +49,12 @@ function create(options, callback) {
   braintreeApi = options.client.getConfiguration().gatewayConfiguration.braintreeApi;
   if (!braintreeApi) {
     callback(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
+    return;
+  }
+
+  usBankAccount = options.client.getConfiguration().gatewayConfiguration.usBankAccount;
+  if (!usBankAccount) {
+    callback(new BraintreeError(errors.US_BANK_ACCOUNT_NOT_ENABLED));
     return;
   }
 

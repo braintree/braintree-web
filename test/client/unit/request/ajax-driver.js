@@ -109,7 +109,7 @@ describe('AJAXDriver', function () {
       expect(XMLHttpRequest.prototype.setRequestHeader).to.have.been.calledWith('Content-Type', 'application/json');
     });
 
-    it('sets the headers if provided', function () {
+    it('sets the headers if provided and XHR is available', function () {
       this.sandbox.stub(XMLHttpRequest.prototype, 'setRequestHeader');
 
       AJAXDriver.request({

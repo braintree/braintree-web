@@ -18,13 +18,13 @@ function getFrame() {
   return frame;
 }
 
-function report(err, payload) {
+function report(err, payload, callback) {
   var frame = getFrame();
 
   frame.bus.emit(events.DISPATCH_FRAME_REPORT, {
     err: err,
     payload: payload
-  });
+  }, callback);
 }
 
 function asyncClose() {

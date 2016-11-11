@@ -4,15 +4,24 @@
 var fake = require('../../helpers/fake');
 var USBankAccount = require('../../../src/us-bank-account/us-bank-account');
 var BraintreeError = require('../../../src/lib/error');
+var analytics = require('../../../src/lib/analytics');
+var methods = require('../../../src/lib/methods');
 
 describe('USBankAccount', function () {
   beforeEach(function () {
     this.configuration = fake.configuration();
 
+    this.configuration.gatewayConfiguration.usBankAccount = {
+      plaid: {
+        publicKey: 'abc123'
+      }
+    };
+
     this.fakeClient = {
       getConfiguration: function () {
         return this.configuration;
       }.bind(this),
+      request: this.sandbox.stub(),
       _request: this.sandbox.stub()
     };
 
@@ -26,6 +35,17 @@ describe('USBankAccount', function () {
       _tokenizeBankDetails: USBankAccount.prototype._tokenizeBankDetails,
       _tokenizeBankLogin: USBankAccount.prototype._tokenizeBankLogin
     };
+
+    this.sandbox.stub(analytics, 'sendEvent');
+  });
+
+  describe('Constructor', function () {
+    it('sends an analytics event', function () {
+      new USBankAccount({client: this.fakeClient}); // eslint-disable-line no-new
+
+      expect(analytics.sendEvent).to.have.been.calledWith(this.fakeClient, 'web.usbankaccount.initialized');
+      expect(analytics.sendEvent).to.have.been.calledOnce;
+    });
   });
 
   describe('tokenize', function () {
@@ -68,7 +88,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_OPTION_REQUIRED');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
           expect(err.message).to.equal('tokenize must be called with bankDetails or bankLogin.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -94,7 +114,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_MUTUALLY_EXCLUSIVE_OPTIONS');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS');
           expect(err.message).to.equal('tokenize must be called with bankDetails or bankLogin, not both.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -183,6 +203,58 @@ describe('USBankAccount', function () {
         }.bind(this));
       });
 
+      it('sends a "success" analytics event when tokenizing bank details successfully', function (done) {
+        this.fakeClient._request.yields(null, this.fakeUsBankAccountResponse);
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankDetails: {
+            routingNumber: '1234567',
+            accountNumber: '0000000',
+            accountType: 'checking',
+            accountHolderName: 'Frodo Baggins',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+        }, function () {
+          expect(analytics.sendEvent).to.have.been.calledWith(this.fakeClient, 'web.usbankaccount.bankdetails.tokenization.succeeded');
+          expect(analytics.sendEvent).to.have.been.calledOnce;
+
+          done();
+        }.bind(this));
+      });
+
+      it('sends a "failed" analytics event when tokenizing bank details badly', function (done) {
+        this.fakeClient._request.yields(new Error('Something bad happnened'), null);
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankDetails: {
+            routingNumber: '1234567',
+            accountNumber: '0000000',
+            accountType: 'checking',
+            accountHolderName: 'Frodo Baggins',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+        }, function () {
+          expect(analytics.sendEvent).to.have.been.calledWith(this.fakeClient, 'web.usbankaccount.bankdetails.tokenization.failed');
+          expect(analytics.sendEvent).to.have.been.calledOnce;
+
+          done();
+        }.bind(this));
+      });
+
       it('errors without mandateText', function (done) {
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -193,7 +265,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_OPTION_REQUIRED');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
           expect(err.message).to.equal('mandateText property is required.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -213,7 +285,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_OPTION_REQUIRED');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
           expect(err.message).to.equal('bankDetails.routingNumber property is required.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -233,7 +305,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_OPTION_REQUIRED');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
           expect(err.message).to.equal('bankDetails.accountNumber property is required.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -253,7 +325,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_OPTION_REQUIRED');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
           expect(err.message).to.equal('bankDetails.accountType property is required.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -262,12 +334,109 @@ describe('USBankAccount', function () {
           done();
         }.bind(this));
       });
+
+      it('errors when tokenize fails with 401 status code', function (done) {
+        var originalError = new Error('Something bad happnened');
+
+        this.fakeClient._request.yields(originalError, null, 401);
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankDetails: {
+            routingNumber: '1234567',
+            accountNumber: '0000000',
+            accountType: 'checking',
+            accountHolderName: 'Frodo Baggins',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+        }, function (err, tokenizedPayload) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('BRAINTREE_API_ACCESS_RESTRICTED');
+          expect(err.message).to.equal('Your access is restricted and cannot use this part of the Braintree API.');
+          expect(err.details.originalError).to.equal(originalError);
+
+          expect(tokenizedPayload).not.to.exist;
+
+          done();
+        });
+      });
+
+      it('errors when tokenize fails with 4xx status code', function (done) {
+        var originalError = new Error('Something bad happnened');
+
+        this.fakeClient._request.yields(originalError, null, 404);
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankDetails: {
+            routingNumber: '1234567',
+            accountNumber: '0000000',
+            accountType: 'checking',
+            accountHolderName: 'Frodo Baggins',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+        }, function (err, tokenizedPayload) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('CUSTOMER');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_FAILED_TOKENIZATION');
+          expect(err.message).to.equal('The supplied data failed tokenization.');
+          expect(err.details.originalError).to.equal(originalError);
+
+          expect(tokenizedPayload).not.to.exist;
+
+          done();
+        });
+      });
+
+      it('errors when tokenize fails with 5xx status code', function (done) {
+        var originalError = new Error('Something bad happnened');
+
+        this.fakeClient._request.yields(originalError, null, 500);
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankDetails: {
+            routingNumber: '1234567',
+            accountNumber: '0000000',
+            accountType: 'checking',
+            accountHolderName: 'Frodo Baggins',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+        }, function (err, tokenizedPayload) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('NETWORK');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_TOKENIZATION_NETWORK_ERROR');
+          expect(err.message).to.equal('A tokenization network error occurred.');
+          expect(err.details.originalError).to.equal(originalError);
+
+          expect(tokenizedPayload).not.to.exist;
+
+          done();
+        });
+      });
     });
 
     describe('bank login', function () {
       beforeEach(function () {
-        this.fakePlaidResponse = {
-        };
         this.fakeGatewayResponse = {
           data: {
             type: 'us_bank_account',
@@ -291,6 +460,291 @@ describe('USBankAccount', function () {
         };
       });
 
+      it('errors when Plaid fails to load', function (done) {
+        var loadError = new Error('Failed to load');
+
+        this.context._loadPlaid = function (callback) {
+          setTimeout(function () {
+            callback(loadError);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+        }, function (err, tokenizedPayload) {
+          expect(err).to.equal(loadError);
+
+          expect(tokenizedPayload).not.to.exist;
+          expect(this.fakeClient._request).not.to.have.been.called;
+
+          done();
+        }.bind(this));
+      });
+
+      it('errors when the Plaid onExit callback is called', function (done) {
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              return {
+                open: function () {
+                  setTimeout(options.onExit, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+        }, function (err, tokenizedPayload) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('CUSTOMER');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_LOGIN_CLOSED');
+          expect(err.message).to.equal('Customer closed bank login flow before authorizing.');
+
+          expect(tokenizedPayload).not.to.exist;
+          expect(this.fakeClient._request).not.to.have.been.called;
+
+          done();
+        }.bind(this));
+      });
+
+      it('errors when calling multiple times', function (done) {
+        var tokenizeOptions = {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        };
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function () {
+              return {
+                open: function () {}
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, tokenizeOptions, function () {});
+
+        USBankAccount.prototype.tokenize.call(this.context, tokenizeOptions, function (err, tokenizedPayload) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_LOGIN_REQUEST_ACTIVE');
+          expect(err.message).to.equal('Another bank login tokenization request is active.');
+
+          expect(tokenizedPayload).not.to.exist;
+
+          done();
+        });
+      });
+
+      it('errors when plaid is missing in usBankAccount configuration', function (done) {
+        var tokenizeOptions = {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        };
+
+        delete this.configuration.gatewayConfiguration.usBankAccount.plaid;
+
+        USBankAccount.prototype.tokenize.call(this.context, tokenizeOptions, function (err, tokenizedPayload) {
+          expect(tokenizedPayload).to.not.exist;
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_BANK_LOGIN_NOT_ENABLED');
+          expect(err.message).to.equal('Bank login is not enabled.');
+
+          done();
+        });
+      });
+
+      it('tokenizes bank login', function (done) {
+        this.fakeClient._request.yields(null, this.fakeGatewayResponse);
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              expect(options.env).to.equal('tartan');
+              expect(options.clientName).to.equal('Test Merchant');
+              expect(options.key).to.equal('test_key');
+              expect(options.product).to.equal('auth');
+              expect(options.selectAccount).to.equal(true);
+              expect(options.onExit).to.be.a('function');
+              expect(options.onSuccess).to.be.a('function');
+
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    var publicToken = 'abc123';
+                    var metadata = {account_id: 'xyz456'};
+
+                    options.onSuccess(publicToken, metadata);
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function (err, tokenizedPayload) {
+          expect(err).not.to.exist;
+
+          expect(this.fakeClient._request).to.have.been.calledOnce;
+          expect(this.fakeClient._request).to.have.been.calledWith({
+            method: 'POST',
+            url: 'https://braintree-api-endpoint.com/tokens',
+            headers: {
+              Authorization: 'Bearer fakeToken',
+              'Braintree-Version': '2016-08-25'
+            },
+            data: {
+              type: 'plaid_public_token',
+              public_token: 'abc123',
+              account_id: 'xyz456',
+              ach_mandate: {
+                text: 'I authorize Braintree to charge my bank account.'
+              }
+            }
+          });
+
+          expect(tokenizedPayload).to.deep.equal({
+            nonce: 'fake-nonce-123',
+            details: {},
+            description: 'US bank account ending in - 9999',
+            type: 'us_bank_account'
+          });
+
+          done();
+        }.bind(this));
+      });
+
+      it('sets Plaid environment to "tartan" in Braintree sandbox', function (done) {
+        this.configuration.gatewayConfiguration.environment = 'sandbox';
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              expect(options.env).to.equal('tartan');
+
+              return {open: done};
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {});
+      });
+
+      it('sets Plaid environment to "production" in Braintree production', function (done) {
+        this.configuration.gatewayConfiguration.environment = 'production';
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              expect(options.env).to.equal('production');
+
+              return {open: done};
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {});
+      });
+
+      it('sets Plaid API key to test_key in Braintree sandbox', function (done) {
+        this.configuration.gatewayConfiguration.environment = 'sandbox';
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              expect(options.key).to.equal('test_key');
+
+              return {open: done};
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {});
+      });
+
+      it('sets Plaid API key to the Plaid public key in the configuration', function (done) {
+        this.configuration.gatewayConfiguration.environment = 'production';
+        this.configuration.gatewayConfiguration.usBankAccount.plaid.publicKey = 'foo_boo';
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              expect(options.key).to.equal('foo_boo');
+
+              return {open: done};
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {});
+      });
+
       it('errors without displayName', function (done) {
         USBankAccount.prototype.tokenize.call(this.context, {
           bankLogin: {},
@@ -298,7 +752,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_OPTION_REQUIRED');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
           expect(err.message).to.equal('displayName property is required when using bankLogin.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -316,7 +770,7 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_OPTION_REQUIRED');
+          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
           expect(err.message).to.equal('mandateText property is required.');
 
           expect(tokenizedPayload).not.to.exist;
@@ -324,6 +778,269 @@ describe('USBankAccount', function () {
 
           done();
         }.bind(this));
+      });
+
+      it('sends a "started" analytics event when starting Plaid', function (done) {
+        var fakeClient = this.fakeClient;
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function () {
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    expect(analytics.sendEvent).to.have.been.calledWith(fakeClient, 'web.usbankaccount.banklogin.tokenization.started');
+                    expect(analytics.sendEvent).to.have.been.calledOnce;
+
+                    done();
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {});
+      });
+
+      it('sends a "succeeded" analytics events when Plaid tokenization completes', function (done) {
+        this.fakeClient._request.yields(null, this.fakeGatewayResponse);
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    var publicToken = 'abc123';
+                    var metadata = {account_id: 'xyz456'};
+
+                    options.onSuccess(publicToken, metadata);
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {
+          expect(analytics.sendEvent).to.have.been.calledWith(this.fakeClient, 'web.usbankaccount.banklogin.tokenization.succeeded');
+
+          done();
+        }.bind(this));
+      });
+
+      it('sends a "closed.by-user" analytics events when user closes Plaid flow', function (done) {
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    options.onExit();
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {
+          expect(analytics.sendEvent).to.have.been.calledWith(this.fakeClient, 'web.usbankaccount.banklogin.tokenization.closed.by-user');
+
+          done();
+        }.bind(this));
+      });
+
+      it('sends a "failed" analytics events when Plaid tokenization fails', function (done) {
+        this.fakeClient._request.yields(new Error('Something bad happened'));
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    var publicToken = 'abc123';
+                    var metadata = {account_id: 'xyz456'};
+
+                    options.onSuccess(publicToken, metadata);
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant'
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function () {
+          expect(analytics.sendEvent).to.have.been.calledWith(this.fakeClient, 'web.usbankaccount.banklogin.tokenization.failed');
+
+          done();
+        }.bind(this));
+      });
+    });
+
+    it('errors when tokenize fails with 401 status code', function (done) {
+      var originalError = new Error('Something bad happnened');
+
+      this.context._loadPlaid = function (callback) {
+        var fakePlaid = {
+          create: function (options) {
+            return {
+              open: function () {
+                setTimeout(function () {
+                  var publicToken = 'abc123';
+                  var metadata = {account_id: 'xyz456'};
+
+                  options.onSuccess(publicToken, metadata);
+                }, 1);
+              }
+            };
+          }
+        };
+
+        setTimeout(function () {
+          callback(null, fakePlaid);
+        }, 1);
+      };
+      this.fakeClient._request.yields(originalError, null, 401);
+
+      USBankAccount.prototype.tokenize.call(this.context, {
+        bankLogin: {
+          displayName: 'Test Merchant'
+        },
+        mandateText: 'I authorize Braintree to charge my bank account.'
+      }, function (err, tokenizedPayload) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('BRAINTREE_API_ACCESS_RESTRICTED');
+        expect(err.message).to.equal('Your access is restricted and cannot use this part of the Braintree API.');
+        expect(err.details.originalError).to.equal(originalError);
+
+        expect(tokenizedPayload).not.to.exist;
+
+        done();
+      });
+    });
+
+    it('errors when tokenize fails with 4xx status code', function (done) {
+      var originalError = new Error('Something bad happnened');
+
+      this.context._loadPlaid = function (callback) {
+        var fakePlaid = {
+          create: function (options) {
+            return {
+              open: function () {
+                setTimeout(function () {
+                  var publicToken = 'abc123';
+                  var metadata = {account_id: 'xyz456'};
+
+                  options.onSuccess(publicToken, metadata);
+                }, 1);
+              }
+            };
+          }
+        };
+
+        setTimeout(function () {
+          callback(null, fakePlaid);
+        }, 1);
+      };
+      this.fakeClient._request.yields(originalError, null, 404);
+
+      USBankAccount.prototype.tokenize.call(this.context, {
+        bankLogin: {
+          displayName: 'Test Merchant'
+        },
+        mandateText: 'I authorize Braintree to charge my bank account.'
+      }, function (err, tokenizedPayload) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('CUSTOMER');
+        expect(err.code).to.equal('US_BANK_ACCOUNT_FAILED_TOKENIZATION');
+        expect(err.message).to.equal('The supplied data failed tokenization.');
+        expect(err.details.originalError).to.equal(originalError);
+
+        expect(tokenizedPayload).not.to.exist;
+
+        done();
+      });
+    });
+
+    it('errors when tokenize fails with 5xx status code', function (done) {
+      var originalError = new Error('Something bad happnened');
+
+      this.context._loadPlaid = function (callback) {
+        var fakePlaid = {
+          create: function (options) {
+            return {
+              open: function () {
+                setTimeout(function () {
+                  var publicToken = 'abc123';
+                  var metadata = {account_id: 'xyz456'};
+
+                  options.onSuccess(publicToken, metadata);
+                }, 1);
+              }
+            };
+          }
+        };
+
+        setTimeout(function () {
+          callback(null, fakePlaid);
+        }, 1);
+      };
+      this.fakeClient._request.yields(originalError, null, 500);
+
+      USBankAccount.prototype.tokenize.call(this.context, {
+        bankLogin: {
+          displayName: 'Test Merchant'
+        },
+        mandateText: 'I authorize Braintree to charge my bank account.'
+      }, function (err, tokenizedPayload) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('US_BANK_ACCOUNT_TOKENIZATION_NETWORK_ERROR');
+        expect(err.message).to.equal('A tokenization network error occurred.');
+
+        expect(tokenizedPayload).not.to.exist;
+
+        done();
       });
     });
   });
@@ -351,7 +1068,7 @@ describe('USBankAccount', function () {
       });
     });
 
-    it('adds a Plaid Link script tag to the <body>', function () {
+    it("adds a Plaid Link script tag to the <body> if one wasn't already there", function () {
       var script;
 
       USBankAccount.prototype._loadPlaid.call(this.context, function () {});
@@ -362,20 +1079,38 @@ describe('USBankAccount', function () {
       expect(script.src).to.equal('https://cdn.plaid.com/link/stable/link-initialize.js');
     });
 
+    it("doesn't add a new Plaid Link script tag if one was already there and sets up listeners", function () {
+      var fakeScript = document.createElement('script');
+
+      this.sandbox.stub(fakeScript, 'addEventListener');
+      this.sandbox.stub(document, 'querySelector').returns(fakeScript);
+
+      USBankAccount.prototype._loadPlaid.call(this.context, function () {});
+
+      expect(document.body.appendChild).not.to.have.been.called;
+      expect(fakeScript.addEventListener).to.have.been.calledWith('error', this.sandbox.match.func);
+      expect(fakeScript.addEventListener).to.have.been.calledWith('load', this.sandbox.match.func);
+      expect(fakeScript.addEventListener).to.have.been.calledWith('readystatechange', this.sandbox.match.func);
+    });
+
     it('calls callback with error when script load errors', function (done) {
       var script;
+      var fakeBody = document.createElement('div');
 
       USBankAccount.prototype._loadPlaid.call(this.context, function (err, plaid) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('US_BANK_LOGIN_LOAD_FAILED');
+        expect(err.code).to.equal('US_BANK_ACCOUNT_LOGIN_LOAD_FAILED');
         expect(err.message).to.equal('Bank login flow failed to load.');
         expect(plaid).not.to.exist;
         done();
       });
 
       script = document.body.appendChild.args[0][0];
-      script.onerror();
+
+      fakeBody.appendChild(script);
+
+      script.dispatchEvent(new Event('error'));
     });
 
     it('calls callback on script load', function (done) {
@@ -391,7 +1126,7 @@ describe('USBankAccount', function () {
       script = document.body.appendChild.args[0][0];
 
       global.Plaid = fakePlaid;
-      script.onload();
+      script.dispatchEvent(new Event('load'));
     });
 
     it('calls callback on script readystatechange if readyState is "loaded"', function (done) {
@@ -408,7 +1143,7 @@ describe('USBankAccount', function () {
       script.readyState = 'loaded';
 
       global.Plaid = fakePlaid;
-      script.onreadystatechange();
+      script.dispatchEvent(new Event('readystatechange'));
     });
 
     it('calls callback on script readystatechange if readyState is "complete"', function (done) {
@@ -425,7 +1160,7 @@ describe('USBankAccount', function () {
       script.readyState = 'complete';
 
       global.Plaid = fakePlaid;
-      script.onreadystatechange();
+      script.dispatchEvent(new Event('readystatechange'));
     });
 
     it('does not call callback on script readystatechange if readyState is not "complete" or "loaded"', function () {
@@ -439,13 +1174,13 @@ describe('USBankAccount', function () {
       script.readyState = 'loading';
 
       global.Plaid = fakePlaid;
-      script.onreadystatechange();
+      script.dispatchEvent(new Event('readystatechange'));
 
       expect(callbackSpy).to.not.be.called;
     });
 
     it('does not call callback more than once', function () {
-      var script, onreadystatechange;
+      var script;
       var fakePlaid = this.fakePlaid;
       var callbackSpy = this.sandbox.spy();
 
@@ -455,9 +1190,8 @@ describe('USBankAccount', function () {
 
       global.Plaid = fakePlaid;
 
-      onreadystatechange = script.onreadystatechange;
-      script.onload();
-      onreadystatechange.call({readyState: 'complete'});
+      script.dispatchEvent(new Event('load'));
+      script.dispatchEvent(new Event('error'));
 
       expect(callbackSpy).to.have.been.calledOnce;
     });
@@ -468,24 +1202,36 @@ describe('USBankAccount', function () {
       USBankAccount.prototype._loadPlaid.call(this.context, function () {});
 
       script = document.body.appendChild.args[0][0];
-      script.onload();
 
-      expect(script.onload).not.to.exist;
-      expect(script.onerror).not.to.exist;
-      expect(script.onreadystatechange).not.to.exist;
+      this.sandbox.stub(script, 'removeEventListener');
+
+      script.dispatchEvent(new Event('load'));
+
+      expect(script.removeEventListener).to.have.been.calledWith('error', this.sandbox.match.func);
+      expect(script.removeEventListener).to.have.been.calledWith('load', this.sandbox.match.func);
+      expect(script.removeEventListener).to.have.been.calledWith('readystatechange', this.sandbox.match.func);
     });
 
-    it('removes load callbacks on error', function () {
+    it('removes the <script> tag from the DOM when it errors', function (done) {
       var script;
+      var fakeBody = document.createElement('div');
 
-      USBankAccount.prototype._loadPlaid.call(this.context, function () {});
+      USBankAccount.prototype._loadPlaid.call(this.context, function () {
+        var i;
+        var children = [];
+
+        for (i = 0; i < fakeBody.children.length; i++) {
+          children.push(fakeBody.children[i]);
+        }
+
+        expect(children).not.to.include(script);
+        done();
+      });
 
       script = document.body.appendChild.args[0][0];
-      script.onerror();
+      fakeBody.appendChild(script);
 
-      expect(script.onload).not.to.exist;
-      expect(script.onerror).not.to.exist;
-      expect(script.onreadystatechange).not.to.exist;
+      script.dispatchEvent(new Event('error'));
     });
 
     it('removes load callbacks on readystatechange completion', function () {
@@ -494,12 +1240,15 @@ describe('USBankAccount', function () {
       USBankAccount.prototype._loadPlaid.call(this.context, function () {});
 
       script = document.body.appendChild.args[0][0];
-      script.readyState = 'complete';
-      script.onreadystatechange();
 
-      expect(script.onload).not.to.exist;
-      expect(script.onerror).not.to.exist;
-      expect(script.onreadystatechange).not.to.exist;
+      this.sandbox.stub(script, 'removeEventListener');
+
+      script.readyState = 'complete';
+      script.dispatchEvent(new Event('readystatechange'));
+
+      expect(script.removeEventListener).to.have.been.calledWith('error', this.sandbox.match.func);
+      expect(script.removeEventListener).to.have.been.calledWith('load', this.sandbox.match.func);
+      expect(script.removeEventListener).to.have.been.calledWith('readystatechange', this.sandbox.match.func);
     });
 
     it('does not remove load callbacks if readystatechange is not "complete" or "loaded"', function () {
@@ -508,14 +1257,38 @@ describe('USBankAccount', function () {
       USBankAccount.prototype._loadPlaid.call(this.context, function () {});
 
       script = document.body.appendChild.args[0][0];
+
+      this.sandbox.stub(script, 'removeEventListener');
+
       script.readyState = 'loading';
-      script.onreadystatechange();
+      script.dispatchEvent(new Event('readystatechange'));
 
-      expect(script.onload).to.be.a('function');
-      expect(script.onerror).to.be.a('function');
-      expect(script.onreadystatechange).to.be.a('function');
+      expect(script.removeEventListener).not.to.have.been.called;
     });
+  });
 
-    it('handles multiple calls');
+  describe('teardown', function () {
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = new USBankAccount({client: this.fakeClient});
+
+      instance.teardown(function () {
+        methods(USBankAccount.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
+      });
+    });
   });
 });

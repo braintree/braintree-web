@@ -71,10 +71,10 @@ function Client(configuration) {
  * Used by other modules to formulate all network requests to the Braintree gateway. It is also capable of being used directly from your own form to tokenize credit card information. However, be sure to satisfy PCI compliance if you use direct card tokenization.
  * @public
  * @param {object} options Request options:
- * @param {string} options.method HTTP method. i.e. "get" or "post"
- * @param {string} options.endpoint Enpoint path. i.e. "payment_methods"
- * @param {object} options.data Data to send with the request
- * @param {string} [options.timeout=60000] Timeout limit
+ * @param {string} options.method HTTP method, e.g. "get" or "post".
+ * @param {string} options.endpoint Endpoint path, e.g. "payment_methods".
+ * @param {object} options.data Data to send with the request.
+ * @param {number} [options.timeout=60000] Set a timeout (in milliseconds) for the request.
  * @param {callback} callback The second argument, <code>data</code>, is the returned server data.
  * @example
  * <caption>Direct Credit Card Tokenization</caption>
@@ -91,6 +91,9 @@ function Client(configuration) {
  *       expirationDate: form['cc-date'].value,
  *       billingAddress: {
  *         postalCode: form['cc-postal'].value
+ *       },
+ *       options: {
+ *         validate: false
  *       }
  *     }
  *   };
@@ -103,6 +106,7 @@ function Client(configuration) {
  *     method: 'post',
  *     data: data
  *   }, function (requestErr, response) {
+ *     // More detailed example of handling API errors: https://codepen.io/braintree/pen/MbwjdM
  *     if (requestErr) { throw new Error(requestErr); }
  *
  *     console.log('Got nonce:', response.creditCards[0].nonce);

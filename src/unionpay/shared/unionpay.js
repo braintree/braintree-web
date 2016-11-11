@@ -141,11 +141,11 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
           }));
         }
 
-        analytics.sendEvent(client, 'web.unionpay.capabilities-failed');
+        analytics.sendEvent(client, 'unionpay.capabilities-failed');
         return;
       }
 
-      analytics.sendEvent(client, 'web.unionpay.capabilities-received');
+      analytics.sendEvent(client, 'unionpay.capabilities-received');
       callback(null, response);
     });
   } else if (hostedFields) {
@@ -314,12 +314,12 @@ UnionPay.prototype.enroll = function (options, callback) {
           error.details = {originalError: err};
         }
 
-        analytics.sendEvent(client, 'web.unionpay.enrollment-failed');
+        analytics.sendEvent(client, 'unionpay.enrollment-failed');
         callback(error);
         return;
       }
 
-      analytics.sendEvent(client, 'web.unionpay.enrollment-succeeded');
+      analytics.sendEvent(client, 'unionpay.enrollment-succeeded');
       callback(null, {
         enrollmentId: response.unionPayEnrollmentId,
         smsCodeRequired: response.smsCodeRequired
@@ -435,7 +435,7 @@ UnionPay.prototype.tokenize = function (options, callback) {
       data: data
     }, function (err, response, status) {
       if (err) {
-        analytics.sendEvent(client, 'web.unionpay.nonce-failed');
+        analytics.sendEvent(client, 'unionpay.nonce-failed');
 
         if (status === 403) {
           error = err;
@@ -455,7 +455,7 @@ UnionPay.prototype.tokenize = function (options, callback) {
       delete tokenizedCard.consumed;
       delete tokenizedCard.threeDSecureInfo;
 
-      analytics.sendEvent(client, 'web.unionpay.nonce-received');
+      analytics.sendEvent(client, 'unionpay.nonce-received');
       callback(null, tokenizedCard);
     });
   } else if (hostedFields) {

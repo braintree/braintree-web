@@ -18,7 +18,7 @@ var errors = require('./errors');
  * @global
  * @name DataCollector
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/data-collector.create|braintree-web.data-collector.create} instead.</strong>
- * @classdesc This class is used for advanced fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions.
+ * @classdesc This class is used for advanced fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions. Before using DataCollector, make sure you have enabled advanced fraud protection in the Braintree gateway. To use your own Kount ID, contact our support team ([support@braintreepayments.com](mailto:support@braintreepayments.com) or [877.434.2894](tel:877.434.2894)).
  */
 
 /**
@@ -42,6 +42,7 @@ var errors = require('./errors');
 /**
  * @static
  * @function create
+ * @description Creates a DataCollector instance. Requires advanced fraud protection to be enabled in the Braintree gateway. Contact our [support team](mailto:support@braintreepayments.com) to configure your Kount ID.
  * @param {object} options Creation options:
  * @param {Client} options.client A {@link Client} instance.
  * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled.

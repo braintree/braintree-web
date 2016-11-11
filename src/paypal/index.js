@@ -69,7 +69,7 @@ function create(options, callback) {
     return;
   }
 
-  analytics.sendEvent(options.client, 'web.paypal.initialized');
+  analytics.sendEvent(options.client, 'paypal.initialized');
 
   pp = new PayPal(options);
   pp._initialize(function () {

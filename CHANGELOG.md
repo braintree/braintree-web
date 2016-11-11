@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.6.0
+
+* Data Collector
+  * Fix iframe styling in PayPal fraud tools
+* Hosted Fields
+  * Add support for `letter-spacing` CSS property
+  * Fix a bug where Safari autocomplete would mangle credit card input
+* PayPal
+  * Return a `MERCHANT` error when `tokenize` is called outside of a user action event
+  * Show loading indicator in popup when a successful authorization is being processed and tokenized
+
 ## 3.5.0
 
 * Hosted Fields

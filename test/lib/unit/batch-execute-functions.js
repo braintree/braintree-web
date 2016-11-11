@@ -5,15 +5,15 @@ var assert = require('assert');
 
 describe('batchExecuteFunctions', function () {
   beforeEach(function () {
-    this.syncFn = sinon.spy(function () {
+    this.syncFn = this.sandbox.spy(function () {
       return 123;
     });
 
-    this.asyncFn = sinon.spy(function (done) {
+    this.asyncFn = this.sandbox.spy(function (done) {
       setTimeout(done, 10);
     });
 
-    this.asyncFnWithError = sinon.spy(function (done) {
+    this.asyncFnWithError = this.sandbox.spy(function (done) {
       setTimeout(function () {
         done(new Error('Error async'));
       }, 10);

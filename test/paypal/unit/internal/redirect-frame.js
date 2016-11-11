@@ -9,7 +9,6 @@ describe('redirect-frame', function () {
     beforeEach(function () {
       this.params = {};
       this.sandbox.stub(frameService, 'report');
-      this.sandbox.stub(frameService, 'asyncClose');
       this.sandbox.stub(querystring, 'parse', function () {
         return this.params;
       }.bind(this));
@@ -18,11 +17,6 @@ describe('redirect-frame', function () {
     it('reports to frame service the params from the querystring', function () {
       redirectFrame.start();
       expect(frameService.report).to.have.been.calledWith(null, this.params);
-    });
-
-    it('closes the page', function () {
-      redirectFrame.start();
-      expect(frameService.asyncClose).to.have.been.called;
     });
   });
 });

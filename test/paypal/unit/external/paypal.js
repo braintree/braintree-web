@@ -35,6 +35,12 @@ describe('PayPal', function () {
       expect(pp._assetsUrl).to.equal(this.configuration.gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION);
     });
 
+    it('sets a loadingFrameUrl', function () {
+      var pp = new PayPal({client: this.client});
+
+      expect(pp._loadingFrameUrl).to.equal(pp._assetsUrl + '/html/paypal-landing-frame@DOT_MIN.html');
+    });
+
     it('setup up authorization state', function () {
       var pp = new PayPal({client: this.client});
 
@@ -45,7 +51,8 @@ describe('PayPal', function () {
   describe('_initialize', function () {
     it('instantiates FrameService', function () {
       var context = {
-        _assetsUrl: 'foo/bar'
+        _assetsUrl: 'foo/bar',
+        _loadingFrameUrl: 'fake-loading-frame-url'
       };
       var callback = this.sandbox.stub();
 
@@ -54,10 +61,10 @@ describe('PayPal', function () {
       PayPal.prototype._initialize.call(context, callback);
 
       expect(frameService.create).to.have.been.calledWith({
-        name: sinon.match.string,
+        name: this.sandbox.match.string,
         dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame@DOT_MIN.html',
-        openFrameUrl: context._assetsUrl + '/html/paypal-landing-frame@DOT_MIN.html'
-      }, sinon.match.func);
+        openFrameUrl: 'fake-loading-frame-url'
+      }, this.sandbox.match.func);
     });
 
     it('assigns _frameService property on instance', function () {
@@ -101,9 +108,9 @@ describe('PayPal', function () {
       pp = new PayPal({client: this.client});
       pp._initialize(callback);
       clock.tick(59999);
-      expect(analytics.sendEvent).not.to.have.been.calledWith(this.client, 'web.paypal.load.timed-out');
+      expect(analytics.sendEvent).not.to.have.been.calledWith(this.client, 'paypal.load.timed-out');
       clock.tick(1);
-      expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'web.paypal.load.timed-out');
+      expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'paypal.load.timed-out');
     });
   });
 
@@ -385,8 +392,8 @@ describe('PayPal', function () {
       expect(this.context._client.request).to.have.been.calledWith({
         endpoint: 'paypal_hermes/create_payment_resource',
         method: 'post',
-        data: sinon.match.object
-      }, sinon.match.func);
+        data: this.sandbox.match.object
+      }, this.sandbox.match.func);
     });
 
     it('makes an api request for a billing agreement', function () {
@@ -396,8 +403,8 @@ describe('PayPal', function () {
       expect(this.context._client.request).to.have.been.calledWith({
         endpoint: 'paypal_hermes/setup_billing_agreement',
         method: 'post',
-        data: sinon.match.object
-      }, sinon.match.func);
+        data: this.sandbox.match.object
+      }, this.sandbox.match.func);
     });
 
     it('reports a provided request error', function () {
@@ -448,7 +455,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, callbackSpy);
 
-      expect(callbackSpy).to.have.been.calledWith(sinon.match({
+      expect(callbackSpy).to.have.been.calledWith(this.sandbox.match({
         type: BraintreeError.types.MERCHANT,
         code: 'PAYPAL_INVALID_PAYMENT_OPTION',
         message: 'PayPal payment options are invalid.',
@@ -468,7 +475,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, callbackSpy);
 
-      expect(callbackSpy).to.have.been.calledWith(sinon.match({
+      expect(callbackSpy).to.have.been.calledWith(this.sandbox.match({
         type: BraintreeError.types.NETWORK,
         code: 'PAYPAL_FLOW_FAILED',
         message: 'Could not initialize PayPal flow.',
@@ -560,7 +567,7 @@ describe('PayPal', function () {
 
       pp._initialize(function () {
         pp.teardown(function () {
-          expect(analytics.sendEvent).to.have.been.calledWith(pp._client, 'web.paypal.teardown-completed');
+          expect(analytics.sendEvent).to.have.been.calledWith(pp._client, 'paypal.teardown-completed');
           done();
         });
       });
@@ -654,7 +661,7 @@ describe('PayPal', function () {
     it('instructs frame service to open', function () {
       PayPal.prototype.tokenize.call(this.context, {}, noop);
 
-      expect(this.context._frameService.open).to.have.been.calledWith(sinon.match.func);
+      expect(this.context._frameService.open).to.have.been.calledWith(this.sandbox.match.func);
     });
 
     it('returns a close method that instructs the frame service to close', function () {
@@ -707,7 +714,7 @@ describe('PayPal', function () {
         this.context._authorizationInProgress = true;
         PayPal.prototype.tokenize.call(this.context, {}, noop);
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'web.paypal.tokenization.error.already-opened');
+        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.error.already-opened');
       });
 
       it('calls analytics when the frame is opened', function () {
@@ -715,7 +722,7 @@ describe('PayPal', function () {
 
         PayPal.prototype.tokenize.call(this.context, {}, noop);
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'web.paypal.tokenization.opened');
+        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.opened');
       });
 
       it('calls analytics when the frame is closed by merchant', function () {
@@ -724,7 +731,7 @@ describe('PayPal', function () {
 
         result.close();
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'web.paypal.tokenization.closed.by-merchant');
+        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.closed.by-merchant');
       });
     });
   });
@@ -752,10 +759,10 @@ describe('PayPal', function () {
 
       wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED);
 
-      expect(analytics.sendEvent).to.be.called; // With(this.context._client, 'web.paypal.tokenization.closed.by-user');
+      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.closed.by-user');
     });
 
-    it('calls the callback with an error', function () {
+    it('calls the callback with error when frame is closed', function () {
       var err;
       var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.callback);
 
@@ -770,6 +777,22 @@ describe('PayPal', function () {
       expect(err.message).to.equal('Customer closed PayPal popup before authorizing.');
       expect(err.details).not.to.exist;
     });
+
+    it('calls the callback with error when frame fails to open', function () {
+      var err;
+      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.callback);
+
+      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED);
+
+      err = this.callback.getCall(0).args[0];
+
+      expect(this.callback).to.be.calledOnce;
+      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('PAYPAL_POPUP_OPEN_FAILED');
+      expect(err.message).to.equal('PayPal popup failed to open, make sure to tokenize in response to a user action.');
+      expect(err.details).not.to.exist;
+    });
   });
 
   describe('_tokenizePayPal', function () {
@@ -780,8 +803,41 @@ describe('PayPal', function () {
       this.context = {
         _client: this.client,
         _formatTokenizeData: function () { return this.requestPayload; }.bind(this),
-        _formatTokenizePayload: function () { return this.responsePayload; }.bind(this)
+        _formatTokenizePayload: function () { return this.responsePayload; }.bind(this),
+        _frameService: {
+          close: this.sandbox.stub(),
+          redirect: this.sandbox.stub()
+        },
+        _loadingFrameUrl: 'fake-loading-frame-url'
       };
+    });
+
+    it('redirects the frame service to the loading frame URL', function () {
+      PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, function () {});
+
+      expect(this.context._frameService.redirect).to.be.calledWith('fake-loading-frame-url');
+    });
+
+    it('closes the popup after tokenization success', function () {
+      this.context._client.request = function (stuff, callback) {
+        callback(null, {});
+      };
+
+      PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, function () {});
+
+      expect(this.context._frameService.close).to.be.called;
+    });
+
+    it('closes the popup after tokenization failure', function () {
+      var fakeError = {};
+
+      this.context._client.request = function (stuff, callback) {
+        callback(fakeError);
+      };
+
+      PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, function () {});
+
+      expect(this.context._frameService.close).to.be.called;
     });
 
     it('calls request with the proper data', function () {
@@ -803,7 +859,7 @@ describe('PayPal', function () {
       };
       PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, callbackSpy);
 
-      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'web.paypal.tokenization.failed');
+      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.failed');
     });
 
     it('calls callback with Braintree error if there was a problem', function (done) {
@@ -835,7 +891,7 @@ describe('PayPal', function () {
       };
       PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, callbackSpy);
 
-      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'web.paypal.tokenization.success');
+      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.success');
     });
 
     it('calls callback with payload if no error', function () {

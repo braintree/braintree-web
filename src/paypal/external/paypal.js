@@ -58,23 +58,24 @@ var querystring = require('../../lib/querystring');
 function PayPal(options) {
   this._client = options.client;
   this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION;
+  this._loadingFrameUrl = this._assetsUrl + '/html/paypal-landing-frame@DOT_MIN.html';
   this._authorizationInProgress = false;
 }
 
 PayPal.prototype._initialize = function (callback) {
   var client = this._client;
   var failureTimeout = setTimeout(function () {
-    analytics.sendEvent(client, 'web.paypal.load.timed-out');
+    analytics.sendEvent(client, 'paypal.load.timed-out');
   }, INTEGRATION_TIMEOUT_MS);
 
   frameService.create({
     name: constants.LANDING_FRAME_NAME,
     dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame@DOT_MIN.html',
-    openFrameUrl: this._assetsUrl + '/html/paypal-landing-frame@DOT_MIN.html'
+    openFrameUrl: this._loadingFrameUrl
   }, function (service) {
     this._frameService = service;
     clearTimeout(failureTimeout);
-    analytics.sendEvent(client, 'web.paypal.load.succeeded');
+    analytics.sendEvent(client, 'paypal.load.succeeded');
     callback();
   }.bind(this));
 };
@@ -100,7 +101,33 @@ PayPal.prototype._initialize = function (callback) {
  * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
- * @param {string} [options.locale=en_US] Use this option to change the language, links, and terminology used in the PayPal flow to suit the country and language of your customer.
+ * @param {string} [options.locale=en_US] Use this option to change the language, links, and terminology used in the PayPal flow. This locale will be used unless the buyer has set a preferred locale for their account. If an unsupported locale is supplied, a fallback locale (determined by buyer preference or browser data) will be used and no error will be thrown.
+ *
+ * Supported locales are:
+ * `da_DK`,
+ * `de_DE`,
+ * `en_AU`,
+ * `en_GB`,
+ * `en_US`,
+ * `es_ES`,
+ * `fr_CA`,
+ * `fr_FR`,
+ * `id_ID`,
+ * `it_IT`,
+ * `ja_JP`,
+ * `ko_KR`,
+ * `nl_NL`,
+ * `no_NO`,
+ * `pl_PL`,
+ * `pt_BR`,
+ * `pt_PT`,
+ * `ru_RU`,
+ * `sv_SE`,
+ * `th_TH`,
+ * `zh_CN`,
+ * `zh_HK`,
+ * and `zh_TW`.
+ *
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
  * @param {string} options.shippingAddressOverride.line1 Street address.
@@ -158,13 +185,13 @@ PayPal.prototype.tokenize = function (options, callback) {
   callback = once(deferred(callback));
 
   if (this._authorizationInProgress) {
-    analytics.sendEvent(client, 'web.paypal.tokenization.error.already-opened');
+    analytics.sendEvent(client, 'paypal.tokenization.error.already-opened');
 
     callback(new BraintreeError(errors.PAYPAL_TOKENIZATION_REQUEST_ACTIVE));
   } else {
     this._authorizationInProgress = true;
 
-    analytics.sendEvent(client, 'web.paypal.tokenization.opened');
+    analytics.sendEvent(client, 'paypal.tokenization.opened');
     this._navigateFrameToAuth(options, callback);
     // This MUST happen after _navigateFrameToAuth for Metro browsers to work.
     this._frameService.open(this._createFrameServiceCallback(options, callback));
@@ -172,7 +199,7 @@ PayPal.prototype.tokenize = function (options, callback) {
 
   return {
     close: function () {
-      analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-merchant');
+      analytics.sendEvent(client, 'paypal.tokenization.closed.by-merchant');
       this._frameService.close();
     }.bind(this),
     focus: function () {
@@ -189,10 +216,11 @@ PayPal.prototype._createFrameServiceCallback = function (options, callback) {
 
     if (err) {
       if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
-        analytics.sendEvent(client, 'web.paypal.tokenization.closed.by-user');
+        analytics.sendEvent(client, 'paypal.tokenization.closed.by-user');
+        callback(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
+      } else if (err.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
+        callback(new BraintreeError(errors.PAYPAL_POPUP_OPEN_FAILED));
       }
-
-      callback(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
     } else {
       this._tokenizePayPal(options, params, callback);
     }
@@ -202,13 +230,15 @@ PayPal.prototype._createFrameServiceCallback = function (options, callback) {
 PayPal.prototype._tokenizePayPal = function (options, params, callback) {
   var client = this._client;
 
+  this._frameService.redirect(this._loadingFrameUrl);
+
   client.request({
     endpoint: 'payment_methods/paypal_accounts',
     method: 'post',
     data: this._formatTokenizeData(options, params)
   }, function (err, response) {
     if (err) {
-      analytics.sendEvent(client, 'web.paypal.tokenization.failed');
+      analytics.sendEvent(client, 'paypal.tokenization.failed');
       callback(err instanceof BraintreeError ? err : new BraintreeError({
         type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
         code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
@@ -218,9 +248,10 @@ PayPal.prototype._tokenizePayPal = function (options, params, callback) {
         }
       }));
     } else {
-      analytics.sendEvent(client, 'web.paypal.tokenization.success');
+      analytics.sendEvent(client, 'paypal.tokenization.success');
       callback(null, this._formatTokenizePayload(response));
     }
+    this._frameService.close();
   }.bind(this));
 };
 
@@ -382,7 +413,7 @@ PayPal.prototype.teardown = function (callback) {
 
   convertMethodsToError(this, methods(PayPal.prototype));
 
-  analytics.sendEvent(this._client, 'web.paypal.teardown-completed');
+  analytics.sendEvent(this._client, 'paypal.teardown-completed');
 
   if (typeof callback === 'function') {
     callback = deferred(callback);

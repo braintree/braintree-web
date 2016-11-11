@@ -131,6 +131,7 @@ describe('dataCollector', function () {
   });
 
   it('sets Kount merchantId from gateway configuration', function (done) {
+    var self = this;
     var mockData = {
       deviceData: {
         device_session_id: 'did', // eslint-disable-line
@@ -144,7 +145,7 @@ describe('dataCollector', function () {
       client: this.client,
       kount: true
     }, function () {
-      expect(kount.setup).to.have.been.calledWith(sinon.match({
+      expect(kount.setup).to.have.been.calledWith(self.sandbox.match({
         merchantId: '12345'
       }));
 

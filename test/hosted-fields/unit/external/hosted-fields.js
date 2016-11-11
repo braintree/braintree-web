@@ -50,7 +50,7 @@ describe('HostedFields', function () {
 
       new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
-      expect(analytics.sendEvent).to.have.been.calledWith(client, 'web.custom.hosted-fields.initialized');
+      expect(analytics.sendEvent).to.have.been.calledWith(client, 'custom.hosted-fields.initialized');
     });
 
     it('sends a timeout event if the fields take too long to set up', function () {
@@ -62,10 +62,10 @@ describe('HostedFields', function () {
       new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
       clock.tick(59999);
-      expect(analytics.sendEvent).not.to.have.been.calledWith(client, 'web.custom.hosted-fields.load.timed-out');
+      expect(analytics.sendEvent).not.to.have.been.calledWith(client, 'custom.hosted-fields.load.timed-out');
 
       clock.tick(1);
-      expect(analytics.sendEvent).to.have.been.calledWith(client, 'web.custom.hosted-fields.load.timed-out');
+      expect(analytics.sendEvent).to.have.been.calledWith(client, 'custom.hosted-fields.load.timed-out');
     });
 
     describe('configuration validation', function () {
@@ -200,7 +200,7 @@ describe('HostedFields', function () {
     it('subscribes to FRAME_READY', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      expect(instance._bus.on).to.be.calledWith(events.FRAME_READY, sinon.match.func);
+      expect(instance._bus.on).to.be.calledWith(events.FRAME_READY, this.sandbox.match.func);
     });
 
     it('replies with configuration, only to the final FRAME_READY', function () {
@@ -286,7 +286,7 @@ describe('HostedFields', function () {
     it('subscribes to INPUT_EVENT', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      expect(instance._bus.on).to.be.calledWith(events.INPUT_EVENT, sinon.match.func);
+      expect(instance._bus.on).to.be.calledWith(events.INPUT_EVENT, this.sandbox.match.func);
     });
 
     it('calls _setupLabelFocus', function () {
@@ -479,7 +479,7 @@ describe('HostedFields', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.tokenize(this.sandbox.stub());
-      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, {}, sinon.match.func);
+      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, {}, this.sandbox.match.func);
     });
 
     it('emits TOKENIZATION_REQUEST with options', function () {
@@ -487,7 +487,7 @@ describe('HostedFields', function () {
       var options = {foo: 'bar'};
 
       instance.tokenize(options, this.sandbox.stub());
-      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, options, sinon.match.func);
+      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, options, this.sandbox.match.func);
     });
 
     it('calls the callback when options are not provided', function (done) {
@@ -563,7 +563,7 @@ describe('HostedFields', function () {
         }
       }, function (err) {
         expect(err).to.equal(fakeErr);
-        expect(analytics.sendEvent).to.have.been.calledWith(client, 'web.custom.hosted-fields.teardown-completed');
+        expect(analytics.sendEvent).to.have.been.calledWith(client, 'custom.hosted-fields.teardown-completed');
 
         done();
       });
@@ -728,7 +728,7 @@ describe('HostedFields', function () {
       instance = new HostedFields(configuration);
 
       instance.setPlaceholder('number', 'great-placeholder');
-      expect(instance._bus.emit).to.be.calledWith(events.SET_PLACEHOLDER, sinon.match.string, sinon.match.string);
+      expect(instance._bus.emit).to.be.calledWith(events.SET_PLACEHOLDER, this.sandbox.match.string, this.sandbox.match.string);
     });
 
     it('calls callback if provided', function (done) {
@@ -748,6 +748,7 @@ describe('HostedFields', function () {
     });
 
     it('calls errback when given non-whitelisted field', function (done) {
+      var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('rogue-field', 'rogue-placeholder', function (err) {
@@ -756,12 +757,13 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting a placeholder.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, sinon.match.string, sinon.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, self.sandbox.match.string, self.sandbox.match.string);
         done();
       });
     });
 
     it('calls errback when given field not supplied by merchant', function (done) {
+      var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('cvv', 'great-placeholder', function (err) {
@@ -770,7 +772,7 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot set placeholder for "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, sinon.match.string, sinon.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, self.sandbox.match.string, self.sandbox.match.string);
         done();
       });
     });
@@ -791,7 +793,7 @@ describe('HostedFields', function () {
       instance = new HostedFields(configuration);
 
       instance.clear('number');
-      expect(instance._bus.emit).to.be.calledWith(events.CLEAR_FIELD, sinon.match.string);
+      expect(instance._bus.emit).to.be.calledWith(events.CLEAR_FIELD, this.sandbox.match.string);
     });
 
     it('calls callback if provided', function (done) {
@@ -811,6 +813,7 @@ describe('HostedFields', function () {
     });
 
     it('calls errback when given non-whitelisted field', function (done) {
+      var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.clear('rogue-field', function (err) {
@@ -819,12 +822,13 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when clearing a field.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, sinon.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, self.sandbox.match.string);
         done();
       });
     });
 
     it('calls errback when given field not supplied by merchant', function (done) {
+      var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.clear('cvv', function (err) {
@@ -833,7 +837,7 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot clear "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, sinon.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, self.sandbox.match.string);
         done();
       });
     });

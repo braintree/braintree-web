@@ -16,7 +16,7 @@ describe('openPopup', function () {
     expect(global.open).to.have.been.calledWith(
       'landing-frame-url',
       'name',
-      sinon.match.string
+      this.sandbox.match.string
     );
   });
 });
