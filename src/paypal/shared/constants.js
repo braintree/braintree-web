@@ -9,5 +9,9 @@ module.exports = {
   POPUP_BASE_OPTIONS: 'resizable,scrollbars,height=' + POPUP_HEIGHT + ',width=' + POPUP_WIDTH,
   POPUP_WIDTH: POPUP_WIDTH,
   POPUP_HEIGHT: POPUP_HEIGHT,
-  POPUP_POLL_INTERVAL: 100
+  POPUP_POLL_INTERVAL: 100,
+  FLOW_ENDPOINTS: {
+    checkout: 'create_payment_resource',
+    vault: 'setup_billing_agreement'
+  }
 };

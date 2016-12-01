@@ -145,6 +145,7 @@ ThreeDSecure.prototype.verifyCard = function (options, callback) {
     data: {amount: options.amount}
   }, function (err, response) {
     if (err) {
+      this._verifyCardInProgress = false;
       callback(err);
       return;
     }

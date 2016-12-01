@@ -15,6 +15,8 @@ var REQUIRED_CONFIG_KEYS = [
   'openFrameUrl'
 ];
 
+function noop() {}
+
 function _validateFrameConfiguration(options) {
   if (!options) {
     throw new Error('Valid configuration is required');
@@ -124,6 +126,34 @@ FrameService.prototype.focus = function () {
   if (!this.isFrameClosed()) {
     this._frame.focus();
   }
+};
+
+FrameService.prototype.createHandler = function (options) {
+  options = options || {};
+
+  return {
+    close: function () {
+      if (options.beforeClose) {
+        options.beforeClose();
+      }
+
+      this.close();
+    }.bind(this),
+    focus: function () {
+      if (options.beforeFocus) {
+        options.beforeFocus();
+      }
+
+      this.focus();
+    }.bind(this)
+  };
+};
+
+FrameService.prototype.createNoopHandler = function () {
+  return {
+    close: noop,
+    focus: noop
+  };
 };
 
 FrameService.prototype.teardown = function () {

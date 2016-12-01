@@ -366,26 +366,6 @@ describe('PayPal', function () {
       };
     });
 
-    it('calls the callback with error if no flow is provided', function (done) {
-      PayPal.prototype._navigateFrameToAuth.call(this.context, {}, function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
-        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
-        done();
-      });
-    });
-
-    it('calls the callback with error if invalid flow is provided', function (done) {
-      PayPal.prototype._navigateFrameToAuth.call(this.context, {flow: 'garbage'}, function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
-        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
-        done();
-      });
-    });
-
     it('makes an api request for a paypal payment resource', function () {
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
@@ -617,16 +597,17 @@ describe('PayPal', function () {
         },
         _frameService: {
           open: this.sandbox.stub(),
-          close: this.sandbox.stub(),
-          focus: this.sandbox.stub()
+          createHandler: this.sandbox.stub(),
+          createNoopHandler: this.sandbox.stub()
         }
       };
+      this.tokenizeOptions = {flow: 'vault'};
     });
 
     it('calls the errback with an err if authorization is in progress', function (done) {
       this.context._authorizationInProgress = true;
 
-      PayPal.prototype.tokenize.call(this.context, {}, function (err, data) {
+      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, function (err, data) {
         expect(data).not.to.exist;
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
@@ -641,7 +622,7 @@ describe('PayPal', function () {
       var err;
 
       try {
-        PayPal.prototype.tokenize.call(this.context, {});
+        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions);
       } catch (e) {
         err = e;
       }
@@ -652,44 +633,75 @@ describe('PayPal', function () {
       expect(err.message).to.equal('tokenize must include a callback function.');
     });
 
+    it('calls errback with error if no options are provided', function (done) {
+      PayPal.prototype.tokenize.call(this.context, {}, function (err, payload) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+        expect(payload).to.not.exist;
+        done();
+      });
+    });
+
+    it('returns a frame service noop handler no options are provided', function () {
+      var fakehandler = {close: 'foo', focus: 'bar'};
+      var handler;
+
+      this.context._frameService.createNoopHandler.returns(fakehandler);
+
+      handler = PayPal.prototype.tokenize.call(this.context, {}, noop);
+
+      expect(handler).to.equal(fakehandler);
+    });
+
+    it('calls errback with error if an invalid flow option is provided', function (done) {
+      PayPal.prototype.tokenize.call(this.context, {flow: 'garbage'}, function (err, payload) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+        expect(payload).to.not.exist;
+        done();
+      });
+    });
+
+    it('returns a frame service noop handler if an invalid flow option is provided', function () {
+      var fakehandler = {close: 'foo', focus: 'bar'};
+      var handler;
+
+      this.context._frameService.createNoopHandler.returns(fakehandler);
+
+      handler = PayPal.prototype.tokenize.call(this.context, {flow: 'garbage'}, noop);
+
+      expect(handler).to.equal(fakehandler);
+    });
+
     it('flips authorization progress state', function () {
-      PayPal.prototype.tokenize.call(this.context, {}, noop);
+      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
       expect(this.context._authorizationInProgress).to.equal(true);
     });
 
     it('instructs frame service to open', function () {
-      PayPal.prototype.tokenize.call(this.context, {}, noop);
+      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
       expect(this.context._frameService.open).to.have.been.calledWith(this.sandbox.match.func);
     });
 
-    it('returns a close method that instructs the frame service to close', function () {
-      var result = PayPal.prototype.tokenize.call(this.context, {}, noop);
+    it('returns a frame service handler', function () {
+      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
-      expect(result.close).to.be.a('function');
-
-      result.close();
-
-      expect(this.context._frameService.close).to.have.been.called;
-    });
-
-    it('returns a focus method that instructs the frame service to focus', function () {
-      var result = PayPal.prototype.tokenize.call(this.context, {}, noop);
-
-      expect(result.focus).to.be.a('function');
-
-      result.focus();
-
-      expect(this.context._frameService.focus).to.have.been.called;
+      expect(this.context._frameService.createHandler).to.be.calledOnce;
+      expect(this.context._frameService.createHandler).to.be.calledWith({
+        beforeClose: this.sandbox.match.func
+      });
     });
 
     it('calls _navigateFrameToAuth', function () {
-      var options = {foo: 'boo'};
+      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
-      PayPal.prototype.tokenize.call(this.context, options, noop);
-
-      expect(this.context._navigateFrameToAuth).to.have.been.calledWith(options);
+      expect(this.context._navigateFrameToAuth).to.have.been.calledWith(this.tokenizeOptions);
     });
 
     describe('analytics', function () {
@@ -703,7 +715,8 @@ describe('PayPal', function () {
           _authorizationInProgress: false,
           _frameService: {
             open: noop,
-            close: noop
+            close: noop,
+            createHandler: this.sandbox.stub()
           }
         };
       });
@@ -712,7 +725,7 @@ describe('PayPal', function () {
         var client = this.client;
 
         this.context._authorizationInProgress = true;
-        PayPal.prototype.tokenize.call(this.context, {}, noop);
+        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
         expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.error.already-opened');
       });
@@ -720,14 +733,25 @@ describe('PayPal', function () {
       it('calls analytics when the frame is opened', function () {
         var client = this.client;
 
-        PayPal.prototype.tokenize.call(this.context, {}, noop);
+        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
         expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.opened');
       });
 
       it('calls analytics when the frame is closed by merchant', function () {
         var client = this.client;
-        var result = PayPal.prototype.tokenize.call(this.context, {}, noop);
+        var result;
+
+        this.context._frameService.createHandler.returns({
+          close: function () {
+            this.context._frameService.createHandler
+              .getCall(0)
+              .args[0]
+              .beforeClose();
+          }.bind(this)
+        });
+
+        result = PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
         result.close();
 

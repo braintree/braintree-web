@@ -527,6 +527,86 @@ describe('FrameService', function () {
     });
   });
 
+  describe('createHandler', function () {
+    beforeEach(function () {
+      this.context = {
+        focus: this.sandbox.stub(),
+        close: this.sandbox.stub()
+      };
+    });
+
+    it('returns an object with a close and focus method', function () {
+      var handler = FrameService.prototype.createHandler.call(this.context);
+
+      expect(handler.close).to.be.a('function');
+      expect(handler.focus).to.be.a('function');
+    });
+
+    it('the close method on the handler closes the frame', function () {
+      var handler = FrameService.prototype.createHandler.call(this.context);
+
+      handler.close();
+
+      expect(this.context.close).to.be.calledOnce;
+    });
+
+    it('the focus method on the handler focuses the frame', function () {
+      var handler = FrameService.prototype.createHandler.call(this.context);
+
+      handler.focus();
+
+      expect(this.context.focus).to.be.calledOnce;
+    });
+
+    it('allows passing in a function to run before the frame is closed', function () {
+      var closeHook = this.sandbox.stub();
+      var handler = FrameService.prototype.createHandler.call(this.context, {beforeClose: closeHook});
+
+      handler.close();
+
+      expect(this.context.close).to.be.calledOnce;
+      expect(closeHook).to.be.calledOnce;
+    });
+
+    it('allows passing in a function to run before the frame is focused', function () {
+      var focusHook = this.sandbox.stub();
+      var handler = FrameService.prototype.createHandler.call(this.context, {beforeFocus: focusHook});
+
+      handler.focus();
+
+      expect(this.context.focus).to.be.calledOnce;
+      expect(focusHook).to.be.calledOnce;
+    });
+  });
+
+  describe('createNoopHandler', function () {
+    it('creates a handler with empty functions', function () {
+      var noopHandler = FrameService.prototype.createNoopHandler();
+
+      expect(noopHandler.close).to.be.a('function');
+      expect(noopHandler.focus).to.be.a('function');
+    });
+
+    it('has the same signature as the object returned from createHandler', function () {
+      var context = {
+        focus: this.sandbox.stub(),
+        close: this.sandbox.stub()
+      };
+
+      var realHandler = FrameService.prototype.createHandler(context);
+      var noopHandler = FrameService.prototype.createNoopHandler();
+
+      var realProps = Object.keys(realHandler);
+      var noopProps = Object.keys(noopHandler);
+
+      expect(realProps.length).to.equal(noopProps.length);
+
+      realProps.forEach(function (prop) {
+        expect(typeof realHandler[prop]).to.equal(typeof noopHandler[prop]);
+      });
+    });
+  });
+
   describe('teardown', function () {
     it('makes a call to close', function () {
       var closeStub = this.sandbox.stub();

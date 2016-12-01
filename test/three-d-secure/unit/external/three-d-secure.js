@@ -90,6 +90,35 @@ describe('ThreeDSecure', function () {
       });
     });
 
+    it('can be called multiple times if first request failed', function (done) {
+      var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
+
+      this.client.request.yields(new Error('failure'));
+
+      this.instance.verifyCard({
+        nonce: 'fake-nonce',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      }, noop);
+
+      this.client.request.yields(null, {
+        paymentMethod: {nonce: 'upgraded-nonce'},
+        threeDSecureInfo: threeDSecureInfo
+      });
+
+      this.instance.verifyCard({
+        nonce: 'fake-nonce',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      }, function (err, data) {
+        expect(data.nonce).to.equal('upgraded-nonce');
+
+        done();
+      });
+    });
+
     it('cannot be called twice without cancelling in between', function (done) {
       var options = {
         nonce: 'fake-nonce',

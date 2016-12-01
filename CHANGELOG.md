@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.6.1
+
+* Hosted Fields
+  * Fix a bug where iOS Safari autocomplete would not print credit card number
+* PayPal
+  * Fix bug where the PayPal authorization flow began when the `flow` option was missing or invalid
+* 3D Secure
+  * Fix bug where failing `verifyCard` call put component in an inconsistent state
+
 ## 3.6.0
 
 * Data Collector

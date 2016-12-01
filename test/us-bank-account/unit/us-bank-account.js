@@ -25,11 +25,6 @@ describe('USBankAccount', function () {
       _request: this.sandbox.stub()
     };
 
-    this.fakePlaidInstance = {open: this.sandbox.stub()};
-
-    this.fakePlaid = {create: this.sandbox.stub()};
-    this.fakePlaid.create.returns(this.fakePlaidInstance);
-
     this.context = {
       _client: this.fakeClient,
       _tokenizeBankDetails: USBankAccount.prototype._tokenizeBankDetails,
@@ -1055,7 +1050,7 @@ describe('USBankAccount', function () {
     });
 
     it('returns the Plaid instance if it already existed on the global', function (done) {
-      var fakePlaid = this.fakePlaid;
+      var fakePlaid = {open: function () {}};
 
       global.Plaid = fakePlaid;
 

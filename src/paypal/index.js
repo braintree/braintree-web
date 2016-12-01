@@ -18,7 +18,7 @@ var VERSION = require('package.version');
  * @param {Client} options.client A {@link Client} instance.
  * @param {callback} callback The second argument, `data`, is the {@link PayPal} instance.
  * @example
- * braintree.paypal.create(
+ * braintree.paypal.create({
  *   client: clientInstance
  * }, function (createErr, paypalInstance) {
  *   if (createErr) {
@@ -28,7 +28,7 @@ var VERSION = require('package.version');
  *       console.error('Error!', createErr);
  *     }
  *   }
- * }
+ * });
  * @returns {void}
  */
 function create(options, callback) {
