@@ -3,6 +3,7 @@
 var BraintreeError = require('../lib/error');
 var deferred = require('../lib/deferred');
 var errors = require('./errors');
+var assign = require('../lib/assign').assign;
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 
 /**
@@ -38,11 +39,14 @@ function AmericanExpress(options) {
  * });
  */
 AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
+  var nonce = options.nonce;
+  var data;
+
   throwIfNoCallback(callback, 'getRewardsBalance');
 
   callback = deferred(callback);
 
-  if (!options.nonce) {
+  if (!nonce) {
     callback(new BraintreeError({
       type: errors.AMEX_NONCE_REQUIRED.type,
       code: errors.AMEX_NONCE_REQUIRED.code,
@@ -51,13 +55,17 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
     return;
   }
 
+  delete options.nonce;
+
+  data = assign({
+    _meta: {source: 'american-express'},
+    paymentMethodNonce: nonce
+  }, options);
+
   this._client.request({
     method: 'get',
     endpoint: 'payment_methods/amex_rewards_balance',
-    data: {
-      _meta: {source: 'american-express'},
-      paymentMethodNonce: options.nonce
-    }
+    data: data
   }, function (err, response) {
     if (err) {
       callback(new BraintreeError({

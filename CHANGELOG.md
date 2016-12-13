@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.6.2
+
+* American Express
+  * Fix bug where additional options were not passed along in getRewardsBalance request
+* Hosted Fields
+  * Fix a bug where unformatted inputs could not tokenize card numbers with hyphens or spaces
+  * Fix a bug where postal codes of length 3 (e.g. in Iceland) were considered invalid
+  * Fix input formatting with third party keyboards on Android Chrome
+
 ## 3.6.1
 
 * Hosted Fields

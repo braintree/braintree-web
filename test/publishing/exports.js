@@ -33,6 +33,10 @@ var components = {
     index: require('../../dist/published/unionpay'),
     debug: require('../../dist/published/unionpay.debug')
   },
+  usBankAccount: {
+    index: require('../../dist/published/us-bank-account'),
+    debug: require('../../dist/published/us-bank-account.debug')
+  },
   threeDSecure: {
     index: require('../../dist/published/three-d-secure'),
     debug: require('../../dist/published/three-d-secure.debug')

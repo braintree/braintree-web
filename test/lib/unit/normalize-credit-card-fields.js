@@ -178,4 +178,12 @@ describe('normalizeCreditCardFields', function () {
 
     expect(creditCard.billingAddress.region).to.equal(value);
   });
+
+  it('should strip out - and spaces from credit card number', function () {
+    var creditCard = normalizeCreditCardFields({
+      number: '1-2 345---67  -   890'
+    });
+
+    expect(creditCard.number).to.equal('1234567890');
+  });
 });

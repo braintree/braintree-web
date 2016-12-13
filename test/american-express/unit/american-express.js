@@ -96,6 +96,22 @@ describe('AmericanExpress', function () {
         done();
       });
     });
+
+    it('passes along options to gateway', function (done) {
+      this.client.request = this.sandbox.stub().yields();
+
+      this.amex.getRewardsBalance({nonce: NONCE, foo: 'bar'}, function () {
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            _meta: {source: 'american-express'},
+            paymentMethodNonce: NONCE,
+            foo: 'bar'
+          }
+        });
+
+        done();
+      }.bind(this));
+    });
   });
 
   describe('getExpressCheckoutProfile', function () {

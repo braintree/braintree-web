@@ -24,6 +24,9 @@ function normalizeCreditCardFields(attrs) {
       case 'streetaddress':
         creditCard.billingAddress[key] = attrs[key];
         break;
+      case 'number':
+        creditCard[key] = attrs[key].replace(/[-\s]/g, '');
+        break;
       default:
         creditCard[key] = attrs[key];
     }
