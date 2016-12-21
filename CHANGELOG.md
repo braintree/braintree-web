@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.6.3
+
+* Hosted Fields
+  * Fix bug where Samsung Keyboards would format incorrectly in Android Chrome
+
 ## 3.6.2
 
 * American Express
