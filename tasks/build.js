@@ -43,6 +43,7 @@ gulp.task('build:published:mins', function () {
     JS_PATH + 'data-collector.min.js',
     JS_PATH + 'hosted-fields.min.js',
     JS_PATH + 'paypal.min.js',
+    JS_PATH + 'paypal-checkout.min.js',
     JS_PATH + 'three-d-secure.min.js',
     JS_PATH + 'unionpay.min.js',
     JS_PATH + 'us-bank-account.min.js'
@@ -59,6 +60,7 @@ gulp.task('build:published:debugs', function () {
     JS_PATH + 'data-collector.js',
     JS_PATH + 'hosted-fields.js',
     JS_PATH + 'paypal.js',
+    JS_PATH + 'paypal-checkout.js',
     JS_PATH + 'three-d-secure.js',
     JS_PATH + 'unionpay.js',
     JS_PATH + 'us-bank-account.js'
@@ -97,6 +99,7 @@ gulp.task('build:hosted', [
   'build:apple-pay',
   'build:client',
   'build:paypal',
+  'build:paypal-checkout',
   'build:three-d-secure',
   'build:hosted-fields',
   'build:data-collector',

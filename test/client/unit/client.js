@@ -3,7 +3,7 @@
 var Client = require('../../../src/client/client');
 var VERSION = require('package.version');
 var fake = require('../../helpers/fake');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 
 describe('Client', function () {
   describe('bad instantiation', function () {
@@ -101,10 +101,24 @@ describe('Client', function () {
   });
 
   describe('toJSON', function () {
-    it('is an alias for getConfiguration', function () {
+    it('returns the same object as getConfiguration', function () {
       var client = new Client(fake.configuration());
 
-      expect(client.toJSON).to.equal(client.getConfiguration);
+      expect(client.toJSON()).to.deep.equal(client.getConfiguration());
+    });
+
+    it('returns the value of getConfiguration when getConfiguration is overwritten', function () {
+      var client = new Client(fake.configuration());
+      var newConfiguration = {foo: 'bar'};
+
+      expect(client.toJSON()).to.deep.equal(client.getConfiguration());
+
+      client.getConfiguration = function () {
+        return newConfiguration;
+      };
+
+      expect(client.toJSON()).to.equal(newConfiguration);
+      expect(client.toJSON()).to.equal(client.getConfiguration());
     });
   });
 

@@ -2,7 +2,7 @@
 
 var create = require('../../../src/american-express').create;
 var AmericanExpress = require('../../../src/american-express/american-express');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var fake = require('../../helpers/fake');
 var version = require('../../../package.json').version;
 

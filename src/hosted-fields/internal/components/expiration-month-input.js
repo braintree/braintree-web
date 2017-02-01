@@ -17,6 +17,7 @@ ExpirationMonthInput.prototype.constructor = ExpirationMonthInput;
 
 ExpirationMonthInput.prototype.constructSelectOptions = function (element) {
   var option, month;
+  var currentMonth = parseInt(this.model.get('expirationMonth.value'), 10);
   var optionTexts = this.getConfiguration().select.options || [];
 
   for (month = 1; month <= 12; month++) {
@@ -25,7 +26,15 @@ ExpirationMonthInput.prototype.constructSelectOptions = function (element) {
     option.value = month;
     option.innerHTML = sanitizeHtml(optionTexts[month - 1]) || month;
 
+    if (month === currentMonth) {
+      option.setAttribute('selected', 'selected');
+    }
+
     element.appendChild(option);
+  }
+
+  if (currentMonth) {
+    element.selectedIndex = currentMonth - 1;
   }
 };
 

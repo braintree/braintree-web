@@ -4,7 +4,7 @@ var Destructor = require('../../lib/destructor');
 var classlist = require('../../lib/classlist');
 var iFramer = require('iframer');
 var Bus = require('../../lib/bus');
-var BraintreeError = require('../../lib/error');
+var BraintreeError = require('../../lib/braintree-error');
 var composeUrl = require('./compose-url');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
@@ -22,7 +22,7 @@ var VERSION = require('package.version');
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var deferred = require('../../lib/deferred');
-var sharedErrors = require('../../errors');
+var sharedErrors = require('../../lib/errors');
 var getCardTypes = require('credit-card-type');
 
 /**

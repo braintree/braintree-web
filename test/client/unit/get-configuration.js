@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var getConfiguration = require('../../../src/client/get-configuration').getConfiguration;
 var AJAXDriver = require('../../../src/client/request/ajax-driver');
 var fake = require('../../helpers/fake');

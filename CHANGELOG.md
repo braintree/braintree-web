@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+## 3.7.0
+
+* Client
+  * Fix issue where `getConfiguration` and `toJSON` were not returning the same object
+* Hosted Fields
+  * Fix a bug when placeholders aren't supplied for expiration month/year
+  * Fix a bug where CVV field wouldn't validate all possible card type CVV lengths
+  * Fix a bug where Samsung keyboards would incorrectly highlight the first character typed
+  * Disable input formatting in the Android Samsung Internet browser
+* PayPal
+  * Return PayPal Credit financing details in `tokenizePayload.creditFinancingOffered`
+* PayPal Checkout
+  * Create the PayPal Checkout component to integrate with PayPal's [checkout.js library](https://github.com/paypal/paypal-checkout)
+
 ## 3.6.3
 
 * Hosted Fields

@@ -2,7 +2,7 @@
 
 var Bus = require('../../lib/bus');
 var isWhitelistedDomain = require('../../lib/is-whitelisted-domain');
-var BraintreeError = require('../../lib/error');
+var BraintreeError = require('../../lib/braintree-error');
 var errors = require('../shared/errors');
 
 module.exports = function () {

@@ -1,7 +1,7 @@
 'use strict';
 
 var convertMethodsToError = require('../../../src/lib/convert-methods-to-error');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 
 describe('convertMethodsToError', function () {
   it('can convert an array of methods to throw an error', function () {

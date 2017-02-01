@@ -3,7 +3,7 @@
 var cancelFrame = require('../../../../src/paypal/internal/cancel-frame');
 var constants = require('../../../../src/lib/frame-service/shared/constants');
 var frameService = require('../../../../src/lib/frame-service/internal');
-var BraintreeError = require('../../../../src/lib/error');
+var BraintreeError = require('../../../../src/lib/braintree-error');
 
 describe('cancel-frame', function () {
   describe('start', function () {

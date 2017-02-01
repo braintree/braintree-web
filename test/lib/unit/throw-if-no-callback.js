@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var throwIfNoCallback = require('../../../src/lib/throw-if-no-callback');
 
 describe('throwIfNoCallback', function () {

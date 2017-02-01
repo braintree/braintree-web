@@ -68,7 +68,7 @@ describe('Expiration Year Input', function () {
         });
 
         expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationYear');
+        expect(input.element.className).to.equal('expirationYear valid');
         expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationYear');
         expect(input.element.name).to.equal('expiration-year');
         expect(input.element.id).to.equal('expiration-year');
@@ -103,7 +103,7 @@ describe('Expiration Year Input', function () {
         });
 
         expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationYear');
+        expect(input.element.className).to.equal('expirationYear valid');
         expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationYear');
         expect(input.element.name).to.equal('expiration-year');
         expect(input.element.id).to.equal('expiration-year');
@@ -145,6 +145,28 @@ describe('Expiration Year Input', function () {
         expect(placeholderEl.innerHTML).to.equal('foo &amp; &lt;boo&gt;');
 
         expect(input.element.querySelectorAll('option')).to.have.lengthOf(constants.maxExpirationYearAge + 2);
+      });
+
+      it('selects current year when no placeholder is set', function () {
+        var i, el;
+        var input = new ExpirationYearInput({
+          type: 'expirationYear',
+          model: new CreditCardForm({
+            fields: {
+              expirationYear: {
+                selector: '#expiration-year',
+                select: true
+              }
+            }
+          })
+        });
+
+        expect(input.element.childNodes[0].getAttribute('selected')).to.equal('selected');
+        for (i = 1; i < input.element.childNodes.length; i++) {
+          el = input.element.childNodes[i];
+          expect(el.getAttribute('selected')).to.equal(null);
+        }
+        expect(input.element.selectedIndex).to.equal(0);
       });
     });
   });

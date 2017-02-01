@@ -18,6 +18,10 @@ function configuration() {
         accessToken: 'fakeToken',
         url: 'https://braintree-api-endpoint.com'
       },
+      paypal: {
+        assetsUrl: 'https://example.com:9292',
+        displayName: 'Name'
+      },
       analytics: {
         url: 'https://braintreegateway.com/analytics'
       }

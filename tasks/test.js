@@ -16,6 +16,7 @@ var KARMA_SUITES = [
   'hosted-fields',
   'lib',
   'paypal',
+  'paypal-checkout',
   'three-d-secure',
   'unionpay',
   'us-bank-account'

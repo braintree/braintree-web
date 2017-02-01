@@ -4,13 +4,13 @@
  * @description This module is for accepting payments of US bank accounts.
  */
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var errors = require('./errors');
 var USBankAccount = require('./us-bank-account');
 var deferred = require('../lib/deferred');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var VERSION = require('package.version');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 
 /**
  * @static

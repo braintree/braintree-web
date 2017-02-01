@@ -7,7 +7,7 @@ var errors = require('../shared/errors');
 var constants = require('../shared/constants');
 var uuid = require('../../uuid');
 var iFramer = require('iframer');
-var BraintreeError = require('../../error');
+var BraintreeError = require('../../braintree-error');
 
 var REQUIRED_CONFIG_KEYS = [
   'name',

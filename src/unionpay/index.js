@@ -5,12 +5,12 @@
  */
 
 var UnionPay = require('./shared/unionpay');
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var errors = require('./shared/errors');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 var VERSION = require('package.version');
 
 /**

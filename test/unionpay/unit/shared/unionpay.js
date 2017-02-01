@@ -2,7 +2,7 @@
 
 var analytics = require('../../../../src/lib/analytics');
 var UnionPay = require('../../../../src/unionpay/shared/unionpay');
-var BraintreeError = require('../../../../src/lib/error');
+var BraintreeError = require('../../../../src/lib/braintree-error');
 var events = require('../../../../src/unionpay/shared/constants').events;
 var methods = require('../../../../src/lib/methods');
 

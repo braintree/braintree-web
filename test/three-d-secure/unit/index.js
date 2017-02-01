@@ -5,7 +5,7 @@ var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var threeDSecure = require('../../../src/three-d-secure');
 var ThreeDSecure = require('../../../src/three-d-secure/external/three-d-secure');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var version = require('../../../package.json').version;
 
 describe('three-d-secure.create', function () {

@@ -1,7 +1,7 @@
 'use strict';
 
 var AmericanExpress = require('../../../src/american-express/american-express');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 
 var NONCE = 'ed1704dc-e98c-427f-9836-0f1933755b6a';
 

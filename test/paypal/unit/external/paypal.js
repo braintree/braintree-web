@@ -6,7 +6,7 @@ var VERSION = require('../../../../package.json').version;
 var PayPal = require('../../../../src/paypal/external/paypal');
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
-var BraintreeError = require('../../../../src/lib/error');
+var BraintreeError = require('../../../../src/lib/braintree-error');
 
 function noop() {}
 
@@ -958,6 +958,36 @@ describe('PayPal', function () {
       });
 
       expect(actual.details).to.equal(payerInfo);
+    });
+
+    it('attaches creditFinancingOffered', function () {
+      var stubCreditFinancingOffered = {
+        totalCost: {
+          value: '250.0',
+          currency: 'USD'
+        },
+        other: 'terms'
+      };
+
+      var actual = PayPal.prototype._formatTokenizePayload({
+        paypalAccounts: [{
+          details: {
+            creditFinancingOffered: stubCreditFinancingOffered
+          }
+        }]
+      });
+
+      expect(actual.creditFinancingOffered).to.equal(stubCreditFinancingOffered);
+    });
+
+    it("doesn't attach creditFinancingOffered if not present", function () {
+      var actual = PayPal.prototype._formatTokenizePayload({
+        paypalAccounts: [{
+          details: {}
+        }]
+      });
+
+      expect(actual).not.to.have.property('creditFinancingOffered');
     });
 
     it('returns {} if no payerInfo', function () {

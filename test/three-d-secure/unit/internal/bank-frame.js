@@ -2,7 +2,7 @@
 
 var initializeBankFrame = require('../../../../src/three-d-secure/internal/bank-frame');
 var Bus = require('../../../../src/lib/bus');
-var BraintreeError = require('../../../../src/lib/error');
+var BraintreeError = require('../../../../src/lib/braintree-error');
 
 describe('initializeBankFrame', function () {
   beforeEach(function () {

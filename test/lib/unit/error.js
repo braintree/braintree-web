@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 
 describe('BraintreeError', function () {
   it('returns a properly formatted error', function () {

@@ -1,0 +1,833 @@
+'use strict';
+
+var PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
+var BraintreeError = require('../../../src/lib/braintree-error');
+var analytics = require('../../../src/lib/analytics');
+var fake = require('../../helpers/fake');
+var Promise = require('promise-polyfill');
+
+function noop() {}
+
+function throwIfResolves() {
+  throw new Error('should not get here');
+}
+
+describe('PayPalCheckout', function () {
+  describe('Constructor', function () {
+    it('stores its client', function () {
+      var client = {};
+      var options = {client: client};
+
+      expect(new PayPalCheckout(options)._client).to.equal(client);
+    });
+  });
+
+  describe('createPayment', function () {
+    beforeEach(function () {
+      this.sandbox.stub(analytics, 'sendEvent');
+
+      this.configuration = fake.configuration();
+      this.client = {
+        request: this.sandbox.stub(),
+        getConfiguration: this.sandbox.stub().returns(this.configuration)
+      };
+      this.paypalCheckout = new PayPalCheckout({
+        client: this.client
+      });
+    });
+
+    context('using promises', function () {
+      it('returns a Promise', function () {
+        var promise = this.paypalCheckout.createPayment({flow: 'checkout'});
+
+        expect(promise).to.be.an.instanceof(Promise);
+      });
+
+      it('rejects with error if options are not passed in', function () {
+        return this.paypalCheckout.createPayment(null).then(throwIfResolves).catch(function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+          expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+        });
+      });
+
+      it('rejects with error if no flow option is passed', function () {
+        return this.paypalCheckout.createPayment({}).then(throwIfResolves).catch(function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+          expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+        });
+      });
+
+      it('rejects with error if invalid flow option is passed', function () {
+        return this.paypalCheckout.createPayment({flow: 'bar'}).then(throwIfResolves).catch(function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+          expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+        });
+      });
+
+      it('rejects with a network BraintreeError on gateway 422 errors', function () {
+        var gateway422Error = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: 'CLIENT_REQUEST_ERROR',
+          message: 'There was a problem with your request.'
+        });
+
+        this.client.request.yields(gateway422Error, null, 422);
+
+        return this.paypalCheckout.createPayment({flow: 'vault'}).then(throwIfResolves).catch(function (err) {
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('PAYPAL_INVALID_PAYMENT_OPTION');
+          expect(err.message).to.equal('PayPal payment options are invalid.');
+          expect(err.details).to.deep.equal({
+            originalError: gateway422Error
+          });
+        });
+      });
+
+      it('rejects with a network BraintreeError on other gateway errors', function () {
+        var gatewayError = new Error('There was a problem with your request.');
+
+        this.client.request.yields(gatewayError, null, 400);
+
+        return this.paypalCheckout.createPayment({flow: 'vault'}).then(throwIfResolves).catch(function (err) {
+          expect(err.type).to.equal(BraintreeError.types.NETWORK);
+          expect(err.code).to.equal('PAYPAL_FLOW_FAILED');
+          expect(err.message).to.equal('Could not initialize PayPal flow.');
+          expect(err.details).to.deep.equal({
+            originalError: gatewayError
+          });
+        });
+      });
+
+      it('rejects with the Braintree error when client request returns a Braintree error', function () {
+        var gatewayError = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: 'CLIENT_REQUEST_ERROR',
+          message: 'There was a problem with your request.'
+        });
+
+        this.client.request.yields(gatewayError, null, 400);
+
+        return this.paypalCheckout.createPayment({flow: 'vault'}).then(throwIfResolves).catch(function (err) {
+          expect(err.type).to.equal(BraintreeError.types.NETWORK);
+          expect(err.code).to.equal('CLIENT_REQUEST_ERROR');
+          expect(err.message).to.equal('There was a problem with your request.');
+        });
+      });
+
+      it('resolves with a paymentID for checkout flow', function () {
+        var paymentId = 'PAY-XXXXXXXXXX';
+
+        this.client.request.yields(null, {
+          paymentResource: {
+            paymentToken: paymentId
+          }
+        });
+
+        return this.paypalCheckout.createPayment({flow: 'checkout'}).then(function (payload) {
+          expect(payload).to.equal(paymentId);
+        });
+      });
+
+      it('resolves with a billingToken for vault flow', function () {
+        var billingToken = 'BA-XXXXXXXXXX';
+
+        this.client.request.yields(null, {
+          agreementSetup: {
+            tokenId: billingToken
+          }
+        });
+
+        return this.paypalCheckout.createPayment({flow: 'vault'}).then(function (payload) {
+          expect(payload).to.equal(billingToken);
+        });
+      });
+    });
+
+    context('using callbacks', function () {
+      it('does not return a Promise', function () {
+        var returnValue = this.paypalCheckout.createPayment({flow: 'checkout'}, noop);
+
+        expect(returnValue).to.be.undefined;
+      });
+
+      it('calls callback with error if options are not passed in', function (done) {
+        this.paypalCheckout.createPayment(null, function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+          expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+
+          done();
+        });
+      });
+
+      it('calls callback with error if no flow option is passed', function (done) {
+        this.paypalCheckout.createPayment({}, function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+          expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+
+          done();
+        });
+      });
+
+      it('calls callback with error if invalid flow option is passed', function (done) {
+        this.paypalCheckout.createPayment({flow: 'bar'}, function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
+          expect(err.message).to.equal('PayPal flow property is invalid or missing.');
+
+          done();
+        });
+      });
+
+      it('calls callback with a network BraintreeError on gateway 422 errors', function (done) {
+        var gateway422Error = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: 'CLIENT_REQUEST_ERROR',
+          message: 'There was a problem with your request.'
+        });
+
+        this.client.request.yields(gateway422Error, null, 422);
+
+        this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('PAYPAL_INVALID_PAYMENT_OPTION');
+          expect(err.message).to.equal('PayPal payment options are invalid.');
+          expect(err.details).to.deep.equal({
+            originalError: gateway422Error
+          });
+
+          done();
+        });
+      });
+
+      it('calls callback with a network BraintreeError on other gateway errors', function (done) {
+        var gatewayError = new Error('There was a problem with your request.');
+
+        this.client.request.yields(gatewayError, null, 400);
+
+        this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
+          expect(err.type).to.equal(BraintreeError.types.NETWORK);
+          expect(err.code).to.equal('PAYPAL_FLOW_FAILED');
+          expect(err.message).to.equal('Could not initialize PayPal flow.');
+          expect(err.details).to.deep.equal({
+            originalError: gatewayError
+          });
+
+          done();
+        });
+      });
+
+      it('calls callback with the Braintree error when client request returns a Braintree error', function (done) {
+        var gatewayError = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: 'CLIENT_REQUEST_ERROR',
+          message: 'There was a problem with your request.'
+        });
+
+        this.client.request.yields(gatewayError, null, 400);
+
+        this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
+          expect(err.type).to.equal(BraintreeError.types.NETWORK);
+          expect(err.code).to.equal('CLIENT_REQUEST_ERROR');
+          expect(err.message).to.equal('There was a problem with your request.');
+
+          done();
+        });
+      });
+
+      it('calls callback with a paymentID for checkout flow', function (done) {
+        var paymentId = 'PAY-XXXXXXXXXX';
+
+        this.client.request.yields(null, {
+          paymentResource: {
+            paymentToken: paymentId
+          }
+        });
+
+        this.paypalCheckout.createPayment({flow: 'checkout'}, function (err, payload) {
+          expect(payload).to.equal(paymentId);
+
+          done();
+        });
+      });
+
+      it('calls callback with a billingToken for vault flow', function (done) {
+        var billingToken = 'BA-XXXXXXXXXX';
+
+        this.client.request.yields(null, {
+          agreementSetup: {
+            tokenId: billingToken
+          }
+        });
+
+        this.paypalCheckout.createPayment({flow: 'vault'}, function (err, payload) {
+          expect(payload).to.equal(billingToken);
+
+          done();
+        });
+      });
+    });
+
+    it('sends analytics event when createPayment is called', function () {
+      this.paypalCheckout.createPayment({flow: 'vault'});
+
+      expect(analytics.sendEvent).to.be.calledOnce;
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.createPayment');
+    });
+
+    it('requests setup_billing_agreement url with vault flow', function () {
+      this.paypalCheckout.createPayment({flow: 'vault'});
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        method: 'post',
+        endpoint: 'paypal_hermes/setup_billing_agreement'
+      });
+    });
+
+    it('requests create_payment_resource url with checkout flow', function () {
+      this.paypalCheckout.createPayment({flow: 'checkout'});
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        method: 'post',
+        endpoint: 'paypal_hermes/create_payment_resource'
+      });
+    });
+
+    it('formats request', function () {
+      this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        locale: 'FOO',
+        enableShippingAddress: true,
+        shippingAddressEditable: false
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          returnUrl: 'x',
+          cancelUrl: 'x',
+          experienceProfile: {
+            brandName: 'Name',
+            localeCode: 'FOO',
+            noShipping: 'false',
+            addressOverride: true
+          }
+        }
+      });
+    });
+
+    it('allows override of displayName', function () {
+      this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        displayName: 'OVERRIDE NAME'
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          experienceProfile: {
+            brandName: 'OVERRIDE NAME'
+          }
+        }
+      });
+    });
+
+    it('assigns provided intent for one-time checkout', function () {
+      this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        intent: 'sale'
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          intent: 'sale'
+        }
+      });
+    });
+
+    it('does not assign intent for one-time checkout if not provided', function () {
+      var arg;
+
+      this.paypalCheckout.createPayment({flow: 'checkout'});
+
+      expect(this.client.request).to.be.calledOnce;
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data).to.not.have.property('intent');
+    });
+
+    it('assigns shipping address for one-time checkout', function () {
+      this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        shippingAddressOverride: {
+          line1: 'line1',
+          line2: 'line2',
+          city: 'city',
+          state: 'state',
+          countryCode: 'countryCode',
+          postalCode: 'postal'
+        }
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          line1: 'line1',
+          line2: 'line2',
+          city: 'city',
+          state: 'state',
+          countryCode: 'countryCode',
+          postalCode: 'postal'
+        }
+      });
+    });
+
+    it('assigns shipping address for billing agreements', function () {
+      var shippingAddress = {
+        line1: 'line1',
+        line2: 'line2',
+        city: 'city',
+        state: 'state',
+        countryCode: 'countryCode',
+        postalCode: 'postal'
+      };
+
+      this.paypalCheckout.createPayment({
+        flow: 'vault',
+        shippingAddressOverride: shippingAddress
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          shippingAddress: shippingAddress
+        }
+      });
+    });
+
+    it('sets offerPaypalCredit to false if offerCredit is unspecified with checkout flow', function () {
+      var arg;
+
+      this.paypalCheckout.createPayment({flow: 'checkout'});
+
+      expect(this.client.request).to.be.calledOnce;
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data.offerPaypalCredit).to.equal(false);
+    });
+
+    it('sets offerPaypalCredit to false if offerCredit is not a boolean true', function () {
+      var arg;
+
+      this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        offerCredit: 'true'
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data.offerPaypalCredit).to.equal(false);
+    });
+
+    it('sets offerPaypalCredit to true if offerCredit is true with checkout flow', function () {
+      var arg;
+
+      this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        offerCredit: true
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data.offerPaypalCredit).to.equal(true);
+    });
+
+    it('does not set offerPaypalCredit for vault flow', function () {
+      var arg;
+
+      this.paypalCheckout.createPayment({
+        flow: 'vault',
+        offerCredit: true
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data).to.not.have.property('offerPaypalCredit');
+    });
+
+    it('sets addressOverride to true if shippingAddressEditable is false', function () {
+      this.paypalCheckout.createPayment({
+        flow: 'vault',
+        shippingAddressOverride: {
+          line1: 'line1',
+          line2: 'line2',
+          city: 'city',
+          state: 'state',
+          countryCode: 'countryCode',
+          postalCode: 'postal'
+        },
+        shippingAddressEditable: false
+      });
+
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          experienceProfile: {
+            addressOverride: true
+          }
+        }
+      });
+    });
+
+    it('sets addressOverride to false if shippingAddressEditable is true', function () {
+      this.paypalCheckout.createPayment({
+        flow: 'vault',
+        shippingAddressOverride: {
+          line1: 'line1',
+          line2: 'line2',
+          city: 'city',
+          state: 'state',
+          countryCode: 'countryCode',
+          postalCode: 'postal'
+        },
+        shippingAddressEditable: true
+      });
+
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          experienceProfile: {
+            addressOverride: false
+          }
+        }
+      });
+    });
+
+    it('assigns billing agreement description for billing agreements', function () {
+      this.paypalCheckout.createPayment({
+        flow: 'vault',
+        billingAgreementDescription: 'Fancy Schmancy Description'
+      });
+
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          description: 'Fancy Schmancy Description'
+        }
+      });
+    });
+
+    it('does not assign billing agreement description for one-time checkout', function () {
+      var arg;
+
+      this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        billingAgreementDescription: 'Fancy Schmancy Description'
+      });
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data).to.not.have.property('description');
+    });
+  });
+
+  describe('tokenizePayment', function () {
+    beforeEach(function () {
+      this.sandbox.stub(analytics, 'sendEvent');
+
+      this.configuration = fake.configuration();
+      this.client = {
+        request: this.sandbox.stub(),
+        getConfiguration: this.sandbox.stub().returns(this.configuration)
+      };
+      this.paypalCheckout = new PayPalCheckout({
+        client: this.client
+      });
+    });
+
+    context('using promises', function () {
+      it('returns a Promise', function () {
+        var promise = this.paypalCheckout.tokenizePayment({});
+
+        expect(promise).to.be.an.instanceof(Promise);
+      });
+
+      it('rejects with a BraintreeError if a non-Braintree error comes back from the client', function () {
+        var error = new Error('Error');
+
+        this.client.request.yields(error);
+
+        return this.paypalCheckout.tokenizePayment({}).then(throwIfResolves).catch(function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('NETWORK');
+          expect(err.code).to.equal('PAYPAL_ACCOUNT_TOKENIZATION_FAILED');
+          expect(err.message).to.equal('Could not tokenize user\'s PayPal account.');
+          expect(err.details.originalError).to.equal(error);
+        });
+      });
+
+      it('rejects with the error if the client error is a BraintreeError', function () {
+        var btError = new BraintreeError({
+          type: 'MERCHANT',
+          code: 'BT_CODE',
+          message: 'message.'
+        });
+
+        this.client.request.yields(btError);
+
+        return this.paypalCheckout.tokenizePayment({}).then(throwIfResolves).catch(function (err) {
+          expect(err).to.equal(btError);
+        });
+      });
+
+      it('resolves with the back account data in response', function () {
+        this.client.request.yields(null, {
+          paypalAccounts: [{nonce: 'nonce', type: 'PayPal'}]
+        });
+
+        return this.paypalCheckout.tokenizePayment({}).then(function (res) {
+          expect(res.nonce).to.equal('nonce');
+          expect(res.type).to.equal('PayPal');
+          expect(res.details).to.deep.equal({});
+        });
+      });
+
+      it('resolves with account details if available', function () {
+        var accountDetails = {
+          payerInfo: {name: 'foo'}
+        };
+
+        this.client.request.yields(null, {
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: accountDetails
+          }]
+        });
+
+        return this.paypalCheckout.tokenizePayment({}).then(function (res) {
+          expect(res.details).to.equal(accountDetails.payerInfo);
+        });
+      });
+    });
+
+    context('using callbacks', function () {
+      it('calls callback with a BraintreeError if a non-Braintree error comes back from the client', function (done) {
+        var error = new Error('Error');
+
+        this.client.request.yields(error);
+
+        this.paypalCheckout.tokenizePayment({}, function (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('NETWORK');
+          expect(err.code).to.equal('PAYPAL_ACCOUNT_TOKENIZATION_FAILED');
+          expect(err.message).to.equal('Could not tokenize user\'s PayPal account.');
+          expect(err.details.originalError).to.equal(error);
+          done();
+        });
+      });
+
+      it('calls callback with the error if the client error is a BraintreeError', function (done) {
+        var btError = new BraintreeError({
+          type: 'MERCHANT',
+          code: 'BT_CODE',
+          message: 'message.'
+        });
+
+        this.client.request.yields(btError);
+
+        this.paypalCheckout.tokenizePayment({}, function (err) {
+          expect(err).to.equal(btError);
+          done();
+        });
+      });
+
+      it('calls callback with the back account data in response', function (done) {
+        this.client.request.yields(null, {
+          paypalAccounts: [{nonce: 'nonce', type: 'PayPal'}]
+        });
+
+        this.paypalCheckout.tokenizePayment({}, function (err, res) {
+          expect(err).to.not.exist;
+          expect(res.nonce).to.equal('nonce');
+          expect(res.type).to.equal('PayPal');
+          expect(res.details).to.deep.equal({});
+          done();
+        });
+      });
+
+      it('includes account details if available', function (done) {
+        var accountDetails = {
+          payerInfo: {name: 'foo'}
+        };
+
+        this.client.request.yields(null, {
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: accountDetails
+          }]
+        });
+
+        this.paypalCheckout.tokenizePayment({}, function (err, res) {
+          expect(err).to.not.exist;
+          expect(res.details).to.equal(accountDetails.payerInfo);
+          done();
+        });
+      });
+    });
+
+    it('sends a tokenization event when tokenization starts', function () {
+      this.paypalCheckout.tokenizePayment({});
+
+      expect(analytics.sendEvent).to.be.calledOnce;
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.started');
+    });
+
+    it('sends a request to payment_methods/paypal_accounts', function () {
+      this.paypalCheckout.tokenizePayment({billingToken: 'token'});
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        endpoint: 'payment_methods/paypal_accounts',
+        method: 'post'
+      });
+    });
+
+    it('calls analytics event when tokenization succeeds', function () {
+      this.client.request.yields(null, {});
+
+      this.paypalCheckout.tokenizePayment({});
+
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.success');
+    });
+
+    it('validates if flow is vault and auth is not tokenization key', function () {
+      this.configuration.authorizationType = 'CLIENT_TOKEN';
+      this.paypalCheckout.tokenizePayment({billingToken: 'token'});
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          paypalAccount: {
+            options: {
+              validate: true
+            }
+          }
+        }
+      });
+    });
+
+    it('throws error if flow is vault and auth is a tokenization key', function () {
+      this.configuration.authorizationType = 'TOKENIZATION_KEY';
+      return this.paypalCheckout.tokenizePayment({billingToken: 'token'}).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('PAYPAL_VAULTING_WITH_TOKENIZATION_KEY');
+        expect(err.message).to.equal('Vaulting directly from the client when using a Tokenization Key is forbidden. To vault, store the transaction in the vault (https://developers.braintreepayments.com/reference/request/transaction/sale/#storing-in-vault) or use a Client Token (https://developers.braintreepayments.com/guides/authorization/client-token)');
+      });
+    });
+
+    it('sends along billing token as billingAgreementToken param', function () {
+      this.paypalCheckout.tokenizePayment({billingToken: 'token'});
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          paypalAccount: {
+            billingAgreementToken: 'token'
+          }
+        }
+      });
+    });
+
+    it('sends along checkout params', function () {
+      this.paypalCheckout.tokenizePayment({
+        payerID: 'payer id',
+        paymentID: 'payment id'
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          paypalAccount: {
+            paymentToken: 'payment id',
+            payerId: 'payer id'
+          }
+        }
+      });
+    });
+
+    it('passes along unvettedMerchant param as true', function () {
+      this.configuration.gatewayConfiguration.paypal.unvettedMerchant = true;
+
+      this.paypalCheckout.tokenizePayment({
+        payerID: 'payer id',
+        paymentID: 'payment id'
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          paypalAccount: {
+            unilateral: true
+          }
+        }
+      });
+    });
+
+    it('passes along unvettedMerchant param as false', function () {
+      this.configuration.gatewayConfiguration.paypal.unvettedMerchant = false;
+
+      this.paypalCheckout.tokenizePayment({
+        payerID: 'payer id',
+        paymentID: 'payment id'
+      });
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          paypalAccount: {
+            unilateral: false
+          }
+        }
+      });
+    });
+
+    it('does not send along billing token if no token is provided', function () {
+      var arg;
+
+      this.paypalCheckout.tokenizePayment({});
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data.paypalAccount).to.not.have.property('billingAgreementToken');
+    });
+
+    it('sends a tokenization failure event when request fails', function () {
+      this.client.request.yields(new Error('Error'));
+
+      this.paypalCheckout.tokenizePayment({}, noop);
+
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.failed');
+    });
+  });
+});

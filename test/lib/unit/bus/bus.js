@@ -2,7 +2,7 @@
 
 var framebus = require('framebus');
 var Bus = require('../../../../src/lib/bus');
-var BraintreeError = require('../../../../src/lib/error');
+var BraintreeError = require('../../../../src/lib/braintree-error');
 
 describe('braintree bus', function () {
   beforeEach(function () {

@@ -38,6 +38,7 @@
 
 var client = require('./client');
 var paypal = require('./paypal');
+var paypalCheckout = require('./paypal-checkout');
 var hostedFields = require('./hosted-fields');
 var dataCollector = require('./data-collector');
 var americanExpress = require('./american-express');
@@ -52,6 +53,8 @@ module.exports = {
   client: client,
   /** @type {module:braintree-web/paypal} */
   paypal: paypal,
+  /** @type {module:braintree-web/paypal-checkout} */
+  paypalCheckout: paypalCheckout,
   /** @type {module:braintree-web/hosted-fields} */
   hostedFields: hostedFields,
   /** @type {module:braintree-web/three-d-secure} */

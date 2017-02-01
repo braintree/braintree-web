@@ -5,12 +5,12 @@
  * @description Accept Apple Pay on the Web. *This component is currently in beta and is subject to change.*
  */
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var ApplePay = require('./apple-pay');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 var VERSION = require('package.version');
 

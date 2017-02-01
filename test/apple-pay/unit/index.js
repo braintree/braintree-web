@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var create = require('../../../src/apple-pay').create;
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');

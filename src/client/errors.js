@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 
 module.exports = {
   CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN: {

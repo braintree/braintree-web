@@ -2,7 +2,7 @@
 
 var internal = require('../../../../src/unionpay/internal/index');
 var Bus = require('../../../../src/lib/bus');
-var BraintreeError = require('../../../../src/lib/error');
+var BraintreeError = require('../../../../src/lib/braintree-error');
 var fake = require('../../../helpers/fake');
 var getHostedFieldsCardForm = require('../../../../src/unionpay/internal/get-hosted-fields-cardform');
 var UnionPay = require('../../../../src/unionpay/shared/unionpay');

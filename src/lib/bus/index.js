@@ -3,7 +3,7 @@
 var bus = require('framebus');
 var events = require('./events');
 var checkOrigin = require('./check-origin').checkOrigin;
-var BraintreeError = require('../error');
+var BraintreeError = require('../braintree-error');
 
 function BraintreeBus(options) {
   options = options || {};

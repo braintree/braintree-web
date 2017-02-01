@@ -5,7 +5,7 @@ var constants = require('../../../../../src/lib/frame-service/shared/constants')
 var events = require('../../../../../src/lib/frame-service/shared/events');
 var popup = require('../../../../../src/lib/frame-service/external/popup');
 var BraintreeBus = require('../../../../../src/lib/bus');
-var BraintreeError = require('../../../../../src/lib/error');
+var BraintreeError = require('../../../../../src/lib/braintree-error');
 
 function noop() {}
 

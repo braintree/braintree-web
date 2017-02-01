@@ -3,7 +3,7 @@
 var create = require('../../../src/unionpay').create;
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var UnionPay = require('../../../src/unionpay/shared/unionpay');
 var version = require('../../../package.json').version;
 

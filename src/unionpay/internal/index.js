@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../lib/error');
+var BraintreeError = require('../../lib/braintree-error');
 var Bus = require('../../lib/bus');
 var Client = require('../../client/client');
 var constants = require('../shared/constants');

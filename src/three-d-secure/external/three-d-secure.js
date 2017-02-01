@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../lib/error');
+var BraintreeError = require('../../lib/braintree-error');
 var analytics = require('../../lib/analytics');
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');

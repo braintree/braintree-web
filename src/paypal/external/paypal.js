@@ -1,7 +1,7 @@
 'use strict';
 
 var frameService = require('../../lib/frame-service/external');
-var BraintreeError = require('../../lib/error');
+var BraintreeError = require('../../lib/braintree-error');
 var once = require('../../lib/once');
 var VERSION = require('package.version');
 var constants = require('../shared/constants');
@@ -42,6 +42,20 @@ var querystring = require('../../lib/querystring');
  * @property {string} details.billingAddress.state State or region.
  * @property {string} details.billingAddress.postalCode Postal code.
  * @property {string} details.billingAddress.countryCode 2 character country code (e.g. US).
+ * @property {?object} creditFinancingOffered This property will only be present when the customer pays with PayPal Credit.
+ * @property {object} creditFinancingOffered.totalCost This is the estimated total payment amount including interest and fees the user will pay during the lifetime of the loan.
+ * @property {string} creditFinancingOffered.totalCost.value An amount defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm) for the given currency.
+ * @property {string} creditFinancingOffered.totalCost.currency 3 letter currency code as defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm).
+ * @property {number} creditFinancingOffered.term Length of financing terms in months.
+ * @property {object} creditFinancingOffered.monthlyPayment This is the estimated amount per month that the customer will need to pay including fees and interest.
+ * @property {string} creditFinancingOffered.monthlyPayment.value An amount defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm) for the given currency.
+ * @property {string} creditFinancingOffered.monthlyPayment.currency 3 letter currency code as defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm).
+ * @property {object} creditFinancingOffered.totalInterest Estimated interest or fees amount the payer will have to pay during the lifetime of the loan.
+ * @property {string} creditFinancingOffered.totalInterest.value An amount defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm) for the given currency.
+ * @property {string} creditFinancingOffered.totalInterest.currency 3 letter currency code as defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm).
+ * @property {boolean} creditFinancingOffered.payerAcceptance Status of whether the customer ultimately was approved for and chose to make the payment using the approved installment credit.
+ * @property {boolean} creditFinancingOffered.cartAmountImmutable Indicates whether the cart amount is editable after payer's acceptance on PayPal side.
+ *
  */
 
 /**
@@ -54,6 +68,7 @@ var querystring = require('../../lib/querystring');
  * @class
  * @param {object} options see {@link module:braintree-web/paypal.create|paypal.create}
  * @classdesc This class represents a PayPal component. Instances of this class have methods for launching auth dialogs and other programmatic interactions with the PayPal component.
+ * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/paypal.create|braintree-web.paypal.create} instead.</strong>
  */
 function PayPal(options) {
   this._client = options.client;
@@ -91,8 +106,6 @@ PayPal.prototype._initialize = function (callback) {
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
  * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify. Checkout flows only.
  * @param {string} [options.useraction]
- * This option only applies to the "checkout" flow and will have no effect on the "vault" flow.
- *
  * Changes the call-to-action in the PayPal flow. By default the final button will show the localized
  * word for "Continue" and implies that the final amount billed is not yet known.
  *
@@ -272,6 +285,10 @@ PayPal.prototype._formatTokenizePayload = function (response) {
 
   if (account.details && account.details.payerInfo) {
     payload.details = account.details.payerInfo;
+  }
+
+  if (account.details && account.details.creditFinancingOffered) {
+    payload.creditFinancingOffered = account.details.creditFinancingOffered;
   }
 
   return payload;

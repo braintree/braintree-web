@@ -2,7 +2,7 @@
 
 var request = require('./request');
 var isWhitelistedDomain = require('../lib/is-whitelisted-domain');
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var addMetadata = require('../lib/add-metadata');
 var deferred = require('../lib/deferred');
 var errors = require('./errors');
@@ -63,8 +63,6 @@ function Client(configuration) {
   this._request = request;
   this._baseUrl = configuration.gatewayConfiguration.clientApiUrl + '/v1/';
   this._configuration = this.getConfiguration();
-
-  this.toJSON = this.getConfiguration;
 }
 
 /**
@@ -165,6 +163,10 @@ Client.prototype._bindRequestCallback = function (callback) {
       callback(null, data, status);
     }
   };
+};
+
+Client.prototype.toJSON = function () {
+  return this.getConfiguration();
 };
 
 module.exports = Client;

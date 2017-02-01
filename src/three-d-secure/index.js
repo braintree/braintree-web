@@ -3,12 +3,12 @@
 
 var ThreeDSecure = require('./external/three-d-secure');
 var browserDetection = require('../lib/browser-detection');
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 var VERSION = require('package.version');
 
 /**

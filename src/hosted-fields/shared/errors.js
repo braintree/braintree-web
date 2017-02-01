@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../lib/error');
+var BraintreeError = require('../../lib/braintree-error');
 
 module.exports = {
   HOSTED_FIELDS_INVALID_FIELD_KEY: {

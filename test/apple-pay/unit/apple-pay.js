@@ -1,7 +1,7 @@
 'use strict';
 
 var ApplePay = require('../../../src/apple-pay/apple-pay');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 

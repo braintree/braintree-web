@@ -4,10 +4,10 @@
  * @description This module is for use with Amex Express Checkout. To accept American Express cards, use Hosted Fields.
  */
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var AmericanExpress = require('./american-express');
 var deferred = require('../lib/deferred');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 var VERSION = require('package.version');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 

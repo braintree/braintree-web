@@ -25,8 +25,14 @@ ExpirationYearInput.prototype.constructSelectOptions = function (element) {
     option.value = year;
     option.innerHTML = year;
 
+    if (year.toString() === this.model.get('expirationYear.value')) {
+      option.setAttribute('selected', 'selected');
+    }
+
     element.appendChild(option);
   }
+
+  element.selectedIndex = 0;
 };
 
 module.exports = {

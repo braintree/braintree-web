@@ -131,22 +131,80 @@ describe('credit card model', function () {
   });
 
   describe('resetAttributes', function () {
-    it('returns the right object for each field', function () {
-      var emptyProperty = {
+    beforeEach(function () {
+      this.scope = {
+        _fieldKeys: ['number', 'cvv', 'expirationMonth', 'expirationYear'],
+        configuration: {
+          fields: {
+            number: {},
+            cvv: {},
+            expirationMonth: {},
+            expirationYear: {}
+          }
+        }
+      };
+
+      this.emptyProperty = {
         value: '',
         isFocused: false,
         isValid: false,
         isPotentiallyValid: true,
         isEmpty: true
       };
+    });
 
+    it('returns the right object for each field', function () {
       expect(this.card.resetAttributes()).to.deep.equal({
-        number: emptyProperty,
-        cvv: emptyProperty,
-        expirationDate: emptyProperty,
-        postalCode: emptyProperty,
+        number: this.emptyProperty,
+        cvv: this.emptyProperty,
+        expirationDate: this.emptyProperty,
+        postalCode: this.emptyProperty,
         possibleCardTypes: getCardTypes('')
       });
+    });
+
+    it('sets expiration month to current month if using a <select> and no placeholder', function () {
+      var currentMonth = ((new Date()).getMonth() + 1).toString();
+
+      this.scope.configuration.fields.expirationMonth = {select: true};
+
+      expect(CreditCardForm.prototype.resetAttributes.call(this.scope).expirationMonth).to.deep.equal({
+        value: currentMonth,
+        isFocused: false,
+        isValid: true,
+        isPotentiallyValid: true,
+        isEmpty: false
+      });
+    });
+
+    it('sets expiration year to current year if using a <select> and no placeholder', function () {
+      var currentYear = (nextYear - 1).toString();
+
+      this.scope.configuration.fields.expirationYear = {select: true};
+
+      expect(CreditCardForm.prototype.resetAttributes.call(this.scope).expirationYear).to.deep.equal({
+        value: currentYear,
+        isFocused: false,
+        isValid: true,
+        isPotentiallyValid: true,
+        isEmpty: false
+      });
+    });
+
+    it('sets expiration month to empty if using a <select> and a placeholder', function () {
+      this.scope.configuration.fields.expirationMonth = {
+        select: true,
+        placeholder: 'expiration month placeholder'
+      };
+      expect(CreditCardForm.prototype.resetAttributes.call(this.scope).expirationMonth).to.deep.equal(this.emptyProperty);
+    });
+
+    it('sets expiration year to empty if using a <select> and a placeholder', function () {
+      this.scope.configuration.fields.expirationYear = {
+        select: true,
+        placeholder: 'expiration year placeholder'
+      };
+      expect(CreditCardForm.prototype.resetAttributes.call(this.scope).expirationYear).to.deep.equal(this.emptyProperty);
     });
   });
 
@@ -600,7 +658,32 @@ describe('credit card model', function () {
       assert();
     });
 
-    it('revalidates CVV', function () {
+    it('validates CVV', function () {
+      this.card.set('possibleCardTypes', [
+        {code: {size: 3}},
+        {code: {size: 4}}
+      ]);
+
+      expect(this.card.get('cvv.isValid')).to.equal(false);
+      expect(this.card.get('cvv.isPotentiallyValid')).to.equal(true);
+
+      this.card.set('cvv.value', '123');
+
+      expect(this.card.get('cvv.isValid')).to.equal(true);
+      expect(this.card.get('cvv.isPotentiallyValid')).to.equal(true);
+
+      this.card.set('cvv.value', '1234');
+
+      expect(this.card.get('cvv.isValid')).to.equal(true);
+      expect(this.card.get('cvv.isPotentiallyValid')).to.equal(true);
+
+      this.card.set('cvv.value', '12345');
+
+      expect(this.card.get('cvv.isValid')).to.equal(false);
+      expect(this.card.get('cvv.isPotentiallyValid')).to.equal(false);
+    });
+
+    it('revalidates CVV when possibleCardTypes changes', function () {
       expect(this.card.get('cvv.isValid')).to.equal(false);
       expect(this.card.get('cvv.isPotentiallyValid')).to.equal(true);
 

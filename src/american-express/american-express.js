@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var deferred = require('../lib/deferred');
 var errors = require('./errors');
 var assign = require('../lib/assign').assign;

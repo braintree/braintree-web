@@ -1,7 +1,7 @@
 'use strict';
 
-var BraintreeError = require('./error');
-var sharedErrors = require('../errors');
+var BraintreeError = require('./braintree-error');
+var sharedErrors = require('../lib/errors');
 
 module.exports = function (callback, functionName) {
   if (typeof callback !== 'function') {

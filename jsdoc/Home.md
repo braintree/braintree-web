@@ -56,16 +56,22 @@ While `braintree.js` will work in browsers other than the ones below, these repr
 ### Desktop
 
 
-- Internet Explorer 9+
-- Microsoft Edge
-- Firefox latest
 - Chrome latest
+- Firefox latest
+- Internet Explorer 9+ (see caveats below)
+- Microsoft Edge
 - Safari 8+
 
 
-#### Internet Explorer Quirks Mode
+#### Internet Explorer caveats
+
+##### Quirks Mode
 
 Quirks Mode is not supported for any version of IE. See our [general best practices](https://developers.braintreepayments.com/reference/general/best-practices#internet-explorer-quirks-mode) to learn more.
+
+##### Older TLS versions
+
+Braintree is [ending support for server-side API requests via TLS 1.0 and 1.1 on June 30, 2017](https://www.braintreepayments.com/blog/updating-your-production-environment-to-support-tlsv1-2/), and plans to do the same for client requests in the future. The sandbox no longer accepts connections using these older TLS versions as of December 13, 2016. Internet Explorer 9 and 10 do not use TLS 1.2 by default; once client-side support for older TLS versions has been dropped, this SDK will only work if customers have explicitly enabled TLS 1.2 in their IE settings.
 
 <a id="browser-support-mobile"></a>
 ### Mobile

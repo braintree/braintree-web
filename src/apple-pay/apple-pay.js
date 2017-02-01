@@ -1,9 +1,9 @@
 'use strict';
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 
 /**

@@ -1,12 +1,12 @@
 'use strict';
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var Client = require('./client');
 var getConfiguration = require('./get-configuration').getConfiguration;
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var packageVersion = require('package.version');
 var deferred = require('../lib/deferred');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 
 /** @module braintree-web/client */
 

@@ -67,7 +67,7 @@ describe('Expiration Month Input', function () {
         });
 
         expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth');
+        expect(input.element.className).to.equal('expirationMonth valid');
         expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
         expect(input.element.name).to.equal('expiration-month');
         expect(input.element.id).to.equal('expiration-month');
@@ -98,7 +98,7 @@ describe('Expiration Month Input', function () {
         });
 
         expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth');
+        expect(input.element.className).to.equal('expirationMonth valid');
         expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
         expect(input.element.name).to.equal('expiration-month');
         expect(input.element.id).to.equal('expiration-month');
@@ -129,7 +129,7 @@ describe('Expiration Month Input', function () {
         });
 
         expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth');
+        expect(input.element.className).to.equal('expirationMonth valid');
         expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
         expect(input.element.name).to.equal('expiration-month');
         expect(input.element.id).to.equal('expiration-month');
@@ -161,7 +161,7 @@ describe('Expiration Month Input', function () {
         });
 
         expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth');
+        expect(input.element.className).to.equal('expirationMonth valid');
         expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
         expect(input.element.name).to.equal('expiration-month');
         expect(input.element.id).to.equal('expiration-month');
@@ -192,7 +192,7 @@ describe('Expiration Month Input', function () {
         });
 
         expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth');
+        expect(input.element.className).to.equal('expirationMonth valid');
         expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
         expect(input.element.name).to.equal('expiration-month');
         expect(input.element.id).to.equal('expiration-month');
@@ -257,6 +257,33 @@ describe('Expiration Month Input', function () {
         expect(placeholderEl.innerHTML).to.equal('foo &amp; &lt;boo&gt;');
 
         expect(input.element.querySelectorAll('option')).to.have.lengthOf(13);
+      });
+
+      it('selects current month value when no placeholder is set', function () {
+        var i, el;
+        var currentMonth = parseInt((new Date()).getMonth(), 10);
+        var input = new ExpirationMonthInput({
+          type: 'expirationMonth',
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                selector: '#expiration-month',
+                select: true
+              }
+            }
+          })
+        });
+
+        for (i = 0; i < input.element.childNodes.length; i++) {
+          el = input.element.childNodes[i];
+
+          if (i === currentMonth) {
+            expect(el.getAttribute('selected')).to.equal('selected');
+          } else {
+            expect(el.getAttribute('selected')).to.equal(null);
+          }
+        }
+        expect(input.element.selectedIndex).to.equal(currentMonth);
       });
     });
   });

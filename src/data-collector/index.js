@@ -4,13 +4,13 @@
 
 var kount = require('./kount');
 var fraudnet = require('./fraudnet');
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var methods = require('../lib/methods');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var deferred = require('../lib/deferred');
 var VERSION = require('package.version');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 
 /**

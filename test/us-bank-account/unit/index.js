@@ -2,7 +2,7 @@
 
 var create = require('../../../src/us-bank-account').create;
 var USBankAccount = require('../../../src/us-bank-account/us-bank-account');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var fake = require('../../helpers/fake');
 var version = require('../../../package.json').version;
 

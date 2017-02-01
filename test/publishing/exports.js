@@ -25,6 +25,10 @@ var components = {
     index: require('../../dist/published/paypal'),
     debug: require('../../dist/published/paypal.debug')
   },
+  paypalCheckout: {
+    index: require('../../dist/published/paypal-checkout'),
+    debug: require('../../dist/published/paypal-checkout.debug')
+  },
   americanExpress: {
     index: require('../../dist/published/american-express'),
     debug: require('../../dist/published/american-express.debug')

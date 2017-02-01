@@ -3,7 +3,7 @@
 
 var fake = require('../../helpers/fake');
 var USBankAccount = require('../../../src/us-bank-account/us-bank-account');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var methods = require('../../../src/lib/methods');
 

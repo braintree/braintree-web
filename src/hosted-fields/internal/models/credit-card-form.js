@@ -14,9 +14,9 @@ function CreditCardForm(configuration) {
     return whitelistedFields.hasOwnProperty(key);
   });
 
-  EventedModel.apply(this, arguments);
-
   this.configuration = configuration;
+
+  EventedModel.apply(this, arguments);
 
   this._fieldKeys.forEach(function (field) {
     var onFieldChange = onFieldStateChange(this, field);
@@ -38,16 +38,37 @@ CreditCardForm.prototype = Object.create(EventedModel.prototype);
 CreditCardForm.prototype.constructor = CreditCardForm;
 
 CreditCardForm.prototype.resetAttributes = function () {
+  var thisMonth = (new Date().getMonth() + 1).toString();
+  var thisYear = (new Date().getFullYear()).toString();
+
   return this._fieldKeys.reduce(function (result, field) {
+    var fieldConfiguration = this.configuration.fields[field];
+    var isSelect = fieldConfiguration.select != null;
+    var hasPlaceholder = fieldConfiguration.placeholder != null;
+
     result[field] = {
       value: '',
       isFocused: false,
       isValid: false,
-      isPotentiallyValid: true,
-      isEmpty: true
+      isPotentiallyValid: true
     };
+
+    if (isSelect && !hasPlaceholder) {
+      if (field === 'expirationMonth') {
+        result[field].value = thisMonth;
+      } else if (field === 'expirationYear') {
+        result[field].value = thisYear;
+      }
+
+      if (field === 'expirationMonth' || field === 'expirationYear') {
+        result[field].isValid = true;
+      }
+    }
+
+    result[field].isEmpty = result[field].value === '';
+
     return result;
-  }, {possibleCardTypes: getCardTypes('')});
+  }.bind(this), {possibleCardTypes: getCardTypes('')});
 };
 
 CreditCardForm.prototype.emitEvent = function (fieldKey, eventType) {
@@ -137,6 +158,12 @@ CreditCardForm.prototype._validateField = function (fieldKey) {
   }
 };
 
+function uniq(array) {
+  return array.filter(function (item, position, arr) {
+    return arr.indexOf(item) === position;
+  });
+}
+
 CreditCardForm.prototype._validateCvv = function (value) {
   var cvvSize;
 
@@ -144,9 +171,10 @@ CreditCardForm.prototype._validateCvv = function (value) {
     return validator.cvv(value, [3, 4]);
   }
 
-  cvvSize = this.get('possibleCardTypes').reduce(function (accum, type) {
-    return Math.max(type.code.size, accum);
-  }, 3);
+  cvvSize = this.get('possibleCardTypes').map(function (item) {
+    return item.code.size;
+  });
+  cvvSize = uniq(cvvSize);
 
   return validator.cvv(value, cvvSize);
 };

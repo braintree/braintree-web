@@ -22,6 +22,8 @@ describe('ECMAScript version', function () {
     'hosted-fields.min',
     'paypal',
     'paypal.min',
+    'paypal-checkout',
+    'paypal-checkout.min',
     'three-d-secure',
     'three-d-secure.min',
     'unionpay',

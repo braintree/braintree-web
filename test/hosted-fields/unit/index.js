@@ -5,7 +5,7 @@ var events = require('../../../src/hosted-fields/shared/constants').events;
 var hostedFields = require('../../../src/hosted-fields');
 var HostedFields = require('../../../src/hosted-fields/external/hosted-fields');
 var fake = require('../../helpers/fake');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 
 describe('hostedFields', function () {
   describe('create', function () {

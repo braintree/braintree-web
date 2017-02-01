@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../lib/error');
+var BraintreeError = require('../../lib/braintree-error');
 var frameService = require('../../lib/frame-service/internal');
 var frameServiceErrors = require('../../lib/frame-service/shared/errors');
 

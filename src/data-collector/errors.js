@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 
 module.exports = {
   DATA_COLLECTOR_KOUNT_NOT_ENABLED: {

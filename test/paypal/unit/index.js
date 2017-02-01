@@ -5,7 +5,7 @@ var browserDetection = require('../../../src/lib/browser-detection');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var PayPal = require('../../../src/paypal/external/paypal');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var version = require('../../../package.json').version;
 
 describe('paypal.create', function () {

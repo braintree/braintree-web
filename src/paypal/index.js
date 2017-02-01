@@ -2,13 +2,13 @@
 /** @module braintree-web/paypal */
 
 var analytics = require('../lib/analytics');
-var BraintreeError = require('../lib/error');
+var BraintreeError = require('../lib/braintree-error');
 var browserDetection = require('../lib/browser-detection');
 var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var PayPal = require('./external/paypal');
-var sharedErrors = require('../errors');
+var sharedErrors = require('../lib/errors');
 var VERSION = require('package.version');
 
 /**

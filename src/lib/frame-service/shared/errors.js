@@ -1,6 +1,6 @@
 'use strict';
 
-var BraintreeError = require('../../error');
+var BraintreeError = require('../../braintree-error');
 
 module.exports = {
   FRAME_SERVICE_FRAME_CLOSED: {

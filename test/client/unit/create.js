@@ -3,7 +3,7 @@
 var Client = require('../../../src/client/client');
 var client = require('../../../src/client');
 var AJAXDriver = require('../../../src/client/request/ajax-driver');
-var BraintreeError = require('../../../src/lib/error');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var fake = require('../../helpers/fake');
 
 describe('client.create', function () {

@@ -8,7 +8,7 @@ var Bus = require('../../../../src/lib/bus');
 var analytics = require('../../../../src/lib/analytics');
 var fake = require('../../../helpers/fake');
 var assembleIFrames = require('../../../../src/hosted-fields/internal/assemble-iframes');
-var BraintreeError = require('../../../../src/lib/error');
+var BraintreeError = require('../../../../src/lib/braintree-error');
 
 describe('internal', function () {
   beforeEach(function () {
