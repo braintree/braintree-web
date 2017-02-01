@@ -1,0 +1,2543 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        UnionPay - Documentation</title>
+
+    <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <!-- at the end of the HEAD -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css" />
+    <!-- at the end of the BODY -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+<!-- start Mixpanel --><script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script><!-- end Mixpanel -->
+</head>
+
+<body>
+    <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+    <label for="nav-trigger" class="navicon-button x">
+        <div class="navicon"></div>
+    </label>
+
+    <label for="nav-trigger" class="overlay"></label>
+
+    <div class="top-nav-wrapper">
+        <ul>
+            <li >
+                <a href="index.html">
+                    
+                        <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                            <path d="M0 0h24v24H0z" fill="none"/>
+                        </svg>
+                    
+                    
+
+                </a>
+            </li>
+            <li>
+                <div class="search-wrapper">
+                    <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        <path d="M0 0h24v24H0z" fill="none"/>
+                    </svg>
+                    <input type="text" placeholder="Search" class="search-input">
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <nav>
+        <h3 class="reference-title">Braintree.js Client Reference</h3>
+
+        <h3>Classes</h3><ul><li id="AmericanExpress-nav"><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type="method" id="AmericanExpress-getExpressCheckoutProfile-nav"><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type="method" id="AmericanExpress-getRewardsBalance-nav"><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li></ul></li><li id="ApplePay-nav"><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type="method" id="ApplePay-createPaymentRequest-nav"><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type="method" id="ApplePay-performValidation-nav"><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type="method" id="ApplePay-tokenize-nav"><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li id="BraintreeError-nav"><a href="BraintreeError.html">BraintreeError</a></li><li id="Client-nav"><a href="Client.html">Client</a><ul class='methods'><li data-type="method" id="Client-getConfiguration-nav"><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type="method" id="Client-request-nav"><a href="Client.html#request">request</a></li></ul></li><li id="DataCollector-nav"><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type="method" id="DataCollector-teardown-nav"><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li id="HostedFields-nav"><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type="method" id="HostedFields-addClass-nav"><a href="HostedFields.html#addClass">addClass</a></li><li data-type="method" id="HostedFields-clear-nav"><a href="HostedFields.html#clear">clear</a></li><li data-type="method" id="HostedFields-getState-nav"><a href="HostedFields.html#getState">getState</a></li><li data-type="method" id="HostedFields-on-nav"><a href="HostedFields.html#on">on</a></li><li data-type="method" id="HostedFields-removeClass-nav"><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type="method" id="HostedFields-setPlaceholder-nav"><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type="method" id="HostedFields-teardown-nav"><a href="HostedFields.html#teardown">teardown</a></li><li data-type="method" id="HostedFields-tokenize-nav"><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li id="PayPal-nav"><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type="method" id="PayPal-teardown-nav"><a href="PayPal.html#teardown">teardown</a></li><li data-type="method" id="PayPal-tokenize-nav"><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li id="PayPalCheckout-nav"><a href="PayPalCheckout.html">PayPalCheckout</a><ul class='methods'><li data-type="method" id="PayPalCheckout-createPayment-nav"><a href="PayPalCheckout.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckout-tokenizePayment-nav"><a href="PayPalCheckout.html#tokenizePayment">tokenizePayment</a></li></ul></li><li id="ThreeDSecure-nav"><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type="method" id="ThreeDSecure-cancelVerifyCard-nav"><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type="method" id="ThreeDSecure-teardown-nav"><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type="method" id="ThreeDSecure-verifyCard-nav"><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li id="UnionPay-nav"><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type="method" id="UnionPay-enroll-nav"><a href="UnionPay.html#enroll">enroll</a></li><li data-type="method" id="UnionPay-fetchCapabilities-nav"><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type="method" id="UnionPay-teardown-nav"><a href="UnionPay.html#teardown">teardown</a></li><li data-type="method" id="UnionPay-tokenize-nav"><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li id="braintree-web-nav"><a href="module-braintree-web.html">braintree-web</a></li><li id="braintree-web_american-express-nav"><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type="method" id="braintree-web_american-express-create-nav"><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li id="braintree-web_apple-pay-nav"><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type="method" id="braintree-web_apple-pay-create-nav"><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li id="braintree-web_client-nav"><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type="method" id="braintree-web_client-create-nav"><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li id="braintree-web_data-collector-nav"><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type="method" id="braintree-web_data-collector-create-nav"><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li id="braintree-web_hosted-fields-nav"><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type="method" id="braintree-web_hosted-fields-create-nav"><a href="module-braintree-web_hosted-fields.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-nav"><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-create-nav"><a href="module-braintree-web_paypal.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-checkout-nav"><a href="module-braintree-web_paypal-checkout.html">braintree-web/paypal-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-create-nav"><a href="module-braintree-web_paypal-checkout.html#.create">create</a></li></ul></li><li id="braintree-web_three-d-secure-nav"><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type="method" id="braintree-web_three-d-secure-create-nav"><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li id="braintree-web_unionpay-nav"><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type="method" id="braintree-web_unionpay-create-nav"><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li></ul><h3 id="global-nav"><a href="global.html">Global</a></h3>
+    </nav>
+
+    <div id="main">
+        
+            <h1 class="page-title">
+                UnionPay
+            </h1>
+            
+
+            
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+        UnionPay
+        </h2>
+        
+            <div class="class-description"><p>This class represents a UnionPay component. Instances of this class have methods for <a href="UnionPay.html#fetchCapabilities">fetching capabilities</a> of UnionPay cards, <a href="UnionPay.html#enroll">enrolling</a> a UnionPay card, and <a href="UnionPay.html#tokenize">tokenizing</a> a UnionPay card.</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    <h4 class="name" id="UnionPay"><span class="type-signature"></span>new UnionPay<span class="signature">(options)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p><strong>You cannot use this constructor directly. Use <a href="module-braintree-web_unionpay.html#.create">braintree-web.unionpay.create</a> instead.</strong></p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>See <a href="module-braintree-web_unionpay.html#.create">unionpay.create</a>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line23">line 23</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="enroll"><span class="type-signature"></span>enroll<span class="signature">(options, callback)</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Enrolls a UnionPay card. Use <a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a> to determine if the SMS enrollment process is required.</p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>UnionPay enrollment options:</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>card</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card to enroll. Required if you are not using the <code>hostedFields</code> option.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>number</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card number.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationDate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card's expiration date. May be in the form <code>MM/YY</code> or <code>MM/YYYY</code>. When defined <code>expirationMonth</code> and <code>expirationYear</code> are ignored.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationMonth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card's expiration month. This should be used with the <code>expirationYear</code> parameter. When <code>expirationDate</code> is defined this parameter is ignored.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationYear</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card's expiration year. This should be used with the <code>expirationMonth</code> parameter. When <code>expirationDate</code> is defined this parameter is ignored.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>hostedFields</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="HostedFields.html">HostedFields</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The Hosted Fields instance used to collect card data. Required if you are not using the <code>card</code> option.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>mobile</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The mobile information collected from the customer.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>countryCode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The country code of the customer's mobile phone number.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>number</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The customer's mobile phone number.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#callback">callback</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The second argument, <code>data</code>, is a <a href="UnionPay.html#~enrollPayload">enrollPayload</a>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line242">line 242</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+        <p class="code-caption">With raw card data</p>
+    
+    <pre class="prettyprint"><code>unionpayInstance.enroll({
+  card: {
+    number: '4111111111111111',
+    expirationMonth: '12',
+    expirationYear: '2038'
+  },
+  mobile: {
+    countryCode: '62',
+    number: '111111111111'
+  }
+}, function (enrollErr, response) {
+  if (enrollErr) {
+     console.error(enrollErr);
+     return;
+  }
+
+  if (response.smsCodeRequired) {
+    // If smsCodeRequired, wait for SMS auth code from customer
+    // Then use response.enrollmentId during <a href="UnionPay.html#tokenize">UnionPay#tokenize</a>
+  } else {
+    // SMS code is not required from the user.
+    // <a href="UnionPay.html#tokenize">UnionPay#tokenize</a> can be called immediately
+});</code></pre>
+
+        <p class="code-caption">With Hosted Fields</p>
+    
+    <pre class="prettyprint"><code>unionpayInstance.enroll({
+  hostedFields: hostedFields,
+  mobile: {
+    countryCode: '62',
+    number: '111111111111'
+  }
+}, function (enrollErr, response) {
+  if (enrollErr) {
+    console.error(enrollErr);
+    return;
+  }
+
+  if (response.smsCodeRequired) {
+    // If smsCodeRequired, wait for SMS auth code from customer
+    // Then use response.enrollmentId during <a href="UnionPay.html#tokenize">UnionPay#tokenize</a>
+  } else {
+    // SMS code is not required from the user.
+    // <a href="UnionPay.html#tokenize">UnionPay#tokenize</a> can be called immediately
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="fetchCapabilities"><span class="type-signature"></span>fetchCapabilities<span class="signature">(options, callback)</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Fetches the capabilities of a card, including whether or not the SMS enrollment process is required.</p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>UnionPay <a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a> options</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>card</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card from which to fetch capabilities. Note that this will only have one property, <code>number</code>. Required if you are not using the <code>hostedFields</code> option.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>number</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Card number.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>hostedFields</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="HostedFields.html">HostedFields</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The Hosted Fields instance used to collect card data. Required if you are not using the <code>card</code> option.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#callback">callback</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The second argument, <code>data</code>, is a fetchCapabilitiesPayload.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line107">line 107</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+        <p class="code-caption">With raw card data</p>
+    
+    <pre class="prettyprint"><code>unionpayInstance.fetchCapabilities({
+  card: {
+    number: '4111111111111111'
+  }
+}, function (fetchErr, cardCapabilities) {
+  if (fetchErr) {
+    console.error(fetchErr);
+    return;
+  }
+
+  if (cardCapabilities.isUnionPay) {
+    if (cardCapabilities.unionPay &amp;&amp; !cardCapabilities.unionPay.isSupported) {
+      // Braintree cannot process this UnionPay card.
+      // Ask the user for a different card.
+      return;
+    }
+
+    if (cardCapabilities.isDebit) {
+      // CVV and expiration date are not required
+    } else {
+      // CVV and expiration date are required
+    }
+
+    // Show mobile phone number field for enrollment
+  }
+});</code></pre>
+
+        <p class="code-caption">With Hosted Fields</p>
+    
+    <pre class="prettyprint"><code>// Fetch capabilities on `validityChange` inside of the Hosted Fields `create` callback
+hostedFieldsInstance.on('validityChange', function (event) {
+  // Only attempt to fetch capabilities when a valid card number has been entered
+  if (event.emittedBy === 'number' &amp;&amp; event.fields.number.isValid) {
+    unionpayInstance.fetchCapabilities({
+      hostedFields: hostedFieldsInstance
+    }, function (fetchErr, cardCapabilities) {
+      if (fetchErr) {
+        console.error(fetchErr);
+        return;
+      }
+
+      if (cardCapabilities.isUnionPay) {
+        if (cardCapabilities.unionPay &amp;&amp; !cardCapabilities.unionPay.isSupported) {
+          // Braintree cannot process this UnionPay card.
+          // Ask the user for a different card.
+          return;
+        }
+        if (cardCapabilities.isDebit) {
+          // CVV and expiration date are not required
+          // Hide the containers with your `cvv` and `expirationDate` fields
+        } else {
+          // CVV and expiration date are required
+        }
+      } else {
+        // Not a UnionPay card
+        // When form is complete, tokenize using your Hosted Fields instance
+      }
+
+      // Show your own mobile country code and phone number inputs for enrollment
+    });
+  });
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="teardown"><span class="type-signature"></span>teardown<span class="signature">(callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Cleanly tear down anything set up by <a href="module-braintree-web_unionpay.html#.create">create</a>. This only needs to be called when using UnionPay with Hosted Fields.</p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#callback">callback</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Called once teardown is complete. No data is returned if teardown completes successfully.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line497">line 497</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>unionpayInstance.teardown(function (teardownErr) {
+  if (teardownErr) {
+    console.error('Could not tear down UnionPay.');
+  } else {
+    console.log('UnionPay has been torn down.');
+  }
+});</code></pre>
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="tokenize"><span class="type-signature"></span>tokenize<span class="signature">(options, callback)</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Tokenizes a UnionPay card and returns a nonce payload.</p>
+</div>
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>UnionPay tokenization options:</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>card</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card to enroll. Required if you are not using the <code>hostedFields</code> option.</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>number</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card number.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationDate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card's expiration date. May be in the form <code>MM/YY</code> or <code>MM/YYYY</code>. When defined <code>expirationMonth</code> and <code>expirationYear</code> are ignored.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationMonth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card's expiration month. This should be used with the <code>expirationYear</code> parameter. When <code>expirationDate</code> is defined this parameter is ignored.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expirationYear</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card's expiration year. This should be used with the <code>expirationMonth</code> parameter. When <code>expirationDate</code> is defined this parameter is ignored.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>cvv</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The card's security number.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>hostedFields</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="HostedFields.html">HostedFields</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The Hosted Fields instance used to collect card data. Required if you are not using the <code>card</code> option.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>enrollmentId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The enrollment ID from <a href="UnionPay.html#enroll">UnionPay#enroll</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>smsCode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The SMS code received from the user if <a href="UnionPay.html#enroll">UnionPay#enroll</a> payload have <code>smsCodeRequired</code>. if <code>smsCodeRequired</code> is false, smsCode should not be passed.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#callback">callback</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The second argument, <code>data</code>, is a <a href="UnionPay.html#~tokenizePayload">tokenizePayload</a>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line391">line 391</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+        <p class="code-caption">With raw card data</p>
+    
+    <pre class="prettyprint"><code>unionpayInstance.tokenize({
+  card: {
+    number: '4111111111111111',
+    expirationMonth: '12',
+    expirationYear: '2038',
+    cvv: '123'
+  },
+  enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
+  smsCode: '11111' // Received by customer's phone, if SMS enrollment was required. Otherwise it should be omitted
+}, function (tokenizeErr, response) {
+  if (tokenizeErr) {
+    console.error(tokenizeErr);
+    return;
+  }
+
+  // Send response.nonce to your server
+});</code></pre>
+
+        <p class="code-caption">With Hosted Fields</p>
+    
+    <pre class="prettyprint"><code>unionpayInstance.tokenize({
+  hostedFields: hostedFieldsInstance,
+  enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
+  smsCode: '11111' // Received by customer's phone, if SMS enrollment was required. Otherwise it should be omitted
+}, function (tokenizeErr, response) {
+  if (tokenizeErr) {
+    console.error(tokenizeErr);
+    return;
+  }
+
+  // Send response.nonce to your server
+});</code></pre>
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Type Definitions</h3>
+
+        
+                
+
+    
+
+    <h4 class="name" id="~enrollPayload"><span class="type-signature"></span>enrollPayload<span class="type-signature"> :object</span></h4>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>enrollmentId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>UnionPay enrollment ID. This value should be passed to <code>tokenize</code>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>smsCodeRequired</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>UnionPay <code>smsCodeRequired</code> flag.
+</p><b>true</b> - the user will receive an SMS code that needs to be supplied for tokenization.
+</p><b>false</b> - the card can be immediately tokenized.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line173">line 173</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+                
+
+    
+
+    <h4 class="name" id="~fetchCapabilitiesPayload"><span class="type-signature"></span>fetchCapabilitiesPayload<span class="type-signature"> :object</span></h4>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>isUnionPay</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Determines if this card is a UnionPay card.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>isDebit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Determines if this card is a debit card. This property is only present if <code>isUnionPay</code> is <code>true</code>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>unionPay</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>UnionPay specific properties. This property is only present if <code>isUnionPay</code> is <code>true</code>.</p>
+                <h6>Properties</h6>
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>supportsTwoStepAuthAndCapture</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Determines if the card allows for an authorization, but settling the transaction later.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>isSupported</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Determines if Braintree can process this UnionPay card. When false, Braintree cannot process this card and the user should use a different card.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line27">line 27</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+                
+
+    
+
+    <h4 class="name" id="~tokenizePayload"><span class="type-signature"></span>tokenizePayload<span class="type-signature"> :object</span></h4>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>nonce</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The payment method nonce.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>type</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Always <code>CreditCard</code>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>details</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Additional account details:</p>
+                <h6>Properties</h6>
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>cardType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Type of card, ex: Visa, MasterCard.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>lastTwo</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Last two digits of card number.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>description</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>A human-readable description.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="unionpay_shared_unionpay.js.html">unionpay/shared/unionpay.js</a>, <a href="unionpay_shared_unionpay.js.html#line334">line 334</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+    </div>
+
+    <br class="clear">
+
+    <footer>
+        Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>
+        
+    </footer>
+
+    <script src="scripts/linenumber.js"></script>
+    <script src="scripts/pagelocation.js"></script>
+    <script src="scripts/search.js"></script>
+
+</body>
+
+</html>
