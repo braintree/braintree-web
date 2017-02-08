@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -17,9 +17,9 @@
   },
   "dependencies": {
     "card-validator": "4.0.0",
-    "credit-card-type": "5.0.0",
+    "credit-card-type": "5.0.1",
     "framebus": "2.0.7",
-    "iframer": "braintree/iframer.git#1.0.0",
+    "iframer": "braintree/iframer.git#1.0.2",
     "inject-stylesheet": "1.0.0",
     "promise-polyfill": "6.0.2",
     "restricted-input": "1.0.9"
@@ -37,6 +37,7 @@
     "eslint": "2.7.0",
     "eslint-config-braintree": "1.0.1",
     "gulp": "3.9.1",
+    "gulp-envify": "1.0.0",
     "gulp-minifier": "0.1.1",
     "gulp-rename": "1.2.2",
     "gulp-replace": "0.5.4",
@@ -51,8 +52,8 @@
     "karma-mocha-reporter": "2.0.3",
     "karma-phantomjs-launcher": "1.0.0",
     "merge-stream": "1.0.0",
+    "mkdirp": "^0.5.1",
     "mocha": "3.2.0",
-    "packageify": "0.2.3",
     "phantomjs-prebuilt": "2.1.12",
     "posix-getopt": "1.2.0",
     "readline-sync": "1.4.2",
@@ -68,7 +69,6 @@
   },
   "browserify": {
     "transform": [
-      "packageify",
       [
         "envify",
         {

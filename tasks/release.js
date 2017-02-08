@@ -23,10 +23,8 @@ gulp.task('release:hosted', function (done) {
 
 gulp.task('release:bower:copy', function () {
   return gulp.src([
-    'dist/published/*',
-    'dist/published/.*',
-    '!dist/published/package.json',
-    '!dist/published/.npmignore'
+    'dist/bower/*',
+    'dist/bower/.*'
   ]).pipe(gulp.dest(BOWER_DEST));
 });
 

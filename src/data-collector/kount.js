@@ -1,7 +1,7 @@
 'use strict';
-/* eslint-disable camelcase */
 
 var sjcl = require('./vendor/sjcl');
+var camelCaseToSnakeCase = require('../lib/camel-case-to-snake-case');
 
 var QA_URL = 'https://assets.qa.braintreepayments.com/data';
 var IFRAME_ID = 'braintreeDataFrame';
@@ -38,10 +38,10 @@ Kount.prototype._removeIframe = function () {
 };
 
 Kount.prototype._getDeviceData = function () {
-  return {
-    device_session_id: this._deviceSessionId,
-    fraud_merchant_id: this._currentEnvironment.id
-  };
+  return camelCaseToSnakeCase({
+    deviceSessionId: this._deviceSessionId,
+    fraudMerchantId: this._currentEnvironment.id
+  });
 };
 
 Kount.prototype._generateDeviceSessionId = function () {

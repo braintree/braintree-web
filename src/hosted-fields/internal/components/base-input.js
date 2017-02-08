@@ -1,5 +1,6 @@
 'use strict';
 
+var attributeValidationError = require('../../external/attribute-validation-error');
 var constants = require('../../shared/constants');
 var classlist = require('../../../lib/classlist');
 var isIe9 = require('../../../lib/is-ie9');
@@ -126,11 +127,11 @@ BaseInput.prototype._addDOMFocusListeners = function () {
     }, false);
   }
 
-  element.addEventListener('focus', function () {
+  global.addEventListener('focus', function () {
     this.updateModel('isFocused', true);
   }.bind(this), false);
 
-  element.addEventListener('blur', function () {
+  global.addEventListener('blur', function () {
     this.updateModel('isFocused', false);
   }.bind(this), false);
 
@@ -145,7 +146,13 @@ BaseInput.prototype.addModelEventListeners = function () {
 };
 
 BaseInput.prototype.setPlaceholder = function (type, placeholder) {
-  if (type === this.type) { this.element.setAttribute('placeholder', placeholder); }
+  this.type.setAttribute(type, 'placeholder', placeholder);
+};
+
+BaseInput.prototype.setAttribute = function (type, attribute, value) {
+  if (type === this.type && !attributeValidationError(attribute, value)) {
+    this.element.setAttribute(attribute, value);
+  }
 };
 
 BaseInput.prototype.addBusEventListeners = function () {
@@ -153,7 +160,7 @@ BaseInput.prototype.addBusEventListeners = function () {
     if (type === this.type) { this.element.focus(); }
   }.bind(this));
 
-  global.bus.on(events.SET_PLACEHOLDER, this.setPlaceholder.bind(this));
+  global.bus.on(events.SET_ATTRIBUTE, this.setAttribute.bind(this));
 
   global.bus.on(events.ADD_CLASS, function (type, classname) {
     if (type === this.type) { classlist.add(this.element, classname); }

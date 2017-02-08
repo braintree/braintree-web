@@ -1,5 +1,4 @@
 'use strict';
-/* eslint-disable camelcase */
 /** @module braintree-web/data-collector */
 
 var kount = require('./kount');
@@ -9,7 +8,7 @@ var methods = require('../lib/methods');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var deferred = require('../lib/deferred');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 
@@ -127,7 +126,7 @@ function create(options, callback) {
     }
 
     fraudnetInstance = fraudnet.setup();
-    data.correlation_id = fraudnetInstance.sessionId;
+    data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
     instances.push(fraudnetInstance);
   }
 

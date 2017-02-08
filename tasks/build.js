@@ -1,82 +1,122 @@
 'use strict';
 
 var gulp = require('gulp');
+var envify = require('gulp-envify');
 var rename = require('gulp-rename');
 var replace = require('gulp-replace');
+var mkdirp = require('mkdirp');
 var sequence = require('run-sequence');
 var browserify = require('./browserify');
+var clone = require('../src/lib/json-clone');
+var COMPONENTS = require('../components');
+var merge = require('merge-stream');
 var VERSION = require('../package.json').version;
 var JS_PATH = 'dist/hosted/web/' + VERSION + '/js/';
 var HTML_PATH = 'dist/hosted/web/' + VERSION + '/html/';
-var PUBLISHED_DIST = 'dist/published';
+var BOWER_DIST = 'dist/bower';
+var NPM_DIST = 'dist/npm';
 var fs = require('fs');
 var JS_COMMENT_REGEX = /(\/\*[\s\S]*?\*\/\n*|\/\/.*?\n)/gm;
 
-gulp.task('build:published:index', function (done) {
+gulp.task('build:index', function (done) {
   browserify({
     standalone: 'braintree',
     main: './src/index.js',
-    dist: PUBLISHED_DIST,
-    out: 'debug.js',
-    min: 'index.js'
+    dist: JS_PATH,
+    out: 'index.js'
   }, done);
 });
 
-gulp.task('build:published:statics', function () {
+gulp.task('build:bower:statics', function () {
   return gulp.src([
     './publishing/.gitignore',
-    './publishing/.npmignore',
     './publishing/bower.json',
-    './publishing/package.json',
     './CHANGELOG.md',
     './LICENSE',
     './README.md'
   ]).pipe(replace('@VERSION', VERSION))
-    .pipe(gulp.dest(PUBLISHED_DIST));
+    .pipe(gulp.dest(BOWER_DIST));
 });
 
-gulp.task('build:published:mins', function () {
+gulp.task('build:npm:statics', ['build:npm:packagejson'], function () {
   return gulp.src([
-    JS_PATH + 'american-express.min.js',
-    JS_PATH + 'apple-pay.min.js',
-    JS_PATH + 'client.min.js',
-    JS_PATH + 'data-collector.min.js',
-    JS_PATH + 'hosted-fields.min.js',
-    JS_PATH + 'paypal.min.js',
-    JS_PATH + 'paypal-checkout.min.js',
-    JS_PATH + 'three-d-secure.min.js',
-    JS_PATH + 'unionpay.min.js',
-    JS_PATH + 'us-bank-account.min.js'
-  ]).pipe(rename(function (path) {
-    path.basename = path.basename.replace(/\.min$/, '');
-  })).pipe(gulp.dest(PUBLISHED_DIST));
+    './publishing/.gitignore',
+    './CHANGELOG.md',
+    './LICENSE',
+    './README.md'
+  ]).pipe(gulp.dest(NPM_DIST));
 });
 
-gulp.task('build:published:debugs', function () {
+gulp.task('build:npm:packagejson', function (done) {
+  var pkg = clone(require('../package.json'));
+
+  pkg.name = 'braintree-web';
+  pkg.main = 'index.js';
+  pkg.description = 'A suite of tools for integrating Braintree in the browser',
+  pkg.repository = {
+    type: 'git',
+    url: 'git@github.com:braintree/braintree-web'
+  };
+  pkg.keywords = [
+    'braintree',
+    'payments'
+  ];
+  pkg.author = 'braintree <code@getbraintree.com>';
+  pkg.homepage = 'https://github.com/braintree/braintree-web';
+
+  delete pkg.private;
+  delete pkg.scripts;
+  delete pkg.browserify;
+  delete pkg.devDependencies;
+
+  mkdirp.sync(NPM_DIST);
+
+  fs.writeFile(NPM_DIST + '/' + 'package.json', JSON.stringify(pkg, null, 2), done);
+});
+
+gulp.task('build:npm:src', function () {
   return gulp.src([
-    JS_PATH + 'american-express.js',
-    JS_PATH + 'apple-pay.js',
-    JS_PATH + 'client.js',
-    JS_PATH + 'data-collector.js',
-    JS_PATH + 'hosted-fields.js',
-    JS_PATH + 'paypal.js',
-    JS_PATH + 'paypal-checkout.js',
-    JS_PATH + 'three-d-secure.js',
-    JS_PATH + 'unionpay.js',
-    JS_PATH + 'us-bank-account.js'
-  ]).pipe(rename({
+    'src/**/*.js',
+    '!src/**/internal/**' // no need to pass the internal files to npm
+  ])
+    .pipe(envify(process.env))
+    .pipe(gulp.dest(NPM_DIST));
+});
+
+gulp.task('build:bower:js', function () {
+  var files = COMPONENTS.concat('index').reduce(function (result, component) {
+    result.push(JS_PATH + component + '.min.js');
+    return result;
+  }, []);
+
+  return gulp.src(files)
+    .pipe(rename(function (path) {
+      path.basename = path.basename.replace(/\.min$/, '');
+    }))
+    .pipe(gulp.dest(BOWER_DIST));
+});
+
+gulp.task('build:bower:debugs', function () {
+  var components = gulp.src(
+    COMPONENTS.map(name => JS_PATH + name + '.js')
+  ).pipe(rename({
     extname: '.debug.js'
-  })).pipe(gulp.dest(PUBLISHED_DIST));
+  })).pipe(gulp.dest(BOWER_DIST));
+
+  var debug = gulp.src(JS_PATH + 'index.js')
+    .pipe(rename('debug.js'))
+    .pipe(gulp.dest(BOWER_DIST));
+
+  return merge(components, debug);
 });
 
-gulp.task('build:published', [
-  'build:published:index',
-  'build:published:mins',
-  'build:published:debugs',
-  'build:published:statics'
+gulp.task('build:bower', [
+  'build:bower:js',
+  'build:bower:debugs',
+  'build:bower:statics'
 ]);
 
-gulp.task('build:unmin', function () {
+gulp.task('build:html:unmin', function () {
   return gulp.src([
     HTML_PATH + '*.html',
     '!' + HTML_PATH + '*.min.html',
@@ -84,42 +124,43 @@ gulp.task('build:unmin', function () {
     .pipe(gulp.dest(HTML_PATH));
 });
 
-gulp.task('build:min', function () {
+gulp.task('build:html:min', function () {
   return gulp.src([
     HTML_PATH + '*.min.html'
   ]).pipe(replace('@DOT_MIN', '.min'))
     .pipe(gulp.dest(HTML_PATH));
 });
 
-gulp.task('build:link-latest', function (done) {
+gulp.task('build:hosted:link-latest', function (done) {
   fs.symlink(VERSION, 'dist/hosted/web/dev', done);
 });
 
-gulp.task('build:hosted', [
-  'build:apple-pay',
-  'build:client',
-  'build:paypal',
-  'build:paypal-checkout',
-  'build:three-d-secure',
-  'build:hosted-fields',
-  'build:data-collector',
-  'build:frame-service',
-  'build:american-express',
-  'build:unionpay',
-  'build:us-bank-account'
+gulp.task('build:hosted', function (done) {
+  var buildTasks = COMPONENTS.concat(['index', 'frame-service']).map(name => 'build:' + name);
+
+  sequence(
+    buildTasks, [
+      'build:hosted:link-latest',
+      'build:html:min',
+      'build:html:unmin'
+    ],
+    done
+  );
+});
+
+gulp.task('build:npm', [
+  'build:npm:statics',
+  'build:npm:src'
 ]);
 
 gulp.task('build', function (done) {
   sequence(
     'clean',
-    'build:hosted',
     [
-      'build:link-latest',
-      'build:published'
-    ], [
-      'build:min',
-      'build:unmin'
+      'build:hosted',
+      'build:npm'
     ],
+    'build:bower',
     done
   );
 });

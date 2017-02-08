@@ -3,7 +3,7 @@
 var frameService = require('../../lib/frame-service/external');
 var BraintreeError = require('../../lib/braintree-error');
 var once = require('../../lib/once');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 var constants = require('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = require('../../lib/analytics');
@@ -73,7 +73,8 @@ var querystring = require('../../lib/querystring');
 function PayPal(options) {
   this._client = options.client;
   this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION;
-  this._loadingFrameUrl = this._assetsUrl + '/html/paypal-landing-frame@DOT_MIN.html';
+  this._isDebug = options.client.getConfiguration().isDebug;
+  this._loadingFrameUrl = this._assetsUrl + '/html/paypal-landing-frame' + (this._isDebug ? '' : '.min') + '.html';
   this._authorizationInProgress = false;
 }
 
@@ -85,7 +86,7 @@ PayPal.prototype._initialize = function (callback) {
 
   frameService.create({
     name: constants.LANDING_FRAME_NAME,
-    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame@DOT_MIN.html',
+    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame' + (this._isDebug ? '' : '.min') + '.html',
     openFrameUrl: this._loadingFrameUrl
   }, function (service) {
     this._frameService = service;
@@ -210,6 +211,9 @@ PayPal.prototype.tokenize = function (options, callback) {
     this._authorizationInProgress = true;
 
     analytics.sendEvent(client, 'paypal.tokenization.opened');
+    if (options.offerCredit === true && options.flow === 'checkout') {
+      analytics.sendEvent(client, 'paypal.credit.offered');
+    }
     this._navigateFrameToAuth(options, callback);
     // This MUST happen after _navigateFrameToAuth for Metro browsers to work.
     this._frameService.open(this._createFrameServiceCallback(options, callback));
@@ -242,6 +246,7 @@ PayPal.prototype._createFrameServiceCallback = function (options, callback) {
 };
 
 PayPal.prototype._tokenizePayPal = function (options, params, callback) {
+  var payload;
   var client = this._client;
 
   this._frameService.redirect(this._loadingFrameUrl);
@@ -262,8 +267,13 @@ PayPal.prototype._tokenizePayPal = function (options, params, callback) {
         }
       }));
     } else {
+      payload = this._formatTokenizePayload(response);
+
       analytics.sendEvent(client, 'paypal.tokenization.success');
-      callback(null, this._formatTokenizePayload(response));
+      if (payload.creditFinancingOffered) {
+        analytics.sendEvent(client, 'paypal.credit.accepted');
+      }
+      callback(null, payload);
     }
     this._frameService.close();
   }.bind(this));
@@ -375,8 +385,8 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
   var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
   var serviceId = this._frameService._serviceId;
   var paymentResource = {
-    returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-redirect-frame@DOT_MIN.html?channel=' + serviceId,
-    cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-cancel-frame@DOT_MIN.html?channel=' + serviceId,
+    returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-redirect-frame' + (this._isDebug ? '' : '.min') + '.html?channel=' + serviceId,
+    cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-cancel-frame' + (this._isDebug ? '' : '.min') + '.html?channel=' + serviceId,
     correlationId: serviceId,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,

@@ -20,14 +20,14 @@ describe('Credit Card Input', function () {
   });
 
   describe('maxlength', function () {
-    it('has a default maxlength of 19', function () {
+    it('has a default maxlength of 22', function () {
       expect(this.input.element.getAttribute('maxlength')).to.equal('22');
     });
 
     it('should update maxlength based on number', function () {
       this.input.element.value = '4111';
       this.input.model.set('number.value', '4111');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
 
       this.input.element.value = '';
       this.input.model.set('number.value', '');
@@ -52,7 +52,7 @@ describe('Credit Card Input', function () {
 
       this.input.element.value = '411';
       this.input.model.set('number.value', '411');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
 
       this.input.element.value = '6282001509099283';
       this.input.model.set('number.value', '6282001509099283');

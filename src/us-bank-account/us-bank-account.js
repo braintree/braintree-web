@@ -170,19 +170,17 @@ USBankAccount.prototype._tokenizeBankDetails = function (options, callback) {
       Authorization: 'Bearer ' + apiConfig.accessToken,
       'Braintree-Version': '2016-08-25'
     },
-    data: {
+    data: camelCaseToSnakeCase({
       type: 'us_bank_account',
-      /* eslint-disable camelcase */
-      routing_number: bankDetails.routingNumber,
-      account_number: bankDetails.accountNumber,
-      account_holder_name: bankDetails.accountHolderName,
-      account_type: bankDetails.accountType,
-      billing_address: camelCaseToSnakeCase(bankDetails.billingAddress),
-      ach_mandate: {
+      routingNumber: bankDetails.routingNumber,
+      accountNumber: bankDetails.accountNumber,
+      accountHolderName: bankDetails.accountHolderName,
+      accountType: bankDetails.accountType,
+      billingAddress: camelCaseToSnakeCase(bankDetails.billingAddress),
+      achMandate: {
         text: options.mandateText
       }
-      /* eslint-enable camelcase */
-    }
+    })
   }, function (err, response, status) {
     var error;
 
@@ -254,16 +252,14 @@ USBankAccount.prototype._tokenizeBankLogin = function (options, callback) {
             Authorization: 'Bearer ' + apiConfig.accessToken,
             'Braintree-Version': '2016-08-25'
           },
-          data: {
+          data: camelCaseToSnakeCase({
             type: 'plaid_public_token',
-            /* eslint-disable camelcase */
-            public_token: publicToken,
-            account_id: metadata.account_id,
-            ach_mandate: {
+            publicToken: publicToken,
+            accountId: metadata.account_id,
+            achMandate: {
               text: options.mandateText
             }
-            /* eslint-enable camelcase */
-          }
+          })
         }, function (tokenizeErr, response, status) {
           var error;
 

@@ -1,0 +1,13 @@
+[
+  "american-express",
+  "apple-pay",
+  "client",
+  "data-collector",
+  "hosted-fields",
+  "paypal",
+  "paypal-checkout",
+  "three-d-secure",
+  "unionpay",
+  "us-bank-account",
+  "visa-checkout"
+]

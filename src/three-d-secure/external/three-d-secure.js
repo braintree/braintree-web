@@ -11,7 +11,7 @@ var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
 var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 var events = require('../shared/events');
-var version = require('package.version');
+var VERSION = process.env.npm_package_version;
 var iFramer = require('iframer');
 
 var IFRAME_HEIGHT = 400;
@@ -37,6 +37,7 @@ var IFRAME_WIDTH = 400;
 function ThreeDSecure(options) {
   this._options = options;
   this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.assetsUrl;
+  this._isDebug = options.client.getConfiguration().isDebug;
   this._client = options.client;
 }
 
@@ -223,7 +224,7 @@ ThreeDSecure.prototype._createIframe = function (options) {
     merchantUrl: location.href
   });
 
-  authenticationCompleteBaseUrl = this._assetsUrl + '/web/' + version + '/html/three-d-secure-authentication-complete-frame.html?channel=' + encodeURIComponent(this._bus.channel) + '&';
+  authenticationCompleteBaseUrl = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-authentication-complete-frame.html?channel=' + encodeURIComponent(this._bus.channel) + '&';
 
   if (parentURL.indexOf('#') > -1) {
     parentURL = parentURL.split('#')[0];
@@ -233,7 +234,7 @@ ThreeDSecure.prototype._createIframe = function (options) {
     reply({
       acsUrl: response.acsUrl,
       pareq: response.pareq,
-      termUrl: response.termUrl + '&three_d_secure_version=' + version + '&authentication_complete_base_url=' + encodeURIComponent(authenticationCompleteBaseUrl),
+      termUrl: response.termUrl + '&three_d_secure_version=' + VERSION + '&authentication_complete_base_url=' + encodeURIComponent(authenticationCompleteBaseUrl),
       md: response.md,
       parentUrl: parentURL
     });
@@ -243,7 +244,7 @@ ThreeDSecure.prototype._createIframe = function (options) {
     this._handleAuthResponse(data, options);
   }.bind(this));
 
-  url = this._assetsUrl + '/web/' + version + '/html/three-d-secure-bank-frame@DOT_MIN.html';
+  url = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-bank-frame' + (this._isDebug ? '' : '.min') + '.html';
 
   this._bankIframe = iFramer({
     src: url,

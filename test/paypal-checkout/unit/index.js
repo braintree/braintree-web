@@ -3,14 +3,12 @@
 var create = require('../../../src/paypal-checkout').create;
 var PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
 var Promise = require('../../../src/lib/promise');
+var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var browserDetection = require('../../../src/lib/browser-detection');
 var BraintreeError = require('../../../src/lib/braintree-error');
+var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 var version = require('../../../package.json').version;
-
-function rejectIfResolves() {
-  throw new Error('should not resolve');
-}
 
 describe('paypalCheckout.create', function () {
   beforeEach(function () {
@@ -21,10 +19,27 @@ describe('paypalCheckout.create', function () {
 
     this.configuration = configuration;
     this.client = {
+      _request: this.sandbox.stub(),
       getConfiguration: function () {
         return configuration;
       }
     };
+  });
+
+  it('sends an analytics event on component creation', function (done) {
+    var client = this.client;
+
+    this.sandbox.stub(analytics, 'sendEvent');
+
+    create({
+      client: client,
+      displayName: 'Awesome Merchant'
+    }, function (err) {
+      expect(err).not.to.exist;
+      expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.initialized');
+
+      done();
+    });
   });
 
   context('with promises', function () {
@@ -34,49 +49,45 @@ describe('paypalCheckout.create', function () {
       expect(promise).to.be.an.instanceof(Promise);
     });
 
-    it('errors out if no client given', function (done) {
-      create({}).then(rejectIfResolves).catch(function (err) {
+    it('errors out if no client given', function () {
+      return create({}).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
         expect(err.message).to.equal('options.client is required when instantiating PayPal Checkout.');
-        done();
       });
     });
 
-    it('errors out if client version does not match', function (done) {
+    it('errors out if client version does not match', function () {
       this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
 
-      create({client: this.client}).then(rejectIfResolves).catch(function (err) {
+      return create({client: this.client}).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
         expect(err.message).to.equal('Client (version 1.2.3) and PayPal Checkout (version ' + version + ') components must be from the same SDK version.');
-        done();
       });
     });
 
-    it('errors out if paypal is not enabled for the merchant', function (done) {
+    it('errors out if paypal is not enabled for the merchant', function () {
       this.configuration.gatewayConfiguration.paypalEnabled = false;
 
-      create({client: this.client}).then(rejectIfResolves).catch(function (err) {
+      return create({client: this.client}).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('PAYPAL_NOT_ENABLED');
         expect(err.message).to.equal('PayPal is not enabled for this merchant.');
-        done();
       });
     });
 
-    it('errors out if browser does not support popups', function (done) {
+    it('errors out if browser does not support popups', function () {
       this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
 
-      create({client: this.client}).then(rejectIfResolves).catch(function (err) {
+      return create({client: this.client}).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
         expect(err.code).to.equal('PAYPAL_BROWSER_NOT_SUPPORTED');
         expect(err.message).to.equal('Browser is not supported.');
-        done();
       });
     });
 

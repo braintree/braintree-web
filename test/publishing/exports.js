@@ -1,61 +1,47 @@
 'use strict';
 
-var VERSION = require('../../dist/published/package.json').version;
-var braintree = require('../../dist/published');
-var braintreeDebug = require('../../dist/published/debug');
 var expect = require('chai').expect;
-var components = {
-  client: {
-    index: require('../../dist/published/client'),
-    debug: require('../../dist/published/client.debug')
-  },
-  dataCollector: {
-    index: require('../../dist/published/data-collector'),
-    debug: require('../../dist/published/data-collector.debug')
-  },
-  applePay: {
-    index: require('../../dist/published/apple-pay'),
-    debug: require('../../dist/published/apple-pay.debug')
-  },
-  hostedFields: {
-    index: require('../../dist/published/hosted-fields'),
-    debug: require('../../dist/published/hosted-fields.debug')
-  },
-  paypal: {
-    index: require('../../dist/published/paypal'),
-    debug: require('../../dist/published/paypal.debug')
-  },
-  paypalCheckout: {
-    index: require('../../dist/published/paypal-checkout'),
-    debug: require('../../dist/published/paypal-checkout.debug')
-  },
-  americanExpress: {
-    index: require('../../dist/published/american-express'),
-    debug: require('../../dist/published/american-express.debug')
-  },
-  unionpay: {
-    index: require('../../dist/published/unionpay'),
-    debug: require('../../dist/published/unionpay.debug')
-  },
-  usBankAccount: {
-    index: require('../../dist/published/us-bank-account'),
-    debug: require('../../dist/published/us-bank-account.debug')
-  },
-  threeDSecure: {
-    index: require('../../dist/published/three-d-secure'),
-    debug: require('../../dist/published/three-d-secure.debug')
-  }
-};
+var VERSION = require('../../package.json').version;
+var braintreeNpm = require('../../dist/npm');
+var braintreeBower = require('../../dist/bower');
+var braintreeDebug = require('../../dist/bower/debug');
+var braintreeHosted = require('../../dist/hosted/web/' + VERSION + '/js/index');
+var braintreeMin = require('../../dist/hosted/web/' + VERSION + '/js/index.min');
+var components = require('../helpers/components')
+  .components
+  .reduce(function (result, component) {
+    result[component] = {
+      npm: require('../../dist/npm/' + component),
+      bower: require('../../dist/bower/' + component),
+      bowerDebug: require('../../dist/bower/' + component + '.debug'),
+      hosted: require('../../dist/hosted/web/' + VERSION + '/js/' + component),
+      hostedMin: require('../../dist/hosted/web/' + VERSION + '/js/' + component + '.min')
+    };
+
+    return result;
+  }, {});
 
 describe('braintree module', function () {
   it('exports VERSION', function () {
-    expect(braintree.VERSION).to.equal(VERSION);
+    expect(braintreeNpm.VERSION).to.equal(VERSION);
+    expect(braintreeBower.VERSION).to.equal(VERSION);
     expect(braintreeDebug.VERSION).to.equal(VERSION);
+    expect(braintreeHosted.VERSION).to.equal(VERSION);
+    expect(braintreeMin.VERSION).to.equal(VERSION);
   });
 
   it('exports components', function () {
-    expect(braintree).to.include.keys(Object.keys(components));
-    expect(braintreeDebug).to.include.keys(Object.keys(components));
+    var keys = Object.keys(components).map(function (key) {
+      return key.replace(/-./g, function (str) {
+        return str[1].toUpperCase();
+      });
+    });
+
+    expect(braintreeNpm).to.include.keys(keys);
+    expect(braintreeBower).to.include.keys(keys);
+    expect(braintreeDebug).to.include.keys(keys);
+    expect(braintreeHosted).to.include.keys(keys);
+    expect(braintreeMin).to.include.keys(keys);
   });
 });
 
@@ -65,8 +51,11 @@ describe('component modules', function () {
 
     for (key in components) {
       if (!components.hasOwnProperty(key)) { continue; }
-      expect(components[key].index.VERSION).to.equal(VERSION);
-      expect(components[key].debug.VERSION).to.equal(VERSION);
+      expect(components[key].npm.VERSION).to.equal(VERSION);
+      expect(components[key].bower.VERSION).to.equal(VERSION);
+      expect(components[key].bowerDebug.VERSION).to.equal(VERSION);
+      expect(components[key].hosted.VERSION).to.equal(VERSION);
+      expect(components[key].hostedMin.VERSION).to.equal(VERSION);
     }
   });
 
@@ -75,8 +64,11 @@ describe('component modules', function () {
 
     for (key in components) {
       if (!components.hasOwnProperty(key)) { continue; }
-      expect(components[key].index.create).to.be.a('function');
-      expect(components[key].debug.create).to.be.a('function');
+      expect(components[key].npm.create).to.be.a('function');
+      expect(components[key].bower.create).to.be.a('function');
+      expect(components[key].bowerDebug.create).to.be.a('function');
+      expect(components[key].hosted.create).to.be.a('function');
+      expect(components[key].hostedMin.create).to.be.a('function');
     }
   });
 });

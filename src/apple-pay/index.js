@@ -9,10 +9,10 @@ var BraintreeError = require('../lib/braintree-error');
 var ApplePay = require('./apple-pay');
 var analytics = require('../lib/analytics');
 var deferred = require('../lib/deferred');
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var sharedErrors = require('../lib/errors');
+var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var errors = require('./errors');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 
 /**
  * @static

@@ -74,8 +74,9 @@ describe('three-d-secure.create', function () {
     });
   });
 
-  it('errors out if browser is not https', function (done) {
+  it('errors out if browser is not https and environment is production', function (done) {
     browserDetection.isHTTPS.restore();
+    this.configuration.gatewayConfiguration.environment = 'production';
     this.sandbox.stub(browserDetection, 'isHTTPS', function () { return false; });
 
     threeDSecure.create({client: this.client}, function (err, thingy) {
@@ -84,6 +85,21 @@ describe('three-d-secure.create', function () {
       expect(err.code).to.eql('THREEDS_HTTPS_REQUIRED');
       expect(err.message).to.equal('3D Secure requires HTTPS.');
       expect(thingy).not.to.exist;
+      done();
+    });
+  });
+
+  it('allows http connections when not in production', function (done) {
+    this.sandbox.stub(analytics, 'sendEvent');
+
+    browserDetection.isHTTPS.restore();
+    this.configuration.gatewayConfiguration.environment = 'sandbox';
+    this.sandbox.stub(browserDetection, 'isHTTPS').returns(false);
+
+    threeDSecure.create({client: this.client}, function (err, foo) {
+      expect(err).not.to.exist;
+      expect(foo).to.be.an.instanceof(ThreeDSecure);
+
       done();
     });
   });

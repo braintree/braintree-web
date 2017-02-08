@@ -133,7 +133,13 @@ describe('internal', function () {
       this.fakeDescription = 'fake description';
       this.fakeOptions = {foo: 'bar'};
 
+      this.configuration = fake.configuration();
+      delete this.configuration.gatewayConfiguration.braintreeApi;
+
       this.goodClient = {
+        getConfiguration: function () {
+          return self.configuration;
+        },
         request: function (_, callback) {
           callback(null, {
             creditCards: [{
@@ -148,6 +154,9 @@ describe('internal', function () {
       };
 
       this.badClient = {
+        getConfiguration: function () {
+          return self.configuration;
+        },
         request: function (_, callback) {
           callback(fakeError, null, 500);
         }
@@ -217,29 +226,86 @@ describe('internal', function () {
       });
     });
 
-    it('sends an analytics event if tokenization fails', function () {
-      create(this.badClient, this.validCardForm)(this.fakeOptions, function () {});
+    it('replies with an error with a non-object `gateways` option', function (done) {
+      create(this.goodClient, this.validCardForm)({
+        gateways: 'clientApi'
+      }, function (arg) {
+        var err = arg[0];
+        var result = arg[1];
 
-      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'custom.hosted-fields.tokenization.failed');
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INVALID_OPTION');
+        expect(err.message).to.equal('options.gateways is invalid.');
+        expect(result).not.to.exist;
+
+        done();
+      });
     });
 
-    it('replies with data if tokenization succeeds', function () {
-      var reply = this.sandbox.spy();
+    it('replies with an error with an empty `gateways` option', function (done) {
+      create(this.goodClient, this.validCardForm)({
+        gateways: {}
+      }, function (arg) {
+        var err = arg[0];
+        var result = arg[1];
 
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, reply);
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INVALID_OPTION');
+        expect(err.message).to.equal('options.gateways is invalid.');
+        expect(result).not.to.exist;
 
-      expect(reply).to.have.been.calledWith([null, {
-        nonce: this.fakeNonce,
-        details: this.fakeDetails,
-        description: this.fakeDescription,
-        type: this.fakeType
-      }]);
+        done();
+      });
     });
 
-    it('sends an analytics event if tokenization succeeds', function () {
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
+    it('replies with an error without a clientApi gateway', function (done) {
+      create(this.goodClient, this.validCardForm)({
+        gateways: {
+          braintreeApi: true
+        }
+      }, function (arg) {
+        var err = arg[0];
+        var result = arg[1];
 
-      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'custom.hosted-fields.tokenization.succeeded');
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('INVALID_OPTION');
+        expect(err.message).to.equal('options.gateways is invalid.');
+        expect(result).not.to.exist;
+
+        done();
+      });
+    });
+
+    it('sends an analytics event if tokenization fails', function (done) {
+      create(this.badClient, this.validCardForm)(this.fakeOptions, function () {
+        expect(analytics.sendEvent).to.have.been.calledWith(this.badClient, 'custom.hosted-fields.tokenization.failed');
+
+        done();
+      }.bind(this));
+    });
+
+    it('replies with data if Client API tokenization succeeds', function (done) {
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (arg) {
+        expect(arg).to.deep.equal([null, {
+          nonce: this.fakeNonce,
+          details: this.fakeDetails,
+          description: this.fakeDescription,
+          type: this.fakeType
+        }]);
+
+        done();
+      }.bind(this));
+    });
+
+    it('sends an analytics event if tokenization succeeds', function (done) {
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+        expect(analytics.sendEvent).to.have.been.calledWith(this.goodClient, 'custom.hosted-fields.tokenization.succeeded');
+
+        done();
+      }.bind(this));
     });
 
     it('replies with an error if all fields are empty', function (done) {
@@ -305,6 +371,282 @@ describe('internal', function () {
             }
           }
         }
+      });
+    });
+
+    it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration or client-side option", function () {
+      this.sandbox.stub(this.goodClient, 'request');
+      this.fakeOptions.gateways = {
+        clientApi: true
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
+
+      expect(this.goodClient.request).not.to.be.calledWithMatch({
+        api: 'braintreeApi'
+      });
+    });
+
+    it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration, even if it's enabled client-side", function () {
+      this.sandbox.stub(this.goodClient, 'request');
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
+
+      expect(this.goodClient.request).not.to.be.calledWithMatch({
+        api: 'braintreeApi'
+      });
+    });
+
+    it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration or even present, even if enabled client-side", function () {
+      this.sandbox.stub(this.goodClient, 'request');
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+      delete this.configuration.gatewayConfiguration.creditCards.supportedGateways;
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
+
+      expect(this.goodClient.request).not.to.be.calledWithMatch({
+        api: 'braintreeApi'
+      });
+    });
+
+    it("doesn't make a request to the Braintree API if it's not enabled by a client-side option", function () {
+      this.sandbox.stub(this.goodClient, 'request');
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
+
+      expect(this.goodClient.request).not.to.be.calledWithMatch({
+        api: 'braintreeApi'
+      });
+    });
+
+    it("makes a request to the Braintree API if it's enabled, in addition to the Client API", function (done) {
+      this.sandbox.stub(this.goodClient, 'request');
+      this.configuration.gatewayConfiguration.braintreeApi = {};
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (err) {
+        if (err) { throw err; }
+        done();
+      });
+
+      expect(this.goodClient.request).to.be.calledWithMatch({
+        api: 'clientApi',
+        endpoint: 'payment_methods/credit_cards',
+        method: 'post'
+      });
+
+      expect(this.goodClient.request).to.be.calledWithMatch({
+        api: 'braintreeApi',
+        endpoint: 'tokens',
+        method: 'post',
+        timeout: 2000
+      });
+
+      done();
+    });
+
+    it('returns combined data from the Braintree and Client APIs', function (done) {
+      this.configuration.gatewayConfiguration.braintreeApi = {};
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      this.goodClient.request = function (options, callback) {
+        if (options.api === 'clientApi') {
+          callback(null, {
+            creditCards: [{
+              nonce: 'clientApi-nonce',
+              details: {
+                cardType: 'Visa',
+                lastTwo: '11'
+              },
+              description: 'ending in 69',
+              type: 'CreditCard'
+            }]
+          });
+        } else if (options.api === 'braintreeApi') {
+          callback(null, {
+            data: {
+              id: 'braintreeApi-token',
+              brand: 'visa',
+              last_4: '1111', // eslint-disable-line camelcase
+              description: 'Visa credit card ending in - 1111',
+              type: 'credit_card'
+            }
+          });
+        }
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
+        var err = args[0];
+        var result = args[1];
+
+        expect(err).not.to.exist;
+        expect(result).to.deep.equal({
+          nonce: 'clientApi-nonce',
+          braintreeApiToken: 'braintreeApi-token',
+          details: {
+            cardType: 'Visa',
+            lastTwo: '11'
+          },
+          description: 'ending in 69',
+          type: 'CreditCard'
+        });
+
+        done();
+      });
+    });
+
+    it('returns Braintree API data if Client API has a network failure and Braintree API succeeds', function (done) {
+      this.configuration.gatewayConfiguration.braintreeApi = {};
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      this.goodClient.request = function (options, callback) {
+        if (options.api === 'clientApi') {
+          callback(new Error('it failed'), null, 500);
+        } else if (options.api === 'braintreeApi') {
+          callback(null, {
+            data: {
+              id: 'braintreeApi-token',
+              brand: 'visa',
+              last_4: '1234', // eslint-disable-line camelcase
+              description: 'Visa credit card ending in - 1234',
+              type: 'credit_card'
+            }
+          });
+        }
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
+        var err = args[0];
+        var result = args[1];
+
+        expect(err).not.to.exist;
+        expect(result).to.deep.equal({
+          braintreeApiToken: 'braintreeApi-token',
+          details: {
+            cardType: 'Visa',
+            lastTwo: '34'
+          },
+          description: 'ending in 34',
+          type: 'CreditCard'
+        });
+
+        done();
+      });
+    });
+
+    it('returns Client API data if it succeeds but Braintree API fails', function (done) {
+      this.configuration.gatewayConfiguration.braintreeApi = {};
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      this.goodClient.request = function (options, callback) {
+        if (options.api === 'clientApi') {
+          callback(null, {
+            creditCards: [{
+              nonce: 'clientApi-nonce',
+              details: {
+                cardType: 'Visa',
+                lastTwo: '11'
+              },
+              description: 'ending in 69',
+              type: 'CreditCard'
+            }]
+          });
+        } else if (options.api === 'braintreeApi') {
+          callback(new Error('it failed'), null, 500);
+        }
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
+        var err = args[0];
+        var result = args[1];
+
+        expect(err).not.to.exist;
+        expect(result).to.deep.equal({
+          nonce: 'clientApi-nonce',
+          details: {
+            cardType: 'Visa',
+            lastTwo: '11'
+          },
+          description: 'ending in 69',
+          type: 'CreditCard'
+        });
+
+        done();
+      });
+    });
+
+    it('sends Client API error when both Client and Braintree APIs fail', function (done) {
+      var fakeErr = new Error('it failed');
+
+      this.configuration.gatewayConfiguration.braintreeApi = {};
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      this.goodClient.request = function (options, callback) {
+        callback(fakeErr, null, 500);
+      };
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
+        var err = args[0];
+        var result = args[1];
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR');
+        expect(err.message).to.equal('A tokenization network error occurred.');
+        expect(err.details.originalError).to.equal(fakeErr);
+
+        expect(result).not.to.exist;
+
+        done();
       });
     });
   });

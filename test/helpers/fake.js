@@ -10,13 +10,20 @@ function configuration() {
       environment: 'development',
       configUrl: 'https://braintreegateway.com/config',
       clientApiUrl: 'https://braintreegateway.com',
+      creditCards: {
+        supportedGateways: [
+          {
+            name: 'clientApi'
+          }
+        ]
+      },
       applePayWeb: {
         merchantIdentifier: 'com.example.test-merchant-identifier',
         supportedNetworks: ['visa', 'amex', 'mastercard']
       },
       braintreeApi: {
         accessToken: 'fakeToken',
-        url: 'https://braintree-api-endpoint.com'
+        url: 'https://example.braintree-api.com'
       },
       paypal: {
         assetsUrl: 'https://example.com:9292',
@@ -24,6 +31,11 @@ function configuration() {
       },
       analytics: {
         url: 'https://braintreegateway.com/analytics'
+      },
+      visaCheckout: {
+        apikey: 'gwApikey',
+        externalClientId: 'gwExternalClientId',
+        supportedCardTypes: ['Visa', 'MasterCard', 'Discover', 'American Express']
       }
     },
     analyticsMetadata: {

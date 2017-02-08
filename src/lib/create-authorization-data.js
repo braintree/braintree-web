@@ -7,11 +7,9 @@ var apiUrls = {
   sandbox: 'https://api.sandbox.braintreegateway.com:443'
 };
 
-/* eslint-disable no-undef,block-scoped-var */
 if (process.env.BRAINTREE_JS_ENV === 'development') {
   apiUrls.development = process.env.BRAINTREE_JS_API_PROTOCOL + '://' + process.env.BRAINTREE_JS_API_HOST + ':' + process.env.BRAINTREE_JS_API_PORT;
 }
-/* eslint-enable no-undef,block-scoped-var */
 
 function _isTokenizationKey(str) {
   return /^[a-zA-Z0-9]+_[a-zA-Z0-9]+_[a-zA-Z0-9_]+$/.test(str);

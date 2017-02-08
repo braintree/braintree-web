@@ -30,9 +30,8 @@ function forkBrowserify(options, done) {
   buildCmd = [
     `browserify -p browserify-derequire --no-builtins ${flags} ${standalone} ${transforms} "${options.main}"`,
     `cat ${prependFiles} - ${appendFiles}`,
-    `tee >(sed -e 's/@DOT_MIN//g' > "${unminifiedFile}")`,
-    `uglifyjs -m -c`,
-    `sed -e 's/@DOT_MIN/.min/g' > "${minifiedFile}"`
+    `tee "${unminifiedFile}"`,
+    `uglifyjs -m -c -o "${minifiedFile}"`
   ].join('|');
 
   function callback(err, stdout, stderr) {

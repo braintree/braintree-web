@@ -4,13 +4,10 @@ var PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
+var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 var Promise = require('promise-polyfill');
 
 function noop() {}
-
-function throwIfResolves() {
-  throw new Error('should not get here');
-}
 
 describe('PayPalCheckout', function () {
   describe('Constructor', function () {
@@ -44,7 +41,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('rejects with error if options are not passed in', function () {
-        return this.paypalCheckout.createPayment(null).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.createPayment(null).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
@@ -53,7 +50,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('rejects with error if no flow option is passed', function () {
-        return this.paypalCheckout.createPayment({}).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.createPayment({}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
@@ -62,7 +59,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('rejects with error if invalid flow option is passed', function () {
-        return this.paypalCheckout.createPayment({flow: 'bar'}).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.createPayment({flow: 'bar'}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
@@ -79,7 +76,7 @@ describe('PayPalCheckout', function () {
 
         this.client.request.yields(gateway422Error, null, 422);
 
-        return this.paypalCheckout.createPayment({flow: 'vault'}).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.MERCHANT);
           expect(err.code).to.equal('PAYPAL_INVALID_PAYMENT_OPTION');
           expect(err.message).to.equal('PayPal payment options are invalid.');
@@ -94,7 +91,7 @@ describe('PayPalCheckout', function () {
 
         this.client.request.yields(gatewayError, null, 400);
 
-        return this.paypalCheckout.createPayment({flow: 'vault'}).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
           expect(err.code).to.equal('PAYPAL_FLOW_FAILED');
           expect(err.message).to.equal('Could not initialize PayPal flow.');
@@ -113,7 +110,7 @@ describe('PayPalCheckout', function () {
 
         this.client.request.yields(gatewayError, null, 400);
 
-        return this.paypalCheckout.createPayment({flow: 'vault'}).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
           expect(err.code).to.equal('CLIENT_REQUEST_ERROR');
           expect(err.message).to.equal('There was a problem with your request.');
@@ -283,6 +280,24 @@ describe('PayPalCheckout', function () {
 
       expect(analytics.sendEvent).to.be.calledOnce;
       expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.createPayment');
+    });
+
+    it('sends analytics event when offerCredit is true and using checkout flow', function () {
+      this.paypalCheckout.createPayment({flow: 'checkout', offerCredit: true});
+
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.offered');
+    });
+
+    it('does not send analytics event when offerCredit is true and using vault flow', function () {
+      this.paypalCheckout.createPayment({flow: 'vault', offerCredit: true});
+
+      expect(analytics.sendEvent).to.not.be.calledWith(this.client, 'paypal-checkout.credit.offered');
+    });
+
+    it('does not send analytics event when offerCredit is false and using checkout flow', function () {
+      this.paypalCheckout.createPayment({flow: 'checkout'});
+
+      expect(analytics.sendEvent).to.not.be.calledWith(this.client, 'paypal-checkout.credit.offered');
     });
 
     it('requests setup_billing_agreement url with vault flow', function () {
@@ -575,7 +590,7 @@ describe('PayPalCheckout', function () {
 
         this.client.request.yields(error);
 
-        return this.paypalCheckout.tokenizePayment({}).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('NETWORK');
           expect(err.code).to.equal('PAYPAL_ACCOUNT_TOKENIZATION_FAILED');
@@ -593,7 +608,7 @@ describe('PayPalCheckout', function () {
 
         this.client.request.yields(btError);
 
-        return this.paypalCheckout.tokenizePayment({}).then(throwIfResolves).catch(function (err) {
+        return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.equal(btError);
         });
       });
@@ -625,6 +640,38 @@ describe('PayPalCheckout', function () {
 
         return this.paypalCheckout.tokenizePayment({}).then(function (res) {
           expect(res.details).to.equal(accountDetails.payerInfo);
+        });
+      });
+
+      it('resolves with creditFinancingOffered if available', function () {
+        var accountDetails = {
+          creditFinancingOffered: {foo: 'bar'}
+        };
+
+        this.client.request.yields(null, {
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: accountDetails
+          }]
+        });
+
+        return this.paypalCheckout.tokenizePayment({}).then(function (res) {
+          expect(res.creditFinancingOffered).to.equal(accountDetails.creditFinancingOffered);
+        });
+      });
+
+      it('does not resolve with creditFinancingOffered when not available', function () {
+        this.client.request.yields(null, {
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: {}
+          }]
+        });
+
+        return this.paypalCheckout.tokenizePayment({}).then(function (res) {
+          expect(res.creditFinancingOffered).to.not.exist;
         });
       });
     });
@@ -693,6 +740,42 @@ describe('PayPalCheckout', function () {
           done();
         });
       });
+
+      it('returns creditFinancingOffered if available', function (done) {
+        var accountDetails = {
+          creditFinancingOffered: {foo: 'bar'}
+        };
+
+        this.client.request.yields(null, {
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: accountDetails
+          }]
+        });
+
+        this.paypalCheckout.tokenizePayment({}, function (err, res) {
+          expect(err).to.not.exist;
+          expect(res.creditFinancingOffered).to.equal(accountDetails.creditFinancingOffered);
+          done();
+        });
+      });
+
+      it('does not return creditFinancingOffered when not available', function (done) {
+        this.client.request.yields(null, {
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: {}
+          }]
+        });
+
+        this.paypalCheckout.tokenizePayment({}, function (err, res) {
+          expect(err).to.not.exist;
+          expect(res.creditFinancingOffered).not.to.exist;
+          done();
+        });
+      });
     });
 
     it('sends a tokenization event when tokenization starts', function () {
@@ -718,6 +801,22 @@ describe('PayPalCheckout', function () {
       this.paypalCheckout.tokenizePayment({});
 
       expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.success');
+    });
+
+    it('calls analytics event when credit offer is accepted', function () {
+      this.client.request.yields(null, {
+        paypalAccounts: [{
+          nonce: 'nonce',
+          type: 'PayPal',
+          details: {
+            creditFinancingOffered: {}
+          }
+        }]
+      });
+
+      this.paypalCheckout.tokenizePayment({});
+
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.accepted');
     });
 
     it('validates if flow is vault and auth is not tokenization key', function () {

@@ -38,7 +38,16 @@ describe('PayPal', function () {
     it('sets a loadingFrameUrl', function () {
       var pp = new PayPal({client: this.client});
 
-      expect(pp._loadingFrameUrl).to.equal(pp._assetsUrl + '/html/paypal-landing-frame@DOT_MIN.html');
+      expect(pp._loadingFrameUrl).to.equal(pp._assetsUrl + '/html/paypal-landing-frame.min.html');
+    });
+
+    it('sets a loadingFrameUrl in debug mode', function () {
+      var pp;
+
+      this.configuration.isDebug = true;
+      pp = new PayPal({client: this.client});
+
+      expect(pp._loadingFrameUrl).to.equal(pp._assetsUrl + '/html/paypal-landing-frame.html');
     });
 
     it('setup up authorization state', function () {
@@ -61,10 +70,28 @@ describe('PayPal', function () {
       PayPal.prototype._initialize.call(context, callback);
 
       expect(frameService.create).to.have.been.calledWith({
-        name: this.sandbox.match.string,
-        dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame@DOT_MIN.html',
-        openFrameUrl: 'fake-loading-frame-url'
-      }, this.sandbox.match.func);
+        name: sinon.match.string,
+        dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.min.html',
+        openFrameUrl: context._loadingFrameUrl
+      }, sinon.match.func);
+    });
+
+    it('instantiates FrameService with unminified assets in debug mode', function () {
+      var context = {
+        _assetsUrl: 'foo/bar',
+        _isDebug: true
+      };
+      var callback = this.sandbox.stub();
+
+      this.sandbox.stub(frameService, 'create');
+
+      PayPal.prototype._initialize.call(context, callback);
+
+      expect(frameService.create).to.have.been.calledWith({
+        name: sinon.match.string,
+        dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.html',
+        openFrameUrl: context._loadingFrameUrl
+      }, sinon.match.func);
     });
 
     it('assigns _frameService property on instance', function () {
@@ -738,6 +765,35 @@ describe('PayPal', function () {
         expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.opened');
       });
 
+      it('calls analytics when credit is offered and using checkout flow', function () {
+        var client = this.client;
+
+        this.tokenizeOptions.flow = 'checkout';
+        this.tokenizeOptions.offerCredit = true;
+        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+
+        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.credit.offered');
+      });
+
+      it('does not send credit.offered event when using vault flow', function () {
+        var client = this.client;
+
+        this.tokenizeOptions.flow = 'vault';
+        this.tokenizeOptions.offerCredit = true;
+        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+
+        expect(analytics.sendEvent).to.not.be.calledWith(client, 'paypal.credit.offered');
+      });
+
+      it('does not send credit.offered event when credit is not offered', function () {
+        var client = this.client;
+
+        this.tokenizeOptions.flow = 'checkout';
+        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+
+        expect(analytics.sendEvent).to.not.be.calledWith(client, 'paypal.credit.offered');
+      });
+
       it('calls analytics when the frame is closed by merchant', function () {
         var client = this.client;
         var result;
@@ -756,6 +812,40 @@ describe('PayPal', function () {
         result.close();
 
         expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.closed.by-merchant');
+      });
+
+      it('calls analytics when tokenization result has creditFinancingOffered', function () {
+        var fakeResponse = {
+          creditFinancingOffered: {}
+        };
+
+        this.context._formatTokenizeData = noop;
+        this.context._formatTokenizePayload = function () {
+          return fakeResponse;
+        };
+        this.context._client.request = function (stuff, callback) {
+          callback(null);
+        };
+        this.context._frameService.redirect = noop;
+        PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, noop);
+
+        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.credit.accepted');
+      });
+
+      it('does not send analytics when tokenization result does not have creditFinancingOffered', function () {
+        var fakeResponse = {};
+
+        this.context._formatTokenizeData = noop;
+        this.context._formatTokenizePayload = function () {
+          return fakeResponse;
+        };
+        this.context._client.request = function (stuff, callback) {
+          callback(null);
+        };
+        this.context._frameService.redirect = noop;
+        PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, noop);
+
+        expect(analytics.sendEvent).not.to.be.calledWith(this.context._client, 'paypal.credit.accepted');
       });
     });
   });

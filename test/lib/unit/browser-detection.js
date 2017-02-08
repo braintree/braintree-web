@@ -23,7 +23,8 @@ var AGENTS = {
   iPodWebview: 'Mozilla/5.0 (iPod; CPU OS 5_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Mobile/3A101a',
   iPhone_3_2Safari: 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B314 Safari/531.21.10',
   iPhone_9_3_1Safari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_3 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13E230 Safari/601.1',
-  iPhoneChrome: 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_1_1 like Mac OS X; en) AppleWebKit/534.46.0 (KHTML, like Gecko) CriOS/19.0.1084.60 Mobile/9B206 Safari/7534.48.3',
+  iPhoneUnsupportedChrome: 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_1_1 like Mac OS X; en) AppleWebKit/534.46.0 (KHTML, like Gecko) CriOS/47.0.1084.60 Mobile/9B206 Safari/7534.48.3',
+  iPhoneSupportedChrome: 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_1_1 like Mac OS X; en) AppleWebKit/534.46.0 (KHTML, like Gecko) CriOS/48.0.1084.60 Mobile/9B206 Safari/7534.48.3',
   iPhoneFirefox: 'Mozilla/5.0 (iPhone; CPU iPhone OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) FxiOS/1.0 Mobile/12F69 Safari/600.1.4',
   iPhoneWebview: 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_1 like Mac OS X; en-us) AppleWebKit/532.9 (KHTML, like Gecko) Mobile/8B117',
   iPhoneGoogleSearchAppWebview: 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_2 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) GSA/16.0.124986583 Mobile/13F69 Safari/600.1.4',
@@ -141,7 +142,8 @@ describe('browser-detection', function () {
     });
 
     it('returns true for iOS Chrome', function () {
-      expect(browserDetection.isIos(AGENTS.iPhoneChrome)).to.equal(true);
+      expect(browserDetection.isIos(AGENTS.iPhoneUnsupportedChrome)).to.equal(true);
+      expect(browserDetection.isIos(AGENTS.iPhoneSupportedChrome)).to.equal(true);
     });
 
     it('returns false for non-iOS browsers', function () {
@@ -188,6 +190,26 @@ describe('browser-detection', function () {
     });
   });
 
+  describe('isUnsupportedIosChrome', function () {
+    it('returns false for iOS Safari', function () {
+      var ua = AGENTS.iPhone_9_3_1Safari;
+
+      expect(browserDetection.isUnsupportedIosChrome(ua)).to.be.false;
+    });
+
+    it('returns true for iOS Chrome less than version 48', function () {
+      var ua = AGENTS.iPhoneUnsupportedChrome;
+
+      expect(browserDetection.isUnsupportedIosChrome(ua)).to.be.true;
+    });
+
+    it('returns true for iOS Chrome less than version 48', function () {
+      var ua = AGENTS.iPhoneSupportedChrome;
+
+      expect(browserDetection.isUnsupportedIosChrome(ua)).to.be.false;
+    });
+  });
+
   describe('supportsPopups', function () {
     it('returns false for webviews', function () {
       var key, ua;
@@ -205,12 +227,17 @@ describe('browser-detection', function () {
 
     it('returns true for browsers', function () {
       var key, ua;
+      var keysToSkip = [
+        'androidOperaMini',
+        'iPhoneUnsupportedChrome',
+        'iPhoneSupportedChrome'
+      ];
 
       for (key in AGENTS) {
         if (!AGENTS.hasOwnProperty(key)) {
           continue;
         }
-        if (key === 'androidOperaMini') {
+        if (keysToSkip.indexOf(key) > -1) {
           continue;
         }
         if (!/webview/i.test(key)) {
@@ -226,6 +253,14 @@ describe('browser-detection', function () {
 
     it('returns false for Opera Mini', function () {
       expect(browserDetection.supportsPopups(AGENTS.androidOperaMini)).to.be.false;
+    });
+
+    it('returns false for iOS Chrome less than 48', function () {
+      expect(browserDetection.supportsPopups(AGENTS.iPhoneUnsupportedChrome)).to.be.false;
+    });
+
+    it('returns true for iOS Chrome less than 48', function () {
+      expect(browserDetection.supportsPopups(AGENTS.iPhoneSupportedChrome)).to.be.true;
     });
   });
 });

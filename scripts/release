@@ -144,7 +144,7 @@ main() {
       confirm_version
       env BRAINTREE_JS_ENV=production gulp release:hosted
       ;;
-    published)
+    bower)
       confirm_destination "$BRAINTREE_JS_BOWER_DEST"
       reinstall_dependencies
       confirm_version
@@ -160,7 +160,7 @@ main() {
     *)
       echo "${YELLOW}${TASK}${RED} is not a valid option. Choose from the following:${RESET}"
       echo "* hosted"
-      echo "* published"
+      echo "* bower"
       echo "* jsdoc"
       echo "* source"
       exit 1

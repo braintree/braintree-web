@@ -2,10 +2,10 @@
 
 var constants = require('../shared/constants');
 
-module.exports = function composeUrl(assetsUrl, componentId) {
+module.exports = function composeUrl(assetsUrl, componentId, isDebug) {
   return assetsUrl +
     '/web/' +
     constants.VERSION +
-    '/html/hosted-fields-frame@DOT_MIN.html#' +
+    '/html/hosted-fields-frame' + (isDebug ? '' : '.min') + '.html#' +
     componentId;
 };

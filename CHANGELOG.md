@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+## 3.8.0
+
+* Pre-bundled files are now published to npm, fixing parsing errors when using webpack
+* Hosted Fields
+  * Fix a bug where Mobile Safari would not emit blur events consistently
+  * Add support for new Visa card numbers with 18 or 19 digits
+  * Add `setAttribute` to allow dynamic updating of input attributes
+  * Validate `setPlaceholder` to accept only strings and numbers
+* 3D Secure
+  * HTTPS is no longer required for sandbox environments
+* PayPal Checkout
+  * Return PayPal Credit financing details when calling `tokenizePayment`
+* American Express
+  * Fix bug where arguments to `getRewardsBalance` were mutated
+* PayPal
+  * Call callback with BROWSER_NOT_SUPPORTED error when using Chrome for iOS v47 or lower
+
 ## 3.7.0
 
 * Client

@@ -169,7 +169,7 @@ describe('USBankAccount', function () {
           expect(this.fakeClient._request).to.be.calledOnce;
           expect(this.fakeClient._request).to.be.calledWithMatch({
             method: 'POST',
-            url: 'https://braintree-api-endpoint.com/tokens',
+            url: 'https://example.braintree-api.com/tokens',
             headers: {
               Authorization: 'Bearer fakeToken',
               'Braintree-Version': '2016-08-25'
@@ -615,7 +615,7 @@ describe('USBankAccount', function () {
           expect(this.fakeClient._request).to.have.been.calledOnce;
           expect(this.fakeClient._request).to.have.been.calledWith({
             method: 'POST',
-            url: 'https://braintree-api-endpoint.com/tokens',
+            url: 'https://example.braintree-api.com/tokens',
             headers: {
               Authorization: 'Bearer fakeToken',
               'Braintree-Version': '2016-08-25'

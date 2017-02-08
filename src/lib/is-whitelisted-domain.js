@@ -4,10 +4,10 @@ var parser;
 var legalHosts = {
   'paypal.com': 1,
   'braintreepayments.com': 1,
-  'braintreegateway.com': 1
+  'braintreegateway.com': 1,
+  'braintree-api.com': 1
 };
 
-/* eslint-disable no-undef,block-scoped-var */
 if (process.env.BRAINTREE_JS_ENV === 'development') {
   legalHosts.localhost = 1;
 
@@ -18,7 +18,6 @@ if (process.env.BRAINTREE_JS_ENV === 'development') {
     legalHosts[stripSubdomains(process.env.BT_DEV_HOST)] = 1;
   }
 }
-/* eslint-enable no-undef,block-scoped-var */
 
 function stripSubdomains(domain) {
   return domain.split('.').slice(-2).join('.');

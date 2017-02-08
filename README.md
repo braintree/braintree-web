@@ -3,7 +3,7 @@ braintree-web
 
 A suite of tools for integrating Braintree in the browser.
 
-This is the repo to submit issues if you have any problems or questions about any v.zero JavaScript integration.
+This is the repo to submit issues if you have any problems or questions about any Braintree JavaScript integration.
 
 Install
 =======

@@ -11,7 +11,7 @@ var deferred = require('../lib/deferred');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var errors = require('./shared/errors');
 var sharedErrors = require('../lib/errors');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 
 /**
 * @static

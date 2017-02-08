@@ -5,9 +5,11 @@ var composeHostedFieldsUrl = require('../../hosted-fields/external/compose-url')
 function getCardForm(client, hostedFieldsInstance) {
   var i, frame;
   var frames = global.parent.frames;
-  var assetsUrl = client.getConfiguration().gatewayConfiguration.assetsUrl;
+  var clientConfig = client.getConfiguration();
+  var assetsUrl = clientConfig.gatewayConfiguration.assetsUrl;
+  var isDebug = clientConfig.isDebug;
   var hostedFieldsComponentId = hostedFieldsInstance._bus.channel;
-  var hostedFieldsFrameUrl = composeHostedFieldsUrl(assetsUrl, hostedFieldsComponentId);
+  var hostedFieldsFrameUrl = composeHostedFieldsUrl(assetsUrl, hostedFieldsComponentId, isDebug);
 
   for (i = 0; i < frames.length; i++) {
     frame = frames[i];

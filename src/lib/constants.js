@@ -1,6 +1,6 @@
 'use strict';
 
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 var PLATFORM = 'web';
 
 module.exports = {

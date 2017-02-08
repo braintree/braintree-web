@@ -11,6 +11,10 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'CLIENT_OPTION_REQUIRED'
   },
+  CLIENT_OPTION_INVALID: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'CLIENT_OPTION_INVALID'
+  },
   CLIENT_MISSING_GATEWAY_CONFIGURATION: {
     type: BraintreeError.types.INTERNAL,
     code: 'CLIENT_MISSING_GATEWAY_CONFIGURATION',

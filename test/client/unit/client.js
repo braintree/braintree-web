@@ -1,7 +1,7 @@
 'use strict';
 
 var Client = require('../../../src/client/client');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 var fake = require('../../helpers/fake');
 var BraintreeError = require('../../../src/lib/braintree-error');
 
@@ -72,6 +72,24 @@ describe('Client', function () {
         expect(err.type).to.equal(BraintreeError.types.MERCHANT);
         expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
         expect(err.message).to.equal('configUrl property is on an invalid domain.');
+        done();
+      }
+    });
+
+    it('throws an error when instantiated with invalid braintreeApi URL', function (done) {
+      try {
+        new Client({ // eslint-disable-line no-new
+          gatewayConfiguration: {
+            braintreeApi: {
+              url: 'http://example.com'
+            }
+          }
+        });
+      } catch (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.message).to.equal('braintreeApi URL is on an invalid domain.');
         done();
       }
     });
@@ -155,6 +173,64 @@ describe('Client', function () {
       });
     });
 
+    it('calls callback with an error when passed a bogus API', function (done) {
+      var client = new Client(fake.configuration());
+
+      client.request({
+        method: 'get',
+        endpoint: 'foo',
+        api: 'garbage'
+      }, function (err, data) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CLIENT_OPTION_INVALID');
+        expect(err.message).to.equal('options.api is invalid.');
+        expect(data).not.to.exist;
+
+        done();
+      });
+    });
+
+    it('calls callback with an error when passed an empty string as an API', function (done) {
+      var client = new Client(fake.configuration());
+
+      client.request({
+        method: 'get',
+        endpoint: 'foo',
+        api: ''
+      }, function (err, data) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CLIENT_OPTION_INVALID');
+        expect(err.message).to.equal('options.api is invalid.');
+        expect(data).not.to.exist;
+
+        done();
+      });
+    });
+
+    it('calls callback with an error when API is braintreeApi and braintreeApi is not available', function (done) {
+      var client;
+      var configuration = fake.configuration();
+
+      delete configuration.gatewayConfiguration.braintreeApi;
+      client = new Client(configuration);
+
+      client.request({
+        method: 'get',
+        endpoint: 'foo',
+        api: 'braintreeApi'
+      }, function (err, data) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('BRAINTREE_API_ACCESS_RESTRICTED');
+        expect(err.message).to.equal('Your access is restricted and cannot use this part of the Braintree API.');
+        expect(data).not.to.exist;
+
+        done();
+      });
+    });
+
     it('calls driver with client for source in _meta if source is not provided', function () {
       var client = new Client(fake.configuration());
 
@@ -170,7 +246,7 @@ describe('Client', function () {
       }));
     });
 
-    it('calls driver with full URL with GET if specified', function () {
+    it('calls driver with full URL with GET if specified and no API is specified', function () {
       var client = new Client(fake.configuration());
 
       this.sandbox.stub(client, '_request');
@@ -186,7 +262,41 @@ describe('Client', function () {
       }));
     });
 
-    it('calls driver with full URL with POST if specified', function () {
+    it('calls driver with full URL with GET if specified and API is clientApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'clientApi',
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        method: 'get',
+        url: 'https://braintreegateway.com/v1/payment_methods'
+      }));
+    });
+
+    it('calls driver with full URL with GET if specified and API is braintreeApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'status',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        method: 'get',
+        url: 'https://example.braintree-api.com/status'
+      }));
+    });
+
+    it('calls driver with full URL with POST if specified and API is unspecified', function () {
       var client = new Client(fake.configuration());
 
       this.sandbox.stub(client, '_request');
@@ -202,7 +312,41 @@ describe('Client', function () {
       }));
     });
 
-    it('calls driver with library version', function () {
+    it('calls driver with full URL with POST if specified and API is clientApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'clientApi',
+        endpoint: 'payment_methods',
+        method: 'post'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        url: 'https://braintreegateway.com/v1/payment_methods',
+        method: 'post'
+      }));
+    });
+
+    it('calls driver with full URL with POST if specified and API is unspecified', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'fooboo',
+        method: 'post'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        url: 'https://example.braintree-api.com/fooboo',
+        method: 'post'
+      }));
+    });
+
+    it('calls driver with library version when API is unspecified', function () {
       var client = new Client(fake.configuration());
 
       this.sandbox.stub(client, '_request');
@@ -217,12 +361,60 @@ describe('Client', function () {
       }));
     });
 
-    it('calls driver with sessionId in _meta', function () {
+    it('calls driver with library version when API is clientApi', function () {
       var client = new Client(fake.configuration());
 
       this.sandbox.stub(client, '_request');
 
       client.request({
+        api: 'clientApi',
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
+      }));
+    });
+
+    it('calls driver with no library version when API is braintreeApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).not.to.have.been.calledWith(this.sandbox.match({
+        data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
+      }));
+    });
+
+    it('calls driver with sessionId in _meta when API is unspecified', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        data: {_meta: {sessionId: client.getConfiguration().analyticsMetadata.sessionId}}
+      }));
+    });
+
+    it('calls driver with sessionId in _meta when API is clientApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'clientApi',
         endpoint: 'payment_methods',
         method: 'get'
       }, function () {});
@@ -265,6 +457,56 @@ describe('Client', function () {
       }));
     });
 
+    it("doesn't set headers when API is unspecified", function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        endpoint: 'cool',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).not.to.have.been.calledWith(this.sandbox.match({
+        headers: this.sandbox.match.defined
+      }));
+    });
+
+    it("doesn't set headers when API is clientApi", function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'clientApi',
+        endpoint: 'cool',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).not.to.have.been.calledWith(this.sandbox.match({
+        headers: this.sandbox.match.defined
+      }));
+    });
+
+    it('sets headers when API is braintreeApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'cool',
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        headers: {
+          'Braintree-Version': '2016-10-07',
+          Authorization: 'Bearer fakeToken'
+        }
+      }));
+    });
+
     it('passes through timeout to driver', function () {
       var client = new Client(fake.configuration());
 
@@ -281,7 +523,7 @@ describe('Client', function () {
       }));
     });
 
-    it('passes through data to driver', function () {
+    it('passes through data to driver when API is unspecified', function () {
       var client = new Client(fake.configuration());
 
       this.sandbox.stub(client, '_request', function () {});
@@ -295,6 +537,43 @@ describe('Client', function () {
       expect(client._request).to.have.been.calledWith(this.sandbox.match({
         data: {some: 'stuffs'}
       }));
+    });
+
+    it('passes through data to driver when API is clientApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request', function () {});
+
+      client.request({
+        api: 'clientApi',
+        endpoint: 'payment_methods',
+        data: {some: 'stuffs'},
+        method: 'get'
+      }, function () {});
+
+      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+        data: {some: 'stuffs'}
+      }));
+    });
+
+    it('passes through unmodified data to driver when API is braintreeApi', function () {
+      var actualData;
+      var expectedData = {foo: 'boo'};
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request', function () {});
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'tokens',
+        data: expectedData,
+        method: 'get'
+      }, function () {});
+
+      actualData = client._request.getCall(0).args[0].data;
+
+      expect(actualData).to.equal(expectedData);
+      expect(expectedData).to.deep.equal({foo: 'boo'});
     });
 
     it('returns BraintreeError for authorization if driver has a 403', function (done) {
@@ -392,29 +671,6 @@ describe('Client', function () {
         expect(status).to.equal(500);
         done();
       });
-    });
-
-    it('sends headers if provided', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        endpoint: 'payment_methods',
-        method: 'post',
-        _headers: {
-          Foo: 'foo',
-          Bar: 'bar'
-        }
-      }, function () {});
-
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
-        headers: {
-          Foo: 'foo',
-          Bar: 'bar'
-        },
-        data: {_meta: {source: 'client'}}
-      }));
     });
   });
 });

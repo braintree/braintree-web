@@ -3,8 +3,8 @@
 var BraintreeError = require('../lib/braintree-error');
 var Client = require('./client');
 var getConfiguration = require('./get-configuration').getConfiguration;
+var VERSION = process.env.npm_package_version;
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
-var packageVersion = require('package.version');
 var deferred = require('../lib/deferred');
 var sharedErrors = require('../lib/errors');
 
@@ -49,6 +49,10 @@ function create(options, callback) {
       return;
     }
 
+    if (options.debug) {
+      configuration.isDebug = true;
+    }
+
     try {
       client = new Client(configuration);
     } catch (clientCreationError) {
@@ -66,5 +70,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: packageVersion
+  VERSION: VERSION
 };

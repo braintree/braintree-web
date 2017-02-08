@@ -112,6 +112,24 @@ describe('AmericanExpress', function () {
         done();
       }.bind(this));
     });
+
+    it("doesn't modify the options that are passed in", function (done) {
+      var options = {
+        nonce: NONCE,
+        foo: 'boo'
+      };
+
+      this.client.request = this.sandbox.stub().yields();
+
+      this.amex.getRewardsBalance(options, function () {
+        expect(options).to.deep.equal({
+          nonce: NONCE,
+          foo: 'boo'
+        });
+
+        done();
+      });
+    });
   });
 
   describe('getExpressCheckoutProfile', function () {

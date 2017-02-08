@@ -713,8 +713,8 @@ describe('HostedFields', function () {
     });
   });
 
-  describe('setPlaceholder', function () {
-    it('emits SET_PLACEHOLDER event', function () {
+  describe('setAttribute', function () {
+    it('emits SET_ATTRIBUTE event if options are valid', function () {
       var configuration = this.defaultConfiguration;
       var numberNode = document.createElement('div');
       var instance;
@@ -727,8 +727,115 @@ describe('HostedFields', function () {
       };
       instance = new HostedFields(configuration);
 
+      instance.setAttribute({
+        field: 'number',
+        attribute: 'placeholder',
+        value: '1111 1111 1111 1111'
+      });
+
+      expect(instance._bus.emit).to.be.calledWith(events.SET_ATTRIBUTE, 'number', 'placeholder', '1111 1111 1111 1111');
+    });
+
+    it('calls callback if provided', function (done) {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var instance;
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.setAttribute({
+        field: 'number',
+        attribute: 'placeholder',
+        value: '1111 1111 1111 1111'
+      }, done);
+    });
+
+    it('calls errback when given non-whitelisted field', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.setAttribute({
+        field: 'rogue-field',
+        attribute: 'placeholder',
+        value: '1111 1111 1111 1111'
+      }, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
+        expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting an attribute.');
+        expect(err.details).not.to.exist;
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
+    });
+
+    it('does not emit SET_ATTRIBUTE event when given non-whitelisted field', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.setAttribute({
+        field: 'rogue-field',
+        attribute: 'placeholder',
+        value: '1111 1111 1111 1111'
+      }, function () {
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
+    });
+
+    it('calls errback when given field not supplied by merchant', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.setAttribute({
+        field: 'cvv',
+        attribute: 'placeholder',
+        value: '123'
+      }, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
+        expect(err.message).to.equal('Cannot set attribute for "cvv" field because it is not part of the current Hosted Fields options.');
+        expect(err.details).not.to.exist;
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
+    });
+
+    it('does not emit SET_ATTRIBUTE event when given field not supplied by merchant', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.setAttribute({
+        field: 'cvv',
+        attribute: 'placeholder',
+        value: '123'
+      }, function () {
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
+    });
+  });
+
+  describe('setPlaceholder', function () {
+    it('calls setAttribute', function () {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var instance;
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+      this.sandbox.stub(HostedFields.prototype, 'setAttribute');
+
       instance.setPlaceholder('number', 'great-placeholder');
-      expect(instance._bus.emit).to.be.calledWith(events.SET_PLACEHOLDER, this.sandbox.match.string, this.sandbox.match.string);
+      expect(instance.setAttribute).to.be.calledWith({field: 'number', attribute: 'placeholder', value: 'great-placeholder'});
     });
 
     it('calls callback if provided', function (done) {
@@ -748,33 +855,49 @@ describe('HostedFields', function () {
     });
 
     it('calls errback when given non-whitelisted field', function (done) {
-      var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('rogue-field', 'rogue-placeholder', function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
-        expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting a placeholder.');
+        expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting an attribute.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, self.sandbox.match.string, self.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
         done();
-      });
+      }.bind(this));
+    });
+
+    it('does not emit SET_ATTRIBUTE event when given non-whitelisted field', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.setPlaceholder('rogue-field', 'rogue-placeholder', function () {
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
     });
 
     it('calls errback when given field not supplied by merchant', function (done) {
-      var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('cvv', 'great-placeholder', function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
-        expect(err.message).to.equal('Cannot set placeholder for "cvv" field because it is not part of the current Hosted Fields options.');
+        expect(err.message).to.equal('Cannot set attribute for "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_PLACEHOLDER, self.sandbox.match.string, self.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
         done();
-      });
+      }.bind(this));
+    });
+
+    it('does not emit SET_ATTRIBUTE event when given field not supplied by merchant', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.setPlaceholder('cvv', 'great-placeholder', function () {
+        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
     });
   });
 

@@ -113,4 +113,13 @@ describe('client.create', function () {
       done();
     });
   });
+
+  it('can pass debug: true onto configuration', function (done) {
+    client.create({authorization: fake.clientToken, debug: true}, function (err, thingy) {
+      expect(err).to.be.null;
+      expect(thingy).to.be.an.instanceof(Client);
+      expect(thingy.getConfiguration().isDebug).to.be.true;
+      done();
+    });
+  });
 });

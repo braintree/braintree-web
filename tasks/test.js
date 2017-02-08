@@ -8,24 +8,13 @@ var fs = require('fs');
 var spawn = require('child_process').spawn;
 
 var TEST_DIR = path.resolve(__dirname, '..', 'test') + '/';
-var KARMA_SUITES = [
-  'american-express',
-  'apple-pay',
-  'client',
-  'data-collector',
-  'hosted-fields',
-  'lib',
-  'paypal',
-  'paypal-checkout',
-  'three-d-secure',
-  'unionpay',
-  'us-bank-account'
-];
+var COMPONENTS = require('../components.json')
+var KARMA_SUITES = COMPONENTS.concat('lib');
 var TEST_TASKS = [
+  'lint',
   'test:environment',
-  'test:publishing',
-  'test:node-parsing',
-  'lint'
+  'mocha:publishing',
+  'test:node-parsing'
 ];
 
 function _lint(src, test, done) {
@@ -98,8 +87,7 @@ gulp.task('test:node-parsing', function (done) {
   var error, bt;
 
   try {
-    bt = require('../dist/published');
-    bt = require('../dist/published/debug');
+    bt = require('../dist/npm');
   } catch (e) {
     error = e;
   }

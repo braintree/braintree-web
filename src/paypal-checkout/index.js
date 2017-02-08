@@ -2,13 +2,14 @@
 /** @module braintree-web/paypal-checkout */
 
 var BraintreeError = require('../lib/braintree-error');
+var analytics = require('../lib/analytics');
 var errors = require('./errors');
 var Promise = require('../lib/promise');
 var wrapPromise = require('../lib/wrap-promise');
 var PayPalCheckout = require('./paypal-checkout');
 var sharedErrors = require('../lib/errors');
 var browserDetection = require('../lib/browser-detection');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 
 /**
  * @static
@@ -93,6 +94,8 @@ function create(options) {
       reject(new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED));
       return;
     }
+
+    analytics.sendEvent(options.client, 'paypal-checkout.initialized');
 
     resolve(new PayPalCheckout(options));
   });

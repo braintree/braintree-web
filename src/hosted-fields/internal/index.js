@@ -7,13 +7,16 @@ var Client = require('../../client/client');
 var injectWithWhitelist = require('inject-stylesheet').injectWithWhitelist;
 var CreditCardForm = require('./models/credit-card-form').CreditCardForm;
 var FieldComponent = require('./components/field-component').FieldComponent;
-var normalizeCreditCardFields = require('../../lib/normalize-credit-card-fields').normalizeCreditCardFields;
 var analytics = require('../../lib/analytics');
 var BraintreeError = require('../../lib/braintree-error');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
+var sharedErrors = require('../../lib/errors');
+var Promise = require('../../lib/promise');
 var events = constants.events;
 var whitelistedStyles = constants.whitelistedStyles;
+var formatCardRequestData = require('./format-card-request-data');
+var formatBraintreeApiCardResponse = require('./format-braintree-api-card-response');
 
 function initialize(cardForm) {
   var fieldComponent;
@@ -52,23 +55,53 @@ function create() {
 }
 
 function createTokenizationHandler(client, cardForm) {
+  var supportedGateways = client.getConfiguration().gatewayConfiguration.creditCards.supportedGateways || [{
+    name: 'clientApi'
+  }];
+  var braintreeApiCreditCardConfiguration = supportedGateways.filter(function (gateway) {
+    return gateway.name === 'braintreeApi';
+  })[0];
+
   return function (options, reply) {
-    var creditCardDetails, error;
+    var gateways, clientApiRequest, braintreeApiRequest, requests, shouldRequestBraintreeApi;
     var isEmpty = cardForm.isEmpty();
     var invalidFieldKeys = cardForm.invalidFieldKeys();
     var isValid = invalidFieldKeys.length === 0;
 
     if (isEmpty) {
       reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
-    } else if (isValid) {
-      creditCardDetails = normalizeCreditCardFields(cardForm.getCardData());
+      return;
+    } else if (!isValid) {
+      reply([new BraintreeError({
+        type: errors.HOSTED_FIELDS_FIELDS_INVALID.type,
+        code: errors.HOSTED_FIELDS_FIELDS_INVALID.code,
+        message: errors.HOSTED_FIELDS_FIELDS_INVALID.message,
+        details: {invalidFieldKeys: invalidFieldKeys}
+      })]);
+      return;
+    }
 
-      options = options || {};
+    options = options || {};
+    gateways = options.gateways || {clientApi: true};
+
+    if (!gateways.clientApi) {
+      reply([new BraintreeError({
+        type: sharedErrors.INVALID_OPTION.type,
+        code: sharedErrors.INVALID_OPTION.code,
+        message: 'options.gateways is invalid.'
+      })]);
+      return;
+    }
+
+    clientApiRequest = new Promise(function (resolve) {
+      var creditCardDetails = formatCardRequestData(cardForm.getCardData());
+
       creditCardDetails.options = {
         validate: options.vault === true
       };
 
       client.request({
+        api: 'clientApi',
         method: 'post',
         endpoint: 'payment_methods/credit_cards',
         data: {
@@ -78,44 +111,85 @@ function createTokenizationHandler(client, cardForm) {
           creditCard: creditCardDetails
         }
       }, function (err, response, status) {
-        var tokenizedCard;
+        resolve({
+          err: err,
+          response: response,
+          status: status
+        });
+      });
+    });
 
-        if (err) {
-          if (status === 403) {
-            error = err;
-          } else if (status < 500) {
-            error = new BraintreeError(errors.HOSTED_FIELDS_FAILED_TOKENIZATION);
-            error.details = {originalError: err};
-          } else {
-            error = new BraintreeError(errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR);
-            error.details = {originalError: err};
-          }
+    requests = [clientApiRequest];
 
-          reply([error]);
+    shouldRequestBraintreeApi = gateways.braintreeApi && Boolean(braintreeApiCreditCardConfiguration);
+    if (shouldRequestBraintreeApi) {
+      braintreeApiRequest = new Promise(function (resolve) {
+        var data = formatCardRequestData(cardForm.getCardData());
 
-          analytics.sendEvent(client, 'custom.hosted-fields.tokenization.failed');
-          return;
+        data.type = 'credit_card';
+
+        client.request({
+          api: 'braintreeApi',
+          endpoint: 'tokens',
+          method: 'post',
+          data: data,
+          timeout: braintreeApiCreditCardConfiguration.timeout
+        }, function (err, response, status) {
+          resolve({
+            err: err,
+            response: response,
+            status: status
+          });
+        });
+      });
+
+      requests.push(braintreeApiRequest);
+    }
+
+    Promise.all(requests).then(function (results) {
+      var err, result, clientApiCreditCard;
+      var clientApiResult = results[0];
+      var braintreeApiResult = results[1];
+      var clientApiSucceeded = !clientApiResult.err;
+
+      if (!clientApiSucceeded && (!braintreeApiResult || braintreeApiResult.err)) {
+        if (clientApiResult.status === 403) {
+          err = clientApiResult.err;
+        } else if (clientApiResult.status < 500) {
+          err = new BraintreeError(errors.HOSTED_FIELDS_FAILED_TOKENIZATION);
+          err.details = {originalError: clientApiResult.err};
+        } else {
+          err = new BraintreeError(errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR);
+          err.details = {originalError: clientApiResult.err};
         }
 
-        tokenizedCard = {
-          nonce: response.creditCards[0].nonce,
-          details: response.creditCards[0].details,
-          description: response.creditCards[0].description,
-          type: response.creditCards[0].type
-        };
+        analytics.sendEvent(client, 'custom.hosted-fields.tokenization.failed');
 
-        reply([null, tokenizedCard]);
+        reply([err]);
 
-        analytics.sendEvent(client, 'custom.hosted-fields.tokenization.succeeded');
-      });
-    } else {
-      reply([new BraintreeError({
-        type: errors.HOSTED_FIELDS_FIELDS_INVALID.type,
-        code: errors.HOSTED_FIELDS_FIELDS_INVALID.code,
-        message: errors.HOSTED_FIELDS_FIELDS_INVALID.message,
-        details: {invalidFieldKeys: invalidFieldKeys}
-      })]);
-    }
+        return;
+      }
+
+      result = {};
+
+      if (braintreeApiResult && !braintreeApiResult.err) {
+        result = formatBraintreeApiCardResponse(braintreeApiResult.response);
+
+        analytics.sendEvent(client, 'custom.hosted-fields.braintree-api.tokenization.succeeded');
+      }
+
+      if (clientApiSucceeded) {
+        clientApiCreditCard = clientApiResult.response.creditCards[0];
+        result.nonce = clientApiCreditCard.nonce;
+        result.details = clientApiCreditCard.details;
+        result.description = clientApiCreditCard.description;
+        result.type = clientApiCreditCard.type;
+      }
+
+      analytics.sendEvent(client, 'custom.hosted-fields.tokenization.succeeded');
+
+      reply([null, result]);
+    });
   };
 }
 

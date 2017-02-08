@@ -1,6 +1,9 @@
 ---
   extends: braintree/client
 
+  globals:
+    process: false
+
   rules:
     valid-jsdoc:
       - 2

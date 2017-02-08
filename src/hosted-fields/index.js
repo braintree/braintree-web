@@ -4,7 +4,7 @@
 var HostedFields = require('./external/hosted-fields');
 var deferred = require('../lib/deferred');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 
 /**
  * Fields used in {@link module:braintree-web/hosted-fields~fieldOptions fields options}

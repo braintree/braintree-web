@@ -1,7 +1,7 @@
 'use strict';
 
 var BraintreeError = require('./braintree-error');
-var sharedErrors = require('../lib/errors');
+var sharedErrors = require('./errors');
 
 module.exports = function (instance, methodNames) {
   methodNames.forEach(function (methodName) {

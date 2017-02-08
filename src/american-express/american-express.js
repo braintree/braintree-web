@@ -55,12 +55,12 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
     return;
   }
 
-  delete options.nonce;
-
   data = assign({
     _meta: {source: 'american-express'},
     paymentMethodNonce: nonce
   }, options);
+
+  delete data.nonce;
 
   this._client.request({
     method: 'get',

@@ -18,7 +18,8 @@ Throughout this page, replace `<component>` with the name of any SDK component (
 ```
 braintree.js
 ├── dist/hosted        <- assets output
-├── dist/published/    <- npm/bower package output
+├── dist/bower/        <- bower package output
+├── dist/npm/          <- npm package output
 ├── publishing/        <- npm/bower-specific sources
 ├── scripts/           <- build helper scripts
 ├── src/               <- source code
@@ -50,7 +51,7 @@ BRAINTREE_JS_SOURCE_DEST=/absolute/path/to/braintree-web/repository
 * __BRAINTREE_JS_API_PORT__ identifies the port where a development gateway is running.
 * __BRAINTREE_JS_API_PROTOCOL__ identifies the protocol where a development gateway is running.
 * __BRAINTREE_JS_HOSTED_DEST__ identifies where to copy `dist/hosted` assets for release.
-* __BRAINTREE_JS_BOWER_DEST__ identifies where to copy `dist/published` assets for bower release.
+* __BRAINTREE_JS_BOWER_DEST__ identifies where to copy `dist/bower` assets for bower release.
 * __BRAINTREE_JS_SOURCE_DEST__ identifies where to patch code deltas as a source release.
 
 ## Building
@@ -70,10 +71,12 @@ npm run build -- <component>
 This will create the following `dist` structure:
 
 ```
-├── dist/published/
+├── dist/npm/
+│   └── ... (mirrors src/)
+├── dist/bower/
 │   ├── index.js
 │   ├── LICENSE
-│   ├── package.json
+│   ├── bower.json
 │   ├── <component>.js
 │   ├── <component>.min.js
 │   └── ...
@@ -87,7 +90,9 @@ This will create the following `dist` structure:
         └── dev@ -> 3.0.0/
 ```
 
-`dist/published` contains exactly what the `braintree-web` npm and bower modules will contain: the externally linkable and `require`able javascript files. These will also be present in `dist/hosted` under `dist/histed/web/@VERSION/js`.
+`dist/npm` contains the pre-processed src tree that is published to npm, ready for use within a CommonJS environment.
+
+`dist/bower` contains exactly what the `braintree-web-bower` bower module will contain: the externally linkable and `require`able javascript files. These will also be present in `dist/hosted` under `dist/hosted/web/@VERSION/js`.
 
 `dist/hosted` has a file structure that mirrors what will be available at https://assets.braintreegateway.com. All component libraries' `js`, `css`, and `html` will be merged under a common, versioned path at https://assets.braintreegateway.com:
 

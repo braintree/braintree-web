@@ -5,32 +5,12 @@
 var assert = require('chai').assert;
 var fs = require('fs');
 var path = require('path');
+var files = require('../helpers/components').files;
 var parseEcmascriptVersion = require('ecmascript-version-detector').parse;
 var version = require('../../package.json').version;
 
 describe('ECMAScript version', function () {
-  [
-    'american-express',
-    'american-express.min',
-    'apple-pay',
-    'apple-pay.min',
-    'client',
-    'client.min',
-    'data-collector',
-    'data-collector.min',
-    'hosted-fields',
-    'hosted-fields.min',
-    'paypal',
-    'paypal.min',
-    'paypal-checkout',
-    'paypal-checkout.min',
-    'three-d-secure',
-    'three-d-secure.min',
-    'unionpay',
-    'unionpay.min',
-    'us-bank-account',
-    'us-bank-account.min'
-  ].forEach(function (file) {
+  files.forEach(function (file) {
     it(file + ' only uses ES5 for browser compatibility', function (done) {
       var jsPath = path.resolve(__dirname, '..', '..', 'dist', 'hosted', 'web', version, 'js', file + '.js');
 

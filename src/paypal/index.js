@@ -9,7 +9,7 @@ var errors = require('./shared/errors');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var PayPal = require('./external/paypal');
 var sharedErrors = require('../lib/errors');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 
 /**
  * @static

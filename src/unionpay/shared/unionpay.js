@@ -10,7 +10,7 @@ var errors = require('./errors');
 var events = constants.events;
 var iFramer = require('iframer');
 var methods = require('../../lib/methods');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 var uuid = require('../../lib/uuid');
 var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 
@@ -509,6 +509,7 @@ UnionPay.prototype.teardown = function (callback) {
 };
 
 UnionPay.prototype._initializeHostedFields = function (callback) {
+  var assetsUrl, isDebug;
   var componentId = uuid();
 
   if (this._bus) {
@@ -516,13 +517,16 @@ UnionPay.prototype._initializeHostedFields = function (callback) {
     return;
   }
 
+  assetsUrl = this._options.client.getConfiguration().gatewayConfiguration.assetsUrl;
+  isDebug = this._options.client.getConfiguration().isDebug;
+
   this._bus = new Bus({
     channel: componentId,
     merchantUrl: location.href
   });
   this._hostedFieldsFrame = iFramer({
     name: constants.HOSTED_FIELDS_FRAME_NAME + '_' + componentId,
-    src: this._options.client.getConfiguration().gatewayConfiguration.assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame@DOT_MIN.html',
+    src: assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame' + (isDebug ? '' : '.min') + '.html',
     height: 0,
     width: 0
   });

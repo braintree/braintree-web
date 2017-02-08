@@ -8,7 +8,7 @@ var BraintreeError = require('../lib/braintree-error');
 var AmericanExpress = require('./american-express');
 var deferred = require('../lib/deferred');
 var sharedErrors = require('../lib/errors');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
 
 /**

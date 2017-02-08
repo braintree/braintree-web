@@ -9,7 +9,7 @@ var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
 var sharedErrors = require('../lib/errors');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 
 /**
  * @static
@@ -24,7 +24,7 @@ var VERSION = require('package.version');
  * }, callback);
  */
 function create(options, callback) {
-  var config, threeDSecure, error, clientVersion;
+  var config, threeDSecure, error, clientVersion, isProduction;
 
   throwIfNoCallback(callback, 'create');
 
@@ -50,7 +50,11 @@ function create(options, callback) {
       code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
       message: 'Client (version ' + clientVersion + ') and 3D Secure (version ' + VERSION + ') components must be from the same SDK version.'
     };
-  } else if (!browserDetection.isHTTPS()) {
+  }
+
+  isProduction = config.gatewayConfiguration.environment === 'production';
+
+  if (isProduction && !browserDetection.isHTTPS()) {
     error = errors.THREEDS_HTTPS_REQUIRED;
   }
 

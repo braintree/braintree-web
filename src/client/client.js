@@ -5,7 +5,9 @@ var isWhitelistedDomain = require('../lib/is-whitelisted-domain');
 var BraintreeError = require('../lib/braintree-error');
 var addMetadata = require('../lib/add-metadata');
 var deferred = require('../lib/deferred');
+var constants = require('./constants');
 var errors = require('./errors');
+var sharedErrors = require('../lib/errors');
 
 /**
  * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
@@ -26,7 +28,7 @@ var errors = require('./errors');
  * @classdesc This class is required by many other Braintree components. It serves as the base API layer that communicates with our servers. It is also capable of being used to formulate direct calls to our servers, such as direct credit card tokenization. See {@link Client#request}.
  */
 function Client(configuration) {
-  var configurationJSON, gatewayConfiguration;
+  var configurationJSON, gatewayConfiguration, braintreeApiConfiguration;
 
   configuration = configuration || {};
 
@@ -61,8 +63,25 @@ function Client(configuration) {
   };
 
   this._request = request;
-  this._baseUrl = configuration.gatewayConfiguration.clientApiUrl + '/v1/';
   this._configuration = this.getConfiguration();
+
+  this._clientApiBaseUrl = gatewayConfiguration.clientApiUrl + '/v1/';
+
+  braintreeApiConfiguration = gatewayConfiguration.braintreeApi;
+  if (braintreeApiConfiguration) {
+    this._braintreeApi = {
+      baseUrl: braintreeApiConfiguration.url + '/',
+      accessToken: braintreeApiConfiguration.accessToken
+    };
+
+    if (!isWhitelistedDomain(this._braintreeApi.baseUrl)) {
+      throw new BraintreeError({
+        type: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
+        code: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
+        message: 'braintreeApi URL is on an invalid domain.'
+      });
+    }
+  }
 }
 
 /**
@@ -113,7 +132,7 @@ function Client(configuration) {
  * @returns {void}
  */
 Client.prototype.request = function (options, callback) {
-  var optionName;
+  var optionName, api, baseUrl, requestOptions;
 
   if (!options.method) {
     optionName = 'options.method';
@@ -131,15 +150,47 @@ Client.prototype.request = function (options, callback) {
     return;
   }
 
-  this._request({
-    url: this._baseUrl + options.endpoint,
+  if ('api' in options) {
+    api = options.api;
+  } else {
+    api = 'clientApi';
+  }
+
+  requestOptions = {
     method: options.method,
-    data: addMetadata(this._configuration, options.data),
-    // TODO: change this to options.headers and document it
-    // when features that require headers are out of beta
-    headers: options._headers,
     timeout: options.timeout
-  }, this._bindRequestCallback(callback));
+  };
+
+  if (api === 'clientApi') {
+    baseUrl = this._clientApiBaseUrl;
+
+    requestOptions.data = addMetadata(this._configuration, options.data);
+  } else if (api === 'braintreeApi') {
+    if (!this._braintreeApi) {
+      callback(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
+      return;
+    }
+
+    baseUrl = this._braintreeApi.baseUrl;
+
+    requestOptions.data = options.data;
+
+    requestOptions.headers = {
+      'Braintree-Version': constants.BRAINTREE_API_VERSION_HEADER,
+      Authorization: 'Bearer ' + this._braintreeApi.accessToken
+    };
+  } else {
+    callback(new BraintreeError({
+      type: errors.CLIENT_OPTION_INVALID.type,
+      code: errors.CLIENT_OPTION_INVALID.code,
+      message: 'options.api is invalid.'
+    }));
+    return;
+  }
+
+  requestOptions.url = baseUrl + options.endpoint;
+
+  this._request(requestOptions, this._bindRequestCallback(callback));
 };
 
 Client.prototype._bindRequestCallback = function (callback) {

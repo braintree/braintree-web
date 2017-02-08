@@ -2,7 +2,7 @@
 /* eslint-disable no-reserved-keys */
 
 var enumerate = require('../../lib/enumerate');
-var VERSION = require('package.version');
+var VERSION = process.env.npm_package_version;
 
 var constants = {
   VERSION: VERSION,
@@ -87,6 +87,12 @@ var constants = {
       name: 'postal-code',
       label: 'Postal Code'
     }
+  },
+  whitelistedAttributes: {
+    'aria-invalid': 'boolean',
+    'aria-required': 'boolean',
+    disabled: 'boolean',
+    placeholder: 'string'
   }
 };
 
@@ -99,7 +105,7 @@ constants.events = enumerate([
   'TRIGGER_INPUT_FOCUS',
   'ADD_CLASS',
   'REMOVE_CLASS',
-  'SET_PLACEHOLDER',
+  'SET_ATTRIBUTE',
   'CLEAR_FIELD'
 ], 'hosted-fields:');
 

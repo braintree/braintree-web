@@ -8,32 +8,12 @@ var path = require('path');
 var requirejs = require('requirejs');
 var tmp = require('tmp');
 var version = require('../../package.json').version;
+var files = require('../helpers/components').files;
 
 var MINIMUM_SIZE = 100;
 
 describe('AMD exports', function () {
-  [
-    'american-express',
-    'american-express.min',
-    'apple-pay',
-    'apple-pay.min',
-    'client',
-    'client.min',
-    'data-collector',
-    'data-collector.min',
-    'hosted-fields',
-    'hosted-fields.min',
-    'paypal',
-    'paypal.min',
-    'paypal-checkout',
-    'paypal-checkout.min',
-    'three-d-secure',
-    'three-d-secure.min',
-    'unionpay',
-    'unionpay.min',
-    'us-bank-account',
-    'us-bank-account.min'
-  ].forEach(function (file) {
+  files.forEach(function (file) {
     it('builds a file that requires ' + file + ' that has at least ' + MINIMUM_SIZE + ' characters', function (done) {
       var inputFile = tmp.fileSync({postfix: '.js'});
       var outputFileName = tmp.tmpNameSync({postfix: '.js'});

@@ -50,11 +50,13 @@ describe('frame-service', function () {
   });
 
   describe('asyncClose', function () {
-    it('async call to global.close', function () {
+    it('async call to global.close', function (done) {
+      this.sandbox.stub(global, 'close');
       frameService.asyncClose();
 
       setTimeout(function () {
-        expect(global.close()).to.have.been.called;
+        expect(global.close).to.have.been.called;
+        done();
       }, constants.POPUP_CLOSE_TIMEOUT + 10);
     });
   });

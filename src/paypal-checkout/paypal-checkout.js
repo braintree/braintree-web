@@ -36,6 +36,19 @@ var constants = require('../paypal/shared/constants');
  * @property {string} details.billingAddress.state State or region.
  * @property {string} details.billingAddress.postalCode Postal code.
  * @property {string} details.billingAddress.countryCode 2 character country code (e.g. US).
+ * @property {?object} creditFinancingOffered This property will only be present when the customer pays with PayPal Credit.
+ * @property {object} creditFinancingOffered.totalCost This is the estimated total payment amount including interest and fees the user will pay during the lifetime of the loan.
+ * @property {string} creditFinancingOffered.totalCost.value An amount defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm) for the given currency.
+ * @property {string} creditFinancingOffered.totalCost.currency 3 letter currency code as defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm).
+ * @property {number} creditFinancingOffered.term Length of financing terms in months.
+ * @property {object} creditFinancingOffered.monthlyPayment This is the estimated amount per month that the customer will need to pay including fees and interest.
+ * @property {string} creditFinancingOffered.monthlyPayment.value An amount defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm) for the given currency.
+ * @property {string} creditFinancingOffered.monthlyPayment.currency 3 letter currency code as defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm).
+ * @property {object} creditFinancingOffered.totalInterest Estimated interest or fees amount the payer will have to pay during the lifetime of the loan.
+ * @property {string} creditFinancingOffered.totalInterest.value An amount defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm) for the given currency.
+ * @property {string} creditFinancingOffered.totalInterest.currency 3 letter currency code as defined by [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm).
+ * @property {boolean} creditFinancingOffered.payerAcceptance Status of whether the customer ultimately was approved for and chose to make the payment using the approved installment credit.
+ * @property {boolean} creditFinancingOffered.cartAmountImmutable Indicates whether the cart amount is editable after payer's acceptance on PayPal side.
  */
 
 /**
@@ -142,6 +155,9 @@ PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
     endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
 
     analytics.sendEvent(client, 'paypal-checkout.createPayment');
+    if (options.offerCredit === true && options.flow === 'checkout') {
+      analytics.sendEvent(client, 'paypal-checkout.credit.offered');
+    }
 
     client.request({
       endpoint: endpoint,
@@ -212,6 +228,7 @@ PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions
   var self = this; // eslint-disable-line no-invalid-this
 
   return new Promise(function (resolve, reject) {
+    var payload;
     var client = self._client;
     var options = {
       flow: tokenizeOptions.billingToken ? 'vault' : 'checkout'
@@ -241,8 +258,14 @@ PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions
           }
         }));
       } else {
+        payload = self._formatTokenizePayload(response);
+
         analytics.sendEvent(client, 'paypal-checkout.tokenization.success');
-        resolve(self._formatTokenizePayload(response));
+        if (payload.creditFinancingOffered) {
+          analytics.sendEvent(client, 'paypal-checkout.credit.accepted');
+        }
+
+        resolve(payload);
       }
     });
   });
@@ -332,6 +355,10 @@ PayPalCheckout.prototype._formatTokenizePayload = function (response) {
 
   if (account.details && account.details.payerInfo) {
     payload.details = account.details.payerInfo;
+  }
+
+  if (account.details && account.details.creditFinancingOffered) {
+    payload.creditFinancingOffered = account.details.creditFinancingOffered;
   }
 
   return payload;
