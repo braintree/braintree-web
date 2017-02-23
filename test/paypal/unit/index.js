@@ -103,5 +103,21 @@ describe('paypal.create', function () {
         done();
       });
     });
+
+    it('allows unsupported browser when PopupBridge is defined', function (done) {
+      global.popupBridge = {};
+      this.sandbox.stub(browserDetection, 'supportsPopups', function () { return false; });
+      this.sandbox.stub(analytics, 'sendEvent');
+      this.sandbox.stub(PayPal.prototype, '_initialize', function (callback) {
+        callback();
+      });
+
+      create({client: this.client}, function (err, thingy) {
+        expect(err).not.to.exist;
+        expect(thingy).to.be.an.instanceof(PayPal);
+
+        done();
+      });
+    });
   });
 });

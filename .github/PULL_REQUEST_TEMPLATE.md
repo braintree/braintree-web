@@ -1,4 +1,4 @@
-| [Trello Card]() |
+| [Jira ticket]() |
 |---|
 
 ### Summary

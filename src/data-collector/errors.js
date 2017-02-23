@@ -12,11 +12,6 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'DATA_COLLECTOR_KOUNT_ERROR'
   },
-  DATA_COLLECTOR_PAYPAL_NOT_ENABLED: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'DATA_COLLECTOR_PAYPAL_NOT_ENABLED',
-    message: 'PayPal is not enabled for this merchant.'
-  },
   DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS: {
     type: BraintreeError.types.MERCHANT,
     code: 'DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS',

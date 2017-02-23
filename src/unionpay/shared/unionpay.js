@@ -4,6 +4,7 @@ var analytics = require('../../lib/analytics');
 var BraintreeError = require('../../lib/braintree-error');
 var Bus = require('../../lib/bus');
 var constants = require('./constants');
+var useMin = require('../../lib/use-min');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var deferred = require('../../lib/deferred');
 var errors = require('./errors');
@@ -526,7 +527,7 @@ UnionPay.prototype._initializeHostedFields = function (callback) {
   });
   this._hostedFieldsFrame = iFramer({
     name: constants.HOSTED_FIELDS_FRAME_NAME + '_' + componentId,
-    src: assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame' + (isDebug ? '' : '.min') + '.html',
+    src: assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame' + useMin(isDebug) + '.html',
     height: 0,
     width: 0
   });

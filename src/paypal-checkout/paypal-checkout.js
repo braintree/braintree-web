@@ -4,6 +4,7 @@ var analytics = require('../lib/analytics');
 var Promise = require('../lib/promise');
 var wrapPromise = require('../lib/wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
+var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var errors = require('./errors');
 var constants = require('../paypal/shared/constants');
 
@@ -143,13 +144,12 @@ function PayPalCheckout(options) {
 PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
   var self = this; // eslint-disable-line no-invalid-this
 
-  return new Promise(function (resolve, reject) {
+  return new Promise(function (resolve) {
     var endpoint;
     var client = self._client;
 
     if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
-      reject(new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED));
-      return;
+      throw new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED);
     }
 
     endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
@@ -168,23 +168,20 @@ PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
 
       if (err) {
         if (status === 422) {
-          reject(new BraintreeError({
+          throw new BraintreeError({
             type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
             code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
             message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
             details: {
               originalError: err
             }
-          }));
+          });
         } else {
-          reject(err instanceof BraintreeError ? err : new BraintreeError({
+          throw convertToBraintreeError(err, {
             type: errors.PAYPAL_FLOW_FAILED.type,
             code: errors.PAYPAL_FLOW_FAILED.code,
-            message: errors.PAYPAL_FLOW_FAILED.message,
-            details: {
-              originalError: err
-            }
-          }));
+            message: errors.PAYPAL_FLOW_FAILED.message
+          });
         }
       } else {
         if (options.flow === 'checkout') {
@@ -227,13 +224,15 @@ PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
 PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions) {
   var self = this; // eslint-disable-line no-invalid-this
 
-  return new Promise(function (resolve, reject) {
+  return new Promise(function (resolve) {
     var payload;
     var client = self._client;
     var options = {
       flow: tokenizeOptions.billingToken ? 'vault' : 'checkout'
     };
     var params = {
+      // The paymentToken provided by Checkout.js v4 is the ECToken
+      ecToken: tokenizeOptions.paymentToken,
       billingToken: tokenizeOptions.billingToken,
       payerId: tokenizeOptions.payerID,
       paymentId: tokenizeOptions.paymentID
@@ -249,14 +248,11 @@ PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions
       if (err) {
         analytics.sendEvent(client, 'paypal-checkout.tokenization.failed');
 
-        reject(err instanceof BraintreeError ? err : new BraintreeError({
+        throw convertToBraintreeError(err, {
           type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
           code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
-          message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message,
-          details: {
-            originalError: err
-          }
-        }));
+          message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
+        });
       } else {
         payload = self._formatTokenizePayload(response);
 
@@ -318,6 +314,7 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
   var isTokenizationKey = clientConfiguration.authorizationType === 'TOKENIZATION_KEY';
   var data = {
     paypalAccount: {
+      correlationId: params.billingToken || params.ecToken,
       options: {
         validate: options.flow === 'vault'
       }

@@ -5,6 +5,7 @@ var analytics = require('../../lib/analytics');
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var constants = require('../shared/constants');
+var useMin = require('../../lib/use-min');
 var Bus = require('../../lib/bus');
 var uuid = require('../../lib/uuid');
 var deferred = require('../../lib/deferred');
@@ -244,7 +245,7 @@ ThreeDSecure.prototype._createIframe = function (options) {
     this._handleAuthResponse(data, options);
   }.bind(this));
 
-  url = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-bank-frame' + (this._isDebug ? '' : '.min') + '.html';
+  url = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-bank-frame' + useMin(this._isDebug) + '.html';
 
   this._bankIframe = iFramer({
     src: url,

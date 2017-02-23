@@ -2,6 +2,8 @@
 
 var frameService = require('../../lib/frame-service/external');
 var BraintreeError = require('../../lib/braintree-error');
+var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
+var useMin = require('../../lib/use-min');
 var once = require('../../lib/once');
 var VERSION = process.env.npm_package_version;
 var constants = require('../shared/constants');
@@ -74,7 +76,7 @@ function PayPal(options) {
   this._client = options.client;
   this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION;
   this._isDebug = options.client.getConfiguration().isDebug;
-  this._loadingFrameUrl = this._assetsUrl + '/html/paypal-landing-frame' + (this._isDebug ? '' : '.min') + '.html';
+  this._loadingFrameUrl = this._assetsUrl + '/html/paypal-landing-frame' + useMin(this._isDebug) + '.html';
   this._authorizationInProgress = false;
 }
 
@@ -86,7 +88,7 @@ PayPal.prototype._initialize = function (callback) {
 
   frameService.create({
     name: constants.LANDING_FRAME_NAME,
-    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame' + (this._isDebug ? '' : '.min') + '.html',
+    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame' + useMin(this._isDebug) + '.html',
     openFrameUrl: this._loadingFrameUrl
   }, function (service) {
     this._frameService = service;
@@ -154,6 +156,9 @@ PayPal.prototype._initialize = function (callback) {
  * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
+ * @param {string} [options.landingPageType] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.
+ * * `login` - A non-PayPal account landing page is used.
+ * * `billing` - A PayPal account login page is used.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
  * @example
  * button.addEventListener('click', function () {
@@ -210,10 +215,14 @@ PayPal.prototype.tokenize = function (options, callback) {
   } else {
     this._authorizationInProgress = true;
 
-    analytics.sendEvent(client, 'paypal.tokenization.opened');
+    if (!global.popupBridge) {
+      analytics.sendEvent(client, 'paypal.tokenization.opened');
+    }
+
     if (options.offerCredit === true && options.flow === 'checkout') {
       analytics.sendEvent(client, 'paypal.credit.offered');
     }
+
     this._navigateFrameToAuth(options, callback);
     // This MUST happen after _navigateFrameToAuth for Metro browsers to work.
     this._frameService.open(this._createFrameServiceCallback(options, callback));
@@ -229,6 +238,23 @@ PayPal.prototype.tokenize = function (options, callback) {
 PayPal.prototype._createFrameServiceCallback = function (options, callback) {
   var client = this._client;
 
+  if (global.popupBridge) {
+    return function (err, payload) {
+      var cancelled = payload && payload.path && payload.path.substring(0, 7) === '/cancel';
+
+      this._authorizationInProgress = false;
+
+      // `err` exists when the user clicks "Done" button of browser view
+      if (err || cancelled) {
+        analytics.sendEvent(client, 'paypal.tokenization.closed-popupbridge.by-user');
+        // Call merchant's tokenize callback with an error
+        callback(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
+      } else if (payload) {
+        this._tokenizePayPal(options, payload.queryItems, callback);
+      }
+    }.bind(this);
+  }
+
   return function (err, params) {
     this._authorizationInProgress = false;
 
@@ -239,7 +265,7 @@ PayPal.prototype._createFrameServiceCallback = function (options, callback) {
       } else if (err.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
         callback(new BraintreeError(errors.PAYPAL_POPUP_OPEN_FAILED));
       }
-    } else {
+    } else if (params) {
       this._tokenizePayPal(options, params, callback);
     }
   }.bind(this);
@@ -249,7 +275,9 @@ PayPal.prototype._tokenizePayPal = function (options, params, callback) {
   var payload;
   var client = this._client;
 
-  this._frameService.redirect(this._loadingFrameUrl);
+  if (!global.popupBridge) {
+    this._frameService.redirect(this._loadingFrameUrl);
+  }
 
   client.request({
     endpoint: 'payment_methods/paypal_accounts',
@@ -257,22 +285,29 @@ PayPal.prototype._tokenizePayPal = function (options, params, callback) {
     data: this._formatTokenizeData(options, params)
   }, function (err, response) {
     if (err) {
-      analytics.sendEvent(client, 'paypal.tokenization.failed');
-      callback(err instanceof BraintreeError ? err : new BraintreeError({
+      if (global.popupBridge) {
+        analytics.sendEvent(client, 'paypal.tokenization.failed-popupbridge');
+      } else {
+        analytics.sendEvent(client, 'paypal.tokenization.failed');
+      }
+      callback(convertToBraintreeError(err, {
         type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
         code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
-        message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message,
-        details: {
-          originalError: err
-        }
+        message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
       }));
     } else {
       payload = this._formatTokenizePayload(response);
 
-      analytics.sendEvent(client, 'paypal.tokenization.success');
+      if (global.popupBridge) {
+        analytics.sendEvent(client, 'paypal.tokenization.success-popupbridge');
+      } else {
+        analytics.sendEvent(client, 'paypal.tokenization.success');
+      }
+
       if (payload.creditFinancingOffered) {
         analytics.sendEvent(client, 'paypal.credit.accepted');
       }
+
       callback(null, payload);
     }
     this._frameService.close();
@@ -310,7 +345,7 @@ PayPal.prototype._formatTokenizeData = function (options, params) {
   var isTokenizationKey = clientConfiguration.authorizationType === 'TOKENIZATION_KEY';
   var data = {
     paypalAccount: {
-      correlationId: this._frameService._serviceId,
+      correlationId: params.ba_token || params.token,
       options: {
         validate: options.flow === 'vault' && !isTokenizationKey
       }
@@ -354,16 +389,14 @@ PayPal.prototype._navigateFrameToAuth = function (options, callback) {
           }
         }));
       } else {
-        callback(err instanceof BraintreeError ? err : new BraintreeError({
+        callback(convertToBraintreeError(err, {
           type: errors.PAYPAL_FLOW_FAILED.type,
           code: errors.PAYPAL_FLOW_FAILED.code,
-          message: errors.PAYPAL_FLOW_FAILED.message,
-          details: {
-            originalError: err
-          }
+          message: errors.PAYPAL_FLOW_FAILED.message
         }));
       }
       this._frameService.close();
+      this._authorizationInProgress = false;
     } else {
       if (options.flow === 'checkout') {
         redirectUrl = response.paymentResource.redirectUrl;
@@ -373,6 +406,10 @@ PayPal.prototype._navigateFrameToAuth = function (options, callback) {
 
       if (options.useraction === 'commit') {
         redirectUrl = querystring.queryify(redirectUrl, {useraction: 'commit'});
+      }
+
+      if (global.popupBridge) {
+        analytics.sendEvent(client, 'paypal.tokenization.opened-popupbridge');
       }
 
       this._frameService.redirect(redirectUrl);
@@ -385,16 +422,21 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
   var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
   var serviceId = this._frameService._serviceId;
   var paymentResource = {
-    returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-redirect-frame' + (this._isDebug ? '' : '.min') + '.html?channel=' + serviceId,
-    cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-cancel-frame' + (this._isDebug ? '' : '.min') + '.html?channel=' + serviceId,
-    correlationId: serviceId,
+    returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-redirect-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
+    cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-cancel-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
       localeCode: options.locale,
       noShipping: (!options.enableShippingAddress).toString(),
-      addressOverride: options.shippingAddressEditable === false
+      addressOverride: options.shippingAddressEditable === false,
+      landingPageType: options.landingPageType
     }
   };
+
+  if (global.popupBridge && typeof global.popupBridge.getReturnUrlPrefix === 'function') {
+    paymentResource.returnUrl = global.popupBridge.getReturnUrlPrefix() + 'return';
+    paymentResource.cancelUrl = global.popupBridge.getReturnUrlPrefix() + 'cancel';
+  }
 
   if (options.flow === 'checkout') {
     paymentResource.amount = options.amount;

@@ -61,38 +61,34 @@ var VERSION = process.env.npm_package_version;
  * @returns {Promise|void} Returns the PayPalCheckout instance.
  */
 function create(options) {
-  return new Promise(function (resolve, reject) {
+  return new Promise(function (resolve) {
     var config, clientVersion;
 
     if (options.client == null) {
-      reject(new BraintreeError({
+      throw new BraintreeError({
         type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
         code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
         message: 'options.client is required when instantiating PayPal Checkout.'
-      }));
-      return;
+      });
     }
 
     config = options.client.getConfiguration();
     clientVersion = config.analyticsMetadata.sdkVersion;
 
     if (clientVersion !== VERSION) {
-      reject(new BraintreeError({
+      throw new BraintreeError({
         type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
         code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
         message: 'Client (version ' + clientVersion + ') and PayPal Checkout (version ' + VERSION + ') components must be from the same SDK version.'
-      }));
-      return;
+      });
     }
 
     if (!config.gatewayConfiguration.paypalEnabled) {
-      reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
-      return;
+      throw new BraintreeError(errors.PAYPAL_NOT_ENABLED);
     }
 
     if (!browserDetection.supportsPopups()) {
-      reject(new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED));
-      return;
+      throw new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED);
     }
 
     analytics.sendEvent(options.client, 'paypal-checkout.initialized');

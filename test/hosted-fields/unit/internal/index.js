@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+
 'use strict';
 
 var internal = require('../../../../src/hosted-fields/internal/index');
@@ -371,6 +373,189 @@ describe('internal', function () {
             }
           }
         }
+      });
+    });
+
+    context('when supplying additional postal code data', function () {
+      beforeEach(function () {
+        var fakeConfigWithPostalCode = {
+          fields: {
+            number: {},
+            postalCode: {}
+          }
+        };
+
+        this.cardFormWithPostalCode = new CreditCardForm(fakeConfigWithPostalCode);
+        this.cardFormWithPostalCode.isEmpty = function () { return false; };
+        this.cardFormWithPostalCode.invalidFieldKeys = function () { return []; };
+
+        this.fakeOptions = {
+          gateways: {
+            clientApi: true,
+            braintreeApi: true
+          }
+        };
+
+        this.configuration.gatewayConfiguration.braintreeApi = {};
+        this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+          name: 'braintreeApi',
+          timeout: 2000
+        });
+      });
+
+      it('tokenizes with additional postal code data when Hosted Fields has no postal code field', function () {
+        var reply = this.sandbox.spy();
+
+        this.fakeOptions.billingAddress = {
+          postalCode: '33333'
+        };
+
+        this.goodClient.request = this.sandbox.stub();
+
+        create(this.goodClient, this.validCardForm)(this.fakeOptions, reply);
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'clientApi',
+          data: {
+            creditCard: {
+              billing_address: {
+                postal_code: '33333'
+              }
+            }
+          }
+        });
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'braintreeApi',
+          data: {
+            billing_address: {
+              postal_code: '33333'
+            }
+          }
+        });
+      });
+
+      it('tokenizes with Hosted Fields postal code', function () {
+        var reply = this.sandbox.spy();
+
+        this.cardFormWithPostalCode.set('postalCode.value', '11111');
+        this.goodClient.request = this.sandbox.stub();
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'clientApi',
+          data: {
+            creditCard: {
+              billing_address: {
+                postal_code: '11111'
+              }
+            }
+          }
+        });
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'braintreeApi',
+          data: {
+            billing_address: {
+              postal_code: '11111'
+            }
+          }
+        });
+      });
+
+      it('prioritizes Hosted Fields postal code even when the field is empty', function () {
+        var reply = this.sandbox.spy();
+
+        this.fakeOptions.billingAddress = {
+          postalCode: '33333'
+        };
+
+        this.cardFormWithPostalCode.set('postalCode.value', '');
+        this.goodClient.request = this.sandbox.stub();
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'clientApi',
+          data: {
+            creditCard: {
+              billing_address: {
+                postal_code: ''
+              }
+            }
+          }
+        });
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'braintreeApi',
+          data: {
+            billing_address: {
+              postal_code: ''
+            }
+          }
+        });
+      });
+
+      it('does not override other parts of the form with options', function () {
+        var reply = this.sandbox.spy();
+
+        this.fakeOptions.number = '3333 3333 3333 3333';
+
+        this.cardFormWithPostalCode.set('number.value', '1111 1111 1111 1111');
+        this.goodClient.request = this.sandbox.stub();
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'clientApi',
+          data: {
+            creditCard: {
+              number: '1111 1111 1111 1111'
+            }
+          }
+        });
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'braintreeApi',
+          data: {
+            number: '1111 1111 1111 1111'
+          }
+        });
+      });
+
+      it('does not attempt to tokenize non-postal code additional options', function () {
+        var reply = this.sandbox.spy();
+
+        this.fakeOptions.billingAddress = {
+          streetAddress: '606 Elm St'
+        };
+
+        this.goodClient.request = this.sandbox.stub();
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
+
+        expect(this.goodClient.request).to.not.be.calledWithMatch({
+          api: 'clientApi',
+          data: {
+            creditCard: {
+              number: '3333 3333 3333 3333',
+              billingAddress: {
+                streetAddress: '606 Elm St'
+              }
+            }
+          }
+        });
+
+        expect(this.goodClient.request).to.not.be.calledWithMatch({
+          api: 'braintreeApi',
+          data: {
+            number: '3333 3333 3333 3333',
+            billingAddress: {
+              streetAddress: '606 Elm St'
+            }
+          }
+        });
       });
     });
 

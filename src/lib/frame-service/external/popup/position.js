@@ -1,19 +1,17 @@
 'use strict';
 
-var constants = require('../../shared/constants');
-
-function top() {
+function top(height) {
   var windowHeight = global.outerHeight || document.documentElement.clientHeight;
   var windowTop = global.screenY == null ? global.screenTop : global.screenY;
 
-  return center(windowHeight, constants.POPUP_HEIGHT, windowTop);
+  return center(windowHeight, height, windowTop);
 }
 
-function left() {
+function left(width) {
   var windowWidth = global.outerWidth || document.documentElement.clientWidth;
   var windowLeft = global.screenX == null ? global.screenLeft : global.screenX;
 
-  return center(windowWidth, constants.POPUP_WIDTH, windowLeft);
+  return center(windowWidth, width, windowLeft);
 }
 
 function center(windowMetric, popupMetric, offset) {

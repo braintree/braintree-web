@@ -9,7 +9,10 @@ var HOSTED_DEST = process.env.BRAINTREE_JS_HOSTED_DEST;
 var BOWER_DEST = process.env.BRAINTREE_JS_BOWER_DEST;
 
 gulp.task('release:hosted:copy', function () {
-  return gulp.src(['dist/hosted/web/' + VERSION + '/**/*'])
+  return gulp.src([
+    'dist/hosted/web/' + VERSION + '/**/*',
+    '!dist/hosted/web/' + VERSION + '/js/index.*'
+  ])
     .pipe(gulp.dest(HOSTED_DEST + '/web/' + VERSION));
 });
 

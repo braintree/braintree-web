@@ -111,11 +111,20 @@ describe('FrameService', function () {
     it('assigns an _options model', function () {
       var frameService = new FrameService(this.options);
 
-      expect(frameService._options).to.deep.equal({
-        name: this.options.name + '_' + frameService._serviceId,
-        dispatchFrameUrl: this.options.dispatchFrameUrl,
-        openFrameUrl: this.options.openFrameUrl
-      });
+      expect(frameService._options.name).to.equal(this.options.name + '_' + frameService._serviceId);
+      expect(frameService._options.dispatchFrameUrl).to.equal(this.options.dispatchFrameUrl);
+      expect(frameService._options.openFrameUrl).to.equal(this.options.openFrameUrl);
+    });
+
+    it('can optionally assign height and width', function () {
+      var frameService;
+
+      this.options.height = 100;
+      this.options.width = 150;
+      frameService = new FrameService(this.options);
+
+      expect(frameService._options.height).to.equal(100);
+      expect(frameService._options.width).to.equal(150);
     });
 
     it('assigns _state property', function () {
@@ -388,6 +397,71 @@ describe('FrameService', function () {
     });
   });
 
+  describe('_initializePopupBridge', function () {
+    describe('PopupBridge.onComplete', function () {
+      beforeEach(function () {
+        global.popupBridge = {};
+      });
+      afterEach(function () {
+        delete global.popupBridge;
+      });
+
+      it('calls callback with frame closed when error', function (done) {
+        FrameService.prototype._initializePopupBridge(function (err, payload) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.INTERNAL);
+          expect(err.code).to.equal('FRAME_SERVICE_FRAME_CLOSED');
+          expect(err.message).to.equal('Frame closed before tokenization could occur.');
+          expect(payload).to.not.exist;
+          done();
+        });
+        global.popupBridge.onComplete(new Error('Failed'));
+      });
+
+      it('calls callback with frame closed when error and payload are null', function (done) {
+        FrameService.prototype._initializePopupBridge(function (err, payload) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.INTERNAL);
+          expect(err.code).to.equal('FRAME_SERVICE_FRAME_CLOSED');
+          expect(err.message).to.equal('Frame closed before tokenization could occur.');
+          expect(payload).to.not.exist;
+          done();
+        });
+        global.popupBridge.onComplete(null, null);
+      });
+
+      it('calls callback with payload if error is null and payload exists', function (done) {
+        FrameService.prototype._initializePopupBridge(function (err, payload) {
+          expect(err).to.not.exist;
+          expect(payload).to.deep.equal({foo: 'bar'});
+          done();
+        });
+        global.popupBridge.onComplete(null, {foo: 'bar'});
+      });
+    });
+  });
+
+  describe('_openPopupBridge', function () {
+    it('calls popup open with options', function () {
+      var context = {
+        _options: {
+          foo: 'bar'
+        }
+      };
+      var options = {
+        param: 'value'
+      };
+
+      this.sandbox.stub(popup, 'open');
+
+      FrameService.prototype._openPopupBridge.call(context, options);
+      expect(popup.open).to.be.calledWith({
+        foo: 'bar',
+        param: 'value'
+      });
+    });
+  });
+
   describe('open', function () {
     it('maps provided callback to instance', function () {
       var frameService;
@@ -456,6 +530,35 @@ describe('FrameService', function () {
       frameService.open(callback);
 
       expect(frameService._pollForPopupClose).to.have.been.called;
+    });
+
+    it('calls _initializePopupBridge with the callback when PopupBridge is defined', function () {
+      var context = {
+        _initializePopupBridge: this.sandbox.stub()
+      };
+      var callback = {};
+
+      global.popupBridge = {};
+      FrameService.prototype.open.call(context, callback);
+
+      expect(context._initializePopupBridge).to.be.calledWith(callback);
+      delete global.popupBridge;
+    });
+  });
+
+  describe('redirect', function () {
+    it('calls _openPopupBridge with an object when PopupBridge is defined', function () {
+      var context = {
+        _openPopupBridge: this.sandbox.stub()
+      };
+
+      global.popupBridge = {};
+      FrameService.prototype.redirect.call(context, 'http://braintreepayments.com');
+
+      expect(context._openPopupBridge).to.be.calledWith({
+        openFrameUrl: 'http://braintreepayments.com'
+      });
+      delete global.popupBridge;
     });
   });
 

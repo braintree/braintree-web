@@ -1,5 +1,6 @@
 'use strict';
 
+var assign = require('../../lib/assign').assign;
 var Bus = require('../../lib/bus');
 var frameName = require('./get-frame-name');
 var assembleIFrames = require('./assemble-iframes');
@@ -63,7 +64,7 @@ function createTokenizationHandler(client, cardForm) {
   })[0];
 
   return function (options, reply) {
-    var gateways, clientApiRequest, braintreeApiRequest, requests, shouldRequestBraintreeApi;
+    var braintreeApiRequest, clientApiRequest, gateways, mergedCardData, requests, shouldRequestBraintreeApi;
     var isEmpty = cardForm.isEmpty();
     var invalidFieldKeys = cardForm.invalidFieldKeys();
     var isValid = invalidFieldKeys.length === 0;
@@ -93,8 +94,10 @@ function createTokenizationHandler(client, cardForm) {
       return;
     }
 
+    mergedCardData = mergeCardData(cardForm.getCardData(), options);
+
     clientApiRequest = new Promise(function (resolve) {
-      var creditCardDetails = formatCardRequestData(cardForm.getCardData());
+      var creditCardDetails = formatCardRequestData(mergedCardData);
 
       creditCardDetails.options = {
         validate: options.vault === true
@@ -124,7 +127,7 @@ function createTokenizationHandler(client, cardForm) {
     shouldRequestBraintreeApi = gateways.braintreeApi && Boolean(braintreeApiCreditCardConfiguration);
     if (shouldRequestBraintreeApi) {
       braintreeApiRequest = new Promise(function (resolve) {
-        var data = formatCardRequestData(cardForm.getCardData());
+        var data = formatCardRequestData(mergedCardData);
 
         data.type = 'credit_card';
 
@@ -212,6 +215,17 @@ function orchestrate(configuration) {
 
   // Globalize cardForm is global so other components (UnionPay) can access it
   global.cardForm = cardForm;
+}
+
+function mergeCardData(cardData, options) {
+  var newCardData = cardData;
+  var postalCode = options.billingAddress && options.billingAddress.postalCode;
+
+  if (postalCode && !cardData.hasOwnProperty('postalCode')) {
+    newCardData = assign({}, newCardData, {postalCode: postalCode});
+  }
+
+  return newCardData;
 }
 
 module.exports = {

@@ -21,8 +21,7 @@ describe('USBankAccount', function () {
       getConfiguration: function () {
         return this.configuration;
       }.bind(this),
-      request: this.sandbox.stub(),
-      _request: this.sandbox.stub()
+      request: this.sandbox.stub()
     };
 
     this.context = {
@@ -54,7 +53,7 @@ describe('USBankAccount', function () {
           expect(err.code).to.equal('CALLBACK_REQUIRED');
           expect(err.message).to.equal('tokenize must include a callback function.');
 
-          expect(this.fakeClient._request).not.to.have.beenCalled;
+          expect(this.fakeClient.request).not.to.have.beenCalled;
 
           done();
         }
@@ -69,7 +68,7 @@ describe('USBankAccount', function () {
           expect(err.code).to.equal('CALLBACK_REQUIRED');
           expect(err.message).to.equal('tokenize must include a callback function.');
 
-          expect(this.fakeClient._request).not.to.have.beenCalled;
+          expect(this.fakeClient.request).not.to.have.beenCalled;
 
           done();
         }
@@ -87,7 +86,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('tokenize must be called with bankDetails or bankLogin.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(client._request).not.to.have.beenCalled;
+          expect(client.request).not.to.have.beenCalled;
 
           done();
         });
@@ -113,7 +112,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('tokenize must be called with bankDetails or bankLogin, not both.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(client._request).not.to.have.beenCalled;
+          expect(client.request).not.to.have.beenCalled;
 
           done();
         });
@@ -146,7 +145,7 @@ describe('USBankAccount', function () {
       });
 
       it('tokenizes a checking account', function (done) {
-        this.fakeClient._request.yields(null, this.fakeUsBankAccountResponse);
+        this.fakeClient.request.yields(null, this.fakeUsBankAccountResponse);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -166,14 +165,11 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).not.to.exist;
 
-          expect(this.fakeClient._request).to.be.calledOnce;
-          expect(this.fakeClient._request).to.be.calledWithMatch({
+          expect(this.fakeClient.request).to.be.calledOnce;
+          expect(this.fakeClient.request).to.be.calledWithMatch({
             method: 'POST',
-            url: 'https://example.braintree-api.com/tokens',
-            headers: {
-              Authorization: 'Bearer fakeToken',
-              'Braintree-Version': '2016-08-25'
-            },
+            api: 'braintreeApi',
+            endpoint: 'tokens',
             data: {
               type: 'us_bank_account',
               routing_number: '1234567',
@@ -199,7 +195,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "success" analytics event when tokenizing bank details successfully', function (done) {
-        this.fakeClient._request.yields(null, this.fakeUsBankAccountResponse);
+        this.fakeClient.request.yields(null, this.fakeUsBankAccountResponse);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -225,7 +221,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "failed" analytics event when tokenizing bank details badly', function (done) {
-        this.fakeClient._request.yields(new Error('Something bad happnened'), null);
+        this.fakeClient.request.yields(new Error('Something bad happnened'), null);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -264,7 +260,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('mandateText property is required.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -284,7 +280,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('bankDetails.routingNumber property is required.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -304,7 +300,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('bankDetails.accountNumber property is required.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -324,7 +320,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('bankDetails.accountType property is required.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -333,7 +329,7 @@ describe('USBankAccount', function () {
       it('errors when tokenize fails with 401 status code', function (done) {
         var originalError = new Error('Something bad happnened');
 
-        this.fakeClient._request.yields(originalError, null, 401);
+        this.fakeClient.request.yields(originalError, null, 401);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -366,7 +362,7 @@ describe('USBankAccount', function () {
       it('errors when tokenize fails with 4xx status code', function (done) {
         var originalError = new Error('Something bad happnened');
 
-        this.fakeClient._request.yields(originalError, null, 404);
+        this.fakeClient.request.yields(originalError, null, 404);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -399,7 +395,7 @@ describe('USBankAccount', function () {
       it('errors when tokenize fails with 5xx status code', function (done) {
         var originalError = new Error('Something bad happnened');
 
-        this.fakeClient._request.yields(originalError, null, 500);
+        this.fakeClient.request.yields(originalError, null, 500);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -473,7 +469,7 @@ describe('USBankAccount', function () {
           expect(err).to.equal(loadError);
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -508,7 +504,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('Customer closed bank login flow before authorizing.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -573,7 +569,7 @@ describe('USBankAccount', function () {
       });
 
       it('tokenizes bank login', function (done) {
-        this.fakeClient._request.yields(null, this.fakeGatewayResponse);
+        this.fakeClient.request.yields(null, this.fakeGatewayResponse);
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
@@ -612,14 +608,11 @@ describe('USBankAccount', function () {
         }, function (err, tokenizedPayload) {
           expect(err).not.to.exist;
 
-          expect(this.fakeClient._request).to.have.been.calledOnce;
-          expect(this.fakeClient._request).to.have.been.calledWith({
+          expect(this.fakeClient.request).to.have.been.calledOnce;
+          expect(this.fakeClient.request).to.have.been.calledWith({
             method: 'POST',
-            url: 'https://example.braintree-api.com/tokens',
-            headers: {
-              Authorization: 'Bearer fakeToken',
-              'Braintree-Version': '2016-08-25'
-            },
+            endpoint: 'tokens',
+            api: 'braintreeApi',
             data: {
               type: 'plaid_public_token',
               public_token: 'abc123',
@@ -751,7 +744,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('displayName property is required when using bankLogin.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -769,7 +762,7 @@ describe('USBankAccount', function () {
           expect(err.message).to.equal('mandateText property is required.');
 
           expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient._request).not.to.have.been.called;
+          expect(this.fakeClient.request).not.to.have.been.called;
 
           done();
         }.bind(this));
@@ -808,7 +801,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "succeeded" analytics events when Plaid tokenization completes', function (done) {
-        this.fakeClient._request.yields(null, this.fakeGatewayResponse);
+        this.fakeClient.request.yields(null, this.fakeGatewayResponse);
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
@@ -875,7 +868,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "failed" analytics events when Plaid tokenization fails', function (done) {
-        this.fakeClient._request.yields(new Error('Something bad happened'));
+        this.fakeClient.request.yields(new Error('Something bad happened'));
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
@@ -934,7 +927,7 @@ describe('USBankAccount', function () {
           callback(null, fakePlaid);
         }, 1);
       };
-      this.fakeClient._request.yields(originalError, null, 401);
+      this.fakeClient.request.yields(originalError, null, 401);
 
       USBankAccount.prototype.tokenize.call(this.context, {
         bankLogin: {
@@ -977,7 +970,7 @@ describe('USBankAccount', function () {
           callback(null, fakePlaid);
         }, 1);
       };
-      this.fakeClient._request.yields(originalError, null, 404);
+      this.fakeClient.request.yields(originalError, null, 404);
 
       USBankAccount.prototype.tokenize.call(this.context, {
         bankLogin: {
@@ -1020,7 +1013,7 @@ describe('USBankAccount', function () {
           callback(null, fakePlaid);
         }, 1);
       };
-      this.fakeClient._request.yields(originalError, null, 500);
+      this.fakeClient.request.yields(originalError, null, 500);
 
       USBankAccount.prototype.tokenize.call(this.context, {
         bankLogin: {

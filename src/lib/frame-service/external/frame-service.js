@@ -8,6 +8,7 @@ var constants = require('../shared/constants');
 var uuid = require('../../uuid');
 var iFramer = require('iframer');
 var BraintreeError = require('../../braintree-error');
+var assign = require('../../assign').assign;
 
 var REQUIRED_CONFIG_KEYS = [
   'name',
@@ -41,7 +42,9 @@ function FrameService(options) {
   this._options = {
     name: options.name + '_' + this._serviceId,
     dispatchFrameUrl: options.dispatchFrameUrl,
-    openFrameUrl: options.openFrameUrl
+    openFrameUrl: options.openFrameUrl,
+    height: options.height,
+    width: options.width
   };
   this._state = options.state;
 
@@ -96,9 +99,33 @@ FrameService.prototype._setBusEvents = function () {
   }.bind(this));
 };
 
-FrameService.prototype.open = function (callback) {
-  this._onCompleteCallback = callback;
+FrameService.prototype._initializePopupBridge = function (callback) {
+  global.popupBridge.onComplete = function (err, payload) {
+    var popupDismissed = !payload && !err;
 
+    if (err || popupDismissed) {
+      // User clicked "Done" button of browser view
+      callback(new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED));
+      return;
+    }
+    // User completed popup flow (includes success and cancel cases)
+    callback(null, payload);
+  };
+};
+
+FrameService.prototype._openPopupBridge = function (options) {
+  var popupOptions = assign({}, this._options, options);
+
+  popup.open(popupOptions);
+};
+
+FrameService.prototype.open = function (callback) {
+  if (global.popupBridge) {
+    // Popup Bridge does not need to open a frame until the landing frame redirects to PayPal
+    this._initializePopupBridge(callback);
+    return;
+  }
+  this._onCompleteCallback = callback;
   this._frame = popup.open(this._options);
   if (this.isFrameClosed()) {
     this._cleanupFrame();
@@ -111,6 +138,12 @@ FrameService.prototype.open = function (callback) {
 };
 
 FrameService.prototype.redirect = function (url) {
+  if (global.popupBridge) {
+    this._openPopupBridge({
+      openFrameUrl: url
+    });
+    return;
+  }
   if (this._frame && !this.isFrameClosed()) {
     this._frame.location.href = url;
   }

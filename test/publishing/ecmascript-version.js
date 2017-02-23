@@ -2,11 +2,9 @@
 
 'use strict';
 
-var assert = require('chai').assert;
-var fs = require('fs');
 var path = require('path');
 var files = require('../helpers/components').files;
-var parseEcmascriptVersion = require('ecmascript-version-detector').parse;
+var checkFile = require('check-ecmascript-version-compatibility');
 var version = require('../../package.json').version;
 
 describe('ECMAScript version', function () {
@@ -17,24 +15,7 @@ describe('ECMAScript version', function () {
       this.slow(8000);
       this.timeout(10000);
 
-      fs.readFile(jsPath, 'utf8', function (err, data) {
-        if (err) {
-          done(err);
-          return;
-        }
-
-        parseEcmascriptVersion(data).forEach(function (expression) {
-          var expressionVersion;
-
-          if (expression.selector === "//Program[@sourceType=='module']") { return; }
-
-          expressionVersion = parseInt(expression.version, 10);
-
-          assert.isAtMost(expressionVersion, 5, expression.en.name + 'is ES' + expressionVersion + ' but we can only use ES5');
-        });
-
-        done();
-      });
+      checkFile(jsPath, done);
     });
   });
 });

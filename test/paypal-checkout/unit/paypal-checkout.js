@@ -819,6 +819,32 @@ describe('PayPalCheckout', function () {
       expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.accepted');
     });
 
+    it('passes the BA token as the correlationId when present', function () {
+      this.paypalCheckout.tokenizePayment({billingToken: 'BA-1234'});
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          paypalAccount: {
+            correlationId: 'BA-1234'
+          }
+        }
+      });
+    });
+
+    it('passes the EC token as the correlationId when present', function () {
+      this.paypalCheckout.tokenizePayment({paymentToken: 'EC-1234'});
+
+      expect(this.client.request).to.be.calledOnce;
+      expect(this.client.request).to.be.calledWithMatch({
+        data: {
+          paypalAccount: {
+            correlationId: 'EC-1234'
+          }
+        }
+      });
+    });
+
     it('validates if flow is vault and auth is not tokenization key', function () {
       this.configuration.authorizationType = 'CLIENT_TOKEN';
       this.paypalCheckout.tokenizePayment({billingToken: 'token'});

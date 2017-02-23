@@ -28,6 +28,17 @@ var errors = require('./errors');
  */
 function ApplePay(options) {
   this._client = options.client;
+  /**
+   * @name ApplePay#merchantIdentifier
+   * @description A special merchant ID which represents the merchant association with Braintree. Required when using `ApplePaySession.canMakePaymentsWithActiveCard`.
+   * @example
+   * var promise = ApplePaySession.canMakePaymentsWithActiveCard(applePayInstance.merchantIdentifier);
+   * promise.then(function (canMakePaymentsWithActiveCard) {
+   *   if (canMakePaymentsWithActiveCard) {
+   *     // Set up Apple Pay buttons
+   *   }
+   * });
+   */
   Object.defineProperty(this, 'merchantIdentifier', {
     value: this._client.getConfiguration().gatewayConfiguration.applePayWeb.merchantIdentifier,
     configurable: false,

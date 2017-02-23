@@ -485,6 +485,7 @@ HostedFields.prototype.teardown = function (callback) {
  * @public
  * @param {object} [options] All tokenization options for the Hosted Fields component.
  * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
+ * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
  * @example <caption>Tokenize a card</caption>
  * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
@@ -512,6 +513,18 @@ HostedFields.prototype.teardown = function (callback) {
  * @example <caption>Tokenize and vault a card</caption>
  * hostedFieldsInstance.tokenize({
  *   vault: true
+ * }, function (tokenizeErr, payload) {
+ *   if (tokenizeErr) {
+ *     console.error(tokenizeErr);
+ *   } else {
+ *     console.log('Got nonce:', payload.nonce);
+ *   }
+ * });
+ * @example <caption>Tokenize a card with the postal code option</caption>
+ * hostedFieldsInstance.tokenize({
+ *   billingAddress: {
+ *     postalCode: '11111'
+ *   }
  * }, function (tokenizeErr, payload) {
  *   if (tokenizeErr) {
  *     console.error(tokenizeErr);
@@ -685,31 +698,13 @@ HostedFields.prototype.setAttribute = function (options, callback) {
 };
 
 /**
- * Sets the placeholder of a {@link module:braintree-web/hosted-fields~field field}.
+ * @deprecated since version 3.8.0. Use {@link HostedFields#setAttribute|setAttribute} instead.
+ *
  * @public
  * @param {string} field The field whose placeholder you wish to change. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
  *
- * @example
- * hostedFieldsInstance.setPlaceholder('number', '4111 1111 1111 1111', function (placeholderErr) {
- *   if (placeholderErr) {
- *     console.error(placeholderErr);
- *   }
- * });
- *
- * @example <caption>Update CVV field on card type change</caption>
- * hostedFieldsInstance.on('cardTypeChange', function (event) {
- *   // Update the placeholder value if there is only one possible card type
- *   if (event.cards.length === 1) {
- *     hostedFields.setPlaceholder('cvv', event.cards[0].code.name, function (placeholderErr) {
- *       if (placeholderErr) {
- *         // Handle errors, such as invalid field name
- *         console.error(placeholderErr);
- *       }
- *     });
- *   }
- * });
  * @returns {void}
  */
 HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) {

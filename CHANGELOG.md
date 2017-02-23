@@ -1,6 +1,26 @@
 CHANGELOG
 =========
 
+## 3.9.0
+
+* Client
+  * `client.create` now returns a promise if no callback is provided
+* Data Collector
+  * `dataCollector.create` now returns a promise if no callback is provided
+  * `dataCollectorInstance.teardown` now returns a promise if no callback is provided
+* Hosted Fields
+  * Fix bug where some versions of IE could not render Hosted Fields inputs because of `window.top` being undefined
+  * Fix autofill for 1Password extensions
+  * Correct detection of Samsung browsers to disable input formatting in old versions
+  * Allow passing `postalCode` as an option when the `postalCode` field is not enabled
+* PayPal
+  * Add `landingPageType` as a tokenization option
+    * `login` - A PayPal account login landing page is used
+    * `billing` - A non-PayPal account landing page is used
+  * Add support for PopupBridge
+* PayPal Checkout
+  * Pass in correlation id from billing agreement token or ec token when tokenizing
+
 ## 3.8.0
 
 * Pre-bundled files are now published to npm, fixing parsing errors when using webpack

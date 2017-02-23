@@ -64,7 +64,7 @@ function create(options, callback) {
     return;
   }
 
-  if (!browserDetection.supportsPopups()) {
+  if (!global.popupBridge && !browserDetection.supportsPopups()) {
     callback(new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED));
     return;
   }
