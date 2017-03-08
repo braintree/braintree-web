@@ -28,7 +28,7 @@ describe('internal', function () {
     it('emits a CONFIGURATION_REQUEST event', function () {
       internal.create();
 
-      expect(Bus.prototype.emit).to.have.been.calledWith(Bus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
+      expect(Bus.prototype.emit).to.be.calledWith(Bus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
     });
   });
 
@@ -47,7 +47,7 @@ describe('internal', function () {
       it('sets up bus for HOSTED_FIELDS_FETCH_CAPABILITIES', function () {
         this.initialize(this.configuration);
 
-        expect(Bus.prototype.on).to.have.been.calledWith(events.HOSTED_FIELDS_FETCH_CAPABILITIES, this.sandbox.match.func);
+        expect(Bus.prototype.on).to.be.calledWith(events.HOSTED_FIELDS_FETCH_CAPABILITIES, this.sandbox.match.func);
       });
 
       it('fetches capabilities when a card form exists', function (done) {
@@ -122,7 +122,7 @@ describe('internal', function () {
       it('sets up bus for HOSTED_FIELDS_ENROLL', function () {
         this.initialize(this.configuration);
 
-        expect(Bus.prototype.on).to.have.been.calledWith(events.HOSTED_FIELDS_ENROLL, this.sandbox.match.func);
+        expect(Bus.prototype.on).to.be.calledWith(events.HOSTED_FIELDS_ENROLL, this.sandbox.match.func);
       });
 
       it('enrolls when a card form exists', function (done) {
@@ -222,7 +222,7 @@ describe('internal', function () {
       it('sets up bus for HOSTED_FIELDS_TOKENIZE', function () {
         this.initialize(this.configuration);
 
-        expect(Bus.prototype.on).to.have.been.calledWith(events.HOSTED_FIELDS_TOKENIZE, this.sandbox.match.func);
+        expect(Bus.prototype.on).to.be.calledWith(events.HOSTED_FIELDS_TOKENIZE, this.sandbox.match.func);
       });
 
       it('tokenizes when a card form exists', function (done) {

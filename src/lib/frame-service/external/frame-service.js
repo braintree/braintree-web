@@ -46,7 +46,7 @@ function FrameService(options) {
     height: options.height,
     width: options.width
   };
-  this._state = options.state;
+  this.state = options.state;
 
   this._bus = new Bus({channel: this._serviceId});
   this._setBusEvents();
@@ -95,7 +95,7 @@ FrameService.prototype._setBusEvents = function () {
   }.bind(this));
 
   this._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
-    reply(this._state);
+    reply(this.state);
   }.bind(this));
 };
 

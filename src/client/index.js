@@ -28,34 +28,20 @@ var sharedErrors = require('../lib/errors');
  * @static
  */
 function create(options) {
-  return new Promise(function (resolve) {
-    if (!options.authorization) {
-      throw new BraintreeError({
-        type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-        code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-        message: 'options.authorization is required when instantiating a client.'
-      });
+  if (!options.authorization) {
+    return Promise.reject(new BraintreeError({
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
+      message: 'options.authorization is required when instantiating a client.'
+    }));
+  }
+
+  return getConfiguration(options).then(function (configuration) {
+    if (options.debug) {
+      configuration.isDebug = true;
     }
 
-    getConfiguration(options, function (err, configuration) {
-      var client;
-
-      if (err) {
-        throw err;
-      }
-
-      if (options.debug) {
-        configuration.isDebug = true;
-      }
-
-      try {
-        client = new Client(configuration);
-      } catch (clientCreationError) {
-        throw clientCreationError;
-      }
-
-      resolve(client);
-    });
+    return new Client(configuration);
   });
 }
 

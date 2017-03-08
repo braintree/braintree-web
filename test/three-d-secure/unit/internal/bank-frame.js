@@ -27,7 +27,7 @@ describe('initializeBankFrame', function () {
   it('emits a CONFIGURATION_REQUEST on the bus', function () {
     initializeBankFrame();
 
-    expect(Bus.prototype.emit).to.have.been.calledWith(Bus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
+    expect(Bus.prototype.emit).to.be.calledWith(Bus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
   });
 
   it('throw an error if termUrl is not a valid domain', function (done) {

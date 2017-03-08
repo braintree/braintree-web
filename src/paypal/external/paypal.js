@@ -70,6 +70,8 @@ var querystring = require('../../lib/querystring');
  * @class
  * @param {object} options see {@link module:braintree-web/paypal.create|paypal.create}
  * @classdesc This class represents a PayPal component. Instances of this class have methods for launching auth dialogs and other programmatic interactions with the PayPal component.
+ *
+ * This component has been deprecated in favor of the {@link PayPalCheckout|PayPal Checkout component}.
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/paypal.create|braintree-web.paypal.create} instead.</strong>
  */
 function PayPal(options) {
@@ -156,11 +158,11 @@ PayPal.prototype._initialize = function (callback) {
  * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
- * @param {string} [options.landingPageType] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.
- * * `login` - A non-PayPal account landing page is used.
- * * `billing` - A PayPal account login page is used.
+ * @param {string} [options.landingPageType=login] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment. It defaults to `login`.
+ * * `login` - A PayPal account login page is used.
+ * * `billing` - A non-PayPal account landing page is used.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
- * @example
+ * @example Tokenizing with the vault flow
  * button.addEventListener('click', function () {
  *   // Disable the button so that we don't attempt to open multiple popups.
  *   button.setAttribute('disabled', 'disabled');
@@ -169,6 +171,43 @@ PayPal.prototype._initialize = function (callback) {
  *   // as a result of a user action, such as a button click.
  *   paypalInstance.tokenize({
  *     flow: 'vault' // Required
+ *     // Any other tokenization options
+ *   }, function (tokenizeErr, payload) {
+ *     button.removeAttribute('disabled');
+ *
+ *     if (tokenizeErr) {
+ *       // Handle tokenization errors or premature flow closure
+ *
+ *       switch (tokenizeErr.code) {
+ *         case 'PAYPAL_POPUP_CLOSED':
+ *           console.error('Customer closed PayPal popup.');
+ *           break;
+ *         case 'PAYPAL_ACCOUNT_TOKENIZATION_FAILED':
+ *           console.error('PayPal tokenization failed. See details:', tokenizeErr.details);
+ *           break;
+ *         case 'PAYPAL_FLOW_FAILED':
+ *           console.error('Unable to initialize PayPal flow. Are your options correct?', tokenizeErr.details);
+ *           break;
+ *         default:
+ *           console.error('Error!', tokenizeErr);
+ *       }
+ *     } else {
+ *       // Submit payload.nonce to your server
+ *     }
+ *   });
+ * });
+
+ * @example Tokenizing with the checkout flow
+ * button.addEventListener('click', function () {
+ *   // Disable the button so that we don't attempt to open multiple popups.
+ *   button.setAttribute('disabled', 'disabled');
+ *
+ *   // Because PayPal tokenization opens a popup, this must be called
+ *   // as a result of a user action, such as a button click.
+ *   paypalInstance.tokenize({
+ *     flow: 'checkout', // Required
+ *     amount: '10.00', // Required
+ *     currency: 'USD' // Required
  *     // Any other tokenization options
  *   }, function (tokenizeErr, payload) {
  *     button.removeAttribute('disabled');

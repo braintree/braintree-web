@@ -697,6 +697,37 @@ HostedFields.prototype.setAttribute = function (options, callback) {
   }
 };
 
+HostedFields.prototype.removeAttribute = function (options, callback) {
+  var attributeErr, err;
+
+  if (!whitelistedFields.hasOwnProperty(options.field)) {
+    err = new BraintreeError({
+      type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
+      code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
+      message: '"' + options.field + '" is not a valid field. You must use a valid field option when removing an attribute.'
+    });
+  } else if (!this._fields.hasOwnProperty(options.field)) {
+    err = new BraintreeError({
+      type: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.type,
+      code: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.code,
+      message: 'Cannot remove attribute for "' + options.field + '" field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    attributeErr = attributeValidationError(options.attribute);
+
+    if (attributeErr) {
+      err = attributeErr;
+    } else {
+      this._bus.emit(events.REMOVE_ATTRIBUTE, options.field, options.attribute);
+    }
+  }
+
+  if (typeof callback === 'function') {
+    callback = deferred(callback);
+    callback(err);
+  }
+};
+
 /**
  * @deprecated since version 3.8.0. Use {@link HostedFields#setAttribute|setAttribute} instead.
  *

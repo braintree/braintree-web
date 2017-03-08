@@ -41,8 +41,8 @@ describe('frame-service', function () {
 
       frameService.report('err', 'payload');
 
-      expect(frame.bus.emit).to.have.been.calledOnce;
-      expect(frame.bus.emit).to.have.been.calledWith(events.DISPATCH_FRAME_REPORT, {
+      expect(frame.bus.emit).to.be.calledOnce;
+      expect(frame.bus.emit).to.be.calledWith(events.DISPATCH_FRAME_REPORT, {
         err: 'err',
         payload: 'payload'
       });
@@ -55,7 +55,7 @@ describe('frame-service', function () {
       frameService.asyncClose();
 
       setTimeout(function () {
-        expect(global.close).to.have.been.called;
+        expect(global.close).to.be.called;
         done();
       }, constants.POPUP_CLOSE_TIMEOUT + 10);
     });

@@ -67,7 +67,7 @@ describe('braintree bus', function () {
   describe('on', function () {
     it('proxies to Framebus\'s on', function () {
       this.bus.on(this.event, this.handler);
-      expect(framebus.on).to.have.been.calledWith('braintree:foo:' + this.event, this.handler);
+      expect(framebus.on).to.be.calledWith('braintree:foo:' + this.event, this.handler);
     });
 
     it.skip('throws an error if called with an invalid event name', function () {
@@ -82,7 +82,7 @@ describe('braintree bus', function () {
   describe('off', function () {
     it('proxies to Framebus\'s off', function () {
       this.bus.off(this.event, this.handler);
-      expect(framebus.off).to.have.been.calledWith('braintree:foo:' + this.event, this.handler);
+      expect(framebus.off).to.be.calledWith('braintree:foo:' + this.event, this.handler);
     });
 
     it.skip('throws an error if called with an invalid event name', function () {
@@ -97,7 +97,7 @@ describe('braintree bus', function () {
   describe('emit', function () {
     it('proxies to Framebus\'s emit', function () {
       this.bus.emit(this.event, this.payload, this.handler);
-      expect(framebus.emit).to.have.been.calledWith('braintree:foo:' + this.event, this.payload, this.handler);
+      expect(framebus.emit).to.be.calledWith('braintree:foo:' + this.event, this.payload, this.handler);
     });
 
     it.skip('throws an error if called with an invalid event name', function () {
@@ -129,9 +129,9 @@ describe('braintree bus', function () {
 
       this.bus.teardown();
 
-      expect(this.bus._offDirect).to.have.been.calledWith(event1, handler1);
-      expect(this.bus._offDirect).to.have.been.calledWith(event2, handler2);
-      expect(this.bus._offDirect).to.have.been.calledWith(event3, handler3);
+      expect(this.bus._offDirect).to.be.calledWith(event1, handler1);
+      expect(this.bus._offDirect).to.be.calledWith(event2, handler2);
+      expect(this.bus._offDirect).to.be.calledWith(event3, handler3);
     });
 
     it('only unsubscribes from events once', function () {
@@ -141,20 +141,20 @@ describe('braintree bus', function () {
       this.bus.teardown();
       this.bus.teardown();
 
-      expect(this.bus._offDirect).to.have.been.calledOnce;
+      expect(this.bus._offDirect).to.be.calledOnce;
     });
 
     it('doesn\'t proxy to framebus after calling', function () {
       this.bus.teardown();
 
       this.bus.on(this.event, this.handler);
-      expect(framebus.on).not.to.have.been.called;
+      expect(framebus.on).not.to.be.called;
 
       this.bus.off(this.event, this.handler);
-      expect(framebus.off).not.to.have.been.called;
+      expect(framebus.off).not.to.be.called;
 
       this.bus.emit(this.event);
-      expect(framebus.emit).not.to.have.been.called;
+      expect(framebus.emit).not.to.be.called;
     });
   });
 });

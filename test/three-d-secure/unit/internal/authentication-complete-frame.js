@@ -12,6 +12,6 @@ describe('initializeAuthenticationCompleteFrame', function () {
 
     initializeAuthenticationCompleteFrame(url);
 
-    expect(Bus.prototype.emit).to.have.been.calledWith(events.AUTHENTICATION_COMPLETE, this.sandbox.match(params));
+    expect(Bus.prototype.emit).to.be.calledWith(events.AUTHENTICATION_COMPLETE, this.sandbox.match(params));
   });
 });

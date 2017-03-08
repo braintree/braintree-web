@@ -151,6 +151,66 @@ describe('Base Input', function () {
               expect(this.instance.element.getAttribute('data-braintree-name')).to.equal(key);
             });
           });
+
+          describe('setAttribute', function () {
+            beforeEach(function () {
+              this.instance.element.setAttribute = this.sandbox.stub();
+            });
+
+            it('calls element.setAttribute', function () {
+              this.instance.setAttribute(this.type, 'disabled', true);
+
+              expect(this.instance.element.setAttribute).to.be.calledWith('disabled', true);
+            });
+
+            it('does not call element.setAttribute when type does not match', function () {
+              this.instance.setAttribute('not-my-type', 'disabled', true);
+
+              expect(this.instance.element.setAttribute).to.not.be.called;
+            });
+
+            it('does not call element.setAttribute when attribute is not whitelisted', function () {
+              this.instance.setAttribute(this.type, 'maxlength', 0);
+
+              expect(this.instance.element.setAttribute).to.not.be.called;
+            });
+
+            it('does not call element.setAttribute when value does not match attribute type', function () {
+              this.instance.setAttribute(this.type, 'maxlength', false);
+
+              expect(this.instance.element.setAttribute).to.not.be.called;
+            });
+          });
+
+          describe('removeAttribute', function () {
+            beforeEach(function () {
+              this.instance.element.removeAttribute = this.sandbox.stub();
+            });
+
+            it('calls element.removeAttribute', function () {
+              this.instance.setAttribute('disabled', true);
+
+              this.instance.removeAttribute(this.type, 'disabled');
+
+              expect(this.instance.element.removeAttribute).to.be.calledWith('disabled');
+            });
+
+            it('does not call element.removeAttribute when type does not match', function () {
+              this.instance.setAttribute('disabled', true);
+
+              this.instance.removeAttribute('not-my-type', 'disabled');
+
+              expect(this.instance.element.removeAttribute).to.not.be.called;
+            });
+
+            it('does not call element.removeAttribute when attribute is not whitelisted', function () {
+              this.instance.element.removeAttribute = this.sandbox.stub();
+
+              this.instance.removeAttribute(this.type, 'maxlength');
+
+              expect(this.instance.element.removeAttribute).to.not.be.called;
+            });
+          });
         });
       });
     });

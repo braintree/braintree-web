@@ -3,6 +3,7 @@
 var gulp = require('gulp');
 var envify = require('gulp-envify');
 var rename = require('gulp-rename');
+var removeCode = require('gulp-remove-code');
 var replace = require('gulp-replace');
 var mkdirp = require('mkdirp');
 var sequence = require('run-sequence');
@@ -79,6 +80,7 @@ gulp.task('build:npm:src', function () {
     'src/**/*.js',
     '!src/**/internal/**' // no need to pass the internal files to npm
   ])
+    .pipe(removeCode({production: true}))
     .pipe(envify(process.env))
     .pipe(gulp.dest(NPM_DIST));
 });

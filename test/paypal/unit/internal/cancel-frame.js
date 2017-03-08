@@ -17,7 +17,7 @@ describe('cancel-frame', function () {
       this.sandbox.stub(frameService, 'report');
       cancelFrame.start();
 
-      expect(frameService.report).to.have.been.calledWith(
+      expect(frameService.report).to.be.calledWith(
         this.sandbox.match(err)
       );
     });
@@ -30,7 +30,7 @@ describe('cancel-frame', function () {
       expect(global.close).to.not.have.been.called;
 
       setTimeout(function () {
-        expect(global.close).to.have.been.called;
+        expect(global.close).to.be.called;
         done();
       }, constants.POPUP_CLOSE_TIMEOUT + 10);
     });

@@ -42,6 +42,7 @@ var constants = {
     '-webkit-tap-highlight-color',
     '-webkit-transition',
     'color',
+    'direction',
     'font',
     'font-family',
     'font-size',
@@ -106,6 +107,7 @@ constants.events = enumerate([
   'ADD_CLASS',
   'REMOVE_CLASS',
   'SET_ATTRIBUTE',
+  'REMOVE_ATTRIBUTE',
   'CLEAR_FIELD'
 ], 'hosted-fields:');
 

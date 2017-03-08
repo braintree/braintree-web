@@ -13,7 +13,7 @@ describe('openPopup', function () {
 
     openPopup(options);
 
-    expect(global.open).to.have.been.calledWith(
+    expect(global.open).to.be.calledWith(
       'landing-frame-url',
       'name',
       this.sandbox.match.string

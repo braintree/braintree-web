@@ -4,6 +4,7 @@
   "client",
   "data-collector",
   "hosted-fields",
+  "masterpass",
   "paypal",
   "paypal-checkout",
   "three-d-secure",

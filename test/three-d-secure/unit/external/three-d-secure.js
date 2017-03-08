@@ -64,7 +64,7 @@ describe('ThreeDSecure', function () {
     it('can be called multiple times if cancelled in between', function (done) {
       var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
 
-      this.client.request.yields(null, {
+      this.client.request.yieldsAsync(null, {
         paymentMethod: {nonce: 'upgraded-nonce'},
         threeDSecureInfo: threeDSecureInfo
       });
@@ -93,30 +93,31 @@ describe('ThreeDSecure', function () {
     it('can be called multiple times if first request failed', function (done) {
       var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
 
-      this.client.request.yields(new Error('failure'));
+      this.client.request.yieldsAsync(new Error('failure'));
 
       this.instance.verifyCard({
         nonce: 'fake-nonce',
         amount: 100,
         addFrame: noop,
         removeFrame: noop
-      }, noop);
+      }, function () {
+        this.client.request.yieldsAsync(null, {
+          paymentMethod: {nonce: 'upgraded-nonce'},
+          threeDSecureInfo: threeDSecureInfo
+        });
 
-      this.client.request.yields(null, {
-        paymentMethod: {nonce: 'upgraded-nonce'},
-        threeDSecureInfo: threeDSecureInfo
-      });
+        this.instance.verifyCard({
+          nonce: 'fake-nonce',
+          amount: 100,
+          addFrame: noop,
+          removeFrame: noop
+        }, function (err, data) {
+          expect(err).not.to.exist;
+          expect(data.nonce).to.equal('upgraded-nonce');
 
-      this.instance.verifyCard({
-        nonce: 'fake-nonce',
-        amount: 100,
-        addFrame: noop,
-        removeFrame: noop
-      }, function (err, data) {
-        expect(data.nonce).to.equal('upgraded-nonce');
-
-        done();
-      });
+          done();
+        });
+      }.bind(this));
     });
 
     it('cannot be called twice without cancelling in between', function (done) {
@@ -261,7 +262,7 @@ describe('ThreeDSecure', function () {
     it('makes a request to the 3DS lookup endpoint', function (done) {
       var self = this;
 
-      this.client.request.yields(null, {paymentMethod: {}});
+      this.client.request.yieldsAsync(null, {paymentMethod: {}});
 
       this.instance.verifyCard({
         nonce: 'abcdef',
@@ -283,7 +284,7 @@ describe('ThreeDSecure', function () {
     it('handles errors when hitting the 3DS lookup endpoint', function (done) {
       var error = new Error('network error');
 
-      this.client.request.yields(error);
+      this.client.request.yieldsAsync(error);
 
       this.instance.verifyCard({
         nonce: 'abcdef',
@@ -301,7 +302,7 @@ describe('ThreeDSecure', function () {
       it('calls the callback with a nonce and verification details', function (done) {
         var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paymentMethod: {nonce: 'upgraded-nonce'},
           threeDSecureInfo: threeDSecureInfo
         });
@@ -325,7 +326,7 @@ describe('ThreeDSecure', function () {
         var addFrame = this.sandbox.spy();
         var removeFrame = this.sandbox.spy();
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paymentMethod: {nonce: 'upgraded-nonce'},
           threeDSecureInfo: threeDSecureInfo
         });
@@ -494,7 +495,7 @@ describe('ThreeDSecure', function () {
             });
           },
           removeFrame: function () {
-            expect(Bus.prototype.teardown).to.have.been.called;
+            expect(Bus.prototype.teardown).to.be.called;
 
             done();
           }
@@ -695,7 +696,7 @@ describe('ThreeDSecure', function () {
       var threeDS = this.threeDS;
 
       threeDS.teardown(function () {
-        expect(analytics.sendEvent).to.have.been.calledWith(threeDS._options.client, 'threedsecure.teardown-completed');
+        expect(analytics.sendEvent).to.be.calledWith(threeDS._options.client, 'threedsecure.teardown-completed');
         done();
       });
     });

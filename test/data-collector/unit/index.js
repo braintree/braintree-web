@@ -40,7 +40,7 @@ describe('dataCollector', function () {
         client: this.client,
         kount: true
       }, function () {
-        expect(kount.setup).to.have.been.calledWith(self.sandbox.match({
+        expect(kount.setup).to.be.calledWith(self.sandbox.match({
           merchantId: '12345'
         }));
 
@@ -120,7 +120,7 @@ describe('dataCollector', function () {
         client: this.client,
         kount: true
       }).then(function () {
-        expect(kount.setup).to.have.been.calledWith(self.sandbox.match({
+        expect(kount.setup).to.be.calledWith(self.sandbox.match({
           merchantId: '12345'
         }));
       });
@@ -247,8 +247,8 @@ describe('dataCollector', function () {
 
         actual.teardown();
 
-        expect(fraudnetTeardown).to.have.been.called;
-        expect(kountTeardown).to.have.been.called;
+        expect(fraudnetTeardown).to.be.called;
+        expect(kountTeardown).to.be.called;
 
         done();
       });

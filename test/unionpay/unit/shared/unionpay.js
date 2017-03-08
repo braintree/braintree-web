@@ -200,7 +200,7 @@ describe('UnionPay', function () {
           _options: {client: client}
         }, options, noop);
 
-        expect(analytics.sendEvent).to.have.been.calledWith(client, 'unionpay.capabilities-received');
+        expect(analytics.sendEvent).to.be.calledWith(client, 'unionpay.capabilities-received');
       });
     });
 
@@ -259,7 +259,7 @@ describe('UnionPay', function () {
         _options: {client: client}
       }, options, noop);
 
-      expect(analytics.sendEvent).to.have.been.calledWith(client, 'unionpay.capabilities-failed');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'unionpay.capabilities-failed');
     });
 
     it('sends _meta source', function () {
@@ -1539,7 +1539,7 @@ describe('UnionPay', function () {
         _hostedFieldsFrame: this.fakeHostedFieldsFrame
       });
 
-      expect(this.fakeBus.teardown).to.have.been.calledOnce;
+      expect(this.fakeBus.teardown).to.be.calledOnce;
     });
 
     it('tears down the Hosted Fields frame if the bus exists', function () {
@@ -1548,7 +1548,7 @@ describe('UnionPay', function () {
         _hostedFieldsFrame: this.fakeHostedFieldsFrame
       });
 
-      expect(this.fakeHostedFieldsFrame.parentNode.removeChild).to.have.been.calledWith(this.fakeHostedFieldsFrame);
+      expect(this.fakeHostedFieldsFrame.parentNode.removeChild).to.be.calledWith(this.fakeHostedFieldsFrame);
     });
 
     it('calls the callback if there is a bus', function (done) {

@@ -241,7 +241,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {_meta: {source: 'client'}}
       }));
     });
@@ -256,7 +256,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         method: 'get',
         url: 'https://braintreegateway.com/v1/payment_methods'
       }));
@@ -273,7 +273,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         method: 'get',
         url: 'https://braintreegateway.com/v1/payment_methods'
       }));
@@ -290,7 +290,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         method: 'get',
         url: 'https://example.braintree-api.com/status'
       }));
@@ -306,7 +306,7 @@ describe('Client', function () {
         method: 'post'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         url: 'https://braintreegateway.com/v1/payment_methods',
         method: 'post'
       }));
@@ -323,7 +323,7 @@ describe('Client', function () {
         method: 'post'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         url: 'https://braintreegateway.com/v1/payment_methods',
         method: 'post'
       }));
@@ -340,7 +340,7 @@ describe('Client', function () {
         method: 'post'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         url: 'https://example.braintree-api.com/fooboo',
         method: 'post'
       }));
@@ -356,7 +356,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
       }));
     });
@@ -372,7 +372,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
       }));
     });
@@ -388,7 +388,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).not.to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).not.to.be.calledWith(this.sandbox.match({
         data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
       }));
     });
@@ -403,7 +403,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {_meta: {sessionId: client.getConfiguration().analyticsMetadata.sessionId}}
       }));
     });
@@ -419,7 +419,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {_meta: {sessionId: client.getConfiguration().analyticsMetadata.sessionId}}
       }));
     });
@@ -434,7 +434,7 @@ describe('Client', function () {
         endpoint: 'payment_methods'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {_meta: {source: 'client'}}
       }));
     });
@@ -452,7 +452,7 @@ describe('Client', function () {
         }
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {_meta: {source: 'custom source'}}
       }));
     });
@@ -467,7 +467,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).not.to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).not.to.be.calledWith(this.sandbox.match({
         headers: this.sandbox.match.defined
       }));
     });
@@ -483,7 +483,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).not.to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).not.to.be.calledWith(this.sandbox.match({
         headers: this.sandbox.match.defined
       }));
     });
@@ -499,7 +499,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         headers: {
           'Braintree-Version': '2016-10-07',
           Authorization: 'Bearer fakeToken'
@@ -518,7 +518,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         timeout: 4000
       }));
     });
@@ -534,7 +534,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {some: 'stuffs'}
       }));
     });
@@ -551,7 +551,7 @@ describe('Client', function () {
         method: 'get'
       }, function () {});
 
-      expect(client._request).to.have.been.calledWith(this.sandbox.match({
+      expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {some: 'stuffs'}
       }));
     });
@@ -579,7 +579,7 @@ describe('Client', function () {
     it('returns BraintreeError for authorization if driver has a 403', function (done) {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request').yields('error', null, 403);
+      this.sandbox.stub(client, '_request').yieldsAsync('error', null, 403);
 
       client.request({
         endpoint: 'payment_methods',
@@ -598,7 +598,7 @@ describe('Client', function () {
     it('returns BraintreeError for rate limiting if driver has a 429', function (done) {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request').yields('error', null, 429);
+      this.sandbox.stub(client, '_request').yieldsAsync('error', null, 429);
 
       client.request({
         endpoint: 'payment_methods',
@@ -617,7 +617,7 @@ describe('Client', function () {
     it('returns BraintreeError if driver times out', function (done) {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request').yields('timeout', null, -1);
+      this.sandbox.stub(client, '_request').yieldsAsync('timeout', null, -1);
 
       client.request({
         endpoint: 'payment_methods',
@@ -637,7 +637,7 @@ describe('Client', function () {
       var errorDetails = {error: 'message'};
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request').yields(errorDetails, null, 422);
+      this.sandbox.stub(client, '_request').yieldsAsync(errorDetails, null, 422);
 
       client.request({
         endpoint: 'payment_methods',
@@ -657,7 +657,7 @@ describe('Client', function () {
     it('returns BraintreeError if driver has a 5xx', function (done) {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request').yields('This is a network error message', null, 500);
+      this.sandbox.stub(client, '_request').yieldsAsync('This is a network error message', null, 500);
 
       client.request({
         endpoint: 'payment_methods',
@@ -669,6 +669,25 @@ describe('Client', function () {
         expect(err.message).to.equal('Cannot contact the gateway at this time.');
         expect(data).to.be.null;
         expect(status).to.equal(500);
+        done();
+      });
+    });
+
+    it('copies data object and adds _httpStatus when request resolves', function (done) {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request').yieldsAsync(null, {foo: 'bar'}, 200);
+
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, function (err, data, status) {
+        expect(err).to.not.exist;
+        expect(status).to.equal(200);
+        expect(data).to.deep.equal({
+          foo: 'bar',
+          _httpStatus: 200
+        });
         done();
       });
     });

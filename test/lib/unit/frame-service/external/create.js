@@ -47,7 +47,7 @@ describe('FrameService create', function () {
 
       frameService.create(this.options, callback);
 
-      expect(stub).to.have.been.called;
+      expect(stub).to.be.called;
     });
   });
 });

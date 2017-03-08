@@ -50,7 +50,7 @@ describe('HostedFields', function () {
 
       new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
-      expect(analytics.sendEvent).to.have.been.calledWith(client, 'custom.hosted-fields.initialized');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'custom.hosted-fields.initialized');
     });
 
     it('sends a timeout event if the fields take too long to set up', function () {
@@ -62,10 +62,10 @@ describe('HostedFields', function () {
       new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
       clock.tick(59999);
-      expect(analytics.sendEvent).not.to.have.been.calledWith(client, 'custom.hosted-fields.load.timed-out');
+      expect(analytics.sendEvent).not.to.be.calledWith(client, 'custom.hosted-fields.load.timed-out');
 
       clock.tick(1);
-      expect(analytics.sendEvent).to.have.been.calledWith(client, 'custom.hosted-fields.load.timed-out');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'custom.hosted-fields.load.timed-out');
     });
 
     describe('configuration validation', function () {
@@ -241,7 +241,7 @@ describe('HostedFields', function () {
       expect(replyStub).not.to.have.beenCalled;
 
       frameReadyHandler(replyStub);
-      expect(replyStub).to.have.been.calledWith(configuration);
+      expect(replyStub).to.be.calledWith(configuration);
     });
 
     it('emits "ready" when the final FRAME_READY is emitted', function (done) {
@@ -458,8 +458,8 @@ describe('HostedFields', function () {
     it('calls emit with the type and merchant payload', function () {
       this.inputEventHandler(this.eventData);
 
-      expect(this.instance._emit).to.have.been.calledOnce;
-      expect(this.instance._emit).to.have.been.calledWith('foo', this.eventData.merchantPayload);
+      expect(this.instance._emit).to.be.calledOnce;
+      expect(this.instance._emit).to.be.calledWith('foo', this.eventData.merchantPayload);
     });
   });
 
@@ -467,7 +467,7 @@ describe('HostedFields', function () {
     it('does not require options', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yields();
+      instance._bus.emit.yieldsAsync();
 
       instance.tokenize(function (err) {
         expect(err).to.not.exist;
@@ -493,7 +493,7 @@ describe('HostedFields', function () {
     it('calls the callback when options are not provided', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yields(['foo']);
+      instance._bus.emit.yieldsAsync(['foo']);
 
       instance.tokenize(function (data) {
         expect(data).to.equal('foo');
@@ -504,7 +504,7 @@ describe('HostedFields', function () {
     it('calls the callback when options are provided', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yields(['foo']);
+      instance._bus.emit.yieldsAsync(['foo']);
 
       instance.tokenize({foo: 'bar'}, function (data) {
         expect(data).to.equal('foo');
@@ -516,7 +516,7 @@ describe('HostedFields', function () {
       var err;
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yields(['foo']);
+      instance._bus.emit.yieldsAsync(['foo']);
 
       try {
         instance.tokenize();
@@ -545,7 +545,7 @@ describe('HostedFields', function () {
         _client: function () {}
       }, callback);
 
-      expect(teardownStub.teardown).to.have.been.calledWith(this.sandbox.match.func);
+      expect(teardownStub.teardown).to.be.calledWith(this.sandbox.match.func);
     });
 
     it('calls teardown analytic', function (done) {
@@ -563,7 +563,7 @@ describe('HostedFields', function () {
         }
       }, function (err) {
         expect(err).to.equal(fakeErr);
-        expect(analytics.sendEvent).to.have.been.calledWith(client, 'custom.hosted-fields.teardown-completed');
+        expect(analytics.sendEvent).to.be.calledWith(client, 'custom.hosted-fields.teardown-completed');
 
         done();
       });
@@ -814,6 +814,150 @@ describe('HostedFields', function () {
         value: '123'
       }, function () {
         expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
+    });
+  });
+
+  describe('removeAttribute', function () {
+    it('emits REMOVE_ATTRIBUTE event if options are valid', function () {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var instance;
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.removeAttribute({
+        field: 'number',
+        attribute: 'disabled'
+      });
+
+      expect(instance._bus.emit).to.be.calledWith(events.REMOVE_ATTRIBUTE, 'number', 'disabled');
+    });
+
+    it('calls callback if provided', function (done) {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var instance;
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.removeAttribute({
+        field: 'number',
+        attribute: 'disabled'
+      }, done);
+    });
+
+    it('calls errback when given non-whitelisted field', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.removeAttribute({
+        field: 'rogue-field',
+        attribute: 'disabled'
+      }, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
+        expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when removing an attribute.');
+        expect(err.details).not.to.exist;
+        done();
+      });
+    });
+
+    it('does not emit REMOVE_ATTRIBUTE event when given non-whitelisted field', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.removeAttribute({
+        field: 'rogue-field',
+        attribute: 'disabled'
+      }, function () {
+        expect(instance._bus.emit).to.not.be.calledWith(events.REMOVE_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
+    });
+
+    it('calls errback when given field not supplied by merchant', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.removeAttribute({
+        field: 'cvv',
+        attribute: 'disabled'
+      }, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
+        expect(err.message).to.equal('Cannot remove attribute for "cvv" field because it is not part of the current Hosted Fields options.');
+        expect(err.details).not.to.exist;
+        done();
+      });
+    });
+
+    it('does not emit REMOVE_ATTRIBUTE event when given field not supplied by merchant', function (done) {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.removeAttribute({
+        field: 'cvv',
+        attribute: 'disabled'
+      }, function () {
+        expect(instance._bus.emit).to.not.be.calledWith(events.REMOVE_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string);
+        done();
+      }.bind(this));
+    });
+
+    it('calls errback when given non-whitelisted attribute', function (done) {
+      var instance;
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+
+      numberNode.id = 'number';
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.removeAttribute({
+        field: 'number',
+        attribute: 'illegal'
+      }, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED');
+        expect(err.message).to.equal('The "illegal" attribute is not supported in Hosted Fields.');
+        expect(err.details).not.to.exist;
+        done();
+      });
+    });
+
+    it('does not emit REMOVE_ATTRIBUTE event when given non-whitelisted attribute', function (done) {
+      var instance;
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+
+      numberNode.id = 'number';
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.removeAttribute({
+        field: 'number',
+        attribute: 'illegal'
+      }, function () {
+        expect(instance._bus.emit).to.not.be.calledWith(events.REMOVE_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string);
         done();
       }.bind(this));
     });

@@ -75,70 +75,68 @@ var errors = require('./errors');
  * @returns {Promise|void} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
  */
 function create(options) {
-  return new Promise(function (resolve) {
-    var data, kountInstance, fraudnetInstance, config, clientVersion;
-    var result = {};
-    var instances = [];
-    var teardown = createTeardownMethod(result, instances);
+  var data, kountInstance, fraudnetInstance, config, clientVersion;
+  var result = {};
+  var instances = [];
+  var teardown = createTeardownMethod(result, instances);
 
-    if (options.client == null) {
-      throw new BraintreeError({
-        type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-        code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-        message: 'options.client is required when instantiating Data Collector.'
+  if (options.client == null) {
+    return Promise.reject(new BraintreeError({
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
+      message: 'options.client is required when instantiating Data Collector.'
+    }));
+  }
+
+  config = options.client.getConfiguration();
+  clientVersion = config.analyticsMetadata.sdkVersion;
+
+  if (clientVersion !== VERSION) {
+    return Promise.reject(new BraintreeError({
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
+      message: 'Client (version ' + clientVersion + ') and Data Collector (version ' + VERSION + ') components must be from the same SDK version.'
+    }));
+  }
+
+  if (options.kount === true) {
+    if (!config.gatewayConfiguration.kount) {
+      return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_KOUNT_NOT_ENABLED));
+    }
+
+    try {
+      kountInstance = kount.setup({
+        environment: config.gatewayConfiguration.environment,
+        merchantId: config.gatewayConfiguration.kount.kountMerchantId
       });
+    } catch (err) {
+      return Promise.reject(new BraintreeError({
+        type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
+        code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
+        message: err.message
+      }));
     }
 
-    config = options.client.getConfiguration();
-    clientVersion = config.analyticsMetadata.sdkVersion;
+    data = kountInstance.deviceData;
+    instances.push(kountInstance);
+  } else {
+    data = {};
+  }
 
-    if (clientVersion !== VERSION) {
-      throw new BraintreeError({
-        type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-        code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-        message: 'Client (version ' + clientVersion + ') and Data Collector (version ' + VERSION + ') components must be from the same SDK version.'
-      });
-    }
+  if (options.paypal === true) {
+    fraudnetInstance = fraudnet.setup();
+    data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
+    instances.push(fraudnetInstance);
+  }
 
-    if (options.kount === true) {
-      if (!config.gatewayConfiguration.kount) {
-        throw new BraintreeError(errors.DATA_COLLECTOR_KOUNT_NOT_ENABLED);
-      }
+  if (instances.length === 0) {
+    return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
+  }
 
-      try {
-        kountInstance = kount.setup({
-          environment: config.gatewayConfiguration.environment,
-          merchantId: config.gatewayConfiguration.kount.kountMerchantId
-        });
-      } catch (err) {
-        throw new BraintreeError({
-          type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
-          code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
-          message: err.message
-        });
-      }
+  result.deviceData = JSON.stringify(data);
+  result.teardown = teardown;
 
-      data = kountInstance.deviceData;
-      instances.push(kountInstance);
-    } else {
-      data = {};
-    }
-
-    if (options.paypal === true) {
-      fraudnetInstance = fraudnet.setup();
-      data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
-      instances.push(fraudnetInstance);
-    }
-
-    if (instances.length === 0) {
-      throw new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS);
-    }
-
-    result.deviceData = JSON.stringify(data);
-    result.teardown = teardown;
-
-    resolve(result);
-  });
+  return Promise.resolve(result);
 }
 
 function createTeardownMethod(result, instances) {

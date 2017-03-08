@@ -8,6 +8,11 @@ module.exports = {
     code: 'PAYPAL_NOT_ENABLED',
     message: 'PayPal is not enabled for this merchant.'
   },
+  PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED',
+    message: 'No linked PayPal Sandbox account. Sign into the Braintree gateway to configure your account.'
+  },
   PAYPAL_TOKENIZATION_REQUEST_ACTIVE: {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYPAL_TOKENIZATION_REQUEST_ACTIVE',

@@ -16,7 +16,7 @@ describe('redirect-frame', function () {
 
     it('reports to frame service the params from the querystring', function () {
       redirectFrame.start();
-      expect(frameService.report).to.have.been.calledWith(null, this.params);
+      expect(frameService.report).to.be.calledWith(null, this.params);
     });
   });
 });

@@ -122,6 +122,9 @@ function PayPalCheckout(options) {
  * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
+ * @param {string} [options.landingPageType=login] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.
+ * * `login` - A PayPal account login page is used.
+ * * `billing` - A non-PayPal account landing page is used.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by checkout.js
@@ -144,7 +147,7 @@ function PayPalCheckout(options) {
 PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
   var self = this; // eslint-disable-line no-invalid-this
 
-  return new Promise(function (resolve) {
+  return new Promise(function (resolve, reject) {
     var endpoint;
     var client = self._client;
 
@@ -168,20 +171,20 @@ PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
 
       if (err) {
         if (status === 422) {
-          throw new BraintreeError({
+          reject(new BraintreeError({
             type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
             code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
             message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
             details: {
               originalError: err
             }
-          });
+          }));
         } else {
-          throw convertToBraintreeError(err, {
+          reject(convertToBraintreeError(err, {
             type: errors.PAYPAL_FLOW_FAILED.type,
             code: errors.PAYPAL_FLOW_FAILED.code,
             message: errors.PAYPAL_FLOW_FAILED.message
-          });
+          }));
         }
       } else {
         if (options.flow === 'checkout') {
@@ -224,7 +227,7 @@ PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
 PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions) {
   var self = this; // eslint-disable-line no-invalid-this
 
-  return new Promise(function (resolve) {
+  return new Promise(function (resolve, reject) {
     var payload;
     var client = self._client;
     var options = {
@@ -248,11 +251,11 @@ PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions
       if (err) {
         analytics.sendEvent(client, 'paypal-checkout.tokenization.failed');
 
-        throw convertToBraintreeError(err, {
+        reject(convertToBraintreeError(err, {
           type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
           code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
           message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
-        });
+        }));
       } else {
         payload = self._formatTokenizePayload(response);
 
@@ -279,7 +282,8 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
       localeCode: options.locale,
       noShipping: (!options.enableShippingAddress).toString(),
-      addressOverride: options.shippingAddressEditable === false
+      addressOverride: options.shippingAddressEditable === false,
+      landingPageType: options.landingPageType
     }
   };
 

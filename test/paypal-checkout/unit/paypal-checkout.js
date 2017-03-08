@@ -74,7 +74,7 @@ describe('PayPalCheckout', function () {
           message: 'There was a problem with your request.'
         });
 
-        this.client.request.yields(gateway422Error, null, 422);
+        this.client.request.yieldsAsync(gateway422Error, null, 422);
 
         return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.MERCHANT);
@@ -89,7 +89,7 @@ describe('PayPalCheckout', function () {
       it('rejects with a network BraintreeError on other gateway errors', function () {
         var gatewayError = new Error('There was a problem with your request.');
 
-        this.client.request.yields(gatewayError, null, 400);
+        this.client.request.yieldsAsync(gatewayError, null, 400);
 
         return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -108,7 +108,7 @@ describe('PayPalCheckout', function () {
           message: 'There was a problem with your request.'
         });
 
-        this.client.request.yields(gatewayError, null, 400);
+        this.client.request.yieldsAsync(gatewayError, null, 400);
 
         return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -120,7 +120,7 @@ describe('PayPalCheckout', function () {
       it('resolves with a paymentID for checkout flow', function () {
         var paymentId = 'PAY-XXXXXXXXXX';
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paymentResource: {
             paymentToken: paymentId
           }
@@ -134,7 +134,7 @@ describe('PayPalCheckout', function () {
       it('resolves with a billingToken for vault flow', function () {
         var billingToken = 'BA-XXXXXXXXXX';
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           agreementSetup: {
             tokenId: billingToken
           }
@@ -142,6 +142,176 @@ describe('PayPalCheckout', function () {
 
         return this.paypalCheckout.createPayment({flow: 'vault'}).then(function (payload) {
           expect(payload).to.equal(billingToken);
+        });
+      });
+
+      describe('Hermes payment resource', function () {
+        beforeEach(function () {
+          this.options = {
+            flow: 'vault'
+          };
+          this.client.request.yieldsAsync(null, {
+            agreementSetup: {
+              tokenId: 'stub'
+            },
+            paymentResource: {
+              paymentToken: 'stub'
+            }
+          });
+        });
+
+        it('contains the PayPal experience profile', function () {
+          this.options.displayName = 'My Merchant';
+          this.options.locale = 'th_TH';
+          this.options.enableShippingAddress = true;
+          this.options.shippingAddressEditable = false;
+
+          return this.paypalCheckout.createPayment(this.options).then(function () {
+            expect(this.client.request).to.be.calledWith(this.sandbox.match({
+              data: {
+                experienceProfile: {
+                  brandName: 'My Merchant',
+                  localeCode: 'th_TH',
+                  noShipping: 'false',
+                  addressOverride: true
+                }
+              }
+            }));
+          }.bind(this));
+        });
+
+        it('uses configuration\'s display name for PayPal brand name by default', function () {
+          return this.paypalCheckout.createPayment(this.options).then(function () {
+            expect(this.client.request).to.be.calledWith(this.sandbox.match({
+              data: {
+                experienceProfile: {
+                  brandName: 'Name'
+                }
+              }
+            }));
+          }.bind(this));
+        });
+
+        it('contains landing page type when specified', function () {
+          this.options.landingPageType = 'foobar';
+
+          return this.paypalCheckout.createPayment(this.options).then(function () {
+            expect(this.client.request).to.be.calledWith(this.sandbox.match({
+              data: {
+                experienceProfile: {
+                  landingPageType: 'foobar'
+                }
+              }
+            }));
+          }.bind(this));
+        });
+
+        it('does not contain landing page type when unspecified', function () {
+          return this.paypalCheckout.createPayment(this.options).then(function () {
+            expect(this.client.request).to.be.calledWith(this.sandbox.match({
+              data: {
+                experienceProfile: this.sandbox.match(function (obj) {
+                  return !obj.landingPageType;
+                })
+              }
+            }));
+          }.bind(this));
+        });
+
+        context('when using checkout flow', function () {
+          beforeEach(function () {
+            this.options.flow = 'checkout';
+            this.options.amount = 1;
+            this.options.currency = 'USD';
+          });
+
+          it('uses the correct endpoint', function () {
+            return this.paypalCheckout.createPayment(this.options).then(function () {
+              expect(this.client.request).to.be.calledWith(this.sandbox.match({
+                endpoint: 'paypal_hermes/create_payment_resource',
+                method: 'post'
+              }));
+            }.bind(this));
+          });
+
+          it('contains payment amount and currency', function () {
+            return this.paypalCheckout.createPayment(this.options).then(function () {
+              expect(this.client.request).to.be.calledWith(this.sandbox.match({
+                data: {
+                  amount: 1,
+                  currencyIsoCode: 'USD'
+                }
+              }));
+            }.bind(this));
+          });
+
+          it('contains other options when specified', function () {
+            this.options.intent = 'sale';
+            this.options.shippingAddressOverride = {
+              line1: '123 Townsend St',
+              line2: 'Fl 6',
+              city: 'San Francisco',
+              state: 'CA',
+              postalCode: '94107',
+              countryCode: 'USA',
+              phone: '111-1111',
+              recipientName: 'Joe Bloggs'
+            };
+
+            return this.paypalCheckout.createPayment(this.options).then(function () {
+              expect(this.client.request).to.be.calledWith(this.sandbox.match({
+                data: {
+                  intent: 'sale',
+                  line1: '123 Townsend St',
+                  line2: 'Fl 6',
+                  city: 'San Francisco',
+                  state: 'CA',
+                  postalCode: '94107',
+                  countryCode: 'USA',
+                  phone: '111-1111',
+                  recipientName: 'Joe Bloggs'
+                }
+              }));
+            }.bind(this));
+          });
+        });
+
+        context('when using vault flow', function () {
+          beforeEach(function () {
+            this.options.flow = 'vault';
+          });
+
+          it('uses the correct endpoint', function () {
+            return this.paypalCheckout.createPayment(this.options).then(function () {
+              expect(this.client.request).to.be.calledWith(this.sandbox.match({
+                endpoint: 'paypal_hermes/setup_billing_agreement',
+                method: 'post'
+              }));
+            }.bind(this));
+          });
+
+          it('contains other options when specified', function () {
+            this.options.billingAgreementDescription = 'Foo Bar';
+            this.options.shippingAddressOverride = {
+              line1: '123 Townsend St',
+              line2: 'Fl 6',
+              city: 'San Francisco',
+              state: 'CA',
+              postalCode: '94107',
+              countryCode: 'USA',
+              phone: '111-1111',
+              recipientName: 'Joe Bloggs'
+            };
+
+            return this.paypalCheckout.createPayment(this.options).then(function () {
+              expect(this.client.request).to.be.calledWith(this.sandbox.match({
+                data: {
+                  description: 'Foo Bar',
+                  shippingAddress: this.options.shippingAddressOverride
+                }
+              }));
+            }.bind(this));
+          });
         });
       });
     });
@@ -193,7 +363,7 @@ describe('PayPalCheckout', function () {
           message: 'There was a problem with your request.'
         });
 
-        this.client.request.yields(gateway422Error, null, 422);
+        this.client.request.yieldsAsync(gateway422Error, null, 422);
 
         this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
           expect(err.type).to.equal(BraintreeError.types.MERCHANT);
@@ -210,7 +380,7 @@ describe('PayPalCheckout', function () {
       it('calls callback with a network BraintreeError on other gateway errors', function (done) {
         var gatewayError = new Error('There was a problem with your request.');
 
-        this.client.request.yields(gatewayError, null, 400);
+        this.client.request.yieldsAsync(gatewayError, null, 400);
 
         this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -231,7 +401,7 @@ describe('PayPalCheckout', function () {
           message: 'There was a problem with your request.'
         });
 
-        this.client.request.yields(gatewayError, null, 400);
+        this.client.request.yieldsAsync(gatewayError, null, 400);
 
         this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -245,7 +415,7 @@ describe('PayPalCheckout', function () {
       it('calls callback with a paymentID for checkout flow', function (done) {
         var paymentId = 'PAY-XXXXXXXXXX';
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paymentResource: {
             paymentToken: paymentId
           }
@@ -261,7 +431,7 @@ describe('PayPalCheckout', function () {
       it('calls callback with a billingToken for vault flow', function (done) {
         var billingToken = 'BA-XXXXXXXXXX';
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           agreementSetup: {
             tokenId: billingToken
           }
@@ -588,7 +758,7 @@ describe('PayPalCheckout', function () {
       it('rejects with a BraintreeError if a non-Braintree error comes back from the client', function () {
         var error = new Error('Error');
 
-        this.client.request.yields(error);
+        this.client.request.yieldsAsync(error);
 
         return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
@@ -606,7 +776,7 @@ describe('PayPalCheckout', function () {
           message: 'message.'
         });
 
-        this.client.request.yields(btError);
+        this.client.request.yieldsAsync(btError);
 
         return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.equal(btError);
@@ -614,7 +784,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('resolves with the back account data in response', function () {
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{nonce: 'nonce', type: 'PayPal'}]
         });
 
@@ -630,7 +800,7 @@ describe('PayPalCheckout', function () {
           payerInfo: {name: 'foo'}
         };
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -648,7 +818,7 @@ describe('PayPalCheckout', function () {
           creditFinancingOffered: {foo: 'bar'}
         };
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -662,7 +832,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('does not resolve with creditFinancingOffered when not available', function () {
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -680,7 +850,7 @@ describe('PayPalCheckout', function () {
       it('calls callback with a BraintreeError if a non-Braintree error comes back from the client', function (done) {
         var error = new Error('Error');
 
-        this.client.request.yields(error);
+        this.client.request.yieldsAsync(error);
 
         this.paypalCheckout.tokenizePayment({}, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
@@ -699,7 +869,7 @@ describe('PayPalCheckout', function () {
           message: 'message.'
         });
 
-        this.client.request.yields(btError);
+        this.client.request.yieldsAsync(btError);
 
         this.paypalCheckout.tokenizePayment({}, function (err) {
           expect(err).to.equal(btError);
@@ -708,7 +878,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('calls callback with the back account data in response', function (done) {
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{nonce: 'nonce', type: 'PayPal'}]
         });
 
@@ -726,7 +896,7 @@ describe('PayPalCheckout', function () {
           payerInfo: {name: 'foo'}
         };
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -746,7 +916,7 @@ describe('PayPalCheckout', function () {
           creditFinancingOffered: {foo: 'bar'}
         };
 
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -762,7 +932,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('does not return creditFinancingOffered when not available', function (done) {
-        this.client.request.yields(null, {
+        this.client.request.yieldsAsync(null, {
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -796,15 +966,19 @@ describe('PayPalCheckout', function () {
     });
 
     it('calls analytics event when tokenization succeeds', function () {
-      this.client.request.yields(null, {});
+      var client = this.client;
 
-      this.paypalCheckout.tokenizePayment({});
+      client.request.yieldsAsync(null, {});
 
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.success');
+      return this.paypalCheckout.tokenizePayment({}).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.tokenization.success');
+      });
     });
 
     it('calls analytics event when credit offer is accepted', function () {
-      this.client.request.yields(null, {
+      var client = this.client;
+
+      client.request.yieldsAsync(null, {
         paypalAccounts: [{
           nonce: 'nonce',
           type: 'PayPal',
@@ -814,9 +988,9 @@ describe('PayPalCheckout', function () {
         }]
       });
 
-      this.paypalCheckout.tokenizePayment({});
-
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.accepted');
+      return this.paypalCheckout.tokenizePayment({}).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.credit.accepted');
+      });
     });
 
     it('passes the BA token as the correlationId when present', function () {
@@ -948,11 +1122,13 @@ describe('PayPalCheckout', function () {
     });
 
     it('sends a tokenization failure event when request fails', function () {
-      this.client.request.yields(new Error('Error'));
+      var client = this.client;
 
-      this.paypalCheckout.tokenizePayment({}, noop);
+      client.request.yieldsAsync(new Error('Error'));
 
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.failed');
+      return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function () {
+        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.tokenization.failed');
+      });
     });
   });
 });

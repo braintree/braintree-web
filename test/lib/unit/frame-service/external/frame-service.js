@@ -127,10 +127,10 @@ describe('FrameService', function () {
       expect(frameService._options.width).to.equal(150);
     });
 
-    it('assigns _state property', function () {
+    it('assigns state property', function () {
       var frameService = new FrameService(this.options);
 
-      expect(frameService._state).to.deep.equal(
+      expect(frameService.state).to.deep.equal(
         this.state
       );
     });
@@ -149,7 +149,7 @@ describe('FrameService', function () {
 
       frameService = new FrameService(this.options);
 
-      expect(frameService._setBusEvents).to.have.been.called;
+      expect(frameService._setBusEvents).to.be.called;
     });
   });
 
@@ -162,7 +162,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.initialize.call(context, noop);
 
-      expect(context._bus.on).to.have.been.calledWith(
+      expect(context._bus.on).to.be.calledWith(
         events.DISPATCH_FRAME_READY,
         this.sandbox.match.func
       );
@@ -202,7 +202,7 @@ describe('FrameService', function () {
       FrameService.prototype.initialize.call(context, callback);
 
       fakeBus.emit(events.DISPATCH_FRAME_READY);
-      expect(callback).to.have.been.called;
+      expect(callback).to.be.called;
     });
 
     it('removes event listener once dispatched', function () {
@@ -241,7 +241,7 @@ describe('FrameService', function () {
       fakeBus.emit(events.DISPATCH_FRAME_READY);
       fakeBus.emit(events.DISPATCH_FRAME_READY);
       fakeBus.emit(events.DISPATCH_FRAME_READY);
-      expect(callback).to.have.been.called;
+      expect(callback).to.be.called;
       expect(callback.callCount).to.equal(1);
     });
 
@@ -257,7 +257,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.initialize.call(context, noop);
 
-      expect(writeDispatchFrameStub).to.have.been.called;
+      expect(writeDispatchFrameStub).to.be.called;
     });
   });
 
@@ -286,7 +286,7 @@ describe('FrameService', function () {
 
       frameService._writeDispatchFrame();
 
-      expect(document.body.appendChild).to.have.been.calledWith(frameService._dispatchFrame);
+      expect(document.body.appendChild).to.be.calledWith(frameService._dispatchFrame);
     });
   });
 
@@ -298,7 +298,7 @@ describe('FrameService', function () {
 
       FrameService.prototype._setBusEvents.call(context);
 
-      expect(context._bus.on).to.have.been.calledWith(events.DISPATCH_FRAME_REPORT, this.sandbox.match.func);
+      expect(context._bus.on).to.be.calledWith(events.DISPATCH_FRAME_REPORT, this.sandbox.match.func);
     });
 
     it('listens for a configuration request', function () {
@@ -308,7 +308,7 @@ describe('FrameService', function () {
 
       FrameService.prototype._setBusEvents.call(context);
 
-      expect(context._bus.on).to.have.been.calledWith(BraintreeBus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
+      expect(context._bus.on).to.be.calledWith(BraintreeBus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
     });
 
     it('calls _onCompleteCallback with provided arguments', function () {
@@ -499,7 +499,7 @@ describe('FrameService', function () {
 
       frameService.open(mockCallback);
 
-      expect(mockCallback).to.have.been.calledWith(this.sandbox.match({
+      expect(mockCallback).to.be.calledWith(this.sandbox.match({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
         message: 'Frame failed to open.'
@@ -529,7 +529,7 @@ describe('FrameService', function () {
 
       frameService.open(callback);
 
-      expect(frameService._pollForPopupClose).to.have.been.called;
+      expect(frameService._pollForPopupClose).to.be.called;
     });
 
     it('calls _initializePopupBridge with the callback when PopupBridge is defined', function () {
@@ -576,7 +576,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.close.call(context);
 
-      expect(frameClosedStub).to.have.been.called;
+      expect(frameClosedStub).to.be.called;
     });
 
     it('does not attempt to close frame if already closed', function () {
@@ -592,7 +592,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.close.call(context);
 
-      expect(frameClosedStub).not.to.have.been.called;
+      expect(frameClosedStub).not.to.be.called;
     });
   });
 
@@ -610,7 +610,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.focus.call(context);
 
-      expect(frameFocusedStub).to.have.been.called;
+      expect(frameFocusedStub).to.be.called;
     });
 
     it('does not attempt to focus frame if already closed', function () {
@@ -626,7 +626,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.focus.call(context);
 
-      expect(frameFocusedStub).not.to.have.been.called;
+      expect(frameFocusedStub).not.to.be.called;
     });
   });
 
@@ -726,7 +726,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.teardown.call(context);
 
-      expect(closeStub).to.have.been.called;
+      expect(closeStub).to.be.called;
     });
 
     it('removes the _dispatchFrame from the DOM', function () {
@@ -744,7 +744,7 @@ describe('FrameService', function () {
 
       FrameService.prototype.teardown.call(context);
 
-      expect(removeChildStub).to.have.been.called;
+      expect(removeChildStub).to.be.called;
       expect(context._dispatchFrame).to.equal(null);
     });
   });
@@ -847,7 +847,7 @@ describe('FrameService', function () {
       frameClosed = true;
 
       setTimeout(function () {
-        expect(cleanupFrameStub).to.have.been.called;
+        expect(cleanupFrameStub).to.be.called;
         done();
       }, 200);
     });
@@ -869,7 +869,7 @@ describe('FrameService', function () {
 
       clock.tick(100);
 
-      expect(onCompleteCallbackStub).to.have.been.calledWith(this.sandbox.match({
+      expect(onCompleteCallbackStub).to.be.calledWith(this.sandbox.match({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_CLOSED',
         message: 'Frame closed before tokenization could occur.'

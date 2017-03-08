@@ -98,7 +98,7 @@ describe('AmericanExpress', function () {
     });
 
     it('passes along options to gateway', function (done) {
-      this.client.request = this.sandbox.stub().yields();
+      this.client.request = this.sandbox.stub().yieldsAsync();
 
       this.amex.getRewardsBalance({nonce: NONCE, foo: 'bar'}, function () {
         expect(this.client.request).to.be.calledWithMatch({
@@ -119,7 +119,7 @@ describe('AmericanExpress', function () {
         foo: 'boo'
       };
 
-      this.client.request = this.sandbox.stub().yields();
+      this.client.request = this.sandbox.stub().yieldsAsync();
 
       this.amex.getRewardsBalance(options, function () {
         expect(options).to.deep.equal({

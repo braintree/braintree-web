@@ -3,8 +3,10 @@
 var request = require('./request');
 var isWhitelistedDomain = require('../lib/is-whitelisted-domain');
 var BraintreeError = require('../lib/braintree-error');
+var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var addMetadata = require('../lib/add-metadata');
-var deferred = require('../lib/deferred');
+var Promise = require('../lib/promise');
+var assign = require('../lib/assign').assign;
 var constants = require('./constants');
 var errors = require('./errors');
 var sharedErrors = require('../lib/errors');
@@ -87,12 +89,13 @@ function Client(configuration) {
 /**
  * Used by other modules to formulate all network requests to the Braintree gateway. It is also capable of being used directly from your own form to tokenize credit card information. However, be sure to satisfy PCI compliance if you use direct card tokenization.
  * @public
+ * @function
  * @param {object} options Request options:
  * @param {string} options.method HTTP method, e.g. "get" or "post".
  * @param {string} options.endpoint Endpoint path, e.g. "payment_methods".
  * @param {object} options.data Data to send with the request.
  * @param {number} [options.timeout=60000] Set a timeout (in milliseconds) for the request.
- * @param {callback} callback The second argument, <code>data</code>, is the returned server data.
+ * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data.
  * @example
  * <caption>Direct Credit Card Tokenization</caption>
  * var createClient = require('braintree-web/client').create;
@@ -129,92 +132,120 @@ function Client(configuration) {
  *     console.log('Got nonce:', response.creditCards[0].nonce);
  *   });
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise that resolves with the request response if no callback is provided.
  */
 Client.prototype.request = function (options, callback) {
-  var optionName, api, baseUrl, requestOptions;
+  var self = this; // eslint-disable-line no-invalid-this
+  var requestPromise = new Promise(function (resolve, reject) {
+    var optionName, api, baseUrl, requestOptions;
 
-  if (!options.method) {
-    optionName = 'options.method';
-  } else if (!options.endpoint) {
-    optionName = 'options.endpoint';
-  }
-
-  if (optionName) {
-    callback = deferred(callback);
-    callback(new BraintreeError({
-      type: errors.CLIENT_OPTION_REQUIRED.type,
-      code: errors.CLIENT_OPTION_REQUIRED.code,
-      message: optionName + ' is required when making a request.'
-    }));
-    return;
-  }
-
-  if ('api' in options) {
-    api = options.api;
-  } else {
-    api = 'clientApi';
-  }
-
-  requestOptions = {
-    method: options.method,
-    timeout: options.timeout
-  };
-
-  if (api === 'clientApi') {
-    baseUrl = this._clientApiBaseUrl;
-
-    requestOptions.data = addMetadata(this._configuration, options.data);
-  } else if (api === 'braintreeApi') {
-    if (!this._braintreeApi) {
-      callback(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
-      return;
+    if (!options.method) {
+      optionName = 'options.method';
+    } else if (!options.endpoint) {
+      optionName = 'options.endpoint';
     }
 
-    baseUrl = this._braintreeApi.baseUrl;
+    if (optionName) {
+      throw new BraintreeError({
+        type: errors.CLIENT_OPTION_REQUIRED.type,
+        code: errors.CLIENT_OPTION_REQUIRED.code,
+        message: optionName + ' is required when making a request.'
+      });
+    }
 
-    requestOptions.data = options.data;
-
-    requestOptions.headers = {
-      'Braintree-Version': constants.BRAINTREE_API_VERSION_HEADER,
-      Authorization: 'Bearer ' + this._braintreeApi.accessToken
-    };
-  } else {
-    callback(new BraintreeError({
-      type: errors.CLIENT_OPTION_INVALID.type,
-      code: errors.CLIENT_OPTION_INVALID.code,
-      message: 'options.api is invalid.'
-    }));
-    return;
-  }
-
-  requestOptions.url = baseUrl + options.endpoint;
-
-  this._request(requestOptions, this._bindRequestCallback(callback));
-};
-
-Client.prototype._bindRequestCallback = function (callback) {
-  return function (err, data, status) {
-    if (status === -1) {
-      callback(new BraintreeError(errors.CLIENT_REQUEST_TIMEOUT), null, status);
-    } else if (status === 403) {
-      callback(new BraintreeError(errors.CLIENT_AUTHORIZATION_INSUFFICIENT), null, status);
-    } else if (status === 429) {
-      callback(new BraintreeError(errors.CLIENT_RATE_LIMITED), null, status);
-    } else if (status >= 500) {
-      callback(new BraintreeError(errors.CLIENT_GATEWAY_NETWORK), null, status);
-    } else if (status < 200 || status >= 400) {
-      callback(new BraintreeError({
-        type: errors.CLIENT_REQUEST_ERROR.type,
-        code: errors.CLIENT_REQUEST_ERROR.code,
-        message: errors.CLIENT_REQUEST_ERROR.message,
-        details: {originalError: err}
-      }), null, status);
+    if ('api' in options) {
+      api = options.api;
     } else {
-      callback(null, data, status);
+      api = 'clientApi';
     }
-  };
+
+    requestOptions = {
+      method: options.method,
+      timeout: options.timeout
+    };
+
+    if (api === 'clientApi') {
+      baseUrl = self._clientApiBaseUrl;
+
+      requestOptions.data = addMetadata(self._configuration, options.data);
+    } else if (api === 'braintreeApi') {
+      if (!self._braintreeApi) {
+        throw new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED);
+      }
+
+      baseUrl = self._braintreeApi.baseUrl;
+
+      requestOptions.data = options.data;
+
+      requestOptions.headers = {
+        'Braintree-Version': constants.BRAINTREE_API_VERSION_HEADER,
+        Authorization: 'Bearer ' + self._braintreeApi.accessToken
+      };
+    } else {
+      throw new BraintreeError({
+        type: errors.CLIENT_OPTION_INVALID.type,
+        code: errors.CLIENT_OPTION_INVALID.code,
+        message: 'options.api is invalid.'
+      });
+    }
+
+    requestOptions.url = baseUrl + options.endpoint;
+
+    self._request(requestOptions, function (err, data, status) {
+      var resolvedData;
+      var requestError = formatRequestError(status, err);
+
+      if (requestError) {
+        reject(requestError);
+        return;
+      }
+
+      resolvedData = assign({_httpStatus: status}, data);
+
+      resolve(resolvedData);
+    });
+  });
+
+  if (typeof callback === 'function') {
+    requestPromise.then(function (response) {
+      callback(null, response, response._httpStatus);
+    }).catch(function (err) {
+      var status = err && err.details && err.details.httpStatus;
+
+      callback(err, null, status);
+    });
+    return;
+  }
+
+  return requestPromise; // eslint-disable-line consistent-return
 };
+
+function formatRequestError(status, err) { // eslint-disable-line consistent-return
+  var requestError;
+
+  if (status === -1) {
+    requestError = new BraintreeError(errors.CLIENT_REQUEST_TIMEOUT);
+  } else if (status === 403) {
+    requestError = new BraintreeError(errors.CLIENT_AUTHORIZATION_INSUFFICIENT);
+  } else if (status === 429) {
+    requestError = new BraintreeError(errors.CLIENT_RATE_LIMITED);
+  } else if (status >= 500) {
+    requestError = new BraintreeError(errors.CLIENT_GATEWAY_NETWORK);
+  } else if (status < 200 || status >= 400) {
+    requestError = convertToBraintreeError(err, {
+      type: errors.CLIENT_REQUEST_ERROR.type,
+      code: errors.CLIENT_REQUEST_ERROR.code,
+      message: errors.CLIENT_REQUEST_ERROR.message
+    });
+  }
+
+  if (requestError) {
+    requestError.details = requestError.details || {};
+    requestError.details.httpStatus = status;
+
+    return requestError;
+  }
+}
 
 Client.prototype.toJSON = function () {
   return this.getConfiguration();

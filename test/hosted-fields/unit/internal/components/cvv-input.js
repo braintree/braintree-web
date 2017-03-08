@@ -34,12 +34,12 @@ describe('CVV Input', function () {
       this.input.model.set('possibleCardTypes', [{code: {size: 6}}]);
 
       expect(this.input.element.getAttribute('maxlength')).to.equal('6');
-      expect(this.input.formatter.setPattern).to.have.been.calledWith('{{999999}}');
+      expect(this.input.formatter.setPattern).to.be.calledWith('{{999999}}');
 
       this.input.model.set('possibleCardTypes', []);
 
       expect(this.input.element.getAttribute('maxlength')).to.equal('4');
-      expect(this.input.formatter.setPattern).to.have.been.calledWith('{{9999}}');
+      expect(this.input.formatter.setPattern).to.be.calledWith('{{9999}}');
     });
   });
 });

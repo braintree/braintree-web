@@ -69,7 +69,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._initialize.call(context, callback);
 
-      expect(frameService.create).to.have.been.calledWith({
+      expect(frameService.create).to.be.calledWith({
         name: sinon.match.string,
         dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.min.html',
         openFrameUrl: context._loadingFrameUrl
@@ -87,7 +87,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._initialize.call(context, callback);
 
-      expect(frameService.create).to.have.been.calledWith({
+      expect(frameService.create).to.be.calledWith({
         name: sinon.match.string,
         dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.html',
         openFrameUrl: context._loadingFrameUrl
@@ -122,7 +122,7 @@ describe('PayPal', function () {
       pp = new PayPal({client: this.client});
       pp._initialize(callback);
 
-      expect(callback).to.have.been.called;
+      expect(callback).to.be.called;
     });
 
     it('calls analytics with timed-out when failing to initialize', function () {
@@ -135,9 +135,9 @@ describe('PayPal', function () {
       pp = new PayPal({client: this.client});
       pp._initialize(callback);
       clock.tick(59999);
-      expect(analytics.sendEvent).not.to.have.been.calledWith(this.client, 'paypal.load.timed-out');
+      expect(analytics.sendEvent).not.to.be.calledWith(this.client, 'paypal.load.timed-out');
       clock.tick(1);
-      expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'paypal.load.timed-out');
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal.load.timed-out');
     });
   });
 
@@ -441,7 +441,7 @@ describe('PayPal', function () {
     it('makes an api request for a paypal payment resource', function () {
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
-      expect(this.context._client.request).to.have.been.calledWith({
+      expect(this.context._client.request).to.be.calledWith({
         endpoint: 'paypal_hermes/create_payment_resource',
         method: 'post',
         data: this.sandbox.match.object
@@ -452,7 +452,7 @@ describe('PayPal', function () {
       this.options.flow = 'vault';
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
-      expect(this.context._client.request).to.have.been.calledWith({
+      expect(this.context._client.request).to.be.calledWith({
         endpoint: 'paypal_hermes/setup_billing_agreement',
         method: 'post',
         data: this.sandbox.match.object
@@ -473,7 +473,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, callbackSpy);
 
-      expect(callbackSpy).to.have.been.calledWith(fakeError);
+      expect(callbackSpy).to.be.calledWith(fakeError);
     });
 
     it('closes frame if there was an error', function () {
@@ -490,7 +490,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, callbackSpy);
 
-      expect(this.context._frameService.close).to.have.been.called;
+      expect(this.context._frameService.close).to.be.called;
     });
 
     it('reports a merchant BraintreeError on gateway 422 errors', function () {
@@ -507,7 +507,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, callbackSpy);
 
-      expect(callbackSpy).to.have.been.calledWith(this.sandbox.match({
+      expect(callbackSpy).to.be.calledWith(this.sandbox.match({
         type: BraintreeError.types.MERCHANT,
         code: 'PAYPAL_INVALID_PAYMENT_OPTION',
         message: 'PayPal payment options are invalid.',
@@ -527,7 +527,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, callbackSpy);
 
-      expect(callbackSpy).to.have.been.calledWith(this.sandbox.match({
+      expect(callbackSpy).to.be.calledWith(this.sandbox.match({
         type: BraintreeError.types.NETWORK,
         code: 'PAYPAL_FLOW_FAILED',
         message: 'Could not initialize PayPal flow.',
@@ -546,7 +546,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
-      expect(this.context._frameService.redirect).to.have.been.calledWith('redirect-url');
+      expect(this.context._frameService.redirect).to.be.calledWith('redirect-url');
     });
 
     it('calls analytics with opened popupBridge event', function () {
@@ -559,7 +559,7 @@ describe('PayPal', function () {
 
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
-      expect(analytics.sendEvent).to.have.been.calledWith(this.context._client, 'paypal.tokenization.opened-popupbridge');
+      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.opened-popupbridge');
       delete global.popupBridge;
     });
 
@@ -583,7 +583,7 @@ describe('PayPal', function () {
       this.options.flow = 'vault';
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
-      expect(this.context._frameService.redirect).to.have.been.calledWith('approval-url');
+      expect(this.context._frameService.redirect).to.be.calledWith('approval-url');
     });
 
     it('appends useraction to an approvalUrl', function () {
@@ -597,7 +597,7 @@ describe('PayPal', function () {
       this.options.useraction = 'commit';
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
-      expect(this.context._frameService.redirect).to.have.been.calledWith('approval-url?useraction=commit');
+      expect(this.context._frameService.redirect).to.be.calledWith('approval-url?useraction=commit');
     });
 
     it('appends useraction to a redirectUrl', function () {
@@ -610,7 +610,7 @@ describe('PayPal', function () {
       this.options.useraction = 'commit';
       PayPal.prototype._navigateFrameToAuth.call(this.context, this.options, function () {});
 
-      expect(this.context._frameService.redirect).to.have.been.calledWith('redirect-url?useraction=commit');
+      expect(this.context._frameService.redirect).to.be.calledWith('redirect-url?useraction=commit');
     });
   });
 
@@ -632,7 +632,7 @@ describe('PayPal', function () {
 
       pp._initialize(function () {
         pp.teardown(function () {
-          expect(frameServiceInstance.teardown).to.have.been.called;
+          expect(frameServiceInstance.teardown).to.be.called;
           done();
         });
       });
@@ -643,7 +643,7 @@ describe('PayPal', function () {
 
       pp._initialize(function () {
         pp.teardown(function () {
-          expect(analytics.sendEvent).to.have.been.calledWith(pp._client, 'paypal.teardown-completed');
+          expect(analytics.sendEvent).to.be.calledWith(pp._client, 'paypal.teardown-completed');
           done();
         });
       });
@@ -782,7 +782,7 @@ describe('PayPal', function () {
     it('instructs frame service to open', function () {
       PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
-      expect(this.context._frameService.open).to.have.been.calledWith(this.sandbox.match.func);
+      expect(this.context._frameService.open).to.be.calledWith(this.sandbox.match.func);
     });
 
     it('returns a frame service handler', function () {
@@ -797,7 +797,7 @@ describe('PayPal', function () {
     it('calls _navigateFrameToAuth', function () {
       PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
 
-      expect(this.context._navigateFrameToAuth).to.have.been.calledWith(this.tokenizeOptions);
+      expect(this.context._navigateFrameToAuth).to.be.calledWith(this.tokenizeOptions);
     });
 
     describe('analytics', function () {
@@ -1115,7 +1115,7 @@ describe('PayPal', function () {
     it('calls request with the proper data', function () {
       PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, function () {});
 
-      expect(this.context._client.request).to.have.been.calledWith({
+      expect(this.context._client.request).to.be.calledWith({
         endpoint: 'payment_methods/paypal_accounts',
         method: 'post',
         data: this.responsePayload
@@ -1210,7 +1210,7 @@ describe('PayPal', function () {
       };
       PayPal.prototype._tokenizePayPal.call(this.context, {}, {}, callbackSpy);
 
-      expect(callbackSpy).to.have.been.calledWith(null, fakeResponse);
+      expect(callbackSpy).to.be.calledWith(null, fakeResponse);
     });
   });
 

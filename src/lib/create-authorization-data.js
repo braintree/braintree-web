@@ -7,9 +7,11 @@ var apiUrls = {
   sandbox: 'https://api.sandbox.braintreegateway.com:443'
 };
 
+// removeIf(production)
 if (process.env.BRAINTREE_JS_ENV === 'development') {
   apiUrls.development = process.env.BRAINTREE_JS_API_PROTOCOL + '://' + process.env.BRAINTREE_JS_API_HOST + ':' + process.env.BRAINTREE_JS_API_PORT;
 }
+// endRemoveIf(production)
 
 function _isTokenizationKey(str) {
   return /^[a-zA-Z0-9]+_[a-zA-Z0-9]+_[a-zA-Z0-9_]+$/.test(str);

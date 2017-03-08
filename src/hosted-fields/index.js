@@ -35,6 +35,7 @@ var VERSION = process.env.npm_package_version;
  *
  * Supported CSS properties are:
  * `color`
+ * `direction`
  * `font-family`
  * `font-size-adjust`
  * `font-size`
@@ -90,6 +91,32 @@ var VERSION = process.env.npm_package_version;
  *   fields: {
  *     number: {
  *       selector: '#card-number'
+ *     },
+ *     cvv: {
+ *       selector: '#cvv',
+ *       placeholder: '•••'
+ *     },
+ *     expirationDate: {
+ *       selector: '#expiration-date',
+ *       type: 'month'
+ *     }
+ *   }
+ * }, callback);
+ * @example <caption>Right to Left Language Support</caption>
+ * braintree.hostedFields.create({
+ *   client: clientInstance,
+ *   styles: {
+ *     'input': {
+ *       // other styles
+ *       direction: 'rtl'
+ *     },
+ *   },
+ *   fields: {
+ *     number: {
+ *       selector: '#card-number',
+ *       // Credit card formatting is not currently supported
+ *       // with RTL languages, so we need to turn it off for the number input
+ *       formatInput: false
  *     },
  *     cvv: {
  *       selector: '#cvv',

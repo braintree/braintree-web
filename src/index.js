@@ -47,6 +47,7 @@ var applePay = require('./apple-pay');
 var threeDSecure = require('./three-d-secure');
 var usBankAccount = require('./us-bank-account');
 var visaCheckout = require('./visa-checkout');
+var masterpass = require('./masterpass');
 var VERSION = process.env.npm_package_version;
 
 module.exports = {
@@ -72,6 +73,8 @@ module.exports = {
   usBankAccount: usBankAccount,
   /** @type {module:braintree-web/visa-checkout} */
   visaCheckout: visaCheckout,
+  /** @type {module:braintree-web/masterpass} */
+  masterpass: masterpass,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

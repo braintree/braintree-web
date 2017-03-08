@@ -1,5 +1,9 @@
 'use strict';
-/** @module braintree-web/paypal */
+/**
+ * @module braintree-web/paypal
+ * @description A component to integrate with PayPal.
+ * @deprecated Use the {@link PayPalCheckout|PayPal Checkout component} instead
+ */
 
 var analytics = require('../lib/analytics');
 var BraintreeError = require('../lib/braintree-error');
@@ -18,16 +22,51 @@ var VERSION = process.env.npm_package_version;
  * @param {Client} options.client A {@link Client} instance.
  * @param {callback} callback The second argument, `data`, is the {@link PayPal} instance.
  * @example
- * braintree.paypal.create({
- *   client: clientInstance
- * }, function (createErr, paypalInstance) {
- *   if (createErr) {
- *     if (createErr.code === 'PAYPAL_BROWSER_NOT_SUPPORTED') {
- *       console.error('This browser is not supported.');
- *     } else {
- *       console.error('Error!', createErr);
- *     }
+ * // We recomend creating your PayPal button with button.js
+ * // For an example, see http://codepen.io/braintree/pen/LNKJWa
+ * var paypalButton = document.querySelector('.paypal-button');
+ *
+ * braintree.client.create({
+ *   authorization: CLIENT_AUTHORIZATION
+ * }, function (clientErr, clientInstance) {
+ *   if (clientErr) {
+ *     console.error('Error creating client:', clientErr);
+ *     return;
  *   }
+ *
+ *   braintree.paypal.create({
+ *     client: clientInstance
+ *   }, function (paypalErr, paypalInstance) {
+ *     if (paypalErr) {
+ *       console.error('Error creating PayPal:', paypalErr);
+ *       return;
+ *     }
+ *
+ *     paypalButton.removeAttribute('disabled');
+ *
+ *     // When the button is clicked, attempt to tokenize.
+ *     paypalButton.addEventListener('click', function (event) {
+ *       // Because tokenization opens a popup, this has to be called as a result of
+ *       // customer action, like clicking a button. You cannot call this at any time.
+ *       paypalInstance.tokenize({
+ *         flow: 'vault'
+ *         // For more tokenization options, see the full PayPal tokenization documentation
+ *         // http://braintree.github.io/braintree-web/current/PayPal.html#tokenize
+ *       }, function (tokenizeErr, payload) {
+ *         if (tokenizeErr) {
+ *           if (tokenizeErr.type !== 'CUSTOMER') {
+ *             console.error('Error tokenizing:', tokenizeErr);
+ *           }
+ *           return;
+ *         }
+ *
+ *         // Tokenization succeeded
+ *         paypalButton.setAttribute('disabled', true);
+ *         console.log('Got a nonce! You should submit this to your server.');
+ *         console.log(payload.nonce);
+ *       });
+ *     }, false);
+ *   });
  * });
  * @returns {void}
  */
@@ -64,7 +103,7 @@ function create(options, callback) {
     return;
   }
 
-  if (!global.popupBridge && !browserDetection.supportsPopups()) {
+  if (!isSupported()) {
     callback(new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED));
     return;
   }
@@ -77,8 +116,25 @@ function create(options, callback) {
   });
 }
 
+/**
+ * @static
+ * @function isSupported
+ * @description Returns true if PayPal [supports this browser](/current/#browser-support-webviews).
+ * @example
+ * if (braintree.paypal.isSupported()) {
+ *   // Add PayPal button to the page
+ * } else {
+ *   // Hide PayPal payment option
+ * }
+ * @returns {Boolean} Returns true if PayPal supports this browser.
+ */
+function isSupported() {
+  return Boolean(global.popupBridge || browserDetection.supportsPopups());
+}
+
 module.exports = {
   create: create,
+  isSupported: isSupported,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

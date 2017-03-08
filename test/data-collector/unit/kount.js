@@ -153,8 +153,8 @@ describe('teardown', function () {
 
     Kount.prototype.teardown();
 
-    expect(sjcl.random.stopCollectors).to.have.been.called;
-    expect(Kount.prototype._removeIframe).to.have.been.called;
+    expect(sjcl.random.stopCollectors).to.be.called;
+    expect(Kount.prototype._removeIframe).to.be.called;
   });
 });
 

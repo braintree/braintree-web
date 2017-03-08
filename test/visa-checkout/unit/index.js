@@ -103,7 +103,7 @@ describe('visaCheckout.create', function () {
       client: client
     }, function (err) {
       expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'web.visacheckout.initialized');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'visacheckout.initialized');
 
       done();
     });

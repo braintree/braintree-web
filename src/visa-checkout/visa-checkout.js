@@ -180,10 +180,10 @@ VisaCheckout.prototype.tokenize = function (payment, callback) {
           originalError: err
         }
       }));
-      analytics.sendEvent(this._client, 'web.visacheckout.tokenize.failed');
+      analytics.sendEvent(this._client, 'visacheckout.tokenize.failed');
     } else {
       callback(null, response.visaCheckoutCards[0]);
-      analytics.sendEvent(this._client, 'web.visacheckout.tokenize.succeeded');
+      analytics.sendEvent(this._client, 'visacheckout.tokenize.succeeded');
     }
   }.bind(this));
 };

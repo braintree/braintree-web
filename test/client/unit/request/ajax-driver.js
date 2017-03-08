@@ -106,7 +106,7 @@ describe('AJAXDriver', function () {
         method: 'POST'
       }, function () {});
 
-      expect(XMLHttpRequest.prototype.setRequestHeader).to.have.been.calledWith('Content-Type', 'application/json');
+      expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Content-Type', 'application/json');
     });
 
     it('sets the headers if provided and XHR is available', function () {
@@ -122,8 +122,8 @@ describe('AJAXDriver', function () {
         method: 'POST'
       }, function () {});
 
-      expect(XMLHttpRequest.prototype.setRequestHeader).to.have.been.calledWith('Foo', 'foo');
-      expect(XMLHttpRequest.prototype.setRequestHeader).to.have.been.calledWith('Bar', 'bar');
+      expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Foo', 'foo');
+      expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Bar', 'bar');
     });
 
     it('calls callback with error if request is unsuccessful', function (done) {

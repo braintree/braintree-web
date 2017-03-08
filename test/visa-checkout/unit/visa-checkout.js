@@ -214,7 +214,7 @@ describe('Visa Checkout', function () {
 
       this.visaCheckout.tokenize(payment, function () {});
 
-      expect(this.client.request).to.have.been.calledWith(this.sandbox.match({
+      expect(this.client.request).to.be.calledWith(this.sandbox.match({
         method: 'post',
         endpoint: 'payment_methods/visa_checkout_cards',
         data: {
@@ -292,7 +292,7 @@ describe('Visa Checkout', function () {
           encPaymentData: 'encPaymentData'
         }, function () {});
 
-        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'web.visacheckout.tokenize.succeeded');
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.succeeded');
       });
 
       it('submits failed', function () {
@@ -308,7 +308,7 @@ describe('Visa Checkout', function () {
           encPaymentData: 'encPaymentData'
         }, function () {});
 
-        expect(analytics.sendEvent).to.have.been.calledWith(this.client, 'web.visacheckout.tokenize.failed');
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.failed');
       });
     });
   });

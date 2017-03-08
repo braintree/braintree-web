@@ -7,6 +7,7 @@ var constants = require('../../src/lib/constants');
 function configuration() {
   return {
     gatewayConfiguration: {
+      assetsUrl: 'https://assets.braintreegateway.com',
       environment: 'development',
       configUrl: 'https://braintreegateway.com/config',
       clientApiUrl: 'https://braintreegateway.com',

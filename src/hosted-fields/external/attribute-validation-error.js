@@ -13,7 +13,7 @@ function attributeValidationError(attribute, value) {
       code: errors.HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED.code,
       message: 'The "' + attribute + '" attribute is not supported in Hosted Fields.'
     });
-  } else if (!_isValid(attribute, value)) {
+  } else if (value != null && !_isValid(attribute, value)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED.type,
       code: errors.HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED.code,

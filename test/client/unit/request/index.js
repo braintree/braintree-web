@@ -12,7 +12,7 @@ describe('Client request driver', function () {
     request({
     }, function () {});
 
-    expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
       timeout: 60000
     }));
   });
@@ -21,7 +21,7 @@ describe('Client request driver', function () {
     request({
     }, function () {});
 
-    expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
       data: {}
     }));
   });
@@ -30,7 +30,7 @@ describe('Client request driver', function () {
     request({
     }, function () {});
 
-    expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
       method: 'GET'
     }));
   });
@@ -40,7 +40,7 @@ describe('Client request driver', function () {
       method: 'post'
     }, function () {});
 
-    expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
       method: 'POST'
     }));
   });

@@ -155,12 +155,19 @@ BaseInput.prototype.setAttribute = function (type, attribute, value) {
   }
 };
 
+BaseInput.prototype.removeAttribute = function (type, attribute) {
+  if (type === this.type && !attributeValidationError(attribute)) {
+    this.element.removeAttribute(attribute);
+  }
+};
+
 BaseInput.prototype.addBusEventListeners = function () {
   global.bus.on(events.TRIGGER_INPUT_FOCUS, function (type) {
     if (type === this.type) { this.element.focus(); }
   }.bind(this));
 
   global.bus.on(events.SET_ATTRIBUTE, this.setAttribute.bind(this));
+  global.bus.on(events.REMOVE_ATTRIBUTE, this.removeAttribute.bind(this));
 
   global.bus.on(events.ADD_CLASS, function (type, classname) {
     if (type === this.type) { classlist.add(this.element, classname); }

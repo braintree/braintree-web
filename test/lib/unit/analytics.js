@@ -26,7 +26,7 @@ describe('analytics.sendEvent', function () {
 
     analytics.sendEvent(this.client, 'test.event.kind', callback);
 
-    expect(this.client._request).to.have.been.called;
+    expect(this.client._request).to.be.called;
     postArgs = this.client._request.firstCall.args;
 
     expect(postArgs[0].url).to.equal('https://example.com/analytics-url');
@@ -46,7 +46,7 @@ describe('analytics.sendEvent', function () {
 
     analytics.sendEvent(this.client, 'test.event.kind');
 
-    expect(this.client._request).to.have.been.called;
+    expect(this.client._request).to.be.called;
     postArgs = this.client._request.firstCall.args;
 
     expect(postArgs[0].url).to.equal('https://example.com/analytics-url');

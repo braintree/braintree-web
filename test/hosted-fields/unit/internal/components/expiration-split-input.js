@@ -35,8 +35,8 @@ describe('Expiration Split Input', function () {
 
       ExpirationSplitInput.prototype.setPlaceholder.call(this.context, 'fakeType', 'foo & <boo>');
 
-      expect(BaseInput.prototype.setPlaceholder).to.have.been.calledOnce;
-      expect(BaseInput.prototype.setPlaceholder).to.have.been.calledOn(this.context);
+      expect(BaseInput.prototype.setPlaceholder).to.be.calledOnce;
+      expect(BaseInput.prototype.setPlaceholder).to.be.calledOn(this.context);
     });
 
     describe('when no placeholder existed', function () {

@@ -1,9 +1,29 @@
 CHANGELOG
 =========
 
+## 3.10.0
+
+* Client
+  * Fix bug where creation errors did not bubble up correctly
+* Data Collector
+  * Fix bug where creation errors did not bubble up correctly
+* Hosted Fields
+  * Add `removeAttribute` to allow removal of certain input attributes
+  * Add RTL language support
+* PayPal
+  * Add synchronous method to determine if PayPal supports the browser
+* PayPal Checkout
+  * Add synchronous method to determine if PayPal Checkout supports the browser
+  * Fix bug that caused some errors to be uncatchable
+  * Add `landingPageType` as a tokenization option
+    * `login` - A PayPal account login landing page is used
+    * `billing` - A non-PayPal account landing page is used
+  * Provide error when PayPal Checkout can not be used because there is no linked PayPal Sandbox account
+
 ## 3.9.0
 
 * Client
+  * `client.request` now returns a promise if no callback is provided.
   * `client.create` now returns a promise if no callback is provided
 * Data Collector
   * `dataCollector.create` now returns a promise if no callback is provided

@@ -6,6 +6,6 @@
   },
   "plugins": ["version-interpolator-plugin", "plugins/markdown"],
   "source": {
-    "excludePattern": "(us-bank-account|visa-checkout)"
+    "excludePattern": "(us-bank-account|visa-checkout|masterpass)"
   }
 }

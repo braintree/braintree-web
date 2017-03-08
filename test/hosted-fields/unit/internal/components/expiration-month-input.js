@@ -48,8 +48,8 @@ describe('Expiration Month Input', function () {
           })
         });
 
-        expect(BaseInput.prototype.constructElement).to.have.been.calledOnce;
-        expect(BaseInput.prototype.constructElement).to.have.been.calledOn(input);
+        expect(BaseInput.prototype.constructElement).to.be.calledOnce;
+        expect(BaseInput.prototype.constructElement).to.be.calledOn(input);
       });
 
       it('select: true creates a <select> with twelve <option>s inside', function () {

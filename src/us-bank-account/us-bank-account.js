@@ -29,7 +29,7 @@ function USBankAccount(options) {
 
   this._isTokenizingBankLogin = false;
 
-  analytics.sendEvent(this._client, 'web.usbankaccount.initialized');
+  analytics.sendEvent(this._client, 'usbankaccount.initialized');
 }
 
 /**
@@ -182,12 +182,12 @@ USBankAccount.prototype._tokenizeBankDetails = function (options, callback) {
 
     if (err) {
       error = errorFrom(err, status);
-      analytics.sendEvent(client, 'web.usbankaccount.bankdetails.tokenization.failed');
+      analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.failed');
       callback(error);
       return;
     }
 
-    analytics.sendEvent(client, 'web.usbankaccount.bankdetails.tokenization.succeeded');
+    analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.succeeded');
 
     callback(null, formatTokenizeResponse(response));
   });
@@ -235,7 +235,7 @@ USBankAccount.prototype._tokenizeBankLogin = function (options, callback) {
       onExit: function () {
         self._isTokenizingBankLogin = false;
 
-        analytics.sendEvent(client, 'web.usbankaccount.banklogin.tokenization.closed.by-user');
+        analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.closed.by-user');
 
         callback(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_CLOSED));
       },
@@ -259,20 +259,20 @@ USBankAccount.prototype._tokenizeBankLogin = function (options, callback) {
 
           if (tokenizeErr) {
             error = errorFrom(tokenizeErr, status);
-            analytics.sendEvent(client, 'web.usbankaccount.banklogin.tokenization.failed');
+            analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.failed');
 
             callback(error);
             return;
           }
 
-          analytics.sendEvent(client, 'web.usbankaccount.banklogin.tokenization.succeeded');
+          analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.succeeded');
 
           callback(null, formatTokenizeResponse(response));
         });
       }
     }).open();
 
-    analytics.sendEvent(client, 'web.usbankaccount.banklogin.tokenization.started');
+    analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.started');
   });
 };
 

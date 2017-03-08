@@ -1,11 +1,20 @@
 'use strict';
 
 var BraintreeError = require('../../../src/lib/braintree-error');
+var Promise = require('../../../src/lib/promise');
 var getConfiguration = require('../../../src/client/get-configuration').getConfiguration;
 var AJAXDriver = require('../../../src/client/request/ajax-driver');
 var fake = require('../../helpers/fake');
 
 describe('getConfiguration', function () {
+  it('returns a promise when no callback is passed', function () {
+    var options = {authorization: 'production_abc123_prod_merchant_id'};
+
+    this.sandbox.stub(AJAXDriver, 'request');
+
+    expect(getConfiguration(options)).to.be.an.instanceof(Promise);
+  });
+
   describe('tokenization key', function () {
     it('uses a production config endpoint with a production tokenization key', function () {
       var options = {authorization: 'production_abc123_prod_merchant_id'};
@@ -13,7 +22,7 @@ describe('getConfiguration', function () {
       this.sandbox.stub(AJAXDriver, 'request');
       getConfiguration(options);
 
-      expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
+      expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
         url: 'https://api.braintreegateway.com:443/merchants/prod_merchant_id/client_api/v1/configuration'
       }));
     });
@@ -24,7 +33,7 @@ describe('getConfiguration', function () {
       this.sandbox.stub(AJAXDriver, 'request');
       getConfiguration(options);
 
-      expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
+      expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
         url: 'https://api.sandbox.braintreegateway.com:443/merchants/sandbox_merchant_id/client_api/v1/configuration'
       }));
     });
@@ -32,7 +41,7 @@ describe('getConfiguration', function () {
     it('passes back configuration on succesful request', function (done) {
       var payload = {foo: 'bar'};
 
-      this.sandbox.stub(AJAXDriver, 'request').yields(null, payload);
+      this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(null, payload);
 
       getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
         expect(err).to.not.exist;
@@ -53,7 +62,7 @@ describe('getConfiguration', function () {
     it('calls the callback with a CLIENT_AUTHORIZATION_INSUFFICIENT error if request 403s', function (done) {
       var fakeErr = new Error('you goofed!');
 
-      this.sandbox.stub(AJAXDriver, 'request').yields(fakeErr, null, 403);
+      this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(fakeErr, null, 403);
 
       getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
         expect(response).to.not.exist;
@@ -71,7 +80,7 @@ describe('getConfiguration', function () {
     it('calls the callback with a CLIENT_GATEWAY_NETWORK error if request fails', function (done) {
       var fakeErr = new Error('you goofed!');
 
-      this.sandbox.stub(AJAXDriver, 'request').yields(fakeErr, null);
+      this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(fakeErr, null);
 
       getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
         expect(response).to.not.exist;
@@ -95,7 +104,7 @@ describe('getConfiguration', function () {
       this.sandbox.stub(AJAXDriver, 'request');
       getConfiguration(options);
 
-      expect(AJAXDriver.request).to.have.been.calledWith(this.sandbox.match({
+      expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
         url: configUrl
       }));
     });
@@ -103,7 +112,7 @@ describe('getConfiguration', function () {
     it('passes back configuration on succesful request', function (done) {
       var payload = {foo: 'bar'};
 
-      this.sandbox.stub(AJAXDriver, 'request').yields(null, payload);
+      this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(null, payload);
 
       getConfiguration({authorization: fake.clientToken}, function (err, response) {
         expect(err).to.not.exist;
@@ -124,7 +133,7 @@ describe('getConfiguration', function () {
     it('calls the callback with a CLIENT_GATEWAY_NETWORK error if request fails', function (done) {
       var fakeErr = new Error('you goofed!');
 
-      this.sandbox.stub(AJAXDriver, 'request').yields(fakeErr, null);
+      this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(fakeErr, null);
 
       getConfiguration({authorization: fake.clientToken}, function (err, response) {
         expect(response).to.not.exist;

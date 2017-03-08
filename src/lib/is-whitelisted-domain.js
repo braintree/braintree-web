@@ -8,6 +8,7 @@ var legalHosts = {
   'braintree-api.com': 1
 };
 
+// removeIf(production)
 if (process.env.BRAINTREE_JS_ENV === 'development') {
   legalHosts.localhost = 1;
 
@@ -18,6 +19,7 @@ if (process.env.BRAINTREE_JS_ENV === 'development') {
     legalHosts[stripSubdomains(process.env.BT_DEV_HOST)] = 1;
   }
 }
+// endRemoveIf(production)
 
 function stripSubdomains(domain) {
   return domain.split('.').slice(-2).join('.');

@@ -23,7 +23,7 @@ describe('client.create', function () {
     var self = this;
 
     client.create({authorization: fake.tokenizationKey}, function () {
-      expect(self.getSpy).to.have.been.calledWith(self.sandbox.match({
+      expect(self.getSpy).to.be.calledWith(self.sandbox.match({
         url: self.sandbox.match(/client_api\/v1\/configuration$/)
       }));
       done();
@@ -44,7 +44,7 @@ describe('client.create', function () {
 
     return client.create({authorization: fake.tokenizationKey}).then(function (thingy) {
       expect(thingy).to.be.an.instanceof(Client);
-      expect(self.getSpy).to.have.been.calledWith(self.sandbox.match({
+      expect(self.getSpy).to.be.calledWith(self.sandbox.match({
         data: {tokenizationKey: fake.tokenizationKey}
       }));
     });
@@ -56,7 +56,7 @@ describe('client.create', function () {
 
     return client.create({authorization: fake.clientToken}).then(function (thingy) {
       expect(thingy).to.be.an.instanceof(Client);
-      expect(self.getSpy).to.have.been.calledWith(self.sandbox.match({
+      expect(self.getSpy).to.be.calledWith(self.sandbox.match({
         data: {authorizationFingerprint: fingerprint}
       }));
     });
@@ -66,7 +66,7 @@ describe('client.create', function () {
     var self = this;
 
     client.create({authorization: fake.tokenizationKey}).then(function () {
-      expect(self.getSpy).to.have.been.calledWith(self.sandbox.match({
+      expect(self.getSpy).to.be.calledWith(self.sandbox.match({
         url: self.sandbox.match(/client_api\/v1\/configuration$/)
       }));
     });

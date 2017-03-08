@@ -62,10 +62,10 @@ describe('internal', function () {
       triggerEvent('click', input);  // not whitelisted
       triggerEvent('keyup', input);  // not whitelisted
 
-      expect(CreditCardForm.prototype.emitEvent).to.have.been.calledWith('number', 'focus');
-      expect(CreditCardForm.prototype.emitEvent).to.have.been.calledWith('number', 'blur');
-      expect(CreditCardForm.prototype.emitEvent).not.to.have.been.calledWith('number', 'click');
-      expect(CreditCardForm.prototype.emitEvent).not.to.have.been.calledWith('number', 'keyup');
+      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('number', 'focus');
+      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('number', 'blur');
+      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('number', 'click');
+      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('number', 'keyup');
     });
   });
 
@@ -109,7 +109,7 @@ describe('internal', function () {
         }
       });
 
-      expect(analytics.sendEvent).to.have.been.calledWith(this.sandbox.match.object, 'custom.hosted-fields.load.succeeded');
+      expect(analytics.sendEvent).to.be.calledWith(this.sandbox.match.object, 'custom.hosted-fields.load.succeeded');
     });
   });
 
@@ -283,7 +283,7 @@ describe('internal', function () {
 
     it('sends an analytics event if tokenization fails', function (done) {
       create(this.badClient, this.validCardForm)(this.fakeOptions, function () {
-        expect(analytics.sendEvent).to.have.been.calledWith(this.badClient, 'custom.hosted-fields.tokenization.failed');
+        expect(analytics.sendEvent).to.be.calledWith(this.badClient, 'custom.hosted-fields.tokenization.failed');
 
         done();
       }.bind(this));
@@ -304,7 +304,7 @@ describe('internal', function () {
 
     it('sends an analytics event if tokenization succeeds', function (done) {
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
-        expect(analytics.sendEvent).to.have.been.calledWith(this.goodClient, 'custom.hosted-fields.tokenization.succeeded');
+        expect(analytics.sendEvent).to.be.calledWith(this.goodClient, 'custom.hosted-fields.tokenization.succeeded');
 
         done();
       }.bind(this));

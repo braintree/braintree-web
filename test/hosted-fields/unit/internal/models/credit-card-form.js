@@ -244,7 +244,7 @@ describe('credit card model', function () {
         ]
       }, 'number', 'foo');
 
-      expect(global.bus.emit).to.have.been.calledWith(events.INPUT_EVENT, this.sandbox.match({
+      expect(global.bus.emit).to.be.calledWith(events.INPUT_EVENT, this.sandbox.match({
         merchantPayload: {
           cards: [],
           emittedBy: 'number',
@@ -282,7 +282,7 @@ describe('credit card model', function () {
         _fieldKeys: []
       }, 'number', 'foo');
 
-      expect(global.bus.emit).to.have.been.calledWith(events.INPUT_EVENT, this.sandbox.match({
+      expect(global.bus.emit).to.be.calledWith(events.INPUT_EVENT, this.sandbox.match({
         merchantPayload: {
           cards: [],
           emittedBy: 'number',
@@ -322,7 +322,7 @@ describe('credit card model', function () {
         _fieldKeys: []
       }, 'number', 'foo');
 
-      expect(global.bus.emit).to.have.been.calledWith(events.INPUT_EVENT, this.sandbox.match({
+      expect(global.bus.emit).to.be.calledWith(events.INPUT_EVENT, this.sandbox.match({
         merchantPayload: {
           cards: cards.map(function (card) {
             return {
@@ -357,7 +357,7 @@ describe('credit card model', function () {
         _fieldKeys: []
       }, 'number', 'foo');
 
-      expect(global.bus.emit).to.have.been.calledWith(events.INPUT_EVENT, this.sandbox.match({
+      expect(global.bus.emit).to.be.calledWith(events.INPUT_EVENT, this.sandbox.match({
         merchantPayload: {
           cards: [{
             niceType: 'Visa',
@@ -713,7 +713,7 @@ describe('credit card model', function () {
       this.card.set('number.value', '');
       this.card.set('number.value', '378282246310005');
 
-      expect(this.card.emitEvent).to.have.been.calledWith('number', externalEvents.CARD_TYPE_CHANGE);
+      expect(this.card.emitEvent).to.be.calledWith('number', externalEvents.CARD_TYPE_CHANGE);
 
       for (i = 0; i < this.card.emitEvent.callCount; i++) {
         if (this.card.emitEvent.getCall(i).args[1] === externalEvents.CARD_TYPE_CHANGE) {
@@ -733,13 +733,13 @@ describe('credit card model', function () {
       this.card.set('number.value', '4');
       this.card.set('number.value', '');
 
-      expect(this.card.emitEvent).to.have.been.calledWith('number', externalEvents.EMPTY);
+      expect(this.card.emitEvent).to.be.calledWith('number', externalEvents.EMPTY);
     });
 
     it('emits a NOT_EMPTY event', function () {
       this.card.set('number.value', '4');
 
-      expect(this.card.emitEvent).to.have.been.calledWith('number', externalEvents.NOT_EMPTY);
+      expect(this.card.emitEvent).to.be.calledWith('number', externalEvents.NOT_EMPTY);
     });
   });
 });

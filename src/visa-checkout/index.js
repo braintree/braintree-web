@@ -53,7 +53,7 @@ function create(options, callback) {
     return;
   }
 
-  analytics.sendEvent(options.client, 'web.visacheckout.initialized');
+  analytics.sendEvent(options.client, 'visacheckout.initialized');
 
   callback(null, new VisaCheckout(options));
 }

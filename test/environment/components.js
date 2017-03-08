@@ -29,4 +29,10 @@ describe('components', function () {
       done();
     });
   });
+
+  it('is alphabetized', function () {
+    var sorted = componentsJson.concat().sort();
+
+    expect(componentsJson).to.deep.equal(sorted);
+  });
 });

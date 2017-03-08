@@ -49,8 +49,8 @@ describe('Expiration Year Input', function () {
           })
         });
 
-        expect(BaseInput.prototype.constructElement).to.have.been.calledOnce;
-        expect(BaseInput.prototype.constructElement).to.have.been.calledOn(input);
+        expect(BaseInput.prototype.constructElement).to.be.calledOnce;
+        expect(BaseInput.prototype.constructElement).to.be.calledOn(input);
       });
 
       it('select: true creates a <select> with year-related <option>s inside', function () {
