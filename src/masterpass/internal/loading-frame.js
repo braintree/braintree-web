@@ -1,38 +1,26 @@
 'use strict';
 
+var querystring = require('../../lib/querystring');
+
 function noop() {}
 
 function start() {
   var script = document.createElement('script');
-  var envSubdomain = getParameterByName('environment') === 'production' ? '' : 'sandbox.';
+  var config = querystring.parse();
+  var envSubdomain = config.environment === 'production' ? '' : 'sandbox.';
+
+  config.failureCallback = noop;
+  config.cancelCallback = noop;
+  config.successCallback = noop;
 
   script.type = 'text/javascript';
   script.src = 'https://' + envSubdomain + 'static.masterpass.com/dyn/js/switch/integration/MasterPass.client.js';
 
   script.onload = function () {
-    window.MasterPass.client.checkout({
-      requestToken: getParameterByName('requestToken'),
-      callbackUrl: getParameterByName('callbackUrl'),
-      failureCallback: noop,
-      cancelCallback: noop,
-      successCallback: noop,
-      merchantCheckoutId: getParameterByName('merchantCheckoutId'),
-      allowedCardTypes: getParameterByName('allowedCardTypes'),
-      version: 'v6'
-    });
+    window.MasterPass.client.checkout(config);
   };
 
   document.body.appendChild(script);
-}
-
-function getParameterByName(name) {
-  var url = window.location.href;
-  var regex = new RegExp('[?&]' + name.replace(/[\[\]]/g, '\\$&') + '(=([^&#]*)|&|#|$)');
-  var results = regex.exec(url);
-
-  if (!results) { return null; }
-  if (!results[2]) { return ''; }
-  return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
 
 module.exports = {

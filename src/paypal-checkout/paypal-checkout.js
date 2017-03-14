@@ -2,7 +2,7 @@
 
 var analytics = require('../lib/analytics');
 var Promise = require('../lib/promise');
-var wrapPromise = require('../lib/wrap-promise');
+var wrapPromise = require('wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var errors = require('./errors');
@@ -74,12 +74,6 @@ function PayPalCheckout(options) {
  * * `authorize` - Submits the transaction for authorization but not settlement.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
  * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify. Checkout flows only.
- * @param {string} [options.useraction]
- * Changes the call-to-action in the PayPal flow. By default the final button will show the localized
- * word for "Continue" and implies that the final amount billed is not yet known.
- *
- * Setting this option to `commit` changes the button text to "Pay Now" and page text will convey to
- * the user that billing will take place immediately.
  * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
@@ -231,7 +225,8 @@ PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions
     var payload;
     var client = self._client;
     var options = {
-      flow: tokenizeOptions.billingToken ? 'vault' : 'checkout'
+      flow: tokenizeOptions.billingToken ? 'vault' : 'checkout',
+      intent: tokenizeOptions.intent
     };
     var params = {
       // The paymentToken provided by Checkout.js v4 is the ECToken
@@ -335,6 +330,10 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
     data.paypalAccount.paymentToken = params.paymentId;
     data.paypalAccount.payerId = params.payerId;
     data.paypalAccount.unilateral = gatewayConfiguration.paypal.unvettedMerchant;
+
+    if (options.intent) {
+      data.paypalAccount.intent = options.intent;
+    }
   }
 
   return data;

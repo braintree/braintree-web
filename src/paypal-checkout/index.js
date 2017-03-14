@@ -8,10 +8,9 @@ var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var errors = require('./errors');
 var Promise = require('../lib/promise');
-var wrapPromise = require('../lib/wrap-promise');
+var wrapPromise = require('wrap-promise');
 var PayPalCheckout = require('./paypal-checkout');
 var sharedErrors = require('../lib/errors');
-var browserDetection = require('../lib/browser-detection');
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -30,11 +29,7 @@ var VERSION = process.env.npm_package_version;
  *   client: clientInstance
  * }, function (createErr, paypalCheckoutInstance) {
  *   if (createErr) {
- *     if (createErr.code === 'PAYPAL_BROWSER_NOT_SUPPORTED') {
- *       console.error('This browser is not supported.');
- *     } else {
- *       console.error('Error!', createErr);
- *     }
+ *     console.error('Error!', createErr);
  *     return;
  *   }
  *
@@ -96,10 +91,6 @@ function create(options) {
     return Promise.reject(new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED));
   }
 
-  if (!isSupported()) {
-    return Promise.reject(new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED));
-  }
-
   analytics.sendEvent(options.client, 'paypal-checkout.initialized');
 
   return Promise.resolve(new PayPalCheckout(options));
@@ -109,6 +100,7 @@ function create(options) {
  * @static
  * @function isSupported
  * @description Returns true if PayPal Checkout [supports this browser](/current/#browser-support-webviews).
+ * @deprecated Previously, this method checked for Popup support in the brower. Checkout.js now falls back to a modal if popups are not supported.
  * @example
  * if (braintree.paypalCheckout.isSupported()) {
  *   // Add PayPal button to the page
@@ -118,7 +110,7 @@ function create(options) {
  * @returns {Boolean} Returns true if PayPal Checkout supports this browser.
  */
 function isSupported() {
-  return Boolean(browserDetection.supportsPopups());
+  return true;
 }
 
 module.exports = {

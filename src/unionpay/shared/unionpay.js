@@ -482,17 +482,11 @@ UnionPay.prototype.tokenize = function (options, callback) {
 };
 
 /**
- * Cleanly tear down anything set up by {@link module:braintree-web/unionpay.create|create}. This only needs to be called when using UnionPay with Hosted Fields.
+ * Cleanly remove anything set up by {@link module:braintree-web/unionpay.create|create}. This only needs to be called when using UnionPay with Hosted Fields.
  * @public
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @param {callback} [callback] Called on completion.
  * @example
- * unionpayInstance.teardown(function (teardownErr) {
- *   if (teardownErr) {
- *     console.error('Could not tear down UnionPay.');
- *   } else {
- *     console.log('UnionPay has been torn down.');
- *   }
- * });
+ * unionpayInstance.teardown();
  * @returns {void}
  */
 UnionPay.prototype.teardown = function (callback) {

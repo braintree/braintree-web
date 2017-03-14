@@ -358,6 +358,12 @@ function addLoadListeners(script, callback) {
  * Cleanly tear down anything set up by {@link module:braintree-web/us-bank-account.create|create}.
  * @public
  * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * usBankAccountInstance.teardown();
+ * @example <caption>With callback</caption>
+ * usBankAccountInstance.teardown(function () {
+ *   // teardown is complete
+ * });
  * @returns {void}
  */
 USBankAccount.prototype.teardown = function (callback) {

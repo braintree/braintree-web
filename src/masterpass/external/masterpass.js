@@ -6,7 +6,7 @@ var BraintreeError = require('../../lib/braintree-error');
 var errors = require('../shared/errors');
 var VERSION = process.env.npm_package_version;
 var methods = require('../../lib/methods');
-var wrapPromise = require('../../lib/wrap-promise');
+var wrapPromise = require('wrap-promise');
 var analytics = require('../../lib/analytics');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
@@ -87,6 +87,7 @@ Masterpass.prototype._initialize = function () {
  * @param {object} options All options for initiating the Masterpass payment flow.
  * @param {string} options.currencyCode The currency code to process the payment.
  * @param {string} options.subtotal The amount to authorize for the transaction.
+ * @param {object} options.config All configuration parameters accepted by Masterpass lightbox, except `function` data type. These options will override the values set by Braintree server. Please see {@link Masterpass Lightbox Parameters|https://developer.mastercard.com/page/masterpass-lightbox-parameters} for more information.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link Masterpass~tokenizePayload|tokenizePayload}. If no callback is provided, the method will return a Promise that resolves with a {@link Masterpass~tokenizePayload|tokenizePayload}.
  * @returns {Promise|void}
  * @example
@@ -154,27 +155,41 @@ Masterpass.prototype._navigateFrameToLoadingPage = function (options, reject) {
         callbackUrl: this._callbackUrl
       }
     }
-  }, function (err, response, status) {
-    var redirectUrl = this._assetsUrl + '/html/masterpass-loading-frame' + (this._isDebug ? '' : '.min') + '.html';
+  }).then(function (response) {
+    var redirectUrl = this._assetsUrl + '/html/masterpass-loading-frame' + (this._isDebug ? '' : '.min') + '.html?';
     var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
+    var config = options.config || {};
+    var queryParams;
 
-    if (err) {
-      this._closeWindow();
+    queryParams = {
+      environment: gatewayConfiguration.environment,
+      requestToken: response.requestToken,
+      callbackUrl: this._callbackUrl,
+      merchantCheckoutId: gatewayConfiguration.masterpass.merchantCheckoutId,
+      allowedCardTypes: gatewayConfiguration.masterpass.supportedNetworks
+    };
 
-      if (status === 422) {
-        reject(convertToBraintreeError(err, errors.MASTERPASS_INVALID_PAYMENT_OPTION));
-      } else {
-        reject(convertToBraintreeError(err, errors.MASTERPASS_FLOW_FAILED));
+    Object.keys(config).forEach(function (key) {
+      if (typeof config[key] !== 'function') {
+        queryParams[key] = config[key];
       }
-      return;
-    }
+    });
 
-    redirectUrl += '?environment=' + gatewayConfiguration.environment;
-    redirectUrl += '&requestToken=' + response.requestToken;
-    redirectUrl += '&callbackUrl=' + this._callbackUrl;
-    redirectUrl += '&merchantCheckoutId=' + gatewayConfiguration.masterpass.merchantCheckoutId;
-    redirectUrl += '&allowedCardTypes=' + gatewayConfiguration.masterpass.supportedNetworks;
+    redirectUrl += Object.keys(queryParams).map(function (key) {
+      return key + '=' + queryParams[key];
+    }).join('&');
+
     this._frameService.redirect(redirectUrl);
+  }.bind(this)).catch(function (err) {
+    var status = err.details && err.details.httpStatus;
+
+    this._closeWindow();
+
+    if (status === 422) {
+      reject(convertToBraintreeError(err, errors.MASTERPASS_INVALID_PAYMENT_OPTION));
+    } else {
+      reject(convertToBraintreeError(err, errors.MASTERPASS_FLOW_FAILED));
+    }
   }.bind(this));
 };
 
@@ -195,7 +210,7 @@ Masterpass.prototype._createFrameOpenHandler = function (resolve, reject) {
         return;
       }
 
-      self._tokenizeMasterpass(payload.queryItems, resolve, reject);
+      self._tokenizeMasterpass(payload.queryItems).then(resolve).catch(reject);
     };
   }
 
@@ -221,48 +236,47 @@ Masterpass.prototype._createFrameOpenHandler = function (resolve, reject) {
       return;
     }
 
-    self._tokenizeMasterpass(payload, resolve, reject);
+    self._tokenizeMasterpass(payload).then(resolve).catch(reject);
   };
 };
 
-Masterpass.prototype._tokenizeMasterpass = function (payload, resolve, reject) {
+Masterpass.prototype._tokenizeMasterpass = function (payload) {
   var self = this;
 
-  if (payload.mpstatus === 'success') {
-    self._client.request({
-      endpoint: 'payment_methods/masterpass_cards',
-      method: 'post',
-      data: {
-        masterpassCard: {
-          checkoutResourceUrl: payload.checkout_resource_url,
-          requestToken: payload.oauth_token,
-          verifierToken: payload.oauth_verifier
-        }
-      }
-    }, function (tokenizeErr, response) {
-      self._closeWindow();
-      if (tokenizeErr) {
-        if (global.popupBridge) {
-          analytics.sendEvent(self._client, 'masterpass.tokenization.failed-popupbridge');
-        } else {
-          analytics.sendEvent(self._client, 'masterpass.tokenization.failed');
-        }
-        reject(convertToBraintreeError(tokenizeErr, errors.MASTERPASS_ACCOUNT_TOKENIZATION_FAILED));
-        return;
-      }
-
-      if (global.popupBridge) {
-        analytics.sendEvent(self._client, 'masterpass.tokenization.success-popupbridge');
-      } else {
-        analytics.sendEvent(self._client, 'masterpass.tokenization.success');
-      }
-      resolve(response.masterpassCards[0]);
-    });
-  } else {
+  if (payload.mpstatus !== 'success') {
     analytics.sendEvent(self._client, 'masterpass.tokenization.closed.by-user');
     self._closeWindow();
-    reject(new BraintreeError(errors.MASTERPASS_POPUP_CLOSED));
+    return Promise.reject(new BraintreeError(errors.MASTERPASS_POPUP_CLOSED));
   }
+
+  return self._client.request({
+    endpoint: 'payment_methods/masterpass_cards',
+    method: 'post',
+    data: {
+      masterpassCard: {
+        checkoutResourceUrl: payload.checkout_resource_url,
+        requestToken: payload.oauth_token,
+        verifierToken: payload.oauth_verifier
+      }
+    }
+  }).then(function (response) {
+    self._closeWindow();
+    if (global.popupBridge) {
+      analytics.sendEvent(self._client, 'masterpass.tokenization.success-popupbridge');
+    } else {
+      analytics.sendEvent(self._client, 'masterpass.tokenization.success');
+    }
+    return response.masterpassCards[0];
+  }).catch(function (tokenizeErr) {
+    self._closeWindow();
+    if (global.popupBridge) {
+      analytics.sendEvent(self._client, 'masterpass.tokenization.failed-popupbridge');
+    } else {
+      analytics.sendEvent(self._client, 'masterpass.tokenization.failed');
+    }
+
+    return Promise.reject(convertToBraintreeError(tokenizeErr, errors.MASTERPASS_ACCOUNT_TOKENIZATION_FAILED));
+  });
 };
 
 Masterpass.prototype._closeWindow = function () {
@@ -274,7 +288,13 @@ Masterpass.prototype._closeWindow = function () {
  * Cleanly tear down anything set up by {@link module:braintree-web/masterpass.create|create}.
  * @public
  * @function
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @param {callback} [callback] Called on completion. If no callback is provided, `teardown` returns a promise.
+ * @example
+ * masterpassInstance.teardown();
+ * @example <caption>With callback</caption>
+ * masterpassInstance.teardown(function () {
+ *   // teardown is complete
+ * });
  * @returns {Promise|void}
  */
 Masterpass.prototype.teardown = wrapPromise(function () {

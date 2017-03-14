@@ -10,5 +10,6 @@
   "three-d-secure",
   "unionpay",
   "us-bank-account",
+  "vault-manager",
   "visa-checkout"
 ]

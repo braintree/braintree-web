@@ -6,7 +6,6 @@ var PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
 var Promise = require('../../../src/lib/promise');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
-var browserDetection = require('../../../src/lib/browser-detection');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 var version = require('../../../package.json').version;
@@ -91,18 +90,7 @@ describe('paypalCheckout', function () {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED');
-          expect(err.message).to.equal('No linked PayPal Sandbox account. Sign into the Braintree gateway to configure your account.');
-        });
-      });
-
-      it('errors out if browser does not support popups', function () {
-        this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
-        return create({client: this.client}).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('CUSTOMER');
-          expect(err.code).to.equal('PAYPAL_BROWSER_NOT_SUPPORTED');
-          expect(err.message).to.equal('Browser is not supported.');
+          expect(err.message).to.equal('A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. Please reach out to our support team at support@braintreepayments.com if you would like this enabled.');
         });
       });
 
@@ -156,33 +144,12 @@ describe('paypalCheckout', function () {
           done();
         });
       });
-
-      it('errors out if browser does not support popups', function (done) {
-        this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
-        create({client: this.client}, function (err, thingy) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('CUSTOMER');
-          expect(err.code).to.equal('PAYPAL_BROWSER_NOT_SUPPORTED');
-          expect(err.message).to.equal('Browser is not supported.');
-          expect(thingy).not.to.exist;
-          done();
-        });
-      });
     });
   });
 
   describe('isSupported', function () {
-    it('returns true if browser supports popups', function () {
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
-
-      expect(isSupported()).to.be.true;
-    });
-
-    it('returns false if browser does not support popups', function () {
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
-      expect(isSupported()).to.be.false;
+    it('returns true', function () {
+      expect(isSupported()).to.equal(true);
     });
   });
 });

@@ -43,7 +43,7 @@ var testCases = {
   shared: {
     invalidValues: {
       object: {foo: 'bar'},
-      'function': function () { console.log('evil'); },
+      'function': function () { throw new Error('this is evil'); },
       array: [1, 2, 3]
     }
   }

@@ -11,7 +11,6 @@ var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var uuid = require('../../lib/uuid');
 var findParentTags = require('../shared/find-parent-tags');
-var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 var isIos = require('../../lib/is-ios');
 var events = constants.events;
 var EventEmitter = require('../../lib/event-emitter');
@@ -25,6 +24,8 @@ var deferred = require('../../lib/deferred');
 var sharedErrors = require('../../lib/errors');
 var getCardTypes = require('credit-card-type');
 var attributeValidationError = require('./attribute-validation-error');
+var Promise = require('../../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @typedef {object} HostedFields~tokenizePayload
@@ -454,9 +455,10 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
 };
 
 /**
- * Cleanly tear down anything set up by {@link module:braintree-web/hosted-fields.create|create}
+ * Cleanly remove anything set up by {@link module:braintree-web/hosted-fields.create|create}.
  * @public
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if teardown completes successfully.
+ * @function
+ * @param {callback} [callback] Called on completion, containing an error if one occurred. No data is returned if teardown completes successfully. If no callback is provided, `teardown` returns a promise.
  * @example
  * hostedFieldsInstance.teardown(function (teardownErr) {
  *   if (teardownErr) {
@@ -465,28 +467,32 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
  *     console.info('Hosted Fields has been torn down!');
  *   }
  * });
- * @returns {void}
+ * @returns {Promise|void} If no callback is provided, returns a promise that resolves when the teardown is complete.
  */
-HostedFields.prototype.teardown = function (callback) {
-  var client = this._client;
+HostedFields.prototype.teardown = wrapPromise(function () {
+  var self = this; // eslint-disable-line no-invalid-this
 
-  this._destructor.teardown(function (err) {
-    analytics.sendEvent(client, 'custom.hosted-fields.teardown-completed');
+  return new Promise(function (resolve, reject) {
+    self._destructor.teardown(function (err) {
+      analytics.sendEvent(self._client, 'custom.hosted-fields.teardown-completed');
 
-    if (typeof callback === 'function') {
-      callback = deferred(callback);
-      callback(err);
-    }
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
   });
-};
+});
 
 /**
  * Tokenizes fields and returns a nonce payload.
  * @public
+ * @function
  * @param {object} [options] All tokenization options for the Hosted Fields component.
  * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
  * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.
- * @param {callback} callback The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}
+ * @param {callback} [callback] The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link HostedFields~tokenizePayload|tokenizePayload}.
  * @example <caption>Tokenize a card</caption>
  * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
  *   if (tokenizeErr) {
@@ -534,18 +540,26 @@ HostedFields.prototype.teardown = function (callback) {
  * });
  * @returns {void}
  */
-HostedFields.prototype.tokenize = function (options, callback) {
-  if (!callback) {
-    callback = options;
+HostedFields.prototype.tokenize = wrapPromise(function (options) {
+  var self = this; // eslint-disable-line no-invalid-this
+
+  if (!options) {
     options = {};
   }
 
-  throwIfNoCallback(callback, 'tokenize');
+  return new Promise(function (resolve, reject) {
+    self._bus.emit(events.TOKENIZATION_REQUEST, options, function (response) {
+      var err = response[0];
+      var payload = response[1];
 
-  this._bus.emit(events.TOKENIZATION_REQUEST, options, function (response) {
-    callback.apply(null, response);
+      if (err) {
+        reject(err);
+      } else {
+        resolve(payload);
+      }
+    });
   });
-};
+});
 
 /**
  * Add a class to a {@link module:braintree-web/hosted-fields~field field}. Useful for updating field styles when events occur elsewhere in your checkout.
@@ -697,6 +711,27 @@ HostedFields.prototype.setAttribute = function (options, callback) {
   }
 };
 
+/**
+ * Removes a supported attribute from a {@link module:braintree-web/hosted-fields~field field}.
+ *
+ * @public
+ * @param {object} options The options for the attribute you wish to remove.
+ * @param {string} options.field The field from which you wish to remove an attribute. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {string} options.attribute The name of the attribute you wish to remove from the field.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the attribute is removed successfully.
+ *
+ * @example <caption>Remove the placeholder attribute of a field</caption>
+ * hostedFieldsInstance.removeAttribute({
+ *   field: 'number',
+ *   attribute: 'placeholder'
+ * }, function (attributeErr) {
+ *   if (attributeErr) {
+ *     console.error(attributeErr);
+ *   }
+ * });
+ *
+ * @returns {void}
+ */
 HostedFields.prototype.removeAttribute = function (options, callback) {
   var attributeErr, err;
 

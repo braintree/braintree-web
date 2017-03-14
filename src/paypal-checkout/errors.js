@@ -11,7 +11,7 @@ module.exports = {
   PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED: {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED',
-    message: 'No linked PayPal Sandbox account. Sign into the Braintree gateway to configure your account.'
+    message: 'A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. Please reach out to our support team at support@braintreepayments.com if you would like this enabled.'
   },
   PAYPAL_TOKENIZATION_REQUEST_ACTIVE: {
     type: BraintreeError.types.MERCHANT,
@@ -32,11 +32,6 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYPAL_FLOW_OPTION_REQUIRED',
     message: 'PayPal flow property is invalid or missing.'
-  },
-  PAYPAL_BROWSER_NOT_SUPPORTED: {
-    type: BraintreeError.types.CUSTOMER,
-    code: 'PAYPAL_BROWSER_NOT_SUPPORTED',
-    message: 'Browser is not supported.'
   },
   PAYPAL_POPUP_OPEN_FAILED: {
     type: BraintreeError.types.MERCHANT,

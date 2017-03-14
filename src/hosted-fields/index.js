@@ -2,8 +2,8 @@
 /** @module braintree-web/hosted-fields */
 
 var HostedFields = require('./external/hosted-fields');
-var deferred = require('../lib/deferred');
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
+var wrapPromise = require('wrap-promise');
+var Promise = require('../lib/promise');
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -71,7 +71,7 @@ var VERSION = process.env.npm_package_version;
  * @param {Client} options.client A {@link Client} instance.
  * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}.
  * @param {styleOptions} options.styles {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
- * @param {callback} callback The second argument, `data`, is the {@link HostedFields} instance.
+ * @param {callback} [callback] The second argument, `data`, is the {@link HostedFields} instance. If no callback is provided, `create` returns a promise that resolves with the {@link HostedFields} instance.
  * @returns {void}
  * @example
  * braintree.hostedFields.create({
@@ -129,26 +129,20 @@ var VERSION = process.env.npm_package_version;
  *   }
  * }, callback);
  */
-function create(options, callback) {
+function create(options) {
   var integration;
 
-  throwIfNoCallback(callback, 'create');
-
-  try {
+  return new Promise(function (resolve) {
     integration = new HostedFields(options);
-  } catch (err) {
-    callback = deferred(callback);
-    callback(err);
-    return;
-  }
 
-  integration.on('ready', function () {
-    callback(null, integration);
+    integration.on('ready', function () {
+      resolve(integration);
+    });
   });
 }
 
 module.exports = {
-  create: create,
+  create: wrapPromise(create),
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

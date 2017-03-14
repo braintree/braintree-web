@@ -1,11 +1,11 @@
 'use strict';
 
 var Bus = require('../../../src/lib/bus');
+var Promise = require('../../../src/lib/promise');
 var events = require('../../../src/hosted-fields/shared/constants').events;
 var hostedFields = require('../../../src/hosted-fields');
 var HostedFields = require('../../../src/hosted-fields/external/hosted-fields');
 var fake = require('../../helpers/fake');
-var BraintreeError = require('../../../src/lib/braintree-error');
 
 describe('hostedFields', function () {
   describe('create', function () {
@@ -41,31 +41,24 @@ describe('hostedFields', function () {
       frameReadyHandler(function () {});
     });
 
-    it('throws an error if called without a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var promise;
       var cvvNode = document.createElement('div');
 
       cvvNode.id = 'cvv';
       document.body.appendChild(cvvNode);
 
-      try {
-        hostedFields.create({
-          client: {
-            getConfiguration: fake.configuration,
-            _request: function () {}
-          },
-          fields: {
-            cvv: {selector: '#cvv'}
-          }
-        });
-      } catch (e) {
-        err = e;
-      }
+      promise = hostedFields.create({
+        client: {
+          getConfiguration: fake.configuration,
+          _request: function () {}
+        },
+        fields: {
+          cvv: {selector: '#cvv'}
+        }
+      });
 
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('create must include a callback function.');
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('returns error if hosted fields integration throws an error', function (done) {

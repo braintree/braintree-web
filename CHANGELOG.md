@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.11.0
+
+* Hosted Fields
+  * `hostedFields.create` now returns a promise if no callback is provided
+  * `hostedFields.tokenize` now returns a promise if no callback is provided
+* PayPal Checkout
+  * Enable webview support
+  * `intent` property is now passed in correctly
+* Vault Manager
+  * Create the Vault Manager component
+
 ## 3.10.0
 
 * Client

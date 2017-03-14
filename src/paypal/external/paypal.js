@@ -70,8 +70,6 @@ var querystring = require('../../lib/querystring');
  * @class
  * @param {object} options see {@link module:braintree-web/paypal.create|paypal.create}
  * @classdesc This class represents a PayPal component. Instances of this class have methods for launching auth dialogs and other programmatic interactions with the PayPal component.
- *
- * This component has been deprecated in favor of the {@link PayPalCheckout|PayPal Checkout component}.
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/paypal.create|braintree-web.paypal.create} instead.</strong>
  */
 function PayPal(options) {
@@ -503,9 +501,15 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
 };
 
 /**
- * Cleanly tear down anything set up by {@link module:braintree-web/paypal.create|create}.
+ * Cleanly remove anything set up by {@link module:braintree-web/paypal.create|create}.
  * @public
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @param {callback} [callback] Called on completion.
+ * @example
+ * paypalInstance.teardown();
+ * @example <caption>With callback</caption>
+ * paypalInstance.teardown(function () {
+ *   // teardown is complete
+ * });
  * @returns {void}
  */
 PayPal.prototype.teardown = function (callback) {

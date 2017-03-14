@@ -5,7 +5,7 @@ var Client = require('./client');
 var getConfiguration = require('./get-configuration').getConfiguration;
 var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
-var wrapPromise = require('../lib/wrap-promise');
+var wrapPromise = require('wrap-promise');
 var sharedErrors = require('../lib/errors');
 
 /** @module braintree-web/client */

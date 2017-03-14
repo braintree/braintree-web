@@ -2,7 +2,6 @@
 /**
  * @module braintree-web/paypal
  * @description A component to integrate with PayPal.
- * @deprecated Use the {@link PayPalCheckout|PayPal Checkout component} instead
  */
 
 var analytics = require('../lib/analytics');

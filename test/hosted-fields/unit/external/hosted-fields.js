@@ -7,6 +7,7 @@ var events = constants.events;
 var Destructor = require('../../../../src/lib/destructor');
 var EventEmitter = require('../../../../src/lib/event-emitter');
 var BraintreeError = require('../../../../src/lib/braintree-error');
+var Promise = require('../../../../src/lib/promise');
 var fake = require('../../../helpers/fake');
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
@@ -467,7 +468,7 @@ describe('HostedFields', function () {
     it('does not require options', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yieldsAsync();
+      instance._bus.emit.yieldsAsync([]);
 
       instance.tokenize(function (err) {
         expect(err).to.not.exist;
@@ -512,22 +513,15 @@ describe('HostedFields', function () {
       });
     });
 
-    it('requires a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var promise;
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance._bus.emit.yieldsAsync(['foo']);
 
-      try {
-        instance.tokenize();
-      } catch (e) {
-        err = e;
-      }
+      promise = instance.tokenize();
 
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('tokenize must include a callback function.');
+      expect(promise).to.be.an.instanceof(Promise);
     });
   });
 
@@ -569,17 +563,18 @@ describe('HostedFields', function () {
       });
     });
 
-    it('does not require a callback', function () {
+    it('returns a promise', function () {
       var client = this.defaultConfiguration.client;
+      var promise;
 
       this.sandbox.stub(analytics, 'sendEvent');
 
-      expect(function () {
-        HostedFields.prototype.teardown.call({
-          _destructor: {teardown: function () {}},
-          _client: client
-        });
-      }).to.not.throw();
+      promise = HostedFields.prototype.teardown.call({
+        _destructor: {teardown: function () {}},
+        _client: client
+      });
+
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('replaces all methods so error is thrown when methods are invoked', function (done) {

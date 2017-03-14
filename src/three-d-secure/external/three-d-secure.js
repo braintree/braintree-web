@@ -291,9 +291,15 @@ ThreeDSecure.prototype._formatAuthResponse = function (paymentMethod, threeDSecu
 };
 
 /**
- * Cleanly tear down anything set up by {@link module:braintree-web/three-d-secure.create|create}
+ * Cleanly remove anything set up by {@link module:braintree-web/three-d-secure.create|create}.
  * @public
- * @param {errback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @param {callback} [callback] Called on completion.
+ * @example
+ * threeDSecure.teardown();
+ * @example <caption>With callback</caption>
+ * threeDSecure.teardown(function () {
+ *   // teardown is complete
+ * });
  * @returns {void}
  */
 ThreeDSecure.prototype.teardown = function (callback) {

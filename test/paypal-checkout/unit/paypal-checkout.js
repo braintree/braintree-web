@@ -831,6 +831,32 @@ describe('PayPalCheckout', function () {
         });
       });
 
+      it('passes along intent property', function () {
+        var accountDetails = {
+          creditFinancingOffered: {foo: 'bar'}
+        };
+
+        this.client.request.yieldsAsync(null, {
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: accountDetails
+          }]
+        });
+
+        return this.paypalCheckout.tokenizePayment({
+          intent: 'sale'
+        }).then(function () {
+          expect(this.client.request).to.be.calledWithMatch({
+            data: {
+              paypalAccount: {
+                intent: 'sale'
+              }
+            }
+          });
+        }.bind(this));
+      });
+
       it('does not resolve with creditFinancingOffered when not available', function () {
         this.client.request.yieldsAsync(null, {
           paypalAccounts: [{

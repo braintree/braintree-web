@@ -11,6 +11,7 @@ var analytics = require('../../../../src/lib/analytics');
 var fake = require('../../../helpers/fake');
 var assembleIFrames = require('../../../../src/hosted-fields/internal/assemble-iframes');
 var BraintreeError = require('../../../../src/lib/braintree-error');
+var Promise = require('../../../../src/lib/promise');
 
 describe('internal', function () {
   beforeEach(function () {
@@ -115,12 +116,36 @@ describe('internal', function () {
 
   describe('createTokenizationHandler', function () {
     var create = internal.createTokenizationHandler;
-    var fakeError = new Error('you done goofed');
-
-    fakeError.errors = [];
 
     beforeEach(function () {
       var self = this;
+      var requestStub = this.sandbox.stub();
+
+      requestStub.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.resolve({
+        creditCards: [{
+          nonce: self.fakeNonce,
+          details: self.fakeDetails,
+          description: self.fakeDescription,
+          type: self.fakeType,
+          foo: 'bar'
+        }]
+      }));
+      requestStub.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.resolve({
+        data: {
+          id: 'braintreeApi-token',
+          brand: 'visa',
+          last_4: '1111', // eslint-disable-line camelcase
+          description: 'Visa credit card ending in - 1111',
+          type: 'credit_card'
+        }
+      }));
+
+      this.fakeError = new Error('you done goofed');
+
+      this.fakeError.errors = [];
+      this.fakeError.details = {
+        httpStatus: 500
+      };
 
       this.sandbox.stub(analytics, 'sendEvent');
 
@@ -142,26 +167,14 @@ describe('internal', function () {
         getConfiguration: function () {
           return self.configuration;
         },
-        request: function (_, callback) {
-          callback(null, {
-            creditCards: [{
-              nonce: self.fakeNonce,
-              details: self.fakeDetails,
-              description: self.fakeDescription,
-              type: self.fakeType,
-              foo: 'bar'
-            }]
-          });
-        }
+        request: requestStub
       };
 
       this.badClient = {
         getConfiguration: function () {
           return self.configuration;
         },
-        request: function (_, callback) {
-          callback(fakeError, null, 500);
-        }
+        request: this.sandbox.stub().returns(Promise.reject(self.fakeError))
       };
 
       this.emptyCardForm = this.cardForm;
@@ -189,30 +202,28 @@ describe('internal', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR');
         expect(err.message).to.equal('A tokenization network error occurred.');
         expect(err.details.originalError.message).to.equal('you done goofed');
-        expect(err.details.originalError.errors).to.equal(fakeError.errors);
+        expect(err.details.originalError.errors).to.equal(this.fakeError.errors);
 
         done();
-      });
+      }.bind(this));
     });
 
     it('replies with client\'s error if tokenization fails due to authorization', function (done) {
-      this.badClient.request = function (_, callback) {
-        callback(fakeError, null, 403);
-      };
+      this.fakeError.details.httpStatus = 403;
+      this.badClient.request.returns(Promise.reject(this.fakeError));
 
       create(this.badClient, this.validCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
 
-        expect(err).to.equal(fakeError);
+        expect(err).to.equal(this.fakeError);
 
         done();
-      });
+      }.bind(this));
     });
 
     it('replies with an error if tokenization fails due to card data', function (done) {
-      this.badClient.request = function (_, callback) {
-        callback(fakeError, null, 422);
-      };
+      this.fakeError.details.httpStatus = 422;
+      this.badClient.request.returns(Promise.reject(this.fakeError));
 
       create(this.badClient, this.validCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
@@ -222,10 +233,10 @@ describe('internal', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FAILED_TOKENIZATION');
         expect(err.message).to.equal('The supplied card data failed tokenization.');
         expect(err.details.originalError.message).to.equal('you done goofed');
-        expect(err.details.originalError.errors).to.equal(fakeError.errors);
+        expect(err.details.originalError.errors).to.equal(this.fakeError.errors);
 
         done();
-      });
+      }.bind(this));
     });
 
     it('replies with an error with a non-object `gateways` option', function (done) {
@@ -340,40 +351,34 @@ describe('internal', function () {
       });
     });
 
-    it('makes a client request with validate false if the vault option is not provided', function () {
-      var reply = this.sandbox.spy();
-
-      this.goodClient.request = this.sandbox.stub();
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, reply);
-
-      expect(this.goodClient.request).to.be.calledWithMatch({
-        data: {
-          creditCard: {
-            options: {
-              validate: false
+    it('makes a client request with validate false if the vault option is not provided', function (done) {
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          data: {
+            creditCard: {
+              options: {
+                validate: false
+              }
             }
           }
-        }
-      });
+        });
+        done();
+      }.bind(this));
     });
 
-    it('makes a client request without validate false if the vault option is not provided', function () {
-      var reply = this.sandbox.spy();
-
-      this.goodClient.request = this.sandbox.stub();
-
-      create(this.goodClient, this.validCardForm)({vault: true}, reply);
-
-      expect(this.goodClient.request).not.to.be.calledWithMatch({
-        data: {
-          creditCard: {
-            options: {
-              validate: false
+    it('makes a client request without validate ealse if the vault option is not provided', function (done) {
+      create(this.goodClient, this.validCardForm)({vault: true}, function () {
+        expect(this.goodClient.request).not.to.be.calledWithMatch({
+          data: {
+            creditCard: {
+              options: {
+                validate: false
+              }
             }
           }
-        }
-      });
+        });
+        done();
+      }.bind(this));
     });
 
     context('when supplying additional postal code data', function () {
@@ -403,164 +408,151 @@ describe('internal', function () {
         });
       });
 
-      it('tokenizes with additional postal code data when Hosted Fields has no postal code field', function () {
-        var reply = this.sandbox.spy();
-
+      it('tokenizes with additional postal code data when Hosted Fields has no postal code field', function (done) {
         this.fakeOptions.billingAddress = {
           postalCode: '33333'
         };
 
-        this.goodClient.request = this.sandbox.stub();
+        create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  postal_code: '33333'
+                }
+              }
+            }
+          });
 
-        create(this.goodClient, this.validCardForm)(this.fakeOptions, reply);
-
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'clientApi',
-          data: {
-            creditCard: {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
               billing_address: {
                 postal_code: '33333'
               }
             }
-          }
-        });
-
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'braintreeApi',
-          data: {
-            billing_address: {
-              postal_code: '33333'
-            }
-          }
-        });
+          });
+          done();
+        }.bind(this));
       });
 
-      it('tokenizes with Hosted Fields postal code', function () {
-        var reply = this.sandbox.spy();
-
+      it('tokenizes with Hosted Fields postal code', function (done) {
         this.cardFormWithPostalCode.set('postalCode.value', '11111');
-        this.goodClient.request = this.sandbox.stub();
 
-        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  postal_code: '11111'
+                }
+              }
+            }
+          });
 
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'clientApi',
-          data: {
-            creditCard: {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
               billing_address: {
                 postal_code: '11111'
               }
             }
-          }
-        });
-
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'braintreeApi',
-          data: {
-            billing_address: {
-              postal_code: '11111'
-            }
-          }
-        });
+          });
+          done();
+        }.bind(this));
       });
 
-      it('prioritizes Hosted Fields postal code even when the field is empty', function () {
-        var reply = this.sandbox.spy();
-
+      it('prioritizes Hosted Fields postal code even when the field is empty', function (done) {
         this.fakeOptions.billingAddress = {
           postalCode: '33333'
         };
 
         this.cardFormWithPostalCode.set('postalCode.value', '');
-        this.goodClient.request = this.sandbox.stub();
 
-        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  postal_code: ''
+                }
+              }
+            }
+          });
 
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'clientApi',
-          data: {
-            creditCard: {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
               billing_address: {
                 postal_code: ''
               }
             }
-          }
-        });
-
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'braintreeApi',
-          data: {
-            billing_address: {
-              postal_code: ''
-            }
-          }
-        });
+          });
+          done();
+        }.bind(this));
       });
 
-      it('does not override other parts of the form with options', function () {
-        var reply = this.sandbox.spy();
-
+      it('does not override other parts of the form with options', function (done) {
         this.fakeOptions.number = '3333 3333 3333 3333';
 
         this.cardFormWithPostalCode.set('number.value', '1111 1111 1111 1111');
-        this.goodClient.request = this.sandbox.stub();
 
-        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                number: '1111 1111 1111 1111'
+              }
+            }
+          });
 
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'clientApi',
-          data: {
-            creditCard: {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
               number: '1111 1111 1111 1111'
             }
-          }
-        });
-
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'braintreeApi',
-          data: {
-            number: '1111 1111 1111 1111'
-          }
-        });
+          });
+          done();
+        }.bind(this));
       });
 
-      it('does not attempt to tokenize non-postal code additional options', function () {
-        var reply = this.sandbox.spy();
-
+      it('does not attempt to tokenize non-postal code additional options', function (done) {
         this.fakeOptions.billingAddress = {
           streetAddress: '606 Elm St'
         };
 
-        this.goodClient.request = this.sandbox.stub();
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.not.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                number: '3333 3333 3333 3333',
+                billingAddress: {
+                  streetAddress: '606 Elm St'
+                }
+              }
+            }
+          });
 
-        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, reply);
-
-        expect(this.goodClient.request).to.not.be.calledWithMatch({
-          api: 'clientApi',
-          data: {
-            creditCard: {
+          expect(this.goodClient.request).to.not.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
               number: '3333 3333 3333 3333',
               billingAddress: {
                 streetAddress: '606 Elm St'
               }
             }
-          }
-        });
-
-        expect(this.goodClient.request).to.not.be.calledWithMatch({
-          api: 'braintreeApi',
-          data: {
-            number: '3333 3333 3333 3333',
-            billingAddress: {
-              streetAddress: '606 Elm St'
-            }
-          }
-        });
+          });
+          done();
+        }.bind(this));
       });
     });
 
     it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration or client-side option", function () {
-      this.sandbox.stub(this.goodClient, 'request');
       this.fakeOptions.gateways = {
         clientApi: true
       };
@@ -573,7 +565,6 @@ describe('internal', function () {
     });
 
     it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration, even if it's enabled client-side", function () {
-      this.sandbox.stub(this.goodClient, 'request');
       this.fakeOptions.gateways = {
         clientApi: true,
         braintreeApi: true
@@ -587,7 +578,6 @@ describe('internal', function () {
     });
 
     it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration or even present, even if enabled client-side", function () {
-      this.sandbox.stub(this.goodClient, 'request');
       this.fakeOptions.gateways = {
         clientApi: true,
         braintreeApi: true
@@ -602,7 +592,6 @@ describe('internal', function () {
     });
 
     it("doesn't make a request to the Braintree API if it's not enabled by a client-side option", function () {
-      this.sandbox.stub(this.goodClient, 'request');
       this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
         name: 'braintreeApi',
         timeout: 2000
@@ -619,7 +608,6 @@ describe('internal', function () {
     });
 
     it("makes a request to the Braintree API if it's enabled, in addition to the Client API", function (done) {
-      this.sandbox.stub(this.goodClient, 'request');
       this.configuration.gatewayConfiguration.braintreeApi = {};
       this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
         name: 'braintreeApi',
@@ -630,25 +618,22 @@ describe('internal', function () {
         braintreeApi: true
       };
 
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (err) {
-        if (err) { throw err; }
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'clientApi',
+          endpoint: 'payment_methods/credit_cards',
+          method: 'post'
+        });
+
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          api: 'braintreeApi',
+          endpoint: 'tokens',
+          method: 'post',
+          timeout: 2000
+        });
+
         done();
-      });
-
-      expect(this.goodClient.request).to.be.calledWithMatch({
-        api: 'clientApi',
-        endpoint: 'payment_methods/credit_cards',
-        method: 'post'
-      });
-
-      expect(this.goodClient.request).to.be.calledWithMatch({
-        api: 'braintreeApi',
-        endpoint: 'tokens',
-        method: 'post',
-        timeout: 2000
-      });
-
-      done();
+      }.bind(this));
     });
 
     it('returns combined data from the Braintree and Client APIs', function (done) {
@@ -662,31 +647,27 @@ describe('internal', function () {
         braintreeApi: true
       };
 
-      this.goodClient.request = function (options, callback) {
-        if (options.api === 'clientApi') {
-          callback(null, {
-            creditCards: [{
-              nonce: 'clientApi-nonce',
-              details: {
-                cardType: 'Visa',
-                lastTwo: '11'
-              },
-              description: 'ending in 69',
-              type: 'CreditCard'
-            }]
-          });
-        } else if (options.api === 'braintreeApi') {
-          callback(null, {
-            data: {
-              id: 'braintreeApi-token',
-              brand: 'visa',
-              last_4: '1111', // eslint-disable-line camelcase
-              description: 'Visa credit card ending in - 1111',
-              type: 'credit_card'
-            }
-          });
+      this.goodClient.request = this.sandbox.stub();
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.resolve({
+        creditCards: [{
+          nonce: 'clientApi-nonce',
+          details: {
+            cardType: 'Visa',
+            lastTwo: '11'
+          },
+          description: 'ending in 69',
+          type: 'CreditCard'
+        }]
+      }));
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.resolve({
+        data: {
+          id: 'braintreeApi-token',
+          brand: 'visa',
+          last_4: '1111', // eslint-disable-line camelcase
+          description: 'Visa credit card ending in - 1111',
+          type: 'credit_card'
         }
-      };
+      }));
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
         var err = args[0];
@@ -719,20 +700,20 @@ describe('internal', function () {
         braintreeApi: true
       };
 
-      this.goodClient.request = function (options, callback) {
+      this.goodClient.request = function (options) {
         if (options.api === 'clientApi') {
-          callback(new Error('it failed'), null, 500);
-        } else if (options.api === 'braintreeApi') {
-          callback(null, {
-            data: {
-              id: 'braintreeApi-token',
-              brand: 'visa',
-              last_4: '1234', // eslint-disable-line camelcase
-              description: 'Visa credit card ending in - 1234',
-              type: 'credit_card'
-            }
-          });
+          return Promise.reject(new Error('it failed'));
         }
+
+        return Promise.resolve({
+          data: {
+            id: 'braintreeApi-token',
+            brand: 'visa',
+            last_4: '1234', // eslint-disable-line camelcase
+            description: 'Visa credit card ending in - 1234',
+            type: 'credit_card'
+          }
+        });
       };
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
@@ -765,9 +746,13 @@ describe('internal', function () {
         braintreeApi: true
       };
 
-      this.goodClient.request = function (options, callback) {
+      this.goodClient.request = function (options) {
+        var error = new Error('it failed');
+
+        error.details = {httpStatus: 500};
+
         if (options.api === 'clientApi') {
-          callback(null, {
+          return Promise.resolve({
             creditCards: [{
               nonce: 'clientApi-nonce',
               details: {
@@ -778,9 +763,10 @@ describe('internal', function () {
               type: 'CreditCard'
             }]
           });
-        } else if (options.api === 'braintreeApi') {
-          callback(new Error('it failed'), null, 500);
         }
+
+        // braintree-api
+        return Promise.reject(error);
       };
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
@@ -805,6 +791,8 @@ describe('internal', function () {
     it('sends Client API error when both Client and Braintree APIs fail', function (done) {
       var fakeErr = new Error('it failed');
 
+      fakeErr.details = {httpStatus: 500};
+
       this.configuration.gatewayConfiguration.braintreeApi = {};
       this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
         name: 'braintreeApi',
@@ -815,9 +803,9 @@ describe('internal', function () {
         braintreeApi: true
       };
 
-      this.goodClient.request = function (options, callback) {
-        callback(fakeErr, null, 500);
-      };
+      this.goodClient.request = this.sandbox.stub();
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.reject(fakeErr));
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.reject(fakeErr));
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
         var err = args[0];

@@ -2,7 +2,7 @@
 
 var BraintreeError = require('../lib/braintree-error');
 var Promise = require('../lib/promise');
-var wrapPromise = require('../lib/wrap-promise');
+var wrapPromise = require('wrap-promise');
 var request = require('./request');
 var uuid = require('../lib/uuid');
 var constants = require('../lib/constants');

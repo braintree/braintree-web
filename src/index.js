@@ -43,6 +43,7 @@ var hostedFields = require('./hosted-fields');
 var dataCollector = require('./data-collector');
 var americanExpress = require('./american-express');
 var unionpay = require('./unionpay');
+var vaultManager = require('./vault-manager');
 var applePay = require('./apple-pay');
 var threeDSecure = require('./three-d-secure');
 var usBankAccount = require('./us-bank-account');
@@ -73,6 +74,8 @@ module.exports = {
   usBankAccount: usBankAccount,
   /** @type {module:braintree-web/visa-checkout} */
   visaCheckout: visaCheckout,
+  /** @type {module:braintree-web/vault-manager} */
+  vaultManager: vaultManager,
   /** @type {module:braintree-web/masterpass} */
   masterpass: masterpass,
   /**

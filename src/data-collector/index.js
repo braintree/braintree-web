@@ -8,7 +8,7 @@ var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
-var wrapPromise = require('../lib/wrap-promise');
+var wrapPromise = require('wrap-promise');
 var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 
@@ -32,12 +32,16 @@ var errors = require('./errors');
  * @memberof DataCollector
  * @name teardown
  * @function
- * @description Cleanly remove all event handlers and DOM nodes that were added.
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @description Cleanly remove anything set up by {@link module:braintree-web/data-collector.create|create}.
+ * @param {callback} [callback] Called on completion. If no callback is provided, `teardown` returns a promise.
  * @instance
  * @example
  * dataCollectorInstance.teardown();
- * @returns {Promise|void} Returns a promise that resolves when the teardown is complete if no callback is provided.
+ * @example <caption>With callback</caption>
+ * dataCollectorInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} If no callback is provided, returns a promise that resolves when the teardown is complete.
  */
 
 /**

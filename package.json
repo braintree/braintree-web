@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.10.0",
+  "version": "3.11.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -22,7 +22,8 @@
     "iframer": "braintree/iframer.git#1.0.2",
     "inject-stylesheet": "1.0.0",
     "promise-polyfill": "6.0.2",
-    "restricted-input": "1.0.11"
+    "restricted-input": "1.0.11",
+    "wrap-promise": "braintree/wrap-promise#1.0.0"
   },
   "devDependencies": {
     "async": "2.0.1",

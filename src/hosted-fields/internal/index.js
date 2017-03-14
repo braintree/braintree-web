@@ -96,14 +96,14 @@ function createTokenizationHandler(client, cardForm) {
 
     mergedCardData = mergeCardData(cardForm.getCardData(), options);
 
-    clientApiRequest = new Promise(function (resolve) {
+    clientApiRequest = Promise.resolve().then(function () {
       var creditCardDetails = formatCardRequestData(mergedCardData);
 
       creditCardDetails.options = {
         validate: options.vault === true
       };
 
-      client.request({
+      return client.request({
         api: 'clientApi',
         method: 'post',
         endpoint: 'payment_methods/credit_cards',
@@ -113,12 +113,8 @@ function createTokenizationHandler(client, cardForm) {
           },
           creditCard: creditCardDetails
         }
-      }, function (err, response, status) {
-        resolve({
-          err: err,
-          response: response,
-          status: status
-        });
+      }).catch(function (err) {
+        return err;
       });
     });
 
@@ -126,23 +122,19 @@ function createTokenizationHandler(client, cardForm) {
 
     shouldRequestBraintreeApi = gateways.braintreeApi && Boolean(braintreeApiCreditCardConfiguration);
     if (shouldRequestBraintreeApi) {
-      braintreeApiRequest = new Promise(function (resolve) {
+      braintreeApiRequest = Promise.resolve().then(function () {
         var data = formatCardRequestData(mergedCardData);
 
         data.type = 'credit_card';
 
-        client.request({
+        return client.request({
           api: 'braintreeApi',
           endpoint: 'tokens',
           method: 'post',
           data: data,
           timeout: braintreeApiCreditCardConfiguration.timeout
-        }, function (err, response, status) {
-          resolve({
-            err: err,
-            response: response,
-            status: status
-          });
+        }).catch(function (err) {
+          return err;
         });
       });
 
@@ -150,20 +142,23 @@ function createTokenizationHandler(client, cardForm) {
     }
 
     Promise.all(requests).then(function (results) {
-      var err, result, clientApiCreditCard;
+      var err, result, clientApiCreditCard, status;
       var clientApiResult = results[0];
       var braintreeApiResult = results[1];
-      var clientApiSucceeded = !clientApiResult.err;
+      var clientApiSucceeded = !(clientApiResult instanceof Error);
+      var braintreeApiSucceeded = !(braintreeApiResult instanceof Error);
 
-      if (!clientApiSucceeded && (!braintreeApiResult || braintreeApiResult.err)) {
-        if (clientApiResult.status === 403) {
-          err = clientApiResult.err;
-        } else if (clientApiResult.status < 500) {
+      if (!clientApiSucceeded && (!braintreeApiResult || !braintreeApiSucceeded)) {
+        status = clientApiResult.details && clientApiResult.details.httpStatus;
+
+        if (status === 403) {
+          err = clientApiResult;
+        } else if (status < 500) {
           err = new BraintreeError(errors.HOSTED_FIELDS_FAILED_TOKENIZATION);
-          err.details = {originalError: clientApiResult.err};
+          err.details = {originalError: clientApiResult};
         } else {
           err = new BraintreeError(errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR);
-          err.details = {originalError: clientApiResult.err};
+          err.details = {originalError: clientApiResult};
         }
 
         analytics.sendEvent(client, 'custom.hosted-fields.tokenization.failed');
@@ -175,14 +170,14 @@ function createTokenizationHandler(client, cardForm) {
 
       result = {};
 
-      if (braintreeApiResult && !braintreeApiResult.err) {
-        result = formatBraintreeApiCardResponse(braintreeApiResult.response);
+      if (braintreeApiResult && braintreeApiSucceeded) {
+        result = formatBraintreeApiCardResponse(braintreeApiResult);
 
         analytics.sendEvent(client, 'custom.hosted-fields.braintree-api.tokenization.succeeded');
       }
 
       if (clientApiSucceeded) {
-        clientApiCreditCard = clientApiResult.response.creditCards[0];
+        clientApiCreditCard = clientApiResult.creditCards[0];
         result.nonce = clientApiCreditCard.nonce;
         result.details = clientApiCreditCard.details;
         result.description = clientApiCreditCard.description;

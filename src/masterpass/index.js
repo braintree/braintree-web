@@ -10,7 +10,7 @@ var VERSION = process.env.npm_package_version;
 var errors = require('./shared/errors');
 var sharedErrors = require('../lib/errors');
 var Promise = require('../lib/promise');
-var wrapPromise = require('../lib/wrap-promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @static
