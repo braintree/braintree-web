@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.11.1
+
+* Client
+  * Fix a bug where errors within the request callback function were being caught by the request promise instead of bubbling up
+* PayPal Checkout
+  * Allow tokenization keys to use the `vault` flow
+
 ## 3.11.0
 
 * Hosted Fields

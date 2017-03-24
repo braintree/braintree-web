@@ -6,6 +6,8 @@ var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var addMetadata = require('../lib/add-metadata');
 var Promise = require('../lib/promise');
+var once = require('../lib/once');
+var deferred = require('../lib/deferred');
 var assign = require('../lib/assign').assign;
 var constants = require('./constants');
 var errors = require('./errors');
@@ -207,6 +209,8 @@ Client.prototype.request = function (options, callback) {
   });
 
   if (typeof callback === 'function') {
+    callback = once(deferred(callback));
+
     requestPromise.then(function (response) {
       callback(null, response, response._httpStatus);
     }).catch(function (err) {

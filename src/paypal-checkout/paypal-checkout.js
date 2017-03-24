@@ -315,14 +315,10 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
     paypalAccount: {
       correlationId: params.billingToken || params.ecToken,
       options: {
-        validate: options.flow === 'vault'
+        validate: options.flow === 'vault' && !isTokenizationKey
       }
     }
   };
-
-  if (isTokenizationKey && data.paypalAccount.options.validate) {
-    throw new BraintreeError(errors.PAYPAL_VAULTING_WITH_TOKENIZATION_KEY);
-  }
 
   if (params.billingToken) {
     data.paypalAccount.billingAgreementToken = params.billingToken;

@@ -47,10 +47,5 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYPAL_INVALID_PAYMENT_OPTION',
     message: 'PayPal payment options are invalid.'
-  },
-  PAYPAL_VAULTING_WITH_TOKENIZATION_KEY: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_VAULTING_WITH_TOKENIZATION_KEY',
-    message: 'Vaulting directly from the client when using a Tokenization Key is forbidden. To vault, store the transaction in the vault (https://developers.braintreepayments.com/reference/request/transaction/sale/#storing-in-vault) or use a Client Token (https://developers.braintreepayments.com/guides/authorization/client-token)'
   }
 };

@@ -1061,24 +1061,17 @@ describe('PayPalCheckout', function () {
       });
     });
 
-    it('throws error if flow is vault and auth is a tokenization key', function () {
+    it('does not validate if flow is vault and auth is tokenization key', function () {
       this.configuration.authorizationType = 'TOKENIZATION_KEY';
-      return this.paypalCheckout.tokenizePayment({billingToken: 'token'}).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('PAYPAL_VAULTING_WITH_TOKENIZATION_KEY');
-        expect(err.message).to.equal('Vaulting directly from the client when using a Tokenization Key is forbidden. To vault, store the transaction in the vault (https://developers.braintreepayments.com/reference/request/transaction/sale/#storing-in-vault) or use a Client Token (https://developers.braintreepayments.com/guides/authorization/client-token)');
-      });
-    });
-
-    it('sends along billing token as billingAgreementToken param', function () {
       this.paypalCheckout.tokenizePayment({billingToken: 'token'});
 
       expect(this.client.request).to.be.calledOnce;
       expect(this.client.request).to.be.calledWithMatch({
         data: {
           paypalAccount: {
-            billingAgreementToken: 'token'
+            options: {
+              validate: false
+            }
           }
         }
       });
