@@ -90,7 +90,7 @@ describe('paypalCheckout', function () {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED');
-          expect(err.message).to.equal('A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. Please reach out to our support team at support@braintreepayments.com if you would like this enabled.');
+          expect(err.message).to.equal('A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developers.braintreepayments.com/guides/paypal/testing-go-live/#linked-paypal-testing for details on linking your PayPal sandbox with Braintree.');
         });
       });
 

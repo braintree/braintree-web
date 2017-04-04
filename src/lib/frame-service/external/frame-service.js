@@ -1,6 +1,8 @@
 'use strict';
 
-var popup = require('./popup');
+var Popup = require('./strategies/popup');
+var PopupBridge = require('./strategies/popup-bridge');
+var Modal = require('./strategies/modal');
 var Bus = require('../../bus');
 var events = require('../shared/events');
 var errors = require('../shared/errors');
@@ -8,7 +10,7 @@ var constants = require('../shared/constants');
 var uuid = require('../../uuid');
 var iFramer = require('iframer');
 var BraintreeError = require('../../braintree-error');
-var assign = require('../../assign').assign;
+var browserDetection = require('../../browser-detection');
 
 var REQUIRED_CONFIG_KEYS = [
   'name',
@@ -86,6 +88,7 @@ FrameService.prototype._setBusEvents = function () {
     if (this._onCompleteCallback) {
       this._onCompleteCallback.call(null, res.err, res.payload);
     }
+    this._frame.close();
 
     this._onCompleteCallback = null;
 
@@ -99,34 +102,17 @@ FrameService.prototype._setBusEvents = function () {
   }.bind(this));
 };
 
-FrameService.prototype._initializePopupBridge = function (callback) {
-  global.popupBridge.onComplete = function (err, payload) {
-    var popupDismissed = !payload && !err;
-
-    if (err || popupDismissed) {
-      // User clicked "Done" button of browser view
-      callback(new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED));
-      return;
-    }
-    // User completed popup flow (includes success and cancel cases)
-    callback(null, payload);
-  };
-};
-
-FrameService.prototype._openPopupBridge = function (options) {
-  var popupOptions = assign({}, this._options, options);
-
-  popup.open(popupOptions);
-};
-
 FrameService.prototype.open = function (callback) {
-  if (global.popupBridge) {
-    // Popup Bridge does not need to open a frame until the landing frame redirects to PayPal
-    this._initializePopupBridge(callback);
+  this._frame = this._getFrameForEnvironment();
+  this._frame.initialize(callback);
+
+  if (this._frame instanceof PopupBridge) {
     return;
   }
+
   this._onCompleteCallback = callback;
-  this._frame = popup.open(this._options);
+  this._frame.open();
+
   if (this.isFrameClosed()) {
     this._cleanupFrame();
     if (callback) {
@@ -138,14 +124,8 @@ FrameService.prototype.open = function (callback) {
 };
 
 FrameService.prototype.redirect = function (url) {
-  if (global.popupBridge) {
-    this._openPopupBridge({
-      openFrameUrl: url
-    });
-    return;
-  }
   if (this._frame && !this.isFrameClosed()) {
-    this._frame.location.href = url;
+    this._frame.redirect(url);
   }
 };
 
@@ -217,6 +197,19 @@ FrameService.prototype._pollForPopupClose = function () {
   }.bind(this), constants.POPUP_POLL_INTERVAL);
 
   return this._popupInterval;
+};
+
+FrameService.prototype._getFrameForEnvironment = function () {
+  var usePopup = browserDetection.supportsPopups();
+  var popupBridgeExists = Boolean(global.popupBridge);
+
+  if (usePopup) {
+    return new Popup(this._options);
+  } else if (popupBridgeExists) {
+    return new PopupBridge(this._options);
+  }
+
+  return new Modal(this._options);
 };
 
 module.exports = FrameService;

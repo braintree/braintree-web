@@ -8,8 +8,9 @@ function getServiceId() {
 }
 
 function getFrame() {
+  var parent = global.opener || global.parent;
   var frameRef = constants.DISPATCH_FRAME_NAME + '_' + getServiceId();
-  var frame = global.opener.frames[frameRef];
+  var frame = parent.frames[frameRef];
 
   if (!frame) {
     throw new Error('Braintree is inactive');

@@ -24,6 +24,11 @@ function getIEVersion(ua) {
   return null;
 }
 
+function isIe9(ua) {
+  ua = ua || navigator.userAgent;
+  return ua.indexOf('MSIE 9') !== -1;
+}
+
 function isHTTPS(protocol) {
   protocol = protocol || global.location.protocol;
   return protocol === 'https:';
@@ -31,7 +36,7 @@ function isHTTPS(protocol) {
 
 function isIos(ua) {
   ua = ua || global.navigator.userAgent;
-  return /iPhone|iPod|iPad/.test(ua);
+  return /iPhone|iPod|iPad/i.test(ua);
 }
 
 function isAndroid(ua) {
@@ -89,6 +94,7 @@ module.exports = {
   isOperaMini: isOperaMini,
   isAndroidFirefox: isAndroidFirefox,
   getIEVersion: getIEVersion,
+  isIe9: isIe9,
   isHTTPS: isHTTPS,
   isIos: isIos,
   isAndroid: isAndroid,

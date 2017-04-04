@@ -30,6 +30,8 @@ function atob(base64String) {
 }
 
 module.exports = {
-  atob: atobNormalized,
+  atob: function (base64String) {
+    return atobNormalized.call(global, base64String);
+  },
   _atob: atob
 };

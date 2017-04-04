@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.12.0
+
+* Client
+  * Fix a bug where `atob` was not being called with the window context
+* Hosted Fields
+  * Add support for `appearance` CSS rule
+* PayPal
+  * Fix support issues
+* Visa Checkout
+  * Add Visa Checkout component
+
 ## 3.11.1
 
 * Client

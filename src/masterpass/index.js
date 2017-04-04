@@ -34,39 +34,37 @@ var wrapPromise = require('wrap-promise');
  * @returns {Promise|void} Resolves with the Masterpass instance.
  */
 function create(options) {
-  return Promise.resolve().then(function () {
-    var masterpassInstance, clientVersion, configuration;
+  var masterpassInstance, clientVersion, configuration;
 
-    if (options.client == null) {
-      throw new BraintreeError({
-        type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-        code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-        message: 'options.client is required when instantiating Masterpass.'
-      });
-    }
+  if (options.client == null) {
+    return Promise.reject(new BraintreeError({
+      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
+      message: 'options.client is required when instantiating Masterpass.'
+    }));
+  }
 
-    clientVersion = options.client.getConfiguration().analyticsMetadata.sdkVersion;
-    if (clientVersion !== VERSION) {
-      throw new BraintreeError({
-        type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-        code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-        message: 'Client (version ' + clientVersion + ') and Masterpass (version ' + VERSION + ') components must be from the same SDK version.'
-      });
-    }
+  clientVersion = options.client.getConfiguration().analyticsMetadata.sdkVersion;
+  if (clientVersion !== VERSION) {
+    return Promise.reject(new BraintreeError({
+      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
+      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
+      message: 'Client (version ' + clientVersion + ') and Masterpass (version ' + VERSION + ') components must be from the same SDK version.'
+    }));
+  }
 
-    if (!isSupported()) {
-      throw new BraintreeError(errors.MASTERPASS_BROWSER_NOT_SUPPORTED);
-    }
+  if (!isSupported()) {
+    return Promise.reject(new BraintreeError(errors.MASTERPASS_BROWSER_NOT_SUPPORTED));
+  }
 
-    configuration = options.client.getConfiguration().gatewayConfiguration;
-    if (!configuration.masterpass) {
-      throw new BraintreeError(errors.MASTERPASS_NOT_ENABLED);
-    }
+  configuration = options.client.getConfiguration().gatewayConfiguration;
+  if (!configuration.masterpass) {
+    return Promise.reject(new BraintreeError(errors.MASTERPASS_NOT_ENABLED));
+  }
 
-    masterpassInstance = new Masterpass(options);
+  masterpassInstance = new Masterpass(options);
 
-    return masterpassInstance._initialize();
-  });
+  return masterpassInstance._initialize();
 }
 
 /**

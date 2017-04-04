@@ -2,7 +2,7 @@
 
 var Promise = require('../../../src/lib/promise');
 var create = require('../../../src/masterpass').create;
-var isSupported = require('../../../src/paypal').isSupported;
+var isSupported = require('../../../src/masterpass').isSupported;
 var browserDetection = require('../../../src/lib/browser-detection');
 var Masterpass = require('../../../src/masterpass/external/masterpass');
 var BraintreeError = require('../../../src/lib/braintree-error');

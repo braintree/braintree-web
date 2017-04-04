@@ -6,7 +6,6 @@
 
 var analytics = require('../lib/analytics');
 var BraintreeError = require('../lib/braintree-error');
-var browserDetection = require('../lib/browser-detection');
 var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
@@ -102,11 +101,6 @@ function create(options, callback) {
     return;
   }
 
-  if (!isSupported()) {
-    callback(new BraintreeError(errors.PAYPAL_BROWSER_NOT_SUPPORTED));
-    return;
-  }
-
   analytics.sendEvent(options.client, 'paypal.initialized');
 
   pp = new PayPal(options);
@@ -128,7 +122,7 @@ function create(options, callback) {
  * @returns {Boolean} Returns true if PayPal supports this browser.
  */
 function isSupported() {
-  return Boolean(global.popupBridge || browserDetection.supportsPopups());
+  return true;
 }
 
 module.exports = {

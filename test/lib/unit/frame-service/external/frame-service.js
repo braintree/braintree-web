@@ -3,9 +3,12 @@
 var FrameService = require('../../../../../src/lib/frame-service/external/frame-service');
 var constants = require('../../../../../src/lib/frame-service/shared/constants');
 var events = require('../../../../../src/lib/frame-service/shared/events');
-var popup = require('../../../../../src/lib/frame-service/external/popup');
+var Popup = require('../../../../../src/lib/frame-service/external/strategies/popup');
+var PopupBridge = require('../../../../../src/lib/frame-service/external/strategies/popup-bridge');
+var Modal = require('../../../../../src/lib/frame-service/external/strategies/modal');
 var BraintreeBus = require('../../../../../src/lib/bus');
 var BraintreeError = require('../../../../../src/lib/braintree-error');
+var browserDetection = require('../../../../../src/lib/browser-detection');
 
 function noop() {}
 
@@ -341,6 +344,9 @@ describe('FrameService', function () {
         close: this.sandbox.stub(),
         _onCompleteCallback: function (err, payload) {
           onCompleteCallbackPayload = [err, payload];
+        },
+        _frame: {
+          close: this.sandbox.stub()
         }
       };
       var fakeErr = 'fakeErr';
@@ -386,7 +392,10 @@ describe('FrameService', function () {
       var context = {
         _bus: fakeBus,
         close: this.sandbox.stub(),
-        _onCompleteCallback: noop
+        _onCompleteCallback: noop,
+        _frame: {
+          close: this.sandbox.stub()
+        }
       };
 
       FrameService.prototype._setBusEvents.call(context);
@@ -397,107 +406,69 @@ describe('FrameService', function () {
     });
   });
 
-  describe('_initializePopupBridge', function () {
-    describe('PopupBridge.onComplete', function () {
-      beforeEach(function () {
-        global.popupBridge = {};
-      });
-      afterEach(function () {
-        delete global.popupBridge;
-      });
-
-      it('calls callback with frame closed when error', function (done) {
-        FrameService.prototype._initializePopupBridge(function (err, payload) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal(BraintreeError.types.INTERNAL);
-          expect(err.code).to.equal('FRAME_SERVICE_FRAME_CLOSED');
-          expect(err.message).to.equal('Frame closed before tokenization could occur.');
-          expect(payload).to.not.exist;
-          done();
-        });
-        global.popupBridge.onComplete(new Error('Failed'));
-      });
-
-      it('calls callback with frame closed when error and payload are null', function (done) {
-        FrameService.prototype._initializePopupBridge(function (err, payload) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal(BraintreeError.types.INTERNAL);
-          expect(err.code).to.equal('FRAME_SERVICE_FRAME_CLOSED');
-          expect(err.message).to.equal('Frame closed before tokenization could occur.');
-          expect(payload).to.not.exist;
-          done();
-        });
-        global.popupBridge.onComplete(null, null);
-      });
-
-      it('calls callback with payload if error is null and payload exists', function (done) {
-        FrameService.prototype._initializePopupBridge(function (err, payload) {
-          expect(err).to.not.exist;
-          expect(payload).to.deep.equal({foo: 'bar'});
-          done();
-        });
-        global.popupBridge.onComplete(null, {foo: 'bar'});
-      });
-    });
-  });
-
-  describe('_openPopupBridge', function () {
-    it('calls popup open with options', function () {
-      var context = {
-        _options: {
-          foo: 'bar'
-        }
-      };
-      var options = {
-        param: 'value'
-      };
-
-      this.sandbox.stub(popup, 'open');
-
-      FrameService.prototype._openPopupBridge.call(context, options);
-      expect(popup.open).to.be.calledWith({
-        foo: 'bar',
-        param: 'value'
-      });
-    });
-  });
-
   describe('open', function () {
-    it('maps provided callback to instance', function () {
-      var frameService;
-      var callback = this.sandbox.stub();
+    beforeEach(function () {
+      this.oldPopupBridge = global.popupBridge;
+      delete global.popupBridge;
 
-      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
-      frameService = new FrameService(this.options);
-      this.sandbox.stub(popup, 'open');
-
-      frameService.open(callback);
-
-      expect(frameService._onCompleteCallback).to.equal(callback);
+      this.frameService = new FrameService(this.options);
+      this.fakeFrame = {
+        initialize: this.sandbox.stub(),
+        open: this.sandbox.stub()
+      };
+      this.sandbox.stub(this.frameService, '_getFrameForEnvironment').returns(this.fakeFrame);
+      this.sandbox.stub(Popup.prototype, 'open');
+      this.sandbox.stub(PopupBridge.prototype, 'open');
+      this.sandbox.stub(Modal.prototype, 'open');
     });
 
-    it('sets frame property to instance', function () {
-      var frameService;
+    afterEach(function () {
+      global.popupBridge = this.oldPopupBridge;
+    });
+
+    it('uses Modal when in a browser that does not support popups and is not using popup bridge', function () {
+      this.frameService._getFrameForEnvironment.restore();
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+      this.frameService.open();
+
+      expect(this.frameService._frame).to.be.an.instanceof(Modal);
+    });
+
+    it('uses PopupBridge when in a browser that does not support popups and is using popup bridge', function () {
+      global.popupBridge = {};
+
+      this.frameService._getFrameForEnvironment.restore();
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+
+      this.frameService.open();
+
+      expect(this.frameService._frame).to.be.an.instanceof(PopupBridge);
+    });
+
+    it('uses a Popup when the browser supports popups', function () {
+      this.frameService._getFrameForEnvironment.restore();
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
+      this.frameService.open();
+
+      expect(this.frameService._frame).to.be.an.instanceof(Popup);
+    });
+
+    it('maps provided callback to instance', function () {
       var callback = this.sandbox.stub();
-      var fakeFrame = {close: 'close'};
 
       this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
-      frameService = new FrameService(this.options);
-      this.sandbox.stub(popup, 'open').returns(fakeFrame);
 
-      frameService.open(callback);
+      this.frameService.open(callback);
 
-      expect(frameService._frame).to.deep.equal(fakeFrame);
+      expect(this.frameService._onCompleteCallback).to.equal(callback);
     });
 
     it('calls the callback with error when popup fails to open', function () {
-      var frameService = new FrameService(this.options);
-      var fakeFrame = {closed: true};
       var mockCallback = this.sandbox.stub();
 
-      this.sandbox.stub(popup, 'open').returns(fakeFrame);
+      this.fakeFrame.closed = true;
 
-      frameService.open(mockCallback);
+      this.frameService.open(mockCallback);
 
       expect(mockCallback).to.be.calledWith(this.sandbox.match({
         type: BraintreeError.types.INTERNAL,
@@ -507,58 +478,103 @@ describe('FrameService', function () {
     });
 
     it('cleans up the frame when popup fails to open', function (done) {
-      var frameService = new FrameService(this.options);
-      var fakeFrame = {closed: true};
+      this.fakeFrame.closed = true;
 
-      this.sandbox.stub(popup, 'open').returns(fakeFrame);
-
-      frameService.open(function () {
-        expect(frameService._frame).to.not.exist;
+      this.frameService.open(function () {
+        expect(this.frameService._frame).to.not.exist;
+        expect(this.frameService._popupInterval).to.not.exist;
         done();
-      });
+      }.bind(this));
     });
 
-    it('initiates polling', function () {
-      var frameService;
+    it('initiates polling when frame is a Modal', function () {
       var callback = this.sandbox.stub();
-      var fakeFrame = {close: 'close'};
 
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
       this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
-      frameService = new FrameService(this.options);
-      this.sandbox.stub(popup, 'open').returns(fakeFrame);
 
-      frameService.open(callback);
+      this.frameService.open(callback);
 
-      expect(frameService._pollForPopupClose).to.be.called;
+      expect(this.frameService._pollForPopupClose).to.be.called;
+
+      browserDetection.supportsPopups.restore();
     });
 
-    it('calls _initializePopupBridge with the callback when PopupBridge is defined', function () {
-      var context = {
-        _initializePopupBridge: this.sandbox.stub()
-      };
-      var callback = {};
+    it('initiates polling when frame is a Popup', function () {
+      var callback = this.sandbox.stub();
+
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
+      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+
+      this.frameService.open(callback);
+
+      expect(this.frameService._pollForPopupClose).to.be.called;
+
+      browserDetection.supportsPopups.restore();
+    });
+
+    it('does not initialize polling if frame is a PopupBridge', function () {
+      var callback = this.sandbox.stub();
 
       global.popupBridge = {};
-      FrameService.prototype.open.call(context, callback);
 
-      expect(context._initializePopupBridge).to.be.calledWith(callback);
-      delete global.popupBridge;
+      this.frameService._getFrameForEnvironment.restore();
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+
+      this.frameService.open(callback);
+
+      expect(this.frameService._pollForPopupClose).to.not.be.called;
+
+      browserDetection.supportsPopups.restore();
+    });
+
+    it('calls _frame.initialize', function () {
+      var cb = this.sandbox.stub();
+
+      this.frameService.open(cb);
+
+      expect(this.fakeFrame.initialize).to.be.calledOnce;
+      expect(this.fakeFrame.initialize).to.be.calledWith(cb);
     });
   });
 
   describe('redirect', function () {
-    it('calls _openPopupBridge with an object when PopupBridge is defined', function () {
-      var context = {
-        _openPopupBridge: this.sandbox.stub()
+    beforeEach(function () {
+      this.frameService = new FrameService(this.options);
+      this.fakeFrame = {
+        redirect: this.sandbox.stub()
       };
+      this.frameService._frame = this.fakeFrame;
 
-      global.popupBridge = {};
-      FrameService.prototype.redirect.call(context, 'http://braintreepayments.com');
+      this.sandbox.stub(this.frameService, 'isFrameClosed');
+    });
 
-      expect(context._openPopupBridge).to.be.calledWith({
-        openFrameUrl: 'http://braintreepayments.com'
-      });
-      delete global.popupBridge;
+    it('calls frame redirect method', function () {
+      var url = 'http://example.com';
+
+      this.frameService.redirect(url);
+
+      expect(this.fakeFrame.redirect).to.be.calledOnce;
+      expect(this.fakeFrame.redirect).to.be.calledWith(url);
+    });
+
+    it('does not call redirect method if frame does not exist', function () {
+      var url = 'http://example.com';
+
+      delete this.frameService._frame;
+      this.frameService.redirect(url);
+
+      expect(this.fakeFrame.redirect).to.not.be.called;
+    });
+
+    it('does not call redirect method if frame is closed', function () {
+      var url = 'http://example.com';
+
+      this.frameService.isFrameClosed.returns(true);
+      this.frameService.redirect(url);
+
+      expect(this.fakeFrame.redirect).to.not.be.called;
     });
   });
 

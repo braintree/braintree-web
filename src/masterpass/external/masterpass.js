@@ -126,15 +126,15 @@ Masterpass.prototype._initialize = function () {
 Masterpass.prototype.tokenize = wrapPromise(function (options) {
   var self = this; // eslint-disable-line no-invalid-this
 
+  if (!options || hasMissingOption(options)) {
+    return Promise.reject(new BraintreeError(errors.MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION));
+  }
+
+  if (self._authInProgress) {
+    return Promise.reject(new BraintreeError(errors.MASTERPASS_TOKENIZATION_ALREADY_IN_PROGRESS));
+  }
+
   return new Promise(function (resolve, reject) {
-    if (!options || hasMissingOption(options)) {
-      throw new BraintreeError(errors.MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION);
-    }
-
-    if (self._authInProgress) {
-      throw new BraintreeError(errors.MASTERPASS_TOKENIZATION_ALREADY_IN_PROGRESS);
-    }
-
     self._navigateFrameToLoadingPage(options, reject);
     // This MUST happen after _navigateFrameToLoadingPage for Metro browsers to work.
     self._frameService.open(self._createFrameOpenHandler(resolve, reject));

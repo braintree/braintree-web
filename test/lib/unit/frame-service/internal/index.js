@@ -7,15 +7,36 @@ var constants = require('../../../../../src/lib/frame-service/shared/constants')
 describe('frame-service', function () {
   beforeEach(function () {
     this.id = 'id';
+    this.cached = {
+      globalOpener: global.opener,
+      globalParent: global.parent
+    };
     global.opener = {
       frames: {}
     };
   });
 
+  afterEach(function () {
+    global.opener = this.cached.globalOpener;
+    global.parent = this.cached.globalParent;
+  });
+
   describe('getFrame', function () {
-    it('to return a frame', function () {
+    it('to return a frame from global.opener', function () {
       global.name = constants.DISPATCH_FRAME_NAME + '_' + this.id;
       global.opener.frames[constants.DISPATCH_FRAME_NAME + '_' + this.id] = 'frame';
+
+      expect(frameService.getFrame()).to.equal('frame');
+    });
+
+    it('to return a frame from global.parent', function () {
+      delete global.opener;
+      global.parent = {
+        frames: {}
+      };
+
+      global.name = constants.DISPATCH_FRAME_NAME + '_' + this.id;
+      global.parent.frames[constants.DISPATCH_FRAME_NAME + '_' + this.id] = 'frame';
 
       expect(frameService.getFrame()).to.equal('frame');
     });

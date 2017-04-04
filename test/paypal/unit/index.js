@@ -2,7 +2,6 @@
 
 var create = require('../../../src/paypal').create;
 var isSupported = require('../../../src/paypal').isSupported;
-var browserDetection = require('../../../src/lib/browser-detection');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var PayPal = require('../../../src/paypal/external/paypal');
@@ -90,68 +89,10 @@ describe('paypal', function () {
         done();
       });
     });
-
-    describe('browser support', function () {
-      it('errors out if browser does not support popups', function (done) {
-        this.sandbox.stub(browserDetection, 'supportsPopups', function () { return false; });
-
-        create({client: this.client}, function (err, thingy) {
-          expect(err).to.be.an.instanceOf(BraintreeError);
-          expect(err.type).to.equal('CUSTOMER');
-          expect(err.code).to.equal('PAYPAL_BROWSER_NOT_SUPPORTED');
-          expect(err.message).to.equal('Browser is not supported.');
-          expect(thingy).not.to.exist;
-
-          done();
-        });
-      });
-
-      it('allows unsupported browser when PopupBridge is defined', function (done) {
-        global.popupBridge = {};
-        this.sandbox.stub(browserDetection, 'supportsPopups', function () { return false; });
-        this.sandbox.stub(analytics, 'sendEvent');
-        this.sandbox.stub(PayPal.prototype, '_initialize', function (callback) {
-          callback();
-        });
-
-        create({client: this.client}, function (err, thingy) {
-          expect(err).not.to.exist;
-          expect(thingy).to.be.an.instanceof(PayPal);
-
-          delete global.popupBridge;
-          done();
-        });
-      });
-    });
   });
 
   describe('isSupported', function () {
-    afterEach(function () {
-      delete global.popupBridge;
-    });
-
-    it('returns true if popupBridge exists', function () {
-      global.popupBridge = {};
-
-      expect(isSupported()).to.be.true;
-    });
-
-    it('returns true if browser supports popups', function () {
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
-
-      expect(isSupported()).to.be.true;
-    });
-
-    it('returns false if popupBridge is not defined and browser does not support popups', function () {
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
-      expect(isSupported()).to.be.false;
-    });
-
-    it('returns true if popupBridge exists and browser does not support popups', function () {
-      global.popupBridge = {};
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
+    it('returns true', function () {
       expect(isSupported()).to.be.true;
     });
   });

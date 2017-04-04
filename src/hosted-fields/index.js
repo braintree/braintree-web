@@ -13,7 +13,7 @@ var VERSION = process.env.npm_package_version;
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
  * @property {string} [type] Will be used as the `type` attribute of the input. To mask `cvv` input, for instance, `type: "password"` can be used.
  * @property {boolean} [formatInput=true] Enable or disable automatic formatting on this field.
- * @property {object|boolean} [select] If truthy, this field becomes a `<select>` dropdown list. This can only be used for `expirationMonth` and `expirationYear` fields.
+ * @property {object|boolean} [select] If truthy, this field becomes a `<select>` dropdown list. This can only be used for `expirationMonth` and `expirationYear` fields. If you do not use a `placeholder` property for the field, the current month/year will be the default selected value.
  * @property {string[]} [select.options] An array of 12 strings, one per month. This can only be used for the `expirationMonth` field. For example, the array can look like `['01 - January', '02 - February', ...]`.
  */
 
@@ -34,6 +34,7 @@ var VERSION = process.env.npm_package_version;
  * These are the CSS properties that Hosted Fields supports. Any other CSS should be specified on your page and outside of any Braintree configuration. Trying to set unsupported properties will fail and put a warning in the console.
  *
  * Supported CSS properties are:
+ * `appearance`
  * `color`
  * `direction`
  * `font-family`
@@ -55,9 +56,11 @@ var VERSION = process.env.npm_package_version;
  * `outline`
  * `text-shadow`
  * `transition`
+ * `-moz-appearance`
  * `-moz-osx-font-smoothing`
  * `-moz-tap-highlight-color`
  * `-moz-transition`
+ * `-webkit-appearance`
  * `-webkit-font-smoothing`
  * `-webkit-tap-highlight-color`
  * `-webkit-transition`

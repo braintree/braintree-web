@@ -35,12 +35,15 @@ var constants = {
     'float': 'left'
   },
   whitelistedStyles: [
+    '-moz-appearance',
     '-moz-osx-font-smoothing',
     '-moz-tap-highlight-color',
     '-moz-transition',
+    '-webkit-appearance',
     '-webkit-font-smoothing',
     '-webkit-tap-highlight-color',
     '-webkit-transition',
+    'appearance',
     'color',
     'direction',
     'font',

@@ -24,6 +24,7 @@ var cardTypeTransformMap = {
  * @property {string} postalCode The customer's postal code.
  * @property {string} region The customer's region.
  * @property {string} streetAddress The customer's street address.
+ * @property {string} phoneNumber The customer's phone number.
  */
 
 /**

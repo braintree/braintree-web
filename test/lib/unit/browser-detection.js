@@ -19,6 +19,7 @@ var AGENTS = {
   iPad5_1Safari: 'Mozilla/5.0 (iPad; U; CPU OS 5_1 like Mac OS X) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B367 Safari/531.21.10',
   iPad9_3Safari: 'Mozilla/5.0 (iPad; CPU OS 9_3 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13e230 Safari/601.1',
   iPadWebview: 'Mozilla/5.0 (iPad; CPU OS 5_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Mobile/98176',
+  iPadLowercase: 'Mozilla/5.0 (ipad Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.6 (KHTML, like Gecko) Chrome/7.0.498.0 Safari/534.6',
   iPodSafari: 'Mozilla/5.0 (iPod; U; CPU like Mac OS X; en) AppleWebKit/420.1 (KHTML, like Gecko) Version/3.0 Mobile/3A101a Safari/419.3',
   iPodWebview: 'Mozilla/5.0 (iPod; CPU OS 5_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Mobile/3A101a',
   iPhone_3_2Safari: 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B314 Safari/531.21.10',
@@ -114,6 +115,30 @@ describe('browser-detection', function () {
     });
   });
 
+  describe('isIe9', function () {
+    it('returns false for Phantom', function () {
+      expect(browserDetection.isIe9()).to.be.false;
+    });
+
+    it('false when chrome', function () {
+      var isChrome = browserDetection.isIe9('Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36');
+
+      expect(isChrome).to.be.false;
+    });
+
+    it('true when IE9', function () {
+      var ua = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)';
+
+      expect(browserDetection.isIe9(ua)).to.be.true;
+    });
+
+    it('false when IE8', function () {
+      var ua = 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E)';
+
+      expect(browserDetection.isIe9(ua)).to.be.false;
+    });
+  });
+
   describe('isHTTPS', function () {
     it('returns true for HTTPS', function () {
       expect(browserDetection.isHTTPS('https:')).to.equal(true);
@@ -144,6 +169,10 @@ describe('browser-detection', function () {
     it('returns true for iOS Chrome', function () {
       expect(browserDetection.isIos(AGENTS.iPhoneUnsupportedChrome)).to.equal(true);
       expect(browserDetection.isIos(AGENTS.iPhoneSupportedChrome)).to.equal(true);
+    });
+
+    it('returns true for ipad', function () {
+      expect(browserDetection.isIos(AGENTS.iPadLowercase)).to.equal(true);
     });
 
     it('returns false for non-iOS browsers', function () {

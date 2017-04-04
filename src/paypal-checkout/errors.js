@@ -11,7 +11,7 @@ module.exports = {
   PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED: {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED',
-    message: 'A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. Please reach out to our support team at support@braintreepayments.com if you would like this enabled.'
+    message: 'A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developers.braintreepayments.com/guides/paypal/testing-go-live/#linked-paypal-testing for details on linking your PayPal sandbox with Braintree.'
   },
   PAYPAL_TOKENIZATION_REQUEST_ACTIVE: {
     type: BraintreeError.types.MERCHANT,
