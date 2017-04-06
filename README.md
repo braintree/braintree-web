@@ -23,7 +23,7 @@ For more thorough documentation, visit [the JavaScript client SDK docs](https://
 
 If you are upgrading from version 2.x, take a look at our [migration guide](https://developers.braintreepayments.com/guides/client-sdk/migration/javascript/v3).
 
-####Hosted Fields integration
+#### Hosted Fields integration
 
 ```html
 <form action="/" id="my-sample-form">

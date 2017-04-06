@@ -17,10 +17,10 @@ describe('PopupBridge', function () {
   });
 
   it('Constructor', function () {
-    it('defaults closed to null', function () {
+    it('defaults closed to false', function () {
       var popupBridge = new PopupBridge();
 
-      expect(popupBridge.closed).to.be(null);
+      expect(popupBridge.isClosed()).to.be(false);
     });
   });
 
@@ -34,6 +34,12 @@ describe('PopupBridge', function () {
     var popupBridge = new PopupBridge();
 
     expect(popupBridge.close).to.be.a('function');
+  });
+
+  it('has a isClosed function', function () {
+    var popupBridge = new PopupBridge();
+
+    expect(popupBridge.isClosed).to.be.a('function');
   });
 
   describe('initialize', function () {
@@ -68,7 +74,7 @@ describe('PopupBridge', function () {
 
       global.popupBridge.onComplete(null, payload);
 
-      expect(popupBridge.closed).to.equal(true);
+      expect(popupBridge.isClosed()).to.equal(true);
     });
 
     it('calls callback with error when onComplete is called with an error', function (done) {
@@ -107,7 +113,7 @@ describe('PopupBridge', function () {
 
       popupBridge.open();
 
-      expect(popupBridge.closed).to.equal(false);
+      expect(popupBridge.isClosed()).to.equal(false);
     });
 
     it('calls popupBridge.open with instantiated url', function () {

@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.12.1
+
+* PayPal
+  * Fix bug where PayPal did not detect when the Popup was closed by the customer
+
 ## 3.12.0
 
 * Client

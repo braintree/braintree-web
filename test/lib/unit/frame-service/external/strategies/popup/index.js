@@ -4,12 +4,13 @@ var Popup = require('../../../../../../../src/lib/frame-service/external/strateg
 
 describe('Popup', function () {
   describe('Constructor', function () {
-    it('defaults closed to false', function () {
+    it('defaults isClosed to false', function () {
       var popup = new Popup();
 
-      expect(popup.closed).to.equal(false);
+      expect(popup.isClosed()).to.equal(false);
     });
   });
+
   describe('open', function () {
     it('opens a window', function () {
       var popup = new Popup({
@@ -23,16 +24,6 @@ describe('Popup', function () {
 
       expect(global.open).to.be.calledOnce;
       expect(global.open).to.be.calledWith('https://example.com', 'myFrame', this.sandbox.match.string);
-    });
-
-    it('sets closed to false', function () {
-      var popup = new Popup();
-
-      this.sandbox.stub(global, 'open');
-
-      popup.open();
-
-      expect(popup.closed).to.equal(false);
     });
   });
 
@@ -67,14 +58,51 @@ describe('Popup', function () {
     it('noop when popup is already closed', function () {
       var popup = new Popup();
 
-      popup.closed = true;
       popup._frame = {
         close: this.sandbox.spy()
       };
 
       popup.close();
+      popup.close();
 
-      expect(popup._frame.close).to.not.be.called;
+      expect(popup._frame.close).to.not.be.calledOnce;
+    });
+  });
+
+  describe('closed', function () {
+    it('returns false when popup is open', function () {
+      var popup = new Popup();
+
+      popup.open();
+
+      expect(popup.isClosed()).to.equal(false);
+    });
+
+    it('returns true after popup is closed', function () {
+      var popup = new Popup();
+
+      popup.open();
+      popup.close();
+
+      expect(popup.isClosed()).to.equal(false);
+    });
+
+    it('returns true when Window is closed', function () {
+      var popup;
+      var fakeWindow = {
+        closed: false
+      };
+
+      this.sandbox.stub(global, 'open').returns(fakeWindow);
+
+      popup = new Popup();
+      popup.open();
+
+      expect(popup.isClosed()).to.equal(false);
+
+      fakeWindow.closed = true;
+
+      expect(popup.isClosed()).to.equal(true);
     });
   });
 

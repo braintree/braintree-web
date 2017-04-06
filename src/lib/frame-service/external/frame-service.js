@@ -177,7 +177,7 @@ FrameService.prototype.teardown = function () {
 };
 
 FrameService.prototype.isFrameClosed = function () {
-  return this._frame == null || this._frame.closed;
+  return this._frame == null || this._frame.isClosed();
 };
 
 FrameService.prototype._cleanupFrame = function () {

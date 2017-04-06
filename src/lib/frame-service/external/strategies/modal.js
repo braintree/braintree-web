@@ -20,7 +20,7 @@ var ELEMENT_STYLES = {
 function noop() {}
 
 function Modal(options) {
-  this.closed = null;
+  this._closed = null;
   this._frame = null;
   this._options = options || {};
   this._container = this._options.container || document.body;
@@ -47,7 +47,7 @@ Modal.prototype.open = function () {
   } else {
     this._el = this._frame = iFramer(iframerConfig);
   }
-  this.closed = false;
+  this._closed = false;
 
   this._container.appendChild(this._el);
 };
@@ -57,7 +57,11 @@ Modal.prototype.focus = noop;
 Modal.prototype.close = function () {
   this._container.removeChild(this._el);
   this._frame = null;
-  this.closed = true;
+  this._closed = true;
+};
+
+Modal.prototype.isClosed = function () {
+  return Boolean(this._closed);
 };
 
 Modal.prototype.redirect = function (redirectUrl) {

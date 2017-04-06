@@ -6,7 +6,7 @@ var errors = require('../../shared/errors');
 function noop() {}
 
 function PopupBridge(options) {
-  this.closed = null;
+  this._closed = null;
   this._options = options;
 }
 
@@ -16,7 +16,7 @@ PopupBridge.prototype.initialize = function (callback) {
   global.popupBridge.onComplete = function (err, payload) {
     var popupDismissed = !payload && !err;
 
-    self.closed = true;
+    self._closed = true;
 
     if (err || popupDismissed) {
       // User clicked "Done" button of browser view
@@ -34,13 +34,17 @@ PopupBridge.prototype.open = function (options) {
   options = options || {};
   url = options.openFrameUrl || this._options.openFrameUrl;
 
-  this.closed = false;
+  this._closed = false;
   global.popupBridge.open(url);
 };
 
 PopupBridge.prototype.focus = noop;
 
 PopupBridge.prototype.close = noop;
+
+PopupBridge.prototype.isClosed = function () {
+  return Boolean(this._closed);
+};
 
 PopupBridge.prototype.redirect = function (redirectUrl) {
   this.open({openFrameUrl: redirectUrl});

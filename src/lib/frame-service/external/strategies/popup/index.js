@@ -5,7 +5,6 @@ var composeOptions = require('./compose-options');
 function noop() {}
 
 function Popup(options) {
-  this.closed = null;
   this._frame = null;
   this._options = options || {};
 
@@ -20,7 +19,6 @@ Popup.prototype.open = function () {
     this._options.name,
     composeOptions(this._options)
   );
-  this.closed = false;
 };
 
 Popup.prototype.focus = function () {
@@ -28,12 +26,11 @@ Popup.prototype.focus = function () {
 };
 
 Popup.prototype.close = function () {
-  if (this.closed) {
-    return;
-  }
-
-  this.closed = true;
   this._frame.close();
+};
+
+Popup.prototype.isClosed = function () {
+  return this._frame && Boolean(this._frame.closed);
 };
 
 Popup.prototype.redirect = function (redirectUrl) {

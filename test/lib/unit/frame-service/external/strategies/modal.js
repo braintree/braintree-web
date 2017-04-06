@@ -10,11 +10,17 @@ describe('Modal', function () {
     expect(modal.focus).to.be.a('function');
   });
 
+  it('has a isClosed function', function () {
+    var modal = new Modal();
+
+    expect(modal.isClosed).to.be.a('function');
+  });
+
   describe('Constructor', function () {
-    it('defaults closed to null', function () {
+    it('defaults closed to false', function () {
       var modal = new Modal();
 
-      expect(modal.closed).to.equal(null);
+      expect(modal.isClosed()).to.equal(false);
     });
   });
 
@@ -41,7 +47,7 @@ describe('Modal', function () {
 
       modal.open();
 
-      expect(modal.closed).to.equal(false);
+      expect(modal.isClosed()).to.equal(false);
     });
 
     it('sets iframe position to absolute if platform is iOS', function () {
@@ -91,7 +97,7 @@ describe('Modal', function () {
       modal.close();
 
       expect(modal._frame).to.equal(null);
-      expect(modal.closed).to.equal(true);
+      expect(modal.isClosed()).to.equal(true);
       expect(container.removeChild).to.have.been.calledOnce;
     });
   });

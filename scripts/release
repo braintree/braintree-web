@@ -30,7 +30,7 @@ handle_abort() {
 }
 
 get_package_json_version() {
-  grep version package.json | cut -d':' -f2- | tr -d '" ,'
+  grep '"version"' package.json | cut -d':' -f2- | tr -d '" ,'
 }
 
 get_version_for_prompt() {

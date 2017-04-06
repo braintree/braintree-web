@@ -414,7 +414,8 @@ describe('FrameService', function () {
       this.frameService = new FrameService(this.options);
       this.fakeFrame = {
         initialize: this.sandbox.stub(),
-        open: this.sandbox.stub()
+        open: this.sandbox.stub(),
+        isClosed: this.sandbox.stub()
       };
       this.sandbox.stub(this.frameService, '_getFrameForEnvironment').returns(this.fakeFrame);
       this.sandbox.stub(Popup.prototype, 'open');
@@ -466,7 +467,7 @@ describe('FrameService', function () {
     it('calls the callback with error when popup fails to open', function () {
       var mockCallback = this.sandbox.stub();
 
-      this.fakeFrame.closed = true;
+      this.fakeFrame.isClosed.returns(true);
 
       this.frameService.open(mockCallback);
 
@@ -478,7 +479,7 @@ describe('FrameService', function () {
     });
 
     it('cleans up the frame when popup fails to open', function (done) {
-      this.fakeFrame.closed = true;
+      this.fakeFrame.isClosed.returns(true);
 
       this.frameService.open(function () {
         expect(this.frameService._frame).to.not.exist;
@@ -609,6 +610,39 @@ describe('FrameService', function () {
       FrameService.prototype.close.call(context);
 
       expect(frameClosedStub).not.to.be.called;
+    });
+  });
+
+  describe('popup closing', function () {
+    var oldOpen;
+
+    beforeEach(function () {
+      oldOpen = global.open;
+    });
+
+    afterEach(function () {
+      global.open = oldOpen;
+    });
+
+    it('calls onCompleteCallback when Window is closed', function () {
+      var clock = this.sandbox.useFakeTimers();
+      var fakeWindow = {
+        closed: false
+      };
+      var frameService = new FrameService(this.options);
+      var onCompleteCallbackStub = this.sandbox.stub();
+
+      global.open = function () { return fakeWindow; };
+
+      frameService.open(onCompleteCallbackStub);
+      fakeWindow.closed = true;
+      clock.tick(100);
+
+      expect(onCompleteCallbackStub).to.be.calledWith(this.sandbox.match({
+        type: BraintreeError.types.INTERNAL,
+        code: 'FRAME_SERVICE_FRAME_CLOSED',
+        message: 'Frame closed before tokenization could occur.'
+      }));
     });
   });
 
@@ -781,21 +815,21 @@ describe('FrameService', function () {
     });
 
     it('returns true if frame is closed', function () {
-      var context = {_frame: {closed: true}};
+      var context = {_frame: {isClosed: function () { return true; }}};
       var result = FrameService.prototype.isFrameClosed.call(context);
 
       expect(result).to.equal(true);
     });
 
     it('returns true if frame exists and is closed', function () {
-      var context = {_frame: {closed: true}};
+      var context = {_frame: {isClosed: function () { return true; }}};
       var result = FrameService.prototype.isFrameClosed.call(context);
 
       expect(result).to.equal(true);
     });
 
     it('returns false if frame is not closed', function () {
-      var context = {_frame: {closed: false}};
+      var context = {_frame: {isClosed: function () { return false; }}};
       var result = FrameService.prototype.isFrameClosed.call(context);
 
       expect(result).to.equal(false);
