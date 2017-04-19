@@ -78,7 +78,7 @@ function clientDidCreate(err, client) {
       }
     }
   }, hostedFieldsDidCreate);
-});
+}
 
 function hostedFieldsDidCreate(err, hostedFields) {
   submitBtn.addEventListener('click', submitHandler.bind(null, hostedFields));
