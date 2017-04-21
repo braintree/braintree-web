@@ -109,8 +109,8 @@ describe('dataCollector', function () {
       var self = this;
       var mockData = {
         deviceData: {
-          device_session_id: 'did', // eslint-disable-line
-          fraud_merchant_id: '12345' // eslint-disable-line
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: '12345' // eslint-disable-line camelcase
         }
       };
 
@@ -129,8 +129,8 @@ describe('dataCollector', function () {
     it('returns only kount information if kount is true but paypal is false', function () {
       var mockData = {
         deviceData: {
-          device_session_id: 'did', // eslint-disable-line
-          fraud_merchant_id: 'fmid' // eslint-disable-line
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: 'fmid' // eslint-disable-line camelcase
         }
       };
 
@@ -163,8 +163,8 @@ describe('dataCollector', function () {
       var mockPPid = 'paypal_id';
       var mockData = {
         deviceData: {
-          device_session_id: 'did', // eslint-disable-line
-          fraud_merchant_id: 'fmid' // eslint-disable-line
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: 'fmid' // eslint-disable-line camelcase
         }
       };
 
@@ -192,8 +192,8 @@ describe('dataCollector', function () {
       var mockPPid = 'paypal_id';
       var mockData = {
         deviceData: {
-          device_session_id: 'did', // eslint-disable-line
-          fraud_merchant_id: 'fmid' // eslint-disable-line
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: 'fmid' // eslint-disable-line camelcase
         }
       };
 

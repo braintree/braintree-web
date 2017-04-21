@@ -140,8 +140,8 @@ describe('_getDeviceData', function () {
     });
 
     expect(actual).to.deep.equal({
-      device_session_id: 'my_device_session_id', // eslint-disable-line
-      fraud_merchant_id: 'id' // eslint-disable-line
+      device_session_id: 'my_device_session_id', // eslint-disable-line camelcase
+      fraud_merchant_id: 'id' // eslint-disable-line camelcase
     });
   });
 });

@@ -10,7 +10,7 @@ var constants = require('../shared/constants');
 var uuid = require('../../uuid');
 var iFramer = require('iframer');
 var BraintreeError = require('../../braintree-error');
-var browserDetection = require('../../browser-detection');
+var browserDetection = require('browser-detection');
 
 var REQUIRED_CONFIG_KEYS = [
   'name',
@@ -31,7 +31,7 @@ function _validateFrameConfiguration(options) {
     }
   });
 
-  if (!(/^[\w_]+$/.test(options.name))) { // eslint-disable-line
+  if (!/^[\w_]+$/.test(options.name)) {
     throw new Error('A valid frame name must be provided');
   }
 }

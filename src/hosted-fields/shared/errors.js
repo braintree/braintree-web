@@ -30,6 +30,16 @@ module.exports = {
     code: 'HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR',
     message: 'A tokenization network error occurred.'
   },
+  HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE',
+    message: 'This credit card already exists in the merchant\'s vault.'
+  },
+  HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED',
+    message: 'CVV verification failed during tokenization.'
+  },
   HOSTED_FIELDS_FAILED_TOKENIZATION: {
     type: BraintreeError.types.CUSTOMER,
     code: 'HOSTED_FIELDS_FAILED_TOKENIZATION',
@@ -52,5 +62,9 @@ module.exports = {
   HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED: {
     type: BraintreeError.types.MERCHANT,
     code: 'HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED'
+  },
+  HOSTED_FIELDS_FIELD_PROPERTY_INVALID: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'HOSTED_FIELDS_FIELD_PROPERTY_INVALID'
   }
 };

@@ -1,5 +1,5 @@
 'use strict';
 
 module.exports = {
-  BRAINTREE_API_VERSION_HEADER: '2016-10-07'
+  BRAINTREE_API_VERSION_HEADER: '2017-04-03'
 };

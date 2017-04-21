@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.12.1",
+  "version": "3.13.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -16,6 +16,7 @@
     "test": "./scripts/npm-to-gulp test"
   },
   "dependencies": {
+    "browser-detection": "braintree/browser-detection#1.1.0",
     "card-validator": "4.0.0",
     "credit-card-type": "5.0.1",
     "framebus": "2.0.8",

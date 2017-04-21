@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+## 3.13.0
+
+* Hosted Fields
+  * Fix an issue where Firefox did not receive focus/blur events consistently when navigating fields via tab key
+  * Provide specific errors for problems with tokenization
+  * Add `focus` to allow programmatic focusing of inputs
+  * Add `maxlength` to fields options to set the `maxlength` of CVV and postal code inputs. Use cases:
+    * Limiting the length of the CVV input for CVV-only verifications when the card type is known
+    * Limiting the length of the postal code input when cards are coming from a known region
+
 ## 3.12.1
 
 * PayPal

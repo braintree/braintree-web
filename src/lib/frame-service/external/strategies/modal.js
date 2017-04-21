@@ -2,7 +2,7 @@
 
 var iFramer = require('iframer');
 var assign = require('../../../assign').assign;
-var browserDetection = require('../../../browser-detection');
+var browserDetection = require('browser-detection');
 
 var ELEMENT_STYLES = {
   position: 'fixed',

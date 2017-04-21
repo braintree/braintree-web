@@ -2,6 +2,7 @@
 
 var assign = require('../../lib/assign').assign;
 var Bus = require('../../lib/bus');
+var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
 var frameName = require('./get-frame-name');
 var assembleIFrames = require('./assemble-iframes');
 var Client = require('../../client/client');
@@ -16,6 +17,7 @@ var sharedErrors = require('../../lib/errors');
 var Promise = require('../../lib/promise');
 var events = constants.events;
 var whitelistedStyles = constants.whitelistedStyles;
+var tokenizationErrorCodes = constants.tokenizationErrorCodes;
 var formatCardRequestData = require('./format-card-request-data');
 var formatBraintreeApiCardResponse = require('./format-braintree-api-card-response');
 
@@ -56,9 +58,7 @@ function create() {
 }
 
 function createTokenizationHandler(client, cardForm) {
-  var supportedGateways = client.getConfiguration().gatewayConfiguration.creditCards.supportedGateways || [{
-    name: 'clientApi'
-  }];
+  var supportedGateways = client.getConfiguration().gatewayConfiguration.creditCards.supportedGateways;
   var braintreeApiCreditCardConfiguration = supportedGateways.filter(function (gateway) {
     return gateway.name === 'braintreeApi';
   })[0];
@@ -142,24 +142,14 @@ function createTokenizationHandler(client, cardForm) {
     }
 
     Promise.all(requests).then(function (results) {
-      var err, result, clientApiCreditCard, status;
+      var err, result, clientApiCreditCard;
       var clientApiResult = results[0];
       var braintreeApiResult = results[1];
       var clientApiSucceeded = !(clientApiResult instanceof Error);
       var braintreeApiSucceeded = !(braintreeApiResult instanceof Error);
 
       if (!clientApiSucceeded && (!braintreeApiResult || !braintreeApiSucceeded)) {
-        status = clientApiResult.details && clientApiResult.details.httpStatus;
-
-        if (status === 403) {
-          err = clientApiResult;
-        } else if (status < 500) {
-          err = new BraintreeError(errors.HOSTED_FIELDS_FAILED_TOKENIZATION);
-          err.details = {originalError: clientApiResult};
-        } else {
-          err = new BraintreeError(errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR);
-          err.details = {originalError: clientApiResult};
-        }
+        err = formatTokenizationError(clientApiResult);
 
         analytics.sendEvent(client, 'custom.hosted-fields.tokenization.failed');
 
@@ -189,6 +179,34 @@ function createTokenizationHandler(client, cardForm) {
       reply([null, result]);
     });
   };
+}
+
+function formatTokenizationError(err) {
+  var formattedError, rootError, code;
+  var status = err.details && err.details.httpStatus;
+
+  if (status === 403) {
+    formattedError = err;
+  } else if (status < 500) {
+    try {
+      rootError = BraintreeError.findRootError(err);
+      code = rootError.fieldErrors[0].fieldErrors[0].code;
+    } catch (e) {
+      // just bail out if code property cannot be found on rootError
+    }
+
+    if (tokenizationErrorCodes.hasOwnProperty(code)) {
+      formattedError = convertToBraintreeError(rootError, tokenizationErrorCodes[code]);
+    } else {
+      formattedError = new BraintreeError(errors.HOSTED_FIELDS_FAILED_TOKENIZATION);
+      formattedError.details = {originalError: err};
+    }
+  } else {
+    formattedError = new BraintreeError(errors.HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR);
+    formattedError.details = {originalError: err};
+  }
+
+  return formattedError;
 }
 
 function orchestrate(configuration) {

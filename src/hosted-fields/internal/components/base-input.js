@@ -3,7 +3,7 @@
 var attributeValidationError = require('../../external/attribute-validation-error');
 var constants = require('../../shared/constants');
 var classlist = require('../../../lib/classlist');
-var isIe9 = require('../../../lib/browser-detection').isIe9;
+var isIe9 = require('browser-detection/is-ie9');
 var createRestrictedInput = require('../../../lib/create-restricted-input');
 var events = constants.events;
 var whitelistedFields = constants.whitelistedFields;
@@ -127,6 +127,14 @@ BaseInput.prototype._addDOMFocusListeners = function () {
     }, false);
   }
 
+  element.addEventListener('focus', function () {
+    this.updateModel('isFocused', true);
+  }.bind(this), false);
+
+  element.addEventListener('blur', function () {
+    this.updateModel('isFocused', false);
+  }.bind(this), false);
+
   global.addEventListener('focus', function () {
     this.updateModel('isFocused', true);
   }.bind(this), false);
@@ -181,6 +189,12 @@ BaseInput.prototype.addBusEventListeners = function () {
     if (type === this.type) {
       this.element.value = '';
       this.updateModel('value', '');
+    }
+  }.bind(this));
+
+  global.bus.on(events.FOCUS_FIELD, function (type) {
+    if (type === this.type) {
+      this.element.focus();
     }
   }.bind(this));
 };

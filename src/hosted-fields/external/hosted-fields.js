@@ -11,7 +11,7 @@ var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var uuid = require('../../lib/uuid');
 var findParentTags = require('../shared/find-parent-tags');
-var isIos = require('../../lib/browser-detection').isIos;
+var isIos = require('browser-detection/is-ios');
 var events = constants.events;
 var EventEmitter = require('../../lib/event-emitter');
 var injectFrame = require('./inject-frame');
@@ -354,6 +354,17 @@ function HostedFields(options) {
       });
     }
 
+    if (field.maxlength && typeof field.maxlength !== 'number') {
+      throw new BraintreeError({
+        type: errors.HOSTED_FIELDS_FIELD_PROPERTY_INVALID.type,
+        code: errors.HOSTED_FIELDS_FIELD_PROPERTY_INVALID.code,
+        message: 'The value for maxlength must be a number.',
+        details: {
+          fieldKey: key
+        }
+      });
+    }
+
     frame = iFramer({
       type: key,
       name: 'braintree-hosted-field-' + key,
@@ -505,6 +516,19 @@ HostedFields.prototype.teardown = wrapPromise(function () {
  *         break;
  *       case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
  *         console.error('Tokenization failed server side. Is the card valid?');
+ *         break;
+ *       case 'HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE':
+ *         // will only get here if you generate a client token with a customer ID
+ *         // with the fail on duplicate payment method option. See:
+ *         // https://developers.braintreepayments.com/reference/request/client-token/generate/#options.fail_on_duplicate_payment_method
+ *         console.error('This payment method already exists in your vault.');
+ *         break;
+ *       case 'HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED':
+ *         // will only get here if you generate a client token with a customer ID
+ *         // with the verify card option or if you have credit card verification
+ *         // turned on in your Braintree Gateway. See
+ *         // https://developers.braintreepayments.com/reference/request/client-token/generate/#options.verify_card
+ *         console.error('CVV did not pass verification');
  *         break;
  *       case 'HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR':
  *         console.error('Network error occurred when tokenizing.');
@@ -784,7 +808,7 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
 /**
  * Clear the value of a {@link module:braintree-web/hosted-fields~field field}.
  * @public
- * @param {string} field The field whose placeholder you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {string} field The field you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
  * @returns {void}
  * @example
@@ -816,6 +840,52 @@ HostedFields.prototype.clear = function (field, callback) {
     });
   } else {
     this._bus.emit(events.CLEAR_FIELD, field);
+  }
+
+  if (typeof callback === 'function') {
+    callback = deferred(callback);
+    callback(err);
+  }
+};
+
+/**
+ * Programmatically focus a {@link module:braintree-web/hosted-fields~field field}.
+ * @public
+ * @param {string} field The field you want to focus. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field focused successfully.
+ * @returns {void}
+ * @example
+ * hostedFieldsInstance.focus('number', function (focusErr) {
+ *   if (focusErr) {
+ *     console.error(focusErr);
+ *   }
+ * });
+ * @example <caption>Using an event listener</caption>
+ * myElement.addEventListener('click', function (e) {
+ *   // Note: In Firefox, the focus method can be suppressed
+ *   // if the element has a tabindex property or the element
+ *   // is an anchor link with an href property.
+ *   e.preventDefault();
+ *   hostedFieldsInstance.focus('number');
+ * });
+ */
+HostedFields.prototype.focus = function (field, callback) {
+  var err;
+
+  if (!whitelistedFields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
+      code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
+      message: '"' + field + '" is not a valid field. You must use a valid field option when focusing a field.'
+    });
+  } else if (!this._fields.hasOwnProperty(field)) {
+    err = new BraintreeError({
+      type: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.type,
+      code: errors.HOSTED_FIELDS_FIELD_NOT_PRESENT.code,
+      message: 'Cannot focus "' + field + '" field because it is not part of the current Hosted Fields options.'
+    });
+  } else {
+    this._bus.emit(events.FOCUS_FIELD, field);
   }
 
   if (typeof callback === 'function') {

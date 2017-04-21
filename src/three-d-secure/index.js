@@ -2,7 +2,7 @@
 /** @module braintree-web/three-d-secure */
 
 var ThreeDSecure = require('./external/three-d-secure');
-var browserDetection = require('../lib/browser-detection');
+var isHTTPS = require('../lib/is-https').isHTTPS;
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var throwIfNoCallback = require('../lib/throw-if-no-callback');
@@ -54,7 +54,7 @@ function create(options, callback) {
 
   isProduction = config.gatewayConfiguration.environment === 'production';
 
-  if (isProduction && !browserDetection.isHTTPS()) {
+  if (isProduction && !isHTTPS()) {
     error = errors.THREEDS_HTTPS_REQUIRED;
   }
 

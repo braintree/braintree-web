@@ -41,7 +41,10 @@ function USBankAccount(options) {
  * @param {string} options.bankDetails.routingNumber The customer's bank routing number, such as `'307075259'`.
  * @param {string} options.bankDetails.accountNumber The customer's bank account number, such as `'999999999'`.
  * @param {string} options.bankDetails.accountType The customer's bank account type. Must be `'checking'` or `'savings'`.
- * @param {string} options.bankDetails.accountHolderName The customer's bank account holder name, such as `'Rosetta Fox'`.
+ * @param {string} options.bankDetails.ownershipType The customer's bank account ownership type. Must be `'personal'` or `'business'`.
+ * @param {string} [options.bankDetails.firstName] The customer's first name. Required when account ownership type is `personal`.
+ * @param {string} [options.bankDetails.lastName] The customer's last name. Required when account ownership type is `personal`.
+ * @param {string} [options.bankDetails.businessName] The customer's business name. Required when account ownership type is `business`.
  * @param {object} options.bankDetails.billingAddress The customer's billing address.
  * @param {string} options.bankDetails.billingAddress.streetAddress The street address for the customer's billing address, such as `'123 Fake St'`.
  * @param {string} [options.bankDetails.billingAddress.extendedAddress] The extended street address for the customer's billing address, such as `'Apartment B'`.
@@ -50,37 +53,59 @@ function USBankAccount(options) {
  * @param {string} options.bankDetails.billingAddress.postalCode The postal code for the customer's billing address. This is typically a ZIP code, such as `'94119'`.
  * @param {object} [options.bankLogin] Bank login information. `bankLogin` or `bankDetails` option must be provided.
  * @param {string} options.bankLogin.displayName Display name for the bank login UI, such as `'My Store'`.
+ * @param {string} options.bankLogin.ownershipType The customer's bank account ownership type. Must be `'personal'` or `'business'`.
+ * @param {string} [options.bankLogin.firstName] The customer's first name. Required when account ownership type is `personal`.
+ * @param {string} [options.bankLogin.lastName] The customer's last name. Required when account ownership type is `personal`.
+ * @param {string} [options.bankLogin.businessName] The customer's business name. Required when account ownership type is `business`.
+ * @param {object} options.bankLogin.billingAddress The customer's billing address.
+ * @param {string} options.bankLogin.billingAddress.streetAddress The street address for the customer's billing address, such as `'123 Fake St'`.
+ * @param {string} [options.bankLogin.billingAddress.extendedAddress] The extended street address for the customer's billing address, such as `'Apartment B'`.
+ * @param {string} options.bankLogin.billingAddress.locality The locality for the customer's billing address. This is typically a city, such as `'San Francisco'`.
+ * @param {string} options.bankLogin.billingAddress.region The region for the customer's billing address. This is typically a state, such as `'CA'`.
+ * @param {string} options.bankLogin.billingAddress.postalCode The postal code for the customer's billing address. This is typically a ZIP code, such as `'94119'`.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link USBankAccount~tokenizePayload|tokenizePayload}.
  * @returns {void}
  * @example
  * <caption>Tokenizing raw bank details</caption>
+ * var routingNumberInput = document.querySelector('input[name="routing-number"]');
+ * var accountNumberInput = document.querySelector('input[name="account-number"]');
+ * var accountTypeInput = document.querySelector('input[name="account-type"]:checked');
+ * var ownershipTypeInput = document.querySelector('input[name="ownership-type"]:checked');
+ * var firstNameInput = document.querySelector('input[name="first-name"]');
+ * var lastNameInput = document.querySelector('input[name="last-name"]');
+ * var businessNameInput = document.querySelector('input[name="business-name"]');
+ * var billingAddressStreetInput = document.querySelector('input[name="street-address"]');
+ * var billingAddressExtendedInput = document.querySelector('input[name="extended-address"]');
+ * var billingAddressLocalityInput = document.querySelector('input[name="locality"]');
+ * var billingAddressRegionSelect = document.querySelector('select[name="region"]');
+ * var billingAddressPostalInput = document.querySelector('input[name="postal-code"]');
+ *
  * submitButton.addEventListener('click', function (event) {
- *   var routingNumberInput = document.querySelector('input#routing-number');
- *   var accountNumberInput = document.querySelector('input#account-number');
- *   var accountHolderNameInput = document.querySelector('input#account-holder-name');
- *   var accountTypeInput = document.querySelector('input[name="account-type"]:checked');
- *   var billingAddressStreetInput = document.querySelector('input#street-address');
- *   var billingAddressExtendedInput = document.querySelector('input#extended-address');
- *   var billingAddressLocalityInput = document.querySelector('input#locality');
- *   var billingAddressRegionSelect = document.querySelector('select#region');
- *   var billingAddressPostalInput = document.querySelector('input#postal-code');
+ *   var bankDetails = {
+ *     routingNumber: routingNumberInput.value,
+ *     accountNumber: accountNumberInput.value,
+ *     accountType: accountTypeInput.value,
+ *     ownershipType: ownershipTypeInput.value,
+ *     billingAddress: {
+ *       streetAddress: billingAddressStreetInput.value,
+ *       extendedAddress: billingAddressExtendedInput.value,
+ *       locality: billingAddressLocalityInput.value,
+ *       region: billingAddressRegionSelect.value,
+ *       postalCode: billingAddressPostalInput.value
+ *     }
+ *   };
+ *
+ *   if (bankDetails.ownershipType === 'personal') {
+ *     bankDetails.firstName = firstNameInput.value;
+ *     bankDetails.lastName = lastNameInput.value;
+ *   } else {
+ *     bankDetails.businessName = businessNameInput.value;
+ *   }
  *
  *   event.preventDefault();
  *
  *   usBankAccountInstance.tokenize({
- *     bankDetails: {
- *       routingNumber: routingNumberInput.value,
- *       accountNumber: accountNumberInput.value,
- *       accountHolderName: accountHolderNameInput.value,
- *       accountType: accountTypeInput.value,
- *       billingAddress: {
- *         streetAddress: billingAddressStreetInput.value,
- *         extendedAddress: billingAddressExtendedInput.value,
- *         locality: billingAddressLocalityInput.value,
- *         region: billingAddressRegionSelect.value,
- *         postalCode: billingAddressPostalInput.value
- *       }
- *     },
+ *     bankDetails: bankDetails,
  *     mandateText: 'I authorize Braintree to debit my bank account on behalf of My Online Store.'
  *   }, function (tokenizeErr, tokenizedPayload) {
  *     if (tokenizeErr) {
@@ -93,13 +118,39 @@ function USBankAccount(options) {
  * });
  * @example
  * <caption>Tokenizing with bank login UI</caption>
+ * var ownershipTypeInput = document.querySelector('input[name="ownership-type"]:checked');
+ * var firstNameInput = document.querySelector('input[name="first-name"]');
+ * var lastNameInput = document.querySelector('input[name="last-name"]');
+ * var businessNameInput = document.querySelector('input[name="business-name"]');
+ * var billingAddressStreetInput = document.querySelector('input[name="street-address"]');
+ * var billingAddressExtendedInput = document.querySelector('input[name="extended-address"]');
+ * var billingAddressLocalityInput = document.querySelector('input[name="locality"]');
+ * var billingAddressRegionSelect = document.querySelector('select[name="region"]');
+ * var billingAddressPostalInput = document.querySelector('input[name="postal-code"]');
+ *
  * bankLoginButton.addEventListener('click', function (event) {
+ *   var bankLogin = {
+ *     displayName: 'My Online Store',
+ *     ownershipType: ownershipTypeInput.value,
+ *     billingAddress: {
+ *       streetAddress: billingAddressStreetInput.value,
+ *       extendedAddress: billingAddressExtendedInput.value,
+ *       locality: billingAddressLocalityInput.value,
+ *       region: billingAddressRegionSelect.value,
+ *       postalCode: billingAddressPostalInput.value
+ *     }
+ *   }
  *   event.preventDefault();
  *
+ *   if (bankLogin.ownershipType === 'personal') {
+ *     bankLogin.firstName = firstNameInput.value;
+ *     bankLogin.lastName = lastNameInput.value;
+ *   } else {
+ *     bankLogin.businessName = businessNameInput.value;
+ *   }
+ *
  *   usBankAccountInstance.tokenize({
- *     bankLogin: {
- *       displayName: 'My Online Store'
- *     },
+ *     bankLogin: bankLogin,
  *     mandateText: 'I authorize Braintree to debit my bank account on behalf of My Online Store.'
  *   }, function (tokenizeErr, tokenizedPayload) {
  *     if (tokenizeErr) {
@@ -146,21 +197,8 @@ USBankAccount.prototype.tokenize = function (options, callback) {
 };
 
 USBankAccount.prototype._tokenizeBankDetails = function (options, callback) {
-  var i, key;
   var client = this._client;
   var bankDetails = options.bankDetails;
-
-  for (i = 0; i < constants.REQUIRED_BANK_DETAILS.length; i++) {
-    key = constants.REQUIRED_BANK_DETAILS[i];
-    if (!bankDetails[key]) {
-      callback(new BraintreeError({
-        type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
-        code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
-        message: 'bankDetails.' + key + ' property is required.'
-      }));
-      return;
-    }
-  }
 
   client.request({
     method: 'POST',
@@ -170,9 +208,12 @@ USBankAccount.prototype._tokenizeBankDetails = function (options, callback) {
       type: 'us_bank_account',
       routingNumber: bankDetails.routingNumber,
       accountNumber: bankDetails.accountNumber,
-      accountHolderName: bankDetails.accountHolderName,
+      firstName: bankDetails.firstName,
+      lastName: bankDetails.lastName,
+      businessName: bankDetails.businessName,
       accountType: bankDetails.accountType,
-      billingAddress: camelCaseToSnakeCase(bankDetails.billingAddress),
+      ownershipType: bankDetails.ownershipType,
+      billingAddress: camelCaseToSnakeCase(bankDetails.billingAddress || {}),
       achMandate: {
         text: options.mandateText
       }
@@ -250,7 +291,12 @@ USBankAccount.prototype._tokenizeBankLogin = function (options, callback) {
             accountId: metadata.account_id,
             achMandate: {
               text: options.mandateText
-            }
+            },
+            ownershipType: options.bankLogin.ownershipType,
+            firstName: options.bankLogin.firstName,
+            lastName: options.bankLogin.lastName,
+            businessName: options.bankLogin.businessName,
+            billingAddress: camelCaseToSnakeCase(options.bankLogin.billingAddress || {})
           })
         }, function (tokenizeErr, response, status) {
           var error;

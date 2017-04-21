@@ -1,6 +1,6 @@
 'use strict';
 
-var browserDetection = require('../../../src/lib/browser-detection');
+var isHTTPS = require('../../../src/lib/is-https');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var threeDSecure = require('../../../src/three-d-secure');
@@ -21,7 +21,7 @@ describe('three-d-secure.create', function () {
         return configuration;
       }
     };
-    this.sandbox.stub(browserDetection, 'isHTTPS', function () { return true; });
+    this.sandbox.stub(isHTTPS, 'isHTTPS', function () { return true; });
   });
 
   it('throws an error if a callback parameter is not provided', function (done) {
@@ -75,9 +75,9 @@ describe('three-d-secure.create', function () {
   });
 
   it('errors out if browser is not https and environment is production', function (done) {
-    browserDetection.isHTTPS.restore();
+    isHTTPS.isHTTPS.restore();
     this.configuration.gatewayConfiguration.environment = 'production';
-    this.sandbox.stub(browserDetection, 'isHTTPS', function () { return false; });
+    this.sandbox.stub(isHTTPS, 'isHTTPS', function () { return false; });
 
     threeDSecure.create({client: this.client}, function (err, thingy) {
       expect(err).to.be.an.instanceof(BraintreeError);
@@ -92,9 +92,9 @@ describe('three-d-secure.create', function () {
   it('allows http connections when not in production', function (done) {
     this.sandbox.stub(analytics, 'sendEvent');
 
-    browserDetection.isHTTPS.restore();
+    isHTTPS.isHTTPS.restore();
     this.configuration.gatewayConfiguration.environment = 'sandbox';
-    this.sandbox.stub(browserDetection, 'isHTTPS').returns(false);
+    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(false);
 
     threeDSecure.create({client: this.client}, function (err, foo) {
       expect(err).not.to.exist;

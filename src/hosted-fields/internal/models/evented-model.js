@@ -19,7 +19,7 @@ EventedModel.prototype.get = function get(compoundKey) {
     key = keys[i];
 
     if (!traversal.hasOwnProperty(key)) {
-      return undefined; // eslint-disable-line
+      return; // eslint-disable-line consistent-return
     }
 
     traversal = traversal[key];

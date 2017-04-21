@@ -19,8 +19,28 @@ describe('CVV Input', function () {
         expect(this.input.element.getAttribute('type')).to.equal('tel');
       });
 
-      it('sets the maxLength to 4', function () {
+      it('sets the maxLength to 4 when no custom maxlength is provided', function () {
         expect(this.input.element.getAttribute('maxlength')).to.equal('4');
+      });
+
+      it('sets the maxLength to 4 if a custom maxlength is provided but is greater than 4', function () {
+        var input;
+
+        this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({maxlength: 5});
+
+        input = helpers.createInput('cvv', ['number']);
+
+        expect(input.element.getAttribute('maxlength')).to.equal('4');
+      });
+
+      it('sets the maxLength to custom maxlength if one is provided and is less than 4', function () {
+        var input;
+
+        this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({maxlength: 3});
+
+        input = helpers.createInput('cvv', ['number']);
+
+        expect(input.element.getAttribute('maxlength')).to.equal('3');
       });
     });
   });
@@ -40,6 +60,26 @@ describe('CVV Input', function () {
 
       expect(this.input.element.getAttribute('maxlength')).to.equal('4');
       expect(this.input.formatter.setPattern).to.be.calledWith('{{9999}}');
+    });
+
+    it('does not set the maxlength on possibleCardTypes change if a custom maxlength is set', function () {
+      var input;
+
+      this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({maxlength: 2});
+
+      input = helpers.createInput('cvv', ['number']);
+
+      this.sandbox.stub(input.formatter, 'setPattern');
+
+      input.model.set('possibleCardTypes', [{code: {size: 6}}]);
+
+      expect(input.element.getAttribute('maxlength')).to.equal('2');
+      expect(input.formatter.setPattern).not.to.be.called;
+
+      input.model.set('possibleCardTypes', []);
+
+      expect(input.element.getAttribute('maxlength')).to.equal('2');
+      expect(input.formatter.setPattern).not.to.be.called;
     });
   });
 });

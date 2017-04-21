@@ -2,6 +2,7 @@
 /* eslint-disable no-reserved-keys */
 
 var enumerate = require('../../lib/enumerate');
+var errors = require('./errors');
 var VERSION = process.env.npm_package_version;
 
 var constants = {
@@ -33,6 +34,10 @@ var constants = {
     width: '100%',
     height: '100%',
     'float': 'left'
+  },
+  tokenizationErrorCodes: {
+    81724: errors.HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE,
+    81736: errors.HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED
   },
   whitelistedStyles: [
     '-moz-appearance',
@@ -111,7 +116,8 @@ constants.events = enumerate([
   'REMOVE_CLASS',
   'SET_ATTRIBUTE',
   'REMOVE_ATTRIBUTE',
-  'CLEAR_FIELD'
+  'CLEAR_FIELD',
+  'FOCUS_FIELD'
 ], 'hosted-fields:');
 
 module.exports = constants;

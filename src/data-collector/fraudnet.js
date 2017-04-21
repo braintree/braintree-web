@@ -66,7 +66,7 @@ function _createThirdPartyBlock() {
     doc = iframe.contentWindow.document;
   } catch (e) {
     dom = document.domain;
-    iframe.src = 'javascript:var d=document.open();d.domain="' + dom + '";void(0);'; // eslint-disable-line
+    iframe.src = 'javascript:var d=document.open();d.domain="' + dom + '";void(0);'; // eslint-disable-line no-script-url
     doc = iframe.contentWindow.document;
   }
 

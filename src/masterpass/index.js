@@ -4,7 +4,7 @@
  */
 
 var BraintreeError = require('../lib/braintree-error');
-var browserDetection = require('../lib/browser-detection');
+var browserDetection = require('browser-detection');
 var Masterpass = require('./external/masterpass');
 var VERSION = process.env.npm_package_version;
 var errors = require('./shared/errors');

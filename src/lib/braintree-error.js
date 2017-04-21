@@ -72,4 +72,12 @@ BraintreeError.types = enumerate([
   'UNKNOWN'
 ]);
 
+BraintreeError.findRootError = function (err) {
+  if (err instanceof BraintreeError && err.details && err.details.originalError) {
+    return BraintreeError.findRootError(err.details.originalError);
+  }
+
+  return err;
+};
+
 module.exports = BraintreeError;

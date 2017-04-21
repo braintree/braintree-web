@@ -501,7 +501,7 @@ describe('Client', function () {
 
       expect(client._request).to.be.calledWith(this.sandbox.match({
         headers: {
-          'Braintree-Version': '2016-10-07',
+          'Braintree-Version': '2017-04-03',
           Authorization: 'Bearer fakeToken'
         }
       }));

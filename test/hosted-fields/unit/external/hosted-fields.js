@@ -196,6 +196,34 @@ describe('HostedFields', function () {
 
         document.body.removeChild(container);
       });
+
+      it('throws an error if a maxlength is provided that is not a number', function () {
+        var container = document.createElement('div');
+        var configuration = this.defaultConfiguration;
+
+        configuration.fields.cvv = {
+          selector: '#foo',
+          maxlength: '3'
+        };
+
+        container.id = 'foo';
+        document.body.appendChild(container);
+
+        try {
+          new HostedFields(configuration);  // eslint-disable-line no-new
+          throw new Error('we should never reach this point');
+        } catch (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('HOSTED_FIELDS_FIELD_PROPERTY_INVALID');
+          expect(err.message).to.equal('The value for maxlength must be a number.');
+          expect(err.details).to.deep.equal({
+            fieldKey: 'cvv'
+          });
+        }
+
+        document.body.removeChild(container);
+      });
     });
 
     it('subscribes to FRAME_READY', function () {
@@ -1100,6 +1128,71 @@ describe('HostedFields', function () {
         expect(err.message).to.equal('Cannot clear "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
         expect(instance._bus.emit).to.not.be.calledWith(events.CLEAR_FIELD, self.sandbox.match.string);
+        done();
+      });
+    });
+  });
+
+  describe('focus', function () {
+    it('emits FOCUS_FIELD event', function () {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var instance;
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.focus('number');
+      expect(instance._bus.emit).to.be.calledWith(events.FOCUS_FIELD, this.sandbox.match.string);
+    });
+
+    it('calls callback if provided', function (done) {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var instance;
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.focus('number', done);
+    });
+
+    it('calls errback when given non-whitelisted field', function (done) {
+      var self = this;
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.focus('rogue-field', function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
+        expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when focusing a field.');
+        expect(err.details).not.to.exist;
+        expect(instance._bus.emit).to.not.be.calledWith(events.FOCUS_FIELD, self.sandbox.match.string);
+        done();
+      });
+    });
+
+    it('calls errback when given field not supplied by merchant', function (done) {
+      var self = this;
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.focus('cvv', function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
+        expect(err.message).to.equal('Cannot focus "cvv" field because it is not part of the current Hosted Fields options.');
+        expect(err.details).not.to.exist;
+        expect(instance._bus.emit).to.not.be.calledWith(events.FOCUS_FIELD, self.sandbox.match.string);
         done();
       });
     });

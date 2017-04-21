@@ -1332,7 +1332,7 @@ describe('PayPal', function () {
       var actual = PayPal.prototype._formatTokenizeData.call(this.context, {
         intent: 'sale'
       }, {
-        ba_token: 'ba_token' // eslint-disable-line
+        ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
       expect(actual.paypalAccount).to.not.have.property('intent');
@@ -1342,7 +1342,7 @@ describe('PayPal', function () {
       var actual = PayPal.prototype._formatTokenizeData.call(this.context, {
         intent: 'sale'
       }, {
-        ba_token: 'ba_token' // eslint-disable-line
+        ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
       expect(actual.paypalAccount.options.validate).to.be.false;
@@ -1356,7 +1356,7 @@ describe('PayPal', function () {
       actual = PayPal.prototype._formatTokenizeData.call(this.context, {
         flow: 'vault'
       }, {
-        ba_token: 'ba_token' // eslint-disable-line
+        ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
       expect(actual.paypalAccount.options.validate).to.be.true;
@@ -1370,7 +1370,7 @@ describe('PayPal', function () {
       actual = PayPal.prototype._formatTokenizeData.call(this.context, {
         flow: 'vault'
       }, {
-        ba_token: 'ba_token' // eslint-disable-line
+        ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
       expect(actual.paypalAccount.options.validate).to.be.false;
@@ -1379,7 +1379,7 @@ describe('PayPal', function () {
     it('if ba_token present, passes proper data for tokenization', function () {
       var actual = PayPal.prototype._formatTokenizeData.call(this.context, {}, {
         token: 'EC-83T8551496489354',
-        ba_token: 'ba_token' // eslint-disable-line
+        ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
       expect(actual.paypalAccount.correlationId).to.equal('ba_token');

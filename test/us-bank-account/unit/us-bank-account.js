@@ -152,7 +152,9 @@ describe('USBankAccount', function () {
             routingNumber: '1234567',
             accountNumber: '0000000',
             accountType: 'checking',
-            accountHolderName: 'Frodo Baggins',
+            ownershipType: 'personal',
+            firstName: 'First',
+            lastName: 'Last',
             billingAddress: {
               streetAddress: '123 Townsend St',
               extendedAddress: 'FL 6',
@@ -175,7 +177,9 @@ describe('USBankAccount', function () {
               routing_number: '1234567',
               account_number: '0000000',
               account_type: 'checking',
-              account_holder_name: 'Frodo Baggins',
+              ownership_type: 'personal',
+              first_name: 'First',
+              last_name: 'Last',
               billing_address: {
                 street_address: '123 Townsend St',
                 extended_address: 'FL 6',
@@ -202,7 +206,8 @@ describe('USBankAccount', function () {
             routingNumber: '1234567',
             accountNumber: '0000000',
             accountType: 'checking',
-            accountHolderName: 'Frodo Baggins',
+            firstName: 'Frodo',
+            lastName: 'Baggins',
             billingAddress: {
               streetAddress: '123 Townsend St',
               extendedAddress: 'FL 6',
@@ -228,7 +233,8 @@ describe('USBankAccount', function () {
             routingNumber: '1234567',
             accountNumber: '0000000',
             accountType: 'checking',
-            accountHolderName: 'Frodo Baggins',
+            firstName: 'Frodo',
+            lastName: 'Baggins',
             billingAddress: {
               streetAddress: '123 Townsend St',
               extendedAddress: 'FL 6',
@@ -266,66 +272,6 @@ describe('USBankAccount', function () {
         }.bind(this));
       });
 
-      it('errors without routingNumber', function (done) {
-        USBankAccount.prototype.tokenize.call(this.context, {
-          bankDetails: {
-            accountNumber: '0000000',
-            accountType: 'checking'
-          },
-          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
-        }, function (err, tokenizedPayload) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
-          expect(err.message).to.equal('bankDetails.routingNumber property is required.');
-
-          expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient.request).not.to.be.called;
-
-          done();
-        }.bind(this));
-      });
-
-      it('errors without accountNumber', function (done) {
-        USBankAccount.prototype.tokenize.call(this.context, {
-          bankDetails: {
-            routingNumber: '1234567',
-            accountType: 'checking'
-          },
-          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
-        }, function (err, tokenizedPayload) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
-          expect(err.message).to.equal('bankDetails.accountNumber property is required.');
-
-          expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient.request).not.to.be.called;
-
-          done();
-        }.bind(this));
-      });
-
-      it('errors without accountType', function (done) {
-        USBankAccount.prototype.tokenize.call(this.context, {
-          bankDetails: {
-            routingNumber: '1234567',
-            accountNumber: '0000000'
-          },
-          mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
-        }, function (err, tokenizedPayload) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('US_BANK_ACCOUNT_OPTION_REQUIRED');
-          expect(err.message).to.equal('bankDetails.accountType property is required.');
-
-          expect(tokenizedPayload).not.to.exist;
-          expect(this.fakeClient.request).not.to.be.called;
-
-          done();
-        }.bind(this));
-      });
-
       it('errors when tokenize fails with 401 status code', function (done) {
         var originalError = new Error('Something bad happnened');
 
@@ -336,7 +282,8 @@ describe('USBankAccount', function () {
             routingNumber: '1234567',
             accountNumber: '0000000',
             accountType: 'checking',
-            accountHolderName: 'Frodo Baggins',
+            firstName: 'Frodo',
+            lastName: 'Baggins',
             billingAddress: {
               streetAddress: '123 Townsend St',
               extendedAddress: 'FL 6',
@@ -369,7 +316,8 @@ describe('USBankAccount', function () {
             routingNumber: '1234567',
             accountNumber: '0000000',
             accountType: 'checking',
-            accountHolderName: 'Frodo Baggins',
+            firstName: 'Frodo',
+            lastName: 'Baggins',
             billingAddress: {
               streetAddress: '123 Townsend St',
               extendedAddress: 'FL 6',
@@ -402,7 +350,8 @@ describe('USBankAccount', function () {
             routingNumber: '1234567',
             accountNumber: '0000000',
             accountType: 'checking',
-            accountHolderName: 'Frodo Baggins',
+            firstName: 'Frodo',
+            lastName: 'Baggins',
             billingAddress: {
               streetAddress: '123 Townsend St',
               extendedAddress: 'FL 6',
@@ -433,11 +382,16 @@ describe('USBankAccount', function () {
             type: 'us_bank_account',
             account_description: null,
             account_holder_name: null,
-            billing_address: null,
+            billing_address: {
+              street_address: '123 Townsend St',
+              extended_address: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postal_code: '94107'
+            },
             owner_id: 'merchant_ngtg6n_2f3xcm_qpbx7z_bx2gvh_6x5',
             custom_fields: [],
             routing_number: '307075259',
-            account_type: 'checking',
             id: 'fake-nonce-123',
             last_4: '9999',
             short_id: '45nbvn',
@@ -568,7 +522,7 @@ describe('USBankAccount', function () {
         });
       });
 
-      it('tokenizes bank login', function (done) {
+      it('tokenizes bank login for personal accounts', function (done) {
         this.fakeClient.request.yieldsAsync(null, this.fakeGatewayResponse);
 
         this.context._loadPlaid = function (callback) {
@@ -602,14 +556,24 @@ describe('USBankAccount', function () {
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankLogin: {
-            displayName: 'Test Merchant'
+            displayName: 'Test Merchant',
+            ownershipType: 'personal',
+            firstName: 'First',
+            lastName: 'Last',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
           },
           mandateText: 'I authorize Braintree to charge my bank account.'
         }, function (err, tokenizedPayload) {
           expect(err).not.to.exist;
 
           expect(this.fakeClient.request).to.be.calledOnce;
-          expect(this.fakeClient.request).to.be.calledWith({
+          expect(this.fakeClient.request).to.be.calledWith(this.sandbox.match({
             method: 'POST',
             endpoint: 'tokens',
             api: 'braintreeApi',
@@ -619,9 +583,103 @@ describe('USBankAccount', function () {
               account_id: 'xyz456',
               ach_mandate: {
                 text: 'I authorize Braintree to charge my bank account.'
+              },
+              ownership_type: 'personal',
+              first_name: 'First',
+              last_name: 'Last',
+              billing_address: {
+                street_address: '123 Townsend St',
+                extended_address: 'FL 6',
+                locality: 'San Francisco',
+                region: 'CA',
+                postal_code: '94107'
               }
             }
+          }));
+
+          expect(tokenizedPayload).to.deep.equal({
+            nonce: 'fake-nonce-123',
+            details: {},
+            description: 'US bank account ending in - 9999',
+            type: 'us_bank_account'
           });
+
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes bank login for business accounts', function (done) {
+        this.fakeClient.request.yieldsAsync(null, this.fakeGatewayResponse);
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              expect(options.env).to.equal('tartan');
+              expect(options.clientName).to.equal('Test Merchant');
+              expect(options.key).to.equal('test_key');
+              expect(options.product).to.equal('auth');
+              expect(options.selectAccount).to.equal(true);
+              expect(options.onExit).to.be.a('function');
+              expect(options.onSuccess).to.be.a('function');
+
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    var publicToken = 'abc123';
+                    var metadata = {account_id: 'xyz456'};
+
+                    options.onSuccess(publicToken, metadata);
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant',
+            ownershipType: 'business',
+            businessName: 'Acme Inc',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function (err, tokenizedPayload) {
+          expect(err).not.to.exist;
+
+          expect(this.fakeClient.request).to.be.calledOnce;
+          expect(this.fakeClient.request).to.be.calledWith(this.sandbox.match({
+            method: 'POST',
+            endpoint: 'tokens',
+            api: 'braintreeApi',
+            data: {
+              type: 'plaid_public_token',
+              public_token: 'abc123',
+              account_id: 'xyz456',
+              ach_mandate: {
+                text: 'I authorize Braintree to charge my bank account.'
+              },
+              ownership_type: 'business',
+              business_name: 'Acme Inc',
+              billing_address: {
+                street_address: '123 Townsend St',
+                extended_address: 'FL 6',
+                locality: 'San Francisco',
+                region: 'CA',
+                postal_code: '94107'
+              }
+            }
+          }));
 
           expect(tokenizedPayload).to.deep.equal({
             nonce: 'fake-nonce-123',

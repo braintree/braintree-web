@@ -125,4 +125,5 @@ You will need to add the following directives to your policy:
 | style-src   | 'unsafe-inline'                                                                    | 'unsafe-inline'                                                                   |
 | img-src     | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                      | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                     |
 | child-src   | assets.braintreegateway.com<br/>c.paypal.com                                       | assets.braintreegateway.com<br/>c.paypal.com                                      |
+| frame-src   | assets.braintreegateway.com<br/>c.paypal.com                                       | assets.braintreegateway.com<br/>c.paypal.com                                      |
 | connect-src | api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com | api.braintreegateway.com<br/>client-analytics.braintreegateway.com                |

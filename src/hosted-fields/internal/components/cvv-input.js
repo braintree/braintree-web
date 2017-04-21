@@ -24,20 +24,29 @@ function _getPattern(length) {
 }
 
 function CVVInput() {
-  this.maxLength = DEFAULT_MAX_LENGTH;
+  var length;
 
   BaseInput.apply(this, arguments);
+
+  this.maxLength = DEFAULT_MAX_LENGTH;
+  length = this.getConfiguration().maxlength;
+
+  if (length && length < this.maxLength) {
+    this.maxLength = length;
+  } else {
+    this.model.on('change:possibleCardTypes', function (possibleCardTypes) {
+      this.maxLength = possibleCardTypes.reduce(function (accum, cardType) {
+        return Math.max(accum, cardType.code.size);
+      }, 0) || DEFAULT_MAX_LENGTH;
+
+      this.formatter.setPattern(_getPattern(this.maxLength));
+      this.updateModel('value', this.formatter.getUnformattedValue());
+      this.render();
+    }.bind(this));
+  }
+
+  this.element.setAttribute('maxlength', this.maxLength);
   this.formatter.setPattern(_getPattern(this.maxLength));
-
-  this.model.on('change:possibleCardTypes', function (possibleCardTypes) {
-    this.maxLength = possibleCardTypes.reduce(function (accum, cardType) {
-      return Math.max(accum, cardType.code.size);
-    }, 0) || DEFAULT_MAX_LENGTH;
-
-    this.formatter.setPattern(_getPattern(this.maxLength));
-    this.updateModel('value', this.formatter.getUnformattedValue());
-    this.render();
-  }.bind(this));
 }
 
 CVVInput.prototype = Object.create(BaseInput.prototype);

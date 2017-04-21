@@ -577,20 +577,6 @@ describe('internal', function () {
       });
     });
 
-    it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration or even present, even if enabled client-side", function () {
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-      delete this.configuration.gatewayConfiguration.creditCards.supportedGateways;
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
-
-      expect(this.goodClient.request).not.to.be.calledWithMatch({
-        api: 'braintreeApi'
-      });
-    });
-
     it("doesn't make a request to the Braintree API if it's not enabled by a client-side option", function () {
       this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
         name: 'braintreeApi',
@@ -816,6 +802,106 @@ describe('internal', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR');
         expect(err.message).to.equal('A tokenization network error occurred.');
         expect(err.details.originalError).to.equal(fakeErr);
+
+        expect(result).not.to.exist;
+
+        done();
+      });
+    });
+
+    it('sends a wrapped fail on duplicate payment method error', function (done) {
+      var originalError = {
+        fieldErrors: [{
+          fieldErrors: [{
+            code: '81724',
+            field: 'creditCard',
+            message: 'Already in vault'
+          }]
+        }]
+      };
+      var fakeErr = new BraintreeError({
+        code: 'CLIENT_REQUEST_ERROR',
+        type: BraintreeError.types.NETWORK,
+        message: 'An error',
+        details: {
+          httpStatus: 422,
+          originalError: originalError
+        }
+      });
+
+      this.configuration.gatewayConfiguration.braintreeApi = {};
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      this.goodClient.request = this.sandbox.stub();
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.reject(fakeErr));
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.reject(fakeErr));
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
+        var err = args[0];
+        var result = args[1];
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('CUSTOMER');
+        expect(err.code).to.equal('HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE');
+        expect(err.message).to.equal('This credit card already exists in the merchant\'s vault.');
+        expect(err.details.originalError).to.equal(originalError);
+
+        expect(result).not.to.exist;
+
+        done();
+      });
+    });
+
+    it('sends a wrapped cvv verification error', function (done) {
+      var originalError = {
+        fieldErrors: [{
+          fieldErrors: [{
+            code: '81736',
+            field: 'cvv',
+            message: 'cvv verification failed'
+          }]
+        }]
+      };
+      var fakeErr = new BraintreeError({
+        code: 'CLIENT_REQUEST_ERROR',
+        type: BraintreeError.types.NETWORK,
+        message: 'An error',
+        details: {
+          httpStatus: 422,
+          originalError: originalError
+        }
+      });
+
+      this.configuration.gatewayConfiguration.braintreeApi = {};
+      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
+        name: 'braintreeApi',
+        timeout: 2000
+      });
+      this.fakeOptions.gateways = {
+        clientApi: true,
+        braintreeApi: true
+      };
+
+      this.goodClient.request = this.sandbox.stub();
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.reject(fakeErr));
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.reject(fakeErr));
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
+        var err = args[0];
+        var result = args[1];
+
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('CUSTOMER');
+        expect(err.code).to.equal('HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED');
+        expect(err.message).to.equal('CVV verification failed during tokenization.');
+        expect(err.details.originalError).to.equal(originalError);
 
         expect(result).not.to.exist;
 
