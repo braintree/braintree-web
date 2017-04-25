@@ -1,5 +1,6 @@
 'use strict';
 
+var Promise = require('../../../../src/lib/promise');
 var analytics = require('../../../../src/lib/analytics');
 var UnionPay = require('../../../../src/unionpay/shared/unionpay');
 var BraintreeError = require('../../../../src/lib/braintree-error');
@@ -11,6 +12,7 @@ function noop() {}
 describe('UnionPay', function () {
   beforeEach(function () {
     this.client = {
+      request: this.sandbox.stub().resolves({}),
       getConfiguration: function () {
         return {
           gatewayConfiguration: {
@@ -38,23 +40,15 @@ describe('UnionPay', function () {
   });
 
   describe('fetchCapabilities', function () {
-    it('throws an error when called without a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var promise = UnionPay.prototype.fetchCapabilities.call({
+        _options: {client: this.client}
+      }, {
+        card: {number: '1234'}
+      });
 
-      try {
-        UnionPay.prototype.fetchCapabilities.call({
-          _options: {}
-        }, {
-          card: {number: '1234'}
-        });
-      } catch (e) {
-        err = e;
-      }
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('fetchCapabilities must include a callback function.');
+      expect(promise).to.respondTo('then');
+      expect(promise).to.respondTo('catch');
     });
 
     describe('when neither card number nor Hosted Fields are present', function () {
@@ -76,7 +70,7 @@ describe('UnionPay', function () {
     describe('when card number is present', function () {
       it('calls the credit card capabilities endpoint', function () {
         var client = {
-          request: this.sandbox.stub()
+          request: this.sandbox.stub().returns(Promise.resolve())
         };
         var errback = noop;
         var number = '621234567890123456';
@@ -104,17 +98,14 @@ describe('UnionPay', function () {
           type: BraintreeError.types.NETWORK,
           message: 'Your network request failed.'
         };
-        var client = {
-          request: function (options, errback) {
-            errback(clientErr);
-          }
-        };
         var options = {
           card: {number: '12345'}
         };
 
+        this.client.request.rejects(clientErr);
+
         UnionPay.prototype.fetchCapabilities.call({
-          _options: {client: client}
+          _options: {client: this.client}
         }, options, function (err, data) {
           expect(data).not.to.exist;
           expect(err).to.be.an.instanceof(BraintreeError);
@@ -130,19 +121,17 @@ describe('UnionPay', function () {
       it('calls the callback with an error when tokenization key is used', function (done) {
         var clientErr = {
           type: BraintreeError.types.NETWORK,
-          message: 'Your network request failed.'
-        };
-        var client = {
-          request: function (options, errback) {
-            errback(clientErr, null, 403);
-          }
+          message: 'Your network request failed.',
+          details: {httpStatus: 403}
         };
         var options = {
           card: {number: '12345'}
         };
 
+        this.client.request.rejects(clientErr);
+
         UnionPay.prototype.fetchCapabilities.call({
-          _options: {client: client}
+          _options: {client: this.client}
         }, options, function (err, data) {
           expect(data).not.to.exist;
           expect(err).to.equal(clientErr);
@@ -160,9 +149,7 @@ describe('UnionPay', function () {
           }
         };
         var client = {
-          request: function (options, errback) {
-            errback(null, unionPayCapabilities);
-          }
+          request: this.sandbox.stub().returns(Promise.resolve(unionPayCapabilities))
         };
         var options = {
           card: {number: '12345'}
@@ -178,7 +165,7 @@ describe('UnionPay', function () {
         });
       });
 
-      it('calls analytics when unionpay capabilities succeeds', function () {
+      it('calls analytics when unionpay capabilities succeeds', function (done) {
         var unionPayCapabilities = {
           isUnionPay: true,
           isDebit: false,
@@ -187,20 +174,18 @@ describe('UnionPay', function () {
             isSupported: false
           }
         };
-        var client = {
-          request: function (options, errback) {
-            errback(null, unionPayCapabilities);
-          }
-        };
         var options = {
           card: {number: '12345'}
         };
 
-        UnionPay.prototype.fetchCapabilities.call({
-          _options: {client: client}
-        }, options, noop);
+        this.client.request.resolves(unionPayCapabilities);
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'unionpay.capabilities-received');
+        UnionPay.prototype.fetchCapabilities.call({
+          _options: {client: this.client}
+        }, options, function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'unionpay.capabilities-received');
+          done();
+        }.bind(this));
       });
     });
 
@@ -245,65 +230,67 @@ describe('UnionPay', function () {
       });
     });
 
-    it('calls analytics when unionpay capabilities request fails', function () {
-      var client = {
-        request: function (options, errback) {
-          errback('error', null);
-        }
-      };
+    it('calls analytics when unionpay capabilities request fails', function (done) {
       var options = {
         card: {number: '12345'}
       };
 
-      UnionPay.prototype.fetchCapabilities.call({
-        _options: {client: client}
-      }, options, noop);
+      this.client.request.rejects(new Error('error'));
 
-      expect(analytics.sendEvent).to.be.calledWith(client, 'unionpay.capabilities-failed');
+      UnionPay.prototype.fetchCapabilities.call({
+        _options: {client: this.client}
+      }, options, function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'unionpay.capabilities-failed');
+        done();
+      }.bind(this));
     });
 
-    it('sends _meta source', function () {
-      var client = {
-        request: this.sandbox.stub()
-      };
-      var errback = noop;
+    it('sends _meta source', function (done) {
       var number = '621234567890123456';
       var options = {
         card: {number: number}
       };
 
       UnionPay.prototype.fetchCapabilities.call({
-        _options: {client: client}
-      }, options, errback);
-
-      expect(client.request).to.be.calledWith(this.sandbox.match({
-        data: {_meta: {source: 'unionpay'}}
-      }));
+        _options: {client: this.client}
+      }, options, function () {
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
+          data: {_meta: {source: 'unionpay'}}
+        }));
+        done();
+      }.bind(this));
     });
   });
 
   describe('enroll', function () {
-    it('throws an error when called without a callback', function () {
-      var err;
+    beforeEach(function () {
+      this.client.request.resolves({
+        unionPayEnrollmentId: 'id',
+        smsCodeRequired: true
+      });
+    });
 
-      try {
-        UnionPay.prototype.enroll.call({
-          _options: {}
-        }, {
-          card: {number: '1234'}
-        });
-      } catch (e) {
-        err = e;
-      }
+    it('returns a promise', function () {
+      var promise = UnionPay.prototype.enroll.call({
+        _options: {client: this.client}
+      }, {
+        card: {
+          number: '6211111111111111',
+          expirationMonth: '12',
+          expirationYear: '2020'
+        },
+        mobile: {
+          countryCode: '62',
+          number: '867530911'
+        }
+      });
 
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('enroll must include a callback function.');
+      expect(promise).to.respondTo('then');
+      expect(promise).to.respondTo('catch');
     });
 
     describe('when a card is present', function () {
-      it('calls the enrollment endpoint with the card', function () {
+      it('calls the enrollment endpoint with the card', function (done) {
         var options = {
           card: {
             number: '6211111111111111',
@@ -316,29 +303,26 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
-        }, options, noop);
-
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
-          method: 'post',
-          endpoint: 'union_pay_enrollments',
-          data: {
-            unionPayEnrollment: {
-              number: '6211111111111111',
-              expirationMonth: '12',
-              expirationYear: '2020',
-              mobileCountryCode: '62'
+          _options: {client: this.client}
+        }, options, function () {
+          expect(this.client.request).to.be.calledWith(this.sandbox.match({
+            method: 'post',
+            endpoint: 'union_pay_enrollments',
+            data: {
+              unionPayEnrollment: {
+                number: '6211111111111111',
+                expirationMonth: '12',
+                expirationYear: '2020',
+                mobileCountryCode: '62'
+              }
             }
-          }
-        }), this.sandbox.match.func);
+          }));
+          done();
+        }.bind(this));
       });
 
-      it('sends _meta source', function () {
+      it('sends _meta source', function (done) {
         var options = {
           card: {
             number: '6211111111111111',
@@ -351,17 +335,14 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
-        }, options, noop);
-
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
-          data: {_meta: {source: 'unionpay'}}
-        }));
+          _options: {client: this.client}
+        }, options, function () {
+          expect(this.client.request).to.be.calledWith(this.sandbox.match({
+            data: {_meta: {source: 'unionpay'}}
+          }));
+          done();
+        }.bind(this));
       });
 
       it('does not pass a CVV into the request payload', function () {
@@ -378,15 +359,11 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'union_pay_enrollments',
           data: {
@@ -414,15 +391,11 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'union_pay_enrollments',
           data: {
@@ -451,15 +424,11 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'union_pay_enrollments',
           data: {
@@ -484,15 +453,11 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
+        expect(this.client.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.unionPayEnrollment.hasOwnProperty('expirationMonth') &&
             !value.data.unionPayEnrollment.hasOwnProperty('expirationYear');
         }));
@@ -511,15 +476,11 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
+        expect(this.client.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.unionPayEnrollment.hasOwnProperty('expirationMonth') &&
             !value.data.unionPayEnrollment.hasOwnProperty('expirationYear');
         }));
@@ -537,12 +498,8 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
@@ -563,12 +520,8 @@ describe('UnionPay', function () {
           }
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.enroll.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
@@ -578,18 +531,7 @@ describe('UnionPay', function () {
       });
 
       describe('when the enrollment fails', function () {
-        var clientErr, stubClient, clientStatus;
-
-        beforeEach(function () {
-          clientStatus = 500;
-          stubClient = {
-            request: function (options, clientErrback) {
-              clientErrback(clientErr, null, clientStatus);
-            }
-          };
-        });
-
-        it('calls analytics', function () {
+        it('calls analytics', function (done) {
           var options = {
             card: {
               number: '6211111111111111',
@@ -601,28 +543,33 @@ describe('UnionPay', function () {
               number: '867530911'
             }
           };
-
-          clientErr = {
+          var clientErr = {
             type: BraintreeError.types.NETWORK,
             message: 'An error message'
           };
-          UnionPay.prototype.enroll.call({
-            _options: {client: stubClient}
-          }, options, noop);
 
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.enrollment-failed');
+          this.client.request.rejects(clientErr);
+
+          UnionPay.prototype.enroll.call({
+            _options: {client: this.client}
+          }, options, function () {
+            expect(analytics.sendEvent).to.be.calledWith(this.client, 'unionpay.enrollment-failed');
+            done();
+          }.bind(this));
         });
 
         describe('with a 422', function () {
           it('calls the errback with a customer error', function (done) {
-            clientErr = {
+            var clientErr = {
               type: BraintreeError.types.CUSTOMER,
-              message: 'The customer input was not valid'
+              message: 'The customer input was not valid',
+              details: {httpStatus: 422}
             };
-            clientStatus = 422;
+
+            this.client.request.rejects(clientErr);
 
             UnionPay.prototype.enroll.call({
-              _options: {client: stubClient}
+              _options: {client: this.client}
             }, {
               card: {
                 number: '5'
@@ -645,14 +592,16 @@ describe('UnionPay', function () {
 
         describe('with a 403', function () {
           it('calls the errback with a client\'s error', function (done) {
-            clientErr = {
+            var clientErr = {
               type: BraintreeError.types.MERCHANT,
-              message: 'error'
+              message: 'error',
+              details: {httpStatus: 403}
             };
-            clientStatus = 403;
+
+            this.client.request.rejects(clientErr);
 
             UnionPay.prototype.enroll.call({
-              _options: {client: stubClient}
+              _options: {client: this.client}
             }, {
               card: {
                 number: '5'
@@ -682,14 +631,16 @@ describe('UnionPay', function () {
           };
 
           it('calls the errback with a network error', function (done) {
-            clientErr = {
+            var clientErr = {
               type: BraintreeError.types.NETWORK,
-              message: 'Your network request failed'
+              message: 'Your network request failed',
+              details: {httpStatus: 500}
             };
-            clientStatus = 500;
+
+            this.client.request.rejects(clientErr);
 
             UnionPay.prototype.enroll.call({
-              _options: {client: stubClient}
+              _options: {client: this.client}
             }, options, function (err, data) {
               expect(data).not.to.exist;
               expect(err).to.be.an.instanceof(BraintreeError);
@@ -718,17 +669,13 @@ describe('UnionPay', function () {
             }
           };
 
-          var stubClient = {
-            request: function (requestOptions, errback) {
-              errback(null, {
-                unionPayEnrollmentId: 'enrollment-id',
-                smsCodeRequired: true
-              });
-            }
-          };
+          this.client.request.resolves({
+            unionPayEnrollmentId: 'enrollment-id',
+            smsCodeRequired: true
+          });
 
           UnionPay.prototype.enroll.call({
-            _options: {client: stubClient}
+            _options: {client: this.client}
           }, options, function (err, data) {
             expect(err).to.equal(null);
             expect(data).to.deep.equal({
@@ -740,7 +687,7 @@ describe('UnionPay', function () {
           });
         });
 
-        it('calls analytics', function () {
+        it('calls analytics', function (done) {
           var options = {
             card: {
               number: '6211111111111111',
@@ -753,20 +700,17 @@ describe('UnionPay', function () {
             }
           };
 
-          var stubClient = {
-            request: function (requestOptions, errback) {
-              errback(null, {
-                unionPayEnrollmentId: 'enrollment-id',
-                smsCodeRequired: true
-              });
-            }
-          };
+          this.client.request.resolves({
+            unionPayEnrollmentId: 'enrollment-id',
+            smsCodeRequired: true
+          });
 
           UnionPay.prototype.enroll.call({
-            _options: {client: stubClient}
-          }, options, noop);
-
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.enrollment-succeeded');
+            _options: {client: this.client}
+          }, options, function () {
+            expect(analytics.sendEvent).to.be.calledWith(this.client, 'unionpay.enrollment-succeeded');
+            done();
+          }.bind(this));
         });
       });
     });
@@ -876,9 +820,15 @@ describe('UnionPay', function () {
   });
 
   describe('tokenize', function () {
+    beforeEach(function () {
+      this.client.request.resolves({
+        creditCards: [{}]
+      });
+    });
+
     describe('with raw card data', function () {
-      it('throws an error when called without a callback', function () {
-        var err;
+      it('returns a promise', function () {
+        var promise;
         var request = {
           card: {
             number: '6211111111111111',
@@ -890,20 +840,15 @@ describe('UnionPay', function () {
           smsCode: '123456'
         };
 
-        try {
-          UnionPay.prototype.tokenize.call({_options: {}}, request);
-        } catch (e) {
-          err = e;
-        }
+        promise = UnionPay.prototype.tokenize.call({_options: {
+          client: this.client
+        }}, request);
 
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CALLBACK_REQUIRED');
-        expect(err.message).to.equal('tokenize must include a callback function.');
+        expect(promise).to.respondTo('then');
+        expect(promise).to.respondTo('catch');
       });
 
       it('calls the tokenization endpoint with the card and enrollment', function () {
-        var mockClient = {request: this.sandbox.stub()};
         var request = {
           card: {
             number: '6211111111111111',
@@ -916,10 +861,10 @@ describe('UnionPay', function () {
         };
 
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'payment_methods/credit_cards',
           data: {
@@ -940,7 +885,6 @@ describe('UnionPay', function () {
       });
 
       it('does not pass smsCode if !smsCodeRequired', function () {
-        var mockClient = {request: this.sandbox.stub()};
         var request = {
           card: {
             number: '6211111111111111',
@@ -952,10 +896,10 @@ describe('UnionPay', function () {
         };
 
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, request, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
+        expect(this.client.request).to.be.calledWith(this.sandbox.match(function (value) {
           return !value.data.creditCard.options.unionPayEnrollment.hasOwnProperty('smsCode');
         }));
       });
@@ -973,15 +917,11 @@ describe('UnionPay', function () {
           smsCode: '12345'
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'payment_methods/credit_cards',
           data: {
@@ -1013,15 +953,11 @@ describe('UnionPay', function () {
           smsCode: '12345'
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
+          _options: {client: this.client}
         }, options, noop);
 
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
           method: 'post',
           endpoint: 'payment_methods/credit_cards',
           data: {
@@ -1040,7 +976,7 @@ describe('UnionPay', function () {
         }));
       });
 
-      it('does not apply expirationMonth and expirationYear to payload if empty string', function () {
+      it('does not apply expirationMonth and expirationYear to payload if empty string', function (done) {
         var options = {
           card: {
             number: '6211111111111111',
@@ -1052,72 +988,18 @@ describe('UnionPay', function () {
           smsCode: '123456'
         };
 
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
-        }, options, noop);
-
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
-          return !value.data.creditCard.hasOwnProperty('expirationMonth') &&
-            !value.data.creditCard.hasOwnProperty('expirationYear');
-        }));
+          _options: {client: this.client}
+        }, options, function () {
+          expect(this.client.request).to.be.calledWith(this.sandbox.match(function (value) {
+            return !value.data.creditCard.hasOwnProperty('expirationMonth') &&
+              !value.data.creditCard.hasOwnProperty('expirationYear');
+          }));
+          done();
+        }.bind(this));
       });
 
-      it('returns a BraintreeError if expirationMonth undefined but expirationYear is defined', function () {
-        var options = {
-          card: {
-            number: '6211111111111111',
-            expirationYear: '2019',
-            cvv: '123'
-          },
-          enrollmentId: 'enrollment-id',
-          smsCode: '123456'
-        };
-
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
-        UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
-        }, options, function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('UNIONPAY_EXPIRATION_DATE_INCOMPLETE');
-          expect(err.message).to.equal('You must supply expiration month and year or neither.');
-        });
-      });
-
-      it('returns a BraintreeError if expirationYear undefined but expirationMonth is defined', function () {
-        var options = {
-          card: {
-            number: '6211111111111111',
-            expirationMonth: '12',
-            cvv: '123'
-          },
-          enrollmentId: 'enrollment-id',
-          smsCode: '123456'
-        };
-
-        var mockClient = {
-          request: this.sandbox.stub()
-        };
-
-        UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
-        }, options, function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('UNIONPAY_EXPIRATION_DATE_INCOMPLETE');
-          expect(err.message).to.equal('You must supply expiration month and year or neither.');
-        });
-      });
-
-      it('accepts cvv if defined', function () {
-        var mockClient = {request: this.sandbox.stub()};
+      it('accepts cvv if defined', function (done) {
         var request = {
           card: {
             number: '6211111111111111',
@@ -1126,20 +1008,20 @@ describe('UnionPay', function () {
         };
 
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
-        }, request, noop);
-
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
-          method: 'post',
-          endpoint: 'payment_methods/credit_cards',
-          data: {
-            creditCard: request.card
-          }
-        }));
+          _options: {client: this.client}
+        }, request, function () {
+          expect(this.client.request).to.be.calledWith(this.sandbox.match({
+            method: 'post',
+            endpoint: 'payment_methods/credit_cards',
+            data: {
+              creditCard: request.card
+            }
+          }));
+          done();
+        }.bind(this));
       });
 
-      it('does not apply cvv if empty string', function () {
-        var mockClient = {request: this.sandbox.stub()};
+      it('does not apply cvv if empty string', function (done) {
         var request = {
           card: {
             number: '6211111111111111',
@@ -1148,16 +1030,16 @@ describe('UnionPay', function () {
         };
 
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
-        }, request, noop);
-
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
-          return !value.data.creditCard.hasOwnProperty('cvv');
-        }));
+          _options: {client: this.client}
+        }, request, function () {
+          expect(this.client.request).to.be.calledWith(this.sandbox.match(function (value) {
+            return !value.data.creditCard.hasOwnProperty('cvv');
+          }));
+          done();
+        }.bind(this));
       });
 
-      it('does not apply cvv if not defined', function () {
-        var mockClient = {request: this.sandbox.stub()};
+      it('does not apply cvv if not defined', function (done) {
         var request = {
           card: {
             number: '6211111111111111'
@@ -1165,16 +1047,16 @@ describe('UnionPay', function () {
         };
 
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
-        }, request, noop);
-
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match(function (value) {
-          return !value.data.creditCard.hasOwnProperty('cvv');
-        }));
+          _options: {client: this.client}
+        }, request, function () {
+          expect(this.client.request).to.be.calledWith(this.sandbox.match(function (value) {
+            return !value.data.creditCard.hasOwnProperty('cvv');
+          }));
+          done();
+        }.bind(this));
       });
 
-      it('sends _meta source', function () {
-        var mockClient = {request: this.sandbox.stub()};
+      it('sends _meta source', function (done) {
         var request = {
           card: {
             number: '6211111111111111',
@@ -1187,16 +1069,17 @@ describe('UnionPay', function () {
         };
 
         UnionPay.prototype.tokenize.call({
-          _options: {client: mockClient}
-        }, request, noop);
-
-        expect(mockClient.request).to.be.calledWith(this.sandbox.match({
-          data: {_meta: {source: 'unionpay'}}
-        }));
+          _options: {client: this.client}
+        }, request, function () {
+          expect(this.client.request).to.be.calledWith(this.sandbox.match({
+            data: {_meta: {source: 'unionpay'}}
+          }));
+          done();
+        }.bind(this));
       });
 
       describe('when tokenization is successful', function () {
-        it('calls analytics', function () {
+        it('calls analytics', function (done) {
           var request = {
             card: {
               number: '6211111111111111',
@@ -1217,18 +1100,15 @@ describe('UnionPay', function () {
             nonce: 'a-nonce',
             type: 'CreditCard'
           };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              clientErrback(null, {creditCards: [expectedCardNonce]});
-            }
-          };
-          var errback = this.sandbox.stub();
+
+          this.client.request.resolves({creditCards: [expectedCardNonce]});
 
           UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
-          }, request, errback);
-
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.nonce-received');
+            _options: {client: this.client}
+          }, request, function () {
+            expect(analytics.sendEvent).to.be.calledWith(this.client, 'unionpay.nonce-received');
+            done();
+          }.bind(this));
         });
 
         it('calls the errback with a nonce', function (done) {
@@ -1252,22 +1132,11 @@ describe('UnionPay', function () {
             nonce: 'a-nonce',
             type: 'CreditCard'
           };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              var data = options.data;
 
-              expect(data.creditCard.number).to.exist;
-              expect(data.creditCard.expirationMonth).to.exist;
-              expect(data.creditCard.expirationYear).to.exist;
-              expect(data.creditCard.cvv).to.exist;
-              expect(data.creditCard.options.unionPayEnrollment.id).to.exist;
-              expect(data.creditCard.options.unionPayEnrollment.smsCode).to.exist;
-              clientErrback(null, {creditCards: [expectedCardNonce]});
-            }
-          };
+          this.client.request.resolves({creditCards: [expectedCardNonce]});
 
           UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
+            _options: {client: this.client}
           }, request, function (err, data) {
             expect(err).to.equal(null);
             expect(data).to.equal(expectedCardNonce);
@@ -1302,14 +1171,11 @@ describe('UnionPay', function () {
               some: 'info'
             }
           };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              clientErrback(null, {creditCards: [expectedCardNonce]});
-            }
-          };
+
+          this.client.request.resolves({creditCards: [expectedCardNonce]});
 
           UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
+            _options: {client: this.client}
           }, request, function (err, data) {
             expect(err).to.equal(null);
             expect(data).to.not.have.property('threeDSecureInfo');
@@ -1334,16 +1200,14 @@ describe('UnionPay', function () {
           };
           var stubError = {
             type: BraintreeError.types.NETWORK,
-            message: 'A client error occurred'
-          };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              clientErrback(stubError, null, 500);
-            }
+            message: 'A client error occurred',
+            details: {httpStatus: 500}
           };
 
+          this.client.request.rejects(stubError);
+
           UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
+            _options: {client: this.client}
           }, request, function (err, data) {
             expect(data).not.to.exist;
             expect(err).to.be.an.instanceof(BraintreeError);
@@ -1369,16 +1233,14 @@ describe('UnionPay', function () {
           };
           var stubError = {
             type: BraintreeError.types.MERCHANT,
-            message: 'A client error occurred'
-          };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              clientErrback(stubError, null, 403);
-            }
+            message: 'A client error occurred',
+            details: {httpStatus: 403}
           };
 
+          this.client.request.rejects(stubError);
+
           UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
+            _options: {client: this.client}
           }, request, function (err, data) {
             expect(data).not.to.exist;
             expect(err).to.equal(stubError);
@@ -1400,16 +1262,15 @@ describe('UnionPay', function () {
           };
           var stubError = {
             type: BraintreeError.types.NETWORK,
-            message: 'A client error occurred'
-          };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              clientErrback(stubError, null, 422);
-            }
+            message: 'A client error occurred',
+            details: {httpStatus: 422}
+
           };
 
+          this.client.request.rejects(stubError);
+
           UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
+            _options: {client: this.client}
           }, request, function (err, data) {
             expect(data).not.to.exist;
             expect(err).to.be.an.instanceof(BraintreeError);
@@ -1422,7 +1283,7 @@ describe('UnionPay', function () {
           });
         });
 
-        it('calls analytics', function () {
+        it('calls analytics', function (done) {
           var request = {
             card: {
               number: '6211111111111111',
@@ -1437,17 +1298,15 @@ describe('UnionPay', function () {
             type: BraintreeError.types.NETWORK,
             message: 'A client error occurred'
           };
-          var stubClient = {
-            request: function (options, clientErrback) {
-              clientErrback(stubError, null);
-            }
-          };
+
+          this.client.request.rejects(stubError);
 
           UnionPay.prototype.tokenize.call({
-            _options: {client: stubClient}
-          }, request, noop);
-
-          expect(analytics.sendEvent).to.be.calledWith(stubClient, 'unionpay.nonce-failed');
+            _options: {client: this.client}
+          }, request, function () {
+            expect(analytics.sendEvent).to.be.calledWith(this.client, 'unionpay.nonce-failed');
+            done();
+          }.bind(this));
         });
       });
     });
@@ -1523,10 +1382,10 @@ describe('UnionPay', function () {
       };
     });
 
-    it("doesn't throw if there is no bus and no callback", function () {
-      expect(function () {
-        UnionPay.prototype.teardown.call({});
-      }).not.to.throw;
+    it('returns a promise', function () {
+      var promise = UnionPay.prototype.teardown.call({});
+
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('calls the callback if there is no bus', function (done) {

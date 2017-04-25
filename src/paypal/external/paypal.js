@@ -9,12 +9,13 @@ var VERSION = process.env.npm_package_version;
 var constants = require('../shared/constants');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var analytics = require('../../lib/analytics');
-var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 var methods = require('../../lib/methods');
 var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var querystring = require('../../lib/querystring');
+var Promise = require('../../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @typedef {object} PayPal~tokenizePayload
@@ -80,22 +81,25 @@ function PayPal(options) {
   this._authorizationInProgress = false;
 }
 
-PayPal.prototype._initialize = function (callback) {
+PayPal.prototype._initialize = function () {
+  var self = this;
   var client = this._client;
   var failureTimeout = setTimeout(function () {
     analytics.sendEvent(client, 'paypal.load.timed-out');
   }, INTEGRATION_TIMEOUT_MS);
 
-  frameService.create({
-    name: constants.LANDING_FRAME_NAME,
-    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame' + useMin(this._isDebug) + '.html',
-    openFrameUrl: this._loadingFrameUrl
-  }, function (service) {
-    this._frameService = service;
-    clearTimeout(failureTimeout);
-    analytics.sendEvent(client, 'paypal.load.succeeded');
-    callback();
-  }.bind(this));
+  return new Promise(function (resolve) {
+    frameService.create({
+      name: constants.LANDING_FRAME_NAME,
+      dispatchFrameUrl: self._assetsUrl + '/html/dispatch-frame' + useMin(self._isDebug) + '.html',
+      openFrameUrl: self._loadingFrameUrl
+    }, function (service) {
+      self._frameService = service;
+      clearTimeout(failureTimeout);
+      analytics.sendEvent(client, 'paypal.load.succeeded');
+      resolve(self);
+    });
+  });
 };
 
 /**
@@ -107,7 +111,7 @@ PayPal.prototype._initialize = function (callback) {
  * Checkout flows only.
  * * `authorize` - Submits the transaction for authorization but not settlement.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
- * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify. Checkout flows only.
+ * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify.
  * @param {string} [options.useraction]
  * Changes the call-to-action in the PayPal flow. By default the final button will show the localized
  * word for "Continue" and implies that the final amount billed is not yet known.
@@ -231,124 +235,145 @@ PayPal.prototype._initialize = function (callback) {
  *     }
  *   });
  * });
- * @returns {PayPal~tokenizeReturn} A handle to manage the PayPal checkout frame.
+ * @returns {Promise|PayPal~tokenizeReturn} A handle to manage the PayPal checkout frame. If no callback is provided, returns a promise.
  */
 PayPal.prototype.tokenize = function (options, callback) {
+  var self = this;
   var client = this._client;
+  var tokenizePromise, optionError;
 
-  throwIfNoCallback(callback, 'tokenize');
-
-  callback = once(deferred(callback));
+  if (callback) {
+    callback = once(deferred(callback));
+  }
 
   if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
-    callback(new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED));
-    return this._frameService.createNoopHandler();
-  }
+    optionError = new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED);
 
-  if (this._authorizationInProgress) {
-    analytics.sendEvent(client, 'paypal.tokenization.error.already-opened');
-
-    callback(new BraintreeError(errors.PAYPAL_TOKENIZATION_REQUEST_ACTIVE));
-  } else {
-    this._authorizationInProgress = true;
-
-    if (!global.popupBridge) {
-      analytics.sendEvent(client, 'paypal.tokenization.opened');
+    if (callback) {
+      callback(optionError);
+      return this._frameService.createNoopHandler();
     }
 
-    if (options.offerCredit === true && options.flow === 'checkout') {
-      analytics.sendEvent(client, 'paypal.credit.offered');
-    }
-
-    this._navigateFrameToAuth(options, callback);
-    // This MUST happen after _navigateFrameToAuth for Metro browsers to work.
-    this._frameService.open(this._createFrameServiceCallback(options, callback));
+    return Promise.reject(optionError);
   }
 
-  return this._frameService.createHandler({
-    beforeClose: function () {
-      analytics.sendEvent(client, 'paypal.tokenization.closed.by-merchant');
+  tokenizePromise = new Promise(function (resolve, reject) {
+    if (self._authorizationInProgress) {
+      analytics.sendEvent(client, 'paypal.tokenization.error.already-opened');
+
+      reject(new BraintreeError(errors.PAYPAL_TOKENIZATION_REQUEST_ACTIVE));
+    } else {
+      self._authorizationInProgress = true;
+
+      if (!global.popupBridge) {
+        analytics.sendEvent(client, 'paypal.tokenization.opened');
+      }
+
+      if (options.offerCredit === true) {
+        analytics.sendEvent(client, 'paypal.credit.offered');
+      }
+
+      self._navigateFrameToAuth(options).catch(reject);
+      // self MUST happen after _navigateFrameToAuth for Metro browsers to work.
+      self._frameService.open(self._createFrameServiceCallback(options, resolve, reject));
     }
   });
+
+  if (callback) {
+    tokenizePromise.then(function (res) {
+      callback(null, res);
+    }).catch(callback);
+
+    return this._frameService.createHandler({
+      beforeClose: function () {
+        analytics.sendEvent(client, 'paypal.tokenization.closed.by-merchant');
+      }
+    });
+  }
+
+  return tokenizePromise;
 };
 
-PayPal.prototype._createFrameServiceCallback = function (options, callback) {
+PayPal.prototype._createFrameServiceCallback = function (options, resolve, reject) {
+  var self = this;
   var client = this._client;
 
   if (global.popupBridge) {
     return function (err, payload) {
       var cancelled = payload && payload.path && payload.path.substring(0, 7) === '/cancel';
 
-      this._authorizationInProgress = false;
+      self._authorizationInProgress = false;
 
       // `err` exists when the user clicks "Done" button of browser view
       if (err || cancelled) {
         analytics.sendEvent(client, 'paypal.tokenization.closed-popupbridge.by-user');
         // Call merchant's tokenize callback with an error
-        callback(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
+        reject(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
       } else if (payload) {
-        this._tokenizePayPal(options, payload.queryItems, callback);
+        self._tokenizePayPal(options, payload.queryItems).then(resolve).catch(reject);
       }
-    }.bind(this);
+    };
   }
 
   return function (err, params) {
-    this._authorizationInProgress = false;
+    self._authorizationInProgress = false;
 
     if (err) {
       if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
         analytics.sendEvent(client, 'paypal.tokenization.closed.by-user');
-        callback(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
+        reject(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
       } else if (err.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
-        callback(new BraintreeError(errors.PAYPAL_POPUP_OPEN_FAILED));
+        reject(new BraintreeError(errors.PAYPAL_POPUP_OPEN_FAILED));
       }
     } else if (params) {
-      this._tokenizePayPal(options, params, callback);
+      self._tokenizePayPal(options, params).then(resolve).catch(reject);
     }
-  }.bind(this);
+  };
 };
 
-PayPal.prototype._tokenizePayPal = function (options, params, callback) {
-  var payload;
+PayPal.prototype._tokenizePayPal = function (options, params) {
+  var self = this;
   var client = this._client;
 
   if (!global.popupBridge) {
     this._frameService.redirect(this._loadingFrameUrl);
   }
 
-  client.request({
+  return client.request({
     endpoint: 'payment_methods/paypal_accounts',
     method: 'post',
     data: this._formatTokenizeData(options, params)
-  }, function (err, response) {
-    if (err) {
-      if (global.popupBridge) {
-        analytics.sendEvent(client, 'paypal.tokenization.failed-popupbridge');
-      } else {
-        analytics.sendEvent(client, 'paypal.tokenization.failed');
-      }
-      callback(convertToBraintreeError(err, {
-        type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
-        code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
-        message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
-      }));
+  }).then(function (response) {
+    var payload = self._formatTokenizePayload(response);
+
+    if (global.popupBridge) {
+      analytics.sendEvent(client, 'paypal.tokenization.success-popupbridge');
     } else {
-      payload = this._formatTokenizePayload(response);
-
-      if (global.popupBridge) {
-        analytics.sendEvent(client, 'paypal.tokenization.success-popupbridge');
-      } else {
-        analytics.sendEvent(client, 'paypal.tokenization.success');
-      }
-
-      if (payload.creditFinancingOffered) {
-        analytics.sendEvent(client, 'paypal.credit.accepted');
-      }
-
-      callback(null, payload);
+      analytics.sendEvent(client, 'paypal.tokenization.success');
     }
-    this._frameService.close();
-  }.bind(this));
+
+    if (payload.creditFinancingOffered) {
+      analytics.sendEvent(client, 'paypal.credit.accepted');
+    }
+
+    self._frameService.close();
+
+    return payload;
+  }).catch(function (err) {
+    if (global.popupBridge) {
+      analytics.sendEvent(client, 'paypal.tokenization.failed-popupbridge');
+    } else {
+      analytics.sendEvent(client, 'paypal.tokenization.failed');
+    }
+
+    self._frameService.close();
+
+    return Promise.reject(convertToBraintreeError(err, {
+      type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
+      code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
+      message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
+    }));
+  });
 };
 
 PayPal.prototype._formatTokenizePayload = function (response) {
@@ -404,54 +429,56 @@ PayPal.prototype._formatTokenizeData = function (options, params) {
   return data;
 };
 
-PayPal.prototype._navigateFrameToAuth = function (options, callback) {
+PayPal.prototype._navigateFrameToAuth = function (options) {
+  var self = this;
   var client = this._client;
   var endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
 
-  client.request({
+  return client.request({
     endpoint: endpoint,
     method: 'post',
     data: this._formatPaymentResourceData(options)
-  }, function (err, response, status) {
+  }).then(function (response) {
     var redirectUrl;
 
-    if (err) {
-      if (status === 422) {
-        callback(new BraintreeError({
-          type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
-          code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
-          message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
-          details: {
-            originalError: err
-          }
-        }));
-      } else {
-        callback(convertToBraintreeError(err, {
-          type: errors.PAYPAL_FLOW_FAILED.type,
-          code: errors.PAYPAL_FLOW_FAILED.code,
-          message: errors.PAYPAL_FLOW_FAILED.message
-        }));
-      }
-      this._frameService.close();
-      this._authorizationInProgress = false;
+    if (options.flow === 'checkout') {
+      redirectUrl = response.paymentResource.redirectUrl;
     } else {
-      if (options.flow === 'checkout') {
-        redirectUrl = response.paymentResource.redirectUrl;
-      } else {
-        redirectUrl = response.agreementSetup.approvalUrl;
-      }
-
-      if (options.useraction === 'commit') {
-        redirectUrl = querystring.queryify(redirectUrl, {useraction: 'commit'});
-      }
-
-      if (global.popupBridge) {
-        analytics.sendEvent(client, 'paypal.tokenization.opened-popupbridge');
-      }
-
-      this._frameService.redirect(redirectUrl);
+      redirectUrl = response.agreementSetup.approvalUrl;
     }
-  }.bind(this));
+
+    if (options.useraction === 'commit') {
+      redirectUrl = querystring.queryify(redirectUrl, {useraction: 'commit'});
+    }
+
+    if (global.popupBridge) {
+      analytics.sendEvent(client, 'paypal.tokenization.opened-popupbridge');
+    }
+
+    self._frameService.redirect(redirectUrl);
+  }).catch(function (err) {
+    var status = err.details && err.details.httpStatus;
+
+    self._frameService.close();
+    self._authorizationInProgress = false;
+
+    if (status === 422) {
+      return Promise.reject(new BraintreeError({
+        type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+        code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+        message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+        details: {
+          originalError: err
+        }
+      }));
+    }
+
+    return Promise.reject(convertToBraintreeError(err, {
+      type: errors.PAYPAL_FLOW_FAILED.type,
+      code: errors.PAYPAL_FLOW_FAILED.code,
+      message: errors.PAYPAL_FLOW_FAILED.message
+    }));
+  });
 };
 
 PayPal.prototype._formatPaymentResourceData = function (options) {
@@ -461,6 +488,7 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
   var paymentResource = {
     returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-redirect-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
     cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-cancel-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
+    offerPaypalCredit: options.offerCredit === true,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
       localeCode: options.locale,
@@ -478,7 +506,6 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
   if (options.flow === 'checkout') {
     paymentResource.amount = options.amount;
     paymentResource.currencyIsoCode = options.currency;
-    paymentResource.offerPaypalCredit = options.offerCredit === true;
 
     if (options.hasOwnProperty('intent')) {
       paymentResource.intent = options.intent;
@@ -501,6 +528,31 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
 };
 
 /**
+ * Closes the PayPal window if it is open.
+ * @public
+ * @example
+ * paypalInstance.closeWindow();
+ * @returns {void}
+ */
+PayPal.prototype.closeWindow = function () {
+  if (this._authorizationInProgress) {
+    analytics.sendEvent(this._client, 'paypal.tokenize.closed.by-merchant');
+  }
+  this._frameService.close();
+};
+
+/**
+ * Focuses the PayPal window if it is open.
+ * @public
+ * @example
+ * paypalInstance.focusWindow();
+ * @returns {void}
+ */
+PayPal.prototype.focusWindow = function () {
+  this._frameService.focus();
+};
+
+/**
  * Cleanly remove anything set up by {@link module:braintree-web/paypal.create|create}.
  * @public
  * @param {callback} [callback] Called on completion.
@@ -510,19 +562,18 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
  * paypalInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-PayPal.prototype.teardown = function (callback) {
-  this._frameService.teardown();
+PayPal.prototype.teardown = wrapPromise(function () {
+  var self = this; // eslint-disable-line no-invalid-this
 
-  convertMethodsToError(this, methods(PayPal.prototype));
+  self._frameService.teardown();
 
-  analytics.sendEvent(this._client, 'paypal.teardown-completed');
+  convertMethodsToError(self, methods(PayPal.prototype));
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback();
-  }
-};
+  analytics.sendEvent(self._client, 'paypal.teardown-completed');
+
+  return Promise.resolve();
+});
 
 module.exports = PayPal;

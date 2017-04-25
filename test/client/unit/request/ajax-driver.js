@@ -1,5 +1,6 @@
 'use strict';
 
+var sinon = require('sinon');
 var AJAXDriver = require('../../../../src/client/request/ajax-driver');
 var TEST_SERVER_URL = 'http://localhost/ajax';
 

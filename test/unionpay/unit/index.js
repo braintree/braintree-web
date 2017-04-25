@@ -1,5 +1,6 @@
 'use strict';
 
+var Promise = require('../../../src/lib/promise');
 var create = require('../../../src/unionpay').create;
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
@@ -20,6 +21,7 @@ describe('unionPay.create', function () {
         return configuration;
       }
     };
+    this.sandbox.stub(analytics, 'sendEvent');
   });
 
   it('errors out if no client given', function (done) {
@@ -46,30 +48,10 @@ describe('unionPay.create', function () {
     });
   });
 
-  it('throws error if callback was not defined', function (done) {
-    try {
-      create({client: this.client}, null);
-    } catch (err) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('create must include a callback function.');
+  it('returns a promise', function () {
+    var promise = create({client: this.client});
 
-      done();
-    }
-  });
-
-  it('throws error if callback was not a function', function (done) {
-    try {
-      create({client: this.client}, 'callback');
-    } catch (err) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('create must include a callback function.');
-
-      done();
-    }
+    expect(promise).to.be.an.instanceof(Promise);
   });
 
   it('errors out if unionpay is not enabled for the merchant', function (done) {
@@ -101,8 +83,6 @@ describe('unionPay.create', function () {
   it('sends an analytics event', function (done) {
     var client = this.client;
 
-    this.sandbox.stub(analytics, 'sendEvent');
-
     create({client: client}, function (err) {
       expect(err).not.to.exist;
       expect(analytics.sendEvent).to.be.calledWith(client, 'unionpay.initialized');
@@ -112,8 +92,6 @@ describe('unionPay.create', function () {
   });
 
   it('creates a UnionPay instance', function (done) {
-    this.sandbox.stub(analytics, 'sendEvent');
-
     create({client: this.client}, function (err, unionpay) {
       expect(err).not.to.exist;
       expect(unionpay).to.be.an.instanceof(UnionPay);

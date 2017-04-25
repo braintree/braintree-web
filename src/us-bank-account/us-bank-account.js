@@ -5,12 +5,12 @@ var constants = require('./constants');
 var errors = require('./errors');
 var sharedErrors = require('../lib/errors');
 var analytics = require('../lib/analytics');
-var deferred = require('../lib/deferred');
 var once = require('../lib/once');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var methods = require('../lib/methods');
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var camelCaseToSnakeCase = require('../lib/camel-case-to-snake-case');
+var Promise = require('../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @typedef {object} USBankAccount~tokenizePayload
@@ -63,8 +63,8 @@ function USBankAccount(options) {
  * @param {string} options.bankLogin.billingAddress.locality The locality for the customer's billing address. This is typically a city, such as `'San Francisco'`.
  * @param {string} options.bankLogin.billingAddress.region The region for the customer's billing address. This is typically a state, such as `'CA'`.
  * @param {string} options.bankLogin.billingAddress.postalCode The postal code for the customer's billing address. This is typically a ZIP code, such as `'94119'`.
- * @param {callback} callback The second argument, <code>data</code>, is a {@link USBankAccount~tokenizePayload|tokenizePayload}.
- * @returns {void}
+ * @param {callback} [callback] The second argument, <code>data</code>, is a {@link USBankAccount~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a promise that resolves with {@link USBankAccount~tokenizePayload|tokenizePayload}.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * <caption>Tokenizing raw bank details</caption>
  * var routingNumberInput = document.querySelector('input[name="routing-number"]');
@@ -162,45 +162,41 @@ function USBankAccount(options) {
  *   });
  * });
  */
-USBankAccount.prototype.tokenize = function (options, callback) {
-  throwIfNoCallback(callback, 'tokenize');
-
+USBankAccount.prototype.tokenize = function (options) {
   options = options || {};
-  callback = deferred(callback);
 
   if (!options.mandateText) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
       code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
       message: 'mandateText property is required.'
     }));
-    return;
   }
 
   if (options.bankDetails && options.bankLogin) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: errors.US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS.type,
       code: errors.US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS.code,
       message: 'tokenize must be called with bankDetails or bankLogin, not both.'
     }));
   } else if (options.bankDetails) {
-    this._tokenizeBankDetails(options, callback);
+    return this._tokenizeBankDetails(options);
   } else if (options.bankLogin) {
-    this._tokenizeBankLogin(options, callback);
-  } else {
-    callback(new BraintreeError({
-      type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
-      code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
-      message: 'tokenize must be called with bankDetails or bankLogin.'
-    }));
+    return this._tokenizeBankLogin(options);
   }
+
+  return Promise.reject(new BraintreeError({
+    type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
+    code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
+    message: 'tokenize must be called with bankDetails or bankLogin.'
+  }));
 };
 
-USBankAccount.prototype._tokenizeBankDetails = function (options, callback) {
+USBankAccount.prototype._tokenizeBankDetails = function (options) {
   var client = this._client;
   var bankDetails = options.bankDetails;
 
-  client.request({
+  return client.request({
     method: 'POST',
     endpoint: 'tokens',
     api: 'braintreeApi',
@@ -218,23 +214,20 @@ USBankAccount.prototype._tokenizeBankDetails = function (options, callback) {
         text: options.mandateText
       }
     })
-  }, function (err, response, status) {
-    var error;
-
-    if (err) {
-      error = errorFrom(err, status);
-      analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.failed');
-      callback(error);
-      return;
-    }
-
+  }).then(function (response) {
     analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.succeeded');
 
-    callback(null, formatTokenizeResponse(response));
+    return Promise.resolve(formatTokenizeResponse(response));
+  }).catch(function (err) {
+    var error = errorFrom(err);
+
+    analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.failed');
+
+    return Promise.reject(error);
   });
 };
 
-USBankAccount.prototype._tokenizeBankLogin = function (options, callback) {
+USBankAccount.prototype._tokenizeBankLogin = function (options) {
   var self = this;
   var client = this._client;
   var gatewayConfiguration = client.getConfiguration().gatewayConfiguration;
@@ -242,88 +235,87 @@ USBankAccount.prototype._tokenizeBankLogin = function (options, callback) {
   var plaidConfig = gatewayConfiguration.usBankAccount.plaid;
 
   if (!options.bankLogin.displayName) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
       code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
       message: 'displayName property is required when using bankLogin.'
     }));
-    return;
   }
 
   if (!plaidConfig) {
-    callback(new BraintreeError(errors.US_BANK_ACCOUNT_BANK_LOGIN_NOT_ENABLED));
-    return;
+    return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_BANK_LOGIN_NOT_ENABLED));
   }
 
   if (this._isTokenizingBankLogin) {
-    callback(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_REQUEST_ACTIVE));
-    return;
+    return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_REQUEST_ACTIVE));
   }
   this._isTokenizingBankLogin = true;
 
-  this._loadPlaid(function (plaidLoadErr, plaid) {
-    if (plaidLoadErr) {
-      callback(plaidLoadErr);
-      return;
-    }
+  return new Promise(function (resolve, reject) {
+    self._loadPlaid(function (plaidLoadErr, plaid) {
+      if (plaidLoadErr) {
+        reject(plaidLoadErr);
+        return;
+      }
 
-    plaid.create({
-      clientName: options.bankLogin.displayName,
-      env: isProduction ? 'production' : 'tartan',
-      key: isProduction ? plaidConfig.publicKey : 'test_key',
-      product: 'auth',
-      selectAccount: true,
-      onExit: function () {
-        self._isTokenizingBankLogin = false;
-
-        analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.closed.by-user');
-
-        callback(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_CLOSED));
-      },
-      onSuccess: function (publicToken, metadata) {
-        client.request({
-          method: 'POST',
-          endpoint: 'tokens',
-          api: 'braintreeApi',
-          data: camelCaseToSnakeCase({
-            type: 'plaid_public_token',
-            publicToken: publicToken,
-            accountId: metadata.account_id,
-            achMandate: {
-              text: options.mandateText
-            },
-            ownershipType: options.bankLogin.ownershipType,
-            firstName: options.bankLogin.firstName,
-            lastName: options.bankLogin.lastName,
-            businessName: options.bankLogin.businessName,
-            billingAddress: camelCaseToSnakeCase(options.bankLogin.billingAddress || {})
-          })
-        }, function (tokenizeErr, response, status) {
-          var error;
-
+      plaid.create({
+        clientName: options.bankLogin.displayName,
+        env: isProduction ? 'production' : 'tartan',
+        key: isProduction ? plaidConfig.publicKey : 'test_key',
+        product: 'auth',
+        selectAccount: true,
+        onExit: function () {
           self._isTokenizingBankLogin = false;
 
-          if (tokenizeErr) {
-            error = errorFrom(tokenizeErr, status);
+          analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.closed.by-user');
+
+          reject(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_CLOSED));
+        },
+        onSuccess: function (publicToken, metadata) {
+          client.request({
+            method: 'POST',
+            endpoint: 'tokens',
+            api: 'braintreeApi',
+            data: camelCaseToSnakeCase({
+              type: 'plaid_public_token',
+              publicToken: publicToken,
+              accountId: metadata.account_id,
+              achMandate: {
+                text: options.mandateText
+              },
+              ownershipType: options.bankLogin.ownershipType,
+              firstName: options.bankLogin.firstName,
+              lastName: options.bankLogin.lastName,
+              businessName: options.bankLogin.businessName,
+              billingAddress: camelCaseToSnakeCase(options.bankLogin.billingAddress || {})
+            })
+          }).then(function (response) {
+            self._isTokenizingBankLogin = false;
+
+            analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.succeeded');
+
+            resolve(formatTokenizeResponse(response));
+          }).catch(function (tokenizeErr) {
+            var error;
+
+            self._isTokenizingBankLogin = false;
+            error = errorFrom(tokenizeErr);
+
             analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.failed');
 
-            callback(error);
-            return;
-          }
+            reject(error);
+          });
+        }
+      }).open();
 
-          analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.succeeded');
-
-          callback(null, formatTokenizeResponse(response));
-        });
-      }
-    }).open();
-
-    analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.started');
+      analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.started');
+    });
   });
 };
 
-function errorFrom(err, status) {
+function errorFrom(err) {
   var error;
+  var status = err.details && err.details.httpStatus;
 
   if (status === 401) {
     error = new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED);
@@ -410,19 +402,16 @@ function addLoadListeners(script, callback) {
  * usBankAccountInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-USBankAccount.prototype.teardown = function (callback) {
+USBankAccount.prototype.teardown = function () {
   if (this._plaidScript) {
     document.body.removeChild(this._plaidScript);
   }
 
   convertMethodsToError(this, methods(USBankAccount.prototype));
 
-  if (callback) {
-    callback = deferred(callback);
-    callback();
-  }
+  return Promise.resolve();
 };
 
-module.exports = USBankAccount;
+module.exports = wrapPromise.wrapPrototype(USBankAccount);

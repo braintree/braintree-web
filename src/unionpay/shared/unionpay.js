@@ -6,14 +6,14 @@ var Bus = require('../../lib/bus');
 var constants = require('./constants');
 var useMin = require('../../lib/use-min');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
-var deferred = require('../../lib/deferred');
 var errors = require('./errors');
 var events = constants.events;
 var iFramer = require('iframer');
 var methods = require('../../lib/methods');
 var VERSION = process.env.npm_package_version;
 var uuid = require('../../lib/uuid');
-var throwIfNoCallback = require('../../lib/throw-if-no-callback');
+var Promise = require('../../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @class
@@ -41,7 +41,7 @@ function UnionPay(options) {
  * @param {object} [options.card] The card from which to fetch capabilities. Note that this will only have one property, `number`. Required if you are not using the `hostedFields` option.
  * @param {string} options.card.number Card number.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
- * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}.
+ * @param {callback} [callback] The second argument, <code>data</code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}. If no callback is provided, `fetchCapabilities` returns a promise that resolves with a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}.
  * @example <caption>With raw card data</caption>
  * unionpayInstance.fetchCapabilities({
  *   card: {
@@ -103,22 +103,18 @@ function UnionPay(options) {
  *     });
  *   });
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-UnionPay.prototype.fetchCapabilities = function (options, callback) {
+UnionPay.prototype.fetchCapabilities = function (options) {
+  var self = this;
   var client = this._options.client;
   var cardNumber = options.card ? options.card.number : null;
   var hostedFields = options.hostedFields;
 
-  throwIfNoCallback(callback, 'fetchCapabilities');
-
-  callback = deferred(callback);
-
   if (cardNumber && hostedFields) {
-    callback(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
-    return;
+    return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
   } else if (cardNumber) {
-    client.request({
+    return client.request({
       method: 'get',
       endpoint: 'payment_methods/credit_cards/capabilities',
       data: {
@@ -127,48 +123,46 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
           number: cardNumber
         }
       }
-    }, function (err, response, status) {
-      if (err) {
-        if (status === 403) {
-          callback(err);
-        } else {
-          callback(new BraintreeError({
-            type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
-            code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
-            message: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.message,
-            details: {
-              originalError: err
-            }
-          }));
-        }
-
-        analytics.sendEvent(client, 'unionpay.capabilities-failed');
-        return;
-      }
-
+    }).then(function (response) {
       analytics.sendEvent(client, 'unionpay.capabilities-received');
-      callback(null, response);
+      return response;
+    }).catch(function (err) {
+      var status = err.details && err.details.httpStatus;
+
+      analytics.sendEvent(client, 'unionpay.capabilities-failed');
+
+      if (status === 403) {
+        return Promise.reject(err);
+      }
+      return Promise.reject(new BraintreeError({
+        type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
+        code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
+        message: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.message,
+        details: {
+          originalError: err
+        }
+      }));
     });
   } else if (hostedFields) {
     if (!hostedFields._bus) {
-      callback(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
-      return;
+      return Promise.reject(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
     }
 
-    this._initializeHostedFields(function () {
-      this._bus.emit(events.HOSTED_FIELDS_FETCH_CAPABILITIES, {hostedFields: hostedFields}, function (response) {
-        if (response.err) {
-          callback(new BraintreeError(response.err));
-          return;
-        }
+    return new Promise(function (resolve, reject) {
+      self._initializeHostedFields(function () {
+        self._bus.emit(events.HOSTED_FIELDS_FETCH_CAPABILITIES, {hostedFields: hostedFields}, function (response) {
+          if (response.err) {
+            reject(new BraintreeError(response.err));
+            return;
+          }
 
-        callback(null, response.payload);
+          resolve(response.payload);
+        });
       });
-    }.bind(this));
-  } else {
-    callback(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
-    return;
+    });
   }
+
+  return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
 };
 
 /**
@@ -192,7 +186,7 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  * @param {object} options.mobile The mobile information collected from the customer.
  * @param {string} options.mobile.countryCode The country code of the customer's mobile phone number.
  * @param {string} options.mobile.number The customer's mobile phone number.
- * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay~enrollPayload|enrollPayload}.
+ * @param {callback} [callback] The second argument, <code>data</code>, is a {@link UnionPay~enrollPayload|enrollPayload}. If no callback is provided, `enroll` returns a promise that resolves with {@link UnionPay~enrollPayload|enrollPayload}.
  * @example <caption>With raw card data</caption>
  * unionpayInstance.enroll({
  *   card: {
@@ -240,41 +234,37 @@ UnionPay.prototype.fetchCapabilities = function (options, callback) {
  * });
  * @returns {void}
  */
-UnionPay.prototype.enroll = function (options, callback) {
+UnionPay.prototype.enroll = function (options) {
+  var self = this;
   var client = this._options.client;
   var card = options.card;
   var mobile = options.mobile;
   var hostedFields = options.hostedFields;
   var data;
 
-  throwIfNoCallback(callback, 'enroll');
-
-  callback = deferred(callback);
-
   if (!mobile) {
-    callback(new BraintreeError(errors.UNIONPAY_MISSING_MOBILE_PHONE_DATA));
-    return;
+    return Promise.reject(new BraintreeError(errors.UNIONPAY_MISSING_MOBILE_PHONE_DATA));
   }
 
   if (hostedFields) {
     if (!hostedFields._bus) {
-      callback(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
-      return;
+      return Promise.reject(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
     } else if (card) {
-      callback(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
-      return;
+      return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
     }
 
-    this._initializeHostedFields(function () {
-      this._bus.emit(events.HOSTED_FIELDS_ENROLL, {hostedFields: hostedFields, mobile: mobile}, function (response) {
-        if (response.err) {
-          callback(new BraintreeError(response.err));
-          return;
-        }
+    return new Promise(function (resolve, reject) {
+      self._initializeHostedFields(function () {
+        self._bus.emit(events.HOSTED_FIELDS_ENROLL, {hostedFields: hostedFields, mobile: mobile}, function (response) {
+          if (response.err) {
+            reject(new BraintreeError(response.err));
+            return;
+          }
 
-        callback(null, response.payload);
+          resolve(response.payload);
+        });
       });
-    }.bind(this));
+    });
   } else if (card && card.number) {
     data = {
       _meta: {source: 'unionpay'},
@@ -292,44 +282,40 @@ UnionPay.prototype.enroll = function (options, callback) {
         data.unionPayEnrollment.expirationYear = card.expirationYear;
         data.unionPayEnrollment.expirationMonth = card.expirationMonth;
       } else {
-        callback(new BraintreeError(errors.UNIONPAY_EXPIRATION_DATE_INCOMPLETE));
-        return;
+        return Promise.reject(new BraintreeError(errors.UNIONPAY_EXPIRATION_DATE_INCOMPLETE));
       }
     }
 
-    client.request({
+    return client.request({
       method: 'post',
       endpoint: 'union_pay_enrollments',
       data: data
-    }, function (err, response, status) {
-      var error;
-
-      if (err) {
-        if (status === 403) {
-          error = err;
-        } else if (status < 500) {
-          error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID);
-          error.details = {originalError: err};
-        } else {
-          error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_NETWORK_ERROR);
-          error.details = {originalError: err};
-        }
-
-        analytics.sendEvent(client, 'unionpay.enrollment-failed');
-        callback(error);
-        return;
-      }
-
+    }).then(function (response) {
       analytics.sendEvent(client, 'unionpay.enrollment-succeeded');
-      callback(null, {
+      return {
         enrollmentId: response.unionPayEnrollmentId,
         smsCodeRequired: response.smsCodeRequired
-      });
+      };
+    }).catch(function (err) {
+      var error;
+      var status = err.details && err.details.httpStatus;
+
+      if (status === 403) {
+        error = err;
+      } else if (status < 500) {
+        error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID);
+        error.details = {originalError: err};
+      } else {
+        error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_NETWORK_ERROR);
+        error.details = {originalError: err};
+      }
+
+      analytics.sendEvent(client, 'unionpay.enrollment-failed');
+      return Promise.reject(error);
     });
-  } else {
-    callback(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
-    return;
   }
+
+  return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
 };
 
 /**
@@ -355,7 +341,7 @@ UnionPay.prototype.enroll = function (options, callback) {
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
  * @param {string} options.enrollmentId The enrollment ID from {@link UnionPay#enroll}.
  * @param {string} [options.smsCode] The SMS code received from the user if {@link UnionPay#enroll} payload have `smsCodeRequired`. if `smsCodeRequired` is false, smsCode should not be passed.
- * @param {callback} callback The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}.
+ * @param {callback} [callback] The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a promise that resolves with a {@link UnionPay~tokenizePayload|tokenizePayload}.
  * @example <caption>With raw card data</caption>
  * unionpayInstance.tokenize({
  *   card: {
@@ -387,21 +373,17 @@ UnionPay.prototype.enroll = function (options, callback) {
  *
  *   // Send response.nonce to your server
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-UnionPay.prototype.tokenize = function (options, callback) {
-  var data, tokenizedCard, error;
+UnionPay.prototype.tokenize = function (options) {
+  var data;
+  var self = this;
   var client = this._options.client;
   var card = options.card;
   var hostedFields = options.hostedFields;
 
-  throwIfNoCallback(callback, 'tokenize');
-
-  callback = deferred(callback);
-
   if (card && hostedFields) {
-    callback(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
-    return;
+    return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
   } else if (card) {
     data = {
       _meta: {source: 'unionpay'},
@@ -430,66 +412,67 @@ UnionPay.prototype.tokenize = function (options, callback) {
       data.creditCard.cvv = options.card.cvv;
     }
 
-    client.request({
+    return client.request({
       method: 'post',
       endpoint: 'payment_methods/credit_cards',
       data: data
-    }, function (err, response, status) {
-      if (err) {
-        analytics.sendEvent(client, 'unionpay.nonce-failed');
+    }).then(function (response) {
+      var tokenizedCard = response.creditCards[0];
 
-        if (status === 403) {
-          error = err;
-        } else if (status < 500) {
-          error = new BraintreeError(errors.UNIONPAY_FAILED_TOKENIZATION);
-          error.details = {originalError: err};
-        } else {
-          error = new BraintreeError(errors.UNIONPAY_TOKENIZATION_NETWORK_ERROR);
-          error.details = {originalError: err};
-        }
-
-        callback(error);
-        return;
-      }
-
-      tokenizedCard = response.creditCards[0];
       delete tokenizedCard.consumed;
       delete tokenizedCard.threeDSecureInfo;
 
       analytics.sendEvent(client, 'unionpay.nonce-received');
-      callback(null, tokenizedCard);
+      return tokenizedCard;
+    }).catch(function (err) {
+      var error;
+      var status = err.details && err.details.httpStatus;
+
+      analytics.sendEvent(client, 'unionpay.nonce-failed');
+
+      if (status === 403) {
+        error = err;
+      } else if (status < 500) {
+        error = new BraintreeError(errors.UNIONPAY_FAILED_TOKENIZATION);
+        error.details = {originalError: err};
+      } else {
+        error = new BraintreeError(errors.UNIONPAY_TOKENIZATION_NETWORK_ERROR);
+        error.details = {originalError: err};
+      }
+
+      return Promise.reject(error);
     });
   } else if (hostedFields) {
     if (!hostedFields._bus) {
-      callback(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
-      return;
+      return Promise.reject(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
     }
 
-    this._initializeHostedFields(function () {
-      this._bus.emit(events.HOSTED_FIELDS_TOKENIZE, options, function (response) {
-        if (response.err) {
-          callback(new BraintreeError(response.err));
-          return;
-        }
+    return new Promise(function (resolve, reject) {
+      self._initializeHostedFields(function () {
+        self._bus.emit(events.HOSTED_FIELDS_TOKENIZE, options, function (response) {
+          if (response.err) {
+            reject(new BraintreeError(response.err));
+            return;
+          }
 
-        callback(null, response.payload);
+          resolve(response.payload);
+        });
       });
-    }.bind(this));
-  } else {
-    callback(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
-    return;
+    });
   }
+
+  return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
 };
 
 /**
  * Cleanly remove anything set up by {@link module:braintree-web/unionpay.create|create}. This only needs to be called when using UnionPay with Hosted Fields.
  * @public
- * @param {callback} [callback] Called on completion.
+ * @param {callback} [callback] Called on completion. If no callback is provided, returns a promise.
  * @example
  * unionpayInstance.teardown();
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-UnionPay.prototype.teardown = function (callback) {
+UnionPay.prototype.teardown = function () {
   if (this._bus) {
     this._hostedFieldsFrame.parentNode.removeChild(this._hostedFieldsFrame);
     this._bus.teardown();
@@ -497,10 +480,7 @@ UnionPay.prototype.teardown = function (callback) {
 
   convertMethodsToError(this, methods(UnionPay.prototype));
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback();
-  }
+  return Promise.resolve();
 };
 
 UnionPay.prototype._initializeHostedFields = function (callback) {
@@ -535,4 +515,4 @@ UnionPay.prototype._initializeHostedFields = function (callback) {
   document.body.appendChild(this._hostedFieldsFrame);
 };
 
-module.exports = UnionPay;
+module.exports = wrapPromise.wrapPrototype(UnionPay);

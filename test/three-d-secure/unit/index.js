@@ -1,5 +1,6 @@
 'use strict';
 
+var Promise = require('../../../src/lib/promise');
 var isHTTPS = require('../../../src/lib/is-https');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
@@ -21,20 +22,15 @@ describe('three-d-secure.create', function () {
         return configuration;
       }
     };
-    this.sandbox.stub(isHTTPS, 'isHTTPS', function () { return true; });
+
+    this.sandbox.stub(analytics, 'sendEvent');
+    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(true);
   });
 
-  it('throws an error if a callback parameter is not provided', function (done) {
-    try {
-      threeDSecure.create({client: this.client});
-    } catch (err) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.eql('MERCHANT');
-      expect(err.code).to.eql('CALLBACK_REQUIRED');
-      expect(err.message).to.eql('create must include a callback function.');
+  it('returns a promise', function () {
+    var promise = threeDSecure.create({client: this.client});
 
-      done();
-    }
+    expect(promise).to.be.an.instanceof(Promise);
   });
 
   it('errors out if no client given', function (done) {
@@ -77,7 +73,7 @@ describe('three-d-secure.create', function () {
   it('errors out if browser is not https and environment is production', function (done) {
     isHTTPS.isHTTPS.restore();
     this.configuration.gatewayConfiguration.environment = 'production';
-    this.sandbox.stub(isHTTPS, 'isHTTPS', function () { return false; });
+    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(false);
 
     threeDSecure.create({client: this.client}, function (err, thingy) {
       expect(err).to.be.an.instanceof(BraintreeError);
@@ -90,8 +86,6 @@ describe('three-d-secure.create', function () {
   });
 
   it('allows http connections when not in production', function (done) {
-    this.sandbox.stub(analytics, 'sendEvent');
-
     isHTTPS.isHTTPS.restore();
     this.configuration.gatewayConfiguration.environment = 'sandbox';
     this.sandbox.stub(isHTTPS, 'isHTTPS').returns(false);
@@ -107,8 +101,6 @@ describe('three-d-secure.create', function () {
   it('sends an analytics event', function (done) {
     var client = this.client;
 
-    this.sandbox.stub(analytics, 'sendEvent');
-
     threeDSecure.create({client: client}, function (err) {
       expect(err).not.to.exist;
       expect(analytics.sendEvent).to.be.calledWith(client, 'threedsecure.initialized');
@@ -118,8 +110,6 @@ describe('three-d-secure.create', function () {
   });
 
   it('resolves with a three-d-secure instance', function (done) {
-    this.sandbox.stub(analytics, 'sendEvent');
-
     threeDSecure.create({client: this.client}, function (err, foo) {
       expect(err).not.to.exist;
       expect(foo).to.be.an.instanceof(ThreeDSecure);

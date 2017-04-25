@@ -24,7 +24,7 @@ describe('Masterpass', function () {
       getConfiguration: function () {
         return this.configuration;
       }.bind(this),
-      request: this.sandbox.stub().returns(Promise.resolve({}))
+      request: this.sandbox.stub().resolves({})
     };
     this.fakeFrameService = {
       close: this.sandbox.stub(),
@@ -56,9 +56,9 @@ describe('Masterpass', function () {
       masterpass._frameService = this.fakeFrameService;
 
       this.sandbox.stub(frameService, 'create').yields();
-      this.fakeClient.request.returns(Promise.resolve({
+      this.fakeClient.request.resolves({
         data: {}
-      }));
+      });
 
       return masterpass._initialize().then(function () {
         expect(frameService.create).to.be.calledOnce;
@@ -76,9 +76,9 @@ describe('Masterpass', function () {
       delete this.masterpass._frameService;
 
       this.sandbox.stub(frameService, 'create').yields(fakeService);
-      this.fakeClient.request.returns(Promise.resolve({
+      this.fakeClient.request.resolves({
         data: {bankData: 'data'}
-      }));
+      });
 
       return this.masterpass._initialize().then(function () {
         expect(this.masterpass._frameService).to.equal(fakeService);
@@ -89,9 +89,9 @@ describe('Masterpass', function () {
       var fakeService = {fakeService: true};
 
       this.sandbox.stub(frameService, 'create').yields(fakeService);
-      this.fakeClient.request.returns(Promise.resolve({
+      this.fakeClient.request.resolves({
         data: {bankData: 'data'}
-      }));
+      });
 
       return this.masterpass._initialize().then(function (instance) {
         expect(instance).to.be.an.instanceof(Masterpass);
@@ -192,7 +192,7 @@ describe('Masterpass', function () {
             }
           });
 
-          this.fakeClient.request.returns(Promise.resolve(expectedPayload));
+          this.fakeClient.request.resolves(expectedPayload);
 
           return this.masterpass.tokenize({
             subtotal: '10.00',
@@ -211,13 +211,13 @@ describe('Masterpass', function () {
               checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
             }
           });
-          this.fakeClient.request.returns(Promise.resolve({
+          this.fakeClient.request.resolves({
             masterpassCards: [{
               nonce: 'a-nonce',
               type: 'MasterpassCard',
               description: 'Ending in 22'
             }]
-          }));
+          });
 
           return this.masterpass.tokenize({
             subtotal: '10.00',
@@ -241,7 +241,7 @@ describe('Masterpass', function () {
             }
           });
 
-          this.fakeClient.request.returns(Promise.resolve(expectedPayload));
+          this.fakeClient.request.resolves(expectedPayload);
 
           return this.masterpass.tokenize({
             subtotal: '10.00',
@@ -332,7 +332,7 @@ describe('Masterpass', function () {
           checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
         });
 
-        this.fakeClient.request.returns(Promise.resolve(expectedPayload));
+        this.fakeClient.request.resolves(expectedPayload);
 
         return this.masterpass.tokenize({
           subtotal: '10.00',
@@ -349,13 +349,13 @@ describe('Masterpass', function () {
           oauth_verifier: 'verifier', // eslint-disable-line camelcase
           checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
         });
-        this.fakeClient.request.returns(Promise.resolve({
+        this.fakeClient.request.resolves({
           masterpassCards: [{
             nonce: 'a-nonce',
             type: 'MasterpassCard',
             description: 'Ending in 22'
           }]
-        }));
+        });
 
         return this.masterpass.tokenize({
           subtotal: '10.00',
@@ -418,7 +418,7 @@ describe('Masterpass', function () {
           checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
         });
 
-        this.fakeClient.request.returns(Promise.reject(expectedError));
+        this.fakeClient.request.rejects(expectedError);
 
         return this.masterpass.tokenize({
           subtotal: '10.00',
@@ -443,7 +443,7 @@ describe('Masterpass', function () {
           checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
         });
 
-        this.fakeClient.request.returns(Promise.reject(expectedError));
+        this.fakeClient.request.rejects(expectedError);
 
         return this.masterpass.tokenize({
           subtotal: '10.00',
@@ -454,7 +454,7 @@ describe('Masterpass', function () {
       });
 
       it('rejects with error if masterpass payment `mpstatus` is not `success`', function () {
-        this.fakeClient.request.returns(Promise.resolve({}));
+        this.fakeClient.request.resolves({});
         this.fakeFrameService.open.yieldsAsync(null, {
           mpstatus: 'failed',
           oauth_token: 'token', // eslint-disable-line camelcase
@@ -546,7 +546,7 @@ describe('Masterpass', function () {
       it('rejects with wrapped BraintreeError when thrown generic errors', function () {
         var requestError = new Error('Foo');
 
-        this.fakeClient.request.returns(Promise.reject(requestError));
+        this.fakeClient.request.rejects(requestError);
 
         return this.masterpass.tokenize({
           subtotal: '10.00',
@@ -622,9 +622,9 @@ describe('Masterpass', function () {
 
       context('when loading page in popup', function () {
         beforeEach(function () {
-          this.fakeClient.request.returns(Promise.resolve({
+          this.fakeClient.request.resolves({
             masterpassCards: [{}]
-          }));
+          });
           this.fakeFrameService.open.yieldsAsync(null, {
             mpstatus: 'success',
             oauth_token: 'token', // eslint-disable-line camelcase
@@ -657,7 +657,7 @@ describe('Masterpass', function () {
         it('reports expected error when network request for Masterpass request token fails with a generic error', function () {
           var expectedError = new Error('foo');
 
-          this.fakeClient.request.returns(Promise.reject(expectedError));
+          this.fakeClient.request.rejects(expectedError);
 
           return this.masterpass.tokenize(this.options).then(rejectIfResolves).catch(function (err) {
             expect(err.code).to.equal('MASTERPASS_FLOW_FAILED');
@@ -672,7 +672,7 @@ describe('Masterpass', function () {
             message: 'foo'
           });
 
-          this.fakeClient.request.returns(Promise.reject(expectedError));
+          this.fakeClient.request.rejects(expectedError);
 
           return this.masterpass.tokenize(this.options).then(rejectIfResolves).catch(function (err) {
             expect(err).to.equal(expectedError);
@@ -686,7 +686,7 @@ describe('Masterpass', function () {
             httpStatus: 422
           };
 
-          this.fakeClient.request.returns(Promise.reject(expectedError));
+          this.fakeClient.request.rejects(expectedError);
 
           return this.masterpass.tokenize(this.options).then(rejectIfResolves).catch(function (err) {
             expect(err).to.be.an.instanceof(BraintreeError);
@@ -698,7 +698,7 @@ describe('Masterpass', function () {
         });
 
         it('closes frame when network request for Masterpass request token fails', function () {
-          this.fakeClient.request.returns(Promise.reject(new Error('foo')));
+          this.fakeClient.request.rejects(new Error('foo'));
           this.masterpass._createFrameOpenHandler = function (resolve) {
             resolve({});
           };
@@ -709,7 +709,7 @@ describe('Masterpass', function () {
         });
 
         it('redirects frameService', function () {
-          this.fakeClient.request.returns(Promise.resolve({requestToken: 'token'}));
+          this.fakeClient.request.resolves({requestToken: 'token'});
           this.masterpass._createFrameOpenHandler = function (resolve) {
             resolve({});
           };
@@ -731,7 +731,7 @@ describe('Masterpass', function () {
             }
           };
 
-          this.fakeClient.request.returns(Promise.resolve({requestToken: 'token'}));
+          this.fakeClient.request.resolves({requestToken: 'token'});
           this.masterpass._createFrameOpenHandler = function (resolve) {
             resolve({});
           };
@@ -752,7 +752,7 @@ describe('Masterpass', function () {
             }
           };
 
-          this.fakeClient.request.returns(Promise.resolve({requestToken: 'token'}));
+          this.fakeClient.request.resolves({requestToken: 'token'});
           this.masterpass._createFrameOpenHandler = function (resolve) {
             resolve({});
           };
@@ -777,11 +777,9 @@ describe('Masterpass', function () {
   describe('teardown', function () {
     beforeEach(function () {
       this.frameServiceInstance = {teardown: this.sandbox.stub()};
-      this.fakeClient.request.returns(Promise.resolve({}));
+      this.fakeClient.request.resolves({});
 
-      this.sandbox.stub(frameService, 'create', function (opts, callback) {
-        callback(this.frameServiceInstance);
-      }.bind(this));
+      this.sandbox.stub(frameService, 'create').yields(this.frameServiceInstance);
     });
 
     it('tears down the frame service', function (done) {

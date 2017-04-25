@@ -6,9 +6,14 @@ var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var PayPal = require('../../../src/paypal/external/paypal');
 var BraintreeError = require('../../../src/lib/braintree-error');
+var Promise = require('../../../src/lib/promise');
 var version = require('../../../package.json').version;
 
 describe('paypal', function () {
+  afterEach(function () {
+    delete global.popupBridge;
+  });
+
   describe('create', function () {
     beforeEach(function () {
       var configuration = fake.configuration();
@@ -16,6 +21,7 @@ describe('paypal', function () {
       configuration.gatewayConfiguration.paypalEnabled = true;
       configuration.gatewayConfiguration.paypal = {};
 
+      this.sandbox.stub(analytics, 'sendEvent');
       this.configuration = configuration;
       this.client = {
         getConfiguration: function () {
@@ -24,17 +30,10 @@ describe('paypal', function () {
       };
     });
 
-    it('errors out if no callback is given', function (done) {
-      try {
-        create({client: this.client});
-      } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CALLBACK_REQUIRED');
-        expect(err.message).to.equal('create must include a callback function.');
+    it('returns a promise when no callback is provided', function () {
+      var promise = create({client: this.client});
 
-        done();
-      }
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('errors out if no client given', function (done) {
@@ -77,10 +76,7 @@ describe('paypal', function () {
     it('sends an analytics event', function (done) {
       var client = this.client;
 
-      this.sandbox.stub(analytics, 'sendEvent');
-      this.sandbox.stub(PayPal.prototype, '_initialize', function (callback) {
-        callback();
-      });
+      this.sandbox.stub(PayPal.prototype, '_initialize').resolves();
 
       create({client: client}, function (err) {
         expect(err).not.to.exist;

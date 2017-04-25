@@ -427,7 +427,7 @@ describe('Client', function () {
     it('calls driver with client for source in _meta if source is not provided', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         method: 'post',
@@ -442,7 +442,7 @@ describe('Client', function () {
     it('calls driver with specified source in _meta', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         method: 'post',
@@ -510,7 +510,7 @@ describe('Client', function () {
     it('passes through timeout to driver', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         endpoint: 'payment_methods',
@@ -526,7 +526,7 @@ describe('Client', function () {
     it('passes through data to driver when API is unspecified', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         endpoint: 'payment_methods',
@@ -542,7 +542,7 @@ describe('Client', function () {
     it('passes through data to driver when API is clientApi', function () {
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         api: 'clientApi',
@@ -561,7 +561,7 @@ describe('Client', function () {
       var expectedData = {foo: 'boo'};
       var client = new Client(fake.configuration());
 
-      this.sandbox.stub(client, '_request', function () {});
+      this.sandbox.stub(client, '_request');
 
       client.request({
         api: 'braintreeApi',

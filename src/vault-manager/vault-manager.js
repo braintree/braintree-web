@@ -25,12 +25,11 @@ function VaultManager(options) {
 
 /**
  * Fetches payment methods owned by the customer whose id was used to generate the client token used to create the {@link module:braintree-web/client|client}.
- * @function
  * @public
  * @param {object} [options] Options for fetching payment methods.
  * @param {boolean} [options.defaultFirst = false] If `true`, the payment methods will be returned with the default payment method for the customer first. Otherwise, the payment methods will be returned with the most recently used payment method first.
  * @param {callback} [callback] The second argument is a {@link VaultManager~fetchPaymentMethodsPayload|fetchPaymentMehodsPayload}. This is also what is resolved by the promise if no callback is provided.
- * @returns {Promise|void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * vaultManagerInstance.fetchPaymentMethods(function (err, paymentMethods) {
  *   paymentMethods.forEach(function (paymentMethod) {
@@ -41,14 +40,14 @@ function VaultManager(options) {
  *   });
  * });
  */
-VaultManager.prototype.fetchPaymentMethods = wrapPromise(function (options) {
+VaultManager.prototype.fetchPaymentMethods = function (options) {
   var defaultFirst;
 
   options = options || {};
 
   defaultFirst = options.defaultFirst === true ? 1 : 0;
 
-  return this._client.request({ // eslint-disable-line no-invalid-this
+  return this._client.request({
     endpoint: 'payment_methods',
     method: 'get',
     data: {
@@ -57,7 +56,7 @@ VaultManager.prototype.fetchPaymentMethods = wrapPromise(function (options) {
   }).then(function (paymentMethodsPayload) {
     return paymentMethodsPayload.paymentMethods.map(formatPaymentMethodPayload);
   });
-});
+};
 
 function formatPaymentMethodPayload(paymentMethod) {
   var formattedPaymentMethod = {
@@ -74,4 +73,4 @@ function formatPaymentMethodPayload(paymentMethod) {
   return formattedPaymentMethod;
 }
 
-module.exports = VaultManager;
+module.exports = wrapPromise.wrapPrototype(VaultManager);

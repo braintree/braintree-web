@@ -71,7 +71,7 @@ describe('internal', function () {
           }
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'fetchCapabilities', function (options, callback) {
+        this.sandbox.stub(UnionPay.prototype, 'fetchCapabilities').callsFake(function (options, callback) {
           expect(options.card.number).to.equal('4111111111111111');
           callback(fakeError, fakePayload);
         });
@@ -149,7 +149,7 @@ describe('internal', function () {
           }
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'enroll', function (options, callback) {
+        this.sandbox.stub(UnionPay.prototype, 'enroll').callsFake(function (options, callback) {
           expect(options).to.deep.equal({
             card: {
               number: '4111111111111111',
@@ -250,7 +250,7 @@ describe('internal', function () {
           }
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'tokenize', function (options, callback) {
+        this.sandbox.stub(UnionPay.prototype, 'tokenize').callsFake(function (options, callback) {
           expect(options).to.deep.equal({
             enrollmentId: 'enrollmentId62',
             smsCode: '1234',
@@ -303,7 +303,7 @@ describe('internal', function () {
           }
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'tokenize', function (options, callback) {
+        this.sandbox.stub(UnionPay.prototype, 'tokenize').callsFake(function (options, callback) {
           expect(options).to.deep.equal({
             enrollmentId: 'enrollmentId62',
             smsCode: '1234',

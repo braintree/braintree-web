@@ -11,12 +11,12 @@ var sharedErrors = require('../lib/errors');
 /** @module braintree-web/client */
 
 /**
- * @function
+ * @function create
  * @description This function is the entry point for the <code>braintree.client</code> module. It is used for creating {@link Client} instances that service communication to Braintree servers.
  * @param {object} options Object containing all {@link Client} options:
  * @param {string} options.authorization A tokenizationKey or clientToken.
  * @param {callback} [callback] The second argument, <code>data</code>, is the {@link Client} instance.
- * @returns {Promise|void} Returns a promise that resolves the client instance if no callback is provided.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * var createClient = require('braintree-web/client').create;
  *

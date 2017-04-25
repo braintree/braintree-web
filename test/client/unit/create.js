@@ -9,14 +9,7 @@ var fake = require('../../helpers/fake');
 
 describe('client.create', function () {
   beforeEach(function () {
-    this.getSpy = this.sandbox.stub(AJAXDriver, 'request', function (options, cb) {
-      var configuration = fake.configuration().gatewayConfiguration;
-
-      configuration.unionPay = {
-        enabled: true
-      };
-      cb(null, fake.configuration().gatewayConfiguration);
-    });
+    this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, fake.configuration().gatewayConfiguration);
   });
 
   it('supports a callback', function (done) {
@@ -74,9 +67,7 @@ describe('client.create', function () {
 
   it('errors out when configuration endpoint is not reachable', function () {
     this.getSpy.restore();
-    this.getSpy = this.sandbox.stub(AJAXDriver, 'request', function (options, cb) {
-      cb({errors: 'Unknown error'});
-    });
+    this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields({errors: 'Unknown error'});
 
     return client.create({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
       expect(err).to.be.an.instanceof(BraintreeError);
@@ -88,9 +79,7 @@ describe('client.create', function () {
 
   it('errors out when the Client fails to initialize', function () {
     this.getSpy.restore();
-    this.getSpy = this.sandbox.stub(AJAXDriver, 'request', function (options, cb) {
-      cb(null, null);
-    });
+    this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, null);
 
     return client.create({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
       expect(err).to.be.an.instanceof(BraintreeError);

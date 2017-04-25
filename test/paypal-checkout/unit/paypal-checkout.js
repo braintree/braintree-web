@@ -5,7 +5,6 @@ var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var Promise = require('promise-polyfill');
 
 function noop() {}
 
@@ -25,7 +24,10 @@ describe('PayPalCheckout', function () {
 
       this.configuration = fake.configuration();
       this.client = {
-        request: this.sandbox.stub(),
+        request: this.sandbox.stub().resolves({
+          paymentResource: {paymentToken: 'token'},
+          agreementSetup: {tokenId: 'id'}
+        }),
         getConfiguration: this.sandbox.stub().returns(this.configuration)
       };
       this.paypalCheckout = new PayPalCheckout({
@@ -35,9 +37,10 @@ describe('PayPalCheckout', function () {
 
     context('using promises', function () {
       it('returns a Promise', function () {
-        var promise = this.paypalCheckout.createPayment({flow: 'checkout'});
+        var promise = this.paypalCheckout.createPayment({flow: 'vault'});
 
-        expect(promise).to.be.an.instanceof(Promise);
+        expect(promise).to.respondTo('then');
+        expect(promise).to.respondTo('catch');
       });
 
       it('rejects with error if options are not passed in', function () {
@@ -71,10 +74,11 @@ describe('PayPalCheckout', function () {
         var gateway422Error = new BraintreeError({
           type: BraintreeError.types.NETWORK,
           code: 'CLIENT_REQUEST_ERROR',
-          message: 'There was a problem with your request.'
+          message: 'There was a problem with your request.',
+          details: {httpStatus: 422}
         });
 
-        this.client.request.yieldsAsync(gateway422Error, null, 422);
+        this.client.request.rejects(gateway422Error);
 
         return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.MERCHANT);
@@ -89,7 +93,9 @@ describe('PayPalCheckout', function () {
       it('rejects with a network BraintreeError on other gateway errors', function () {
         var gatewayError = new Error('There was a problem with your request.');
 
-        this.client.request.yieldsAsync(gatewayError, null, 400);
+        gatewayError.details = {httpStatus: 400};
+
+        this.client.request.rejects(gatewayError);
 
         return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -105,10 +111,11 @@ describe('PayPalCheckout', function () {
         var gatewayError = new BraintreeError({
           type: BraintreeError.types.NETWORK,
           code: 'CLIENT_REQUEST_ERROR',
-          message: 'There was a problem with your request.'
+          message: 'There was a problem with your request.',
+          details: {httpStatus: 400}
         });
 
-        this.client.request.yieldsAsync(gatewayError, null, 400);
+        this.client.request.rejects(gatewayError);
 
         return this.paypalCheckout.createPayment({flow: 'vault'}).then(rejectIfResolves).catch(function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -120,7 +127,7 @@ describe('PayPalCheckout', function () {
       it('resolves with a paymentID for checkout flow', function () {
         var paymentId = 'PAY-XXXXXXXXXX';
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paymentResource: {
             paymentToken: paymentId
           }
@@ -134,7 +141,7 @@ describe('PayPalCheckout', function () {
       it('resolves with a billingToken for vault flow', function () {
         var billingToken = 'BA-XXXXXXXXXX';
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           agreementSetup: {
             tokenId: billingToken
           }
@@ -150,7 +157,7 @@ describe('PayPalCheckout', function () {
           this.options = {
             flow: 'vault'
           };
-          this.client.request.yieldsAsync(null, {
+          this.client.request.resolves({
             agreementSetup: {
               tokenId: 'stub'
             },
@@ -360,10 +367,11 @@ describe('PayPalCheckout', function () {
         var gateway422Error = new BraintreeError({
           type: BraintreeError.types.NETWORK,
           code: 'CLIENT_REQUEST_ERROR',
-          message: 'There was a problem with your request.'
+          message: 'There was a problem with your request.',
+          details: {httpStatus: 422}
         });
 
-        this.client.request.yieldsAsync(gateway422Error, null, 422);
+        this.client.request.rejects(gateway422Error);
 
         this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
           expect(err.type).to.equal(BraintreeError.types.MERCHANT);
@@ -380,7 +388,9 @@ describe('PayPalCheckout', function () {
       it('calls callback with a network BraintreeError on other gateway errors', function (done) {
         var gatewayError = new Error('There was a problem with your request.');
 
-        this.client.request.yieldsAsync(gatewayError, null, 400);
+        gatewayError.details = {httpStatus: 400};
+
+        this.client.request.rejects(gatewayError);
 
         this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -398,10 +408,11 @@ describe('PayPalCheckout', function () {
         var gatewayError = new BraintreeError({
           type: BraintreeError.types.NETWORK,
           code: 'CLIENT_REQUEST_ERROR',
-          message: 'There was a problem with your request.'
+          message: 'There was a problem with your request.',
+          details: {httpStatus: 400}
         });
 
-        this.client.request.yieldsAsync(gatewayError, null, 400);
+        this.client.request.rejects(gatewayError);
 
         this.paypalCheckout.createPayment({flow: 'vault'}, function (err) {
           expect(err.type).to.equal(BraintreeError.types.NETWORK);
@@ -415,7 +426,7 @@ describe('PayPalCheckout', function () {
       it('calls callback with a paymentID for checkout flow', function (done) {
         var paymentId = 'PAY-XXXXXXXXXX';
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paymentResource: {
             paymentToken: paymentId
           }
@@ -431,7 +442,7 @@ describe('PayPalCheckout', function () {
       it('calls callback with a billingToken for vault flow', function (done) {
         var billingToken = 'BA-XXXXXXXXXX';
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           agreementSetup: {
             tokenId: billingToken
           }
@@ -458,14 +469,20 @@ describe('PayPalCheckout', function () {
       expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.offered');
     });
 
-    it('does not send analytics event when offerCredit is true and using vault flow', function () {
+    it('sends analytics event when offerCredit is true and using vault flow', function () {
       this.paypalCheckout.createPayment({flow: 'vault', offerCredit: true});
 
-      expect(analytics.sendEvent).to.not.be.calledWith(this.client, 'paypal-checkout.credit.offered');
+      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.offered');
     });
 
     it('does not send analytics event when offerCredit is false and using checkout flow', function () {
       this.paypalCheckout.createPayment({flow: 'checkout'});
+
+      expect(analytics.sendEvent).to.not.be.calledWith(this.client, 'paypal-checkout.credit.offered');
+    });
+
+    it('does not send analytics event when offerCredit is false and using vault flow', function () {
+      this.paypalCheckout.createPayment({flow: 'vault'});
 
       expect(analytics.sendEvent).to.not.be.calledWith(this.client, 'paypal-checkout.credit.offered');
     });
@@ -616,6 +633,18 @@ describe('PayPalCheckout', function () {
       expect(arg.data.offerPaypalCredit).to.equal(false);
     });
 
+    it('sets offerPaypalCredit to false if offerCredit is unspecified with vault flow', function () {
+      var arg;
+
+      this.paypalCheckout.createPayment({flow: 'vault'});
+
+      expect(this.client.request).to.be.calledOnce;
+
+      arg = this.client.request.args[0][0];
+
+      expect(arg.data.offerPaypalCredit).to.equal(false);
+    });
+
     it('sets offerPaypalCredit to false if offerCredit is not a boolean true', function () {
       var arg;
 
@@ -646,7 +675,7 @@ describe('PayPalCheckout', function () {
       expect(arg.data.offerPaypalCredit).to.equal(true);
     });
 
-    it('does not set offerPaypalCredit for vault flow', function () {
+    it('sets offerPaypalCredit to true if offerCredit is true with vault flow', function () {
       var arg;
 
       this.paypalCheckout.createPayment({
@@ -658,7 +687,7 @@ describe('PayPalCheckout', function () {
 
       arg = this.client.request.args[0][0];
 
-      expect(arg.data).to.not.have.property('offerPaypalCredit');
+      expect(arg.data.offerPaypalCredit).to.equal(true);
     });
 
     it('sets addressOverride to true if shippingAddressEditable is false', function () {
@@ -740,7 +769,7 @@ describe('PayPalCheckout', function () {
 
       this.configuration = fake.configuration();
       this.client = {
-        request: this.sandbox.stub(),
+        request: this.sandbox.stub().resolves({}),
         getConfiguration: this.sandbox.stub().returns(this.configuration)
       };
       this.paypalCheckout = new PayPalCheckout({
@@ -752,13 +781,14 @@ describe('PayPalCheckout', function () {
       it('returns a Promise', function () {
         var promise = this.paypalCheckout.tokenizePayment({});
 
-        expect(promise).to.be.an.instanceof(Promise);
+        expect(promise).to.respondTo('then');
+        expect(promise).to.respondTo('catch');
       });
 
       it('rejects with a BraintreeError if a non-Braintree error comes back from the client', function () {
         var error = new Error('Error');
 
-        this.client.request.yieldsAsync(error);
+        this.client.request.rejects(error);
 
         return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
@@ -776,7 +806,7 @@ describe('PayPalCheckout', function () {
           message: 'message.'
         });
 
-        this.client.request.yieldsAsync(btError);
+        this.client.request.rejects(btError);
 
         return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.equal(btError);
@@ -784,7 +814,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('resolves with the back account data in response', function () {
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{nonce: 'nonce', type: 'PayPal'}]
         });
 
@@ -800,7 +830,7 @@ describe('PayPalCheckout', function () {
           payerInfo: {name: 'foo'}
         };
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -818,7 +848,7 @@ describe('PayPalCheckout', function () {
           creditFinancingOffered: {foo: 'bar'}
         };
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -836,7 +866,7 @@ describe('PayPalCheckout', function () {
           creditFinancingOffered: {foo: 'bar'}
         };
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -858,7 +888,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('does not resolve with creditFinancingOffered when not available', function () {
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -876,7 +906,7 @@ describe('PayPalCheckout', function () {
       it('calls callback with a BraintreeError if a non-Braintree error comes back from the client', function (done) {
         var error = new Error('Error');
 
-        this.client.request.yieldsAsync(error);
+        this.client.request.rejects(error);
 
         this.paypalCheckout.tokenizePayment({}, function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
@@ -895,7 +925,7 @@ describe('PayPalCheckout', function () {
           message: 'message.'
         });
 
-        this.client.request.yieldsAsync(btError);
+        this.client.request.rejects(btError);
 
         this.paypalCheckout.tokenizePayment({}, function (err) {
           expect(err).to.equal(btError);
@@ -904,7 +934,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('calls callback with the back account data in response', function (done) {
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{nonce: 'nonce', type: 'PayPal'}]
         });
 
@@ -922,7 +952,7 @@ describe('PayPalCheckout', function () {
           payerInfo: {name: 'foo'}
         };
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -942,7 +972,7 @@ describe('PayPalCheckout', function () {
           creditFinancingOffered: {foo: 'bar'}
         };
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -958,7 +988,7 @@ describe('PayPalCheckout', function () {
       });
 
       it('does not return creditFinancingOffered when not available', function (done) {
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paypalAccounts: [{
             nonce: 'nonce',
             type: 'PayPal',
@@ -975,10 +1005,9 @@ describe('PayPalCheckout', function () {
     });
 
     it('sends a tokenization event when tokenization starts', function () {
-      this.paypalCheckout.tokenizePayment({});
-
-      expect(analytics.sendEvent).to.be.calledOnce;
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.started');
+      return this.paypalCheckout.tokenizePayment({billingToken: 'token'}).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.started');
+      }.bind(this));
     });
 
     it('sends a request to payment_methods/paypal_accounts', function () {
@@ -994,7 +1023,7 @@ describe('PayPalCheckout', function () {
     it('calls analytics event when tokenization succeeds', function () {
       var client = this.client;
 
-      client.request.yieldsAsync(null, {});
+      client.request.resolves({});
 
       return this.paypalCheckout.tokenizePayment({}).then(function () {
         expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.tokenization.success');
@@ -1004,7 +1033,7 @@ describe('PayPalCheckout', function () {
     it('calls analytics event when credit offer is accepted', function () {
       var client = this.client;
 
-      client.request.yieldsAsync(null, {
+      client.request.resolves({
         paypalAccounts: [{
           nonce: 'nonce',
           type: 'PayPal',
@@ -1143,7 +1172,7 @@ describe('PayPalCheckout', function () {
     it('sends a tokenization failure event when request fails', function () {
       var client = this.client;
 
-      client.request.yieldsAsync(new Error('Error'));
+      client.request.rejects(new Error('Error'));
 
       return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function () {
         expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.tokenization.failed');

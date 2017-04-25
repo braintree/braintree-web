@@ -6,12 +6,12 @@
 
 var analytics = require('../lib/analytics');
 var BraintreeError = require('../lib/braintree-error');
-var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var PayPal = require('./external/paypal');
 var sharedErrors = require('../lib/errors');
 var VERSION = process.env.npm_package_version;
+var wrapPromise = require('wrap-promise');
+var Promise = require('../lib/promise');
 
 /**
  * @static
@@ -66,47 +66,38 @@ var VERSION = process.env.npm_package_version;
  *     }, false);
  *   });
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-function create(options, callback) {
+function create(options) {
   var config, pp, clientVersion;
 
-  throwIfNoCallback(callback, 'create');
-
-  callback = deferred(callback);
-
   if (options.client == null) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
       code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating PayPal.'
     }));
-    return;
   }
 
   config = options.client.getConfiguration();
   clientVersion = config.analyticsMetadata.sdkVersion;
 
   if (clientVersion !== VERSION) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
       code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
       message: 'Client (version ' + clientVersion + ') and PayPal (version ' + VERSION + ') components must be from the same SDK version.'
     }));
-    return;
   }
 
   if (config.gatewayConfiguration.paypalEnabled !== true) {
-    callback(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
-    return;
+    return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
   }
 
   analytics.sendEvent(options.client, 'paypal.initialized');
 
   pp = new PayPal(options);
-  pp._initialize(function () {
-    callback(null, pp);
-  });
+  return pp._initialize();
 }
 
 /**
@@ -126,7 +117,7 @@ function isSupported() {
 }
 
 module.exports = {
-  create: create,
+  create: wrapPromise(create),
   isSupported: isSupported,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.

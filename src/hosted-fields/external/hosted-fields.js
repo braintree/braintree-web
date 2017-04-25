@@ -20,7 +20,6 @@ var whitelistedFields = constants.whitelistedFields;
 var VERSION = process.env.npm_package_version;
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
-var deferred = require('../../lib/deferred');
 var sharedErrors = require('../../lib/errors');
 var getCardTypes = require('credit-card-type');
 var attributeValidationError = require('./attribute-validation-error');
@@ -468,7 +467,6 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
 /**
  * Cleanly remove anything set up by {@link module:braintree-web/hosted-fields.create|create}.
  * @public
- * @function
  * @param {callback} [callback] Called on completion, containing an error if one occurred. No data is returned if teardown completes successfully. If no callback is provided, `teardown` returns a promise.
  * @example
  * hostedFieldsInstance.teardown(function (teardownErr) {
@@ -478,10 +476,10 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
  *     console.info('Hosted Fields has been torn down!');
  *   }
  * });
- * @returns {Promise|void} If no callback is provided, returns a promise that resolves when the teardown is complete.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-HostedFields.prototype.teardown = wrapPromise(function () {
-  var self = this; // eslint-disable-line no-invalid-this
+HostedFields.prototype.teardown = function () {
+  var self = this;
 
   return new Promise(function (resolve, reject) {
     self._destructor.teardown(function (err) {
@@ -494,12 +492,11 @@ HostedFields.prototype.teardown = wrapPromise(function () {
       }
     });
   });
-});
+};
 
 /**
  * Tokenizes fields and returns a nonce payload.
  * @public
- * @function
  * @param {object} [options] All tokenization options for the Hosted Fields component.
  * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
  * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.
@@ -562,10 +559,10 @@ HostedFields.prototype.teardown = wrapPromise(function () {
  *     console.log('Got nonce:', payload.nonce);
  *   }
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-HostedFields.prototype.tokenize = wrapPromise(function (options) {
-  var self = this; // eslint-disable-line no-invalid-this
+HostedFields.prototype.tokenize = function (options) {
+  var self = this;
 
   if (!options) {
     options = {};
@@ -583,7 +580,7 @@ HostedFields.prototype.tokenize = wrapPromise(function (options) {
       }
     });
   });
-});
+};
 
 /**
  * Add a class to a {@link module:braintree-web/hosted-fields~field field}. Useful for updating field styles when events occur elsewhere in your checkout.
@@ -598,9 +595,9 @@ HostedFields.prototype.tokenize = wrapPromise(function (options) {
  *     console.error(addClassErr);
  *   }
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-HostedFields.prototype.addClass = function (field, classname, callback) {
+HostedFields.prototype.addClass = function (field, classname) {
   var err;
 
   if (!whitelistedFields.hasOwnProperty(field)) {
@@ -619,10 +616,11 @@ HostedFields.prototype.addClass = function (field, classname, callback) {
     this._bus.emit(events.ADD_CLASS, field, classname);
   }
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback(err);
+  if (err) {
+    return Promise.reject(err);
   }
+
+  return Promise.resolve();
 };
 
 /**
@@ -642,9 +640,9 @@ HostedFields.prototype.addClass = function (field, classname, callback) {
  *   // some time later...
  *   hostedFieldsInstance.removeClass('number', 'custom-class');
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-HostedFields.prototype.removeClass = function (field, classname, callback) {
+HostedFields.prototype.removeClass = function (field, classname) {
   var err;
 
   if (!whitelistedFields.hasOwnProperty(field)) {
@@ -663,10 +661,11 @@ HostedFields.prototype.removeClass = function (field, classname, callback) {
     this._bus.emit(events.REMOVE_CLASS, field, classname);
   }
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback(err);
+  if (err) {
+    return Promise.reject(err);
   }
+
+  return Promise.resolve();
 };
 
 /**
@@ -702,9 +701,9 @@ HostedFields.prototype.removeClass = function (field, classname, callback) {
  *   }
  * });
  *
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-HostedFields.prototype.setAttribute = function (options, callback) {
+HostedFields.prototype.setAttribute = function (options) {
   var attributeErr, err;
 
   if (!whitelistedFields.hasOwnProperty(options.field)) {
@@ -729,10 +728,11 @@ HostedFields.prototype.setAttribute = function (options, callback) {
     }
   }
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback(err);
+  if (err) {
+    return Promise.reject(err);
   }
+
+  return Promise.resolve();
 };
 
 /**
@@ -754,9 +754,9 @@ HostedFields.prototype.setAttribute = function (options, callback) {
  *   }
  * });
  *
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-HostedFields.prototype.removeAttribute = function (options, callback) {
+HostedFields.prototype.removeAttribute = function (options) {
   var attributeErr, err;
 
   if (!whitelistedFields.hasOwnProperty(options.field)) {
@@ -781,10 +781,11 @@ HostedFields.prototype.removeAttribute = function (options, callback) {
     }
   }
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback(err);
+  if (err) {
+    return Promise.reject(err);
   }
+
+  return Promise.resolve();
 };
 
 /**
@@ -795,14 +796,14 @@ HostedFields.prototype.removeAttribute = function (options, callback) {
  * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
  *
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) {
-  this.setAttribute({
+HostedFields.prototype.setPlaceholder = function (field, placeholder) {
+  return this.setAttribute({
     field: field,
     attribute: 'placeholder',
     value: placeholder
-  }, callback);
+  });
 };
 
 /**
@@ -810,7 +811,7 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
  * @public
  * @param {string} field The field you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * hostedFieldsInstance.clear('number', function (clearErr) {
  *   if (clearErr) {
@@ -823,7 +824,7 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder, callback) 
  * hostedFieldsInstance.clear('cvv');
  * hostedFieldsInstance.clear('expirationDate');
  */
-HostedFields.prototype.clear = function (field, callback) {
+HostedFields.prototype.clear = function (field) {
   var err;
 
   if (!whitelistedFields.hasOwnProperty(field)) {
@@ -842,10 +843,11 @@ HostedFields.prototype.clear = function (field, callback) {
     this._bus.emit(events.CLEAR_FIELD, field);
   }
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback(err);
+  if (err) {
+    return Promise.reject(err);
   }
+
+  return Promise.resolve();
 };
 
 /**
@@ -869,7 +871,7 @@ HostedFields.prototype.clear = function (field, callback) {
  *   hostedFieldsInstance.focus('number');
  * });
  */
-HostedFields.prototype.focus = function (field, callback) {
+HostedFields.prototype.focus = function (field) {
   var err;
 
   if (!whitelistedFields.hasOwnProperty(field)) {
@@ -885,13 +887,14 @@ HostedFields.prototype.focus = function (field, callback) {
       message: 'Cannot focus "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
-    this._bus.emit(events.FOCUS_FIELD, field);
+    this._bus.emit(events.TRIGGER_INPUT_FOCUS, field);
   }
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback(err);
+  if (err) {
+    return Promise.reject(err);
   }
+
+  return Promise.resolve();
 };
 
 /**
@@ -909,4 +912,4 @@ HostedFields.prototype.getState = function () {
   return this._state;
 };
 
-module.exports = HostedFields;
+module.exports = wrapPromise.wrapPrototype(HostedFields);

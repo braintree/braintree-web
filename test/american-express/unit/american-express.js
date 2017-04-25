@@ -2,30 +2,23 @@
 
 var AmericanExpress = require('../../../src/american-express/american-express');
 var BraintreeError = require('../../../src/lib/braintree-error');
+var Promise = require('../../../src/lib/promise');
 
 var NONCE = 'ed1704dc-e98c-427f-9836-0f1933755b6a';
 
 describe('AmericanExpress', function () {
   beforeEach(function () {
     this.client = {
-      request: this.sandbox.spy()
+      request: this.sandbox.stub().resolves()
     };
     this.amex = new AmericanExpress({client: this.client});
   });
 
   describe('getRewardsBalance', function () {
-    it('throws an error when called without a callback', function (done) {
-      try {
-        this.amex.getRewardsBalance({});
-      } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('CALLBACK_REQUIRED');
-        expect(err.message).to.equal('getRewardsBalance must include a callback function.');
+    it('returns a promise', function () {
+      var promise = this.amex.getRewardsBalance({nonce: NONCE});
 
-        expect(this.client.request).not.to.have.beenCalled;
-        done();
-      }
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('calls the callback with an error if called without a nonce', function (done) {
@@ -46,18 +39,7 @@ describe('AmericanExpress', function () {
     it('makes a request to the gateway and calls the callback if it fails', function (done) {
       var requestError = new Error('something went wrong');
 
-      this.client.request = function (options, callback) {
-        expect(options.method).to.equal('get');
-        expect(options.endpoint).to.equal('payment_methods/amex_rewards_balance');
-        expect(options.data).to.deep.equal({
-          _meta: {
-            source: 'american-express'
-          },
-          paymentMethodNonce: NONCE
-        });
-
-        callback(new Error(requestError));
-      };
+      this.client.request.rejects(requestError);
 
       this.amex.getRewardsBalance({nonce: NONCE}, function (err, response) {
         expect(response).not.to.exist;
@@ -75,30 +57,30 @@ describe('AmericanExpress', function () {
     it('makes a request to the gateway and calls the callback if it succeeds', function (done) {
       var fakeResponseData = {foo: 'boo'};
 
-      this.client.request = function (options, callback) {
-        expect(options.method).to.equal('get');
-        expect(options.endpoint).to.equal('payment_methods/amex_rewards_balance');
-        expect(options.data).to.deep.equal({
-          _meta: {
-            source: 'american-express'
-          },
-          paymentMethodNonce: NONCE
-        });
-
-        callback(null, fakeResponseData);
-      };
+      this.client.request.resolves(fakeResponseData);
 
       this.amex.getRewardsBalance({nonce: NONCE}, function (err, response) {
         expect(err).to.equal(null);
 
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
+          method: 'get',
+          endpoint: 'payment_methods/amex_rewards_balance',
+          data: {
+            _meta: {
+              source: 'american-express'
+            },
+            paymentMethodNonce: NONCE
+          }
+        }));
+
         expect(response).to.equal(fakeResponseData);
 
         done();
-      });
+      }.bind(this));
     });
 
     it('passes along options to gateway', function (done) {
-      this.client.request = this.sandbox.stub().yieldsAsync();
+      this.client.request.resolves();
 
       this.amex.getRewardsBalance({nonce: NONCE, foo: 'bar'}, function () {
         expect(this.client.request).to.be.calledWithMatch({
@@ -119,7 +101,7 @@ describe('AmericanExpress', function () {
         foo: 'boo'
       };
 
-      this.client.request = this.sandbox.stub().yieldsAsync();
+      this.client.request.resolves();
 
       this.amex.getRewardsBalance(options, function () {
         expect(options).to.deep.equal({
@@ -133,21 +115,11 @@ describe('AmericanExpress', function () {
   });
 
   describe('getExpressCheckoutProfile', function () {
-    it('throws an error when called without a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var promise = this.amex.getExpressCheckoutProfile({nonce: NONCE});
 
-      try {
-        this.amex.getExpressCheckoutProfile({nonce: NONCE});
-      } catch (e) {
-        err = e;
-      }
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('getExpressCheckoutProfile must include a callback function.');
-
-      expect(this.client.request).not.to.have.beenCalled;
+      expect(promise).to.respondTo('then');
+      expect(promise).to.respondTo('catch');
     });
 
     it('calls the callback with an error if called without a nonce', function (done) {
@@ -168,19 +140,7 @@ describe('AmericanExpress', function () {
     it('makes a request to the gateway and calls the callback if it fails', function (done) {
       var requestError = new Error('something went wrong');
 
-      this.client.request = function (options, callback) {
-        expect(options.method).to.equal('get');
-        expect(options.endpoint).to.equal('payment_methods/amex_express_checkout_cards/' + NONCE);
-        expect(options.data).to.deep.equal({
-          _meta: {
-            source: 'american-express'
-          },
-          paymentMethodNonce: NONCE
-        });
-
-        callback(new Error(requestError));
-      };
-
+      this.client.request.rejects(requestError);
       this.amex.getExpressCheckoutProfile({nonce: NONCE}, function (err, response) {
         expect(response).not.to.exist;
 
@@ -197,26 +157,26 @@ describe('AmericanExpress', function () {
     it('makes a request to the gateway and calls the callback if it succeeds', function (done) {
       var fakeResponseData = {foo: 'boo'};
 
-      this.client.request = function (options, callback) {
-        expect(options.method).to.equal('get');
-        expect(options.endpoint).to.equal('payment_methods/amex_express_checkout_cards/' + NONCE);
-        expect(options.data).to.deep.equal({
-          _meta: {
-            source: 'american-express'
-          },
-          paymentMethodNonce: NONCE
-        });
-
-        callback(null, fakeResponseData);
-      };
+      this.client.request.resolves(fakeResponseData);
 
       this.amex.getExpressCheckoutProfile({nonce: NONCE}, function (err, response) {
         expect(err).to.equal(null);
 
+        expect(this.client.request).to.be.calledWith(this.sandbox.match({
+          method: 'get',
+          endpoint: 'payment_methods/amex_express_checkout_cards/' + NONCE,
+          data: {
+            _meta: {
+              source: 'american-express'
+            },
+            paymentMethodNonce: NONCE
+          }
+        }));
+
         expect(response).to.equal(fakeResponseData);
 
         done();
-      });
+      }.bind(this));
     });
   });
 });

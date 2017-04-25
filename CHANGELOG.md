@@ -1,6 +1,49 @@
 CHANGELOG
 =========
 
+## 3.14.0
+
+* American Express
+  * `americanExpress.create` returns a promise if no callback is provided
+  * `americanExpress.getRewardsBalance` returns a promise if no callback is provided
+  * `americanExpress.getExpressCheckoutProfile` returns a promise if no callback is provided
+* Apple Pay
+  * `applePay.create` returns a promise if no callback is provided
+  * `applePay.performValidation` returns a promise if no callback is provided
+  * `applePay.tokenize` returns a promise if no callback is provided
+* Hosted Fields
+  * `hostedFields.tokenize` returns a promise if no callback is provided
+  * `hostedFields.addClass` returns a promise if no callback is provided
+  * `hostedFields.removeClass` returns a promise if no callback is provided
+  * `hostedFields.setAttribute` returns a promise if no callback is provided
+  * `hostedFields.removeAttribute` returns a promise if no callback is provided
+  * `hostedFields.setPlaceholder` returns a promise if no callback is provided
+  * `hostedFields.clear` returns a promise if no callback is provided
+  * `hostedFields.focus` returns a promise if no callback is provided
+* PayPal
+  * Add support for PayPal Credit in Vault flow
+  * `paypal.create` returns a promise if no callback is provided
+  * `paypal.tokenize` returns a promise if no callback is provided
+  * `paypal.teardown` returns a promise if no callback is provided
+  * `paypal.closeWindow` closes the PayPal window if open
+  * `paypal.focusWindow` focuses the PayPal window if open
+* PayPal Checkout
+  * Add support for PayPal Credit in Vault flow
+* 3D Secure
+  * `threeDSecure.create` returns a promise if no callback is provided
+  * `threeDSecure.verifyCard` returns a promise if no callback is provided
+  * `threeDSecure.cancelVerifyCard` returns a promise if no callback is provided
+  * `threeDSecure.teardown` returns a promise if no callback is provided
+* Union Pay
+  * `unionPay.create` returns a promise if no callback is provided
+  * `unionPay.enroll` returns a promise if no callback is provided
+  * `unionPay.fetchCapabilities` returns a promise if no callback is provided
+  * `unionPay.teardown` returns a promise if no callback is provided
+  * `unionPay.tokenize` returns a promise if no callback is provided
+* Visa Checkout
+  * `visaCheckout.create` returns a promise if no callback is provided
+  * `visaCheckout.tokenize` returns a promise if no callback is provided
+
 ## 3.13.0
 
 * Hosted Fields

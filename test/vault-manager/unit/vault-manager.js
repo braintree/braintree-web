@@ -1,7 +1,6 @@
 'use strict';
 
 var VaultManager = require('../../../src/vault-manager/vault-manager');
-var Promise = require('../../../src/lib/promise');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 
 describe('VaultManager', function () {
@@ -21,9 +20,9 @@ describe('VaultManager', function () {
 
   describe('fetchPaymentMethods', function () {
     it('supports a callback', function (done) {
-      this.client.request.returns(Promise.resolve({
+      this.client.request.resolves({
         paymentMethods: [this.fakePaymentMethod]
-      }));
+      });
 
       return this.vaultManager.fetchPaymentMethods(function (err, paymentMethods) {
         expect(err).to.not.exist;
@@ -39,9 +38,9 @@ describe('VaultManager', function () {
     });
 
     it('requests payment methods', function () {
-      this.client.request.returns(Promise.resolve({
+      this.client.request.resolves({
         paymentMethods: [this.fakePaymentMethod]
-      }));
+      });
 
       return this.vaultManager.fetchPaymentMethods().then(function () {
         expect(this.client.request).to.be.calledOnce;
@@ -56,9 +55,9 @@ describe('VaultManager', function () {
     });
 
     it('allows passing in a defaultFirst param', function () {
-      this.client.request.returns(Promise.resolve({
+      this.client.request.resolves({
         paymentMethods: [this.fakePaymentMethod]
-      }));
+      });
 
       return this.vaultManager.fetchPaymentMethods({
         defaultFirst: true
@@ -75,9 +74,9 @@ describe('VaultManager', function () {
     });
 
     it('formats response from server', function () {
-      this.client.request.returns(Promise.resolve({
+      this.client.request.resolves({
         paymentMethods: [this.fakePaymentMethod]
-      }));
+      });
 
       return this.vaultManager.fetchPaymentMethods().then(function (paymentMethods) {
         expect(paymentMethods).to.deep.equal([{
@@ -92,7 +91,7 @@ describe('VaultManager', function () {
     it('includes description if payload includes a description', function () {
       this.fakePaymentMethod.type = 'CreditCard';
       this.fakePaymentMethod.description = 'A card ending in 11';
-      this.client.request.returns(Promise.resolve({
+      this.client.request.resolves({
         paymentMethods: [
           this.fakePaymentMethod, {
             nonce: 'payment-method-without-a-description',
@@ -107,7 +106,7 @@ describe('VaultManager', function () {
             description: 'A description'
           }
         ]
-      }));
+      });
 
       return this.vaultManager.fetchPaymentMethods().then(function (paymentMethods) {
         expect(paymentMethods).to.deep.equal([{
@@ -134,7 +133,7 @@ describe('VaultManager', function () {
     it('sends back error if request fails', function () {
       var fakeError = new Error('error');
 
-      this.client.request.returns(Promise.reject(fakeError));
+      this.client.request.rejects(fakeError);
 
       return this.vaultManager.fetchPaymentMethods().then(rejectIfResolves).catch(function (err) {
         expect(err).to.equal(fakeError);

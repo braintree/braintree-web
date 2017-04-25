@@ -1,11 +1,6 @@
 'use strict';
 
 var Bus = require('../../../src/lib/bus');
-var chai = require('chai');
-var sinon = require('sinon');
-var sinonChai = require('sinon-chai');
-
-chai.use(sinonChai);
 
 global.triggerEvent = function (name, target) {
   var event = document.createEvent('Event');
@@ -14,13 +9,11 @@ global.triggerEvent = function (name, target) {
   target.dispatchEvent(event);
 };
 
-global.expect = require('chai').expect;
 global.helpers = require('./helpers/index');
 
 beforeEach(function () {
   var fn;
 
-  this.sandbox = sinon.sandbox.create();
   this.sandbox.stub(console, 'warn');
 
   document.body.innerHTML = '';
@@ -31,15 +24,9 @@ beforeEach(function () {
 
     this.sandbox.stub(Bus.prototype, fn);
   }
-});
 
-beforeEach(function () {
   global.bus = {
-    on: sinon.stub(),
-    emit: sinon.stub()
+    on: this.sandbox.stub(),
+    emit: this.sandbox.stub()
   };
-});
-
-afterEach(function () {
-  this.sandbox.restore();
 });

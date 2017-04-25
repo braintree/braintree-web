@@ -1,5 +1,6 @@
 'use strict';
 
+var Promise = require('../../../src/lib/promise');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var create = require('../../../src/apple-pay').create;
 var analytics = require('../../../src/lib/analytics');
@@ -14,25 +15,18 @@ describe('applePay.create', function () {
 
     this.configuration = configuration;
     this.client = {
+      request: this.sandbox.stub(),
       getConfiguration: function () {
         return configuration;
       }
     };
+    this.sandbox.stub(analytics, 'sendEvent');
   });
 
-  it('throws an error when called without a callback', function () {
-    var err;
+  it('returns a promise', function () {
+    var promise = create({client: this.client});
 
-    try {
-      create({});
-    } catch (e) {
-      err = e;
-    }
-
-    expect(err).to.be.an.instanceOf(BraintreeError);
-    expect(err.code).to.equal('CALLBACK_REQUIRED');
-    expect(err.type).to.equal('MERCHANT');
-    expect(err.message).to.equal('create must include a callback function.');
+    expect(promise).to.be.an.instanceof(Promise);
   });
 
   it('calls callback with an error when missing client', function (done) {
@@ -80,8 +74,6 @@ describe('applePay.create', function () {
 
   it('sends an analytics event', function (done) {
     var client = this.client;
-
-    this.sandbox.stub(analytics, 'sendEvent');
 
     create({
       client: client,

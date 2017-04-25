@@ -26,9 +26,7 @@ describe('internal', function () {
 
     this.type = 'number';
 
-    this.sandbox.stub(getFrameName, 'getFrameName', function () {
-      return this.type;
-    }.bind(this));
+    this.sandbox.stub(getFrameName, 'getFrameName').returns(this.type);
 
     internal.initialize(this.cardForm);
   });
@@ -121,7 +119,7 @@ describe('internal', function () {
       var self = this;
       var requestStub = this.sandbox.stub();
 
-      requestStub.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.resolve({
+      requestStub.withArgs(this.sandbox.match({api: 'clientApi'})).resolves({
         creditCards: [{
           nonce: self.fakeNonce,
           details: self.fakeDetails,
@@ -129,8 +127,8 @@ describe('internal', function () {
           type: self.fakeType,
           foo: 'bar'
         }]
-      }));
-      requestStub.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.resolve({
+      });
+      requestStub.withArgs(this.sandbox.match({api: 'braintreeApi'})).resolves({
         data: {
           id: 'braintreeApi-token',
           brand: 'visa',
@@ -138,7 +136,7 @@ describe('internal', function () {
           description: 'Visa credit card ending in - 1111',
           type: 'credit_card'
         }
-      }));
+      });
 
       this.fakeError = new Error('you done goofed');
 
@@ -174,7 +172,7 @@ describe('internal', function () {
         getConfiguration: function () {
           return self.configuration;
         },
-        request: this.sandbox.stub().returns(Promise.reject(self.fakeError))
+        request: this.sandbox.stub().rejects(self.fakeError)
       };
 
       this.emptyCardForm = this.cardForm;
@@ -210,7 +208,7 @@ describe('internal', function () {
 
     it('replies with client\'s error if tokenization fails due to authorization', function (done) {
       this.fakeError.details.httpStatus = 403;
-      this.badClient.request.returns(Promise.reject(this.fakeError));
+      this.badClient.request.rejects(this.fakeError);
 
       create(this.badClient, this.validCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
@@ -223,7 +221,7 @@ describe('internal', function () {
 
     it('replies with an error if tokenization fails due to card data', function (done) {
       this.fakeError.details.httpStatus = 422;
-      this.badClient.request.returns(Promise.reject(this.fakeError));
+      this.badClient.request.rejects(this.fakeError);
 
       create(this.badClient, this.validCardForm)(this.fakeOptions, function (response) {
         var err = response[0];
@@ -634,7 +632,7 @@ describe('internal', function () {
       };
 
       this.goodClient.request = this.sandbox.stub();
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.resolve({
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).resolves({
         creditCards: [{
           nonce: 'clientApi-nonce',
           details: {
@@ -644,8 +642,8 @@ describe('internal', function () {
           description: 'ending in 69',
           type: 'CreditCard'
         }]
-      }));
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.resolve({
+      });
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).resolves({
         data: {
           id: 'braintreeApi-token',
           brand: 'visa',
@@ -653,7 +651,7 @@ describe('internal', function () {
           description: 'Visa credit card ending in - 1111',
           type: 'credit_card'
         }
-      }));
+      });
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
         var err = args[0];
@@ -790,8 +788,8 @@ describe('internal', function () {
       };
 
       this.goodClient.request = this.sandbox.stub();
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.reject(fakeErr));
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.reject(fakeErr));
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).rejects(fakeErr);
+      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).rejects(fakeErr);
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
         var err = args[0];

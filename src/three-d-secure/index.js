@@ -5,38 +5,33 @@ var ThreeDSecure = require('./external/three-d-secure');
 var isHTTPS = require('../lib/is-https').isHTTPS;
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
-var deferred = require('../lib/deferred');
 var errors = require('./shared/errors');
 var sharedErrors = require('../lib/errors');
 var VERSION = process.env.npm_package_version;
+var Promise = require('../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @static
  * @function create
  * @param {object} options Creation options:
  * @param {Client} options.client A {@link Client} instance.
- * @param {callback} callback The second argument, `data`, is the {@link ThreeDSecure} instance.
- * @returns {void}
+ * @param {callback} [callback] The second argument, `data`, is the {@link ThreeDSecure} instance. If no callback is provided, it returns a promise that resolves the {@link ThreeDSecure} instance.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * braintree.threeDSecure.create({
  *   client: client
  * }, callback);
  */
-function create(options, callback) {
-  var config, threeDSecure, error, clientVersion, isProduction;
-
-  throwIfNoCallback(callback, 'create');
-
-  callback = deferred(callback);
+function create(options) {
+  var config, error, clientVersion, isProduction;
 
   if (options.client == null) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
       code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating 3D Secure.'
     }));
-    return;
   }
 
   config = options.client.getConfiguration();
@@ -59,24 +54,16 @@ function create(options, callback) {
   }
 
   if (error) {
-    callback(new BraintreeError(error));
-    return;
+    return Promise.reject(new BraintreeError(error));
   }
 
   analytics.sendEvent(options.client, 'threedsecure.initialized');
 
-  try {
-    threeDSecure = new ThreeDSecure(options);
-  } catch (err) {
-    callback(err);
-    return;
-  }
-
-  callback(null, threeDSecure);
+  return Promise.resolve(new ThreeDSecure(options));
 }
 
 module.exports = {
-  create: create,
+  create: wrapPromise(create),
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

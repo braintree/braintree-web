@@ -2,10 +2,10 @@
 
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
-var deferred = require('../lib/deferred');
 var errors = require('./errors');
 var jsonClone = require('../lib/json-clone');
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
+var Promise = require('../lib/promise');
+var wrapPromise = require('wrap-promise');
 var cardTypeTransformMap = {
   Visa: 'VISA',
   MasterCard: 'MASTERCARD',
@@ -135,8 +135,8 @@ VisaCheckout.prototype.createInitOptions = function (options) {
  * @param {string} payment.callid Visa Checkout transaction ID associated with this payment.
  * @param {string} payment.encKey The encrypted key used to decrypt the payment data.
  * @param {string} payment.encPaymentData The encrypted payment data.
- * @param {callback} callback The second argument, <code>tokenizePayload</code> is a {@link VisaCheckout~tokenizePayload|tokenizePayload}.
- * @returns {void}
+ * @param {callback} [callback] The second argument, <code>tokenizePayload</code> is a {@link VisaCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a promise that resolves with the {@link VisaCheckout~tokenizePayload|tokenizePayload}.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * V.on('payment.success', function (payment) {
  *   visaCheckoutInstance.tokenize(payment, function (err, tokenizePayload) {
@@ -148,17 +148,14 @@ VisaCheckout.prototype.createInitOptions = function (options) {
  *   });
  * });
  */
-VisaCheckout.prototype.tokenize = function (payment, callback) {
-  throwIfNoCallback(callback, 'tokenize');
-
-  callback = deferred(callback);
+VisaCheckout.prototype.tokenize = function (payment) {
+  var self = this;
 
   if (!payment.callid || !payment.encKey || !payment.encPaymentData) {
-    callback(new BraintreeError(errors.VISA_CHECKOUT_PAYMENT_REQUIRED));
-    return;
+    return Promise.reject(new BraintreeError(errors.VISA_CHECKOUT_PAYMENT_REQUIRED));
   }
 
-  this._client.request({
+  return this._client.request({
     method: 'post',
     endpoint: 'payment_methods/visa_checkout_cards',
     data: {
@@ -171,22 +168,20 @@ VisaCheckout.prototype.tokenize = function (payment, callback) {
         encryptedKey: payment.encKey
       }
     }
-  }, function (err, response) {
-    if (err) {
-      callback(new BraintreeError({
-        type: errors.VISA_CHECKOUT_TOKENIZATION.type,
-        code: errors.VISA_CHECKOUT_TOKENIZATION.code,
-        message: errors.VISA_CHECKOUT_TOKENIZATION.message,
-        details: {
-          originalError: err
-        }
-      }));
-      analytics.sendEvent(this._client, 'visacheckout.tokenize.failed');
-    } else {
-      callback(null, response.visaCheckoutCards[0]);
-      analytics.sendEvent(this._client, 'visacheckout.tokenize.succeeded');
-    }
-  }.bind(this));
+  }).then(function (response) {
+    analytics.sendEvent(self._client, 'visacheckout.tokenize.succeeded');
+    return response.visaCheckoutCards[0];
+  }).catch(function (err) {
+    analytics.sendEvent(self._client, 'visacheckout.tokenize.failed');
+    return Promise.reject(new BraintreeError({
+      type: errors.VISA_CHECKOUT_TOKENIZATION.type,
+      code: errors.VISA_CHECKOUT_TOKENIZATION.code,
+      message: errors.VISA_CHECKOUT_TOKENIZATION.message,
+      details: {
+        originalError: err
+      }
+    }));
+  });
 };
 
-module.exports = VisaCheckout;
+module.exports = wrapPromise.wrapPrototype(VisaCheckout);

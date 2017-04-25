@@ -2,18 +2,18 @@
 
 module.exports = {
   basePath: '../',
-  frameworks: ['browserify', 'mocha', 'chai-sinon'],
+  frameworks: ['browserify', 'mocha'],
   plugins: [
     'karma-browserify',
     'karma-phantomjs-launcher',
     'karma-mocha',
-    'karma-chai-sinon',
     'karma-mocha-reporter'
   ],
   browsers: ['PhantomJS'],
   port: 7357,
   reporters: ['mocha'],
   preprocessors: {
+    '../global.js': ['browserify'],
     '**/*.js': ['browserify']
   },
   browserify: {
@@ -24,6 +24,7 @@ module.exports = {
     noParse: []
   },
   files: [
+    '../global.js',
     '**/*.js'
   ],
   exclude: ['**/*.swp']

@@ -1,6 +1,5 @@
 'use strict';
 
-var Promise = require('../../../src/lib/promise');
 var create = require('../../../src/masterpass').create;
 var isSupported = require('../../../src/masterpass').isSupported;
 var browserDetection = require('browser-detection');
@@ -22,7 +21,7 @@ describe('masterpass', function () {
     this.masterpassInstance = new Masterpass({
       client: this.fakeClient
     });
-    this.sandbox.stub(Masterpass.prototype, '_initialize').returns(Promise.resolve(this.masterpassInstance));
+    this.sandbox.stub(Masterpass.prototype, '_initialize').resolves(this.masterpassInstance);
   });
 
   describe('create', function () {

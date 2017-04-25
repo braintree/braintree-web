@@ -1,5 +1,6 @@
 'use strict';
 
+var Promise = require('../../../../src/lib/promise');
 var ThreeDSecure = require('../../../../src/three-d-secure/external/three-d-secure');
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
@@ -24,7 +25,7 @@ describe('ThreeDSecure', function () {
       }
     };
     this.client = {
-      request: this.sandbox.stub(),
+      request: this.sandbox.stub().resolves(),
       getConfiguration: function () { return self.configuration; }
     };
   });
@@ -46,54 +47,55 @@ describe('ThreeDSecure', function () {
       this.instance = new ThreeDSecure({
         client: this.client
       });
+
+      this.client.request.resolves({
+        paymentMethod: {}
+      });
     });
 
-    it('requires an errback', function (done) {
-      try {
-        this.instance.verifyCard({});
-      } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.eql('MERCHANT');
-        expect(err.code).to.eql('CALLBACK_REQUIRED');
-        expect(err.message).to.eql('verifyCard must include a callback function.');
+    it('returns a promise', function () {
+      var promise = this.instance.verifyCard({
+        nonce: 'fake-nonce',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      });
 
-        done();
-      }
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
-    it('can be called multiple times if cancelled in between', function (done) {
+    it('can be called multiple times if cancelled in between', function () {
       var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
+      var self = this;
 
-      this.client.request.yieldsAsync(null, {
+      this.client.request.resolves({
         paymentMethod: {nonce: 'upgraded-nonce'},
         threeDSecureInfo: threeDSecureInfo
       });
 
-      this.instance.verifyCard({
+      return this.instance.verifyCard({
         nonce: 'fake-nonce',
         amount: 100,
         addFrame: noop,
         removeFrame: noop
-      }, noop);
-
-      this.instance.cancelVerifyCard();
-
-      this.instance.verifyCard({
-        nonce: 'fake-nonce',
-        amount: 100,
-        addFrame: noop,
-        removeFrame: noop
-      }, function (err, data) {
+      }).then(function () {
+        return self.instance.cancelVerifyCard();
+      }).then(function () {
+        return self.instance.verifyCard({
+          nonce: 'fake-nonce',
+          amount: 100,
+          addFrame: noop,
+          removeFrame: noop
+        });
+      }).then(function (data) {
         expect(data.nonce).to.equal('upgraded-nonce');
-
-        done();
       });
     });
 
     it('can be called multiple times if first request failed', function (done) {
       var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
 
-      this.client.request.yieldsAsync(new Error('failure'));
+      this.client.request.rejects(new Error('failure'));
 
       this.instance.verifyCard({
         nonce: 'fake-nonce',
@@ -101,7 +103,7 @@ describe('ThreeDSecure', function () {
         addFrame: noop,
         removeFrame: noop
       }, function () {
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paymentMethod: {nonce: 'upgraded-nonce'},
           threeDSecureInfo: threeDSecureInfo
         });
@@ -127,6 +129,8 @@ describe('ThreeDSecure', function () {
         addFrame: noop,
         removeFrame: noop
       };
+
+      this.client.request.resolves({});
 
       this.instance.verifyCard(options, noop);
 
@@ -164,7 +168,7 @@ describe('ThreeDSecure', function () {
         removeFrame: noop
       };
 
-      this.client.request.callsArgWith(1, null, {
+      this.client.request.resolves({
         paymentMethod: {},
         lookup: {
           acsUrl: 'http://example.com/acs',
@@ -262,7 +266,7 @@ describe('ThreeDSecure', function () {
     it('makes a request to the 3DS lookup endpoint', function (done) {
       var self = this;
 
-      this.client.request.yieldsAsync(null, {paymentMethod: {}});
+      this.client.request.resolves({paymentMethod: {}});
 
       this.instance.verifyCard({
         nonce: 'abcdef',
@@ -275,7 +279,7 @@ describe('ThreeDSecure', function () {
           endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
           method: 'post',
           data: {amount: 100}
-        }, self.sandbox.match.func);
+        });
 
         done();
       });
@@ -284,7 +288,7 @@ describe('ThreeDSecure', function () {
     it('handles errors when hitting the 3DS lookup endpoint', function (done) {
       var error = new Error('network error');
 
-      this.client.request.yieldsAsync(error);
+      this.client.request.rejects(error);
 
       this.instance.verifyCard({
         nonce: 'abcdef',
@@ -302,7 +306,7 @@ describe('ThreeDSecure', function () {
       it('calls the callback with a nonce and verification details', function (done) {
         var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paymentMethod: {nonce: 'upgraded-nonce'},
           threeDSecureInfo: threeDSecureInfo
         });
@@ -326,7 +330,7 @@ describe('ThreeDSecure', function () {
         var addFrame = this.sandbox.spy();
         var removeFrame = this.sandbox.spy();
 
-        this.client.request.yieldsAsync(null, {
+        this.client.request.resolves({
           paymentMethod: {nonce: 'upgraded-nonce'},
           threeDSecureInfo: threeDSecureInfo
         });
@@ -351,7 +355,7 @@ describe('ThreeDSecure', function () {
           client: this.client
         });
 
-        this.client.request.callsArgWith(1, null, {
+        this.client.request.resolves({
           paymentMethod: {},
           lookup: {
             acsUrl: 'http://example.com/acs',
@@ -385,7 +389,7 @@ describe('ThreeDSecure', function () {
           client: this.client
         });
 
-        this.client.request.callsArgWith(1, null, {
+        this.client.request.resolves({
           paymentMethod: {},
           lookup: {
             acsUrl: 'http://example.com/acs',
@@ -429,7 +433,7 @@ describe('ThreeDSecure', function () {
           client: this.client
         });
 
-        this.client.request.callsArgWith(1, null, {
+        this.client.request.resolves({
           paymentMethod: {},
           lookup: {
             acsUrl: 'http://example.com/acs',
@@ -468,7 +472,7 @@ describe('ThreeDSecure', function () {
           client: this.client
         });
 
-        this.client.request.callsArgWith(1, null, {
+        this.client.request.resolves({
           paymentMethod: {},
           lookup: {
             acsUrl: 'http://example.com/acs',
@@ -526,7 +530,7 @@ describe('ThreeDSecure', function () {
             }
           };
 
-          this.client.request.callsArgWith(1, null, {
+          this.client.request.resolves({
             paymentMethod: {
               nonce: 'lookup-nonce'
             },
@@ -641,12 +645,14 @@ describe('ThreeDSecure', function () {
   describe('cancelVerifyCard', function () {
     beforeEach(function () {
       this.threeDS = new ThreeDSecure({client: this.client});
+      this.threeDS._verifyCardInProgress = true;
+      this.threeDS._lookupPaymentMethod = {};
     });
 
-    it('does not require a callback', function () {
-      expect(function () {
-        this.threeDS.cancelVerifyCard();
-      }.bind(this)).to.not.throw();
+    it('returns a promise', function () {
+      var promise = this.threeDS.cancelVerifyCard();
+
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('sets _verifyCardInProgress to false', function (done) {
@@ -660,6 +666,8 @@ describe('ThreeDSecure', function () {
     });
 
     it('passes back an error if there is no _lookupPaymentMethod', function (done) {
+      delete this.threeDS._lookupPaymentMethod;
+
       this.threeDS.cancelVerifyCard(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.MERCHANT);
@@ -701,12 +709,10 @@ describe('ThreeDSecure', function () {
       });
     });
 
-    it('does not require a callback', function () {
-      var threeDS = this.threeDS;
+    it('returns a promise', function () {
+      var promise = this.threeDS.teardown();
 
-      expect(function () {
-        threeDS.teardown();
-      }).to.not.throw();
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('replaces all methods so error is thrown when methods are invoked', function (done) {

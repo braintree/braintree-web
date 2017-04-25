@@ -1,6 +1,7 @@
 'use strict';
 /* eslint-disable camelcase */
 
+var Promise = require('../../../src/lib/promise');
 var fake = require('../../helpers/fake');
 var USBankAccount = require('../../../src/us-bank-account/us-bank-account');
 var BraintreeError = require('../../../src/lib/braintree-error');
@@ -21,7 +22,7 @@ describe('USBankAccount', function () {
       getConfiguration: function () {
         return this.configuration;
       }.bind(this),
-      request: this.sandbox.stub()
+      request: this.sandbox.stub().resolves()
     };
 
     this.context = {
@@ -43,37 +44,40 @@ describe('USBankAccount', function () {
   });
 
   describe('tokenize', function () {
+    it('returns a promise', function () {
+      var promise;
+
+      this.fakeClient.request.resolves({
+        data: {
+          id: 'id',
+          description: 'description',
+          type: 'type'
+        }
+      });
+
+      promise = USBankAccount.prototype.tokenize.call(this.context, {
+        bankDetails: {
+          routingNumber: '1234567',
+          accountNumber: '0000000',
+          accountType: 'checking',
+          ownershipType: 'personal',
+          firstName: 'First',
+          lastName: 'Last',
+          billingAddress: {
+            streetAddress: '123 Townsend St',
+            extendedAddress: 'FL 6',
+            locality: 'San Francisco',
+            region: 'CA',
+            postalCode: '94107'
+          }
+        },
+        mandateText: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
+      });
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
     describe('with bad arguments', function () {
-      it('errors without any arguments', function (done) {
-        try {
-          USBankAccount.prototype.tokenize.call(this.context);
-        } catch (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('CALLBACK_REQUIRED');
-          expect(err.message).to.equal('tokenize must include a callback function.');
-
-          expect(this.fakeClient.request).not.to.have.beenCalled;
-
-          done();
-        }
-      });
-
-      it('errors without a callback', function (done) {
-        try {
-          USBankAccount.prototype.tokenize.call(this.context, {});
-        } catch (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('CALLBACK_REQUIRED');
-          expect(err.message).to.equal('tokenize must include a callback function.');
-
-          expect(this.fakeClient.request).not.to.have.beenCalled;
-
-          done();
-        }
-      });
-
       it('errors without tokenizing raw bank details or the auth flow', function (done) {
         var client = this.fakeClient;
 
@@ -145,7 +149,7 @@ describe('USBankAccount', function () {
       });
 
       it('tokenizes a checking account', function (done) {
-        this.fakeClient.request.yieldsAsync(null, this.fakeUsBankAccountResponse);
+        this.fakeClient.request.resolves(this.fakeUsBankAccountResponse);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -191,7 +195,7 @@ describe('USBankAccount', function () {
                 text: 'I authorize Braintree to charge my bank account on behalf of Test Merchant.'
               }
             }
-          }, this.sandbox.match.func);
+          });
 
           expect(tokenizedPayload.nonce).to.equal('fake-nonce-123');
           done();
@@ -199,7 +203,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "success" analytics event when tokenizing bank details successfully', function (done) {
-        this.fakeClient.request.yieldsAsync(null, this.fakeUsBankAccountResponse);
+        this.fakeClient.request.resolves(this.fakeUsBankAccountResponse);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -226,7 +230,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "failed" analytics event when tokenizing bank details badly', function (done) {
-        this.fakeClient.request.yieldsAsync(new Error('Something bad happnened'), null);
+        this.fakeClient.request.rejects(new Error('Something bad happnened'));
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -275,7 +279,9 @@ describe('USBankAccount', function () {
       it('errors when tokenize fails with 401 status code', function (done) {
         var originalError = new Error('Something bad happnened');
 
-        this.fakeClient.request.yieldsAsync(originalError, null, 401);
+        originalError.details = {httpStatus: 401};
+
+        this.fakeClient.request.rejects(originalError);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -309,7 +315,9 @@ describe('USBankAccount', function () {
       it('errors when tokenize fails with 4xx status code', function (done) {
         var originalError = new Error('Something bad happnened');
 
-        this.fakeClient.request.yieldsAsync(originalError, null, 404);
+        originalError.details = {httpStatus: 404};
+
+        this.fakeClient.request.rejects(originalError);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -343,7 +351,9 @@ describe('USBankAccount', function () {
       it('errors when tokenize fails with 5xx status code', function (done) {
         var originalError = new Error('Something bad happnened');
 
-        this.fakeClient.request.yieldsAsync(originalError, null, 500);
+        originalError.details = {httpStatus: 500};
+
+        this.fakeClient.request.rejects(originalError);
 
         USBankAccount.prototype.tokenize.call(this.context, {
           bankDetails: {
@@ -523,7 +533,7 @@ describe('USBankAccount', function () {
       });
 
       it('tokenizes bank login for personal accounts', function (done) {
-        this.fakeClient.request.yieldsAsync(null, this.fakeGatewayResponse);
+        this.fakeClient.request.resolves(this.fakeGatewayResponse);
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
@@ -609,7 +619,7 @@ describe('USBankAccount', function () {
       });
 
       it('tokenizes bank login for business accounts', function (done) {
-        this.fakeClient.request.yieldsAsync(null, this.fakeGatewayResponse);
+        this.fakeClient.request.resolves(this.fakeGatewayResponse);
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
@@ -859,7 +869,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "succeeded" analytics events when Plaid tokenization completes', function (done) {
-        this.fakeClient.request.yieldsAsync(null, this.fakeGatewayResponse);
+        this.fakeClient.request.resolves(this.fakeGatewayResponse);
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
@@ -926,7 +936,7 @@ describe('USBankAccount', function () {
       });
 
       it('sends a "failed" analytics events when Plaid tokenization fails', function (done) {
-        this.fakeClient.request.yieldsAsync(new Error('Something bad happened'));
+        this.fakeClient.request.rejects(new Error('Something bad happened'));
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
@@ -965,6 +975,8 @@ describe('USBankAccount', function () {
     it('errors when tokenize fails with 401 status code', function (done) {
       var originalError = new Error('Something bad happnened');
 
+      originalError.details = {httpStatus: 401};
+
       this.context._loadPlaid = function (callback) {
         var fakePlaid = {
           create: function (options) {
@@ -985,7 +997,8 @@ describe('USBankAccount', function () {
           callback(null, fakePlaid);
         }, 1);
       };
-      this.fakeClient.request.yieldsAsync(originalError, null, 401);
+
+      this.fakeClient.request.rejects(originalError);
 
       USBankAccount.prototype.tokenize.call(this.context, {
         bankLogin: {
@@ -1008,6 +1021,7 @@ describe('USBankAccount', function () {
     it('errors when tokenize fails with 4xx status code', function (done) {
       var originalError = new Error('Something bad happnened');
 
+      originalError.details = {httpStatus: 404};
       this.context._loadPlaid = function (callback) {
         var fakePlaid = {
           create: function (options) {
@@ -1028,7 +1042,7 @@ describe('USBankAccount', function () {
           callback(null, fakePlaid);
         }, 1);
       };
-      this.fakeClient.request.yieldsAsync(originalError, null, 404);
+      this.fakeClient.request.rejects(originalError);
 
       USBankAccount.prototype.tokenize.call(this.context, {
         bankLogin: {
@@ -1051,6 +1065,8 @@ describe('USBankAccount', function () {
     it('errors when tokenize fails with 5xx status code', function (done) {
       var originalError = new Error('Something bad happnened');
 
+      originalError.details = {httpStatus: 500};
+
       this.context._loadPlaid = function (callback) {
         var fakePlaid = {
           create: function (options) {
@@ -1071,7 +1087,7 @@ describe('USBankAccount', function () {
           callback(null, fakePlaid);
         }, 1);
       };
-      this.fakeClient.request.yieldsAsync(originalError, null, 500);
+      this.fakeClient.request.rejects(originalError);
 
       USBankAccount.prototype.tokenize.call(this.context, {
         bankLogin: {
@@ -1314,6 +1330,13 @@ describe('USBankAccount', function () {
   });
 
   describe('teardown', function () {
+    it('returns a promise', function () {
+      var instance = new USBankAccount({client: this.fakeClient});
+      var promise = instance.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
     it('replaces all methods so error is thrown when methods are invoked', function (done) {
       var instance = new USBankAccount({client: this.fakeClient});
 

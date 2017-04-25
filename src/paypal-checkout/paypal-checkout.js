@@ -66,14 +66,13 @@ function PayPalCheckout(options) {
  * Creates a PayPal payment ID or billing token using the given options. This is meant to be passed to PayPal's checkout.js library.
  * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the checkout.js library. Otherwise, it returns a Promise that resolves with the id.
  * @public
- * @function
  * @param {object} options All options for the PayPalCheckout component.
  * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow. If 'vault' is used with a client token generated with a customer ID, the PayPal account will be added to that customer as a saved payment method.
  * @param {string} [options.intent=authorize]
  * Checkout flows only.
  * * `authorize` - Submits the transaction for authorization but not settlement.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
- * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify. Checkout flows only.
+ * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify.
  * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
@@ -136,68 +135,62 @@ function PayPalCheckout(options) {
  *   // Add other options, e.g. onAuthorize, env, locale
  * }, '#paypal-button');
  *
- * @returns {Promise|void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
-  var self = this; // eslint-disable-line no-invalid-this
+PayPalCheckout.prototype.createPayment = function (options) {
+  var endpoint;
 
-  return new Promise(function (resolve, reject) {
-    var endpoint;
-    var client = self._client;
+  if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
+    return Promise.reject(new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED));
+  }
 
-    if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
-      throw new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED);
+  endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
+
+  analytics.sendEvent(this._client, 'paypal-checkout.createPayment');
+  if (options.offerCredit === true) {
+    analytics.sendEvent(this._client, 'paypal-checkout.credit.offered');
+  }
+
+  return this._client.request({
+    endpoint: endpoint,
+    method: 'post',
+    data: this._formatPaymentResourceData(options)
+  }).then(function (response) {
+    var flowToken;
+
+    if (options.flow === 'checkout') {
+      flowToken = response.paymentResource.paymentToken;
+    } else {
+      flowToken = response.agreementSetup.tokenId;
     }
 
-    endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
+    return flowToken;
+  }).catch(function (err) {
+    var status = err.details && err.details.httpStatus;
 
-    analytics.sendEvent(client, 'paypal-checkout.createPayment');
-    if (options.offerCredit === true && options.flow === 'checkout') {
-      analytics.sendEvent(client, 'paypal-checkout.credit.offered');
+    if (status === 422) {
+      return Promise.reject(new BraintreeError({
+        type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+        code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+        message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+        details: {
+          originalError: err
+        }
+      }));
     }
 
-    client.request({
-      endpoint: endpoint,
-      method: 'post',
-      data: self._formatPaymentResourceData(options)
-    }, function (err, response, status) {
-      var flowToken;
-
-      if (err) {
-        if (status === 422) {
-          reject(new BraintreeError({
-            type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
-            code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
-            message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
-            details: {
-              originalError: err
-            }
-          }));
-        } else {
-          reject(convertToBraintreeError(err, {
-            type: errors.PAYPAL_FLOW_FAILED.type,
-            code: errors.PAYPAL_FLOW_FAILED.code,
-            message: errors.PAYPAL_FLOW_FAILED.message
-          }));
-        }
-      } else {
-        if (options.flow === 'checkout') {
-          flowToken = response.paymentResource.paymentToken;
-        } else {
-          flowToken = response.agreementSetup.tokenId;
-        }
-
-        resolve(flowToken);
-      }
-    });
+    return Promise.reject(convertToBraintreeError(err, {
+      type: errors.PAYPAL_FLOW_FAILED.type,
+      code: errors.PAYPAL_FLOW_FAILED.code,
+      message: errors.PAYPAL_FLOW_FAILED.message
+    }));
   });
-});
+};
 
 /**
  * Tokenizes the authorize data from PayPal's checkout.js library when completing a buyer approval flow.
  * When a {@link callback} is defined, invokes the callback with {@link PayPalCheckout~tokenizePayload|tokenizePayload} and returns undefined. Otherwise, returns a Promise that resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @public
- * @function
  * @param {object} tokenizeOptions Tokens and IDs required to tokenize the payment.
  * @param {string} tokenizeOptions.payerId Payer ID returned by PayPal `onAuthorize` callback.
  * @param {string} [tokenizeOptions.paymentId] Payment ID returned by PayPal `onAuthorize` callback.
@@ -216,54 +209,49 @@ PayPalCheckout.prototype.createPayment = wrapPromise(function (options) {
  *   },
  *   // Add other options, e.g. payment, env, locale
  * }, '#paypal-button');
- * @returns {Promise|void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-PayPalCheckout.prototype.tokenizePayment = wrapPromise(function (tokenizeOptions) {
-  var self = this; // eslint-disable-line no-invalid-this
+PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
+  var self = this;
+  var payload;
+  var client = this._client;
+  var options = {
+    flow: tokenizeOptions.billingToken ? 'vault' : 'checkout',
+    intent: tokenizeOptions.intent
+  };
+  var params = {
+    // The paymentToken provided by Checkout.js v4 is the ECToken
+    ecToken: tokenizeOptions.paymentToken,
+    billingToken: tokenizeOptions.billingToken,
+    payerId: tokenizeOptions.payerID,
+    paymentId: tokenizeOptions.paymentID
+  };
 
-  return new Promise(function (resolve, reject) {
-    var payload;
-    var client = self._client;
-    var options = {
-      flow: tokenizeOptions.billingToken ? 'vault' : 'checkout',
-      intent: tokenizeOptions.intent
-    };
-    var params = {
-      // The paymentToken provided by Checkout.js v4 is the ECToken
-      ecToken: tokenizeOptions.paymentToken,
-      billingToken: tokenizeOptions.billingToken,
-      payerId: tokenizeOptions.payerID,
-      paymentId: tokenizeOptions.paymentID
-    };
+  analytics.sendEvent(client, 'paypal-checkout.tokenization.started');
 
-    analytics.sendEvent(client, 'paypal-checkout.tokenization.started');
+  return client.request({
+    endpoint: 'payment_methods/paypal_accounts',
+    method: 'post',
+    data: self._formatTokenizeData(options, params)
+  }).then(function (response) {
+    payload = self._formatTokenizePayload(response);
 
-    client.request({
-      endpoint: 'payment_methods/paypal_accounts',
-      method: 'post',
-      data: self._formatTokenizeData(options, params)
-    }, function (err, response) {
-      if (err) {
-        analytics.sendEvent(client, 'paypal-checkout.tokenization.failed');
+    analytics.sendEvent(client, 'paypal-checkout.tokenization.success');
+    if (payload.creditFinancingOffered) {
+      analytics.sendEvent(client, 'paypal-checkout.credit.accepted');
+    }
 
-        reject(convertToBraintreeError(err, {
-          type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
-          code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
-          message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
-        }));
-      } else {
-        payload = self._formatTokenizePayload(response);
+    return payload;
+  }).catch(function (err) {
+    analytics.sendEvent(client, 'paypal-checkout.tokenization.failed');
 
-        analytics.sendEvent(client, 'paypal-checkout.tokenization.success');
-        if (payload.creditFinancingOffered) {
-          analytics.sendEvent(client, 'paypal-checkout.credit.accepted');
-        }
-
-        resolve(payload);
-      }
-    });
+    return Promise.reject(convertToBraintreeError(err, {
+      type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
+      code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
+      message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
+    }));
   });
-});
+};
 
 PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
   var key;
@@ -273,6 +261,7 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
     // but are not validated and are not actually used with checkout.js
     returnUrl: 'x',
     cancelUrl: 'x',
+    offerPaypalCredit: options.offerCredit === true,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
       localeCode: options.locale,
@@ -285,7 +274,6 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
   if (options.flow === 'checkout') {
     paymentResource.amount = options.amount;
     paymentResource.currencyIsoCode = options.currency;
-    paymentResource.offerPaypalCredit = options.offerCredit === true;
 
     if (options.hasOwnProperty('intent')) {
       paymentResource.intent = options.intent;
@@ -360,4 +348,4 @@ PayPalCheckout.prototype._formatTokenizePayload = function (response) {
   return payload;
 };
 
-module.exports = PayPalCheckout;
+module.exports = wrapPromise.wrapPrototype(PayPalCheckout);

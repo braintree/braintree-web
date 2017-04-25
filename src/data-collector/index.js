@@ -41,7 +41,7 @@ var errors = require('./errors');
  * dataCollectorInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} If no callback is provided, returns a promise that resolves when the teardown is complete.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 
 /**

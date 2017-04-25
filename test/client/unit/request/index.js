@@ -53,7 +53,7 @@ describe('Client request driver', function () {
     }
 
     AJAXDriver.request.restore();
-    this.sandbox.stub(AJAXDriver, 'request', function (_, cb) {
+    this.sandbox.stub(AJAXDriver, 'request').callsFake(function (_, cb) {
       cb();
       cb();
       cb();

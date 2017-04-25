@@ -1,10 +1,10 @@
 'use strict';
 
 var BraintreeError = require('../lib/braintree-error');
-var deferred = require('../lib/deferred');
 var errors = require('./errors');
 var assign = require('../lib/assign').assign;
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
+var Promise = require('../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @class
@@ -21,8 +21,8 @@ function AmericanExpress(options) {
  * @public
  * @param {object} options Request options
  * @param {string} options.nonce An existing Braintree nonce.
- * @param {callback} callback The second argument, <code>data</code>, is the returned server data.
- * @returns {void}
+ * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data. If no callback is provided, `getRewardsBalance` returns a promise that resolves with the server data.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
@@ -38,21 +38,16 @@ function AmericanExpress(options) {
  *   });
  * });
  */
-AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
+AmericanExpress.prototype.getRewardsBalance = function (options) {
   var nonce = options.nonce;
   var data;
 
-  throwIfNoCallback(callback, 'getRewardsBalance');
-
-  callback = deferred(callback);
-
   if (!nonce) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: errors.AMEX_NONCE_REQUIRED.type,
       code: errors.AMEX_NONCE_REQUIRED.code,
       message: 'getRewardsBalance must be called with a nonce.'
     }));
-    return;
   }
 
   data = assign({
@@ -62,23 +57,19 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
 
   delete data.nonce;
 
-  this._client.request({
+  return this._client.request({
     method: 'get',
     endpoint: 'payment_methods/amex_rewards_balance',
     data: data
-  }, function (err, response) {
-    if (err) {
-      callback(new BraintreeError({
-        type: errors.AMEX_NETWORK_ERROR.type,
-        code: errors.AMEX_NETWORK_ERROR.code,
-        message: 'A network error occurred when getting the American Express rewards balance.',
-        details: {
-          originalError: err
-        }
-      }));
-    } else {
-      callback(null, response);
-    }
+  }).catch(function (err) {
+    return Promise.reject(new BraintreeError({
+      type: errors.AMEX_NETWORK_ERROR.type,
+      code: errors.AMEX_NETWORK_ERROR.code,
+      message: 'A network error occurred when getting the American Express rewards balance.',
+      details: {
+        originalError: err
+      }
+    }));
   });
 };
 
@@ -87,8 +78,8 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
  * @public
  * @param {object} options Request options
  * @param {string} options.nonce An existing nonce from American Express (note that this is <em>not</em> a nonce from Braintree).
- * @param {callback} callback The second argument, <code>data</code>, is the returned server data.
- * @returns {void}
+ * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data. If no callback is provided, `getExpressCheckoutProfile` returns a promise that resolves with the server data.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
@@ -104,41 +95,32 @@ AmericanExpress.prototype.getRewardsBalance = function (options, callback) {
  *   });
  * });
  */
-AmericanExpress.prototype.getExpressCheckoutProfile = function (options, callback) {
-  throwIfNoCallback(callback, 'getExpressCheckoutProfile');
-
-  callback = deferred(callback);
-
+AmericanExpress.prototype.getExpressCheckoutProfile = function (options) {
   if (!options.nonce) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: errors.AMEX_NONCE_REQUIRED.type,
       code: errors.AMEX_NONCE_REQUIRED.code,
       message: 'getExpressCheckoutProfile must be called with a nonce.'
     }));
-    return;
   }
 
-  this._client.request({
+  return this._client.request({
     method: 'get',
     endpoint: 'payment_methods/amex_express_checkout_cards/' + options.nonce,
     data: {
       _meta: {source: 'american-express'},
       paymentMethodNonce: options.nonce
     }
-  }, function (err, response) {
-    if (err) {
-      callback(new BraintreeError({
-        type: errors.AMEX_NETWORK_ERROR.type,
-        code: errors.AMEX_NETWORK_ERROR.code,
-        message: 'A network error occurred when getting the American Express Checkout nonce profile.',
-        details: {
-          originalError: err
-        }
-      }));
-    } else {
-      callback(null, response);
-    }
+  }).catch(function (err) {
+    return Promise.reject(new BraintreeError({
+      type: errors.AMEX_NETWORK_ERROR.type,
+      code: errors.AMEX_NETWORK_ERROR.code,
+      message: 'A network error occurred when getting the American Express Checkout nonce profile.',
+      details: {
+        originalError: err
+      }
+    }));
   });
 };
 
-module.exports = AmericanExpress;
+module.exports = wrapPromise.wrapPrototype(AmericanExpress);

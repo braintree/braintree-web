@@ -13,9 +13,9 @@ describe('braintree bus', function () {
     Bus.prototype.on.restore();
     Bus.prototype.off.restore();
     Bus.prototype.emit.restore();
-    this.sandbox.stub(framebus, 'on', function () {});
-    this.sandbox.stub(framebus, 'off', function () {});
-    this.sandbox.stub(framebus, 'emit', function () {});
+    this.sandbox.stub(framebus, 'on');
+    this.sandbox.stub(framebus, 'off');
+    this.sandbox.stub(framebus, 'emit');
 
     this.event = Bus.events[firstEvent];
 

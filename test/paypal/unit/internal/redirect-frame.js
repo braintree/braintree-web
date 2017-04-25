@@ -9,9 +9,7 @@ describe('redirect-frame', function () {
     beforeEach(function () {
       this.params = {};
       this.sandbox.stub(frameService, 'report');
-      this.sandbox.stub(querystring, 'parse', function () {
-        return this.params;
-      }.bind(this));
+      this.sandbox.stub(querystring, 'parse').returns(this.params);
     });
 
     it('reports to frame service the params from the querystring', function () {

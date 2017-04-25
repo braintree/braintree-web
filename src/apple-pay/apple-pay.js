@@ -2,9 +2,9 @@
 
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
-var deferred = require('../lib/deferred');
-var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
+var Promise = require('../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * An Apple Pay Payment Authorization Event object.
@@ -97,9 +97,9 @@ ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
  * @param {object} options Options
  * @param {string} options.validationURL The validationURL fram an `ApplePayValidateMerchantEvent`.
  * @param {string} options.displayName The canonical name for your store. Use a non-localized name. This parameter should be a UTF-8 string that is a maximum of 128 characters. The system may display this name to the user.
- * @param {callback} callback The second argument, <code>data</code>, is the Apple Pay merchant session object.
+ * @param {callback} [callback] The second argument, <code>data</code>, is the Apple Pay merchant session object. If no callback is provided, `performValidation` returns a promise.
  * Pass the merchant session to your Apple Pay session's `completeMerchantValidation` method.
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * var applePay = require('braintree-web/apple-pay');
  *
@@ -133,22 +133,12 @@ ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
  *   };
  * });
  */
-ApplePay.prototype.performValidation = function (options, callback) {
+ApplePay.prototype.performValidation = function (options) {
   var applePayWebSession;
-
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'performValidation requires a callback.'
-    });
-  }
-
-  callback = deferred(callback);
+  var self = this;
 
   if (!options || !options.validationURL) {
-    callback(new BraintreeError(errors.APPLE_PAY_VALIDATION_URL_REQUIRED));
-    return;
+    return Promise.reject(new BraintreeError(errors.APPLE_PAY_VALIDATION_URL_REQUIRED));
   }
 
   applePayWebSession = {
@@ -161,40 +151,39 @@ ApplePay.prototype.performValidation = function (options, callback) {
     applePayWebSession.displayName = options.displayName;
   }
 
-  this._client.request({
+  return this._client.request({
     method: 'post',
     endpoint: 'apple_pay_web/sessions',
     data: {
       _meta: {source: 'apple-pay'},
       applePayWebSession: applePayWebSession
     }
-  }, function (err, response) {
-    if (err) {
-      if (err.code === 'CLIENT_REQUEST_ERROR') {
-        callback(new BraintreeError({
-          type: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.type,
-          code: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.code,
-          message: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.message,
-          details: {
-            originalError: err.details.originalError
-          }
-        }));
-      } else {
-        callback(new BraintreeError({
-          type: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.type,
-          code: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.code,
-          message: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.message,
-          details: {
-            originalError: err
-          }
-        }));
-      }
-      analytics.sendEvent(this._client, 'applepay.performValidation.failed');
-    } else {
-      callback(null, response);
-      analytics.sendEvent(this._client, 'applepay.performValidation.succeeded');
+  }).then(function (response) {
+    analytics.sendEvent(self._client, 'applepay.performValidation.succeeded');
+    return Promise.resolve(response);
+  }).catch(function (err) {
+    analytics.sendEvent(self._client, 'applepay.performValidation.failed');
+
+    if (err.code === 'CLIENT_REQUEST_ERROR') {
+      return Promise.reject(new BraintreeError({
+        type: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.type,
+        code: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.code,
+        message: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.message,
+        details: {
+          originalError: err.details.originalError
+        }
+      }));
     }
-  }.bind(this));
+
+    return Promise.reject(new BraintreeError({
+      type: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.type,
+      code: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.code,
+      message: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.message,
+      details: {
+        originalError: err
+      }
+    }));
+  });
 };
 
 /**
@@ -202,8 +191,8 @@ ApplePay.prototype.performValidation = function (options, callback) {
  * @public
  * @param {object} options Options
  * @param {object} options.token The `payment.token` property of an {@link external:ApplePayPaymentAuthorizedEvent}.
- * @param {callback} callback The second argument, <code>data</code>, is the tokenized payload.
- * @returns {void}
+ * @param {callback} [callback] The second argument, <code>data</code>, is the tokenized payload. If no callback is provided, `tokenize` returns a promise that resolves with the tokenized payload.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * var applePay = require('braintree-web/apple-pay');
  *
@@ -238,23 +227,14 @@ ApplePay.prototype.performValidation = function (options, callback) {
  *   // ...
  * });
  */
-ApplePay.prototype.tokenize = function (options, callback) {
-  if (typeof callback !== 'function') {
-    throw new BraintreeError({
-      type: sharedErrors.CALLBACK_REQUIRED.type,
-      code: sharedErrors.CALLBACK_REQUIRED.code,
-      message: 'tokenize requires a callback.'
-    });
-  }
-
-  callback = deferred(callback);
+ApplePay.prototype.tokenize = function (options) {
+  var self = this;
 
   if (!options.token) {
-    callback(new BraintreeError(errors.APPLE_PAY_PAYMENT_TOKEN_REQUIRED));
-    return;
+    return Promise.reject(new BraintreeError(errors.APPLE_PAY_PAYMENT_TOKEN_REQUIRED));
   }
 
-  this._client.request({
+  return this._client.request({
     method: 'post',
     endpoint: 'payment_methods/apple_payment_tokens',
     data: {
@@ -266,22 +246,21 @@ ApplePay.prototype.tokenize = function (options, callback) {
         paymentData: btoa(JSON.stringify(options.token.paymentData))
       })
     }
-  }, function (err, response) {
-    if (err) {
-      callback(new BraintreeError({
-        type: errors.APPLE_PAY_TOKENIZATION.type,
-        code: errors.APPLE_PAY_TOKENIZATION.code,
-        message: errors.APPLE_PAY_TOKENIZATION.message,
-        details: {
-          originalError: err
-        }
-      }));
-      analytics.sendEvent(this._client, 'applepay.tokenize.failed');
-    } else {
-      callback(null, response.applePayCards[0]);
-      analytics.sendEvent(this._client, 'applepay.tokenize.succeeded');
-    }
-  }.bind(this));
+  }).then(function (response) {
+    analytics.sendEvent(self._client, 'applepay.tokenize.succeeded');
+    return Promise.resolve(response.applePayCards[0]);
+  }).catch(function (err) {
+    analytics.sendEvent(self._client, 'applepay.tokenize.failed');
+
+    return Promise.reject(new BraintreeError({
+      type: errors.APPLE_PAY_TOKENIZATION.type,
+      code: errors.APPLE_PAY_TOKENIZATION.code,
+      message: errors.APPLE_PAY_TOKENIZATION.message,
+      details: {
+        originalError: err
+      }
+    }));
+  });
 };
 
-module.exports = ApplePay;
+module.exports = wrapPromise.wrapPrototype(ApplePay);

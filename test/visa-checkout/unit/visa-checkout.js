@@ -10,7 +10,9 @@ describe('Visa Checkout', function () {
     this.sandbox.stub(analytics, 'sendEvent');
     this.configuration = fake.configuration();
     this.client = {
-      request: this.sandbox.spy(),
+      request: this.sandbox.stub().resolves({
+        visaCheckoutCards: []
+      }),
       getConfiguration: function () {
         return this.configuration;
       }.bind(this)
@@ -142,19 +144,15 @@ describe('Visa Checkout', function () {
   });
 
   describe('tokenize', function () {
-    it('throws an error when called without a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var promise = this.visaCheckout.tokenize({
+        callid: 'callid',
+        encKey: 'encKey',
+        encPaymentData: 'encPaymentData'
+      });
 
-      try {
-        this.visaCheckout.tokenize({});
-      } catch (e) {
-        err = e;
-      }
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('tokenize must include a callback function.');
+      expect(promise).to.be.respondTo('then');
+      expect(promise).to.be.respondTo('catch');
     });
 
     it('calls callback with error when payment.callid is undefined', function (done) {
@@ -235,9 +233,7 @@ describe('Visa Checkout', function () {
         message: 'message'
       });
 
-      this.client.request = function (options, cb) {
-        cb(originalError);
-      };
+      this.client.request.rejects(originalError);
 
       this.visaCheckout.tokenize({
         callid: 'callId',
@@ -258,11 +254,9 @@ describe('Visa Checkout', function () {
         foo: 'baz'
       };
 
-      this.client.request = function (options, cb) {
-        cb(null, {
-          visaCheckoutCards: [tokenizedPayload]
-        });
-      };
+      this.client.request.resolves({
+        visaCheckoutCards: [tokenizedPayload]
+      });
 
       this.visaCheckout.tokenize({
         callid: 'callId',
@@ -277,12 +271,10 @@ describe('Visa Checkout', function () {
 
   describe('analytics', function () {
     describe('tokenize', function () {
-      it('submits succeeded', function () {
-        this.client.request = function (_, cb) {
-          cb(null, {
-            visaCheckoutCards: [{}]
-          });
-        };
+      it('submits succeeded', function (done) {
+        this.client.request.resolves({
+          visaCheckoutCards: [{}]
+        });
 
         VisaCheckout.prototype.tokenize.call({
           _client: this.client
@@ -290,15 +282,14 @@ describe('Visa Checkout', function () {
           callid: 'callId',
           encKey: 'encKey',
           encPaymentData: 'encPaymentData'
-        }, function () {});
-
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.succeeded');
+        }, function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.succeeded');
+          done();
+        }.bind(this));
       });
 
-      it('submits failed', function () {
-        this.client.request = function (_, cb) {
-          cb({}, null);
-        };
+      it('submits failed', function (done) {
+        this.client.request.rejects(new Error());
 
         VisaCheckout.prototype.tokenize.call({
           _client: this.client
@@ -306,9 +297,10 @@ describe('Visa Checkout', function () {
           callid: 'callId',
           encKey: 'encKey',
           encPaymentData: 'encPaymentData'
-        }, function () {});
-
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.failed');
+        }, function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.failed');
+          done();
+        }.bind(this));
       });
     });
   });

@@ -7,62 +7,54 @@
 var BraintreeError = require('../lib/braintree-error');
 var errors = require('./errors');
 var USBankAccount = require('./us-bank-account');
-var deferred = require('../lib/deferred');
-var throwIfNoCallback = require('../lib/throw-if-no-callback');
 var VERSION = process.env.npm_package_version;
 var sharedErrors = require('../lib/errors');
+var Promise = require('../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 /**
  * @static
  * @function create
  * @param {object} options Creation options:
  * @param {Client} options.client A {@link Client} instance.
- * @param {callback} callback The second argument, `data`, is the {@link USBankAccount} instance.
- * @returns {void}
+ * @param {callback} [callback] The second argument, `data`, is the {@link USBankAccount} instance. If no callback is provided, `create` returns a promise that resolves with the {@link USBankAccount} instance.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-function create(options, callback) {
+function create(options) {
   var clientVersion, braintreeApi, usBankAccount;
 
-  throwIfNoCallback(callback, 'create');
-
-  callback = deferred(callback);
-
   if (options.client == null) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
       code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: 'options.client is required when instantiating US Bank Account.'
     }));
-    return;
   }
 
   clientVersion = options.client.getConfiguration().analyticsMetadata.sdkVersion;
   if (clientVersion !== VERSION) {
-    callback(new BraintreeError({
+    return Promise.reject(new BraintreeError({
       type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
       code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
       message: 'Client (version ' + clientVersion + ') and US Bank Account (version ' + VERSION + ') components must be from the same SDK version.'
     }));
-    return;
   }
 
   braintreeApi = options.client.getConfiguration().gatewayConfiguration.braintreeApi;
   if (!braintreeApi) {
-    callback(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
-    return;
+    return Promise.reject(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
   }
 
   usBankAccount = options.client.getConfiguration().gatewayConfiguration.usBankAccount;
   if (!usBankAccount) {
-    callback(new BraintreeError(errors.US_BANK_ACCOUNT_NOT_ENABLED));
-    return;
+    return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_NOT_ENABLED));
   }
 
-  callback(null, new USBankAccount(options));
+  return Promise.resolve(new USBankAccount(options));
 }
 
 module.exports = {
-  create: create,
+  create: wrapPromise(create),
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

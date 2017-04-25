@@ -1,5 +1,6 @@
 'use strict';
 
+var Promise = require('../../../src/lib/promise');
 var create = require('../../../src/us-bank-account').create;
 var USBankAccount = require('../../../src/us-bank-account/us-bank-account');
 var BraintreeError = require('../../../src/lib/braintree-error');
@@ -24,19 +25,10 @@ describe('usBankAccount component', function () {
   });
 
   describe('create', function () {
-    it('throws an error when called without a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var promise = create({client: this.fakeClient});
 
-      try {
-        create({client: this.fakeClient});
-      } catch (e) {
-        err = e;
-      }
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.message).to.equal('create must include a callback function.');
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('calls callback with an error when called without a client', function (done) {

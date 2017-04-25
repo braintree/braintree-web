@@ -13,7 +13,7 @@ describe('placeholder shim', function () {
     var originalCreateElement = document.createElement;
 
     inputEl.parentNode = parentNode;
-    this.sandbox.stub(document, 'createElement', function (string) {
+    this.sandbox.stub(document, 'createElement').callsFake(function (string) {
       if (string === 'input') {
         return {};
       }

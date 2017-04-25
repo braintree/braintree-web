@@ -191,12 +191,6 @@ BaseInput.prototype.addBusEventListeners = function () {
       this.updateModel('value', '');
     }
   }.bind(this));
-
-  global.bus.on(events.FOCUS_FIELD, function (type) {
-    if (type === this.type) {
-      this.element.focus();
-    }
-  }.bind(this));
 };
 
 BaseInput.prototype.render = function () {

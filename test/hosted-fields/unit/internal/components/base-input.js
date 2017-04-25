@@ -1,7 +1,6 @@
 'use strict';
 
 var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
-var Bus = require('../../../../../src/lib/bus');
 var constants = require('../../../../../src/hosted-fields/shared/constants');
 var RestrictedInput = require('restricted-input');
 var FakeRestrictedInput = require('../../../../../src/lib/fake-restricted-input');
@@ -13,9 +12,7 @@ describe('Base Input', function () {
         var config = {};
 
         this.config = config;
-        this.sandbox.stub(BaseInput.prototype, 'getConfiguration', function () {
-          return config;
-        });
+        this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns(config);
 
         this.sandbox.stub(BaseInput.prototype, 'addDOMEventListeners');
         this.sandbox.stub(BaseInput.prototype, 'addModelEventListeners');
@@ -43,9 +40,7 @@ describe('Base Input', function () {
           var instance;
 
           BaseInput.prototype.getConfiguration.restore();
-          this.sandbox.stub(BaseInput.prototype, 'getConfiguration', function () {
-            return {formatInput: false};
-          });
+          this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({formatInput: false});
 
           instance = new BaseInput({
             model: this.model,
@@ -135,59 +130,6 @@ describe('Base Input', function () {
           describe('data-braintree-name', function () {
             it('applies based on type', function () {
               expect(this.instance.element.getAttribute('data-braintree-name')).to.equal(key);
-            });
-          });
-
-          describe('focus field', function () {
-            beforeEach(function () {
-              this.model = {
-                configuration: {
-                  fields: {}
-                }
-              };
-
-              this.model.configuration.fields[this.type] = {
-                type: this.type
-              };
-
-              this.sandbox.restore(Bus.prototype, 'emit');
-              this.sandbox.restore(Bus.prototype, 'on');
-
-              global.bus = new Bus({channel: 'hosted-fields'});
-
-              this.sandbox.stub(BaseInput.prototype, 'addDOMEventListeners');
-              this.sandbox.stub(BaseInput.prototype, 'addModelEventListeners');
-              this.sandbox.stub(BaseInput.prototype, 'render');
-            });
-
-            it('focuses the element when the type matches', function (done) {
-              var instance = new BaseInput({
-                model: this.model,
-                type: this.type
-              });
-
-              this.sandbox.stub(instance.element, 'focus');
-
-              global.bus.emit('hosted-fields:FOCUS_FIELD', this.type);
-              setTimeout(function () {
-                expect(instance.element.focus).to.be.calledOnce;
-                done();
-              }, 1);
-            });
-
-            it('does not focus the element when the type does not match', function (done) {
-              var instance = new BaseInput({
-                model: this.model,
-                type: this.type
-              });
-
-              this.sandbox.stub(instance.element, 'focus');
-
-              global.bus.emit('hosted-fields:FOCUS_FIELD', 'not-my-type');
-              setTimeout(function () {
-                expect(instance.element.focus).not.to.be.called;
-                done();
-              }, 1);
             });
           });
 

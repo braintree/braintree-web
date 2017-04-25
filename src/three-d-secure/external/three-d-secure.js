@@ -10,10 +10,11 @@ var Bus = require('../../lib/bus');
 var uuid = require('../../lib/uuid');
 var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
-var throwIfNoCallback = require('../../lib/throw-if-no-callback');
 var events = require('../shared/events');
 var VERSION = process.env.npm_package_version;
 var iFramer = require('iframer');
+var Promise = require('../../lib/promise');
+var wrapPromise = require('wrap-promise');
 
 var IFRAME_HEIGHT = 400;
 var IFRAME_WIDTH = 400;
@@ -64,8 +65,9 @@ function ThreeDSecure(options) {
  * @param {number} options.amount The amount of the transaction in the current merchant account's currency. For example, if you are running a transaction of $123.45 US dollars, `amount` would be 123.45.
  * @param {errback} options.addFrame This {@link ThreeDSecure~addFrameCallback|addFrameCallback} will be called when the bank frame needs to be added to your page.
  * @param {callback} options.removeFrame This {@link ThreeDSecure~removeFrameCallback|removeFrameCallback} will be called when the bank frame needs to be removed from your page.
- * @param {errback} callback The second argument, <code>data</code>, is a {@link ThreeDSecure~verifyPayload|verifyPayload}
- * @returns {void}
+ * @param {errback} [callback] The second argument, <code>data</code>, is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If no callback is provided, it will return a promise that resolves {@link ThreeDSecure~verifyPayload|verifyPayload}.
+
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * <caption>Verifying an existing nonce with 3DS</caption>
  * var my3DSContainer;
@@ -101,13 +103,11 @@ function ThreeDSecure(options) {
  *   }
  * });
  */
-ThreeDSecure.prototype.verifyCard = function (options, callback) {
+ThreeDSecure.prototype.verifyCard = function (options) {
   var url, addFrame, removeFrame, error, errorOption;
-
-  throwIfNoCallback(callback, 'verifyCard');
+  var self = this;
 
   options = options || {};
-  callback = deferred(callback);
 
   if (this._verifyCardInProgress === true) {
     error = errors.THREEDS_AUTHENTICATION_IN_PROGRESS;
@@ -130,8 +130,7 @@ ThreeDSecure.prototype.verifyCard = function (options, callback) {
   }
 
   if (error) {
-    callback(new BraintreeError(error));
-    return;
+    return Promise.reject(new BraintreeError(error));
   }
 
   this._verifyCardInProgress = true;
@@ -141,37 +140,41 @@ ThreeDSecure.prototype.verifyCard = function (options, callback) {
 
   url = 'payment_methods/' + options.nonce + '/three_d_secure/lookup';
 
-  this._client.request({
+  return this._client.request({
     endpoint: url,
     method: 'post',
     data: {amount: options.amount}
-  }, function (err, response) {
-    if (err) {
-      this._verifyCardInProgress = false;
-      callback(err);
-      return;
-    }
+  }).then(function (response) {
+    self._lookupPaymentMethod = response.paymentMethod;
 
-    this._lookupPaymentMethod = response.paymentMethod;
-    this._verifyCardCallback = function () {
-      this._verifyCardInProgress = false;
+    return new Promise(function (resolve, reject) {
+      self._verifyCardCallback = function (verifyErr, payload) {
+        self._verifyCardInProgress = false;
 
-      callback.apply(null, arguments);
-    }.bind(this);
+        if (verifyErr) {
+          reject(verifyErr);
+        } else {
+          resolve(payload);
+        }
+      };
 
-    this._handleLookupResponse({
-      lookupResponse: response,
-      addFrame: addFrame,
-      removeFrame: removeFrame
+      self._handleLookupResponse({
+        lookupResponse: response,
+        addFrame: addFrame,
+        removeFrame: removeFrame
+      });
     });
-  }.bind(this));
+  }).catch(function (err) {
+    self._verifyCardInProgress = false;
+    return Promise.reject(err);
+  });
 };
 
 /**
  * Cancel the 3DS flow and return the verification payload if available.
  * @public
- * @param {errback} callback The second argument is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If there is no verifyPayload (the initial lookup did not complete), an error will be returned.
- * @returns {void}
+ * @param {errback} [callback] The second argument is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If there is no verifyPayload (the initial lookup did not complete), an error will be returned. If no callback is passed, `cancelVerifyCard` will return a promise.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
  *   if (err) {
@@ -185,18 +188,14 @@ ThreeDSecure.prototype.verifyCard = function (options, callback) {
  *   verifyPayload.liabilityShiftPossible; // boolean
  * });
  */
-ThreeDSecure.prototype.cancelVerifyCard = function (callback) {
-  var error;
-
+ThreeDSecure.prototype.cancelVerifyCard = function () {
   this._verifyCardInProgress = false;
 
-  if (typeof callback === 'function') {
-    if (!this._lookupPaymentMethod) {
-      error = new BraintreeError(errors.THREEDS_NO_VERIFICATION_PAYLOAD);
-    }
-
-    callback(error, this._lookupPaymentMethod);
+  if (!this._lookupPaymentMethod) {
+    return Promise.reject(new BraintreeError(errors.THREEDS_NO_VERIFICATION_PAYLOAD));
   }
+
+  return Promise.resolve(this._lookupPaymentMethod);
 };
 
 ThreeDSecure.prototype._handleLookupResponse = function (options) {
@@ -293,16 +292,16 @@ ThreeDSecure.prototype._formatAuthResponse = function (paymentMethod, threeDSecu
 /**
  * Cleanly remove anything set up by {@link module:braintree-web/three-d-secure.create|create}.
  * @public
- * @param {callback} [callback] Called on completion.
+ * @param {callback} [callback] Called on completion. If no callback is passed, `teardown` will return a promise.
  * @example
  * threeDSecure.teardown();
  * @example <caption>With callback</caption>
  * threeDSecure.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {void}
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-ThreeDSecure.prototype.teardown = function (callback) {
+ThreeDSecure.prototype.teardown = function () {
   var iframeParent;
 
   convertMethodsToError(this, methods(ThreeDSecure.prototype));
@@ -321,10 +320,7 @@ ThreeDSecure.prototype.teardown = function (callback) {
     }
   }
 
-  if (typeof callback === 'function') {
-    callback = deferred(callback);
-    callback();
-  }
+  return Promise.resolve();
 };
 
-module.exports = ThreeDSecure;
+module.exports = wrapPromise.wrapPrototype(ThreeDSecure);

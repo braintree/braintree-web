@@ -1134,7 +1134,7 @@ describe('HostedFields', function () {
   });
 
   describe('focus', function () {
-    it('emits FOCUS_FIELD event', function () {
+    it('emits TRIGGER_INPUT_FOCUS event', function () {
       var configuration = this.defaultConfiguration;
       var numberNode = document.createElement('div');
       var instance;
@@ -1148,7 +1148,7 @@ describe('HostedFields', function () {
       instance = new HostedFields(configuration);
 
       instance.focus('number');
-      expect(instance._bus.emit).to.be.calledWith(events.FOCUS_FIELD, this.sandbox.match.string);
+      expect(instance._bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, this.sandbox.match.string);
     });
 
     it('calls callback if provided', function (done) {
@@ -1177,7 +1177,7 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when focusing a field.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.FOCUS_FIELD, self.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.TRIGGER_INPUT_FOCUS, self.sandbox.match.string);
         done();
       });
     });
@@ -1192,7 +1192,7 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot focus "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.FOCUS_FIELD, self.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(events.TRIGGER_INPUT_FOCUS, self.sandbox.match.string);
         done();
       });
     });

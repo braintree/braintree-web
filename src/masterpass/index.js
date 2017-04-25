@@ -31,7 +31,7 @@ var wrapPromise = require('wrap-promise');
  *     return;
  *   }
  * });
- * @returns {Promise|void} Resolves with the Masterpass instance.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
   var masterpassInstance, clientVersion, configuration;

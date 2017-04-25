@@ -1,5 +1,6 @@
 'use strict';
 
+var Promise = require('../../../src/lib/promise');
 var ApplePay = require('../../../src/apple-pay/apple-pay');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
@@ -10,8 +11,7 @@ describe('ApplePay', function () {
     this.sandbox.stub(analytics, 'sendEvent');
     this.configuration = fake.configuration();
     this.client = {
-      request: this.sandbox.spy(),
-      _request: this.sandbox.spy(),
+      request: this.sandbox.stub().resolves(),
       getConfiguration: function () {
         return this.configuration;
       }.bind(this)
@@ -114,19 +114,10 @@ describe('ApplePay', function () {
   });
 
   describe('performValidation', function () {
-    it('throws an error when called without a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var promise = this.applePay.performValidation({validationURL: 'something'});
 
-      try {
-        this.applePay.performValidation();
-      } catch (e) {
-        err = e;
-      }
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('performValidation requires a callback.');
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('calls callback with error when event is undefined', function (done) {
@@ -184,7 +175,7 @@ describe('ApplePay', function () {
         displayName: 'Awesome Merchant'
       };
 
-      this.client.request = function (options, callback) {
+      this.client.request = function (options) {
         expect(options.method).to.equal('post');
         expect(options.endpoint).to.equal('apple_pay_web/sessions');
         expect(options.data._meta.source).to.equal('apple-pay');
@@ -192,7 +183,7 @@ describe('ApplePay', function () {
         expect(options.data.applePayWebSession.domainName).to.equal('localhost');
         expect(options.data.applePayWebSession.displayName).to.equal('Awesome Merchant');
         expect(options.data.applePayWebSession.validationUrl).to.equal('https://apple-pay-gateway-cert.apple.com/paymentservices/startSession');
-        callback(requestError);
+        return Promise.reject(requestError);
       };
 
       this.applePay.performValidation(validationOptions, function (err, response) {
@@ -220,7 +211,7 @@ describe('ApplePay', function () {
         displayName: 'Awesome Merchant'
       };
 
-      this.client.request = function (options, callback) {
+      this.client.request = function (options) {
         expect(options.method).to.equal('post');
         expect(options.endpoint).to.equal('apple_pay_web/sessions');
         expect(options.data._meta.source).to.equal('apple-pay');
@@ -228,7 +219,7 @@ describe('ApplePay', function () {
         expect(options.data.applePayWebSession.domainName).to.equal('localhost');
         expect(options.data.applePayWebSession.displayName).to.equal('Awesome Merchant');
         expect(options.data.applePayWebSession.validationUrl).to.equal('https://apple-pay-gateway-cert.apple.com/paymentservices/startSession');
-        callback(requestError);
+        return Promise.reject(requestError);
       };
 
       this.applePay.performValidation(validationOptions, function (err, response) {
@@ -251,7 +242,7 @@ describe('ApplePay', function () {
         displayName: 'Awesome Merchant'
       };
 
-      this.client.request = function (options, callback) {
+      this.client.request = function (options) {
         expect(options.method).to.equal('post');
         expect(options.endpoint).to.equal('apple_pay_web/sessions');
         expect(options.endpoint).to.equal('apple_pay_web/sessions');
@@ -260,7 +251,7 @@ describe('ApplePay', function () {
         expect(options.data.applePayWebSession.domainName).to.equal('localhost');
         expect(options.data.applePayWebSession.displayName).to.equal('Awesome Merchant');
         expect(options.data.applePayWebSession.validationUrl).to.equal('https://apple-pay-gateway-cert.apple.com/paymentservices/startSession');
-        callback(null, fakeResponseData);
+        return Promise.resolve(fakeResponseData);
       };
 
       this.applePay.performValidation(validationOptions, function (err, response) {
@@ -274,19 +265,19 @@ describe('ApplePay', function () {
   });
 
   describe('tokenize', function () {
-    it('throws an error when called without a callback', function () {
-      var err;
+    it('returns a promise', function () {
+      var token = {
+        foo: 'boo',
+        paymentData: {
+          bar: 'yar'
+        }
+      };
+      var promise;
 
-      try {
-        this.applePay.tokenize({});
-      } catch (e) {
-        err = e;
-      }
+      this.client.request.resolves({applePayCards: []});
+      promise = this.applePay.tokenize({token: token});
 
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.code).to.equal('CALLBACK_REQUIRED');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('tokenize requires a callback.');
+      expect(promise).to.be.an.instanceof(Promise);
     });
 
     it('calls callback with error when token is undefined', function (done) {
@@ -311,7 +302,7 @@ describe('ApplePay', function () {
         }
       };
 
-      this.client.request = function (options, callback) {
+      this.client.request = function (options) {
         expect(options.method).to.equal('post');
         expect(options.endpoint).to.equal('payment_methods/apple_payment_tokens');
         expect(options.data).to.deep.equal({
@@ -324,7 +315,7 @@ describe('ApplePay', function () {
           }
         });
 
-        callback(fakeResponseError);
+        return Promise.reject(fakeResponseError);
       };
 
       this.applePay.tokenize({token: token}, function (err, response) {
@@ -364,7 +355,7 @@ describe('ApplePay', function () {
         }
       };
 
-      this.client.request = function (options, callback) {
+      this.client.request = function (options) {
         expect(options.method).to.equal('post');
         expect(options.endpoint).to.equal('payment_methods/apple_payment_tokens');
         expect(options.data).to.deep.equal({
@@ -377,7 +368,7 @@ describe('ApplePay', function () {
           }
         });
 
-        callback(null, fakeResponseData);
+        return Promise.resolve(fakeResponseData);
       };
 
       this.applePay.tokenize({
@@ -394,9 +385,9 @@ describe('ApplePay', function () {
 
   describe('analytics', function () {
     describe('performValidation', function () {
-      it('submits succeeded', function () {
-        this.client.request = function (_, cb) {
-          cb(null, {});
+      it('submits succeeded', function (done) {
+        this.client.request = function () {
+          return Promise.resolve({});
         };
 
         ApplePay.prototype.performValidation.call({
@@ -404,14 +395,15 @@ describe('ApplePay', function () {
         }, {
           validationURL: 'validationURL',
           displayName: 'JS SDK Integration'
-        }, function () {});
-
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.performValidation.succeeded');
+        }, function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.performValidation.succeeded');
+          done();
+        }.bind(this));
       });
 
-      it('submits failed', function () {
-        this.client.request = function (_, cb) {
-          cb({}, null);
+      it('submits failed', function (done) {
+        this.client.request = function () {
+          return Promise.reject({});
         };
 
         ApplePay.prototype.performValidation.call({
@@ -419,16 +411,17 @@ describe('ApplePay', function () {
         }, {
           validationURL: 'validationURL',
           displayName: 'JS SDK Integration'
-        }, function () {});
-
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.performValidation.failed');
+        }, function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.performValidation.failed');
+          done();
+        }.bind(this));
       });
     });
 
     describe('tokenize', function () {
-      it('submits succeeded', function () {
-        this.client.request = function (_, cb) {
-          cb(null, {
+      it('submits succeeded', function (done) {
+        this.client.request = function () {
+          return Promise.resolve({
             applePayCards: []
           });
         };
@@ -437,23 +430,25 @@ describe('ApplePay', function () {
           _client: this.client
         }, {
           token: 'token'
-        }, function () {});
-
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.tokenize.succeeded');
+        }, function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.tokenize.succeeded');
+          done();
+        }.bind(this));
       });
 
-      it('submits failed', function () {
-        this.client.request = function (_, cb) {
-          cb({}, null);
+      it('submits failed', function (done) {
+        this.client.request = function () {
+          return Promise.reject({});
         };
 
         ApplePay.prototype.tokenize.call({
           _client: this.client
         }, {
           token: 'token'
-        }, function () {});
-
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.tokenize.failed');
+        }, function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.tokenize.failed');
+          done();
+        }.bind(this));
       });
     });
   });
