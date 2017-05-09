@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+## 3.15.0
+
+* Hosted Fields
+  * Fix bug where expiration dates using select boxes would print an error when selected on mobile devices
+  * Fix a bug where Android Webviews on KitKat could not enter more than 4 characters in inputs
+  * Add supportsInputFormatting method to check if browser will support input formatting
+* Data Collector
+  * Cache and reuse device data when created multiple times with the same Kount merchant id
+  * Fix issue where Kount data was not collected by additional Data Collector instances
+
 ## 3.14.0
 
 * American Express

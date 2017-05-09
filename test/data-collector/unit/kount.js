@@ -14,20 +14,25 @@ function deleteAllIframes() {
   }
 }
 
+function getIframe(kountInstance) {
+  return document.getElementById('braintreeDataFrame-' + kountInstance.deviceData.device_session_id);
+}
+
 describe('kount', function () {
   beforeEach(function () {
     deleteAllIframes();
+    this.sandbox.stub(Kount, 'getCachedDeviceData');
   });
 
   afterEach(deleteAllIframes);
 
   it('appends an environment-specific iframe to the body', function (done) {
-    var iframe;
+    var iframe, kountInstance;
 
     this.timeout(4000);
-    kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
+    kountInstance = kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
 
-    iframe = document.getElementById('braintreeDataFrame');
+    iframe = getIframe(kountInstance);
 
     setTimeout(function () {
       expect(iframe.src).to.match(new RegExp('^' + kount.environmentUrls.qa));
@@ -65,7 +70,35 @@ describe('kount', function () {
 
     iframes = document.getElementsByTagName('iframe');
 
-    expect(iframes.length).to.equal(1);
+    expect(iframes.length).to.equal(2);
+  });
+
+  it('returns the same device_data when called multiple times with the same merchant ids', function () {
+    var instance1, instance2;
+
+    Kount.setCachedDeviceData('custom_Kount_mid', null);
+    Kount.getCachedDeviceData.restore();
+
+    instance1 = kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
+    instance2 = kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
+
+    expect(instance1.deviceData).to.not.equal(null);
+    expect(instance1.deviceData).to.equal(instance2.deviceData);
+  });
+
+  it('returns different device_data when called multiple times with with different merchant ids', function () {
+    var instance1, instance2;
+
+    Kount.setCachedDeviceData('custom_Kount_mid', null);
+    Kount.setCachedDeviceData('a_different_custom_Kount_mid', null);
+    Kount.getCachedDeviceData.restore();
+
+    instance1 = kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
+    instance2 = kount.setup({environment: 'qa', merchantId: 'a_different_custom_Kount_mid'});
+
+    expect(instance1.deviceData).to.not.equal(null);
+    expect(instance2.deviceData).to.not.equal(null);
+    expect(instance1.deviceData).to.not.equal(instance2.deviceData);
   });
 
   it('creates an iframe, containing an img, with the device session id & merchant ids as params', function (done) {
@@ -75,7 +108,7 @@ describe('kount', function () {
 
     actual = kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
     dsid = actual.deviceData.device_session_id;
-    iframe = document.getElementById('braintreeDataFrame');
+    iframe = getIframe(actual);
 
     setTimeout(function () {
       expect(iframe.src).to.contain(dsid);
@@ -87,11 +120,11 @@ describe('kount', function () {
   });
 
   it('creates an iframe with a specific id', function (done) {
-    var iframe;
+    var iframe, kountInstance;
 
     this.timeout(4000);
-    kount.setup({environment: 'qa', merchantId: 'myid'});
-    iframe = document.getElementById('braintreeDataFrame');
+    kountInstance = kount.setup({environment: 'qa', merchantId: 'myid'});
+    iframe = document.getElementById('braintreeDataFrame-' + kountInstance.deviceData.device_session_id);
 
     setTimeout(function () {
       expect(iframe.src).to.contain('myid');
@@ -101,12 +134,12 @@ describe('kount', function () {
   });
 
   it('safely urlencodes device session id & merchant ids as params', function () {
-    var iframe;
+    var iframe, kountInstance;
 
     this.sandbox.stub(Kount.prototype, '_generateDeviceSessionId').returns('<script>alert("HACKED");</script>');
 
-    kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
-    iframe = document.getElementById('braintreeDataFrame');
+    kountInstance = kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
+    iframe = getIframe(kountInstance);
 
     expect(iframe.src).not.to.contain('<script>');
   });
@@ -118,12 +151,12 @@ describe('kount', function () {
   });
 
   it('includes the environment\'s url in the iframe', function (done) {
-    var iframe;
+    var iframe, kountInstance;
 
     this.timeout(4000);
-    kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
+    kountInstance = kount.setup({environment: 'qa', merchantId: 'custom_Kount_mid'});
 
-    iframe = document.getElementById('braintreeDataFrame');
+    iframe = getIframe(kountInstance);
 
     setTimeout(function () {
       expect(iframe.src).to.match(new RegExp('^' + kount.environmentUrls.qa));
@@ -178,5 +211,18 @@ describe('_generateDeviceSessionId', function () {
 
     dsid = Kount.prototype._generateDeviceSessionId();
     expect(Kount.prototype._generateDeviceSessionId()).not.to.equal(dsid);
+  });
+});
+
+describe('cached device data', function () {
+  it('can set and return the value of the cached device data', function () {
+    var dataForMerchant1 = {foo: 'bar'};
+    var dataForMerchant2 = {baz: 'buz'};
+
+    Kount.setCachedDeviceData('merchant1', dataForMerchant1);
+    Kount.setCachedDeviceData('merchant2', dataForMerchant2);
+
+    expect(Kount.getCachedDeviceData('merchant1')).to.equal(dataForMerchant1);
+    expect(Kount.getCachedDeviceData('merchant2')).to.equal(dataForMerchant2);
   });
 });

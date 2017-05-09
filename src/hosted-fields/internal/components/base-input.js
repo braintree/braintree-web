@@ -143,9 +143,12 @@ BaseInput.prototype._addDOMFocusListeners = function () {
     this.updateModel('isFocused', false);
   }.bind(this), false);
 
-  element.addEventListener('touchstart', function () {
-    element.select();
-  });
+  // select inputs don't have a select function
+  if (typeof element.select === 'function') {
+    element.addEventListener('touchstart', function () {
+      element.select();
+    });
+  }
 };
 
 BaseInput.prototype.addModelEventListeners = function () {

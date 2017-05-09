@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="40px" height="36px" viewBox="0 0 40 36" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group</title>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group" fill="#666666">
+            <polygon id="Polygon" points="19.9956609 0 39.9913219 8.16830495 40 9.97461872 0.0212822559 10 0 8.16830495"></polygon>
+            <rect id="Rectangle-3" x="0" y="33" width="40" height="3"></rect>
+            <rect id="Rectangle-3-Copy" x="2" y="28" width="36" height="3"></rect>
+            <rect id="Rectangle-4" x="4" y="12" width="6" height="14"></rect>
+            <rect id="Rectangle-4-Copy" x="17" y="12" width="6" height="14"></rect>
+            <rect id="Rectangle-4-Copy-2" x="30" y="12" width="6" height="14"></rect>
+        </g>
+    </g>
+</svg>

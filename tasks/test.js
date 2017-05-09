@@ -103,7 +103,17 @@ gulp.task('lint', function(done) {
   _lint('', '', done);
 });
 
-gulp.task('test', ['build'], function (done) {
+gulp.task('cleanup', function (done) {
+  spawn('rm', ['-rf', 'src/dropin']).on('exit', function (code, signal) {
+    if (code === 0) {
+      done();
+    } else {
+      done('Failed to remove src/dropin');
+    }
+  });
+});
+
+gulp.task('test', ['build', 'cleanup'], function (done) {
   TEST_TASKS.push(done);
   run.apply(null, TEST_TASKS);
 });

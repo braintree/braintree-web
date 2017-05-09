@@ -2,6 +2,7 @@
 /** @module braintree-web/hosted-fields */
 
 var HostedFields = require('./external/hosted-fields');
+var supportsInputFormatting = require('restricted-input/supports-input-formatting');
 var wrapPromise = require('wrap-promise');
 var Promise = require('../lib/promise');
 var VERSION = process.env.npm_package_version;
@@ -146,6 +147,46 @@ function create(options) {
 }
 
 module.exports = {
+  /**
+   * @static
+   * @function supportsInputFormatting
+   * @description Returns false if input formatting will be automatically disabled due to browser incompatibility. Otherwise, returns true. For a list of unsupported browsers, [go here](https://github.com/braintree/restricted-input/blob/master/README.md#browsers-where-formatting-is-turned-off-automatically).
+   * @returns {Boolean} Returns false if input formatting will be automatically disabled due to browser incompatibility. Otherwise, returns true.
+   * @example Conditionally choosing split expiration date inputs if formatting is unavailable
+   * var canFormat = braintree.hostedFields.supportsInputFormatting();
+   * var fields = {
+   *   number: {
+   *     selector: '#card-number'
+   *   },
+   *   cvv: {
+   *     selector: '#cvv'
+   *   }
+   * };
+   *
+   * if (canFormat) {
+   *   fields.expirationDate = {
+   *     selection: '#expiration-date'
+   *   };
+   *   functionToCreateAndInsertExpirationDateDivToForm();
+   * } else {
+   *   fields.expirationMonth = {
+   *     selection: '#expiration-month'
+   *   };
+   *   fields.expirationYear = {
+   *     selection: '#expiration-year'
+   *   };
+   *   functionToCreateAndInsertExpirationMonthAndYearDivsToForm();
+   * }
+   *
+   * braintree.hostedFields.create({
+   *   client: clientInstance,
+   *   styles: {
+   *     // Styles
+   *   },
+   *   fields: fields
+   * }, callback);
+   */
+  supportsInputFormatting: supportsInputFormatting,
   create: wrapPromise(create),
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.

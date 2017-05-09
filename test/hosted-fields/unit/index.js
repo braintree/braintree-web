@@ -73,4 +73,10 @@ describe('hostedFields', function () {
       });
     });
   });
+
+  describe('supportsInputFormatting', function () {
+    it('returns a boolean', function () {
+      expect(hostedFields.supportsInputFormatting()).to.be.a('boolean');
+    });
+  });
 });

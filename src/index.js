@@ -45,6 +45,7 @@ var americanExpress = require('./american-express');
 var unionpay = require('./unionpay');
 var vaultManager = require('./vault-manager');
 var applePay = require('./apple-pay');
+var ideal = require('./ideal');
 var threeDSecure = require('./three-d-secure');
 var usBankAccount = require('./us-bank-account');
 var visaCheckout = require('./visa-checkout');
@@ -78,6 +79,8 @@ module.exports = {
   vaultManager: vaultManager,
   /** @type {module:braintree-web/masterpass} */
   masterpass: masterpass,
+  /** @type {module:braintree-web/ideal} */
+  ideal: ideal,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

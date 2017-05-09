@@ -125,3 +125,33 @@ braintree.client.create({
   });
 });
 ```
+
+#### Promises
+
+All the asyncronous methods will return a `Promise` if no callback is provided.
+
+```js
+var submitBtn = document.getElementById('my-submit');
+var yourStylesConfig = { /* your Hosted Fields `styles` config */ };
+var yourFieldsConfig = { /* your Hosted Hields `fields` config */ };
+
+braintree.client.create({authorization: CLIENT_AUTHORIZATION}).then(function (client) {
+  return braintree.hostedFields.create({
+    client: client,
+    styles: yourStylesConfig,
+    fields: yourFieldsConfig
+  });
+}).then(function (hostedFields) {
+  submitBtn.addEventListener('click', function (event) {
+    event.preventDefault();
+    submitBtn.setAttribute('disabled', 'disabled');
+
+    hostedFields.tokenize().then(function (payload) {
+      // send payload.nonce to your server
+    }).catch(function (err) {
+      submitBtn.removeAttribute('disabled');
+      console.error(err);
+    });
+  });
+});
+```

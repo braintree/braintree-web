@@ -16,6 +16,11 @@ gulp.task('release:hosted:copy', function () {
     .pipe(gulp.dest(HOSTED_DEST + '/web/' + VERSION));
 });
 
+gulp.task('release:hosted-static:copy', function () {
+  return gulp.src(['dist/hosted/static/**/*'])
+    .pipe(gulp.dest(HOSTED_DEST + '/web/static'));
+});
+
 gulp.task('release:hosted', function (done) {
   sequence(
     'build',
