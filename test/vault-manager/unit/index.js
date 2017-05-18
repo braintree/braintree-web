@@ -9,12 +9,7 @@ var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 
 describe('vaultManager', function () {
   beforeEach(function () {
-    this.configuration = fake.configuration();
-    this.fakeClient = {
-      getConfiguration: function () {
-        return this.configuration;
-      }.bind(this)
-    };
+    this.fakeClient = fake.client();
   });
 
   describe('create', function () {
@@ -38,9 +33,11 @@ describe('vaultManager', function () {
     });
 
     it('throws an error when called with a mismatched version', function () {
-      this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+      var client = fake.client({
+        version: '1.2.3'
+      });
 
-      return create({client: this.fakeClient}).then(rejectIfResolves).catch(function (err) {
+      return create({client: client}).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');

@@ -459,7 +459,7 @@ describe('FrameService', function () {
 
       this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
 
-      this.frameService.open(callback);
+      this.frameService.open({}, callback);
 
       expect(this.frameService._onCompleteCallback).to.equal(callback);
     });
@@ -469,7 +469,7 @@ describe('FrameService', function () {
 
       this.fakeFrame.isClosed.returns(true);
 
-      this.frameService.open(mockCallback);
+      this.frameService.open({}, mockCallback);
 
       expect(mockCallback).to.be.calledWith(this.sandbox.match({
         type: BraintreeError.types.INTERNAL,
@@ -481,11 +481,36 @@ describe('FrameService', function () {
     it('cleans up the frame when popup fails to open', function (done) {
       this.fakeFrame.isClosed.returns(true);
 
-      this.frameService.open(function () {
+      this.frameService.open({}, function () {
         expect(this.frameService._frame).to.not.exist;
         expect(this.frameService._popupInterval).to.not.exist;
         done();
       }.bind(this));
+    });
+
+    it('uses default options if none passed', function () {
+      var callback = this.sandbox.stub();
+
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+      this.sandbox.stub(FrameService.prototype, '_getFrameForEnvironment');
+
+      this.frameService.open(null, callback);
+
+      expect(this.frameService._getFrameForEnvironment).to.be.calledWith({});
+    });
+
+    it('override values in options with values passed in open', function () {
+      var callback = this.sandbox.stub();
+      var options = {foo: 'bar'};
+
+      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+      this.sandbox.stub(FrameService.prototype, '_getFrameForEnvironment');
+
+      this.frameService.open(options, callback);
+
+      expect(this.frameService._getFrameForEnvironment).to.be.calledWith(options);
     });
 
     it('initiates polling when frame is a Modal', function () {
@@ -494,11 +519,9 @@ describe('FrameService', function () {
       this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
       this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
 
-      this.frameService.open(callback);
+      this.frameService.open({}, callback);
 
       expect(this.frameService._pollForPopupClose).to.be.called;
-
-      browserDetection.supportsPopups.restore();
     });
 
     it('initiates polling when frame is a Popup', function () {
@@ -507,11 +530,9 @@ describe('FrameService', function () {
       this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
       this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
 
-      this.frameService.open(callback);
+      this.frameService.open({}, callback);
 
       expect(this.frameService._pollForPopupClose).to.be.called;
-
-      browserDetection.supportsPopups.restore();
     });
 
     it('does not initialize polling if frame is a PopupBridge', function () {
@@ -523,17 +544,15 @@ describe('FrameService', function () {
       this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
       this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
 
-      this.frameService.open(callback);
+      this.frameService.open({}, callback);
 
       expect(this.frameService._pollForPopupClose).to.not.be.called;
-
-      browserDetection.supportsPopups.restore();
     });
 
     it('calls _frame.initialize', function () {
       var cb = this.sandbox.stub();
 
-      this.frameService.open(cb);
+      this.frameService.open({}, cb);
 
       expect(this.fakeFrame.initialize).to.be.calledOnce;
       expect(this.fakeFrame.initialize).to.be.calledWith(cb);
@@ -634,7 +653,7 @@ describe('FrameService', function () {
 
       global.open = function () { return fakeWindow; };
 
-      frameService.open(onCompleteCallbackStub);
+      frameService.open({}, onCompleteCallbackStub);
       fakeWindow.closed = true;
       clock.tick(100);
 

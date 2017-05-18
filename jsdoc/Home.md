@@ -1,10 +1,11 @@
-# Braintree.js Client Reference <span>v@VERSION</span>
+# Braintree Web Client Reference <span>v@VERSION</span>
 
 <span class="rule"></span>
 
 * [Overview](#overview)
     * [Module Hierarchy](#module-hierarchy)
     * [Callbacks](#callbacks)
+    * [Promises](#promises)
 * [Browser Support](#browser-support)
     * [Desktop](#browser-support-desktop)
     * [Mobile](#browser-support-mobile)
@@ -43,14 +44,27 @@ braintree.client.create({...}, callback);
 function callback(err, clientInstance) { ... }
 ```
 
-While we do not directly support promises, many promise libraries such as [bluebird](http://bluebirdjs.com/docs/working-with-callbacks.html#working-with-callback-apis-using-the-node-convention) allow for automatic conversion of APIs that follow this callback style.
+<a id="promises"></a>
+### Promises
+
+This SDK uses the Node.js callback style, with callbacks passed as the last argument to a function. Callbacks are expected to receive possible errors as the first parameter, and any returned data as the second:
+
+In addition to callbacks, all asyncronous methods will return a `Promise` if no callback is provided:
+
+```javascript
+braintree.client.create({
+  authorization: CLIENT_AUTHORIZATION
+}).then(function (client) {
+  // Create other components
+});
+```
 
 <a id="browser-support"></a>
 ## Browser support
 
-`braintree.js` provides support for numerous browsers and devices. There are, however, caveats with certain integrations and browser combinations.
+The Braintree JS SDK provides support for numerous browsers and devices. There are, however, caveats with certain integrations and browser combinations.
 
-While `braintree.js` will work in browsers other than the ones below, these represent the platforms against which we actively test. If you have problems with a specific browser or device, contact [our Support team](mailto:support@braintreepayments.com).
+While `braintree-web` will work in browsers other than the ones below, these represent the platforms against which we actively test. If you have problems with a specific browser or device, contact [our Support team](https://developers.braintreepayments.com/forms/contact).
 
 <a id="browser-support-desktop"></a>
 ### Desktop
@@ -90,14 +104,14 @@ Braintree is [ending support for server-side API requests via TLS 1.0 and 1.1 on
 <a id="browser-support-webviews"></a>
 ### Webviews and hybrid environments
 
-Webviews on iOS and Android are supported for all integrations except PayPal. PayPal is not supported in any webview for [security reasons](https://developer.paypal.com/docs/classic/lifecycle/info-security-guidelines/#secure-applications).
+If you are using PayPal in a mobile webview, we recommend using PopupBridge for [iOS](https://github.com/braintree/popup-bridge-ios) or [Android](https://github.com/braintree/popup-bridge-android) to open the PayPal authentication flow in a mobile browser for improved security.
 
-Additionally, `braintree.js` is neither tested nor developed for hybrid runtimes such as Cordova, PhoneGap, Ionic, React Native, and Electron. While some success may be had in such environments, our SDK is optimized for the browser and its security policies and may not function correctly outside of them.
+Additionally, `braintree-web` is neither tested nor developed for hybrid runtimes such as Cordova, PhoneGap, Ionic, React Native, and Electron. While some success may be had in such environments, our SDK is optimized for the browser and its security policies and may not function correctly outside of them.
 
 <a id="teardown"></a>
 ## Teardown
 
-In certain scenarios you may need to remove your `braintree.js` integration. This is common in single page applications, modal flows, and other situations where state management is a key factor. Any module returned from a `braintree.component.create` call will include a `teardown` function.
+In certain scenarios you may need to remove your `braintree-web` integration. This is common in single page applications, modal flows, and other situations where state management is a key factor. Any module returned from a `braintree.component.create` call will include a `teardown` function.
 
 Invoking `teardown` will clean up any DOM nodes, event handlers, popups and/or iframes that have been created by the integration. Additionally, `teardown` accepts a callback which you can use to know when it is safe to proceed.
 
@@ -113,7 +127,7 @@ hostedFieldsInstance.teardown(function (err) {
 
 If you happen to call this method while the instance's `teardown` is in progress, you'll receive an error. Once completed, calling any methods on the instance will throw an error.
 
-## Using `braintree.js` with a Content Security Policy
+## Using `braintree-web` with a Content Security Policy
 
 [Content Security Policy](http://www.html5rocks.com/en/tutorials/security/content-security-policy/) is a feature of web browsers that mitigates cross-site scripting and other attacks. By limiting the origins of resources that may be loaded on your page, you can maintain tighter control over any potentially malicious code. We recommend considering the implementation of a CSP when available.
 

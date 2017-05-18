@@ -70,7 +70,9 @@ var wrapPromise = require('wrap-promise');
 /**
  * @class
  * @param {object} options see {@link module:braintree-web/paypal.create|paypal.create}
- * @classdesc This class represents a PayPal component. Instances of this class have methods for launching auth dialogs and other programmatic interactions with the PayPal component.
+ * @classdesc This class represents a PayPal component. Instances of this class can open a PayPal window for authenticating a PayPal account. Any additional UI, such as disabling the page while authentication is taking place, is up to the developer.
+ *
+ * This component has been deprecated in favor of the {@link PayPalCheckout|PayPal Checkout component}, which provides a fully managed UI. New features will not be added to this component.
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/paypal.create|braintree-web.paypal.create} instead.</strong>
  */
 function PayPal(options) {
@@ -169,6 +171,9 @@ PayPal.prototype._initialize = function () {
  *   // Disable the button so that we don't attempt to open multiple popups.
  *   button.setAttribute('disabled', 'disabled');
  *
+ *   // if there is any other part of the page that must be disabled
+ *   // while authentication is in progress, do so now
+ *
  *   // Because PayPal tokenization opens a popup, this must be called
  *   // as a result of a user action, such as a button click.
  *   paypalInstance.tokenize({
@@ -176,6 +181,8 @@ PayPal.prototype._initialize = function () {
  *     // Any other tokenization options
  *   }, function (tokenizeErr, payload) {
  *     button.removeAttribute('disabled');
+ *
+ *     // if any other part of the page was disabled, re-enable now
  *
  *     if (tokenizeErr) {
  *       // Handle tokenization errors or premature flow closure
@@ -275,7 +282,7 @@ PayPal.prototype.tokenize = function (options, callback) {
 
       self._navigateFrameToAuth(options).catch(reject);
       // self MUST happen after _navigateFrameToAuth for Metro browsers to work.
-      self._frameService.open(self._createFrameServiceCallback(options, resolve, reject));
+      self._frameService.open({}, self._createFrameServiceCallback(options, resolve, reject));
     }
   });
 

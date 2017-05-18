@@ -4,6 +4,7 @@ var attributeValidationError = require('../../external/attribute-validation-erro
 var constants = require('../../shared/constants');
 var classlist = require('../../../lib/classlist');
 var isIe9 = require('browser-detection/is-ie9');
+var isIosWebview = require('browser-detection/is-ios-webview');
 var createRestrictedInput = require('../../../lib/create-restricted-input');
 var events = constants.events;
 var whitelistedFields = constants.whitelistedFields;
@@ -144,7 +145,7 @@ BaseInput.prototype._addDOMFocusListeners = function () {
   }.bind(this), false);
 
   // select inputs don't have a select function
-  if (typeof element.select === 'function') {
+  if (typeof element.select === 'function' && !isIosWebview()) {
     element.addEventListener('touchstart', function () {
       element.select();
     });

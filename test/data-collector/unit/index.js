@@ -11,15 +11,11 @@ var version = require('../../../package.json').version;
 
 describe('dataCollector', function () {
   beforeEach(function () {
-    var configuration = fake.configuration();
-
-    this.configuration = configuration;
+    this.configuration = fake.configuration();
     this.configuration.gatewayConfiguration.kount = {kountMerchantId: '12345'};
-    this.client = {
-      getConfiguration: function () {
-        return configuration;
-      }
-    };
+    this.client = fake.client({
+      configuration: this.configuration
+    });
     this.sandbox.stub(kount, 'setup');
     this.sandbox.stub(fraudnet, 'setup');
   });
@@ -58,10 +54,12 @@ describe('dataCollector', function () {
     });
 
     it('returns an error when called with a mismatched version', function () {
-      this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+      var client = fake.client({
+        version: '1.2.3'
+      });
 
       return dataCollector.create({
-        client: this.client,
+        client: client,
         kount: true
       }).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);

@@ -52,6 +52,18 @@ function configuration() {
   };
 }
 
+function client(options) {
+  options = options || {};
+  return {
+    getConfiguration: function () {
+      return options.configuration || configuration();
+    },
+    getVersion: function () {
+      return options.version || constants.VERSION;
+    }
+  };
+}
+
 clientToken = configuration().gatewayConfiguration;
 clientToken.authorizationFingerprint = 'encoded_auth_fingerprint';
 clientToken = btoa(JSON.stringify(clientToken));
@@ -59,5 +71,6 @@ clientToken = btoa(JSON.stringify(clientToken));
 module.exports = {
   tokenizationKey: tokenizationKey,
   clientToken: clientToken,
-  configuration: configuration
+  configuration: configuration,
+  client: client
 };

@@ -805,7 +805,7 @@ describe('PayPal', function () {
       PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions);
 
       expect(this.context._frameService.open).to.be.calledOnce;
-      expect(this.context._frameService.open).to.be.calledWith(this.sandbox.match.func);
+      expect(this.context._frameService.open).to.be.calledWith({}, this.sandbox.match.func);
     });
 
     it('returns a frame service handler', function () {

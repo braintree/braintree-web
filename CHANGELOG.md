@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+## 3.16.0
+
+* Client
+  * Access version with `getVersion()`
+* Hosted Fields
+  * Fix bug where inputs would not load intermittently on old browsers (#233)
+  * Typing `1/` in an expiration date field will now result in `01 / ` formatting (#221)
+  * Fix bug where certain webviews would cause inputs to be untypable after tapping a second time (#207)
+* Masterpass
+  * Enable Masterpass as a payment option
+* PayPal
+  * Mark PayPal component as deprecated in favor of using PayPal Checkout
+
 ## 3.15.0
 
 * Hosted Fields

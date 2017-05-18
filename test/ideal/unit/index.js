@@ -13,11 +13,9 @@ describe('ideal', function () {
   beforeEach(function () {
     this.configuration = fake.configuration();
     this.configuration.gatewayConfiguration.ideal = {};
-    this.fakeClient = {
-      getConfiguration: function () {
-        return this.configuration;
-      }.bind(this)
-    };
+    this.fakeClient = fake.client({
+      configuration: this.configuration
+    });
     this.idealInstance = new Ideal({
       client: this.fakeClient
     });
@@ -44,9 +42,11 @@ describe('ideal', function () {
       });
 
       it('rejects with an error when called with a mismatched version', function () {
-        this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+        var client = fake.client({
+          version: '1.2.3'
+        });
 
-        return create({client: this.fakeClient}).then(rejectIfResolves).catch(function (err) {
+        return create({client: client}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
@@ -109,9 +109,11 @@ describe('ideal', function () {
       });
 
       it('throws an error when called with a mismatched version', function (done) {
-        this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+        var client = fake.client({
+          version: '1.2.3'
+        });
 
-        create({client: this.fakeClient}, function (err, ideal) {
+        create({client: client}, function (err, ideal) {
           expect(ideal).not.to.exist;
 
           expect(err).to.be.an.instanceof(BraintreeError);

@@ -3,7 +3,10 @@
 var gulp = require('gulp');
 var browserify = require('./browserify');
 var path = require('path');
+var fs = require('fs');
 var rename = require('gulp-rename');
+var replace = require('gulp-replace');
+var run = require('run-sequence');
 var VERSION = require('../package.json').version;
 
 var BASE_PATH = path.resolve(__dirname, '..', 'src', 'hosted-fields');
@@ -11,8 +14,10 @@ var DIST_PATH = path.resolve(__dirname, '..', 'dist', 'hosted', 'web', VERSION);
 
 gulp.task('build:hosted-fields:html', function () {
   var minifyHTML = require('gulp-minifier');
+  var jsFile = fs.readFileSync(DIST_PATH + '/js/hosted-fields-internal.js', 'utf8');
 
   return gulp.src(BASE_PATH + '/internal/hosted-fields-frame.html')
+    .pipe(replace('@BUILT_FILE', jsFile))
     .pipe(gulp.dest(DIST_PATH + '/html'))
     .pipe(minifyHTML({
       minify: true,
@@ -53,9 +58,13 @@ gulp.task('build:hosted-fields:polyfills-ie9', function (done) {
   }, done);
 });
 
-gulp.task('build:hosted-fields', [
-  'build:hosted-fields:html',
-  'build:hosted-fields:internal-js',
+gulp.task('build:hosted-fields', function (done) {
+  run('build:hosted-fields:internal-js',
   'build:hosted-fields:polyfills-ie9',
-  'build:hosted-fields:external-js'
-]);
+  'build:hosted-fields:external-js',
+  // the html desk depends on the internal-js task
+  // so it must run after the internal-js task has
+  // finished
+  'build:hosted-fields:html',
+  done)
+});

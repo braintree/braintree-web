@@ -692,4 +692,12 @@ describe('Client', function () {
       });
     });
   });
+
+  describe('getVersion', function () {
+    it('returns the package.json version', function () {
+      var client = new Client(fake.configuration());
+
+      expect(client.getVersion()).to.equal(VERSION);
+    });
+  });
 });

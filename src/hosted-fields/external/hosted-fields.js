@@ -276,7 +276,7 @@ function HostedFields(options) {
   }
 
   clientConfig = options.client.getConfiguration();
-  clientVersion = clientConfig.analyticsMetadata.sdkVersion;
+  clientVersion = options.client.getVersion();
   if (clientVersion !== VERSION) {
     throw new BraintreeError({
       type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
@@ -506,28 +506,38 @@ HostedFields.prototype.teardown = function () {
  *   if (tokenizeErr) {
  *     switch (tokenizeErr.code) {
  *       case 'HOSTED_FIELDS_FIELDS_EMPTY':
+ *         // occurs when none of the fields are filled in
  *         console.error('All fields are empty! Please fill out the form.');
  *         break;
  *       case 'HOSTED_FIELDS_FIELDS_INVALID':
+ *         // occurs when certain fields do not pass client side validation
  *         console.error('Some fields are invalid:', tokenizeErr.details.invalidFieldKeys);
  *         break;
- *       case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
- *         console.error('Tokenization failed server side. Is the card valid?');
- *         break;
  *       case 'HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE':
- *         // will only get here if you generate a client token with a customer ID
- *         // with the fail on duplicate payment method option. See:
- *         // https://developers.braintreepayments.com/reference/request/client-token/generate/#options.fail_on_duplicate_payment_method
+ *         // occurs when:
+ *         //   * the client token used for client authorization was generated
+ *         //     with a customer ID and the fail on duplicate payment method
+ *         //     option is set to true
+ *         //   * the card being tokenized has previously been vaulted (with any customer)
+ *         // See: https://developers.braintreepayments.com/reference/request/client-token/generate/#options.fail_on_duplicate_payment_method
  *         console.error('This payment method already exists in your vault.');
  *         break;
  *       case 'HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED':
- *         // will only get here if you generate a client token with a customer ID
- *         // with the verify card option or if you have credit card verification
- *         // turned on in your Braintree Gateway. See
- *         // https://developers.braintreepayments.com/reference/request/client-token/generate/#options.verify_card
+ *         // occurs when:
+ *         //   * the client token used for client authorization was generated
+ *         //     with a customer ID and the verify card option is set to true
+ *         //     and you have credit card verification turned on in the Braintree
+ *         //     control panel
+ *         //   * the cvv does not pass verfication (https://developers.braintreepayments.com/reference/general/testing/#avs-and-cvv/cid-responses)
+ *         // See: https://developers.braintreepayments.com/reference/request/client-token/generate/#options.verify_card
  *         console.error('CVV did not pass verification');
  *         break;
+ *       case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
+ *         // occurs for any other tokenization error on the server
+ *         console.error('Tokenization failed server side. Is the card valid?');
+ *         break;
  *       case 'HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR':
+ *         // occurs when the Braintree gateway cannot be contacted
  *         console.error('Network error occurred when tokenizing.');
  *         break;
  *       default:

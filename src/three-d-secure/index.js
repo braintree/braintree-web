@@ -35,11 +35,11 @@ function create(options) {
   }
 
   config = options.client.getConfiguration();
-  clientVersion = config.analyticsMetadata.sdkVersion;
+  clientVersion = options.client.getVersion();
 
   if (!config.gatewayConfiguration.threeDSecureEnabled) {
     error = errors.THREEDS_NOT_ENABLED;
-  } else if (config.analyticsMetadata.sdkVersion !== VERSION) {
+  } else if (clientVersion !== VERSION) {
     error = {
       type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
       code: sharedErrors.INCOMPATIBLE_VERSIONS.code,

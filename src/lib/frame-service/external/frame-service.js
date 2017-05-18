@@ -11,6 +11,7 @@ var uuid = require('../../uuid');
 var iFramer = require('iframer');
 var BraintreeError = require('../../braintree-error');
 var browserDetection = require('browser-detection');
+var assign = require('./../../assign').assign;
 
 var REQUIRED_CONFIG_KEYS = [
   'name',
@@ -46,7 +47,9 @@ function FrameService(options) {
     dispatchFrameUrl: options.dispatchFrameUrl,
     openFrameUrl: options.openFrameUrl,
     height: options.height,
-    width: options.width
+    width: options.width,
+    top: options.top,
+    left: options.left
   };
   this.state = options.state;
 
@@ -102,8 +105,10 @@ FrameService.prototype._setBusEvents = function () {
   }.bind(this));
 };
 
-FrameService.prototype.open = function (callback) {
-  this._frame = this._getFrameForEnvironment();
+FrameService.prototype.open = function (options, callback) {
+  options = options || {};
+  this._frame = this._getFrameForEnvironment(options);
+
   this._frame.initialize(callback);
 
   if (this._frame instanceof PopupBridge) {
@@ -199,17 +204,19 @@ FrameService.prototype._pollForPopupClose = function () {
   return this._popupInterval;
 };
 
-FrameService.prototype._getFrameForEnvironment = function () {
+FrameService.prototype._getFrameForEnvironment = function (options) {
   var usePopup = browserDetection.supportsPopups();
   var popupBridgeExists = Boolean(global.popupBridge);
 
+  var initOptions = assign({}, this._options, options);
+
   if (usePopup) {
-    return new Popup(this._options);
+    return new Popup(initOptions);
   } else if (popupBridgeExists) {
-    return new PopupBridge(this._options);
+    return new PopupBridge(initOptions);
   }
 
-  return new Modal(this._options);
+  return new Modal(initOptions);
 };
 
 module.exports = FrameService;

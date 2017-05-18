@@ -10,17 +10,13 @@ var version = require('../../../package.json').version;
 
 describe('unionPay.create', function () {
   beforeEach(function () {
-    var configuration = fake.configuration();
-
-    configuration.gatewayConfiguration.unionPay = {
+    this.configuration = fake.configuration();
+    this.configuration.gatewayConfiguration.unionPay = {
       enabled: true
     };
-    this.configuration = configuration;
-    this.client = {
-      getConfiguration: function () {
-        return configuration;
-      }
-    };
+    this.client = fake.client({
+      configuration: this.configuration
+    });
     this.sandbox.stub(analytics, 'sendEvent');
   });
 
@@ -36,7 +32,10 @@ describe('unionPay.create', function () {
   });
 
   it('errors out if client version does not match', function (done) {
-    this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+    this.client = fake.client({
+      configuration: this.configuration,
+      version: '1.2.3'
+    });
 
     create({client: this.client}, function (err, thingy) {
       expect(err).to.be.an.instanceof(BraintreeError);

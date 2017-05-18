@@ -16,12 +16,10 @@ describe('usBankAccount component', function () {
       }
     };
 
-    this.fakeClient = {
-      getConfiguration: function () {
-        return this.configuration;
-      }.bind(this),
-      _request: this.sandbox.stub()
-    };
+    this.fakeClient = fake.client({
+      configuration: this.configuration
+    });
+    this.fakeClient._request = this.sandbox.stub();
   });
 
   describe('create', function () {
@@ -45,9 +43,11 @@ describe('usBankAccount component', function () {
     });
 
     it('throws an error when called with a mismatched version', function (done) {
-      this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+      var client = fake.client({
+        version: '1.2.3'
+      });
 
-      create({client: this.fakeClient}, function (err, usb) {
+      create({client: client}, function (err, usb) {
         expect(usb).not.to.exist;
 
         expect(err).to.be.an.instanceof(BraintreeError);

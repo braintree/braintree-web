@@ -9,6 +9,11 @@ var fake = require('../../helpers/fake');
 
 describe('hostedFields', function () {
   describe('create', function () {
+    beforeEach(function () {
+      this.fakeClient = fake.client();
+      this.fakeClient._request = function () {};
+    });
+
     it('instantiates a Hosted Fields integration', function (done) {
       var i, frameReadyHandler;
       var cvvNode = document.createElement('div');
@@ -17,10 +22,7 @@ describe('hostedFields', function () {
       document.body.appendChild(cvvNode);
 
       hostedFields.create({
-        client: {
-          getConfiguration: fake.configuration,
-          _request: function () {}
-        },
+        client: this.fakeClient,
         fields: {
           cvv: {selector: '#cvv'}
         }
@@ -49,10 +51,7 @@ describe('hostedFields', function () {
       document.body.appendChild(cvvNode);
 
       promise = hostedFields.create({
-        client: {
-          getConfiguration: fake.configuration,
-          _request: function () {}
-        },
+        client: this.fakeClient,
         fields: {
           cvv: {selector: '#cvv'}
         }

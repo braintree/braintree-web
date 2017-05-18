@@ -17,11 +17,9 @@ describe('three-d-secure.create', function () {
 
     this.configuration = configuration;
 
-    this.client = {
-      getConfiguration: function () {
-        return configuration;
-      }
-    };
+    this.client = fake.client({
+      configuration: this.configuration
+    });
 
     this.sandbox.stub(analytics, 'sendEvent');
     this.sandbox.stub(isHTTPS, 'isHTTPS').returns(true);
@@ -58,7 +56,10 @@ describe('three-d-secure.create', function () {
   });
 
   it('errors out if client version does not match', function (done) {
-    this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+    this.client = fake.client({
+      configuration: this.configuration,
+      version: '1.2.3'
+    });
 
     threeDSecure.create({client: this.client}, function (err, thingy) {
       expect(err).to.be.an.instanceof(BraintreeError);

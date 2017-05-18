@@ -8,16 +8,11 @@ var fake = require('../../helpers/fake');
 var version = require('../../../package.json').version;
 
 describe('americanExpress', function () {
-  beforeEach(function () {
-    this.configuration = fake.configuration();
-    this.fakeClient = {
-      getConfiguration: function () {
-        return this.configuration;
-      }.bind(this)
-    };
-  });
-
   describe('create', function () {
+    beforeEach(function () {
+      this.fakeClient = fake.client();
+    });
+
     it('returns a promise', function () {
       var promise = create({client: this.fakeClient});
 
@@ -38,9 +33,11 @@ describe('americanExpress', function () {
     });
 
     it('throws an error when called with a mismatched version', function (done) {
-      this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+      var client = fake.client({
+        version: '1.2.3'
+      });
 
-      create({client: this.fakeClient}, function (err, amex) {
+      create({client: client}, function (err, amex) {
         expect(amex).not.to.exist;
 
         expect(err).to.be.an.instanceof(BraintreeError);

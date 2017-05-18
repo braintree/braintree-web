@@ -17,12 +17,11 @@ var getCardTypes = require('credit-card-type');
 describe('HostedFields', function () {
   beforeEach(function () {
     this.defaultConfiguration = {
-      client: {
-        getConfiguration: fake.configuration,
-        _request: function () {}
-      },
+      client: fake.client(),
       fields: {}
     };
+
+    this.defaultConfiguration.client._request = function () {};
   });
 
   describe('Constructor', function () {
@@ -89,12 +88,9 @@ describe('HostedFields', function () {
       it('throws an error if client version does not match', function () {
         var err;
 
-        this.defaultConfiguration.client.getConfiguration = function () {
-          var config = fake.configuration();
-
-          config.analyticsMetadata.sdkVersion = '1.2.3';
-          return config;
-        };
+        this.defaultConfiguration.client = fake.client({
+          version: '1.2.3'
+        });
 
         try {
           new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new

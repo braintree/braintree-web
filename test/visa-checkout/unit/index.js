@@ -15,11 +15,9 @@ describe('visaCheckout.create', function () {
     configuration.gatewayConfiguration.visaCheckout = {};
 
     this.configuration = configuration;
-    this.client = {
-      getConfiguration: function () {
-        return configuration;
-      }
-    };
+    this.client = fake.client({
+      configuration: configuration
+    });
     this.sandbox.stub(analytics, 'sendEvent');
   });
 
@@ -56,9 +54,11 @@ describe('visaCheckout.create', function () {
   });
 
   it('calls callback with an error when called with a mismatched version', function (done) {
-    this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+    var client = fake.client({
+      version: '1.2.3'
+    });
 
-    create({client: this.client}, function (err, visaCheckoutInstance) {
+    create({client: client}, function (err, visaCheckoutInstance) {
       expect(visaCheckoutInstance).not.to.exist;
 
       expect(err).to.be.an.instanceof(BraintreeError);

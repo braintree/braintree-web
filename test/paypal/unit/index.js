@@ -16,18 +16,14 @@ describe('paypal', function () {
 
   describe('create', function () {
     beforeEach(function () {
-      var configuration = fake.configuration();
-
-      configuration.gatewayConfiguration.paypalEnabled = true;
-      configuration.gatewayConfiguration.paypal = {};
+      this.configuration = fake.configuration();
+      this.configuration.gatewayConfiguration.paypalEnabled = true;
+      this.configuration.gatewayConfiguration.paypal = {};
 
       this.sandbox.stub(analytics, 'sendEvent');
-      this.configuration = configuration;
-      this.client = {
-        getConfiguration: function () {
-          return configuration;
-        }
-      };
+      this.client = fake.client({
+        configuration: this.configuration
+      });
     });
 
     it('returns a promise when no callback is provided', function () {
@@ -48,9 +44,11 @@ describe('paypal', function () {
     });
 
     it('errors out if client version does not match', function (done) {
-      this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+      var client = fake.client({
+        version: '1.2.3'
+      });
 
-      create({client: this.client}, function (err, thingy) {
+      create({client: client}, function (err, thingy) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');

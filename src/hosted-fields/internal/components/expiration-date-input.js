@@ -11,6 +11,13 @@ function ExpirationDateInput() {
   BaseInput.apply(this, arguments);
   this.formatter.setPattern(DEFAULT_PATTERN);
 
+  this.element.addEventListener('keyup', function (event) {
+    if (this.element.value === '1' && event.key === '/') {
+      this.element.value = '01 / ';
+      this.model.set('expirationDate.value', '01');
+    }
+  }.bind(this), false);
+
   this.model.on('change:expirationDate.value', function (date) {
     if (date.length === 0 || date[0] === '0' || date[0] === '1') {
       this.formatter.setPattern(DEFAULT_PATTERN);

@@ -21,12 +21,10 @@ describe('paypalCheckout', function () {
       };
 
       this.configuration = configuration;
-      this.client = {
-        _request: this.sandbox.stub(),
-        getConfiguration: function () {
-          return configuration;
-        }
-      };
+      this.client = fake.client({
+        configuration: this.configuration
+      });
+      this.client._request = this.sandbox.stub();
     });
 
     it('sends an analytics event on component creation', function (done) {
@@ -62,9 +60,11 @@ describe('paypalCheckout', function () {
       });
 
       it('errors out if client version does not match', function () {
-        this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+        var client = fake.client({
+          version: '1.2.3'
+        });
 
-        return create({client: this.client}).then(rejectIfResolves).catch(function (err) {
+        return create({client: client}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
@@ -120,9 +120,11 @@ describe('paypalCheckout', function () {
       });
 
       it('errors out if client version does not match', function (done) {
-        this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+        var client = fake.client({
+          version: '1.2.3'
+        });
 
-        create({client: this.client}, function (err, thingy) {
+        create({client: client}, function (err, thingy) {
           expect(err).to.be.an.instanceof(BraintreeError);
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');

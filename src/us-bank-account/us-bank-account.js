@@ -260,8 +260,9 @@ USBankAccount.prototype._tokenizeBankLogin = function (options) {
 
       plaid.create({
         clientName: options.bankLogin.displayName,
-        env: isProduction ? 'production' : 'tartan',
-        key: isProduction ? plaidConfig.publicKey : 'test_key',
+        apiVersion: 'v2',
+        env: isProduction ? 'production' : 'sandbox',
+        key: plaidConfig.publicKey,
         product: 'auth',
         selectAccount: true,
         onExit: function () {
@@ -279,7 +280,7 @@ USBankAccount.prototype._tokenizeBankLogin = function (options) {
             data: camelCaseToSnakeCase({
               type: 'plaid_public_token',
               publicToken: publicToken,
-              accountId: metadata.account_id,
+              accountId: isProduction ? metadata.account_id : 'plaid_account_id',
               achMandate: {
                 text: options.mandateText
               },

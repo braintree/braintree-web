@@ -145,7 +145,7 @@ Ideal.prototype.startPayment = wrapPromise(function (options) {
     self._startPaymentCallback = self._createStartPaymentCallback(resolve, reject);
     self._startPaymentOptions = options;
 
-    self._frameService.open(self._startPaymentCallback);
+    self._frameService.open({}, self._startPaymentCallback);
   });
 });
 

@@ -82,11 +82,25 @@ Masterpass.prototype._initialize = function () {
 
 /**
  * Launches the Masterpass flow and returns a nonce payload. Only one Masterpass flow should be active at a time. One way to achieve this is to disable your Masterpass button while the flow is open.
+ *
+ * Braintree will apply these properties in `options.config`. Merchants should not override these values, except for advanced usage.
+ *  - `environment`
+ *  - `requestToken`
+ *  - `callbackUrl`
+ *  - `merchantCheckoutId`
+ *  - `allowedCardTypes`
+ *  - `version`
+ *
  * @public
  * @param {object} options All options for initiating the Masterpass payment flow.
  * @param {string} options.currencyCode The currency code to process the payment.
  * @param {string} options.subtotal The amount to authorize for the transaction.
  * @param {object} options.config All configuration parameters accepted by Masterpass lightbox, except `function` data type. These options will override the values set by Braintree server. Please see {@link Masterpass Lightbox Parameters|https://developer.mastercard.com/page/masterpass-lightbox-parameters} for more information.
+ * @param {object} [options.frameOptions] Used to configure the window that contains the Masterpass login.
+ * @param {number} [options.frameOptions.width] Popup width to be used instead of default value (450px).
+ * @param {number} [options.frameOptions.height] Popup height to be used instead of default value (660px).
+ * @param {number} [options.frameOptions.top] The top position of the popup window to be used instead of default value, that is calculated based on provided height, and parent window size.
+ * @param {number} [options.frameOptions.left] The left position to the popup window to be used instead of default value, that is calculated baed on provided width, and parent window size.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link Masterpass~tokenizePayload|tokenizePayload}. If no callback is provided, the method will return a Promise that resolves with a {@link Masterpass~tokenizePayload|tokenizePayload}.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
@@ -136,7 +150,7 @@ Masterpass.prototype.tokenize = function (options) {
   return new Promise(function (resolve, reject) {
     self._navigateFrameToLoadingPage(options).catch(reject);
     // This MUST happen after _navigateFrameToLoadingPage for Metro browsers to work.
-    self._frameService.open(self._createFrameOpenHandler(resolve, reject));
+    self._frameService.open(options.frameOptions, self._createFrameOpenHandler(resolve, reject));
   });
 };
 
@@ -167,7 +181,8 @@ Masterpass.prototype._navigateFrameToLoadingPage = function (options) {
       requestToken: response.requestToken,
       callbackUrl: self._callbackUrl,
       merchantCheckoutId: gatewayConfiguration.masterpass.merchantCheckoutId,
-      allowedCardTypes: gatewayConfiguration.masterpass.supportedNetworks
+      allowedCardTypes: gatewayConfiguration.masterpass.supportedNetworks,
+      version: constants.MASTERPASS_VERSION
     };
 
     Object.keys(config).forEach(function (key) {

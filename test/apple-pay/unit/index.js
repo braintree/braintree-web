@@ -9,17 +9,13 @@ var version = require('../../../package.json').version;
 
 describe('applePay.create', function () {
   beforeEach(function () {
-    var configuration = fake.configuration();
+    this.configuration = fake.configuration();
+    this.configuration.gatewayConfiguration.applePayWeb = {};
 
-    configuration.gatewayConfiguration.applePayWeb = {};
+    this.client = fake.client({
+      configuration: this.configuration
+    });
 
-    this.configuration = configuration;
-    this.client = {
-      request: this.sandbox.stub(),
-      getConfiguration: function () {
-        return configuration;
-      }
-    };
     this.sandbox.stub(analytics, 'sendEvent');
   });
 
@@ -43,9 +39,11 @@ describe('applePay.create', function () {
   });
 
   it('calls callback with an error when called with a mismatched version', function (done) {
-    this.configuration.analyticsMetadata.sdkVersion = '1.2.3';
+    var client = fake.client({
+      version: '1.2.3'
+    });
 
-    create({client: this.client}, function (err, applePayInstance) {
+    create({client: client}, function (err, applePayInstance) {
       expect(applePayInstance).not.to.exist;
 
       expect(err).to.be.an.instanceOf(BraintreeError);

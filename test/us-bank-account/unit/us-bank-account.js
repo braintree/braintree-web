@@ -538,9 +538,9 @@ describe('USBankAccount', function () {
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
             create: function (options) {
-              expect(options.env).to.equal('tartan');
+              expect(options.env).to.equal('sandbox');
               expect(options.clientName).to.equal('Test Merchant');
-              expect(options.key).to.equal('test_key');
+              expect(options.key).to.equal('abc123');
               expect(options.product).to.equal('auth');
               expect(options.selectAccount).to.equal(true);
               expect(options.onExit).to.be.a('function');
@@ -590,7 +590,7 @@ describe('USBankAccount', function () {
             data: {
               type: 'plaid_public_token',
               public_token: 'abc123',
-              account_id: 'xyz456',
+              account_id: 'plaid_account_id',
               ach_mandate: {
                 text: 'I authorize Braintree to charge my bank account.'
               },
@@ -624,9 +624,9 @@ describe('USBankAccount', function () {
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
             create: function (options) {
-              expect(options.env).to.equal('tartan');
+              expect(options.env).to.equal('sandbox');
               expect(options.clientName).to.equal('Test Merchant');
-              expect(options.key).to.equal('test_key');
+              expect(options.key).to.equal('abc123');
               expect(options.product).to.equal('auth');
               expect(options.selectAccount).to.equal(true);
               expect(options.onExit).to.be.a('function');
@@ -675,7 +675,7 @@ describe('USBankAccount', function () {
             data: {
               type: 'plaid_public_token',
               public_token: 'abc123',
-              account_id: 'xyz456',
+              account_id: 'plaid_account_id',
               ach_mandate: {
                 text: 'I authorize Braintree to charge my bank account.'
               },
@@ -702,13 +702,118 @@ describe('USBankAccount', function () {
         }.bind(this));
       });
 
-      it('sets Plaid environment to "tartan" in Braintree sandbox', function (done) {
+      it('uses plaid_account_id for accountId when not in production', function (done) {
+        this.fakeClient.request.resolves(this.fakeGatewayResponse);
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    var publicToken = 'abc123';
+                    var metadata = {account_id: 'xyz456'};
+
+                    options.onSuccess(publicToken, metadata);
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant',
+            ownershipType: 'business',
+            businessName: 'Acme Inc',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function (err) {
+          expect(err).not.to.exist;
+
+          expect(this.fakeClient.request).to.be.calledOnce;
+          expect(this.fakeClient.request).to.be.calledWith(this.sandbox.match({
+            data: {
+              account_id: 'plaid_account_id'
+            }
+          }));
+
+          done();
+        }.bind(this));
+      });
+
+      it('uses provided account id for accountId when in production', function (done) {
+        this.configuration.gatewayConfiguration.environment = 'production';
+        this.fakeClient.request.resolves(this.fakeGatewayResponse);
+
+        this.context._loadPlaid = function (callback) {
+          var fakePlaid = {
+            create: function (options) {
+              return {
+                open: function () {
+                  setTimeout(function () {
+                    var publicToken = 'abc123';
+                    var metadata = {account_id: 'xyz456'};
+
+                    options.onSuccess(publicToken, metadata);
+                  }, 1);
+                }
+              };
+            }
+          };
+
+          setTimeout(function () {
+            callback(null, fakePlaid);
+          }, 1);
+        };
+
+        USBankAccount.prototype.tokenize.call(this.context, {
+          bankLogin: {
+            displayName: 'Test Merchant',
+            ownershipType: 'business',
+            businessName: 'Acme Inc',
+            billingAddress: {
+              streetAddress: '123 Townsend St',
+              extendedAddress: 'FL 6',
+              locality: 'San Francisco',
+              region: 'CA',
+              postalCode: '94107'
+            }
+          },
+          mandateText: 'I authorize Braintree to charge my bank account.'
+        }, function (err) {
+          expect(err).not.to.exist;
+
+          expect(this.fakeClient.request).to.be.calledOnce;
+          expect(this.fakeClient.request).to.be.calledWith(this.sandbox.match({
+            data: {
+              account_id: 'xyz456'
+            }
+          }));
+
+          done();
+        }.bind(this));
+      });
+
+      it('sets Plaid environment to "sandbox" in Braintree sandbox', function (done) {
         this.configuration.gatewayConfiguration.environment = 'sandbox';
 
         this.context._loadPlaid = function (callback) {
           var fakePlaid = {
             create: function (options) {
-              expect(options.env).to.equal('tartan');
+              expect(options.env).to.equal('sandbox');
 
               return {open: done};
             }
@@ -734,30 +839,6 @@ describe('USBankAccount', function () {
           var fakePlaid = {
             create: function (options) {
               expect(options.env).to.equal('production');
-
-              return {open: done};
-            }
-          };
-
-          setTimeout(function () {
-            callback(null, fakePlaid);
-          }, 1);
-        };
-
-        USBankAccount.prototype.tokenize.call(this.context, {
-          bankLogin: {
-            displayName: 'Test Merchant'
-          },
-          mandateText: 'I authorize Braintree to charge my bank account.'
-        }, function () {});
-      });
-
-      it('sets Plaid API key to test_key in Braintree sandbox', function (done) {
-        this.configuration.gatewayConfiguration.environment = 'sandbox';
-        this.context._loadPlaid = function (callback) {
-          var fakePlaid = {
-            create: function (options) {
-              expect(options.key).to.equal('test_key');
 
               return {open: done};
             }

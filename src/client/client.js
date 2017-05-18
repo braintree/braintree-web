@@ -12,6 +12,7 @@ var assign = require('../lib/assign').assign;
 var constants = require('./constants');
 var errors = require('./errors');
 var sharedErrors = require('../lib/errors');
+var VERSION = require('../lib/constants').VERSION;
 
 /**
  * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
@@ -252,6 +253,24 @@ function formatRequestError(status, err) { // eslint-disable-line consistent-ret
 
 Client.prototype.toJSON = function () {
   return this.getConfiguration();
+};
+
+/**
+ * Returns the Client version.
+ * @public
+ * @returns {String} The created client's version.
+ * @example
+ * var createClient = require('braintree-web/client').create;
+ *
+ * createClient({
+ *   authorization: CLIENT_AUTHORIZATION
+ * }, function (createErr, clientInstance) {
+ *   console.log(clientInstance.getVersion()); // Ex: 1.0.0
+ * });
+ * @returns {void}
+ */
+Client.prototype.getVersion = function () {
+  return VERSION;
 };
 
 module.exports = Client;
