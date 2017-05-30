@@ -364,6 +364,17 @@ function HostedFields(options) {
       });
     }
 
+    if (field.minlength && typeof field.minlength !== 'number') {
+      throw new BraintreeError({
+        type: errors.HOSTED_FIELDS_FIELD_PROPERTY_INVALID.type,
+        code: errors.HOSTED_FIELDS_FIELD_PROPERTY_INVALID.code,
+        message: 'The value for minlength must be a number.',
+        details: {
+          fieldKey: key
+        }
+      });
+    }
+
     frame = iFramer({
       type: key,
       name: 'braintree-hosted-field-' + key,

@@ -99,7 +99,7 @@ function create(options) {
 /**
  * @static
  * @function isSupported
- * @description Returns true if PayPal Checkout [supports this browser](/current/#browser-support-webviews).
+ * @description Returns true if PayPal Checkout [supports this browser](index.html#browser-support-webviews).
  * @deprecated Previously, this method checked for Popup support in the brower. Checkout.js now falls back to a modal if popups are not supported.
  * @example
  * if (braintree.paypalCheckout.isSupported()) {

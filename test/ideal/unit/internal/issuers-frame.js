@@ -3,6 +3,25 @@
 var issuersFrame = require('../../../../src/ideal/internal/issuers-frame');
 var Bus = require('../../../../src/lib/bus');
 
+function makeMockConfirmView() {
+  var confirmView = document.createElement('div');
+  var backButton = document.createElement('div');
+  var bankLogo = document.createElement('div');
+  var bankName = document.createElement('div');
+
+  confirmView.className = 'confirm-view';
+  backButton.className = 'back-btn';
+  bankLogo.className = 'bank-message--logo';
+  bankName.className = 'bank-message--name';
+  confirmView.style.display = 'none';
+
+  confirmView.appendChild(backButton);
+  confirmView.appendChild(bankLogo);
+  confirmView.appendChild(bankName);
+
+  return confirmView;
+}
+
 describe('issuers-frame', function () {
   beforeEach(function () {
     this.oldWindowName = window.name;
@@ -24,16 +43,25 @@ describe('issuers-frame', function () {
     ];
     /* eslint-enable */
 
+    this.confirmView = makeMockConfirmView();
+    document.body.appendChild(this.confirmView);
+    this.idealList = document.createElement('div');
+    this.idealList.className = 'ideal-list-container';
+    document.body.appendChild(this.idealList);
+    this.overlayNode = document.createElement('div');
+    this.overlayNode.className = 'overlay';
+    document.body.appendChild(this.overlayNode);
+
     window.name = 'braintree_uuid';
 
     this.sandbox.stub(Bus.prototype, 'emit').onCall(0).yields({bankData: this.fakeConfig});
   });
 
   afterEach(function () {
-    var container = document.querySelector('.container--ideal');
-
     window.name = this.oldWindowName;
-    document.body.removeChild(container);
+    document.body.removeChild(this.confirmView);
+    document.body.removeChild(this.idealList);
+    document.body.removeChild(this.overlayNode);
   });
 
   it('adds issuing banks to the dom', function () {
@@ -62,8 +90,8 @@ describe('issuers-frame', function () {
     goodBank = document.querySelector('#INGBNL2A');
     sketchyBank = document.querySelector('#sketchy');
 
-    expect(goodBank.innerHTML).to.contain('src="../../static/images/ideal_issuer-logo_INGBNL2A.png">');
-    expect(sketchyBank.innerHTML).to.contain('src="../../static/images/ideal_issuer-logo_onloaddoSomethingBadignored-property">');
+    expect(goodBank.querySelector('img').src).to.contain('static/images/ideal_issuer-logo_INGBNL2A.png');
+    expect(sketchyBank.querySelector('img').src).to.contain('static/images/ideal_issuer-logo_onloaddoSomethingBadignored-property');
   });
 
   it('sanitizes bank name', function () {
@@ -139,8 +167,32 @@ describe('issuers-frame', function () {
     expect(nodes).to.have.a.lengthOf(0);
   });
 
-  it('adds click listeners to bank list to message bank id', function () {
+  it('adds click listeners to bank list to open a confirmation view', function (done) {
+    var btn, confirmView;
+
+    this.timeout(4000);
+
+    issuersFrame.start();
+
+    btn = document.querySelector('#INGBNL2A');
+    confirmView = document.querySelector('.confirm-view');
+
+    expect(confirmView.style.display).to.equal('none');
+
+    btn.click();
+
+    setTimeout(function () {
+      expect(confirmView.style.display).to.equal('block');
+      expect(confirmView.querySelector('.bank-message--logo').innerHTML).to.contain('INGBNL2A.png');
+      expect(confirmView.querySelector('.bank-message--name').innerHTML).to.contain('Issuer Simulation V3 - ING');
+      done();
+    }, 500);
+  });
+
+  it('emits BANK_CHOSEN event 3 seconds after bank button is clicked', function (done) {
     var btn;
+
+    this.timeout(4000);
 
     issuersFrame.start();
 
@@ -148,8 +200,53 @@ describe('issuers-frame', function () {
 
     btn.click();
 
-    expect(Bus.prototype.emit).to.be.calledWith('ideal:BANK_CHOSEN', {
-      issuingBankId: 'INGBNL2A'
-    });
+    setTimeout(function () {
+      expect(Bus.prototype.emit).to.be.calledWith('ideal:BANK_CHOSEN', {
+        issuingBankId: 'INGBNL2A'
+      });
+      done();
+    }, 3501); // need some extra padding to allow the images to load
+  });
+
+  it('does not emit BANK_CHOSEN event until after 3 seconds after button is clicked', function (done) {
+    var btn;
+
+    this.timeout(4000);
+
+    issuersFrame.start();
+
+    btn = document.querySelector('#INGBNL2A');
+
+    btn.click();
+
+    setTimeout(function () {
+      expect(Bus.prototype.emit).to.not.be.calledWith('ideal:BANK_CHOSEN', {
+        issuingBankId: 'INGBNL2A'
+      });
+      done();
+    }, 2900);
+  });
+
+  it('does not emit BANK_CHOSEN event if back button is clicked', function (done) {
+    var btn, backBtn;
+
+    this.timeout(5000);
+
+    issuersFrame.start();
+
+    btn = document.querySelector('#INGBNL2A');
+    backBtn = document.querySelector('.confirm-view .back-btn');
+
+    btn.click();
+
+    setTimeout(function () {
+      backBtn.click();
+      setTimeout(function () {
+        expect(Bus.prototype.emit).to.not.be.calledWith('ideal:BANK_CHOSEN', {
+          issuingBankId: 'INGBNL2A'
+        });
+        done();
+      }, 1000);
+    }, 2900);
   });
 });

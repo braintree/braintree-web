@@ -620,6 +620,19 @@ describe('credit card model', function () {
       expect(this.card.invalidFieldKeys()).to.be.empty;
       expect(this.card.invalidFieldKeys()).to.be.instanceOf(Array);
     });
+
+    it('marks postal code as invalid if set minlength is not reached', function () {
+      this.card.set('postalCode.value', '303');
+
+      expect(this.card.invalidFieldKeys()).to.not.contain('postalCode');
+
+      this.card.configuration.fields.postalCode.minlength = 4;
+      this.card.set('postalCode.value', '123');
+      expect(this.card.invalidFieldKeys()).to.contain('postalCode');
+
+      this.card.set('postalCode.value', '4321');
+      expect(this.card.invalidFieldKeys()).to.not.contain('postalCode');
+    });
   });
 
   describe('possibleCardTypes', function () {

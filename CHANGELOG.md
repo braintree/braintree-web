@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.17.0
+
+* Hosted Fields
+  * Add `minlength` to fields options to set the `minlength` of postal code inputs
+  * Update credit-card-type dependency (UnionPay detection fixes)
+  * Update restricted-input dependency to 1.2.1 (Browser Detection updates)
+* PayPal
+  * Frame fixes in iOS
+
 ## 3.16.0
 
 * Client

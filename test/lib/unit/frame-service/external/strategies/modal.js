@@ -32,6 +32,10 @@ describe('Modal', function () {
       };
     });
 
+    afterEach(function () {
+      document.body.removeAttribute('style');
+    });
+
     it('adds an iframe to a container', function () {
       var container = document.createElement('div');
       var modal = new Modal({container: container});
@@ -50,22 +54,6 @@ describe('Modal', function () {
       expect(modal.isClosed()).to.equal(false);
     });
 
-    it('sets iframe position to absolute if platform is iOS', function () {
-      var modal = new Modal({
-        container: this.containerStub
-      });
-      var fakeDomNode = {
-        appendChild: this.sandbox.stub()
-      };
-
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.containerStub.createElement.returns(fakeDomNode);
-
-      modal.open();
-
-      expect(modal._frame.style.position).to.equal('absolute');
-    });
-
     it('inserts iframe into a div if platform is iOS', function () {
       var container = document.createElement('div');
       var modal = new Modal({
@@ -80,6 +68,102 @@ describe('Modal', function () {
       expect(container.children[0]).to.be.an.instanceOf(HTMLDivElement);
       expect(container.children[0].children).to.have.lengthOf(1);
       expect(container.children[0].children[0]).to.be.an.instanceOf(HTMLIFrameElement);
+    });
+
+    it('adds styling to iframe div wrapper if platform is iOS', function () {
+      var div;
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+
+      modal.open();
+
+      div = container.children[0];
+      expect(div.style.height).to.equal('100%');
+      expect(div.style.width).to.equal('100%');
+      expect(div.style.overflow).to.equal('auto');
+      expect(div.style['-webkit-overflow-scrolling']).to.equal('touch');
+    });
+
+    it('sets no styles to iframe if platform is iOS and using WKWebView', function () {
+      var iframe;
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+
+      modal.open();
+
+      iframe = container.children[0].children[0];
+      ['position', 'top', 'left', 'bottom', 'padding', 'margin', 'border', 'outline', 'zIndex', 'background'].forEach(function (s) {
+        expect(iframe.style[s]).to.be.empty;
+      });
+    });
+
+    it('locks scrolling on body if platform is iOS and using WKWebView', function () {
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+
+      modal.open();
+
+      expect(document.body.style.overflow).to.equal('hidden');
+      expect(document.body.style.position).to.equal('fixed');
+    });
+
+    it('does not lock scrolling on body by default', function () {
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(false);
+      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(false);
+
+      modal.open();
+
+      expect(document.body.style.overflow).to.not.equal('hidden');
+      expect(document.body.style.position).to.not.equal('fixed');
+    });
+
+    it('does not lock scrolling on body when platform is iOS but not using WKWebView', function () {
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(false);
+
+      modal.open();
+
+      expect(document.body.style.overflow).to.not.equal('hidden');
+      expect(document.body.style.position).to.not.equal('fixed');
+    });
+
+    it('scrolls to top if platform is iOS and using WKWebView', function () {
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      this.sandbox.stub(global, 'scrollTo');
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+
+      modal.open();
+
+      expect(global.scrollTo).to.be.calledWith(0, 0);
     });
   });
 
@@ -99,6 +183,45 @@ describe('Modal', function () {
       expect(modal._frame).to.equal(null);
       expect(modal.isClosed()).to.equal(true);
       expect(container.removeChild).to.have.been.calledOnce;
+    });
+
+    it('unlocks scrolling on body if platform is iOS and using WKWebView', function () {
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      document.body.style.overflow = 'visible';
+      document.body.style.position = 'static';
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+
+      modal.open();
+      modal.close();
+
+      expect(document.body.style.overflow).to.equal('visible');
+      expect(document.body.style.position).to.equal('static');
+    });
+
+    it('scrolls back to previous user position if platform is iOS and using WKWebView', function () {
+      var container = document.createElement('div');
+      var modal = new Modal({
+        container: container
+      });
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+      this.sandbox.stub(global, 'scrollTo');
+
+      modal.open();
+
+      modal._savedBodyProperties.left = 10;
+      modal._savedBodyProperties.top = 20;
+
+      modal.close();
+
+      expect(global.scrollTo).to.be.calledWith(10, 20);
     });
   });
 

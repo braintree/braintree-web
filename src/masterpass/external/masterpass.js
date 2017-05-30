@@ -32,7 +32,13 @@ var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_
  * @property {string} type The payment method type, always `MasterpassCard`.
  * @property {object} details Additional account details.
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
+ * @property {object} contact The customer's contact information.
+ * @property {string} contact.firstName The customer's first name.
+ * @property {string} contact.lastName The customer's last name.
+ * @property {string} contact.phoneNumber The customer's phone number.
+ * @property {string} contact.emailAddress The customer's email address.
  * @property {Masterpass~Address} billingAddress The customer's billing address.
  * @property {Masterpass~Address} shippingAddress The customer's shipping address.
  */
@@ -95,7 +101,7 @@ Masterpass.prototype._initialize = function () {
  * @param {object} options All options for initiating the Masterpass payment flow.
  * @param {string} options.currencyCode The currency code to process the payment.
  * @param {string} options.subtotal The amount to authorize for the transaction.
- * @param {object} options.config All configuration parameters accepted by Masterpass lightbox, except `function` data type. These options will override the values set by Braintree server. Please see {@link Masterpass Lightbox Parameters|https://developer.mastercard.com/page/masterpass-lightbox-parameters} for more information.
+ * @param {object} [options.config] All configuration parameters accepted by Masterpass lightbox, except `function` data type. These options will override the values set by Braintree server. Please see {@link Masterpass Lightbox Parameters|https://developer.mastercard.com/page/masterpass-lightbox-parameters} for more information.
  * @param {object} [options.frameOptions] Used to configure the window that contains the Masterpass login.
  * @param {number} [options.frameOptions.width] Popup width to be used instead of default value (450px).
  * @param {number} [options.frameOptions.height] Popup height to be used instead of default value (660px).

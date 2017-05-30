@@ -144,6 +144,10 @@ CreditCardForm.prototype._validateField = function (fieldKey) {
 
   if (fieldKey === 'cvv') {
     validationResult = this._validateCvv(value);
+  } else if (fieldKey === 'postalCode') {
+    validationResult = validate(value, {
+      minLength: this.configuration.fields.postalCode.minlength
+    });
   } else if (fieldKey === 'expirationDate') {
     validationResult = validate(splitDate(value));
   } else {

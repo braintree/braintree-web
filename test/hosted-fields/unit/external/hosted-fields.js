@@ -220,6 +220,34 @@ describe('HostedFields', function () {
 
         document.body.removeChild(container);
       });
+
+      it('throws an error if a minlength is provided that is not a number', function () {
+        var container = document.createElement('div');
+        var configuration = this.defaultConfiguration;
+
+        configuration.fields.cvv = {
+          selector: '#foo',
+          minlength: '5'
+        };
+
+        container.id = 'foo';
+        document.body.appendChild(container);
+
+        try {
+          new HostedFields(configuration);  // eslint-disable-line no-new
+          throw new Error('we should never reach this point');
+        } catch (err) {
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.code).to.equal('HOSTED_FIELDS_FIELD_PROPERTY_INVALID');
+          expect(err.message).to.equal('The value for minlength must be a number.');
+          expect(err.details).to.deep.equal({
+            fieldKey: 'cvv'
+          });
+        }
+
+        document.body.removeChild(container);
+      });
     });
 
     it('subscribes to FRAME_READY', function () {

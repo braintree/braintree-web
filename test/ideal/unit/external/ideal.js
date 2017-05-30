@@ -26,7 +26,9 @@ describe('iDEAL', function () {
       getConfiguration: function () {
         return this.configuration;
       }.bind(this),
-      request: this.sandbox.stub().resolves()
+      request: this.sandbox.stub().resolves({
+        data: {}
+      })
     };
     this.fakeFrameService = {
       close: this.sandbox.stub(),
@@ -105,6 +107,8 @@ describe('iDEAL', function () {
         expect(frameService.create).to.be.calledOnce;
         expect(frameService.create).to.be.calledWith({
           name: 'braintreeideallanding',
+          height: 550,
+          width: 500,
           dispatchFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/dispatch-frame.min.html',
           openFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/ideal-issuers-frame.min.html',
           state: {bankData: bankData}

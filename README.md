@@ -3,7 +3,9 @@ braintree-web
 
 A suite of tools for integrating Braintree in the browser.
 
-This is the repo to submit issues if you have any problems or questions about any Braintree JavaScript integration.
+This is the repo to submit issues if you have any problems or questions about a Braintree JavaScript integration.
+
+For a ready-made payment UI, see [Braintree Web Drop-in](https://github.com/braintree/braintree-web-drop-in).
 
 Install
 =======

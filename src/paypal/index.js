@@ -104,7 +104,7 @@ function create(options) {
 /**
  * @static
  * @function isSupported
- * @description Returns true if PayPal [supports this browser](/current/#browser-support-webviews).
+ * @description Returns true if PayPal [supports this browser](index.html#browser-support-webviews).
  * @example
  * if (braintree.paypal.isSupported()) {
  *   // Add PayPal button to the page
