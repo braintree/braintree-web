@@ -4,7 +4,7 @@ var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var errors = require('./errors');
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @typedef {object} ApplePay~tokenizePayload

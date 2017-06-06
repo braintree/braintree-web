@@ -1,7 +1,7 @@
 'use strict';
 
 var create = require('../../../src/ideal').create;
-var browserDetection = require('browser-detection');
+var browserDetection = require('@braintree/browser-detection');
 var Ideal = require('../../../src/ideal/external/ideal');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');

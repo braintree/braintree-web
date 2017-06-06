@@ -4,13 +4,13 @@
  */
 
 var BraintreeError = require('../lib/braintree-error');
-var browserDetection = require('browser-detection');
+var browserDetection = require('@braintree/browser-detection');
 var Masterpass = require('./external/masterpass');
 var VERSION = process.env.npm_package_version;
 var errors = require('./shared/errors');
 var sharedErrors = require('../lib/errors');
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @static

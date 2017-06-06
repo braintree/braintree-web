@@ -15,7 +15,7 @@ var errors = require('../shared/errors');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var querystring = require('../../lib/querystring');
 var Promise = require('../../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @typedef {object} PayPal~tokenizePayload
@@ -162,11 +162,12 @@ PayPal.prototype._initialize = function () {
  * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
- * @param {string} [options.landingPageType=login] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment. It defaults to `login`.
+ * @param {string} [options.landingPageType] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.
  * * `login` - A PayPal account login page is used.
  * * `billing` - A non-PayPal account landing page is used.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link PayPal~tokenizePayload|tokenizePayload}.
- * @example Tokenizing with the vault flow
+ * @example
+ * <caption>Tokenizing with the vault flow</caption>
  * button.addEventListener('click', function () {
  *   // Disable the button so that we don't attempt to open multiple popups.
  *   button.setAttribute('disabled', 'disabled');
@@ -206,7 +207,8 @@ PayPal.prototype._initialize = function () {
  *   });
  * });
 
- * @example Tokenizing with the checkout flow
+ * @example
+ * <caption>Tokenizing with the checkout flow</caption>
  * button.addEventListener('click', function () {
  *   // Disable the button so that we don't attempt to open multiple popups.
  *   button.setAttribute('disabled', 'disabled');

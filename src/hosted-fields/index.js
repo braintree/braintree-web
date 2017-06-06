@@ -3,7 +3,7 @@
 
 var HostedFields = require('./external/hosted-fields');
 var supportsInputFormatting = require('restricted-input/supports-input-formatting');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 var Promise = require('../lib/promise');
 var VERSION = process.env.npm_package_version;
 
@@ -153,7 +153,8 @@ module.exports = {
    * @function supportsInputFormatting
    * @description Returns false if input formatting will be automatically disabled due to browser incompatibility. Otherwise, returns true. For a list of unsupported browsers, [go here](https://github.com/braintree/restricted-input/blob/master/README.md#browsers-where-formatting-is-turned-off-automatically).
    * @returns {Boolean} Returns false if input formatting will be automatically disabled due to browser incompatibility. Otherwise, returns true.
-   * @example Conditionally choosing split expiration date inputs if formatting is unavailable
+   * @example
+   * <caption>Conditionally choosing split expiration date inputs if formatting is unavailable</caption>
    * var canFormat = braintree.hostedFields.supportsInputFormatting();
    * var fields = {
    *   number: {

@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.18.0
+
+* Hosted Fields
+  * Fix autofill issues for Chrome and Safari (#239)
+
 ## 3.17.0
 
 * Hosted Fields

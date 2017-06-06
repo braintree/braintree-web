@@ -8,7 +8,7 @@ var PopupBridge = require('../../../../../src/lib/frame-service/external/strateg
 var Modal = require('../../../../../src/lib/frame-service/external/strategies/modal');
 var BraintreeBus = require('../../../../../src/lib/bus');
 var BraintreeError = require('../../../../../src/lib/braintree-error');
-var browserDetection = require('browser-detection');
+var browserDetection = require('@braintree/browser-detection');
 
 function noop() {}
 

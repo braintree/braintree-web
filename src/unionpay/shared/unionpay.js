@@ -8,12 +8,12 @@ var useMin = require('../../lib/use-min');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var errors = require('./errors');
 var events = constants.events;
-var iFramer = require('iframer');
+var iFramer = require('@braintree/iframer');
 var methods = require('../../lib/methods');
 var VERSION = process.env.npm_package_version;
 var uuid = require('../../lib/uuid');
 var Promise = require('../../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @class

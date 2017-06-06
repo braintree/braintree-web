@@ -1,8 +1,8 @@
 'use strict';
 
-var iFramer = require('iframer');
+var iFramer = require('@braintree/iframer');
 var assign = require('../../../assign').assign;
-var browserDetection = require('browser-detection');
+var browserDetection = require('@braintree/browser-detection');
 
 var ELEMENT_STYLES = {
   position: 'fixed',

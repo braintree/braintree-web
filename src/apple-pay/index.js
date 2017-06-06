@@ -12,7 +12,7 @@ var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @static

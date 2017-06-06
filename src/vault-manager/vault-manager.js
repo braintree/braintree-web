@@ -1,6 +1,6 @@
 'use strict';
 
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @typedef {array} VaultManager~fetchPaymentMethodsPayload The customer's payment methods.

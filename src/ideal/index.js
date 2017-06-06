@@ -2,14 +2,14 @@
 /** @module braintree-web/ideal */
 
 var BraintreeError = require('../lib/braintree-error');
-var browserDetection = require('browser-detection');
+var browserDetection = require('@braintree/browser-detection');
 var Ideal = require('./external/ideal');
 var VERSION = process.env.npm_package_version;
 var errors = require('./shared/errors');
 var sharedErrors = require('../lib/errors');
 var analytics = require('../lib/analytics');
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @static

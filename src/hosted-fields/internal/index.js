@@ -21,8 +21,12 @@ var tokenizationErrorCodes = constants.tokenizationErrorCodes;
 var formatCardRequestData = require('./format-card-request-data');
 var formatBraintreeApiCardResponse = require('./format-braintree-api-card-response');
 
+var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
+
 function initialize(cardForm) {
   var fieldComponent;
+  var name = frameName.getFrameName();
+  var form = document.createElement('form');
 
   injectWithWhitelist(
     cardForm.configuration.styles,
@@ -31,11 +35,117 @@ function initialize(cardForm) {
 
   fieldComponent = new FieldComponent({
     cardForm: cardForm,
-    type: frameName.getFrameName()
+    type: name
   });
 
-  document.body.appendChild(fieldComponent.element);
+  form.appendChild(fieldComponent.element);
+
+  if (name === 'number') {
+    createInputsForAutofill(form);
+  }
+
+  global.bus.on(events.AUTOFILL_EXPIRATION_DATE, autofillHandler(fieldComponent));
+
+  document.body.appendChild(form);
   shimPlaceholder();
+}
+
+function makeMockInput(name) {
+  var fragment = document.createDocumentFragment();
+  var label = document.createElement('label');
+  var input = document.createElement('input');
+
+  label.setAttribute('for', name + '-autofill-field');
+  label.textContent = name;
+
+  input.id = name + '-autofill-field';
+  input.className = 'autofill-field';
+  input.type = 'text';
+  input.name = name;
+  input.setAttribute('tabindex', -1);
+
+  fragment.appendChild(label);
+  fragment.appendChild(input);
+
+  return fragment;
+}
+
+function fix1PasswordAdjustment(form) {
+  // 1Password autofill throws the form
+  // positioning off screen. By toggling
+  // the position, we can prevent the number
+  // field from dissapearing
+  form.style.position = 'relative';
+  form.style.position = 'absolute';
+}
+
+function createInputsForAutofill(form) {
+  var expMonth = makeMockInput('expiration-month');
+  var expYear = makeMockInput('expiration-year');
+  var cvv = makeMockInput('cvv');
+  var expMonthInput = expMonth.querySelector('input');
+  var expYearInput = expYear.querySelector('input');
+  var cvvInput = cvv.querySelector('input');
+
+  expMonthInput.addEventListener('keydown', function () {
+    setTimeout(function () {
+      fix1PasswordAdjustment(form);
+      global.bus.emit(events.AUTOFILL_EXPIRATION_DATE, {
+        month: expMonthInput.value,
+        year: expYearInput.value,
+        cvv: cvvInput.value
+      });
+    }, TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL);
+  });
+
+  form.appendChild(expMonth);
+  form.appendChild(expYear);
+  form.appendChild(cvv);
+}
+
+function autofillHandler(fieldComponent) {
+  return function (payload) {
+    var name, value, month, year, cvv, thisYear;
+
+    if (!payload || !payload.month || !payload.year) {
+      return;
+    }
+
+    name = frameName.getFrameName();
+    month = payload.month;
+    year = payload.year;
+    cvv = payload.cvv;
+
+    if (year.length === 2) {
+      thisYear = String((new Date()).getFullYear());
+      year = thisYear.substring(0, 2) + year;
+    }
+
+    if (name === 'expirationDate') {
+      value = month + ' / ' + year;
+    } else if (name === 'expirationMonth') {
+      value = month;
+    } else if (name === 'expirationYear') {
+      value = year;
+    } else if (name === 'cvv' && cvv) {
+      value = cvv;
+    }
+
+    if (value) {
+      fieldComponent.input.updateModel('value', value);
+      fieldComponent.input.element.value = value;
+      resetPlaceholder(fieldComponent.input.element);
+    }
+  };
+}
+
+function resetPlaceholder(element) {
+  // Safari leaves the placholder visible in the iframe, we
+  // compensate for this by removing and re-setting the placeholder
+  var placeholder = element.getAttribute('placeholder');
+
+  element.setAttribute('placeholder', '');
+  element.setAttribute('placeholder', placeholder);
 }
 
 function shimPlaceholder() {
@@ -244,5 +354,6 @@ function mergeCardData(cardData, options) {
 module.exports = {
   initialize: initialize,
   create: create,
-  createTokenizationHandler: createTokenizationHandler
+  createTokenizationHandler: createTokenizationHandler,
+  autofillHandler: autofillHandler
 };

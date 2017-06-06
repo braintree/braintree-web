@@ -10,11 +10,14 @@ module.exports = {
     var attribution = whitelistedFields[type];
 
     this.element = document.createDocumentFragment();
-    this.element.appendChild(new LabelComponent(attribution).element);
 
-    this.element.appendChild(new InputComponents[type]({
+    this.label = new LabelComponent(attribution);
+    this.element.appendChild(this.label.element);
+
+    this.input = new InputComponents[type]({
       model: options.cardForm,
       type: type
-    }).element);
+    });
+    this.element.appendChild(this.input.element);
   }
 };

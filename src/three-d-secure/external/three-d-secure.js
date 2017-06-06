@@ -12,9 +12,9 @@ var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
 var events = require('../shared/events');
 var VERSION = process.env.npm_package_version;
-var iFramer = require('iframer');
+var iFramer = require('@braintree/iframer');
 var Promise = require('../../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 var IFRAME_HEIGHT = 400;
 var IFRAME_WIDTH = 400;

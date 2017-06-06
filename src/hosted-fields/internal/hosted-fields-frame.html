@@ -23,6 +23,17 @@
       width: 100%;
     }
 
+    input.autofill-field {
+      /* Safari needs a width of at least 2px */
+      width: 2px;
+      z-index: -1;
+      /* Dashline password manager needs the inputs to be on the page
+         So we can't set left to -9999px
+      */
+      left: -2px;
+      opacity: 0;
+    }
+
     label {
       position: absolute;
       left: -9999px;

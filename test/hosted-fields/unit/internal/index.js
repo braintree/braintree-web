@@ -19,23 +19,39 @@ describe('internal', function () {
 
     this.fakeConfig = {
       fields: {
-        number: {}
+        number: {},
+        cvv: {}
       }
     };
     this.cardForm = new CreditCardForm(this.fakeConfig);
 
-    this.type = 'number';
-
-    this.sandbox.stub(getFrameName, 'getFrameName').returns(this.type);
-
-    internal.initialize(this.cardForm);
+    this.sandbox.stub(getFrameName, 'getFrameName').returns('cvv');
   });
 
   describe('initialize', function () {
+    beforeEach(function () {
+      internal.initialize(this.cardForm);
+    });
+
     it('creates an input element', function () {
       var inputs = document.querySelectorAll('input');
 
       expect(inputs).to.have.length(1);
+    });
+
+    it('sets up autofill inputs for number input', function () {
+      var inputs;
+
+      document.querySelector('input').remove(); // reset from beforeEach
+
+      getFrameName.getFrameName.returns('number');
+      internal.initialize(this.cardForm);
+
+      inputs = document.querySelectorAll('input');
+
+      expect(inputs).to.have.length(4);
+      expect(document.querySelector('#expiration-month-autofill-field')).to.exist;
+      expect(document.querySelector('#expiration-year-autofill-field')).to.exist;
     });
 
     it('makes the input have a transparent background', function () {
@@ -48,7 +64,7 @@ describe('internal', function () {
     it('gives the input a class of the proper type', function () {
       var input = document.querySelector('input');
 
-      expect(input.classList.contains('number')).to.be.true;
+      expect(input.classList.contains('cvv')).to.be.true;
     });
 
     it('triggers events on the bus when events occur', function () {
@@ -61,10 +77,10 @@ describe('internal', function () {
       triggerEvent('click', input);  // not whitelisted
       triggerEvent('keyup', input);  // not whitelisted
 
-      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('number', 'focus');
-      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('number', 'blur');
-      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('number', 'click');
-      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('number', 'keyup');
+      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'focus');
+      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'blur');
+      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'click');
+      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'keyup');
     });
   });
 
@@ -905,6 +921,160 @@ describe('internal', function () {
 
         done();
       });
+    });
+  });
+
+  describe('autofillHandler', function () {
+    beforeEach(function () {
+      this.fieldComponent = {
+        input: {
+          updateModel: this.sandbox.stub(),
+          element: {
+            value: '',
+            getAttribute: this.sandbox.stub(),
+            setAttribute: this.sandbox.stub()
+          }
+        }
+      };
+    });
+
+    it('returns a function', function () {
+      expect(internal.autofillHandler(this.fieldComponent)).to.be.a('function');
+    });
+
+    it('returns early if there is no payload', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      handler();
+      expect(getFrameName.getFrameName).to.not.be.called;
+    });
+
+    it('returns early if payload does not contain a month', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      handler({
+        year: '2020'
+      });
+      expect(getFrameName.getFrameName).to.not.be.called;
+    });
+
+    it('returns early if payload does not contain a year', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      handler({
+        month: '12'
+      });
+      expect(getFrameName.getFrameName).to.not.be.called;
+    });
+
+    it('noops if input is not an expiration field', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      getFrameName.getFrameName.returns('postalCode');
+
+      handler({
+        month: '12',
+        year: '2020'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.not.be.called;
+    });
+
+    it('updates input with month and year if frame is expiration date', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      getFrameName.getFrameName.returns('expirationDate');
+
+      handler({
+        month: '12',
+        year: '2020'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
+      expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '12 / 2020');
+      expect(this.fieldComponent.input.element.value).to.equal('12 / 2020');
+    });
+
+    it('updates input with month if frame is expiration month', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      getFrameName.getFrameName.returns('expirationMonth');
+
+      handler({
+        month: '12',
+        year: '2020'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
+      expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '12');
+      expect(this.fieldComponent.input.element.value).to.equal('12');
+    });
+
+    it('updates input with year if frame is expiration year', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      getFrameName.getFrameName.returns('expirationYear');
+
+      handler({
+        month: '12',
+        year: '2020'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
+      expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '2020');
+      expect(this.fieldComponent.input.element.value).to.equal('2020');
+    });
+
+    it('formats year as 4 digit number', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      getFrameName.getFrameName.returns('expirationYear');
+
+      handler({
+        month: '12',
+        year: '34'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
+      expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '2034');
+      expect(this.fieldComponent.input.element.value).to.equal('2034');
+    });
+
+    it('sends cvv if it exists', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      getFrameName.getFrameName.returns('cvv');
+
+      handler({
+        month: '12',
+        year: '34',
+        cvv: '123'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
+      expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '123');
+      expect(this.fieldComponent.input.element.value).to.equal('123');
+    });
+
+    it('ignores cvv if it is not present', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      getFrameName.getFrameName.returns('cvv');
+
+      handler({
+        month: '12',
+        year: '34',
+        cvv: ''
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.not.be.called;
     });
   });
 });

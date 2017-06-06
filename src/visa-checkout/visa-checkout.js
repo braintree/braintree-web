@@ -5,7 +5,7 @@ var analytics = require('../lib/analytics');
 var errors = require('./errors');
 var jsonClone = require('../lib/json-clone');
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 var cardTypeTransformMap = {
   Visa: 'VISA',
   MasterCard: 'MASTERCARD',

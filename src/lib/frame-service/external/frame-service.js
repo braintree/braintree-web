@@ -8,9 +8,9 @@ var events = require('../shared/events');
 var errors = require('../shared/errors');
 var constants = require('../shared/constants');
 var uuid = require('../../uuid');
-var iFramer = require('iframer');
+var iFramer = require('@braintree/iframer');
 var BraintreeError = require('../../braintree-error');
-var browserDetection = require('browser-detection');
+var browserDetection = require('@braintree/browser-detection');
 var assign = require('./../../assign').assign;
 
 var REQUIRED_CONFIG_KEYS = [

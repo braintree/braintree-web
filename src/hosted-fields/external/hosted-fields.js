@@ -2,7 +2,7 @@
 
 var Destructor = require('../../lib/destructor');
 var classlist = require('../../lib/classlist');
-var iFramer = require('iframer');
+var iFramer = require('@braintree/iframer');
 var Bus = require('../../lib/bus');
 var BraintreeError = require('../../lib/braintree-error');
 var composeUrl = require('./compose-url');
@@ -11,7 +11,7 @@ var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var uuid = require('../../lib/uuid');
 var findParentTags = require('../shared/find-parent-tags');
-var isIos = require('browser-detection/is-ios');
+var isIos = require('@braintree/browser-detection/is-ios');
 var events = constants.events;
 var EventEmitter = require('../../lib/event-emitter');
 var injectFrame = require('./inject-frame');
@@ -24,7 +24,7 @@ var sharedErrors = require('../../lib/errors');
 var getCardTypes = require('credit-card-type');
 var attributeValidationError = require('./attribute-validation-error');
 var Promise = require('../../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @typedef {object} HostedFields~tokenizePayload

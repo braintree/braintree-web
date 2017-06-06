@@ -8,7 +8,7 @@ var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 

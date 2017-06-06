@@ -10,7 +10,7 @@ var USBankAccount = require('./us-bank-account');
 var VERSION = process.env.npm_package_version;
 var sharedErrors = require('../lib/errors');
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @static

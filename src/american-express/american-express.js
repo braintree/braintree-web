@@ -4,7 +4,7 @@ var BraintreeError = require('../lib/braintree-error');
 var errors = require('./errors');
 var assign = require('../lib/assign').assign;
 var Promise = require('../lib/promise');
-var wrapPromise = require('wrap-promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @class
