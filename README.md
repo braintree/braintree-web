@@ -118,7 +118,9 @@ braintree.client.create({
         expirationDate: '10/20',
         cvv: '123',
         billingAddress: {
-          postalCode: '12345'
+          postalCode: '12345',
+          streetAddress: '123 Street',
+          country: 'US'
         }
       }
     }
