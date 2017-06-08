@@ -90,7 +90,9 @@ function Client(configuration) {
  *       cvv: form['cc-cvv'].value,
  *       expirationDate: form['cc-date'].value,
  *       billingAddress: {
- *         postalCode: form['cc-postal'].value
+ *         postalCode: form['cc-postal'].value,
+ *         streetAddress: form['street-address'].value,
+ *         country: form['country'].value
  *       }
  *     }
  *   };
