@@ -31,5 +31,9 @@ module.exports = function (data) {
     };
   }
 
+  if ('cardholderName' in data) {
+    result.cardholderName = data.cardholderName;
+  }
+
   return result;
 };

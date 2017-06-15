@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.19.0
+
+* Hosted Fields
+  * Allow `cardholderName` to be passed while tokenizing the card
+  * Fix bug disabling fields when enter is pressed
+
 ## 3.18.0
 
 * Hosted Fields

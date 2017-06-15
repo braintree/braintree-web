@@ -180,17 +180,19 @@ describe('PayPal', function () {
       expect(actual.experienceProfile.brandName).to.equal("Bob's Burgers");
     });
 
-    it('assigns provided intent for one-time checkout', function () {
-      var actual;
+    ['authorize', 'order', 'sale'].forEach(function (intent) {
+      it('assigns provided intent "' + intent + '" for one-time checkout', function () {
+        var actual;
 
-      this.options.intent = 'sale';
+        this.options.intent = intent;
 
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
+        actual = PayPal.prototype._formatPaymentResourceData.call({
+          _client: this.client,
+          _frameService: this.frameService
+        }, this.options);
 
-      expect(actual.intent).to.equal('sale');
+        expect(actual.intent).to.equal(intent);
+      });
     });
 
     it('does not assign intent for one-time checkout if not provided', function () {

@@ -28,6 +28,10 @@ function initialize(cardForm) {
   var name = frameName.getFrameName();
   var form = document.createElement('form');
 
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+  });
+
   injectWithWhitelist(
     cardForm.configuration.styles,
     whitelistedStyles
@@ -342,10 +346,15 @@ function orchestrate(configuration) {
 
 function mergeCardData(cardData, options) {
   var newCardData = cardData;
+  var cardholderName = options.cardholderName;
   var postalCode = options.billingAddress && options.billingAddress.postalCode;
 
   if (postalCode && !cardData.hasOwnProperty('postalCode')) {
     newCardData = assign({}, newCardData, {postalCode: postalCode});
+  }
+
+  if (cardholderName) {
+    newCardData = assign({}, newCardData, {cardholderName: cardholderName});
   }
 
   return newCardData;

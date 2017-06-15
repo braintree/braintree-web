@@ -57,8 +57,17 @@ describe('formatCardRequestData', function () {
     });
   });
 
+  it('includes cardholder name', function () {
+    var result = formatCardRequestData({cardholderName: 'First Last'});
+
+    expect(result).to.deep.equal({
+      cardholderName: 'First Last'
+    });
+  });
+
   it('includes all data', function () {
     var result = formatCardRequestData({
+      cardholderName: 'First Last',
       number: '4111111111111111',
       expirationMonth: '04',
       expirationYear: '21',
@@ -67,6 +76,7 @@ describe('formatCardRequestData', function () {
     });
 
     expect(result).to.deep.equal({
+      cardholderName: 'First Last',
       number: '4111111111111111',
       expiration_month: '04',
       expiration_year: '2021',

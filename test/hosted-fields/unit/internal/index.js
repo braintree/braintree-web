@@ -380,7 +380,7 @@ describe('internal', function () {
       }.bind(this));
     });
 
-    it('makes a client request without validate ealse if the vault option is not provided', function (done) {
+    it('makes a client request without validate false if the vault option is not provided', function (done) {
       create(this.goodClient, this.validCardForm)({vault: true}, function () {
         expect(this.goodClient.request).not.to.be.calledWithMatch({
           data: {
@@ -395,7 +395,7 @@ describe('internal', function () {
       }.bind(this));
     });
 
-    context('when supplying additional postal code data', function () {
+    context('when supplying additional data', function () {
       beforeEach(function () {
         var fakeConfigWithPostalCode = {
           fields: {
@@ -420,6 +420,29 @@ describe('internal', function () {
           name: 'braintreeApi',
           timeout: 2000
         });
+      });
+
+      it('tokenizes with additional cardholder name', function (done) {
+        this.fakeOptions.cardholderName = 'First Last';
+
+        create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                cardholderName: 'First Last'
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              cardholderName: 'First Last'
+            }
+          });
+          done();
+        }.bind(this));
       });
 
       it('tokenizes with additional postal code data when Hosted Fields has no postal code field', function (done) {

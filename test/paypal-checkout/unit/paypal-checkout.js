@@ -546,17 +546,19 @@ describe('PayPalCheckout', function () {
       });
     });
 
-    it('assigns provided intent for one-time checkout', function () {
-      this.paypalCheckout.createPayment({
-        flow: 'checkout',
-        intent: 'sale'
-      });
+    ['authorize', 'order', 'sale'].forEach(function (intent) {
+      it('assigns intent "' + intent + '" for one-time checkout', function () {
+        this.paypalCheckout.createPayment({
+          flow: 'checkout',
+          intent: intent
+        });
 
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          intent: 'sale'
-        }
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            intent: intent
+          }
+        });
       });
     });
 

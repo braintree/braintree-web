@@ -112,6 +112,7 @@ PayPal.prototype._initialize = function () {
  * @param {string} [options.intent=authorize]
  * Checkout flows only.
  * * `authorize` - Submits the transaction for authorization but not settlement.
+ * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
  * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify.
  * @param {string} [options.useraction]
