@@ -4,7 +4,7 @@ var exec = require('child_process').exec;
 var path = require('path');
 
 function forkBrowserify(options, done) {
-  var buildCmd;
+  var buildCmd, buildCmdArray;
   var PATH = path.resolve('./node_modules/.bin') + ':' + process.env.PATH;
   var standalone = options.standalone == null ? '' : `--standalone "${options.standalone}"`;
   var unminifiedFile = options.dist + '/' + options.out;
@@ -12,6 +12,8 @@ function forkBrowserify(options, done) {
   var prependFiles = '';
   var appendFiles = '';
   var flags = options.flags || '';
+  // uglify could be set to false. Otherwise it would be undefined and should default to true.
+  var uglify = options.uglify !== false;
   var transforms = (options.transforms && options.transforms.length) ? `-t ${options.transforms.join(' -t ')}` : '';
   var execOptions = {
     env: Object.assign({}, process.env, {PATH: PATH}),
@@ -27,12 +29,18 @@ function forkBrowserify(options, done) {
     appendFiles = `"${options.appendFiles.join('" "')}"`;
   }
 
-  buildCmd = [
+  buildCmdArray = [
     `browserify -p browserify-derequire --no-builtins ${flags} ${standalone} ${transforms} "${options.main}"`,
-    `cat ${prependFiles} - ${appendFiles}`,
-    `tee "${unminifiedFile}"`,
-    `uglifyjs -m -c -o "${minifiedFile}"`
-  ].join('|');
+    '|',
+    `cat ${prependFiles} - ${appendFiles} > ${unminifiedFile}`
+  ];
+
+  if (uglify) {
+    buildCmdArray.push('&&');
+    buildCmdArray.push(`uglifyjs ${unminifiedFile} -m -c -o "${minifiedFile}"`);
+  }
+
+  buildCmd = buildCmdArray.join(' ');
 
   function callback(err, stdout, stderr) {
     if (err) {

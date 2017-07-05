@@ -9,6 +9,7 @@ var fake = require('../../helpers/fake');
 
 describe('client.create', function () {
   beforeEach(function () {
+    client._clearCache();
     this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, fake.configuration().gatewayConfiguration);
   });
 
@@ -58,10 +59,28 @@ describe('client.create', function () {
   it('gets the configuration from the gateway', function () {
     var self = this;
 
-    client.create({authorization: fake.tokenizationKey}).then(function () {
+    return client.create({authorization: fake.tokenizationKey}).then(function () {
       expect(self.getSpy).to.be.calledWith(self.sandbox.match({
         url: self.sandbox.match(/client_api\/v1\/configuration$/)
       }));
+    });
+  });
+
+  it('caches client when created with the same authorization', function () {
+    var getSpy = this.getSpy;
+
+    return client.create({authorization: fake.tokenizationKey}).then(function (firstFakeClient) {
+      return client.create({authorization: fake.clientToken}).then(function (secondFakeClient) {
+        expect(firstFakeClient).to.not.equal(secondFakeClient);
+
+        expect(getSpy).to.be.calledTwice;
+        getSpy.reset();
+
+        return client.create({authorization: fake.tokenizationKey});
+      }).then(function (thirdFakeClient) {
+        expect(getSpy).to.not.be.called;
+        expect(firstFakeClient).to.equal(thirdFakeClient);
+      });
     });
   });
 

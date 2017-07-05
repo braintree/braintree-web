@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.19.0",
+  "version": "3.19.1",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -18,7 +18,7 @@
   "dependencies": {
     "@braintree/browser-detection": "1.4.1",
     "card-validator": "4.1.0",
-    "credit-card-type": "5.0.2",
+    "credit-card-type": "5.0.3",
     "framebus": "2.0.8",
     "@braintree/iframer": "1.0.3",
     "inject-stylesheet": "1.0.0",

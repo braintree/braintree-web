@@ -7,165 +7,83 @@
     /*------------------------------
       RESET
     ------------------------------*/
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body, html {
-      font-family: Helvetica, Arial, Sans-Serif;
-      font-size: 16px;
-      margin: 0;
-      padding: 0;
-    }
-
-    h1, h2 {
-      margin: 0;
-      padding: 0;
-    }
-
-
-    /*------------------------------
-      HEADER
-    ------------------------------*/
-
-    .braintree-display--none {
-      display: none;
-    }
-
-    .ideal-header {
-      border-bottom: 1px solid #dcdcdc;
-      display: block;
-      padding: 10px 5%;
-      width: 100%;
-    }
-
-    .logo {
-      display: inline-block;
-    }
-
-    .logo--ideal {
-      height: 38px;
-      overflow: auto;
-      width: 51px;
-    }
-
-    .heading--ideal {
-      color: #333333;
-      display: inline-block;
-      font-size: 30px;
-      margin-left: 20px;
-      position: relative;
-      top: -8px;
-    }
-
+      html, body, div, span, applet, object, iframe,
+      h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+      a, abbr, acronym, address, big, cite, code,
+      del, dfn, em, img, ins, kbd, q, s, samp,
+      small, strike, strong, sub, sup, tt, var,
+      b, u, i, center,
+      dl, dt, dd, ol, ul, li,
+      fieldset, form, label, legend,
+      table, caption, tbody, tfoot, thead, tr, th, td,
+      article, aside, canvas, details, embed,
+      figure, figcaption, footer, header, hgroup,
+      menu, nav, output, ruby, section, summary,
+      time, mark, audio, video {
+          margin: 0;
+          padding: 0;
+          border: 0;
+          font-size: 100%;
+          font: inherit;
+          vertical-align: baseline;
+      }
 
     /*------------------------------
-      Details
+     CONTENT
     ------------------------------*/
 
-    .title {
-      color: #000000;
-      font-size: 24px;
-      font-weight: 600;
-      margin-left: 24px;
-    }
-
-    .detail-title {
-      color: #000000;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .details-desc {
-      margin-left: 0;
-      text-align: right;
-    }
-
-    .details-list {
-      border-bottom: 1px solid #dcdcdc;
-      /* TODO: decide whether we need to support non-flexbox browsers */
-      display: flex;
-      padding: 4px 8px 18px;
-      justify-content: space-between;
-    }
-
-    .button-main {
-      background: #eeeeee;
-      border: 1px solid #dcdcdc;
-      border-radius: 5px;
-      box-sizing: border-box;
-      font-size: 16px;
-      margin: 16px auto;
-      padding: 16px;
-      cursor: pointer;
-    }
-
-    .container--ideal {
-      margin-left: auto;
-      margin-right: auto;
-      padding-bottom: 30px;
-      padding-top: 30px;
-      width: 50%;
-    }
-
-    .ideal-demo-screen {
+    .bank-step-container {
+      color: #333;
+      font-family: helvetica, sans-serif;
+      margin: 0 auto;
+      padding-top: 1.5em;
       text-align: center;
+      width: 485px;
     }
-
-    .ideal-demo-screen img {
-      max-width: 100%;
+    .bank-step-container h1 {
+      font-size: 32px;
+      font-weight: bold;
     }
-
-    @media (max-width:500px) {
-      .container--ideal--mobile {
-        width: 100%;
-      }
-      .heading--ideal--mobile {
-        font-size: 24px;
-      }
-      .logo--ideal--mobile {
-        -webkit-transform: scale(0.8);
-        transform: scale(0.8);
-      }
-      .button-main--mobile {
-        margin-left: 5%;
-      }
-      .details-list--mobile {
-        padding-left: 5%;
-        padding-right: 5%;
-      }
+    .bank-step-container p {
+      margin: 0 auto 1em auto;
+      text-align: left;
+      width: 80%;
+    }
+    .bank-step-marquee {
+      margin: 2em 0;
+    }
+    .bank-step-marquee img {
+      width: 80%;
+    }
+    .btn--demo-continue {
+      background: #fff;
+      border-radius: .25em;
+      border: solid 1px #333;
+      box-shadow: 0;
+      color: #333;
+      display: block;
+      font-size: 1em;
+      font-weight: bold;
+      max-width: 200px;
+      margin: 2em auto;
+      padding: 1em;
+      text-decoration: none;
+      width: 65%;
     }
     </style>
   </head>
   <body>
-    <svg width="0" height="0" class="braintree-display--none"><defs><symbol id="logoIdeal" viewBox="0 0 605 527"><title>ideal-logo</title><defs></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="ideal-logo"><g id="Layer_2"><rect id="Rectangle-path" fill="#000000" x="67.2" y="296.6" width="96.9" height="160.8"></rect><path d="M171.3,216.2 C171.3,246.5 146.8,271 116.5,271 C86.2,271 61.7,246.4 61.7,216.2 C61.7,185.9 86.2,161.4 116.5,161.4 C146.8,161.4 171.3,185.9 171.3,216.2 L171.3,216.2 Z" id="Shape" fill="#000000"></path><path d="M347.5,0 L0,0 L0,527 L347.5,527 L347.5,526.9 C423.4,525.9 483.5,507 526.2,470.7 C578.1,426.5 604.4,356.8 604.4,263.5 C604.4,218.9 597.5,178.9 583.8,144.6 C570.7,111.8 551.4,83.9 526.4,61.7 C482.4,22.6 420.6,1.4 347.4,0.2 C347.5,0.1 347.5,0 347.5,0 L347.5,0 Z M340.9,35 C408.2,35 464.4,53.2 503.2,87.8 C547.1,126.8 569.4,185.9 569.4,263.5 C569.4,417.2 494.7,492 340.9,492 L35,492 L35,35 L340.9,35 L340.9,35 Z" id="Shape" fill="#000000"></path><path d="M331.4,457.6 L208.5,457.6 L208.5,77.6 L331.3,77.6 L326.3,77.6 C428.8,77.6 537.8,118 537.8,268.1 C537.8,426.8 428.7,457.6 326.3,457.6 L331.4,457.6 L331.4,457.6 Z" id="Shape" fill="#CD0067"></path></g><g id="Layer_3" transform="translate(184.000000, 173.000000)" fill="#FFFFFF"><g id="Group"><g id="Shape"><path d="M3.3,2.7 L37,2.7 C44.6,2.7 50.4,3.3 54.4,4.4 C59.8,6 64.4,8.8 68.2,12.8 C72,16.8 74.9,21.8 76.9,27.6 C78.9,33.4 79.9,40.6 79.9,49.2 C79.9,56.7 79,63.2 77.1,68.7 C74.8,75.4 71.6,80.7 67.3,84.9 C64.1,88 59.8,90.5 54.3,92.2 C50.2,93.5 44.8,94.1 38,94.1 L3.3,94.1 L3.3,2.7 L3.3,2.7 L3.3,2.7 Z M21.8,18.2 L21.8,78.6 L35.6,78.6 C40.8,78.6 44.5,78.3 46.8,77.7 C49.8,77 52.3,75.7 54.3,73.9 C56.3,72.1 57.9,69.2 59.1,65.1 C60.3,61 61,55.4 61,48.4 C61,41.3 60.4,35.9 59.1,32.2 C57.9,28.4 56.1,25.5 53.9,23.4 C51.7,21.3 48.8,19.9 45.3,19.1 C42.7,18.5 37.7,18.2 30.1,18.2 L21.8,18.2 L21.8,18.2 L21.8,18.2 Z"></path><path d="M0.8,0.2 L0.8,96.6 L38,96.6 C45,96.6 50.8,95.9 55.1,94.5 C60.9,92.6 65.6,90 69.1,86.6 C73.6,82.2 77.1,76.5 79.5,69.5 C81.5,63.8 82.4,57 82.4,49.2 C82.4,40.4 81.3,32.9 79.3,26.8 C77.2,20.6 74.1,15.4 70,11.1 C65.9,6.8 60.9,3.7 55.1,2 C50.8,0.8 44.9,0.2 37,0.2 L0.8,0.2 L0.8,0.2 Z M37.1,5.2 C44.4,5.2 50.1,5.8 53.8,6.8 C58.7,8.2 63,10.8 66.5,14.5 C70.1,18.3 72.8,22.9 74.7,28.4 C76.6,34 77.6,41 77.6,49.2 C77.6,56.4 76.7,62.7 74.9,67.8 C72.8,74 69.7,79.2 65.7,83 C62.8,85.8 58.8,88.1 53.7,89.7 C49.9,90.9 44.7,91.5 38.1,91.5 L5.9,91.5 L5.9,5.1 C10.1,5.2 37.1,5.2 37.1,5.2 L37.1,5.2 Z"></path><path d="M19.3,15.7 L19.3,81.1 L35.6,81.1 C41,81.1 44.9,80.8 47.4,80.2 C50.8,79.4 53.6,77.9 55.9,75.8 C58.2,73.7 60.1,70.4 61.5,65.9 C62.8,61.5 63.5,55.8 63.5,48.5 C63.5,41.1 62.8,35.5 61.5,31.5 C60.1,27.3 58.1,24 55.6,21.6 C53,19.2 49.7,17.5 45.9,16.7 C43.1,16.1 38,15.8 30.2,15.8 L19.3,15.8 L19.3,15.7 L19.3,15.7 Z M30.1,20.7 C39.2,20.7 43.1,21.1 44.7,21.5 C47.7,22.2 50.2,23.4 52.1,25.2 C54,27 55.6,29.6 56.7,33 C57.9,36.5 58.4,41.7 58.4,48.5 C58.4,55.3 57.8,60.6 56.6,64.5 C55.5,68.1 54.1,70.7 52.5,72.2 C50.8,73.7 48.7,74.8 46.1,75.4 C44,75.9 40.5,76.2 35.5,76.2 L24.2,76.2 L24.2,20.8 C26.7,20.7 30.1,20.7 30.1,20.7 L30.1,20.7 Z"></path></g><g transform="translate(98.000000, 0.000000)" id="Shape"><polygon points="2.8 94.1 2.8 2.7 70.5 2.7 70.5 18.2 21.3 18.2 21.3 38.4 67.1 38.4 67.1 53.9 21.3 53.9 21.3 78.6 72.3 78.6 72.3 94.1 2.8 94.1"></polygon><path d="M0.3,0.2 L0.3,96.6 L74.7,96.6 L74.7,76.1 L23.7,76.1 L23.7,56.4 L69.5,56.4 L69.5,35.9 L23.7,35.9 L23.7,20.7 L72.9,20.7 L72.9,0.2 L0.3,0.2 L0.3,0.2 L0.3,0.2 Z M68,5.2 L68,15.7 L18.8,15.7 L18.8,40.9 L64.6,40.9 L64.6,51.4 L18.8,51.4 L18.8,81.1 L69.8,81.1 L69.8,91.6 L5.4,91.6 L5.4,5.2 C9.8,5.2 63.5,5.2 68,5.2 L68,5.2 Z"></path></g><g transform="translate(178.000000, 0.000000)" id="Shape"><path d="M95.5,94.1 L75.4,94.1 L67.4,73.3 L30.9,73.3 L23.3,94.1 L3.7,94.1 L39.2,2.7 L58.9,2.7 L95.5,94.1 L95.5,94.1 Z M61.5,57.9 L48.9,24 L36.6,57.9 L61.5,57.9 L61.5,57.9 Z"></path><path d="M37.6,0.2 L0.1,96.6 L25.1,96.6 C25.1,96.6 31.7,78.6 32.7,75.8 L65.8,75.8 C66.8,78.5 73.8,96.6 73.8,96.6 L99.3,96.6 L60.7,0.2 L37.6,0.2 L37.6,0.2 Z M57.2,5.2 C58.4,8.1 89.3,85.4 91.8,91.6 L77.1,91.6 C76.1,88.9 69.1,70.8 69.1,70.8 L29.1,70.8 C29.1,70.8 22.5,88.8 21.5,91.6 L7.3,91.6 C9.7,85.4 39.7,8.1 40.9,5.2 C43.6,5.2 54.7,5.2 57.2,5.2 L57.2,5.2 Z"></path><path d="M33,60.4 L65.1,60.4 L48.9,16.8 L33,60.4 L33,60.4 Z M48.9,31.3 C51.6,38.7 56.3,51.1 57.9,55.4 L40.1,55.4 C41.7,51.1 46.2,38.6 48.9,31.3 L48.9,31.3 Z"></path></g><g transform="translate(286.000000, 1.000000)" id="Shape"><polygon points="2.9 93.1 2.9 2.4 21.3 2.4 21.3 77.6 67.2 77.6 67.2 93.1"></polygon><path d="M0.4,0 L0.4,95.7 L69.8,95.7 L69.8,75.2 L23.9,75.2 L23.9,0 L0.4,0 L0.4,0 L0.4,0 Z M18.9,5 L18.9,80.2 L64.8,80.2 L64.8,90.7 L5.4,90.7 L5.4,5 L18.9,5 L18.9,5 Z"></path></g></g></g></g></g></symbol></defs></svg>
 
-    <header class="ideal-header"><svg class="logo logo--ideal logo--ideal--mobile"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#logoIdeal"></use></svg>
-      <h1 class="heading--ideal heading--ideal--mobile">iDEAL</h1>
-    </header>
-
-    <div class="container--ideal container--ideal--mobile">
-      <dl class="details-list details-list--mobile">
-        <dt class="detail-title">Amount</dt>
-        <dd class="details-desc"><span id="amount"></span> <span id="currency"></span></dd>
-      </dl>
-
-      <dl class="details-list details-list--mobile">
-        <dt class="detail-title">Final Status</dt>
-        <dd class="details-desc">This test payment will automatically progress to <span id="final_status"></span></dd>
-      </dl>
-
-      <a id="redirect_url" href="">
-        <button class="button-main button-main--mobile">Continue</button>
-      </a>
+    <div class="bank-step-container">
+      <h1>Mock bank flow</h1>
+      <div class="bank-step-marquee"><img src="../images/ideal_mock-flow-steps.png"></div>
+      <p>Here the customer is presented with their bank's login, after which they can confirm their payment and be returned to your shop. To pass mock credentials and simulate this transaction, click continue below.</p>
+      <a id="redirect_url" class="btn--demo-continue" href="">Continue</a>
     </div>
 
-    <div class="ideal-demo-screen">
-      <img src="../images/ideal_mock-flow-steps.gif">
-    </div>
-
-    <script src="../js/ideal-sandbox-approval.min.js"></script>
+    <script>
+    @BUILT_FILE
+    </script>
     <script>
       braintree.ideal.start();
     </script>

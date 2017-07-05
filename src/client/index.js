@@ -8,6 +8,8 @@ var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var sharedErrors = require('../lib/errors');
 
+var cachedClients = {};
+
 /** @module braintree-web/client */
 
 /**
@@ -36,13 +38,28 @@ function create(options) {
     }));
   }
 
+  if (cachedClients[options.authorization]) {
+    return Promise.resolve(cachedClients[options.authorization]);
+  }
+
   return getConfiguration(options).then(function (configuration) {
+    var client;
+
     if (options.debug) {
       configuration.isDebug = true;
     }
 
-    return new Client(configuration);
+    client = new Client(configuration);
+
+    cachedClients[options.authorization] = client;
+
+    return client;
   });
+}
+
+// Primarily used for testing the client create call
+function clearCache() {
+  cachedClients = {};
 }
 
 module.exports = {
@@ -51,5 +68,6 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
+  _clearCache: clearCache
 };

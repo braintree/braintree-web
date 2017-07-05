@@ -4,75 +4,52 @@
 var sandboxApprovalFrame = require('../../../../src/ideal/static/sandbox-approval');
 var querystring = require('../../../../src/lib/querystring');
 
-var PARAMS = ['amount', 'currency', 'final_status', 'redirect_url'];
-
 describe('sandbox approval frame', function () {
   beforeEach(function () {
-    PARAMS.forEach(function (param) {
-      var node = document.createElement('div');
+    var link = document.createElement('a');
 
-      node.id = param;
-      document.body.appendChild(node);
-    });
+    link.id = 'redirect_url';
+    document.body.appendChild(link);
   });
 
   afterEach(function () {
-    PARAMS.forEach(function (param) {
-      var node = document.getElementById(param);
+    var link = document.getElementById('redirect_url');
 
-      node.parentNode.removeChild(node);
-    });
+    document.body.removeChild(link);
   });
 
-  PARAMS.forEach(function (param) {
-    it('requires ' + param + ' query param', function (done) {
-      var params = {
-        amount: '10.00',
-        currency: 'EUR',
-        final_status: 'COMPLETE',
-        redirect_url: 'https://braintreepayments.com'
-      };
+  it('requires redirect_url query param', function (done) {
+    var params = {};
 
-      delete params[param];
+    this.sandbox.stub(querystring, 'parse').returns(params);
 
-      this.sandbox.stub(querystring, 'parse').returns(params);
+    try {
+      sandboxApprovalFrame.start();
+    } catch (err) {
+      expect(err.message).to.equal('redirect_url param must be a string');
 
-      try {
-        sandboxApprovalFrame.start();
-      } catch (err) {
-        expect(err.message).to.equal(param + ' param must be a string');
+      done();
+    }
+  });
 
-        done();
-      }
-    });
+  it('requires redirect_url query param to be a string', function (done) {
+    var params = {
+      redirect_url: 100
+    };
 
-    it('requires ' + param + ' query param to be a string', function (done) {
-      var params = {
-        amount: '10.00',
-        currency: 'EUR',
-        final_status: 'COMPLETE',
-        redirect_url: 'https://braintreepayments.com'
-      };
+    this.sandbox.stub(querystring, 'parse').returns(params);
 
-      params[param] = 100;
+    try {
+      sandboxApprovalFrame.start();
+    } catch (err) {
+      expect(err.message).to.equal('redirect_url param must be a string');
 
-      this.sandbox.stub(querystring, 'parse').returns(params);
-
-      try {
-        sandboxApprovalFrame.start();
-      } catch (err) {
-        expect(err.message).to.equal(param + ' param must be a string');
-
-        done();
-      }
-    });
+      done();
+    }
   });
 
   it('requires redirect url to be a white listed url', function (done) {
     var params = {
-      amount: '10.00',
-      currency: 'EUR',
-      final_status: 'COMPLETE',
       redirect_url: 'https://foo.com'
     };
 
@@ -87,12 +64,9 @@ describe('sandbox approval frame', function () {
     }
   });
 
-  it('it does not error with all proper params', function () {
+  it('does not error with redirect_url param', function () {
     var error;
     var params = {
-      amount: '10.00',
-      currency: 'EUR',
-      final_status: 'COMPLETE',
       redirect_url: 'https://braintreepayments.com'
     };
 
@@ -108,11 +82,8 @@ describe('sandbox approval frame', function () {
   });
 
   it('populates page with data from query params', function () {
-    var amount, currency, finalStatus, redirectUrl;
+    var redirectUrl;
     var params = {
-      amount: '10.00',
-      currency: 'EUR',
-      final_status: 'COMPLETE',
       redirect_url: 'https://braintreepayments.com'
     };
 
@@ -120,14 +91,8 @@ describe('sandbox approval frame', function () {
 
     sandboxApprovalFrame.start();
 
-    amount = document.querySelector('#amount');
-    currency = document.querySelector('#currency');
-    finalStatus = document.querySelector('#final_status');
     redirectUrl = document.querySelector('#redirect_url');
 
-    expect(amount.textContent).to.equal('10.00');
-    expect(currency.textContent).to.equal('EUR');
-    expect(finalStatus.textContent).to.equal('COMPLETE');
-    expect(redirectUrl.href).to.equal('https://braintreepayments.com');
+    expect(redirectUrl.href).to.equal('https://braintreepayments.com/');
   });
 });

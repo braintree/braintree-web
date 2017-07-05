@@ -8,16 +8,20 @@ function makeMockConfirmView() {
   var backButton = document.createElement('div');
   var bankLogo = document.createElement('div');
   var bankName = document.createElement('div');
+  var proceed = document.createElement('div');
 
   confirmView.className = 'confirm-view';
   backButton.className = 'back-btn';
+  backButton.appendChild(document.createElement('span'));
   bankLogo.className = 'bank-message--logo';
   bankName.className = 'bank-message--name';
+  proceed.className = 'bank-message--proceed';
   confirmView.style.display = 'none';
 
   confirmView.appendChild(backButton);
   confirmView.appendChild(bankLogo);
   confirmView.appendChild(bankName);
+  confirmView.appendChild(proceed);
 
   return confirmView;
 }
@@ -43,6 +47,9 @@ describe('issuers-frame', function () {
     ];
     /* eslint-enable */
 
+    this.header = document.createElement('h1');
+    this.header.className = 'ideal-header';
+    this.header.appendChild(document.createElement('h1'));
     this.confirmView = makeMockConfirmView();
     document.body.appendChild(this.confirmView);
     this.idealList = document.createElement('div');
@@ -51,6 +58,7 @@ describe('issuers-frame', function () {
     this.overlayNode = document.createElement('div');
     this.overlayNode.className = 'overlay';
     document.body.appendChild(this.overlayNode);
+    document.body.appendChild(this.header);
 
     window.name = 'braintree_uuid';
 
@@ -62,6 +70,7 @@ describe('issuers-frame', function () {
     document.body.removeChild(this.confirmView);
     document.body.removeChild(this.idealList);
     document.body.removeChild(this.overlayNode);
+    document.body.removeChild(this.header);
   });
 
   it('adds issuing banks to the dom', function () {

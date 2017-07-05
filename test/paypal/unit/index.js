@@ -18,7 +18,6 @@ describe('paypal', function () {
     beforeEach(function () {
       this.configuration = fake.configuration();
       this.configuration.gatewayConfiguration.paypalEnabled = true;
-      this.configuration.gatewayConfiguration.paypal = {};
 
       this.sandbox.stub(analytics, 'sendEvent');
       this.client = fake.client({

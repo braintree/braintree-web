@@ -5,7 +5,8 @@ var sanitizeHtml = require('../../lib/sanitize-html');
 var events = require('../shared/events');
 var TIMEOUT_TILL_OVERLAY_SHOULD_BE_HIDDEN = 1000;
 var bankSelectionInProgress = false;
-var cachedBus, redirectTimeout, overlayNode;
+var cachedBus, redirectTimeout, overlayNode, translations;
+var translator = require('./translator');
 
 function start() {
   var confirmView = document.querySelector('.confirm-view');
@@ -19,6 +20,10 @@ function start() {
   });
 
   getBus().emit(Bus.events.CONFIGURATION_REQUEST, function (config) {
+    translations = translator(config.locale);
+    document.querySelector('.ideal-header h1').textContent = translations.idealSelectYourBank;
+    document.querySelector('.back-btn span').textContent = translations.idealBack;
+    document.querySelector('.bank-message--proceed').textContent = translations.idealContinuingTo;
     setupBankList(config);
     setTimeout(function () {
       hideNode(overlayNode);

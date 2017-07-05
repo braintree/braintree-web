@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## 3.19.1
+
+* Client
+  * Cache client creation when using the same authorization
+* Hosted Fields
+  * Update credit-card-type to v5.0.3 to fix a bug where certain MasterCard bins were not being marked as potentially valid
+* Inline JS in HTML frames
+
 ## 3.19.0
 
 * Hosted Fields
