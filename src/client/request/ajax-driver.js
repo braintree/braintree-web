@@ -1,16 +1,24 @@
 'use strict';
 
 var querystring = require('../../lib/querystring');
+var browserDetection = require('../browser-detection');
 var assign = require('../../lib/assign').assign;
 var prepBody = require('./prep-body');
 var parseBody = require('./parse-body');
 var isXHRAvailable = global.XMLHttpRequest && 'withCredentials' in new global.XMLHttpRequest();
 
+var MAX_TCP_RETRYCOUNT = 1;
+var TCP_PRECONNECT_BUG_STATUS_CODE = 408;
+
 function getRequestObject() {
   return isXHRAvailable ? new XMLHttpRequest() : new XDomainRequest();
 }
 
-function request(options, cb) {
+function requestShouldRetry(status) {
+  return (!status || status === TCP_PRECONNECT_BUG_STATUS_CODE) && browserDetection.isIe();
+}
+
+function _requestWithRetry(options, tcpRetryCount, cb) {
   var status, resBody;
   var method = options.method;
   var url = options.url;
@@ -35,6 +43,11 @@ function request(options, cb) {
       resBody = parseBody(req.responseText);
 
       if (status >= 400 || status < 200) {
+        if (tcpRetryCount < MAX_TCP_RETRYCOUNT && requestShouldRetry(status)) {
+          tcpRetryCount++;
+          _requestWithRetry(options, tcpRetryCount, cb);
+          return;
+        }
         callback(resBody || 'error', null, status || 500);
       } else {
         callback(null, resBody, status);
@@ -75,6 +88,10 @@ function request(options, cb) {
   try {
     req.send(prepBody(method, body));
   } catch (e) { /* ignored */ }
+}
+
+function request(options, cb) {
+  _requestWithRetry(options, 0, cb);
 }
 
 module.exports = {

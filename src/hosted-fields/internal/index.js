@@ -148,8 +148,10 @@ function resetPlaceholder(element) {
   // compensate for this by removing and re-setting the placeholder
   var placeholder = element.getAttribute('placeholder');
 
-  element.setAttribute('placeholder', '');
-  element.setAttribute('placeholder', placeholder);
+  if (placeholder) {
+    element.setAttribute('placeholder', '');
+    element.setAttribute('placeholder', placeholder);
+  }
 }
 
 function shimPlaceholder() {
@@ -347,10 +349,21 @@ function orchestrate(configuration) {
 function mergeCardData(cardData, options) {
   var newCardData = cardData;
   var cardholderName = options.cardholderName;
-  var postalCode = options.billingAddress && options.billingAddress.postalCode;
+  var billingAddress = options.billingAddress;
+  var postalCode = billingAddress && billingAddress.postalCode;
+  var streetAddress = billingAddress && billingAddress.streetAddress;
+  var country = billingAddress && billingAddress.country;
 
   if (postalCode && !cardData.hasOwnProperty('postalCode')) {
     newCardData = assign({}, newCardData, {postalCode: postalCode});
+  }
+
+  if (streetAddress) {
+    newCardData = assign({}, newCardData, {streetAddress: streetAddress});
+  }
+
+  if (country) {
+    newCardData = assign({}, newCardData, {country: country});
   }
 
   if (cardholderName) {

@@ -36,7 +36,7 @@ function Ideal(options) {
   var configuration = options.client.getConfiguration();
 
   this._client = options.client;
-  this._assetsUrl = configuration.gatewayConfiguration.assetsUrl + '/web/' + VERSION;
+  this._assetsUrl = configuration.gatewayConfiguration.ideal.assetsUrl + '/web/' + VERSION;
   this._isDebug = configuration.isDebug;
   this._idealPaymentStatus = {
     authInProgress: false,
@@ -87,6 +87,7 @@ Ideal.prototype._initialize = function () {
  * @param {string} options.orderId An ID supplied by the merchant for creating the iDEAL transaction.
  * @param {string} options.amount The amount to authorize for the transaction.
  * @param {string} options.currency The currency to process the payment.
+ * @param {string} [options.locale=nl] An optional string to specify the locale of the bank selection window. Possible values: `nl`, `en`.
  * @param {string} [options.descriptor] An optional string that will appear on the customer's bank statement.
  * @param {function} options.onPaymentStart A function that will be called with an object containing the iDEAL Payment `id` and `status` when the customer chooses an issuing bank. You can use this hook to update your payment page.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link iDEAL~startPaymentPayload|startPaymentPayload}. If no callback is provided, the method will return a Promise that resolves with a {@link iDEAL~startPaymentPayload|startPaymentPayload}.
@@ -147,7 +148,11 @@ Ideal.prototype.startPayment = wrapPromise(function (options) {
     self._startPaymentCallback = self._createStartPaymentCallback(resolve, reject);
     self._startPaymentOptions = options;
 
-    self._frameService.open({}, self._startPaymentCallback);
+    self._frameService.open({
+      state: {
+        locale: options.locale
+      }
+    }, self._startPaymentCallback);
   });
 });
 

@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.20.0
+
+* Client
+  * Add request retries for TCP preconnect errors in Internet Explorer and Edge
+* Hosted Fields
+  * Update restricted-input to version 1.2.5
+  * Fix bug where placeholder would be set to null after autocomplete fires if no placeholder was set
+  * Allow passing `streetAddress` under `billingAddress` as an option
+  * Fix issue where Hosted Fields would not load intermittently in Edge and IE11
+  * Fix issue where Hosted Fields validity would not update after paste events (#308)
+
 ## 3.19.1
 
 * Client

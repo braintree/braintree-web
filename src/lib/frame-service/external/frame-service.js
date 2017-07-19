@@ -51,7 +51,7 @@ function FrameService(options) {
     top: options.top,
     left: options.left
   };
-  this.state = options.state;
+  this.state = options.state || {};
 
   this._bus = new Bus({channel: this._serviceId});
   this._setBusEvents();
@@ -114,6 +114,8 @@ FrameService.prototype.open = function (options, callback) {
   if (this._frame instanceof PopupBridge) {
     return;
   }
+
+  assign(this.state, options.state);
 
   this._onCompleteCallback = callback;
   this._frame.open();

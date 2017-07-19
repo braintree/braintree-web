@@ -17,13 +17,14 @@ gulp.task('release:hosted:copy', function () {
 });
 
 gulp.task('release:hosted-static:copy', function () {
-  return gulp.src(['dist/hosted/static/**/*'])
+  return gulp.src(['dist/hosted/web/static/**/*'])
     .pipe(gulp.dest(HOSTED_DEST + '/web/static'));
 });
 
 gulp.task('release:hosted', function (done) {
   sequence(
     'build',
+    'release:hosted-static:copy',
     'release:hosted:copy',
     endingMessage(HOSTED_DEST, done)
   );

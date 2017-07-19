@@ -445,6 +445,60 @@ describe('internal', function () {
         }.bind(this));
       });
 
+      it('tokenizes with street address', function (done) {
+        this.fakeOptions.billingAddress = {streetAddress: '123 Main Street'};
+
+        create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  street_address: '123 Main Street'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                street_address: '123 Main Street'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes with country', function (done) {
+        this.fakeOptions.billingAddress = {country: 'US'};
+
+        create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  country: 'US'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                country: 'US'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
       it('tokenizes with additional postal code data when Hosted Fields has no postal code field', function (done) {
         this.fakeOptions.billingAddress = {
           postalCode: '33333'
@@ -1083,6 +1137,40 @@ describe('internal', function () {
       expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
       expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '123');
       expect(this.fieldComponent.input.element.value).to.equal('123');
+    });
+
+    it('resets placeholder if it exists to account for bug in Safari', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      this.fieldComponent.input.element.getAttribute.returns('111');
+      getFrameName.getFrameName.returns('cvv');
+
+      handler({
+        month: '12',
+        year: '34',
+        cvv: '123'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.element.setAttribute).to.be.calledTwice;
+      expect(this.fieldComponent.input.element.setAttribute).to.be.calledWith('placeholder', '');
+      expect(this.fieldComponent.input.element.setAttribute).to.be.calledWith('placeholder', '111');
+    });
+
+    it('ignores setting placeholder if no placeholder on element', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      this.fieldComponent.input.element.getAttribute.returns(null);
+      getFrameName.getFrameName.returns('cvv');
+
+      handler({
+        month: '12',
+        year: '34',
+        cvv: '123'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.element.setAttribute).to.not.be.called;
     });
 
     it('ignores cvv if it is not present', function () {

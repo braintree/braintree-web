@@ -110,9 +110,48 @@ function Client(configuration) {
  *     creditCard: {
  *       number: form['cc-number'].value,
  *       cvv: form['cc-cvv'].value,
- *       expirationDate: form['cc-date'].value,
+ *       expirationDate: form['cc-expiration-date'].value,
  *       billingAddress: {
- *         postalCode: form['cc-postal'].value
+ *         postalCode: form['cc-postal-code'].value
+ *       },
+ *       options: {
+ *         validate: false
+ *       }
+ *     }
+ *   };
+ *
+ *   // Warning: For a merchant to be eligible for the easiest level of PCI compliance (SAQ A),
+ *   // payment fields cannot be hosted on your checkout page.
+ *   // For an alternative to the following, use Hosted Fields.
+ *   clientInstance.request({
+ *     endpoint: 'payment_methods/credit_cards',
+ *     method: 'post',
+ *     data: data
+ *   }, function (requestErr, response) {
+ *     // More detailed example of handling API errors: https://codepen.io/braintree/pen/MbwjdM
+ *     if (requestErr) { throw new Error(requestErr); }
+ *
+ *     console.log('Got nonce:', response.creditCards[0].nonce);
+ *   });
+ * });
+ * @example
+ * <caption>Tokenizing Fields for AVS Checks</caption>
+ * var createClient = require('braintree-web/client').create;
+ *
+ * createClient({
+ *   authorization: CLIENT_AUTHORIZATION
+ * }, function (createErr, clientInstance) {
+ *   var form = document.getElementById('my-form-id');
+ *   var data = {
+ *     creditCard: {
+ *       number: form['cc-number'].value,
+ *       cvv: form['cc-cvv'].value,
+ *       expirationDate: form['cc-date'].value,
+ *       // The billing address can be checked with AVS rules.
+ *       // See: https://articles.braintreepayments.com/support/guides/fraud-tools/basic/avs-cvv-rules
+ *       billingAddress: {
+ *         postalCode: form['cc-postal-code'].value,
+ *         streetAddress: form['cc-street-address'].value
  *       },
  *       options: {
  *         validate: false
@@ -194,8 +233,9 @@ Client.prototype.request = function (options, callback) {
     requestOptions.url = baseUrl + options.endpoint;
 
     self._request(requestOptions, function (err, data, status) {
-      var resolvedData;
-      var requestError = formatRequestError(status, err);
+      var resolvedData, requestError;
+
+      requestError = formatRequestError(status, err);
 
       if (requestError) {
         reject(requestError);

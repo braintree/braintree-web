@@ -1,6 +1,7 @@
 'use strict';
 
 var sinon = require('sinon');
+var browserDetection = require('../../../../src/client/browser-detection');
 var AJAXDriver = require('../../../../src/client/request/ajax-driver');
 var TEST_SERVER_URL = 'http://localhost/ajax';
 
@@ -30,6 +31,116 @@ describe('AJAXDriver', function () {
     setTimeout(function () {
       this.server.respond();
     }.bind(this), 1000);
+  });
+
+  describe('tcp preconnect bug retry', function () {
+    it('retries if a 408 error and browser is IE', function (done) {
+      var responseCount = 0;
+
+      this.sandbox.stub(browserDetection, 'isIe').returns(true);
+
+      this.server.respondWith(function (req) {
+        if (responseCount === 0) {
+          responseCount++;
+          req.respond(408, {}, '');
+          return;
+        }
+
+        req.respond(200, {}, '{"result": "yay"}');
+      });
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL,
+        method: 'GET'
+      }, function callback(err, data, status) {
+        expect(err).to.not.exist;
+        expect(status).to.equal(200);
+        expect(data).to.deep.equal({result: 'yay'});
+        done();
+      });
+    });
+
+    it('retries if a status code is 0 and browser is IE', function (done) {
+      var responseCount = 0;
+
+      this.sandbox.stub(browserDetection, 'isIe').returns(true);
+
+      this.server.respondWith(function (req) {
+        if (responseCount === 0) {
+          responseCount++;
+          req.respond(0, {}, '');
+          return;
+        }
+
+        req.respond(200, {}, '{"result": "yay"}');
+      });
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL,
+        method: 'GET'
+      }, function callback(err, data, status) {
+        expect(err).to.not.exist;
+        expect(status).to.equal(200);
+        expect(data).to.deep.equal({result: 'yay'});
+        done();
+      });
+    });
+
+    it('only retries once if status is 408 and browser is IE', function (done) {
+      var responseCount = 0;
+
+      this.sandbox.stub(browserDetection, 'isIe').returns(true);
+
+      this.server.respondWith(function (req) {
+        if (responseCount === 0) {
+          responseCount++;
+          req.respond(408, {}, 'first');
+          return;
+        } else if (responseCount === 1) {
+          responseCount++;
+          req.respond(408, {}, 'second');
+          return;
+        }
+
+        req.respond(200, {}, '{"never": "gets here"}');
+      });
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL,
+        method: 'GET'
+      }, function callback(err, data, status) {
+        expect(err).to.equal('second');
+        expect(status).to.equal(408);
+        expect(data).to.not.exist;
+        done();
+      });
+    });
+
+    it('only retries for 408 if browser is IE', function (done) {
+      var responseCount = 0;
+
+      this.sandbox.stub(browserDetection, 'isIe').returns(false);
+
+      this.server.respondWith(function (req) {
+        if (responseCount === 0) {
+          responseCount++;
+          req.respond(408, {}, 'error');
+          return;
+        }
+
+        req.respond(200, {}, '{"result": "yay"}');
+      });
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL,
+        method: 'GET'
+      }, function callback(err, data, status) {
+        expect(err).to.equal('error');
+        expect(status).to.equal(408);
+        expect(data).to.not.exist;
+        done();
+      });
+    });
   });
 
   describe('#request with get', function () {

@@ -105,6 +105,8 @@ function submitHandler(hostedFields, event) {
 
 #### Advanced integration
 
+To be eligible for the easiest level of PCI compliance (SAQ A), payment fields cannot be hosted on your checkout page. For an alternative to the following, use Hosted Fields.
+
 ```javascript
 braintree.client.create({
   authorization: CLIENT_AUTHORIZATION
@@ -127,6 +129,8 @@ braintree.client.create({
   });
 });
 ```
+
+For more examples, [see the reference](http://braintree.github.io/braintree-web/current/Client.html#request).
 
 #### Promises
 

@@ -557,6 +557,31 @@ describe('FrameService', function () {
       expect(this.fakeFrame.initialize).to.be.calledOnce;
       expect(this.fakeFrame.initialize).to.be.calledWith(cb);
     });
+
+    it('can set new state properties', function () {
+      var cb = this.sandbox.stub();
+
+      this.frameService.state = {
+        foo: 'Going to change',
+        bar: 'existing value that will be null',
+        biz: 'unchanged value'
+      };
+
+      this.frameService.open({
+        state: {
+          foo: 'foo',
+          bar: null,
+          baz: 'baz'
+        }
+      }, cb);
+
+      expect(this.frameService.state).to.deep.equal({
+        foo: 'foo',
+        bar: null,
+        baz: 'baz',
+        biz: 'unchanged value'
+      });
+    });
   });
 
   describe('redirect', function () {

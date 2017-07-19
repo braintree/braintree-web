@@ -2,8 +2,26 @@
 
 'use strict';
 
+function constructBillingAddress(data) {
+  var billingAddress = {
+    postal_code: data.postalCode,
+    street_address: data.streetAddress,
+    country: data.country
+  };
+
+  Object.keys(billingAddress).forEach(function (key) {
+    if (billingAddress[key] == null) {
+      delete billingAddress[key];
+    }
+  });
+
+  return billingAddress;
+}
+
 module.exports = function (data) {
   var result = {};
+  var billingAddress = constructBillingAddress(data);
+  var hasBillingAddress = Object.keys(billingAddress).length > 0;
 
   if ('number' in data) {
     result.number = data.number;
@@ -25,10 +43,8 @@ module.exports = function (data) {
     }
   }
 
-  if ('postalCode' in data) {
-    result.billing_address = {
-      postal_code: data.postalCode
-    };
+  if (hasBillingAddress) {
+    result.billing_address = billingAddress;
   }
 
   if ('cardholderName' in data) {

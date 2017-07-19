@@ -20,6 +20,7 @@ describe('iDEAL', function () {
   beforeEach(function () {
     this.configuration = fake.configuration();
     this.configuration.gatewayConfiguration.ideal = {
+      assetsUrl: 'https://checkout.paypal.com',
       routeId: 'route_789'
     };
     this.fakeClient = {
@@ -45,6 +46,7 @@ describe('iDEAL', function () {
       client: this.fakeClient
     });
     this.ideal._frameService = this.fakeFrameService;
+    this.ideal._frameData = {};
     this.sandbox.stub(analytics, 'sendEvent');
   });
 
@@ -109,8 +111,8 @@ describe('iDEAL', function () {
           name: 'braintreeideallanding',
           height: 550,
           width: 500,
-          dispatchFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/dispatch-frame.min.html',
-          openFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/ideal-issuers-frame.min.html',
+          dispatchFrameUrl: 'https://checkout.paypal.com/web/' + VERSION + '/html/dispatch-frame.min.html',
+          openFrameUrl: 'https://checkout.paypal.com/web/' + VERSION + '/html/ideal-issuers-frame.min.html',
           state: {bankData: bankData}
         });
       }.bind(this));
@@ -126,8 +128,8 @@ describe('iDEAL', function () {
       return this.ideal._initialize().then(function () {
         expect(frameService.create).to.be.calledOnce;
         expect(frameService.create).to.be.calledWithMatch({
-          dispatchFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/dispatch-frame.html',
-          openFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/ideal-issuers-frame.html'
+          dispatchFrameUrl: 'https://checkout.paypal.com/web/' + VERSION + '/html/dispatch-frame.html',
+          openFrameUrl: 'https://checkout.paypal.com/web/' + VERSION + '/html/ideal-issuers-frame.html'
         });
       });
     });
@@ -376,6 +378,32 @@ describe('iDEAL', function () {
       });
     });
 
+    it('can pass optional locale param', function () {
+      this.fakeFrameService.open.yields(new BraintreeError({
+        type: 'INTERNAL',
+        code: 'FRAME_SERVICE_FRAME_CLOSED',
+        message: 'foo'
+      }));
+      this.ideal._idealPaymentStatus = {
+        authInProgress: false,
+        id: 'foo-id',
+        status: 'COMPLETE'
+      };
+
+      return this.ideal.startPayment({
+        orderId: 'abc',
+        amount: '10.00',
+        currency: 'EUR',
+        locale: 'en'
+      }).then(function () {
+        expect(this.fakeFrameService.open).to.be.calledWithMatch({
+          state: {
+            locale: 'en'
+          }
+        });
+      }.bind(this));
+    });
+
     it('rejects with error when status is not PENDING or COMPLETE', function () {
       this.fakeFrameService.open.yields(new BraintreeError({
         type: 'INTERNAL',
@@ -492,7 +520,7 @@ describe('iDEAL', function () {
           amount: '10.00',
           currency: 'EUR',
           descriptor: 'Descriptor',
-          redirect_url: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/ideal-redirect-frame.html' // eslint-disable-line camelcase
+          redirect_url: 'https://checkout.paypal.com/web/' + VERSION + '/html/ideal-redirect-frame.html' // eslint-disable-line camelcase
         },
         endpoint: 'ideal-payments'
       });

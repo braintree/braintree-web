@@ -92,6 +92,7 @@ BaseInput.prototype.addDOMEventListeners = function () {
   this._addDOMFocusListeners();
   this._addDOMInputListeners();
   this._addDOMKeypressListeners();
+  this._addPasteEventListeners();
 };
 
 BaseInput.prototype._addDOMKeypressListeners = function () {
@@ -99,6 +100,12 @@ BaseInput.prototype._addDOMKeypressListeners = function () {
     if (event.keyCode === ENTER_KEY_CODE) {
       this.model.emitEvent(this.type, 'inputSubmitRequest');
     }
+  }.bind(this), false);
+};
+
+BaseInput.prototype._addPasteEventListeners = function () {
+  this.element.addEventListener('paste', function () {
+    this.render();
   }.bind(this), false);
 };
 
