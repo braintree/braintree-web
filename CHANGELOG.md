@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## 3.20.1
+
+* Update browser-detection to v1.6.0
+* Hosted Fields
+  * Fix issue where field would not blur on iOS when tapping out of the Hosted Fields inputs
+* PayPal
+  * Fix issue in iOS Firefox where PayPal window would not open
+
 ## 3.20.0
 
 * Client

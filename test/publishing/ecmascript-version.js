@@ -12,8 +12,8 @@ describe('ECMAScript version', function () {
     it(file + ' only uses ES5 for browser compatibility', function (done) {
       var jsPath = path.resolve(__dirname, '..', '..', 'dist', 'hosted', 'web', version, 'js', file + '.js');
 
-      this.slow(10000);
-      this.timeout(12000);
+      this.slow(12000);
+      this.timeout(15000);
 
       checkFile(jsPath, done);
     });
