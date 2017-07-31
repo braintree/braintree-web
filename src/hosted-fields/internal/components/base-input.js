@@ -3,12 +3,24 @@
 var attributeValidationError = require('../../external/attribute-validation-error');
 var constants = require('../../shared/constants');
 var classlist = require('../../../lib/classlist');
-var isIe9 = require('@braintree/browser-detection/is-ie9');
-var isIosWebview = require('@braintree/browser-detection/is-ios-webview');
+var browserDetection = require('../../shared/browser-detection');
 var createRestrictedInput = require('../../../lib/create-restricted-input');
 var events = constants.events;
 var whitelistedFields = constants.whitelistedFields;
 var ENTER_KEY_CODE = 13;
+
+function constructAttributes(attributes) {
+  if (!attributes.type) {
+    if (browserDetection.isIos()) {
+      attributes.type = 'text';
+      attributes.pattern = '\\d*';
+    } else {
+      attributes.type = 'tel';
+    }
+  }
+
+  return attributes;
+}
 
 function BaseInput(options) {
   var shouldFormat;
@@ -50,15 +62,13 @@ BaseInput.prototype.modelOnChange = function (property, callback) {
 
 BaseInput.prototype.constructElement = function () {
   var type = this.type;
-  var inputType = this.getConfiguration().type || 'tel';
-
   var element = document.createElement('input');
 
   var placeholder = this.getConfiguration().placeholder;
   var name = whitelistedFields[type] ? whitelistedFields[type].name : null;
 
-  var attributes = {
-    type: inputType,
+  var attributes = constructAttributes({
+    type: this.getConfiguration().type,
     autocomplete: 'off',
     autocorrect: 'off',
     autocapitalize: 'none',
@@ -67,7 +77,7 @@ BaseInput.prototype.constructElement = function () {
     'data-braintree-name': type,
     name: name,
     id: name
-  };
+  });
 
   if (this.maxLength) {
     attributes.maxlength = this.maxLength;
@@ -116,7 +126,7 @@ BaseInput.prototype._addDOMInputListeners = function () {
 };
 
 BaseInput.prototype._getDOMChangeEvent = function () {
-  return isIe9() ? 'keyup' : 'input';
+  return browserDetection.isIe9() ? 'keyup' : 'input';
 };
 
 BaseInput.prototype._addDOMFocusListeners = function () {
@@ -152,7 +162,7 @@ BaseInput.prototype._addDOMFocusListeners = function () {
   }.bind(this), false);
 
   // select inputs don't have a select function
-  if (typeof element.select === 'function' && !isIosWebview()) {
+  if (typeof element.select === 'function' && !browserDetection.isIosWebview()) {
     element.addEventListener('touchstart', function () {
       element.select();
     });

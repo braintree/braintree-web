@@ -22,6 +22,14 @@ var formatCardRequestData = require('./format-card-request-data');
 var formatBraintreeApiCardResponse = require('./format-braintree-api-card-response');
 
 var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
+var WHITELISTED_BILLING_ADDRESS_FIELDS = [
+  'countryCodeNumeric',
+  'countryCodeAlpha2',
+  'countryCodeAlpha3',
+  'countryName',
+  'postalCode',
+  'streetAddress'
+];
 
 function initialize(cardForm) {
   var fieldComponent;
@@ -347,28 +355,21 @@ function orchestrate(configuration) {
 }
 
 function mergeCardData(cardData, options) {
-  var newCardData = cardData;
+  var newCardData;
+  var userProvidedCardData = assign({}, options.billingAddress);
   var cardholderName = options.cardholderName;
-  var billingAddress = options.billingAddress;
-  var postalCode = billingAddress && billingAddress.postalCode;
-  var streetAddress = billingAddress && billingAddress.streetAddress;
-  var country = billingAddress && billingAddress.country;
 
-  if (postalCode && !cardData.hasOwnProperty('postalCode')) {
-    newCardData = assign({}, newCardData, {postalCode: postalCode});
-  }
-
-  if (streetAddress) {
-    newCardData = assign({}, newCardData, {streetAddress: streetAddress});
-  }
-
-  if (country) {
-    newCardData = assign({}, newCardData, {country: country});
-  }
+  Object.keys(userProvidedCardData).forEach(function (field) {
+    if (WHITELISTED_BILLING_ADDRESS_FIELDS.indexOf(field) === -1 || cardData.hasOwnProperty(field)) {
+      delete userProvidedCardData[field];
+    }
+  });
 
   if (cardholderName) {
-    newCardData = assign({}, newCardData, {cardholderName: cardholderName});
+    userProvidedCardData.cardholderName = cardholderName;
   }
+
+  newCardData = assign({}, cardData, userProvidedCardData);
 
   return newCardData;
 }

@@ -2,7 +2,7 @@
 
 var iFramer = require('@braintree/iframer');
 var assign = require('../../../assign').assign;
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('../../shared/browser-detection');
 
 var ELEMENT_STYLES = {
   position: 'fixed',

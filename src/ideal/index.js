@@ -2,7 +2,7 @@
 /** @module braintree-web/ideal */
 
 var BraintreeError = require('../lib/braintree-error');
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('./shared/browser-detection');
 var Ideal = require('./external/ideal');
 var VERSION = process.env.npm_package_version;
 var errors = require('./shared/errors');

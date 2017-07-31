@@ -445,16 +445,18 @@ describe('internal', function () {
         }.bind(this));
       });
 
-      it('tokenizes with street address', function (done) {
-        this.fakeOptions.billingAddress = {streetAddress: '123 Main Street'};
+      it('tokenizes street address', function (done) {
+        this.fakeOptions.billingAddress = {
+          streetAddress: '606 Elm St'
+        };
 
-        create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
           expect(this.goodClient.request).to.be.calledWithMatch({
             api: 'clientApi',
             data: {
               creditCard: {
                 billing_address: {
-                  street_address: '123 Main Street'
+                  street_address: '606 Elm St'
                 }
               }
             }
@@ -464,7 +466,7 @@ describe('internal', function () {
             api: 'braintreeApi',
             data: {
               billing_address: {
-                street_address: '123 Main Street'
+                street_address: '606 Elm St'
               }
             }
           });
@@ -472,16 +474,18 @@ describe('internal', function () {
         }.bind(this));
       });
 
-      it('tokenizes with country', function (done) {
-        this.fakeOptions.billingAddress = {country: 'US'};
+      it('tokenizes country name', function (done) {
+        this.fakeOptions.billingAddress = {
+          countryName: 'United States'
+        };
 
-        create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
           expect(this.goodClient.request).to.be.calledWithMatch({
             api: 'clientApi',
             data: {
               creditCard: {
                 billing_address: {
-                  country: 'US'
+                  country_name: 'United States'
                 }
               }
             }
@@ -491,7 +495,94 @@ describe('internal', function () {
             api: 'braintreeApi',
             data: {
               billing_address: {
-                country: 'US'
+                country_name: 'United States'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes country code alpha 2', function (done) {
+        this.fakeOptions.billingAddress = {
+          countryCodeAlpha2: 'US'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  country_code_alpha2: 'US'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                country_code_alpha2: 'US'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes country code alpha 3', function (done) {
+        this.fakeOptions.billingAddress = {
+          countryCodeAlpha3: 'USA'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  country_code_alpha3: 'USA'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                country_code_alpha3: 'USA'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes numeric country code', function (done) {
+        this.fakeOptions.billingAddress = {
+          countryCodeNumeric: '840'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  country_code_numeric: '840'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                country_code_numeric: '840'
               }
             }
           });
@@ -611,33 +702,22 @@ describe('internal', function () {
         }.bind(this));
       });
 
-      it('does not attempt to tokenize non-postal code additional options', function (done) {
+      it('does not attempt to tokenize non-whitelisted billing address options', function (done) {
+        this.cardFormWithPostalCode.set('number.value', '1111 1111 1111 1111');
         this.fakeOptions.billingAddress = {
-          streetAddress: '606 Elm St'
+          foo: 'bar',
+          baz: 'biz'
         };
 
         create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
-          expect(this.goodClient.request).to.not.be.calledWithMatch({
-            api: 'clientApi',
-            data: {
-              creditCard: {
-                number: '3333 3333 3333 3333',
-                billingAddress: {
-                  streetAddress: '606 Elm St'
-                }
-              }
-            }
-          });
+          var clientApiRequestArgs = this.goodClient.request.args[0][0];
+          var braintreeApiRequestArgs = this.goodClient.request.args[1][0];
 
-          expect(this.goodClient.request).to.not.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              number: '3333 3333 3333 3333',
-              billingAddress: {
-                streetAddress: '606 Elm St'
-              }
-            }
-          });
+          expect(clientApiRequestArgs.data.creditCard.billing_address.foo).to.not.exist;
+          expect(clientApiRequestArgs.data.creditCard.billing_address.baz).to.not.exist;
+          expect(braintreeApiRequestArgs.data.billing_address.foo).to.not.exist;
+          expect(braintreeApiRequestArgs.data.billing_address.baz).to.not.exist;
+
           done();
         }.bind(this));
       });

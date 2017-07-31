@@ -151,7 +151,11 @@ function Client(configuration) {
  *       // See: https://articles.braintreepayments.com/support/guides/fraud-tools/basic/avs-cvv-rules
  *       billingAddress: {
  *         postalCode: form['cc-postal-code'].value,
- *         streetAddress: form['cc-street-address'].value
+ *         streetAddress: form['cc-street-address'].value,
+ *         countryName: form['cc-country-name'].value,
+ *         countryCodeAlpha2: form['cc-country-alpha2'].value,
+ *         countryCodeAlpha3: form['cc-country-alpha3'].value,
+ *         countryCodeNumeric: form['cc-country-numeric'].value
  *       },
  *       options: {
  *         validate: false

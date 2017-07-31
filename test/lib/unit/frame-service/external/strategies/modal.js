@@ -1,7 +1,7 @@
 'use strict';
 
 var Modal = require('../../../../../../src/lib/frame-service/external/strategies/modal');
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('../../../../../../src/lib/frame-service/shared/browser-detection');
 
 describe('Modal', function () {
   it('has a focus function', function () {

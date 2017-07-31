@@ -2,7 +2,7 @@
 
 var create = require('../../../src/masterpass').create;
 var isSupported = require('../../../src/masterpass').isSupported;
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('../../../src/masterpass/shared/browser-detection');
 var Masterpass = require('../../../src/masterpass/external/masterpass');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var fake = require('../../helpers/fake');

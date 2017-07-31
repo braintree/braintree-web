@@ -2,6 +2,7 @@
 
 var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
 var constants = require('../../../../../src/hosted-fields/shared/constants');
+var browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
 var RestrictedInput = require('restricted-input');
 var FakeRestrictedInput = require('../../../../../src/lib/fake-restricted-input');
 
@@ -88,6 +89,16 @@ describe('Base Input', function () {
 
             it('uses "tel" if not provided', function () {
               expect(this.instance.element.getAttribute('type')).to.equal('tel');
+            });
+
+            it('uses "text" with pattern for iOS', function () {
+              var instance;
+
+              this.sandbox.stub(browserDetection, 'isIos').returns(true);
+              instance = new BaseInput({model: this.model, type: 'cvv'});
+
+              expect(instance.element.getAttribute('type')).to.equal('text');
+              expect(instance.element.getAttribute('pattern')).to.equal('\\d*');
             });
           });
 

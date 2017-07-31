@@ -13,7 +13,7 @@ var analytics = require('../../../../src/lib/analytics');
 function noop() {}
 
 function waitForAsyncAction(cb) {
-  setTimeout(cb, 10);
+  setTimeout(cb, 100);
 }
 
 describe('iDEAL', function () {

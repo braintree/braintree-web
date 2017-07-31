@@ -11,7 +11,7 @@ var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var uuid = require('../../lib/uuid');
 var findParentTags = require('../shared/find-parent-tags');
-var isIos = require('@braintree/browser-detection/is-ios');
+var browserDetection = require('../shared/browser-detection');
 var events = constants.events;
 var EventEmitter = require('../../lib/event-emitter');
 var injectFrame = require('./inject-frame');
@@ -266,7 +266,7 @@ function createInputEventHandler(fields) {
 function performBlurFixForIos(container) {
   var hiddenInput;
 
-  if (!isIos()) {
+  if (!browserDetection.isIos()) {
     return;
   }
 
@@ -445,7 +445,14 @@ function HostedFields(options) {
       // the actual source. Both instances
       // of setting the src need to be in a
       // setTimeout to work.
-      frame.src = 'about:blank';
+      // In Safari, including this behavior
+      // results in a new history event for
+      // each iframe. So we only do this
+      // hack in browsers that are not
+      // safari based.
+      if (global.navigator && global.navigator.vendor.indexOf('Apple') === -1) { // TODO - move to browser detection module
+        frame.src = 'about:blank';
+      }
       setTimeout(function () {
         frame.src = composeUrl(clientConfig.gatewayConfiguration.assetsUrl, componentId, clientConfig.isDebug);
       }, 0);
@@ -501,7 +508,7 @@ HostedFields.prototype = Object.create(EventEmitter.prototype, {
 
 HostedFields.prototype._setupLabelFocus = function (type, container) {
   var labels, i;
-  var shouldSkipLabelFocus = isIos();
+  var shouldSkipLabelFocus = browserDetection.isIos();
   var bus = this._bus;
 
   if (shouldSkipLabelFocus) { return; }
@@ -563,6 +570,11 @@ HostedFields.prototype.teardown = function () {
  * @param {string} [options.cardholderName] When supplied, the cardholder name to be tokenized with the contents of the fields.
  * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.
  * @param {string} [options.billingAddress.streetAddress] When supplied, this street address will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.countryCodeNumeric] When supplied, this numeric country code will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.countryCodeAlpha2] When supplied, this alpha 2 representation of a country will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.countryCodeAlpha3] When supplied, this alpha 3 representation of a country will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.countryName] When supplied, this country name will be tokenized along with the contents of the fields.
+ *
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link HostedFields~tokenizePayload|tokenizePayload}.
  * @example <caption>Tokenize a card</caption>
  * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
@@ -634,6 +646,26 @@ HostedFields.prototype.teardown = function () {
  * hostedFieldsInstance.tokenize({
  *   billingAddress: {
  *     postalCode: '11111'
+ *   }
+ * }, function (tokenizeErr, payload) {
+ *   if (tokenizeErr) {
+ *     console.error(tokenizeErr);
+ *   } else {
+ *     console.log('Got nonce:', payload.nonce);
+ *   }
+ * });
+ * @example <caption>Tokenize a card with additional billing address options</caption>
+ * hostedFieldsInstance.tokenize({
+ *   billingAddress: {
+ *     streetAddress: '123 Street',
+ *     // passing just one of the country options is sufficient to
+ *     // associate the card details with a particular country
+ *     // valid country names and codes can be found here:
+ *     // https://developers.braintreepayments.com/reference/general/countries/ruby#list-of-countries
+ *     countryName: 'United States',
+ *     countryCodeAlpha2: 'US',
+ *     countryCodeAlpha3: 'USA',
+ *     countryCodeNumeric: '840'
  *   }
  * }, function (tokenizeErr, payload) {
  *   if (tokenizeErr) {

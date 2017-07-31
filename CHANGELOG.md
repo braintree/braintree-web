@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.21.0
+
+* Hosted Fields
+  * Fix issue where phone number keyboard would display on iOS devices
+  * Allow passing `countryName`, `countryCodeAlpha2`, `countryCodeAlpha3`, and `countryCodeNumeric` under `billingAddress` as a tokenization option
+  * Fix issue where Apple based browsers (Safari, iOS Chrome, iOS Firefox, etc) would add multiple history states when Hosted Fields loads
+
 ## 3.20.1
 
 * Update browser-detection to v1.6.0
@@ -16,7 +23,7 @@ CHANGELOG
 * Hosted Fields
   * Update restricted-input to version 1.2.5
   * Fix bug where placeholder would be set to null after autocomplete fires if no placeholder was set
-  * Allow passing `streetAddress` under `billingAddress` as an option
+  * Allow passing `streetAddress` under `billingAddress` as a tokenization option
   * Fix issue where Hosted Fields would not load intermittently in Edge and IE11
   * Fix issue where Hosted Fields validity would not update after paste events (#308)
 

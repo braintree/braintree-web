@@ -10,7 +10,7 @@ var constants = require('../shared/constants');
 var uuid = require('../../uuid');
 var iFramer = require('@braintree/iframer');
 var BraintreeError = require('../../braintree-error');
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('../shared/browser-detection');
 var assign = require('./../../assign').assign;
 
 var REQUIRED_CONFIG_KEYS = [
