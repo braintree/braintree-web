@@ -450,7 +450,7 @@ function HostedFields(options) {
       // each iframe. So we only do this
       // hack in browsers that are not
       // safari based.
-      if (global.navigator && global.navigator.vendor.indexOf('Apple') === -1) { // TODO - move to browser detection module
+      if (global.navigator && global.navigator.vendor && global.navigator.vendor.indexOf('Apple') === -1) { // TODO - move to browser detection module
         frame.src = 'about:blank';
       }
       setTimeout(function () {

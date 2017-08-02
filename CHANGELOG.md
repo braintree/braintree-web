@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.21.1
+
+* Hosted Fields
+  * Fix regression where iframes could not load on IE 9 and 10
+
 ## 3.21.0
 
 * Hosted Fields
