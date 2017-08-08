@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.22.0
+
+* Hosted Fields
+  * Fix regression where postal code input would not display alpha numeric keyboard on iOS
+  * Add bin data to tokenization payload
+  * Add option for input masking
+
 ## 3.21.1
 
 * Hosted Fields

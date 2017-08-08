@@ -8,6 +8,7 @@ var createRestrictedInput = require('../../../lib/create-restricted-input');
 var events = constants.events;
 var whitelistedFields = constants.whitelistedFields;
 var ENTER_KEY_CODE = 13;
+var DEFAULT_MASK_CHARACTER = '•';
 
 function constructAttributes(attributes) {
   if (!attributes.type) {
@@ -23,14 +24,20 @@ function constructAttributes(attributes) {
 }
 
 function BaseInput(options) {
-  var shouldFormat;
+  var shouldFormat, configuration;
 
   this.model = options.model;
   this.type = options.type;
 
+  configuration = this.getConfiguration();
+
+  this.hiddenMaskedValue = '';
+  this.shouldMask = Boolean(configuration.maskInput);
+  this.maskCharacter = configuration.maskInput && configuration.maskInput.character || DEFAULT_MASK_CHARACTER;
+
   this.element = this.constructElement();
 
-  shouldFormat = this.getConfiguration().formatInput !== false && this.element instanceof HTMLInputElement;
+  shouldFormat = configuration.formatInput !== false && this.element instanceof HTMLInputElement;
   this.formatter = createRestrictedInput({
     shouldFormat: shouldFormat,
     element: this.element,
@@ -105,6 +112,10 @@ BaseInput.prototype.addDOMEventListeners = function () {
   this._addPasteEventListeners();
 };
 
+BaseInput.prototype.maskValue = function (value) {
+  return value.replace(/[^\s\/\-]/g, this.maskCharacter);
+};
+
 BaseInput.prototype._addDOMKeypressListeners = function () {
   this.element.addEventListener('keypress', function (event) {
     if (event.keyCode === ENTER_KEY_CODE) {
@@ -146,10 +157,17 @@ BaseInput.prototype._addDOMFocusListeners = function () {
   }
 
   element.addEventListener('focus', function () {
+    if (this.shouldMask) {
+      element.value = this.hiddenMaskedValue;
+    }
     this.updateModel('isFocused', true);
   }.bind(this), false);
 
   element.addEventListener('blur', function () {
+    if (this.shouldMask) {
+      this.hiddenMaskedValue = element.value;
+      element.value = this.maskValue(this.hiddenMaskedValue);
+    }
     this.updateModel('isFocused', false);
   }.bind(this), false);
 
@@ -209,6 +227,7 @@ BaseInput.prototype.addBusEventListeners = function () {
   global.bus.on(events.CLEAR_FIELD, function (type) {
     if (type === this.type) {
       this.element.value = '';
+      this.hiddenMaskedValue = '';
       this.updateModel('value', '');
     }
   }.bind(this));

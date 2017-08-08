@@ -77,6 +77,44 @@ describe('Base Input', function () {
             });
           });
 
+          describe('masking', function () {
+            beforeEach(function () {
+              this.sandbox.stub(BaseInput.prototype, 'updateModel');
+              // prevents adding listeners to document
+              // when calling _addDOMFOcusListeners
+              // and polluting other tests
+              this.sandbox.stub(document.documentElement, 'addEventListener');
+              this.sandbox.stub(document, 'addEventListener');
+              this.sandbox.stub(global, 'addEventListener');
+            });
+
+            it('applies if provided', function () {
+              var instance;
+
+              this.config.maskInput = true;
+              instance = new BaseInput({model: this.model});
+              instance._addDOMFocusListeners();
+
+              triggerEvent('focus', instance.element);
+              instance.element.value = 'abc 1234-asdf /asdf';
+              triggerEvent('blur', instance.element);
+
+              expect(instance.element.value).to.equal('••• ••••-•••• /••••');
+              triggerEvent('focus', instance.element);
+              expect(instance.element.value).to.equal('abc 1234-asdf /asdf');
+            });
+
+            it('does not apply if not defined', function () {
+              this.instance._addDOMFocusListeners();
+
+              triggerEvent('focus', this.instance.element);
+              this.instance.element.value = 'abc 1234-asdf /asdf';
+              triggerEvent('blur', this.instance.element);
+
+              expect(this.instance.element.value).to.equal('abc 1234-asdf /asdf');
+            });
+          });
+
           describe('type', function () {
             it('applies if provided', function () {
               var instance;
@@ -171,6 +209,24 @@ describe('Base Input', function () {
               this.instance.setAttribute(this.type, 'maxlength', false);
 
               expect(this.instance.element.setAttribute).to.not.be.called;
+            });
+          });
+
+          describe('maskValue', function () {
+            it('returns masked version of the value', function () {
+              var masked = this.instance.maskValue('abc 1234-asdf /asdf');
+
+              expect(masked).to.equal('••• ••••-•••• /••••');
+            });
+
+            it('can use custom mask-deliminator', function () {
+              var masked;
+
+              this.instance.maskCharacter = ':)';
+
+              masked = this.instance.maskValue('abc 1234-asdf /asdf');
+
+              expect(masked).to.equal(':):):) :):):):)-:):):):) /:):):):)');
             });
           });
 

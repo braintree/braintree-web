@@ -2,6 +2,7 @@
 
 var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
 var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
+var browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
 var PostalCodeInput = require('../../../../../src/hosted-fields/internal/components/postal-code-input').PostalCodeInput;
 var RestrictedInput = require('restricted-input');
 
@@ -55,6 +56,21 @@ describe('Postal Code Input', function () {
         type: 'postalCode'
       });
       expect(this.input.element.getAttribute('type')).to.equal('tel');
+    });
+
+    it('removes pattern attribute', function () {
+      var config, input;
+
+      // causes base input to set the pattern property
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+
+      config = helpers.getModelConfig('postalCode');
+      input = new PostalCodeInput({
+        model: new CreditCardForm(config),
+        type: 'postalCode'
+      });
+
+      expect(input.element.getAttribute('pattern')).to.equal(null);
     });
   });
 

@@ -40,7 +40,15 @@ function CVVInput() {
       }, 0) || DEFAULT_MAX_LENGTH;
 
       this.formatter.setPattern(_getPattern(this.maxLength));
-      this.updateModel('value', this.formatter.getUnformattedValue());
+
+      if (this.shouldMask) {
+        this.hiddenMaskedValue = this.hiddenMaskedValue.substring(0, this.maxLength);
+        this.updateModel('value', this.hiddenMaskedValue);
+        this.element.value = this.maskValue(this.hiddenMaskedValue);
+      } else {
+        this.updateModel('value', this.formatter.getUnformattedValue());
+      }
+
       this.render();
     }.bind(this));
   }

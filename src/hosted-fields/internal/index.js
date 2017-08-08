@@ -296,6 +296,7 @@ function createTokenizationHandler(client, cardForm) {
         result.details = clientApiCreditCard.details;
         result.description = clientApiCreditCard.description;
         result.type = clientApiCreditCard.type;
+        result.binData = clientApiCreditCard.binData;
       }
 
       analytics.sendEvent(client, 'custom.hosted-fields.tokenization.succeeded');

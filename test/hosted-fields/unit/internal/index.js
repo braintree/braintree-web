@@ -135,13 +135,21 @@ describe('internal', function () {
       var self = this;
       var requestStub = this.sandbox.stub();
 
+      this.fakeNonce = 'nonce homeboy';
+      this.fakeDetails = 'yas';
+      this.fakeType = 'YASS';
+      this.fakeDescription = 'fake description';
+      this.fakeOptions = {foo: 'bar'};
+      this.binData = {commercial: 'Yes'};
+
       requestStub.withArgs(this.sandbox.match({api: 'clientApi'})).resolves({
         creditCards: [{
           nonce: self.fakeNonce,
           details: self.fakeDetails,
           description: self.fakeDescription,
           type: self.fakeType,
-          foo: 'bar'
+          foo: 'bar',
+          binData: self.binData
         }]
       });
       requestStub.withArgs(this.sandbox.match({api: 'braintreeApi'})).resolves({
@@ -168,11 +176,6 @@ describe('internal', function () {
         isEmpty: false,
         someOtherStuff: null
       };
-      this.fakeNonce = 'nonce homeboy';
-      this.fakeDetails = 'yas';
-      this.fakeType = 'YASS';
-      this.fakeDescription = 'fake description';
-      this.fakeOptions = {foo: 'bar'};
 
       this.configuration = fake.configuration();
       delete this.configuration.gatewayConfiguration.braintreeApi;
@@ -320,7 +323,8 @@ describe('internal', function () {
           nonce: this.fakeNonce,
           details: this.fakeDetails,
           description: this.fakeDescription,
-          type: this.fakeType
+          type: this.fakeType,
+          binData: this.binData
         }]);
 
         done();
@@ -813,7 +817,8 @@ describe('internal', function () {
             lastTwo: '11'
           },
           description: 'ending in 69',
-          type: 'CreditCard'
+          type: 'CreditCard',
+          binData: {commercial: 'Yes'}
         }]
       });
       this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).resolves({
@@ -839,7 +844,8 @@ describe('internal', function () {
             lastTwo: '11'
           },
           description: 'ending in 69',
-          type: 'CreditCard'
+          type: 'CreditCard',
+          binData: {commercial: 'Yes'}
         });
 
         done();
@@ -917,7 +923,8 @@ describe('internal', function () {
                 lastTwo: '11'
               },
               description: 'ending in 69',
-              type: 'CreditCard'
+              type: 'CreditCard',
+              binData: {commercial: 'Yes'}
             }]
           });
         }
@@ -938,7 +945,8 @@ describe('internal', function () {
             lastTwo: '11'
           },
           description: 'ending in 69',
-          type: 'CreditCard'
+          type: 'CreditCard',
+          binData: {commercial: 'Yes'}
         });
 
         done();

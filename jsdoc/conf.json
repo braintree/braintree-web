@@ -2,6 +2,9 @@
   "templates": {
     "default": {
       "includeDate": false
+    },
+    "search": {
+      "apiKey": "1097a5c904574f31dd6d5d174a658739"
     }
   },
   "plugins": ["version-interpolator-plugin", "plugins/markdown"],

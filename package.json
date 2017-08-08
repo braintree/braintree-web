@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.21.1",
+  "version": "3.22.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -47,7 +47,7 @@
     "gzip-size": "3.0.0",
     "is-uuid": "1.0.2",
     "jsdoc": "3.4.0",
-    "jsdoc-template": "braintree/jsdoc-template#2.0.2",
+    "jsdoc-template": "braintree/jsdoc-template#3.1.0",
     "karma": "0.13.22",
     "karma-browserify": "5.0.5",
     "karma-mocha": "1.1.1",

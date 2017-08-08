@@ -81,5 +81,19 @@ describe('CVV Input', function () {
       expect(input.element.getAttribute('maxlength')).to.equal('2');
       expect(input.formatter.setPattern).not.to.be.called;
     });
+
+    it('accounts for masked value if masking is being used', function () {
+      var input = helpers.createInput('cvv', ['number']);
+
+      this.sandbox.stub(input.formatter, 'setPattern');
+
+      input.shouldMask = true;
+      input.hiddenMaskedValue = '1234';
+      input.element.value = input.maskValue(input.hiddenMaskedValue);
+      input.model.set('possibleCardTypes', [{code: {size: 3}}]);
+
+      expect(input.hiddenMaskedValue).to.equal('123');
+      expect(input.element.value).to.equal(input.maskValue(input.hiddenMaskedValue));
+    });
   });
 });
