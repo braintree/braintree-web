@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.22.1
+
+* Security improvements
+* Data Collector
+  * Fix bug where Data Collector with Kount could not be torn down more than once (#314)
+
 ## 3.22.0
 
 * Hosted Fields

@@ -24,6 +24,7 @@ function Kount(options) {
 
   if (previouslyInitializedDeviceData) {
     this.deviceData = previouslyInitializedDeviceData;
+    this._isCached = true;
     return;
   }
 
@@ -48,8 +49,11 @@ Kount.setCachedDeviceData = function (merchantId, data) {
 };
 
 Kount.prototype.teardown = function () {
-  sjcl.random.stopCollectors();
-  this._removeIframe();
+  if (!this._isCached) {
+    sjcl.random.stopCollectors();
+
+    this._removeIframe();
+  }
 };
 
 Kount.prototype._removeIframe = function () {

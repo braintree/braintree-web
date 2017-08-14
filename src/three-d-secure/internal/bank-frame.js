@@ -3,6 +3,7 @@
 var Bus = require('../../lib/bus');
 var isWhitelistedDomain = require('../../lib/is-whitelisted-domain');
 var BraintreeError = require('../../lib/braintree-error');
+var sanitizeUrl = require('@braintree/sanitize-url').sanitizeUrl;
 var errors = require('../shared/errors');
 
 module.exports = function () {
@@ -22,7 +23,7 @@ function handleConfiguration(configuration) {
     throw new BraintreeError(errors.THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN);
   }
 
-  form.action = configuration.acsUrl;
+  form.action = sanitizeUrl(configuration.acsUrl);
   form.method = 'POST';
 
   for (field in fields) {

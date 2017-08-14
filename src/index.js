@@ -50,6 +50,7 @@ var threeDSecure = require('./three-d-secure');
 var usBankAccount = require('./us-bank-account');
 var visaCheckout = require('./visa-checkout');
 var masterpass = require('./masterpass');
+var venmo = require('./venmo');
 var VERSION = process.env.npm_package_version;
 
 module.exports = {
@@ -79,6 +80,8 @@ module.exports = {
   vaultManager: vaultManager,
   /** @type {module:braintree-web/masterpass} */
   masterpass: masterpass,
+  /** @type {module:braintree-web/venmo} */
+  venmo: venmo,
   /** @type {module:braintree-web/ideal} */
   ideal: ideal,
   /**

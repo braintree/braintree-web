@@ -12,5 +12,6 @@
   "unionpay",
   "us-bank-account",
   "vault-manager",
+  "venmo",
   "visa-checkout"
 ]

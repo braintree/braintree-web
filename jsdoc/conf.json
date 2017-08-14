@@ -9,6 +9,6 @@
   },
   "plugins": ["version-interpolator-plugin", "plugins/markdown"],
   "source": {
-    "excludePattern": "(us-bank-account|ideal)"
+    "excludePattern": "(us-bank-account|ideal|venmo)"
   }
 }

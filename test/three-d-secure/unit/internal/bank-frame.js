@@ -17,9 +17,14 @@ describe('initializeBankFrame', function () {
   });
 
   afterEach(function () {
+    var form = document.body.querySelector('form');
+
     window.name = this.oldWindowName;
 
     document.body.removeChild(this.svg);
+    if (form) {
+      document.body.removeChild(form);
+    }
 
     HTMLFormElement.prototype.submit = this.oldFormSubmit;
   });
@@ -88,6 +93,29 @@ describe('initializeBankFrame', function () {
 
     handleConfiguration({
       acsUrl: 'http://example.com/acs',
+      pareq: 'the pareq',
+      md: 'the md',
+      termUrl: 'https://braintreepayments.com/some/url'
+    });
+  });
+
+  it('sanitizes acs url', function (done) {
+    var handleConfiguration;
+
+    initializeBankFrame();
+
+    handleConfiguration = Bus.prototype.emit.getCall(0).args[1];
+
+    HTMLFormElement.prototype.submit = function () {
+      var form = document.body.querySelector('form');
+
+      expect(form.getAttribute('action')).to.equal('about:blank');
+
+      done();
+    };
+
+    handleConfiguration({
+      acsUrl: decodeURIComponent('jaVa%0ascript:alert(document.domain)'), // eslint-disable-line no-script-url
       pareq: 'the pareq',
       md: 'the md',
       termUrl: 'https://braintreepayments.com/some/url'

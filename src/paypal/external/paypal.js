@@ -114,7 +114,7 @@ PayPal.prototype._initialize = function () {
  * * `authorize` - Submits the transaction for authorization but not settlement.
  * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
- * @param {boolean} [options.offerCredit=false] Offers the customer PayPal Credit if they qualify.
+ * @param {boolean} [options.offerCredit=false] Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.
  * @param {string} [options.useraction]
  * Changes the call-to-action in the PayPal flow. By default the final button will show the localized
  * word for "Continue" and implies that the final amount billed is not yet known.

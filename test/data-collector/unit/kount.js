@@ -189,6 +189,16 @@ describe('teardown', function () {
     expect(sjcl.random.stopCollectors).to.be.called;
     expect(Kount.prototype._removeIframe).to.be.called;
   });
+
+  it('noops teardown if device data was cached', function () {
+    this.sandbox.spy(sjcl.random, 'stopCollectors');
+
+    expect(function () {
+      Kount.prototype.teardown.call({_isCached: true});
+    }).to.not.throw();
+
+    expect(sjcl.random.stopCollectors).to.not.be.called;
+  });
 });
 
 describe('_removeIframe', function () {

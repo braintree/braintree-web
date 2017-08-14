@@ -30,6 +30,11 @@ function configuration() {
         assetsUrl: 'https://example.com:9292',
         displayName: 'Name'
       },
+      payWithVenmo: {
+        accessToken: 'pwv-access-token',
+        environment: 'sandbox',
+        merchantId: 'pwv-merchant-id'
+      },
       analytics: {
         url: 'https://braintreegateway.com/analytics'
       },
