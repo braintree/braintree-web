@@ -10,6 +10,8 @@
     * [Desktop](#browser-support-desktop)
     * [Mobile](#browser-support-mobile)
     * [Webviews](#browser-support-webviews)
+* [Teardown](#teardown)
+* [Content Security Policy](#content-security-policy)
 
 <span class="rule"></span>
 
@@ -127,6 +129,7 @@ hostedFieldsInstance.teardown(function (err) {
 
 If you happen to call this method while the instance's `teardown` is in progress, you'll receive an error. Once completed, calling any methods on the instance will throw an error.
 
+<a id="content-security-policy"></a>
 ## Using `braintree-web` with a Content Security Policy
 
 [Content Security Policy](http://www.html5rocks.com/en/tutorials/security/content-security-policy/) is a feature of web browsers that mitigates cross-site scripting and other attacks. By limiting the origins of resources that may be loaded on your page, you can maintain tighter control over any potentially malicious code. We recommend considering the implementation of a CSP when available.
