@@ -113,7 +113,14 @@ BaseInput.prototype.addDOMEventListeners = function () {
 };
 
 BaseInput.prototype.maskValue = function (value) {
-  return value.replace(/[^\s\/\-]/g, this.maskCharacter);
+  value = value || this.element.value;
+
+  this.hiddenMaskedValue = value;
+  this.element.value = value.replace(/[^\s\/\-]/g, this.maskCharacter);
+};
+
+BaseInput.prototype.unmaskValue = function () {
+  this.element.value = this.hiddenMaskedValue;
 };
 
 BaseInput.prototype._addDOMKeypressListeners = function () {
@@ -158,15 +165,14 @@ BaseInput.prototype._addDOMFocusListeners = function () {
 
   element.addEventListener('focus', function () {
     if (this.shouldMask) {
-      element.value = this.hiddenMaskedValue;
+      this.unmaskValue();
     }
     this.updateModel('isFocused', true);
   }.bind(this), false);
 
   element.addEventListener('blur', function () {
     if (this.shouldMask) {
-      this.hiddenMaskedValue = element.value;
-      element.value = this.maskValue(this.hiddenMaskedValue);
+      this.maskValue();
     }
     this.updateModel('isFocused', false);
   }.bind(this), false);

@@ -93,7 +93,7 @@ describe('CVV Input', function () {
       input.model.set('possibleCardTypes', [{code: {size: 3}}]);
 
       expect(input.hiddenMaskedValue).to.equal('123');
-      expect(input.element.value).to.equal(input.maskValue(input.hiddenMaskedValue));
+      expect(input.element.value).to.equal('•••');
     });
   });
 });

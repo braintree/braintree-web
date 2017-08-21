@@ -61,7 +61,7 @@ Ideal.prototype._initialize = function () {
       frameService.create({
         name: 'braintreeideallanding',
         height: 550,
-        width: 500,
+        width: 960,
         dispatchFrameUrl: self._assetsUrl + '/html/dispatch-frame' + useMin(self._isDebug) + '.html',
         openFrameUrl: self._assetsUrl + '/html/ideal-issuers-frame' + useMin(self._isDebug) + '.html',
         state: {bankData: response.data}

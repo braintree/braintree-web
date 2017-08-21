@@ -42,9 +42,8 @@ function CVVInput() {
       this.formatter.setPattern(_getPattern(this.maxLength));
 
       if (this.shouldMask) {
-        this.hiddenMaskedValue = this.hiddenMaskedValue.substring(0, this.maxLength);
+        this.maskValue(this.hiddenMaskedValue.substring(0, this.maxLength));
         this.updateModel('value', this.hiddenMaskedValue);
-        this.element.value = this.maskValue(this.hiddenMaskedValue);
       } else {
         this.updateModel('value', this.formatter.getUnformattedValue());
       }

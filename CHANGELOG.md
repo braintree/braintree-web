@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+## 3.22.2
+
+* Update sanitize-url to version 2.0.0
+* 3D Secure
+  * Add `liabilityShifted` and `liabilityShiftPossible` to the top level when 3DS lookup fails to open a 3DS iframe.
+* Hosted Fields
+  * Fix issue where inputs would not mask correctly when autofilled
+  * Update credit-card-type to version 5.0.4
+  * Fix issue where placeholder would not load in IE9
+
 ## 3.22.1
 
 * Security improvements

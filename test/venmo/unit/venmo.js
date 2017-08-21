@@ -89,6 +89,16 @@ describe('Venmo', function () {
         });
       });
 
+      it('contains user agent in query params', function () {
+        var params;
+        var userAgent = window.navigator.userAgent;
+
+        return this.venmo._initialize().then(function (venmoInstance) {
+          params = querystring.parse(venmoInstance._url);
+          expect(params.ua).to.equal(userAgent);
+        });
+      });
+
       it('contains correct Braintree configuration options in query params', function () {
         /* eslint-disable camelcase */
         var params;

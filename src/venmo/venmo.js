@@ -53,6 +53,7 @@ Venmo.prototype._initialize = function () {
   params['x-success'] = currentUrl + '#venmoSuccess=1';
   params['x-cancel'] = currentUrl + '#venmoCancel=1';
   params['x-error'] = currentUrl + '#venmoError=1';
+  params.ua = global.navigator.userAgent;
   /* eslint-disable camelcase */
   params.braintree_merchant_id = venmoConfiguration.merchantId;
   params.braintree_access_token = venmoConfiguration.accessToken;

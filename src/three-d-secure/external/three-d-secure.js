@@ -209,6 +209,8 @@ ThreeDSecure.prototype._handleLookupResponse = function (options) {
   } else {
     this._verifyCardCallback(null, {
       nonce: lookupResponse.paymentMethod.nonce,
+      liabilityShiftPossible: lookupResponse.threeDSecureInfo.liabilityShiftPossible,
+      liabilityShifted: lookupResponse.threeDSecureInfo.liabilityShifted,
       verificationDetails: lookupResponse.threeDSecureInfo
     });
   }

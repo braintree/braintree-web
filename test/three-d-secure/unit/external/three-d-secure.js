@@ -303,6 +303,29 @@ describe('ThreeDSecure', function () {
     });
 
     context('when no authentication is required', function () {
+      it('retains verifiaction details object for backwards compatibility', function (done) {
+        // when porting this code from v2, we accdientally put the 3ds info under verifiaction details
+        // instead of at the top level
+        var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
+
+        this.client.request.resolves({
+          paymentMethod: {nonce: 'upgraded-nonce'},
+          threeDSecureInfo: threeDSecureInfo
+        });
+
+        this.instance.verifyCard({
+          nonce: 'nonce-that-does-not-require-authentication',
+          amount: 100,
+          addFrame: noop,
+          removeFrame: noop
+        }, function (err, data) {
+          expect(err).not.to.exist;
+
+          expect(data.verificationDetails).to.equal(threeDSecureInfo);
+          done();
+        });
+      });
+
       it('calls the callback with a nonce and verification details', function (done) {
         var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
 
@@ -319,7 +342,8 @@ describe('ThreeDSecure', function () {
         }, function (err, data) {
           expect(err).not.to.exist;
           expect(data.nonce).to.equal('upgraded-nonce');
-          expect(data.verificationDetails).to.equal(threeDSecureInfo);
+          expect(data.liabilityShiftPossible).to.equal(threeDSecureInfo.liabilityShiftPossible);
+          expect(data.liabilityShifted).to.equal(threeDSecureInfo.liabilityShifted);
 
           done();
         });

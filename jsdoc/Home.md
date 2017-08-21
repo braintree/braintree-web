@@ -113,7 +113,7 @@ Additionally, `braintree-web` is neither tested nor developed for hybrid runtime
 <a id="teardown"></a>
 ## Teardown
 
-In certain scenarios you may need to remove your `braintree-web` integration. This is common in single page applications, modal flows, and other situations where state management is a key factor. Any module returned from a `braintree.component.create` call will include a `teardown` function.
+In certain scenarios you may need to remove your `braintree-web` integration. This is common in single page applications, modal flows, and other situations where state management is a key factor. Any module returned from a `braintree.component.create` call that can be torn down will include a `teardown` function.
 
 Invoking `teardown` will clean up any DOM nodes, event handlers, popups and/or iframes that have been created by the integration. Additionally, `teardown` accepts a callback which you can use to know when it is safe to proceed.
 

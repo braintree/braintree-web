@@ -1093,6 +1093,7 @@ describe('internal', function () {
     beforeEach(function () {
       this.fieldComponent = {
         input: {
+          maskValue: this.sandbox.stub(),
           updateModel: this.sandbox.stub(),
           element: {
             value: '',
@@ -1160,6 +1161,24 @@ describe('internal', function () {
       expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
       expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '12 / 2020');
       expect(this.fieldComponent.input.element.value).to.equal('12 / 2020');
+    });
+
+    it('masks input if masking is turned on', function () {
+      var handler = internal.autofillHandler(this.fieldComponent);
+
+      this.fieldComponent.input.shouldMask = true;
+
+      getFrameName.getFrameName.returns('expirationDate');
+
+      handler({
+        month: '12',
+        year: '2020'
+      });
+
+      expect(getFrameName.getFrameName).to.be.called;
+      expect(this.fieldComponent.input.updateModel).to.be.calledOnce;
+      expect(this.fieldComponent.input.updateModel).to.be.calledWith('value', '12 / 2020');
+      expect(this.fieldComponent.input.maskValue).to.be.calledWith('12 / 2020');
     });
 
     it('updates input with month if frame is expiration month', function () {

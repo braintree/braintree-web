@@ -56,8 +56,7 @@ gulp.task('build:hosted-fields:frame:js:polyfills-ie9', function (done) {
   browserify({
     main: BASE_PATH + '/internal/polyfills/ie9.js',
     out: 'hosted-fields-internal-polyfills-ie9.js',
-    dist: DIST_PATH + '/js',
-    uglify: false
+    dist: DIST_PATH + '/js'
   }, done);
 });
 

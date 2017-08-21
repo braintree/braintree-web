@@ -145,7 +145,13 @@ function autofillHandler(fieldComponent) {
 
     if (value) {
       fieldComponent.input.updateModel('value', value);
-      fieldComponent.input.element.value = value;
+
+      if (fieldComponent.input.shouldMask) {
+        fieldComponent.input.maskValue(value);
+      } else {
+        fieldComponent.input.element.value = value;
+      }
+
       resetPlaceholder(fieldComponent.input.element);
     }
   };

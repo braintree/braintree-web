@@ -63,7 +63,7 @@ function setupBankList(config) {
     }
   }
 
-  bankListNode.className = 'container--ideal container--ideal--mobile';
+  bankListNode.className = 'container--ideal';
 
   bankData.forEach(function (banksByCountry) {
     var countryNode = document.createElement('div');
@@ -74,7 +74,7 @@ function setupBankList(config) {
       countryNode.innerHTML = '<h2 class="list--heading--ideal list--heading--ideal--mobile">' + sanitizeHtml(banksByCountry.localized_country_names[0]) + ':</h2>';
     }
 
-    issuersList.className = 'list list--ideal list--ideal--mobile';
+    issuersList.className = 'list list--ideal';
     countryNode.appendChild(issuersList);
 
     issuers.forEach(function (issuer) {

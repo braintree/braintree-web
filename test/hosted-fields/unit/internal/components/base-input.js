@@ -213,20 +213,29 @@ describe('Base Input', function () {
           });
 
           describe('maskValue', function () {
-            it('returns masked version of the value', function () {
-              var masked = this.instance.maskValue('abc 1234-asdf /asdf');
+            it('masks element value', function () {
+              this.instance.maskValue('abc 1234-asdf /asdf');
 
-              expect(masked).to.equal('••• ••••-•••• /••••');
+              expect(this.instance.element.value).to.equal('••• ••••-•••• /••••');
             });
 
             it('can use custom mask-deliminator', function () {
-              var masked;
-
               this.instance.maskCharacter = ':)';
 
-              masked = this.instance.maskValue('abc 1234-asdf /asdf');
+              this.instance.maskValue('abc 1234-asdf /asdf');
 
-              expect(masked).to.equal(':):):) :):):):)-:):):):) /:):):):)');
+              expect(this.instance.element.value).to.equal(':):):) :):):):)-:):):):) /:):):):)');
+            });
+          });
+
+          describe('unmaskValue', function () {
+            it('sets elemnt value to hiddenMaskedValue', function () {
+              this.instance.hiddenMaskedValue = 'abc';
+              this.instance.element.value = '123';
+
+              this.instance.unmaskValue();
+
+              expect(this.instance.element.value).to.equal('abc');
             });
           });
 

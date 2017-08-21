@@ -110,7 +110,7 @@ describe('iDEAL', function () {
         expect(frameService.create).to.be.calledWith({
           name: 'braintreeideallanding',
           height: 550,
-          width: 500,
+          width: 960,
           dispatchFrameUrl: 'https://checkout.paypal.com/web/' + VERSION + '/html/dispatch-frame.min.html',
           openFrameUrl: 'https://checkout.paypal.com/web/' + VERSION + '/html/ideal-issuers-frame.min.html',
           state: {bankData: bankData}
