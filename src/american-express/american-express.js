@@ -21,13 +21,14 @@ function AmericanExpress(options) {
  * @public
  * @param {object} options Request options
  * @param {string} options.nonce An existing Braintree nonce.
+ * @param {string} options.currencyIsoCode The currency to convert the points value to (e.g. USD).
  * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data. If no callback is provided, `getRewardsBalance` returns a promise that resolves with the server data.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
  * americanExpress.create({client: clientInstance}, function (createErr, americanExpressInstance) {
- *   var options = {nonce: existingBraintreeNonce};
+ *   var options = {nonce: existingBraintreeNonce, currencyIsoCode: currencyIsoCode};
  *   americanExpressInstance.getRewardsBalance(options, function (getErr, payload) {
  *     if (getErr || payload.error) {
  *       // Handle error
