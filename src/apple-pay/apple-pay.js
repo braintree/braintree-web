@@ -94,7 +94,7 @@ function ApplePay(options) {
  *     }
  *   });
  *
- *   var session = new ApplePaySession(1, paymentRequest);
+ *   var session = new ApplePaySession(2, paymentRequest);
  *
  *   // ...
  */
@@ -136,7 +136,7 @@ ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
  *       amount: '19.99'
  *     }
  *   });
- *   var session = new ApplePaySession(1, paymentRequest);
+ *   var session = new ApplePaySession(2, paymentRequest);
  *
  *   session.onvalidatemerchant = function (event) {
  *     applePayInstance.performValidation({
@@ -229,7 +229,7 @@ ApplePay.prototype.performValidation = function (options) {
  *       amount: '19.99'
  *     }
  *   });
- *   var session = new ApplePaySession(1, paymentRequest);
+ *   var session = new ApplePaySession(2, paymentRequest);
  *
  *   session.onpaymentauthorized = function (event) {
  *     applePayInstance.tokenize({

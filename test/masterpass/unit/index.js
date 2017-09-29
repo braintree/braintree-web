@@ -1,5 +1,6 @@
 'use strict';
 
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var create = require('../../../src/masterpass').create;
 var isSupported = require('../../../src/masterpass').isSupported;
 var browserDetection = require('../../../src/masterpass/shared/browser-detection');
@@ -7,7 +8,6 @@ var Masterpass = require('../../../src/masterpass/external/masterpass');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var fake = require('../../helpers/fake');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var version = require('../../../package.json').version;
 
 describe('masterpass', function () {
   beforeEach(function () {
@@ -20,32 +20,26 @@ describe('masterpass', function () {
       client: this.fakeClient
     });
     this.sandbox.stub(Masterpass.prototype, '_initialize').resolves(this.masterpassInstance);
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
   });
 
   describe('create', function () {
+    it('verifies with basicComponentVerification', function (done) {
+      var client = this.fakeClient;
+
+      create({
+        client: client
+      }, function () {
+        expect(basicComponentVerification.verify).to.be.calledOnce;
+        expect(basicComponentVerification.verify).to.be.calledWith({
+          name: 'Masterpass',
+          client: client
+        });
+        done();
+      });
+    });
+
     context('with promises', function () {
-      it('rejects with an error when called without a client', function () {
-        return create({}).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-          expect(err.message).to.equal('options.client is required when instantiating Masterpass.');
-        });
-      });
-
-      it('rejects with an error when called with a mismatched version', function () {
-        var client = fake.client({
-          version: '1.2.3'
-        });
-
-        return create({client: client}).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-          expect(err.message).to.equal('Client (version 1.2.3) and Masterpass (version ' + version + ') components must be from the same SDK version.');
-        });
-      });
-
       it('rejects with an error when merchant is not enabled for masterpass', function () {
         delete this.configuration.gatewayConfiguration.masterpass;
 
@@ -94,36 +88,6 @@ describe('masterpass', function () {
     });
 
     context('with callbacks', function () {
-      it('calls callback with an error when called without a client', function (done) {
-        create({}, function (err, masterpass) {
-          expect(masterpass).not.to.exist;
-
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-          expect(err.message).to.equal('options.client is required when instantiating Masterpass.');
-
-          done();
-        });
-      });
-
-      it('throws an error when called with a mismatched version', function (done) {
-        var client = fake.client({
-          version: '1.2.3'
-        });
-
-        create({client: client}, function (err, masterpass) {
-          expect(masterpass).not.to.exist;
-
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-          expect(err.message).to.equal('Client (version 1.2.3) and Masterpass (version ' + version + ') components must be from the same SDK version.');
-
-          done();
-        });
-      });
-
       it('passes back an error when merchant is not enabled for masterpass', function (done) {
         delete this.configuration.gatewayConfiguration.masterpass;
 

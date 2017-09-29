@@ -130,6 +130,35 @@ describe('VaultManager', function () {
       });
     });
 
+    it('includes binData if payload includes a binData', function () {
+      this.fakePaymentMethod.type = 'CreditCard';
+      this.fakePaymentMethod.binData = {
+        some: 'data'
+      };
+      this.client.request.resolves({
+        paymentMethods: [
+          this.fakePaymentMethod, {
+            nonce: 'payment-method-without-bin-data',
+            'default': true,
+            details: {},
+            type: 'Type'
+          }, {
+            nonce: 'payment-method-with-bin-data',
+            'default': false,
+            details: {},
+            type: 'BinData',
+            binData: {more: 'data'}
+          }
+        ]
+      });
+
+      return this.vaultManager.fetchPaymentMethods().then(function (paymentMethods) {
+        expect(paymentMethods[0].binData).to.deep.equal({some: 'data'});
+        expect(paymentMethods[1].binData).to.not.exist;
+        expect(paymentMethods[2].binData).to.deep.equal({more: 'data'});
+      });
+    });
+
     it('sends back error if request fails', function () {
       var fakeError = new Error('error');
 

@@ -3,10 +3,10 @@
 
 var ThreeDSecure = require('./external/three-d-secure');
 var isHTTPS = require('../lib/is-https').isHTTPS;
+var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var errors = require('./shared/errors');
-var sharedErrors = require('../lib/errors');
 var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -24,42 +24,31 @@ var wrapPromise = require('@braintree/wrap-promise');
  * }, callback);
  */
 function create(options) {
-  var config, error, clientVersion, isProduction;
+  return basicComponentVerification.verify({
+    name: '3D Secure',
+    client: options.client
+  }).then(function () {
+    var error, isProduction;
+    var config = options.client.getConfiguration();
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating 3D Secure.'
-    }));
-  }
+    if (!config.gatewayConfiguration.threeDSecureEnabled) {
+      error = errors.THREEDS_NOT_ENABLED;
+    }
 
-  config = options.client.getConfiguration();
-  clientVersion = options.client.getVersion();
+    isProduction = config.gatewayConfiguration.environment === 'production';
 
-  if (!config.gatewayConfiguration.threeDSecureEnabled) {
-    error = errors.THREEDS_NOT_ENABLED;
-  } else if (clientVersion !== VERSION) {
-    error = {
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and 3D Secure (version ' + VERSION + ') components must be from the same SDK version.'
-    };
-  }
+    if (isProduction && !isHTTPS()) {
+      error = errors.THREEDS_HTTPS_REQUIRED;
+    }
 
-  isProduction = config.gatewayConfiguration.environment === 'production';
+    if (error) {
+      return Promise.reject(new BraintreeError(error));
+    }
 
-  if (isProduction && !isHTTPS()) {
-    error = errors.THREEDS_HTTPS_REQUIRED;
-  }
+    analytics.sendEvent(options.client, 'threedsecure.initialized');
 
-  if (error) {
-    return Promise.reject(new BraintreeError(error));
-  }
-
-  analytics.sendEvent(options.client, 'threedsecure.initialized');
-
-  return Promise.resolve(new ThreeDSecure(options));
+    return new ThreeDSecure(options);
+  });
 }
 
 module.exports = {

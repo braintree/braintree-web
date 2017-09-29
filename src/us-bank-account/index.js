@@ -4,6 +4,7 @@
  * @description This module is for accepting payments of US bank accounts.
  */
 
+var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
 var errors = require('./errors');
 var USBankAccount = require('./us-bank-account');
@@ -21,36 +22,24 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var clientVersion, braintreeApi, usBankAccount;
+  return basicComponentVerification.verify({
+    name: 'US Bank Account',
+    client: options.client
+  }).then(function () {
+    var usBankAccount;
+    var braintreeApi = options.client.getConfiguration().gatewayConfiguration.braintreeApi;
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating US Bank Account.'
-    }));
-  }
+    if (!braintreeApi) {
+      return Promise.reject(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
+    }
 
-  clientVersion = options.client.getVersion();
-  if (clientVersion !== VERSION) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and US Bank Account (version ' + VERSION + ') components must be from the same SDK version.'
-    }));
-  }
+    usBankAccount = options.client.getConfiguration().gatewayConfiguration.usBankAccount;
+    if (!usBankAccount) {
+      return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_NOT_ENABLED));
+    }
 
-  braintreeApi = options.client.getConfiguration().gatewayConfiguration.braintreeApi;
-  if (!braintreeApi) {
-    return Promise.reject(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
-  }
-
-  usBankAccount = options.client.getConfiguration().gatewayConfiguration.usBankAccount;
-  if (!usBankAccount) {
-    return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_NOT_ENABLED));
-  }
-
-  return Promise.resolve(new USBankAccount(options));
+    return new USBankAccount(options);
+  });
 }
 
 module.exports = {

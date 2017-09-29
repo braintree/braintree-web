@@ -1,10 +1,10 @@
 'use strict';
 
 var analytics = require('../../../src/lib/analytics');
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var create = require('../../../src/venmo').create;
 var fake = require('../../helpers/fake');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var version = require('../../../package.json').version;
 var BraintreeError = require('../../../src/lib/braintree-error');
 var Venmo = require('../../../src/venmo/venmo');
 var Promise = require('../../../src/lib/promise');
@@ -16,6 +16,22 @@ describe('venmo.create', function () {
       configuration: this.configuration
     });
     this.sandbox.stub(analytics, 'sendEvent');
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+  });
+
+  it('verifies with basicComponentVerification', function (done) {
+    var client = this.client;
+
+    create({
+      client: client
+    }, function () {
+      expect(basicComponentVerification.verify).to.be.calledOnce;
+      expect(basicComponentVerification.verify).to.be.calledWith({
+        name: 'Venmo',
+        client: client
+      });
+      done();
+    });
   });
 
   context('with promises', function () {
@@ -36,28 +52,6 @@ describe('venmo.create', function () {
 
       return create({client: this.client}).then(function () {
         expect(Venmo.prototype._initialize).to.be.calledOnce;
-      });
-    });
-
-    it('errors out if no client given', function () {
-      return create({}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-        expect(err.message).to.equal('options.client is required when instantiating Venmo.');
-      });
-    });
-
-    it('errors out if client version does not match', function () {
-      var client = fake.client({
-        version: '1.2.3'
-      });
-
-      return create({client: client}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-        expect(err.message).to.equal('Client (version 1.2.3) and Venmo (version ' + version + ') components must be from the same SDK version.');
       });
     });
 
@@ -100,32 +94,6 @@ describe('venmo.create', function () {
 
       create({client: this.client}, function () {
         expect(Venmo.prototype._initialize).to.be.calledOnce;
-        done();
-      });
-    });
-
-    it('errors out if no client given', function (done) {
-      create({}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-        expect(err.message).to.equal('options.client is required when instantiating Venmo.');
-        expect(thingy).not.to.exist;
-        done();
-      });
-    });
-
-    it('errors out if client version does not match', function (done) {
-      var client = fake.client({
-        version: '1.2.3'
-      });
-
-      create({client: client}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-        expect(err.message).to.equal('Client (version 1.2.3) and Venmo (version ' + version + ') components must be from the same SDK version.');
-        expect(thingy).not.to.exist;
         done();
       });
     });

@@ -49,7 +49,8 @@ describe('ThreeDSecure', function () {
       });
 
       this.client.request.resolves({
-        paymentMethod: {}
+        paymentMethod: {},
+        threeDSecureInfo: {}
       });
     });
 
@@ -399,6 +400,69 @@ describe('ThreeDSecure', function () {
             expect(iframe.width).to.equal('400');
             expect(iframe.height).to.equal('400');
             expect(url.host).to.equal('example.com');
+
+            done();
+          },
+          removeFrame: noop
+        }, function () {
+          done(new Error('This should never be called'));
+        });
+      });
+
+      it('defaults to showing loader on bank frame', function (done) {
+        var threeDSecure = new ThreeDSecure({
+          client: this.client
+        });
+
+        this.client.request.resolves({
+          paymentMethod: {},
+          lookup: {
+            acsUrl: 'http://example.com/acs',
+            pareq: 'pareq',
+            termUrl: 'http://example.com/term',
+            md: 'md'
+          }
+        });
+
+        threeDSecure.verifyCard({
+          nonce: 'abc123',
+          amount: 100,
+          addFrame: function (err, iframe) {
+            var url = parseUrl(iframe.src);
+
+            expect(url.search).to.include('showLoader=true');
+
+            done();
+          },
+          removeFrame: noop
+        }, function () {
+          done(new Error('This should never be called'));
+        });
+      });
+
+      it('can opt out of loader', function (done) {
+        var threeDSecure = new ThreeDSecure({
+          client: this.client
+        });
+
+        this.client.request.resolves({
+          paymentMethod: {},
+          lookup: {
+            acsUrl: 'http://example.com/acs',
+            pareq: 'pareq',
+            termUrl: 'http://example.com/term',
+            md: 'md'
+          }
+        });
+
+        threeDSecure.verifyCard({
+          showLoader: false,
+          nonce: 'abc123',
+          amount: 100,
+          addFrame: function (err, iframe) {
+            var url = parseUrl(iframe.src);
+
+            expect(url.search).to.include('showLoader=false');
 
             done();
           },

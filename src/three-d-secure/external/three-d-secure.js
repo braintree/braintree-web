@@ -65,6 +65,7 @@ function ThreeDSecure(options) {
  * @param {number} options.amount The amount of the transaction in the current merchant account's currency. For example, if you are running a transaction of $123.45 US dollars, `amount` would be 123.45.
  * @param {callback} options.addFrame This {@link ThreeDSecure~addFrameCallback|addFrameCallback} will be called when the bank frame needs to be added to your page.
  * @param {callback} options.removeFrame This {@link ThreeDSecure~removeFrameCallback|removeFrameCallback} will be called when the bank frame needs to be removed from your page.
+ * @param {boolean} [options.showLoader=true] Whether to show the loader icon while the bank frame is loading.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If no callback is provided, it will return a promise that resolves {@link ThreeDSecure~verifyPayload|verifyPayload}.
 
  * @returns {Promise|void} Returns a promise if no callback is provided.
@@ -104,7 +105,7 @@ function ThreeDSecure(options) {
  * });
  */
 ThreeDSecure.prototype.verifyCard = function (options) {
-  var url, addFrame, removeFrame, error, errorOption;
+  var url, showLoader, addFrame, removeFrame, error, errorOption;
   var self = this;
 
   options = options || {};
@@ -133,6 +134,8 @@ ThreeDSecure.prototype.verifyCard = function (options) {
     return Promise.reject(new BraintreeError(error));
   }
 
+  showLoader = options.showLoader !== false;
+
   this._verifyCardInProgress = true;
 
   addFrame = deferred(options.addFrame);
@@ -159,6 +162,7 @@ ThreeDSecure.prototype.verifyCard = function (options) {
       };
 
       self._handleLookupResponse({
+        showLoader: showLoader,
         lookupResponse: response,
         addFrame: addFrame,
         removeFrame: removeFrame
@@ -203,6 +207,7 @@ ThreeDSecure.prototype._handleLookupResponse = function (options) {
 
   if (lookupResponse.lookup && lookupResponse.lookup.acsUrl && lookupResponse.lookup.acsUrl.length > 0) {
     options.addFrame(null, this._createIframe({
+      showLoader: options.showLoader,
       response: lookupResponse.lookup,
       removeFrame: options.removeFrame
     }));
@@ -246,7 +251,7 @@ ThreeDSecure.prototype._createIframe = function (options) {
     this._handleAuthResponse(data, options);
   }.bind(this));
 
-  url = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-bank-frame' + useMin(this._isDebug) + '.html';
+  url = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-bank-frame' + useMin(this._isDebug) + '.html?showLoader=' + options.showLoader;
 
   this._bankIframe = iFramer({
     src: url,

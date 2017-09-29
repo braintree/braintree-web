@@ -23,10 +23,14 @@ var formatBraintreeApiCardResponse = require('./format-braintree-api-card-respon
 
 var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
 var WHITELISTED_BILLING_ADDRESS_FIELDS = [
+  'company',
   'countryCodeNumeric',
   'countryCodeAlpha2',
   'countryCodeAlpha3',
   'countryName',
+  'extendedAddress',
+  'firstName',
+  'lastName',
   'postalCode',
   'streetAddress'
 ];

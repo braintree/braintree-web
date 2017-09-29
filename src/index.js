@@ -36,54 +36,60 @@
  * @returns {void}
  */
 
+var americanExpress = require('./american-express');
+var applePay = require('./apple-pay');
 var client = require('./client');
+var dataCollector = require('./data-collector');
+var hostedFields = require('./hosted-fields');
+var ideal = require('./ideal');
+var masterpass = require('./masterpass');
+var paymentRequest = require('./payment-request');
 var paypal = require('./paypal');
 var paypalCheckout = require('./paypal-checkout');
-var hostedFields = require('./hosted-fields');
-var dataCollector = require('./data-collector');
-var americanExpress = require('./american-express');
-var unionpay = require('./unionpay');
-var vaultManager = require('./vault-manager');
-var applePay = require('./apple-pay');
-var ideal = require('./ideal');
+var googlePayment = require('./google-payment');
 var threeDSecure = require('./three-d-secure');
+var unionpay = require('./unionpay');
 var usBankAccount = require('./us-bank-account');
-var visaCheckout = require('./visa-checkout');
-var masterpass = require('./masterpass');
+var vaultManager = require('./vault-manager');
 var venmo = require('./venmo');
+var visaCheckout = require('./visa-checkout');
 var VERSION = process.env.npm_package_version;
 
 module.exports = {
+  /** @type {module:braintree-web/american-express} */
+  americanExpress: americanExpress,
+  /** @type {module:braintree-web/apple-pay} */
+  applePay: applePay,
   /** @type {module:braintree-web/client} */
   client: client,
+  /** @type {module:braintree-web/data-collector} */
+  dataCollector: dataCollector,
+  /** @type {module:braintree-web/hosted-fields} */
+  hostedFields: hostedFields,
+  /** @type {module:braintree-web/ideal} */
+  ideal: ideal,
+  /** @type {module:braintree-web/masterpass} */
+  masterpass: masterpass,
+  /** @type {module:braintree-web/google-payment} */
+  googlePayment: googlePayment,
+  /** @type {module:braintree-web/payment-request} */
+  paymentRequest: paymentRequest,
   /** @type {module:braintree-web/paypal} */
   paypal: paypal,
   /** @type {module:braintree-web/paypal-checkout} */
   paypalCheckout: paypalCheckout,
-  /** @type {module:braintree-web/hosted-fields} */
-  hostedFields: hostedFields,
   /** @type {module:braintree-web/three-d-secure} */
   threeDSecure: threeDSecure,
-  /** @type {module:braintree-web/data-collector} */
-  dataCollector: dataCollector,
-  /** @type {module:braintree-web/american-express} */
-  americanExpress: americanExpress,
   /** @type {module:braintree-web/unionpay} */
   unionpay: unionpay,
-  /** @type {module:braintree-web/apple-pay} */
-  applePay: applePay,
   /** @type {module:braintree-web/us-bank-account} */
   usBankAccount: usBankAccount,
-  /** @type {module:braintree-web/visa-checkout} */
-  visaCheckout: visaCheckout,
   /** @type {module:braintree-web/vault-manager} */
   vaultManager: vaultManager,
-  /** @type {module:braintree-web/masterpass} */
-  masterpass: masterpass,
   /** @type {module:braintree-web/venmo} */
   venmo: venmo,
-  /** @type {module:braintree-web/ideal} */
-  ideal: ideal,
+  /** @type {module:braintree-web/visa-checkout} */
+  visaCheckout: visaCheckout,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

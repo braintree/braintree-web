@@ -478,6 +478,122 @@ describe('internal', function () {
         }.bind(this));
       });
 
+      it('tokenizes extended address', function (done) {
+        this.fakeOptions.billingAddress = {
+          extendedAddress: 'Unit 1'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  extended_address: 'Unit 1'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                extended_address: 'Unit 1'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes first name', function (done) {
+        this.fakeOptions.billingAddress = {
+          firstName: 'First'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  first_name: 'First'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                first_name: 'First'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes last name', function (done) {
+        this.fakeOptions.billingAddress = {
+          lastName: 'Last'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  last_name: 'Last'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                last_name: 'Last'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes company', function (done) {
+        this.fakeOptions.billingAddress = {
+          company: 'Company'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  company: 'Company'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                company: 'Company'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
       it('tokenizes country name', function (done) {
         this.fakeOptions.billingAddress = {
           countryName: 'United States'

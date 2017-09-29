@@ -6,10 +6,10 @@
  */
 
 var analytics = require('../lib/analytics');
+var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
 var errors = require('./shared/errors');
 var PayPal = require('./external/paypal');
-var sharedErrors = require('../lib/errors');
 var VERSION = process.env.npm_package_version;
 var wrapPromise = require('@braintree/wrap-promise');
 var Promise = require('../lib/promise');
@@ -70,35 +70,22 @@ var Promise = require('../lib/promise');
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var config, pp, clientVersion;
+  return basicComponentVerification.verify({
+    name: 'PayPal',
+    client: options.client
+  }).then(function () {
+    var pp;
+    var config = options.client.getConfiguration();
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating PayPal.'
-    }));
-  }
+    if (config.gatewayConfiguration.paypalEnabled !== true) {
+      return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
+    }
 
-  config = options.client.getConfiguration();
-  clientVersion = options.client.getVersion();
+    analytics.sendEvent(options.client, 'paypal.initialized');
 
-  if (clientVersion !== VERSION) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and PayPal (version ' + VERSION + ') components must be from the same SDK version.'
-    }));
-  }
-
-  if (config.gatewayConfiguration.paypalEnabled !== true) {
-    return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
-  }
-
-  analytics.sendEvent(options.client, 'paypal.initialized');
-
-  pp = new PayPal(options);
-  return pp._initialize();
+    pp = new PayPal(options);
+    return pp._initialize();
+  });
 }
 
 /**

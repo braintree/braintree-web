@@ -4,12 +4,16 @@
 
 function constructBillingAddress(data) {
   var billingAddress = {
-    postal_code: data.postalCode,
-    street_address: data.streetAddress,
+    company: data.company,
     country_code_numeric: data.countryCodeNumeric,
     country_code_alpha2: data.countryCodeAlpha2,
     country_code_alpha3: data.countryCodeAlpha3,
-    country_name: data.countryName
+    country_name: data.countryName,
+    extended_address: data.extendedAddress,
+    first_name: data.firstName,
+    last_name: data.lastName,
+    postal_code: data.postalCode,
+    street_address: data.streetAddress
   };
 
   Object.keys(billingAddress).forEach(function (key) {

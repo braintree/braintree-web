@@ -2,8 +2,8 @@
 /** @module braintree-web/venmo */
 
 var analytics = require('../lib/analytics');
+var basicComponentVerification = require('../lib/basic-component-verification');
 var errors = require('./shared/errors');
-var sharedErrors = require('../lib/errors');
 var wrapPromise = require('@braintree/wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
 var Venmo = require('./venmo');
@@ -28,36 +28,23 @@ var VERSION = process.env.npm_package_version;
  * @returns {Promise|void} Returns the Venmo instance.
  */
 function create(options) {
-  var configuration, clientVersion, instance;
+  return basicComponentVerification.verify({
+    name: 'Venmo',
+    client: options.client
+  }).then(function () {
+    var instance;
+    var configuration = options.client.getConfiguration();
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating Venmo.'
-    }));
-  }
+    if (!configuration.gatewayConfiguration.payWithVenmo) {
+      return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
+    }
 
-  configuration = options.client.getConfiguration();
-  clientVersion = options.client.getVersion();
+    instance = new Venmo(options);
 
-  if (clientVersion !== VERSION) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and Venmo (version ' + VERSION + ') components must be from the same SDK version.'
-    }));
-  }
+    analytics.sendEvent(options.client, 'venmo.initialized');
 
-  if (!configuration.gatewayConfiguration.payWithVenmo) {
-    return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
-  }
-
-  instance = new Venmo(options);
-
-  analytics.sendEvent(options.client, 'venmo.initialized');
-
-  return instance._initialize();
+    return instance._initialize();
+  });
 }
 
 module.exports = {

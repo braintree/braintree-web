@@ -1,11 +1,11 @@
 'use strict';
 
 var Promise = require('../../../src/lib/promise');
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var create = require('../../../src/apple-pay').create;
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
-var version = require('../../../package.json').version;
 
 describe('applePay.create', function () {
   beforeEach(function () {
@@ -17,6 +17,7 @@ describe('applePay.create', function () {
     });
 
     this.sandbox.stub(analytics, 'sendEvent');
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
   });
 
   it('returns a promise', function () {
@@ -25,32 +26,17 @@ describe('applePay.create', function () {
     expect(promise).to.be.an.instanceof(Promise);
   });
 
-  it('calls callback with an error when missing client', function (done) {
-    create({}, function (err, applePayInstance) {
-      expect(applePayInstance).not.to.exist;
+  it('verifies with basicComponentVerification', function (done) {
+    var client = this.client;
 
-      expect(err).to.be.an.instanceOf(BraintreeError);
-      expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('options.client is required when instantiating Apple Pay.');
-
-      done();
-    });
-  });
-
-  it('calls callback with an error when called with a mismatched version', function (done) {
-    var client = fake.client({
-      version: '1.2.3'
-    });
-
-    create({client: client}, function (err, applePayInstance) {
-      expect(applePayInstance).not.to.exist;
-
-      expect(err).to.be.an.instanceOf(BraintreeError);
-      expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('Client (version 1.2.3) and Apple Pay (version ' + version + ') components must be from the same SDK version.');
-
+    create({
+      client: client
+    }, function () {
+      expect(basicComponentVerification.verify).to.be.calledOnce;
+      expect(basicComponentVerification.verify).to.be.calledWith({
+        name: 'Apple Pay',
+        client: client
+      });
       done();
     });
   });

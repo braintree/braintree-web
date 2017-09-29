@@ -284,13 +284,7 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
   return self._client.request({
     endpoint: 'payment_methods/masterpass_cards',
     method: 'post',
-    data: {
-      masterpassCard: {
-        checkoutResourceUrl: payload.checkout_resource_url,
-        requestToken: payload.oauth_token,
-        verifierToken: payload.oauth_verifier
-      }
-    }
+    data: formatTokenizeData(payload)
   }).then(function (response) {
     self._closeWindow();
     if (global.popupBridge) {
@@ -310,6 +304,17 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
     return Promise.reject(convertToBraintreeError(tokenizeErr, errors.MASTERPASS_ACCOUNT_TOKENIZATION_FAILED));
   });
 };
+
+function formatTokenizeData(payload) {
+  // Converts null values that can be returned as strings
+  return {
+    masterpassCard: {
+      checkoutResourceUrl: payload.checkout_resource_url,
+      requestToken: payload.oauth_token,
+      verifierToken: payload.oauth_verifier === 'null' ? null : payload.oauth_verifier
+    }
+  };
+}
 
 Masterpass.prototype._closeWindow = function () {
   this._authInProgress = false;

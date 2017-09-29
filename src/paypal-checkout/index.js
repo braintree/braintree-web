@@ -6,11 +6,11 @@
 
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
+var basicComponentVerification = require('../lib/basic-component-verification');
 var errors = require('./errors');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var PayPalCheckout = require('./paypal-checkout');
-var sharedErrors = require('../lib/errors');
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -62,45 +62,31 @@ var VERSION = process.env.npm_package_version;
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var config, clientVersion;
+  return basicComponentVerification.verify({
+    name: 'PayPal Checkout',
+    client: options.client
+  }).then(function () {
+    var config = options.client.getConfiguration();
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating PayPal Checkout.'
-    }));
-  }
+    if (!config.gatewayConfiguration.paypalEnabled) {
+      return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
+    }
 
-  config = options.client.getConfiguration();
-  clientVersion = options.client.getVersion();
+    if (!config.gatewayConfiguration.paypal.clientId) {
+      return Promise.reject(new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED));
+    }
 
-  if (clientVersion !== VERSION) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and PayPal Checkout (version ' + VERSION + ') components must be from the same SDK version.'
-    }));
-  }
+    analytics.sendEvent(options.client, 'paypal-checkout.initialized');
 
-  if (!config.gatewayConfiguration.paypalEnabled) {
-    return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
-  }
-
-  if (!config.gatewayConfiguration.paypal.clientId) {
-    return Promise.reject(new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED));
-  }
-
-  analytics.sendEvent(options.client, 'paypal-checkout.initialized');
-
-  return Promise.resolve(new PayPalCheckout(options));
+    return new PayPalCheckout(options);
+  });
 }
 
 /**
  * @static
  * @function isSupported
  * @description Returns true if PayPal Checkout [supports this browser](index.html#browser-support-webviews).
- * @deprecated Previously, this method checked for Popup support in the brower. Checkout.js now falls back to a modal if popups are not supported.
+ * @deprecated Previously, this method checked for Popup support in the browser. Checkout.js now falls back to a modal if popups are not supported.
  * @example
  * if (braintree.paypalCheckout.isSupported()) {
  *   // Add PayPal button to the page

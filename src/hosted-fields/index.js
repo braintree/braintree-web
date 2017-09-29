@@ -2,6 +2,7 @@
 /** @module braintree-web/hosted-fields */
 
 var HostedFields = require('./external/hosted-fields');
+var basicComponentVerification = require('../lib/basic-component-verification');
 var supportsInputFormatting = require('restricted-input/supports-input-formatting');
 var wrapPromise = require('@braintree/wrap-promise');
 var Promise = require('../lib/promise');
@@ -138,13 +139,16 @@ var VERSION = process.env.npm_package_version;
  * }, callback);
  */
 function create(options) {
-  var integration;
+  return basicComponentVerification.verify({
+    name: 'Hosted Fields',
+    client: options.client
+  }).then(function () {
+    var integration = new HostedFields(options);
 
-  return new Promise(function (resolve) {
-    integration = new HostedFields(options);
-
-    integration.on('ready', function () {
-      resolve(integration);
+    return new Promise(function (resolve) {
+      integration.on('ready', function () {
+        resolve(integration);
+      });
     });
   });
 }

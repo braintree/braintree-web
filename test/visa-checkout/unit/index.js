@@ -2,11 +2,11 @@
 
 var Promise = require('../../../src/lib/promise');
 var BraintreeError = require('../../../src/lib/braintree-error');
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var create = require('../../../src/visa-checkout').create;
 var VisaCheckout = require('../../../src/visa-checkout/visa-checkout');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
-var version = require('../../../package.json').version;
 
 describe('visaCheckout.create', function () {
   beforeEach(function () {
@@ -19,6 +19,22 @@ describe('visaCheckout.create', function () {
       configuration: configuration
     });
     this.sandbox.stub(analytics, 'sendEvent');
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+  });
+
+  it('verifies with basicComponentVerification', function (done) {
+    var client = this.client;
+
+    create({
+      client: client
+    }, function () {
+      expect(basicComponentVerification.verify).to.be.calledOnce;
+      expect(basicComponentVerification.verify).to.be.calledWith({
+        name: 'Visa Checkout',
+        client: client
+      });
+      done();
+    });
   });
 
   it('calls callback with a VisaCheckout instance when successful', function (done) {
@@ -38,36 +54,6 @@ describe('visaCheckout.create', function () {
     var promise = create({client: this.client});
 
     expect(promise).to.be.an.instanceof(Promise);
-  });
-
-  it('calls callback with an error when missing client', function (done) {
-    create({}, function (err, visaCheckoutInstance) {
-      expect(visaCheckoutInstance).not.to.exist;
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('options.client is required when instantiating Visa Checkout.');
-
-      done();
-    });
-  });
-
-  it('calls callback with an error when called with a mismatched version', function (done) {
-    var client = fake.client({
-      version: '1.2.3'
-    });
-
-    create({client: client}, function (err, visaCheckoutInstance) {
-      expect(visaCheckoutInstance).not.to.exist;
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('Client (version 1.2.3) and Visa Checkout (version ' + version + ') components must be from the same SDK version.');
-
-      done();
-    });
   });
 
   it('calls callback with an error when visa checkout is not enabled in configuration', function (done) {

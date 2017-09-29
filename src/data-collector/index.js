@@ -4,12 +4,12 @@
 var kount = require('./kount');
 var fraudnet = require('./fraudnet');
 var BraintreeError = require('../lib/braintree-error');
+var basicComponentVerification = require('../lib/basic-component-verification');
 var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
-var sharedErrors = require('../lib/errors');
 var errors = require('./errors');
 
 /**
@@ -25,6 +25,14 @@ var errors = require('./errors');
  * @name deviceData
  * @type string
  * @description JSON string to pass with server transactions.
+ * @instance
+ */
+
+/**
+ * @memberof DataCollector
+ * @name rawDeviceData
+ * @type object
+ * @description The device data as an object instead of a string.
  * @instance
  */
 
@@ -81,68 +89,57 @@ var errors = require('./errors');
  * @returns {Promise|void} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
  */
 function create(options) {
-  var data, kountInstance, fraudnetInstance, config, clientVersion;
   var result = {};
   var instances = [];
   var teardown = createTeardownMethod(result, instances);
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating Data Collector.'
-    }));
-  }
+  return basicComponentVerification.verify({
+    name: 'Data Collector',
+    client: options.client
+  }).then(function () {
+    var data, kountInstance, fraudnetInstance;
+    var config = options.client.getConfiguration();
 
-  config = options.client.getConfiguration();
-  clientVersion = options.client.getVersion();
+    if (options.kount === true) {
+      if (!config.gatewayConfiguration.kount) {
+        return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_KOUNT_NOT_ENABLED));
+      }
 
-  if (clientVersion !== VERSION) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and Data Collector (version ' + VERSION + ') components must be from the same SDK version.'
-    }));
-  }
+      try {
+        kountInstance = kount.setup({
+          environment: config.gatewayConfiguration.environment,
+          merchantId: config.gatewayConfiguration.kount.kountMerchantId
+        });
+      } catch (err) {
+        return Promise.reject(new BraintreeError({
+          type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
+          code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
+          message: err.message
+        }));
+      }
 
-  if (options.kount === true) {
-    if (!config.gatewayConfiguration.kount) {
-      return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_KOUNT_NOT_ENABLED));
+      data = kountInstance.deviceData;
+      instances.push(kountInstance);
+    } else {
+      data = {};
     }
 
-    try {
-      kountInstance = kount.setup({
-        environment: config.gatewayConfiguration.environment,
-        merchantId: config.gatewayConfiguration.kount.kountMerchantId
-      });
-    } catch (err) {
-      return Promise.reject(new BraintreeError({
-        type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
-        code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
-        message: err.message
-      }));
+    if (options.paypal === true) {
+      fraudnetInstance = fraudnet.setup();
+      data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
+      instances.push(fraudnetInstance);
     }
 
-    data = kountInstance.deviceData;
-    instances.push(kountInstance);
-  } else {
-    data = {};
-  }
+    if (instances.length === 0) {
+      return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
+    }
 
-  if (options.paypal === true) {
-    fraudnetInstance = fraudnet.setup();
-    data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
-    instances.push(fraudnetInstance);
-  }
+    result.deviceData = JSON.stringify(data);
+    result.rawDeviceData = data;
+    result.teardown = teardown;
 
-  if (instances.length === 0) {
-    return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
-  }
-
-  result.deviceData = JSON.stringify(data);
-  result.teardown = teardown;
-
-  return Promise.resolve(result);
+    return result;
+  });
 }
 
 function createTeardownMethod(result, instances) {

@@ -3,6 +3,10 @@
 var BraintreeError = require('./braintree-error');
 
 module.exports = {
+  INVALID_USE_OF_INTERNAL_FUNCTION: {
+    type: BraintreeError.types.INTERNAL,
+    code: 'INVALID_USE_OF_INTERNAL_FUNCTION'
+  },
   CALLBACK_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
     code: 'CALLBACK_REQUIRED'

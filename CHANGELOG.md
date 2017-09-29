@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+# 3.23.0
+
+* Update sanitize-url to version 2.0.2
+* Update restricted-input to version 1.2.6
+* Data Collector
+  * Update sjcl to 1.0.7
+  * Provide raw device data object as `instance.rawDeviceData`
+* Hosted Fields
+  * Add `billingAddress.extendedAddress` as a tokenization option
+  * Add `billingAddress.company` as a tokenization option
+  * Add `billingAddress.firstName` as a tokenization option
+  * Add `billingAddress.lastName` as a tokenization option
+* 3D Secure
+  * Allow opting out of bank frame loader
+* Vault Manager
+  * Provide bin data if present
+
 ## 3.22.2
 
 * Update sanitize-url to version 2.0.0

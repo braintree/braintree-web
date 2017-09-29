@@ -2,6 +2,7 @@
 
 var Bus = require('../../lib/bus');
 var isWhitelistedDomain = require('../../lib/is-whitelisted-domain');
+var queryString = require('../../lib/querystring');
 var BraintreeError = require('../../lib/braintree-error');
 var sanitizeUrl = require('@braintree/sanitize-url').sanitizeUrl;
 var errors = require('../shared/errors');
@@ -10,6 +11,11 @@ module.exports = function () {
   var bus = new Bus({
     channel: window.name.split('_')[1]
   });
+  var params = queryString.parse();
+
+  if (params.showLoader === 'true') {
+    document.querySelector('#loader').className = '';
+  }
 
   bus.emit(Bus.events.CONFIGURATION_REQUEST, handleConfiguration);
 };

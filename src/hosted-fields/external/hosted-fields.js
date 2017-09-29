@@ -17,7 +17,6 @@ var EventEmitter = require('../../lib/event-emitter');
 var injectFrame = require('./inject-frame');
 var analytics = require('../../lib/analytics');
 var whitelistedFields = constants.whitelistedFields;
-var VERSION = process.env.npm_package_version;
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var sharedErrors = require('../../lib/errors');
@@ -310,29 +309,13 @@ function performBlurFixForIos(container) {
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
 function HostedFields(options) {
-  var failureTimeout, clientVersion, clientConfig;
+  var failureTimeout, clientConfig;
   var self = this;
   var fields = {};
   var fieldCount = 0;
   var componentId = uuid();
 
-  if (!options.client) {
-    throw new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating Hosted Fields.'
-    });
-  }
-
   clientConfig = options.client.getConfiguration();
-  clientVersion = options.client.getVersion();
-  if (clientVersion !== VERSION) {
-    throw new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and Hosted Fields (version ' + VERSION + ') components must be from the same SDK version.'
-    });
-  }
 
   if (!options.fields) {
     throw new BraintreeError({
@@ -579,7 +562,11 @@ HostedFields.prototype.teardown = function () {
  * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
  * @param {string} [options.cardholderName] When supplied, the cardholder name to be tokenized with the contents of the fields.
  * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.
+ * @param {string} [options.billingAddress.firstName] When supplied, this customer first name will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.lastName] When supplied, this customer last name will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.company] When supplied, this company name will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.streetAddress] When supplied, this street address will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.extendedAddress] When supplied, this extended address will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryCodeNumeric] When supplied, this numeric country code will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryCodeAlpha2] When supplied, this alpha 2 representation of a country will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryCodeAlpha3] When supplied, this alpha 3 representation of a country will be tokenized along with the contents of the fields.
@@ -667,7 +654,11 @@ HostedFields.prototype.teardown = function () {
  * @example <caption>Tokenize a card with additional billing address options</caption>
  * hostedFieldsInstance.tokenize({
  *   billingAddress: {
+ *     firstName: 'First',
+ *     lastName: 'Last',
+ *     company: 'Company',
  *     streetAddress: '123 Street',
+ *     extendedAddress: 'Unit 1',
  *     // passing just one of the country options is sufficient to
  *     // associate the card details with a particular country
  *     // valid country names and codes can be found here:

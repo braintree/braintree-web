@@ -1,5 +1,6 @@
 'use strict';
 
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var dataCollector = require('../../../src/data-collector');
 var kount = require('../../../src/data-collector/kount');
 var fraudnet = require('../../../src/data-collector/fraudnet');
@@ -7,7 +8,6 @@ var BraintreeError = require('../../../src/lib/braintree-error');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 var methods = require('../../../src/lib/methods');
 var fake = require('../../helpers/fake');
-var version = require('../../../package.json').version;
 
 describe('dataCollector', function () {
   beforeEach(function () {
@@ -18,6 +18,7 @@ describe('dataCollector', function () {
     });
     this.sandbox.stub(kount, 'setup');
     this.sandbox.stub(fraudnet, 'setup');
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
   });
 
   describe('create', function () {
@@ -44,28 +45,18 @@ describe('dataCollector', function () {
       });
     });
 
-    it('returns an error if no client is given', function () {
-      return dataCollector.create({kount: true}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.message).to.equal('options.client is required when instantiating Data Collector.');
-        expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-        expect(err.type).to.equal('MERCHANT');
-      });
-    });
+    it('verifies with basicComponentVerification', function (done) {
+      var client = this.client;
 
-    it('returns an error when called with a mismatched version', function () {
-      var client = fake.client({
-        version: '1.2.3'
-      });
-
-      return dataCollector.create({
-        client: client,
-        kount: true
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-        expect(err.message).to.equal('Client (version 1.2.3) and Data Collector (version ' + version + ') components must be from the same SDK version.');
+      dataCollector.create({
+        client: client
+      }, function () {
+        expect(basicComponentVerification.verify).to.be.calledOnce;
+        expect(basicComponentVerification.verify).to.be.calledWith({
+          name: 'Data Collector',
+          client: client
+        });
+        done();
       });
     });
 
@@ -219,6 +210,33 @@ describe('dataCollector', function () {
           expect(actual1.deviceData).not.to.equal(actual2.deviceData);
         });
       }.bind(this));
+    });
+
+    it('provides rawDeviceData', function () {
+      var mockPPid = 'paypal_id';
+      var mockData = {
+        deviceData: {
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: 'fmid' // eslint-disable-line camelcase
+        }
+      };
+
+      kount.setup.returns(mockData);
+      fraudnet.setup.returns({
+        sessionId: mockPPid
+      });
+
+      return dataCollector.create({
+        client: this.client,
+        paypal: true,
+        kount: true
+      }).then(function (instance) {
+        expect(instance.rawDeviceData).to.deep.equal({
+          correlation_id: 'paypal_id', // eslint-disable-line camelcase
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: 'fmid' // eslint-disable-line camelcase
+        });
+      });
     });
   });
 

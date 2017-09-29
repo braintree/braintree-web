@@ -1,13 +1,13 @@
 'use strict';
 
 var create = require('../../../src/ideal').create;
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var browserDetection = require('../../../src/ideal/shared/browser-detection');
 var Ideal = require('../../../src/ideal/external/ideal');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var version = require('../../../package.json').version;
 
 describe('ideal', function () {
   beforeEach(function () {
@@ -21,6 +21,7 @@ describe('ideal', function () {
     });
     this.sandbox.stub(Ideal.prototype, '_initialize').resolves(this.idealInstance);
     this.sandbox.stub(analytics, 'sendEvent');
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
   });
 
   describe('create', function () {
@@ -31,29 +32,22 @@ describe('ideal', function () {
       }.bind(this));
     });
 
+    it('verifies with basicComponentVerification', function (done) {
+      var client = this.fakeClient;
+
+      create({
+        client: client
+      }, function () {
+        expect(basicComponentVerification.verify).to.be.calledOnce;
+        expect(basicComponentVerification.verify).to.be.calledWith({
+          name: 'iDEAL',
+          client: client
+        });
+        done();
+      });
+    });
+
     context('with promises', function () {
-      it('rejects with an error when called without a client', function () {
-        return create({}).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-          expect(err.message).to.equal('options.client is required when instantiating iDEAL.');
-        });
-      });
-
-      it('rejects with an error when called with a mismatched version', function () {
-        var client = fake.client({
-          version: '1.2.3'
-        });
-
-        return create({client: client}).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-          expect(err.message).to.equal('Client (version 1.2.3) and iDEAL (version ' + version + ') components must be from the same SDK version.');
-        });
-      });
-
       it('rejects with an error when client does not contain braintreeApi', function () {
         delete this.configuration.gatewayConfiguration.braintreeApi;
 
@@ -95,36 +89,6 @@ describe('ideal', function () {
     });
 
     context('with callbacks', function () {
-      it('calls callback with an error when called without a client', function (done) {
-        create({}, function (err, ideal) {
-          expect(ideal).not.to.exist;
-
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-          expect(err.message).to.equal('options.client is required when instantiating iDEAL.');
-
-          done();
-        });
-      });
-
-      it('throws an error when called with a mismatched version', function (done) {
-        var client = fake.client({
-          version: '1.2.3'
-        });
-
-        create({client: client}, function (err, ideal) {
-          expect(ideal).not.to.exist;
-
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-          expect(err.message).to.equal('Client (version 1.2.3) and iDEAL (version ' + version + ') components must be from the same SDK version.');
-
-          done();
-        });
-      });
-
       it('passes back an error when client does not contain braintreeApi', function (done) {
         delete this.configuration.gatewayConfiguration.braintreeApi;
 

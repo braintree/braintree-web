@@ -5,10 +5,10 @@
  */
 
 var UnionPay = require('./shared/unionpay');
+var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var errors = require('./shared/errors');
-var sharedErrors = require('../lib/errors');
 var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -30,34 +30,20 @@ var wrapPromise = require('@braintree/wrap-promise');
 * });
 */
 function create(options) {
-  var config, clientVersion;
+  return basicComponentVerification.verify({
+    name: 'UnionPay',
+    client: options.client
+  }).then(function () {
+    var config = options.client.getConfiguration();
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating UnionPay.'
-    }));
-  }
+    if (!config.gatewayConfiguration.unionPay || config.gatewayConfiguration.unionPay.enabled !== true) {
+      return Promise.reject(new BraintreeError(errors.UNIONPAY_NOT_ENABLED));
+    }
 
-  config = options.client.getConfiguration();
-  clientVersion = options.client.getVersion();
+    analytics.sendEvent(options.client, 'unionpay.initialized');
 
-  if (clientVersion !== VERSION) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and UnionPay (version ' + VERSION + ') components must be from the same SDK version.'
-    }));
-  }
-
-  if (!config.gatewayConfiguration.unionPay || config.gatewayConfiguration.unionPay.enabled !== true) {
-    return Promise.reject(new BraintreeError(errors.UNIONPAY_NOT_ENABLED));
-  }
-
-  analytics.sendEvent(options.client, 'unionpay.initialized');
-
-  return Promise.resolve(new UnionPay(options));
+    return new UnionPay(options);
+  });
 }
 
 module.exports = {

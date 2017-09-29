@@ -1,13 +1,13 @@
 'use strict';
 
 var Promise = require('../../../src/lib/promise');
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var isHTTPS = require('../../../src/lib/is-https');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var threeDSecure = require('../../../src/three-d-secure');
 var ThreeDSecure = require('../../../src/three-d-secure/external/three-d-secure');
 var BraintreeError = require('../../../src/lib/braintree-error');
-var version = require('../../../package.json').version;
 
 describe('three-d-secure.create', function () {
   beforeEach(function () {
@@ -23,6 +23,7 @@ describe('three-d-secure.create', function () {
 
     this.sandbox.stub(analytics, 'sendEvent');
     this.sandbox.stub(isHTTPS, 'isHTTPS').returns(true);
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
   });
 
   it('returns a promise', function () {
@@ -31,13 +32,17 @@ describe('three-d-secure.create', function () {
     expect(promise).to.be.an.instanceof(Promise);
   });
 
-  it('errors out if no client given', function (done) {
-    threeDSecure.create({}, function (err, thingy) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.eql('INSTANTIATION_OPTION_REQUIRED');
-      expect(err.message).to.equal('options.client is required when instantiating 3D Secure.');
-      expect(thingy).not.to.exist;
+  it('verifies with basicComponentVerification', function (done) {
+    var client = this.client;
+
+    threeDSecure.create({
+      client: client
+    }, function () {
+      expect(basicComponentVerification.verify).to.be.calledOnce;
+      expect(basicComponentVerification.verify).to.be.calledWith({
+        name: '3D Secure',
+        client: client
+      });
       done();
     });
   });
@@ -50,22 +55,6 @@ describe('three-d-secure.create', function () {
       expect(err.type).to.equal('MERCHANT');
       expect(err.code).to.eql('THREEDS_NOT_ENABLED');
       expect(err.message).to.equal('3D Secure is not enabled for this merchant.');
-      expect(thingy).not.to.exist;
-      done();
-    });
-  });
-
-  it('errors out if client version does not match', function (done) {
-    this.client = fake.client({
-      configuration: this.configuration,
-      version: '1.2.3'
-    });
-
-    threeDSecure.create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.eql('INCOMPATIBLE_VERSIONS');
-      expect(err.message).to.equal('Client (version 1.2.3) and 3D Secure (version ' + version + ') components must be from the same SDK version.');
       expect(thingy).not.to.exist;
       done();
     });

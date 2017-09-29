@@ -3,6 +3,7 @@
 
 var BraintreeError = require('../lib/braintree-error');
 var browserDetection = require('./shared/browser-detection');
+var basicComponentVerification = require('../lib/basic-component-verification');
 var Ideal = require('./external/ideal');
 var VERSION = process.env.npm_package_version;
 var errors = require('./shared/errors');
@@ -33,40 +34,28 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @returns {Promise|void} Resolves with the iDEAL Payment instance.
  */
 function create(options) {
-  var idealInstance, clientVersion, configuration;
+  return basicComponentVerification.verify({
+    name: 'iDEAL',
+    client: options.client
+  }).then(function () {
+    var idealInstance, configuration;
 
-  if (options.client == null) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.client is required when instantiating iDEAL.'
-    }));
-  }
+    if (!browserDetection.supportsPopups()) {
+      return Promise.reject(new BraintreeError(errors.IDEAL_BROWSER_NOT_SUPPORTED));
+    }
 
-  clientVersion = options.client.getVersion();
-  if (clientVersion !== VERSION) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
-      code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-      message: 'Client (version ' + clientVersion + ') and iDEAL (version ' + VERSION + ') components must be from the same SDK version.'
-    }));
-  }
+    configuration = options.client.getConfiguration().gatewayConfiguration;
+    if (!configuration.braintreeApi) {
+      return Promise.reject(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
+    } else if (!configuration.ideal) {
+      return Promise.reject(new BraintreeError(errors.IDEAL_NOT_ENABLED));
+    }
 
-  if (!browserDetection.supportsPopups()) {
-    return Promise.reject(new BraintreeError(errors.IDEAL_BROWSER_NOT_SUPPORTED));
-  }
+    analytics.sendEvent(options.client, 'ideal.initialization');
+    idealInstance = new Ideal(options);
 
-  configuration = options.client.getConfiguration().gatewayConfiguration;
-  if (!configuration.braintreeApi) {
-    return Promise.reject(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
-  } else if (!configuration.ideal) {
-    return Promise.reject(new BraintreeError(errors.IDEAL_NOT_ENABLED));
-  }
-
-  analytics.sendEvent(options.client, 'ideal.initialization');
-  idealInstance = new Ideal(options);
-
-  return idealInstance._initialize();
+    return idealInstance._initialize();
+  });
 }
 
 module.exports = {

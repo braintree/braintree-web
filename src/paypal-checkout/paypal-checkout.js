@@ -71,9 +71,8 @@ function PayPalCheckout(options) {
  * @param {object} options All options for the PayPalCheckout component.
  * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow. If 'vault' is used with a client token generated with a customer ID, the PayPal account will be added to that customer as a saved payment method.
  * @param {string} [options.intent=authorize]
- * Checkout flows only.
  * * `authorize` - Submits the transaction for authorization but not settlement.
- * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed.
+ * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed. Only available for Checkout flow.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
  * @param {boolean} [options.offerCredit=false] Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.
  * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.

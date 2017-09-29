@@ -3,6 +3,7 @@
 var initializeBankFrame = require('../../../../src/three-d-secure/internal/bank-frame');
 var Bus = require('../../../../src/lib/bus');
 var BraintreeError = require('../../../../src/lib/braintree-error');
+var queryString = require('../../../../src/lib/querystring');
 
 describe('initializeBankFrame', function () {
   beforeEach(function () {
@@ -33,6 +34,36 @@ describe('initializeBankFrame', function () {
     initializeBankFrame();
 
     expect(Bus.prototype.emit).to.be.calledWith(Bus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
+  });
+
+  it('removes hidden class from loader if params include showLoader=true', function () {
+    var fakeDomNode = {
+      className: 'hidden'
+    };
+
+    this.sandbox.stub(queryString, 'parse').returns({
+      showLoader: 'true'
+    });
+    this.sandbox.stub(document, 'querySelector').returns(fakeDomNode);
+
+    initializeBankFrame();
+
+    expect(fakeDomNode.className).to.equal('');
+  });
+
+  it('retains hidden class from loader if params do not include showLoader=true', function () {
+    var fakeDomNode = {
+      className: 'hidden'
+    };
+
+    this.sandbox.stub(queryString, 'parse').returns({
+      showLoader: 'not true'
+    });
+    this.sandbox.stub(document, 'querySelector').returns(fakeDomNode);
+
+    initializeBankFrame();
+
+    expect(fakeDomNode.className).to.equal('hidden');
   });
 
   it('throw an error if termUrl is not a valid domain', function (done) {

@@ -1,11 +1,11 @@
 'use strict';
 
 var Promise = require('../../../src/lib/promise');
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var create = require('../../../src/us-bank-account').create;
 var USBankAccount = require('../../../src/us-bank-account/us-bank-account');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var fake = require('../../helpers/fake');
-var version = require('../../../package.json').version;
 
 describe('usBankAccount component', function () {
   beforeEach(function () {
@@ -20,6 +20,7 @@ describe('usBankAccount component', function () {
       configuration: this.configuration
     });
     this.fakeClient._request = this.sandbox.stub();
+    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
   });
 
   describe('create', function () {
@@ -29,32 +30,17 @@ describe('usBankAccount component', function () {
       expect(promise).to.be.an.instanceof(Promise);
     });
 
-    it('calls callback with an error when called without a client', function (done) {
-      create({}, function (err, usb) {
-        expect(usb).not.to.exist;
+    it('verifies with basicComponentVerification', function (done) {
+      var client = this.fakeClient;
 
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-        expect(err.message).to.equal('options.client is required when instantiating US Bank Account.');
-
-        done();
-      });
-    });
-
-    it('throws an error when called with a mismatched version', function (done) {
-      var client = fake.client({
-        version: '1.2.3'
-      });
-
-      create({client: client}, function (err, usb) {
-        expect(usb).not.to.exist;
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-        expect(err.message).to.equal('Client (version 1.2.3) and US Bank Account (version ' + version + ') components must be from the same SDK version.');
-
+      create({
+        client: client
+      }, function () {
+        expect(basicComponentVerification.verify).to.be.calledOnce;
+        expect(basicComponentVerification.verify).to.be.calledWith({
+          name: 'US Bank Account',
+          client: client
+        });
         done();
       });
     });

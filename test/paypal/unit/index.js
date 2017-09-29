@@ -1,5 +1,6 @@
 'use strict';
 
+var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var create = require('../../../src/paypal').create;
 var isSupported = require('../../../src/paypal').isSupported;
 var analytics = require('../../../src/lib/analytics');
@@ -7,7 +8,6 @@ var fake = require('../../helpers/fake');
 var PayPal = require('../../../src/paypal/external/paypal');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var Promise = require('../../../src/lib/promise');
-var version = require('../../../package.json').version;
 
 describe('paypal', function () {
   afterEach(function () {
@@ -23,6 +23,7 @@ describe('paypal', function () {
       this.client = fake.client({
         configuration: this.configuration
       });
+      this.sandbox.stub(basicComponentVerification, 'verify').resolves();
     });
 
     it('returns a promise when no callback is provided', function () {
@@ -31,28 +32,19 @@ describe('paypal', function () {
       expect(promise).to.be.an.instanceof(Promise);
     });
 
-    it('errors out if no client given', function (done) {
-      create({}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
-        expect(err.message).to.equal('options.client is required when instantiating PayPal.');
-        expect(thingy).not.to.exist;
-        done();
-      });
-    });
+    it('verifies with basicComponentVerification', function (done) {
+      var client = this.client;
 
-    it('errors out if client version does not match', function (done) {
-      var client = fake.client({
-        version: '1.2.3'
-      });
+      this.sandbox.stub(PayPal.prototype, '_initialize').resolves();
 
-      create({client: client}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-        expect(err.message).to.equal('Client (version 1.2.3) and PayPal (version ' + version + ') components must be from the same SDK version.');
-        expect(thingy).not.to.exist;
+      create({
+        client: client
+      }, function () {
+        expect(basicComponentVerification.verify).to.be.calledOnce;
+        expect(basicComponentVerification.verify).to.be.calledWith({
+          name: 'PayPal',
+          client: client
+        });
         done();
       });
     });

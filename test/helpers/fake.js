@@ -7,11 +7,17 @@ var constants = require('../../src/lib/constants');
 function configuration() {
   return {
     gatewayConfiguration: {
+      merchantId: 'merchant-id',
       assetsUrl: 'https://assets.braintreegateway.com',
       environment: 'development',
       configUrl: 'https://braintreegateway.com/config',
       clientApiUrl: 'https://braintreegateway.com',
       creditCards: {
+        supportedCardTypes: [
+          'American Express',
+          'Discover',
+          'Visa'
+        ],
         supportedGateways: [
           {
             name: 'clientApi'

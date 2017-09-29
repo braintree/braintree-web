@@ -10,6 +10,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @property {object} paymentMethod.details Any additional details about the payment method. Varies depending on the type of payment method.
  * @property {string} paymentMethod.type A constant indicating the type of payment method.
  * @property {?string} paymentMethod.description Additional description about the payment method.
+ * @property {?object} paymentMethod.binData Bin data about the payment method.
  *
  */
 
@@ -68,6 +69,10 @@ function formatPaymentMethodPayload(paymentMethod) {
 
   if (paymentMethod.description) {
     formattedPaymentMethod.description = paymentMethod.description;
+  }
+
+  if (paymentMethod.binData) {
+    formattedPaymentMethod.binData = paymentMethod.binData;
   }
 
   return formattedPaymentMethod;
