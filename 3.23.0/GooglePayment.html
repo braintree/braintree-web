@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>
-      visa-checkout/visa-checkout.js - Documentation
+      GooglePayment - Documentation
   </title>
 
   <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
@@ -92,217 +90,788 @@
   <div id="main">
     
       <h1 class="page-title">
-        visa-checkout/visa-checkout.js
+        GooglePayment
       </h1>
     
 
     
-      
 
 <section>
+  <header>
+    
+      <h2>
+        
+        GooglePayment
+        
+      </h2>
+
+      
+        <div class="class-description">
+          <p>This class represents a Google Payment component produced by <a href="module-braintree-web_google-payment.html#.create">braintree-web/google-payment.create</a>. Instances of this class have methods for initializing the Pay with Google flow.</p>
+<p><strong>Note:</strong> This component is currently in beta and the API may include breaking changes when upgrading. Please review the <a href="https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md">Changelog</a> for upgrade steps whenever you upgrade the version of braintree-web.</p>
+        </div>
+      
+    
+  </header>
+
   <article>
-    <pre class="prettyprint source linenums"><code>'use strict';
+    <div class="container-overview">
+      
+        
 
-var BraintreeError = require('../lib/braintree-error');
-var analytics = require('../lib/analytics');
-var errors = require('./errors');
-var jsonClone = require('../lib/json-clone');
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
-var cardTypeTransformMap = {
-  Visa: 'VISA',
-  MasterCard: 'MASTERCARD',
-  Discover: 'DISCOVER',
-  'American Express': 'AMEX'
-};
 
-/**
- * Visa Checkout Address object.
- * @typedef {object} VisaCheckout~Address
- * @property {string} countryCode The customer's country code.
- * @property {string} extendedAddress The customer's extended address.
- * @property {string} firstName The customer's first name.
- * @property {string} lastName The customer's last name.
- * @property {string} locality The customer's locality.
- * @property {string} postalCode The customer's postal code.
- * @property {string} region The customer's region.
- * @property {string} streetAddress The customer's street address.
- * @property {string} phoneNumber The customer's phone number.
- */
+  
+    <h2>Constructor</h2>
+  
 
-/**
- * Visa Checkout UserData object.
- * @typedef {object} VisaCheckout~UserData
- * @property {string} userEmail The customer's email address.
- * @property {string} userFirstName The customer's first name.
- * @property {string} userLastName The customer's last name.
- * @property {string} userFullName The customer's full name.
- * @property {string} userName The customer's username.
- */
+  <span class='name-container'>
+    <a class="link-icon" href="#GooglePayment">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="GooglePayment">
+      <span class="type-signature"></span>new GooglePayment<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
 
-/**
- * Visa Checkout tokenize payload.
- * @typedef {object} VisaCheckout~tokenizePayload
- * @property {string} nonce The payment method nonce.
- * @property {object} details Additional account details.
- * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
- * @property {string} details.lastTwo Last two digits of card number.
- * @property {string} description A human-readable description.
- * @property {string} type The payment method type, always `VisaCheckoutCard`.
- * @property {VisaCheckout~Address} billingAddress The customer's billing address.
- * @property {VisaCheckout~Address} shippingAddress The customer's shipping address.
- * @property {VisaCheckout~UserData} userData Information about the customer.
- * @property {object} binData Information about the card based on the bin.
- * @property {string} binData.commercial Possible values: 'Yes', 'No', 'Unknown'.
- * @property {string} binData.countryOfIssuance The country of issuance.
- * @property {string} binData.debit Possible values: 'Yes', 'No', 'Unknown'.
- * @property {string} binData.durbinRegulated Possible values: 'Yes', 'No', 'Unknown'.
- * @property {string} binData.healthcare Possible values: 'Yes', 'No', 'Unknown'.
- * @property {string} binData.issuingBank The issuing bank.
- * @property {string} binData.payroll Possible values: 'Yes', 'No', 'Unknown'.
- * @property {string} binData.prepaid Possible values: 'Yes', 'No', 'Unknown'.
- * @property {string} binData.productId The product id.
- */
+  
 
-/**
- * @class
- * @param {object} options The Visa Checkout {@link module:braintree-web/visa-checkout.create create} options.
- * @description &lt;strong>Do not use this constructor directly. Use {@link module:braintree-web/visa-checkout.create|braintree-web.visa-checkout.create} instead.&lt;/strong>
- * @classdesc This class represents a Visa Checkout component produced by {@link module:braintree-web/visa-checkout.create|braintree-web/visa-checkout.create}. Instances of this class have methods for interacting with Visa Checkout's JavaScript library.
- */
-function VisaCheckout(options) {
-  this._client = options.client;
-}
 
-function transformCardTypes(cardTypes) {
-  return cardTypes.reduce(function (acc, type) {
-    if (cardTypeTransformMap.hasOwnProperty(type)) {
-      return acc.concat(cardTypeTransformMap[type]);
-    }
 
-    return acc;
-  }, []);
-}
+  <div class="description">
+    <p><strong>Do not use this constructor directly. Use <a href="module-braintree-web_google-payment.html#.create">braintree-web.google-payment.create</a> instead.</strong></p>
+  </div>
 
-/**
- * Creates an `initOptions` object from the passed `options`, applying properties that Braintree needs to transact Visa Checkout.
- *
- * Braintree will apply these properties if they do not exist on the given `options`:
- *  - `apikey`
- *  - `externalClientId`
- *  - `settings.payment.cardBrands`
- *
- * Braintree will overwrite `settings.dataLevel = 'FULL'` to access the full payment method.
- * @public
- * @param {object} options The base `initOptions` that will be used to init Visa Checkout.
- * @param {string} [options.apikey] The API key used to initialize Visa Checkout. When not supplied, Braintree will set this property.
- * @param {string} [options.externalClientId] The external client ID key used to initialize Visa Checkout. When not supplied, Braintree will set this property.
- * @param {object} [options.settings] The settings object used to initialize Visa Checkout.
- * @param {string} [options.settings.dataLevel] The data level used to initialize Visa Checkout. Braintree will overwrite this property to 'FULL'.
- * @param {object} [options.settings.payment] The payment object used to initialize Visa Checkout.
- * @param {string[]} [options.settings.payment.cardBrands] The card brands that Visa Checkout will allow the customer to pay with. When not supplied, Braintree will set this property.
- * @returns {object} `initOptions` The `initOptions` that Visa Checkout should be initialized with.
- * @example
- * &lt;caption>Applying Braintree properties to initOptions&lt;/caption>
- * var baseInitOptions = {
- *    paymentRequest: {
- *      currencyCode: 'USD',
- *      subtotal: '1.00',
- *      total: '1.00'
- *    }
- *  };
- *
- *  var initOptions = visaCheckoutInstance.createInitOptions(baseInitOptions);
- *
- *  console.log('initOptions with Braintree properties', initOptions);
- *
- *  V.init(initOptions);
- */
-VisaCheckout.prototype.createInitOptions = function (options) {
-  var initOptions;
-  var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
-  var visaCheckoutConfiguration = gatewayConfiguration.visaCheckout;
 
-  if (!options) {
-    throw new BraintreeError(errors.VISA_CHECKOUT_INIT_OPTIONS_REQUIRED);
-  }
 
-  initOptions = jsonClone(options);
-  initOptions.apikey = initOptions.apikey || visaCheckoutConfiguration.apikey;
-  initOptions.externalClientId = initOptions.externalClientId || visaCheckoutConfiguration.externalClientId;
-  initOptions.settings = initOptions.settings || {};
-  initOptions.settings.dataLevel = 'FULL';
-  initOptions.settings.payment = initOptions.settings.payment || {};
 
-  if (!initOptions.settings.payment.cardBrands) {
-    initOptions.settings.payment.cardBrands = transformCardTypes(gatewayConfiguration.visaCheckout.supportedCardTypes);
-  }
 
-  return initOptions;
-};
 
-/**
- * Tokenizes the Visa Checkout payload, returning a payment method nonce.
- * @public
- * @param {object} payment The object that Visa Checkout supplies on `payment.success`.
- * @param {string} payment.callid Visa Checkout transaction ID associated with this payment.
- * @param {string} payment.encKey The encrypted key used to decrypt the payment data.
- * @param {string} payment.encPaymentData The encrypted payment data.
- * @param {callback} [callback] The second argument, &lt;code>tokenizePayload&lt;/code> is a {@link VisaCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a promise that resolves with the {@link VisaCheckout~tokenizePayload|tokenizePayload}.
- * @returns {Promise|void} Returns a promise if no callback is provided.
- * @example
- * V.on('payment.success', function (payment) {
- *   visaCheckoutInstance.tokenize(payment, function (err, tokenizePayload) {
- *     if (err) {
- *       console.error('There was an error tokenizing Visa Checkout', err);
- *       return;
- *     }
- *     console.log('Send tokenizePayload.nonce to your server here!', tokenizePayload);
- *   });
- * });
- */
-VisaCheckout.prototype.tokenize = function (payment) {
-  var self = this;
 
-  if (!payment.callid || !payment.encKey || !payment.encPaymentData) {
-    return Promise.reject(new BraintreeError(errors.VISA_CHECKOUT_PAYMENT_REQUIRED));
-  }
+  <h5>Parameters:</h5>
+  
 
-  return this._client.request({
-    method: 'post',
-    endpoint: 'payment_methods/visa_checkout_cards',
-    data: {
-      _meta: {
-        source: 'visa-checkout'
-      },
-      visaCheckoutCard: {
-        callId: payment.callid,
-        encryptedPaymentData: payment.encPaymentData,
-        encryptedKey: payment.encKey
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Google Payment <a href="module-braintree-web_google-payment.html#.create">create</a> options.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="google-payment_google-payment.js.html">google-payment/google-payment.js</a>, <a href="google-payment_google-payment.js.html#line7">line 7</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+      <h3 class="subsection-title">Methods</h3>
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#createSupportedPaymentMethodsConfiguration">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="createSupportedPaymentMethodsConfiguration">
+      <span class="type-signature"></span>createSupportedPaymentMethodsConfiguration<span class="signature">(overrides<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {object}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Create an object to pass into the <code>tokenize</code> method to specify a custom configuration. If no overrides are provided, the default configuration will be used in <code>tokenize</code>.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>overrides</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The configuration overrides for the <a href="https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request">data property on the supported payment methods objects</a>. This object will be merged with the default configuration object based on the settings in the Braintree Gateway. If no object is passed in, the default configuration object will be returned.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="google-payment_google-payment.js.html">google-payment/google-payment.js</a>, <a href="google-payment_google-payment.js.html#line50">line 50</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#createSupportedPaymentMethodsConfiguration-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="createSupportedPaymentMethodsConfiguration-examples">Examples</h5>
+    
+  <p class="code-caption">
+    Getting the default configuration for a specified type
+  </p>
+
+
+  <pre class="prettyprint"><code>var configuration = googlePaymentInstance.createSupportedPaymentMethodsConfiguration();
+
+configuration.supportedMethods; // ['https://google.com/pay']
+
+configuration.data.allowedCardNetworks; // ['AMEX', 'DISCOVER', 'MASTERCARD', 'VISA'] &lt;- whatever the supported card networks for the merchant account are</code></pre>
+
+  <p class="code-caption">
+    Specifying overrides
+  </p>
+
+
+  <pre class="prettyprint"><code>var configuration = googlePaymentInstance.createSupportedPaymentMethodsConfiguration({
+  merchantName: 'My Custom Merchant Account Name',
+  allowedCardNetworks: ['VISA']
+});
+
+configuration.data.merchantName; // 'My Custom Merchant Account Name'
+configuration.data.allowedCardNetworks; // ['VISA']</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#tokenize">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="tokenize">
+      <span class="type-signature"></span>tokenize<span class="signature">(configuration, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise|void}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Initializes a Pay with Google flow and provides a nonce payload.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>configuration</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The payment details.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>details</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The payment details. For details on this object, see <a href="https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_payment_details">Google's PaymentRequest API documentation</a>.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Additional Pay with Google options. For details on this object, see <a href="https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_options_optional">Google's PaymentRequest API documentation</a>.</p>
+<p><strong>Note:</strong> <code>requestShipping</code> is not supported by Braintree at this time.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>callback</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#callback">callback</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The second argument, <code>data</code>, is a paymentPayload. If no callback is provided, <code>tokenize</code> returns a function that resolves with a paymentPayload.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="google-payment_google-payment.js.html">google-payment/google-payment.js</a>, <a href="google-payment_google-payment.js.html#line130">line 130</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#tokenize-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="tokenize-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>googlePaymentInstance.tokenize({
+  details: {
+    total: {
+      label: 'Price',
+      amount: {
+        currency: 'USD',
+        value: '100.00'
       }
     }
-  }).then(function (response) {
-    analytics.sendEvent(self._client, 'visacheckout.tokenize.succeeded');
-    return response.visaCheckoutCards[0];
-  }).catch(function (err) {
-    analytics.sendEvent(self._client, 'visacheckout.tokenize.failed');
-    return Promise.reject(new BraintreeError({
-      type: errors.VISA_CHECKOUT_TOKENIZATION.type,
-      code: errors.VISA_CHECKOUT_TOKENIZATION.code,
-      message: errors.VISA_CHECKOUT_TOKENIZATION.message,
-      details: {
-        originalError: err
-      }
-    }));
-  });
-};
+  }
+}).then(function (payload) {
+  // send payload.nonce to server
+}).catch(function (err) {
+  if (err.code === 'PAYMENT_REQUEST_CANCELED') {
+    // Pay with Google payment request was canceled by user
+  } else {
+    // an error occurred while processing
+  }
+});</code></pre>
 
-module.exports = wrapPromise.wrapPrototype(VisaCheckout);
-</code></pre>
+  <p class="code-caption">
+    Include additional payment request options
+  </p>
+
+
+  <pre class="prettyprint"><code>googlePaymentInstance.tokenize({
+  details: {
+    total: {
+      label: 'Price',
+      amount: {
+        currency: 'USD',
+        value: '100.00'
+      }
+    }
+  },
+  options: {
+    requestPayerName: true,
+    requestPayerPhone: true,
+    requestPayerEmail: true
+  }
+}).then(function (payload) {
+  // Send payload.nonce to your server
+
+  // Examine additional info in the raw payment response
+  console.log(payload.details.rawPaymentResponse);
+});</code></pre>
+
+  <p class="code-caption">
+    Include custom supported payment method object
+  </p>
+
+
+  <pre class="prettyprint"><code>googlePaymentInstance.tokenize({
+  supportedPaymentMethods: googlePaymentInstance.createSupportedPaymentMethodsConfiguration({merchantName: 'Custom Name'}),
+  details: {
+    total: {
+      label: 'Price',
+      amount: {
+        currency: 'USD',
+        value: '100.00'
+      }
+    }
+  },
+  options: {
+    requestPayerName: true,
+    requestPayerPhone: true,
+    requestPayerEmail: true
+  }
+}).then(function (payload) {
+  // Send payload.nonce to your server
+
+  // Examine additional info in the raw payment response
+  console.log(payload.details.rawPaymentResponse);
+});</code></pre>
+
+
+  </div>
+
+
+      
+    
+
+    
+
+    
   </article>
 </section>
 
-    
+
 
 
   </div>
