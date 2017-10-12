@@ -1,5 +1,10 @@
 'use strict';
-/** @module braintree-web/payment-request */
+/**
+ * @module braintree-web/payment-request
+ * @description A component to integrate with the Payment Request API.
+ *
+ * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
+ * */
 
 var PaymentRequestComponent = require('./external/payment-request');
 var basicComponentVerification = require('../lib/basic-component-verification');
@@ -13,7 +18,7 @@ var VERSION = process.env.npm_package_version;
  * @param {Client} options.client A {@link Client} instance.
  * @param {object} [options.enabledPaymentMethods] An object representing which payment methods to display.
  * @param {boolean} [options.enabledPaymentMethods.basicCard=true] Whether or not to display credit card as an option in the Payment Request dialog. If left blank or set to true, credit cards will be displayed in the dialog if the merchant account is set up to process credit cards.
- * @param {boolean} [options.enabledPaymentMethods.googlePayment=true] Whether or not to display Pay with Google as an option in the Payment Request dialog. If left blank or set to true, Pay with Google will be displayed in the dialog if the merchant account is set up to process Pay with Google.
+ * @param {boolean} [options.enabledPaymentMethods.payWithGoogle=true] Whether or not to display Pay with Google as an option in the Payment Request dialog. If left blank or set to true, Pay with Google will be displayed in the dialog if the merchant account is set up to process Pay with Google.
  * @param {callback} [callback] The second argument, `data`, is the {@link PaymentRequestComponent} instance. If no callback is provided, `create` returns a promise that resolves with the {@link PaymentRequestComponent} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
@@ -29,7 +34,7 @@ var VERSION = process.env.npm_package_version;
  * braintree.paymentRequest.create({
  *   client: clientInstance,
  *   enabledPaymentMethods: {
- *     googlePayment: true,
+ *     payWithGoogle: true,
  *     basicCard: false
  *   }
  * }, cb);

@@ -60,6 +60,19 @@ describe('three-d-secure.create', function () {
     });
   });
 
+  it('errors out if tokenization key is used', function (done) {
+    this.configuration.authorizationType = 'TOKENIZATION_KEY';
+
+    threeDSecure.create({client: this.client}, function (err, thingy) {
+      expect(err).to.be.an.instanceof(BraintreeError);
+      expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.eql('THREEDS_CAN_NOT_USE_TOKENIZATION_KEY');
+      expect(err.message).to.equal('3D Secure can not use a tokenization key for authorization.');
+      expect(thingy).not.to.exist;
+      done();
+    });
+  });
+
   it('errors out if browser is not https and environment is production', function (done) {
     isHTTPS.isHTTPS.restore();
     this.configuration.gatewayConfiguration.environment = 'production';

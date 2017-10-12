@@ -23,6 +23,8 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @class
  * @param {object} options See {@link module:braintree-web/us-bank-account.create|us-bank-account.create}.
  * @classdesc This class represents a US Bank Account component. Instances of this class can tokenize raw bank details or present a bank login. <strong>You cannot use this constructor directly. Use {@link module:braintree-web/us-bank-account.create|braintree.us-bank-account.create} instead.</strong>
+ *
+ * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  */
 function USBankAccount(options) {
   this._client = options.client;

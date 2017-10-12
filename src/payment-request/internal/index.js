@@ -37,8 +37,19 @@ function initializePaymentRequest(data) {
     return paymentResponse;
   }).then(tokenize).then(function (payload) {
     var rawPaymentResponse = clone(paymentResponse);
+    var billingAddress = rawPaymentResponse.details.billingAddress;
+    var cardholderName = rawPaymentResponse.details.cardholderName;
 
-    delete rawPaymentResponse.details;
+    // we overwrite the details object so credit card information
+    // is not exposed back to the merchant
+    rawPaymentResponse.details = {};
+
+    if (billingAddress) {
+      rawPaymentResponse.details.billingAddress = billingAddress;
+    }
+    if (cardholderName) {
+      rawPaymentResponse.details.cardholderName = cardholderName;
+    }
 
     payload.details.rawPaymentResponse = rawPaymentResponse;
 

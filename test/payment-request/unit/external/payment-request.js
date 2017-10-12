@@ -88,6 +88,22 @@ describe('Payment Request component', function () {
     });
   });
 
+  it('sets pay with google to have a clientKey param when using a tokenization key', function () {
+    var instance;
+    var conf = this.fakeClient.getConfiguration();
+
+    conf.authorization = 'authorization';
+    conf.authorizationType = 'TOKENIZATION_KEY';
+
+    this.sandbox.stub(this.fakeClient, 'getConfiguration').returns(conf);
+
+    instance = new PaymentRequestComponent({
+      client: this.fakeClient
+    });
+
+    expect(instance._defaultSupportedPaymentMethods[1].data.paymentMethodTokenizationParameters.parameters['braintree:clientKey']).to.equal('authorization');
+  });
+
   it('can turn off basic-card', function () {
     var instance = new PaymentRequestComponent({
       enabledPaymentMethods: {
@@ -243,7 +259,10 @@ describe('Payment Request component', function () {
         var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
 
         successHandler({
-          nonce: 'a-nonce'
+          nonce: 'a-nonce',
+          details: {
+            rawPaymentResponse: {}
+          }
         });
       }, 100);
     });
@@ -262,7 +281,10 @@ describe('Payment Request component', function () {
         var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
 
         successHandler({
-          nonce: 'a-nonce'
+          nonce: 'a-nonce',
+          details: {
+            rawPaymentResponse: {}
+          }
         });
       }, 100);
     });
@@ -278,7 +300,10 @@ describe('Payment Request component', function () {
         var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
 
         successHandler({
-          nonce: 'a-nonce'
+          nonce: 'a-nonce',
+          details: {
+            rawPaymentResponse: {}
+          }
         });
       }, 100);
     });
@@ -293,7 +318,10 @@ describe('Payment Request component', function () {
         var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
 
         successHandler({
-          nonce: 'a-nonce'
+          nonce: 'a-nonce',
+          details: {
+            rawPaymentResponse: {}
+          }
         });
       }, 100);
     });

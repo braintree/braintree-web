@@ -161,3 +161,14 @@ braintree.client.create({authorization: CLIENT_AUTHORIZATION}).then(function (cl
   });
 });
 ```
+
+Releases
+========
+
+Subscribe to our [Google Group](https://groups.google.com/forum/#!forum/braintree-sdk-announce) to
+be notified when SDK releases go out.
+
+License
+=======
+
+The Braintree JavaScript SDK is open source and available under the MIT license. See the [LICENSE](LICENSE) file for more info.

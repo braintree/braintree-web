@@ -1,8 +1,26 @@
 CHANGELOG
 =========
 
-# 3.23.0
+## 3.24.0
 
+* 3D Secure
+  * Error early in creation if a tokenization key is used for authorization
+  * Add liablity shift info to top level of cancelVerifyCard payload
+* Payment Request - Beta
+  * Add billing address details to tokenization payload
+* Pay with Google - Beta
+  * Apply field to allow tokenization with tokenization key
+  * Properly wrap Pay with Google so callbacks can be used
+
+__BREAKING CHANGES__
+
+* Payment Request and Pay with Google - Beta
+  * Some non-essential fields from tokenize payload removed
+
+## 3.23.0
+
+* Add beta Pay with Google Component
+* Add beta Payment Request Component
 * Update sanitize-url to version 2.0.2
 * Update restricted-input to version 1.2.6
 * Data Collector

@@ -9,6 +9,6 @@
   },
   "plugins": ["version-interpolator-plugin", "plugins/markdown"],
   "source": {
-    "excludePattern": "(ideal|venmo|payment-request|google-payment)"
+    "excludePattern": "(ideal|venmo)"
   }
 }

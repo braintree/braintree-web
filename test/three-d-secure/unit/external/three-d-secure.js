@@ -70,7 +70,10 @@ describe('ThreeDSecure', function () {
       var self = this;
 
       this.client.request.resolves({
-        paymentMethod: {nonce: 'upgraded-nonce'},
+        paymentMethod: {
+          nonce: 'upgraded-nonce',
+          threeDSecureInfo: threeDSecureInfo
+        },
         threeDSecureInfo: threeDSecureInfo
       });
 
@@ -105,7 +108,10 @@ describe('ThreeDSecure', function () {
         removeFrame: noop
       }, function () {
         this.client.request.resolves({
-          paymentMethod: {nonce: 'upgraded-nonce'},
+          paymentMethod: {
+            nonce: 'upgraded-nonce',
+            threeDSecureInfo: threeDSecureInfo
+          },
           threeDSecureInfo: threeDSecureInfo
         });
 
@@ -734,7 +740,12 @@ describe('ThreeDSecure', function () {
     beforeEach(function () {
       this.threeDS = new ThreeDSecure({client: this.client});
       this.threeDS._verifyCardInProgress = true;
-      this.threeDS._lookupPaymentMethod = {};
+      this.threeDS._lookupPaymentMethod = {
+        threeDSecureInfo: {
+          liabilityShiftPossible: true,
+          liabilityShifted: true
+        }
+      };
     });
 
     it('returns a promise', function () {
@@ -769,8 +780,10 @@ describe('ThreeDSecure', function () {
     it('passes back the result of the initial lookup', function (done) {
       this.threeDS._lookupPaymentMethod = {
         nonce: 'fake-nonce',
-        liabilityShiftPossible: true,
-        liabilityShifted: false
+        threeDSecureInfo: {
+          liabilityShiftPossible: true,
+          liabilityShifted: false
+        }
       };
 
       this.threeDS.cancelVerifyCard(function (err, response) {

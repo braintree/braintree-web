@@ -52,7 +52,10 @@ describe('GooglePayment', function () {
     });
 
     Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').yields({
-      nonce: 'a-nonce'
+      nonce: 'a-nonce',
+      details: {
+        rawPaymentResponse: {}
+      }
     });
 
     return googlePayment.tokenize({
@@ -112,6 +115,24 @@ describe('GooglePayment', function () {
       expect(err.type).to.equal('MERCHANT');
       expect(err.code).to.equal('PAY_WITH_GOOGLE_CAN_ONLY_TOKENIZE_WITH_PAY_WITH_GOOGLE');
       expect(err.message).to.equal('Only Pay with Google is supported in supportedPaymentMethods.');
+      done();
+    });
+  });
+
+  it('supports callbacks', function (done) {
+    var googlePayment = new GooglePayment({
+      client: this.fakeClient
+    });
+    var configuration = {
+      details: {total: '100.00'},
+      options: {}
+    };
+    var result = {};
+
+    this.sandbox.stub(PaymentRequestComponent.prototype, 'tokenize').resolves(result);
+
+    googlePayment.tokenize(configuration, function (err, data) {
+      expect(data).to.equal(result);
       done();
     });
   });

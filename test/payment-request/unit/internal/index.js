@@ -309,6 +309,9 @@ describe('Payment Request Frame', function () {
           shippingAddress: {},
           shippingOption: null,
           details: {
+            billingAddress: {
+              addressLine: ['foo', 'bar']
+            },
             cardNumber: '4111111111111111',
             cardholderName: 'First Last',
             expiryMonth: '12',
@@ -323,6 +326,12 @@ describe('Payment Request Frame', function () {
             nonce: 'a-nonce',
             details: {
               rawPaymentResponse: {
+                details: {
+                  billingAddress: {
+                    addressLine: ['foo', 'bar']
+                  },
+                  cardholderName: 'First Last'
+                },
                 methodName: 'basic-card',
                 payerEmail: 'asdf@example.com',
                 payerName: 'First Last',
@@ -380,6 +389,7 @@ describe('Payment Request Frame', function () {
             type: 'AndroidPay',
             details: {
               rawPaymentResponse: {
+                details: {},
                 methodName: 'https://google.com/pay',
                 requestId: '68a2ac68-3f7e-42e4-82f9-a690d9166a16'
               }

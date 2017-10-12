@@ -2,6 +2,8 @@
 /**
  * @module braintree-web/us-bank-account
  * @description This module is for accepting payments of US bank accounts.
+ *
+ * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  */
 
 var basicComponentVerification = require('../lib/basic-component-verification');

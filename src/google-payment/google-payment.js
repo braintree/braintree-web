@@ -3,12 +3,15 @@
 var BraintreeError = require('../lib/braintree-error');
 var PaymentRequestComponent = require('../payment-request/external/payment-request');
 var Promise = require('../lib/promise');
+var wrapPromise = require('@braintree/wrap-promise');
 
 /**
  * @class GooglePayment
  * @param {object} options Google Payment {@link module:braintree-web/google-payment.create create} options.
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/google-payment.create|braintree-web.google-payment.create} instead.</strong>
  * @classdesc This class represents a Google Payment component produced by {@link module:braintree-web/google-payment.create|braintree-web/google-payment.create}. Instances of this class have methods for initializing the Pay with Google flow.
+ *
+ * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  */
 function GooglePayment(options) {
   PaymentRequestComponent.call(this, {
@@ -26,9 +29,9 @@ GooglePayment.prototype = Object.create(PaymentRequestComponent.prototype);
 GooglePayment.prototype.constructor = GooglePayment;
 
 /**
- * Create an object to pass into tokenize to specify a custom configuration. If no overrides are provided, the default configuration will be provided.
+ * Create an object to pass into the `tokenize` method to specify a custom configuration. If no overrides are provided, the default configuration will be used in `tokenize`.
  * @public
- * @param {object} [overrides] The configuration overrides for the [data property on the supported payment methods objects](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request). If not passed in, the default configuration for the specified type will be provided. If a property is not provided, the value from the default configruation will be used.
+ * @param {object} [overrides] The configuration overrides for the [data property on the supported payment methods objects](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request). This object will be merged with the default configuration object based on the settings in the Braintree Gateway. If no object is passed in, the default configuration object will be returned.
  * @example <caption>Getting the default configuration for a specified type</caption>
  * var configuration = googlePaymentInstance.createSupportedPaymentMethodsConfiguration();
  *
@@ -50,11 +53,13 @@ GooglePayment.prototype.createSupportedPaymentMethodsConfiguration = function (o
 };
 
 /**
- * Initializes a Pay with Google flow and returns a nonce payload.
+ * Initializes a Pay with Google flow and provides a nonce payload.
  * @public
  * @param {object} configuration The payment details.
  * @param {object} configuration.details The payment details. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_payment_details).
- * @param {object} [configuration.options] Additional Pay with Google options. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_options_optional). **Note:** `requestShipping` is not supported by Braintree at this time.
+ * @param {object} [configuration.options] Additional Pay with Google options. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_options_optional).
+ *
+ * **Note:** `requestShipping` is not supported by Braintree at this time.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link PaymentRequest~paymentPayload|paymentPayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link PaymentRequest~paymentPayload|paymentPayload}.
  * @example
  * googlePaymentInstance.tokenize({
@@ -145,4 +150,4 @@ GooglePayment.prototype.tokenize = function (configuration) {
   });
 };
 
-module.exports = GooglePayment;
+module.exports = wrapPromise.wrapPrototype(GooglePayment);

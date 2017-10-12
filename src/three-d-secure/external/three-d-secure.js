@@ -2,6 +2,7 @@
 
 var BraintreeError = require('../../lib/braintree-error');
 var analytics = require('../../lib/analytics');
+var assign = require('../../lib/assign').assign;
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var constants = require('../shared/constants');
@@ -193,13 +194,21 @@ ThreeDSecure.prototype.verifyCard = function (options) {
  * });
  */
 ThreeDSecure.prototype.cancelVerifyCard = function () {
+  var response;
+
   this._verifyCardInProgress = false;
 
   if (!this._lookupPaymentMethod) {
     return Promise.reject(new BraintreeError(errors.THREEDS_NO_VERIFICATION_PAYLOAD));
   }
 
-  return Promise.resolve(this._lookupPaymentMethod);
+  response = assign({}, this._lookupPaymentMethod, {
+    liabilityShiftPossible: this._lookupPaymentMethod.threeDSecureInfo.liabilityShiftPossible,
+    liabilityShifted: this._lookupPaymentMethod.threeDSecureInfo.liabilityShifted,
+    verificationDetails: this._lookupPaymentMethod.threeDSecureInfo.verificationDetails
+  });
+
+  return Promise.resolve(response);
 };
 
 ThreeDSecure.prototype._handleLookupResponse = function (options) {

@@ -1,5 +1,10 @@
 'use strict';
-/** @module braintree-web/payment-request */
+/**
+ * @module braintree-web/google-payment
+ * @description A component to integrate with Pay with Google.
+ *
+ * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
+ * */
 
 var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
@@ -17,7 +22,7 @@ var VERSION = process.env.npm_package_version;
  * @param {callback} [callback] The second argument, `data`, is the {@link GooglePayment} instance. If no callback is provided, `create` returns a promise that resolves with the {@link GooglePayment} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
- * if (window.PaymentRequest && isGoogleChrome()) {
+ * if (braintree.googlePayment.isSupported()) {
  *   braintree.googlePayment.create({
  *     client: clientInstance
  *   }, function (err, instance) {
@@ -60,6 +65,8 @@ function create(options) {
  * @returns {Boolean} Returns true if Pay with Google supports this browser.
  */
 function isSupported() {
+  // TODO - We should limit this to android chrome for now
+  // Once it works in Desktop Chrome, we can revert to this or specify a specific version of Chrome
   return Boolean(window.PaymentRequest && browserDetection.isChrome());
 }
 

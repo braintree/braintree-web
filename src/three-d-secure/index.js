@@ -35,6 +35,10 @@ function create(options) {
       error = errors.THREEDS_NOT_ENABLED;
     }
 
+    if (config.authorizationType === 'TOKENIZATION_KEY') {
+      error = errors.THREEDS_CAN_NOT_USE_TOKENIZATION_KEY;
+    }
+
     isProduction = config.gatewayConfiguration.environment === 'production';
 
     if (isProduction && !isHTTPS()) {
