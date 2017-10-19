@@ -17,7 +17,7 @@ function start() {
     bankSelectionInProgress = false;
     hideNode(confirmView);
     clearTimeout(redirectTimeout);
-  });
+  }, false);
 
   getBus().emit(Bus.events.CONFIGURATION_REQUEST, function (config) {
     translations = translator(config.locale);
@@ -104,7 +104,7 @@ function setupBankList(config) {
 
       bankNode.addEventListener('click', function () {
         bankSelectHandler(issuer.id, logoImage, bankName);
-      });
+      }, false);
 
       issuersList.appendChild(bankNode);
     });
@@ -154,6 +154,7 @@ function bankSelectHandler(id, logoImage, bankName) {
     showNode(confirmView);
     redirectTimeout = setTimeout(createIssuingBankHandler(id), 3000);
   };
+  logoImage.src = logoImage.src; // we need to set src again for onload to trigger in IE
 }
 
 function createIssuingBankHandler(id) {

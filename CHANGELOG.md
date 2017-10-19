@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.24.1
+
+* Update credit-card-type to v6.0.0
+* Update card-validator to v4.1.1
+* Hosted Fields
+  * `niceType` for Mastercard will now render as `Mastercard` instead of `MasterCard` to match Mastercard's brand guidelines
+* Pay with Google - Beta
+  * Correct isSupported to only return true on Android Chrome v61 and higher
+
 ## 3.24.0
 
 * 3D Secure

@@ -2,7 +2,7 @@
 
 var Promise = require('../../../src/lib/promise');
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('../../../src/google-payment/browser-detection');
 var googlePayment = require('../../../src/google-payment');
 var GooglePayment = require('../../../src/google-payment/google-payment');
 var fake = require('../../helpers/fake');
@@ -92,30 +92,23 @@ describe('googlePayment', function () {
   });
 
   describe('isSupported', function () {
-    it('returns true when in Chrome and Payment Request API is supported', function () {
-      this.sandbox.stub(browserDetection, 'isChrome').returns(true);
-      global.PaymentRequest = global.PaymentRequest || {};
+    it('returns true when in Android Chrome and Payment Request API is supported', function () {
+      this.sandbox.stub(browserDetection, 'supportsPaymentRequestApi').returns(true);
+      this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
 
       expect(googlePayment.isSupported()).to.eql(true);
     });
 
-    it('returns false when not in Chrome and Payment Request API is supported', function () {
-      this.sandbox.stub(browserDetection, 'isChrome').returns(false);
-      global.PaymentRequest = global.PaymentRequest || {};
+    it('returns false when not in Android Chrome and Payment Request API is supported', function () {
+      this.sandbox.stub(browserDetection, 'supportsPaymentRequestApi').returns(true);
+      this.sandbox.stub(browserDetection, 'isAndroid').returns(false);
 
       expect(googlePayment.isSupported()).to.eql(false);
     });
 
-    it('returns false when in Chrome and Payment Request API is not supported', function () {
-      this.sandbox.stub(browserDetection, 'isChrome').returns(true);
-      global.PaymentRequest = undefined; // eslint-disable-line no-undefined
-
-      expect(googlePayment.isSupported()).to.eql(false);
-    });
-
-    it('returns false when not in Chrome and Payment Request API is not supported', function () {
-      this.sandbox.stub(browserDetection, 'isChrome').returns(false);
-      global.PaymentRequest = undefined; // eslint-disable-line no-undefined
+    it('returns false when in Android Chrome and Payment Request API is not supported', function () {
+      this.sandbox.stub(browserDetection, 'supportsPaymentRequestApi').returns(false);
+      this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
 
       expect(googlePayment.isSupported()).to.eql(false);
     });

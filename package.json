@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.24.0",
+  "version": "3.24.1",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -16,12 +16,12 @@
     "test": "./scripts/npm-to-gulp test"
   },
   "dependencies": {
-    "@braintree/browser-detection": "1.6.0",
+    "@braintree/browser-detection": "1.7.0",
     "@braintree/iframer": "1.0.3",
     "@braintree/sanitize-url": "2.0.2",
     "@braintree/wrap-promise": "1.1.1",
-    "card-validator": "4.1.0",
-    "credit-card-type": "5.0.4",
+    "card-validator": "4.1.1",
+    "credit-card-type": "6.0.0",
     "framebus": "2.0.8",
     "inject-stylesheet": "1.0.0",
     "promise-polyfill": "6.0.2",

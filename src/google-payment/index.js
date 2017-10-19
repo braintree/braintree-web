@@ -8,7 +8,7 @@
 
 var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('./browser-detection');
 var GooglePayment = require('./google-payment');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -65,9 +65,9 @@ function create(options) {
  * @returns {Boolean} Returns true if Pay with Google supports this browser.
  */
 function isSupported() {
-  // TODO - We should limit this to android chrome for now
-  // Once it works in Desktop Chrome, we can revert to this or specify a specific version of Chrome
-  return Boolean(window.PaymentRequest && browserDetection.isChrome());
+  // TODO - We limit this to android chrome for now
+  // Once it works in Desktop Chrome, we can just check that it's Chrome
+  return Boolean(browserDetection.supportsPaymentRequestApi() && browserDetection.isAndroid());
 }
 
 module.exports = {

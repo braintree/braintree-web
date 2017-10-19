@@ -15,6 +15,7 @@ var spawn = require('child_process').spawnSync;
 var readline = require('readline-sync');
 var ADDED = chalk.bgGreen.black('  added  ');
 var REMOVED = chalk.bgRed.black(' removed ');
+var NA = chalk.white('   N/A   ')
 
 function parseArgs() {
   var parser = new posixGetopt.BasicParser('jh', process.argv);
@@ -158,13 +159,13 @@ function compareAssets(deltas, v1, v2, directory) {
 
     rows.push([
       `${file} ${chalk.magenta(v1)}`,
-      data.left.exists ? data.left.size.toLocaleString() : ADDED,
+      data.left.exists ? data.left.size.toLocaleString() : data.right.exists ? ADDED : NA,
       data.leftMin.exists ? data.leftMin.size.toLocaleString() : ADDED,
       data.leftMin.exists ? data.leftMin.gzip.toLocaleString() : ADDED
     ]);
     rows.push([
       `${file} ${chalk.blue(v2)}`,
-      data.right.exists ? data.right.size.toLocaleString() : REMOVED,
+      data.right.exists ? data.right.size.toLocaleString() : data.left.exists ? REMOVED : NA,
       data.rightMin.exists ? data.rightMin.size.toLocaleString() : REMOVED,
       data.rightMin.exists ? data.rightMin.gzip.toLocaleString() : REMOVED
     ]);
