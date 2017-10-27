@@ -20,6 +20,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @property {string} nonce The payment method nonce.
  * @property {object} details Additional account details.
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
  * @property {object} details.rawPaymentResponse The raw payment response from the payment request, with sensitive card details removed.
  * @property {string} description A human-readable description.
@@ -304,6 +305,7 @@ PaymentRequestComponent.prototype.tokenize = function (configuration) {
         details: {
           rawPaymentResponse: payload.details.rawPaymentResponse,
           cardType: payload.details.cardType,
+          lastFour: payload.details.lastFour,
           lastTwo: payload.details.lastTwo
         },
         binData: payload.binData

@@ -16,6 +16,59 @@ describe('Expiration Month Input', function () {
   });
 
   describe('element creation', function () {
+    describe('prefill', function () {
+      it('applies prefill', function () {
+        var input = new ExpirationMonthInput({
+          type: 'expirationMonth',
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                prefill: '09',
+                selector: '#expiration-month',
+                select: false
+              }
+            }
+          })
+        });
+
+        expect(input.element.value).to.equal('09');
+      });
+
+      it('prefixes month value with a leading zero if it is one digit', function () {
+        var input = new ExpirationMonthInput({
+          type: 'expirationMonth',
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                prefill: '9',
+                selector: '#expiration-month',
+                select: false
+              }
+            }
+          })
+        });
+
+        expect(input.element.value).to.equal('09');
+      });
+
+      it('does not prefix month value with a leading zero if it is not one digit', function () {
+        var input = new ExpirationMonthInput({
+          type: 'expirationMonth',
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                prefill: '11',
+                selector: '#expiration-month',
+                select: false
+              }
+            }
+          })
+        });
+
+        expect(input.element.value).to.equal('11');
+      });
+    });
+
     describe('without a `select` option', function () {
       it('is an <input> element', function () {
         expect(this.input.element).to.be.an.instanceOf(HTMLInputElement);
@@ -76,11 +129,39 @@ describe('Expiration Month Input', function () {
           optionEl = input.element.childNodes[month - 1];
 
           expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.equal(month.toString());
+          expect(optionEl.value).to.include(month.toString());
           expect(optionEl.innerHTML).to.equal(month.toString());
         }
 
         expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);
+      });
+
+      it('prepends select values with a 0 for months 1-9', function () {
+        var input = new ExpirationMonthInput({
+          type: 'expirationMonth',
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                selector: '#expiration-month',
+                select: true
+              }
+            }
+          })
+        });
+        var nodes = input.element.childNodes;
+
+        expect(nodes[0].value).to.equal('01');
+        expect(nodes[1].value).to.equal('02');
+        expect(nodes[2].value).to.equal('03');
+        expect(nodes[3].value).to.equal('04');
+        expect(nodes[4].value).to.equal('05');
+        expect(nodes[5].value).to.equal('06');
+        expect(nodes[6].value).to.equal('07');
+        expect(nodes[7].value).to.equal('08');
+        expect(nodes[8].value).to.equal('09');
+        expect(nodes[9].value).to.equal('10');
+        expect(nodes[10].value).to.equal('11');
+        expect(nodes[11].value).to.equal('12');
       });
 
       it('select: {} creates a <select> with twelve <option>s inside', function () {
@@ -107,7 +188,7 @@ describe('Expiration Month Input', function () {
           optionEl = input.element.childNodes[month - 1];
 
           expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.equal(month.toString());
+          expect(optionEl.value).to.include(month.toString());
           expect(optionEl.innerHTML).to.equal(month.toString());
         }
 
@@ -138,7 +219,7 @@ describe('Expiration Month Input', function () {
           optionEl = input.element.childNodes[month - 1];
 
           expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.equal(month.toString());
+          expect(optionEl.value).to.include(month.toString());
           expect(optionEl.innerHTML).to.equal(month.toString());
         }
 
@@ -170,7 +251,7 @@ describe('Expiration Month Input', function () {
           optionEl = input.element.childNodes[month - 1];
 
           expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.equal(month.toString());
+          expect(optionEl.value).to.include(month.toString());
           expect(optionEl.innerHTML).to.equal(options[month - 1]);
         }
 
@@ -200,14 +281,14 @@ describe('Expiration Month Input', function () {
         for (month = 1; month <= 3; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl.value).to.equal(month.toString());
+          expect(optionEl.value).to.include(month.toString());
           expect(optionEl.innerHTML).to.equal(['a', 'b', 'c'][month - 1]);
         }
 
         for (month = 4; month <= 12; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl.value).to.equal(month.toString());
+          expect(optionEl.value).to.include(month.toString());
           expect(optionEl.innerHTML).to.equal(month.toString());
         }
 
@@ -229,7 +310,7 @@ describe('Expiration Month Input', function () {
         });
 
         optionEl = input.element.childNodes[0];
-        expect(optionEl.value).to.equal('1');
+        expect(optionEl.value).to.equal('01');
         expect(optionEl.innerHTML).to.equal('1');
 
         expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);

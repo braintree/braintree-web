@@ -30,6 +30,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @property {string} nonce The payment method nonce.
  * @property {object} details Additional account details.
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
  * @property {string} description A human-readable description.
  * @property {string} type The payment method type, always `CreditCard`.
@@ -849,6 +850,32 @@ HostedFields.prototype.setAttribute = function (options) {
   }
 
   return Promise.resolve();
+};
+
+/**
+ * Sets a visually hidden message (for screenreaders) on a {@link module:braintree-web/hosted-fields~field field}.
+ *
+ * @public
+ * @param {object} options The options for the attribute you wish to set.
+ * @param {string} options.field The field to which you wish to add an attribute. Must be a valid {@link module:braintree-web/hosted-fields~field field}.
+ * @param {string} options.message The message to set.
+ *
+ * @example <caption>Set an error message on a field</caption>
+ * hostedFieldsInstance.setMessage({
+ *   field: 'number',
+ *   message: 'Invalid card number'
+ * });
+ *
+ * @example <caption>Remove the message on a field</caption>
+ * hostedFieldsInstance.setMessage({
+ *   field: 'number',
+ *   message: ''
+ * });
+ *
+ * @returns {void}
+ */
+HostedFields.prototype.setMessage = function (options) {
+  this._bus.emit(events.SET_MESSAGE, options.field, options.message);
 };
 
 /**

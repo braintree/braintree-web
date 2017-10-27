@@ -23,7 +23,12 @@ ExpirationMonthInput.prototype.constructSelectOptions = function (element) {
   for (month = 1; month <= 12; month++) {
     option = document.createElement('option');
 
-    option.value = month;
+    if (month < 10) {
+      option.value = '0' + month; // we do this to allow autofill to work with selects
+    } else {
+      option.value = month;
+    }
+
     option.innerHTML = sanitizeHtml(optionTexts[month - 1]) || month;
 
     if (month === currentMonth) {
@@ -36,6 +41,14 @@ ExpirationMonthInput.prototype.constructSelectOptions = function (element) {
   if (currentMonth) {
     element.selectedIndex = currentMonth - 1;
   }
+};
+
+ExpirationMonthInput.prototype._applyPrefill = function () {
+  if (this._prefill && this._prefill.length === 1) {
+    this._prefill = '0' + this._prefill;
+  }
+
+  ExpirationSplitInput.prototype._applyPrefill.call(this);
 };
 
 module.exports = {

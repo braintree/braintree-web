@@ -1,7 +1,7 @@
 'use strict';
 
 var analytics = require('../lib/analytics');
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('./shared/browser-detection');
 var constants = require('./shared/constants');
 var errors = require('./shared/errors');
 var querystring = require('../lib/querystring');

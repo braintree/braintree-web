@@ -21,7 +21,9 @@ describe('Base Input', function () {
       });
 
       beforeEach(function () {
-        this.model = {};
+        this.model = {
+          set: this.sandbox.stub()
+        };
         this.type = key;
       });
 
@@ -60,6 +62,36 @@ describe('Base Input', function () {
         describe('attributes', function () {
           afterEach(function () {
             delete BaseInput.prototype.maxLength;
+          });
+
+          describe('prefill', function () {
+            it('applies prefill provided', function () {
+              var instance;
+
+              this.config.prefill = 'value';
+              instance = new BaseInput({
+                model: this.model,
+                type: this.type
+              });
+
+              expect(instance.element.value).to.equal('value');
+              expect(this.model.set).to.be.calledOnce;
+              expect(this.model.set).to.be.calledWith(this.type + '.value', 'value');
+            });
+
+            it('coerces prefill to a string', function () {
+              var instance;
+
+              this.config.prefill = 1;
+              instance = new BaseInput({
+                model: this.model,
+                type: this.type
+              });
+
+              expect(instance.element.value).to.equal('1');
+              expect(this.model.set).to.be.calledOnce;
+              expect(this.model.set).to.be.calledWith(this.type + '.value', '1');
+            });
           });
 
           describe('placeholder', function () {

@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.25.0
+
+* Hosted Fields
+  * Add `setMessage` for screenreader-compatible error messages
+  * Fix issue where autofill would not work in selects with month values 1-9 (##331)
+  * Allow fields to be prefilled with values
+* Payment Request - Beta
+  * Add `lastFour` to tokenize payload
+
 ## 3.24.1
 
 * Update credit-card-type to v6.0.0

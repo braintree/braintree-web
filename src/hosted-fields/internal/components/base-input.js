@@ -31,6 +31,8 @@ function BaseInput(options) {
 
   configuration = this.getConfiguration();
 
+  this._prefill = configuration.prefill && String(configuration.prefill);
+
   this.hiddenMaskedValue = '';
   this.shouldMask = Boolean(configuration.maskInput);
   this.maskCharacter = configuration.maskInput && configuration.maskInput.character || DEFAULT_MASK_CHARACTER;
@@ -47,6 +49,9 @@ function BaseInput(options) {
   this.addDOMEventListeners();
   this.addModelEventListeners();
   this.addBusEventListeners();
+
+  this._applyPrefill();
+
   this.render();
 }
 
@@ -110,6 +115,15 @@ BaseInput.prototype.addDOMEventListeners = function () {
   this._addDOMInputListeners();
   this._addDOMKeypressListeners();
   this._addPasteEventListeners();
+};
+
+BaseInput.prototype._applyPrefill = function () {
+  if (!this._prefill) {
+    return;
+  }
+
+  this.element.value = this._prefill;
+  this.model.set(this.type + '.value', this._prefill);
 };
 
 BaseInput.prototype.maskValue = function (value) {

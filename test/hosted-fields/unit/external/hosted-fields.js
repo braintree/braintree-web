@@ -683,6 +683,29 @@ describe('HostedFields', function () {
     });
   });
 
+  describe('setMessage', function () {
+    it('emits SET_MESSAGE event if options are valid', function () {
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var instance;
+
+      numberNode.id = 'number';
+
+      document.body.appendChild(numberNode);
+      configuration.fields.number = {
+        selector: '#number'
+      };
+      instance = new HostedFields(configuration);
+
+      instance.setMessage({
+        field: 'number',
+        message: 'This is a test message'
+      });
+
+      expect(instance._bus.emit).to.be.calledWith(events.SET_MESSAGE, 'number', 'This is a test message');
+    });
+  });
+
   describe('removeAttribute', function () {
     it('emits REMOVE_ATTRIBUTE event if options are valid', function () {
       var configuration = this.defaultConfiguration;

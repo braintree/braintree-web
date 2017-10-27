@@ -2,7 +2,7 @@
 
 var atob = require('../../../src/lib/polyfill').atob;
 var analytics = require('../../../src/lib/analytics');
-var browserDetection = require('@braintree/browser-detection');
+var browserDetection = require('../../../src/venmo/shared/browser-detection');
 var constants = require('../../../src/venmo/shared/constants');
 var fake = require('../../helpers/fake');
 var querystring = require('../../../src/lib/querystring');
