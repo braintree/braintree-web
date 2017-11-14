@@ -43,6 +43,7 @@ describe('AJAXDriver', function () {
         if (responseCount === 0) {
           responseCount++;
           req.respond(408, {}, '');
+
           return;
         }
 
@@ -69,6 +70,7 @@ describe('AJAXDriver', function () {
         if (responseCount === 0) {
           responseCount++;
           req.respond(0, {}, '');
+
           return;
         }
 
@@ -95,10 +97,12 @@ describe('AJAXDriver', function () {
         if (responseCount === 0) {
           responseCount++;
           req.respond(408, {}, 'first');
+
           return;
         } else if (responseCount === 1) {
           responseCount++;
           req.respond(408, {}, 'second');
+
           return;
         }
 
@@ -125,6 +129,7 @@ describe('AJAXDriver', function () {
         if (responseCount === 0) {
           responseCount++;
           req.respond(408, {}, 'error');
+
           return;
         }
 
@@ -153,6 +158,7 @@ describe('AJAXDriver', function () {
       }, function callback(err, resp) {
         if (err) {
           done(err);
+
           return;
         }
 
@@ -201,6 +207,7 @@ describe('AJAXDriver', function () {
       }, function callback(err, resp) {
         if (err) {
           done(err);
+
           return;
         }
 

@@ -17,6 +17,7 @@ describe('components', function () {
 
       if (err) {
         done(err);
+
         return;
       }
 

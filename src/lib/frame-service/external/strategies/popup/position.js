@@ -15,7 +15,7 @@ function left(width) {
 }
 
 function center(windowMetric, popupMetric, offset) {
-  return (windowMetric - popupMetric) / 2 + offset;
+  return ((windowMetric - popupMetric) / 2) + offset;
 }
 
 module.exports = {

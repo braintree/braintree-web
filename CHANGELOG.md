@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.26.0
+
+* Hosted Fields
+  * Correct bug where pasting in on an iOS device would mangle the input (https://github.com/braintree/restricted-input/pull/46)
+  * Update credit-card-type to version 6.1.0 (accept JCB cards of length 17-19)
+
 ## 3.25.0
 
 * Hosted Fields

@@ -21,12 +21,14 @@ module.exports = function (functions, cb) {
 
   if (length === 0) {
     callback(null);
+
     return;
   }
 
   function finish(err) {
     if (err) {
       callback(err);
+
       return;
     }
 

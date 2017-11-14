@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+
 'use strict';
 
 var Masterpass = require('../../../../src/masterpass/external/masterpass');

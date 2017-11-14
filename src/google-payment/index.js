@@ -21,14 +21,6 @@ var VERSION = process.env.npm_package_version;
  * @param {Client} options.client A {@link Client} instance.
  * @param {callback} [callback] The second argument, `data`, is the {@link GooglePayment} instance. If no callback is provided, `create` returns a promise that resolves with the {@link GooglePayment} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
- * @example
- * if (braintree.googlePayment.isSupported()) {
- *   braintree.googlePayment.create({
- *     client: clientInstance
- *   }, function (err, instance) {
- *      // set up Pay with Google button
- *   });
- * }
  */
 function create(options) {
   return basicComponentVerification.verify({

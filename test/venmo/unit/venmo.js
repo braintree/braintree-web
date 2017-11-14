@@ -1,6 +1,6 @@
 'use strict';
 
-var atob = require('../../../src/lib/polyfill').atob;
+var atob = require('../../../src/lib/vendor/polyfill').atob;
 var analytics = require('../../../src/lib/analytics');
 var browserDetection = require('../../../src/venmo/shared/browser-detection');
 var constants = require('../../../src/venmo/shared/constants');

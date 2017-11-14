@@ -64,6 +64,7 @@ ExpirationSplitInput.prototype.setPlaceholder = function (type, placeholder) {
 
   if (!configuration.select) {
     BaseInput.prototype.setPlaceholder.apply(this, arguments);
+
     return;
   }
 

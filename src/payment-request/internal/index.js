@@ -29,11 +29,13 @@ function initializePaymentRequest(data) {
     global.bus.emit(constants.events.PAYMENT_REQUEST_FAILED, {
       name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
     });
+
     return Promise.resolve();
   }
 
   return paymentRequest.show().then(function (response) {
     paymentResponse = response;
+
     return paymentResponse;
   }).then(tokenize).then(function (payload) {
     var rawPaymentResponse = clone(paymentResponse);

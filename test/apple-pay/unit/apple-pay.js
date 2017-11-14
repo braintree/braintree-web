@@ -183,6 +183,7 @@ describe('ApplePay', function () {
         expect(options.data.applePayWebSession.domainName).to.equal('localhost');
         expect(options.data.applePayWebSession.displayName).to.equal('Awesome Merchant');
         expect(options.data.applePayWebSession.validationUrl).to.equal('https://apple-pay-gateway-cert.apple.com/paymentservices/startSession');
+
         return Promise.reject(requestError);
       };
 
@@ -219,6 +220,7 @@ describe('ApplePay', function () {
         expect(options.data.applePayWebSession.domainName).to.equal('localhost');
         expect(options.data.applePayWebSession.displayName).to.equal('Awesome Merchant');
         expect(options.data.applePayWebSession.validationUrl).to.equal('https://apple-pay-gateway-cert.apple.com/paymentservices/startSession');
+
         return Promise.reject(requestError);
       };
 
@@ -251,6 +253,7 @@ describe('ApplePay', function () {
         expect(options.data.applePayWebSession.domainName).to.equal('localhost');
         expect(options.data.applePayWebSession.displayName).to.equal('Awesome Merchant');
         expect(options.data.applePayWebSession.validationUrl).to.equal('https://apple-pay-gateway-cert.apple.com/paymentservices/startSession');
+
         return Promise.resolve(fakeResponseData);
       };
 

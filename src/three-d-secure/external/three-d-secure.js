@@ -8,7 +8,7 @@ var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var constants = require('../shared/constants');
 var useMin = require('../../lib/use-min');
 var Bus = require('../../lib/bus');
-var uuid = require('../../lib/uuid');
+var uuid = require('../../lib/vendor/uuid');
 var deferred = require('../../lib/deferred');
 var errors = require('../shared/errors');
 var events = require('../shared/events');
@@ -172,6 +172,7 @@ ThreeDSecure.prototype.verifyCard = function (options) {
     });
   }).catch(function (err) {
     self._verifyCardInProgress = false;
+
     return Promise.reject(err);
   });
 };

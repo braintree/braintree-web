@@ -17,6 +17,7 @@ describe('placeholder shim', function () {
       if (string === 'input') {
         return {};
       }
+
       return originalCreateElement.apply(document, arguments);
     });
 

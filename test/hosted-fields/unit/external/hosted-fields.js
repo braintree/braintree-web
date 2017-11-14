@@ -253,6 +253,7 @@ describe('HostedFields', function () {
         if (args[0] === events.INPUT_EVENT) {
           return args[1];
         }
+
         return result;
       });
 
@@ -461,16 +462,16 @@ describe('HostedFields', function () {
 
       instance.teardown(function () {
         methods(HostedFields.prototype).concat(methods(EventEmitter.prototype))
-        .forEach(function (method) {
-          try {
-            instance[method]();
-          } catch (err) {
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-            expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-            expect(err.message).to.equal(method + ' cannot be called after teardown.');
-          }
-        });
+          .forEach(function (method) {
+            try {
+              instance[method]();
+            } catch (err) {
+              expect(err).to.be.an.instanceof(BraintreeError);
+              expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+              expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+              expect(err.message).to.equal(method + ' cannot be called after teardown.');
+            }
+          });
 
         document.body.removeChild(numberNode);
 
@@ -633,7 +634,12 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting an attribute.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -646,7 +652,12 @@ describe('HostedFields', function () {
         attribute: 'placeholder',
         value: '1111 1111 1111 1111'
       }, function () {
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -664,7 +675,12 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot set attribute for "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -677,7 +693,12 @@ describe('HostedFields', function () {
         attribute: 'placeholder',
         value: '123'
       }, function () {
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -770,7 +791,12 @@ describe('HostedFields', function () {
         field: 'rogue-field',
         attribute: 'disabled'
       }, function () {
-        expect(instance._bus.emit).to.not.be.calledWith(events.REMOVE_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.REMOVE_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -798,7 +824,12 @@ describe('HostedFields', function () {
         field: 'cvv',
         attribute: 'disabled'
       }, function () {
-        expect(instance._bus.emit).to.not.be.calledWith(events.REMOVE_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.REMOVE_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -844,7 +875,12 @@ describe('HostedFields', function () {
         field: 'number',
         attribute: 'illegal'
       }, function () {
-        expect(instance._bus.emit).to.not.be.calledWith(events.REMOVE_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.REMOVE_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -894,7 +930,12 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_INVALID');
         expect(err.message).to.equal('"rogue-field" is not a valid field. You must use a valid field option when setting an attribute.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -903,7 +944,12 @@ describe('HostedFields', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('rogue-field', 'rogue-placeholder', function () {
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -917,7 +963,12 @@ describe('HostedFields', function () {
         expect(err.code).to.equal('HOSTED_FIELDS_FIELD_NOT_PRESENT');
         expect(err.message).to.equal('Cannot set attribute for "cvv" field because it is not part of the current Hosted Fields options.');
         expect(err.details).not.to.exist;
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });
@@ -926,7 +977,12 @@ describe('HostedFields', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('cvv', 'great-placeholder', function () {
-        expect(instance._bus.emit).to.not.be.calledWith(events.SET_ATTRIBUTE, this.sandbox.match.string, this.sandbox.match.string, this.sandbox.match.string);
+        expect(instance._bus.emit).to.not.be.calledWith(
+          events.SET_ATTRIBUTE,
+          this.sandbox.match.string,
+          this.sandbox.match.string,
+          this.sandbox.match.string
+        );
         done();
       }.bind(this));
     });

@@ -35,7 +35,7 @@ function BaseInput(options) {
 
   this.hiddenMaskedValue = '';
   this.shouldMask = Boolean(configuration.maskInput);
-  this.maskCharacter = configuration.maskInput && configuration.maskInput.character || DEFAULT_MASK_CHARACTER;
+  this.maskCharacter = (configuration.maskInput && configuration.maskInput.character) || DEFAULT_MASK_CHARACTER;
 
   this.element = this.constructElement();
 

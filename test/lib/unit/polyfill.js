@@ -1,6 +1,6 @@
 'use strict';
 
-var atob = require('../../../src/lib/polyfill')._atob;
+var atob = require('../../../src/lib/vendor/polyfill')._atob;
 
 describe('Polyfill', function () {
   describe('atob', function () {

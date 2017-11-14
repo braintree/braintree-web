@@ -67,6 +67,7 @@ describe('internal', function () {
         this.sandbox.stub(getHostedFieldsCardForm, 'get').returns({
           get: function (property) {
             expect(property).to.equal('number.value');
+
             return '4111111111111111';
           }
         });

@@ -32,6 +32,7 @@ function _generatePattern(card) {
   }
 
   PATTERN_CACHE[type] = pattern + '}}';
+
   return PATTERN_CACHE[type];
 }
 

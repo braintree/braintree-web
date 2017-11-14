@@ -39,7 +39,7 @@ CreditCardForm.prototype.constructor = CreditCardForm;
 
 CreditCardForm.prototype.resetAttributes = function () {
   var thisMonth = (new Date().getMonth() + 1).toString();
-  var thisYear = (new Date().getFullYear()).toString();
+  var thisYear = new Date().getFullYear().toString();
 
   return this._fieldKeys.reduce(function (result, field) {
     var fieldConfiguration = this.configuration.fields[field];
@@ -83,6 +83,7 @@ CreditCardForm.prototype.emitEvent = function (fieldKey, eventType) {
       isPotentiallyValid: fieldData.isPotentiallyValid,
       isFocused: fieldData.isFocused
     };
+
     return result;
   }.bind(this), {});
 
@@ -217,6 +218,7 @@ CreditCardForm.prototype.getCardData = function () {
 
   keys.reduce(function (reducedResult, name) {
     reducedResult[name] = this.get(name + '.value');
+
     return reducedResult;
   }.bind(this), result);
 

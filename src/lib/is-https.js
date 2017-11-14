@@ -2,6 +2,7 @@
 
 function isHTTPS(protocol) {
   protocol = protocol || global.location.protocol;
+
   return protocol === 'https:';
 }
 

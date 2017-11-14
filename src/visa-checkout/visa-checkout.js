@@ -100,21 +100,6 @@ function transformCardTypes(cardTypes) {
  * @param {object} [options.settings.payment] The payment object used to initialize Visa Checkout.
  * @param {string[]} [options.settings.payment.cardBrands] The card brands that Visa Checkout will allow the customer to pay with. When not supplied, Braintree will set this property.
  * @returns {object} `initOptions` The `initOptions` that Visa Checkout should be initialized with.
- * @example
- * <caption>Applying Braintree properties to initOptions</caption>
- * var baseInitOptions = {
- *    paymentRequest: {
- *      currencyCode: 'USD',
- *      subtotal: '1.00',
- *      total: '1.00'
- *    }
- *  };
- *
- *  var initOptions = visaCheckoutInstance.createInitOptions(baseInitOptions);
- *
- *  console.log('initOptions with Braintree properties', initOptions);
- *
- *  V.init(initOptions);
  */
 VisaCheckout.prototype.createInitOptions = function (options) {
   var initOptions;
@@ -148,16 +133,6 @@ VisaCheckout.prototype.createInitOptions = function (options) {
  * @param {string} payment.encPaymentData The encrypted payment data.
  * @param {callback} [callback] The second argument, <code>tokenizePayload</code> is a {@link VisaCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a promise that resolves with the {@link VisaCheckout~tokenizePayload|tokenizePayload}.
  * @returns {Promise|void} Returns a promise if no callback is provided.
- * @example
- * V.on('payment.success', function (payment) {
- *   visaCheckoutInstance.tokenize(payment, function (err, tokenizePayload) {
- *     if (err) {
- *       console.error('There was an error tokenizing Visa Checkout', err);
- *       return;
- *     }
- *     console.log('Send tokenizePayload.nonce to your server here!', tokenizePayload);
- *   });
- * });
  */
 VisaCheckout.prototype.tokenize = function (payment) {
   var self = this;
@@ -181,9 +156,11 @@ VisaCheckout.prototype.tokenize = function (payment) {
     }
   }).then(function (response) {
     analytics.sendEvent(self._client, 'visacheckout.tokenize.succeeded');
+
     return response.visaCheckoutCards[0];
   }).catch(function (err) {
     analytics.sendEvent(self._client, 'visacheckout.tokenize.failed');
+
     return Promise.reject(new BraintreeError({
       type: errors.VISA_CHECKOUT_TOKENIZATION.type,
       code: errors.VISA_CHECKOUT_TOKENIZATION.code,

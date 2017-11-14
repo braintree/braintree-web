@@ -84,6 +84,7 @@ function create(options) {
     analytics.sendEvent(options.client, 'paypal.initialized');
 
     pp = new PayPal(options);
+
     return pp._initialize();
   });
 }

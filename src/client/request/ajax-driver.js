@@ -46,6 +46,7 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
         if (tcpRetryCount < MAX_TCP_RETRYCOUNT && requestShouldRetry(status)) {
           tcpRetryCount++;
           _requestWithRetry(options, tcpRetryCount, cb);
+
           return;
         }
         callback(resBody || 'error', null, status || 500);

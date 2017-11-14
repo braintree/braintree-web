@@ -4,7 +4,7 @@ var BraintreeError = require('../lib/braintree-error');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var request = require('./request');
-var uuid = require('../lib/uuid');
+var uuid = require('../lib/vendor/uuid');
 var constants = require('../lib/constants');
 var createAuthorizationData = require('../lib/create-authorization-data');
 var errors = require('./errors');
@@ -27,6 +27,7 @@ function getConfiguration(options) {
       authData = createAuthorizationData(options.authorization);
     } catch (err) {
       reject(new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION));
+
       return;
     }
     attrs = authData.attrs;
@@ -58,6 +59,7 @@ function getConfiguration(options) {
             originalError: err
           }
         }));
+
         return;
       }
 

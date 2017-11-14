@@ -7,6 +7,7 @@ function comparePossibleCardTypes(a, b) {
 
   aHash = a.reduce(function (accum, type) {
     accum[type.type] = true;
+
     return accum;
   }, {});
 

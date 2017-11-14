@@ -205,6 +205,7 @@ function createTokenizationHandler(client, cardForm) {
 
     if (isEmpty) {
       reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
+
       return;
     } else if (!isValid) {
       reply([new BraintreeError({
@@ -213,6 +214,7 @@ function createTokenizationHandler(client, cardForm) {
         message: errors.HOSTED_FIELDS_FIELDS_INVALID.message,
         details: {invalidFieldKeys: invalidFieldKeys}
       })]);
+
       return;
     }
 
@@ -225,6 +227,7 @@ function createTokenizationHandler(client, cardForm) {
         code: sharedErrors.INVALID_OPTION.code,
         message: 'options.gateways is invalid.'
       })]);
+
       return;
     }
 

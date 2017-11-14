@@ -243,6 +243,7 @@ Client.prototype.request = function (options, callback) {
 
       if (requestError) {
         reject(requestError);
+
         return;
       }
 
@@ -262,6 +263,7 @@ Client.prototype.request = function (options, callback) {
 
       callback(err, null, status);
     });
+
     return;
   }
 

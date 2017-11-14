@@ -235,10 +235,12 @@ Masterpass.prototype._createFrameOpenHandler = function (resolve, reject) {
       if (popupBridgeErr) {
         analytics.sendEvent(self._client, 'masterpass.tokenization.closed-popupbridge.by-user');
         reject(convertToBraintreeError(popupBridgeErr, errors.MASTERPASS_POPUP_CLOSED));
+
         return;
       } else if (!payload.queryItems) {
         analytics.sendEvent(self._client, 'masterpass.tokenization.failed-popupbridge');
         reject(new BraintreeError(errors.MASTERPASS_FLOW_FAILED));
+
         return;
       }
 
@@ -253,18 +255,21 @@ Masterpass.prototype._createFrameOpenHandler = function (resolve, reject) {
       if (frameServiceErr.code === 'FRAME_SERVICE_FRAME_CLOSED') {
         analytics.sendEvent(self._client, 'masterpass.tokenization.closed.by-user');
         reject(new BraintreeError(errors.MASTERPASS_POPUP_CLOSED));
+
         return;
       }
 
       if (frameServiceErr.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
         analytics.sendEvent(self._client, 'masterpass.tokenization.failed.to-open');
         reject(new BraintreeError(errors.MASTERPASS_POPUP_OPEN_FAILED));
+
         return;
       }
 
       analytics.sendEvent(self._client, 'masterpass.tokenization.failed');
       self._closeWindow();
       reject(convertToBraintreeError(frameServiceErr, errors.MASTERPASS_FLOW_FAILED));
+
       return;
     }
 
@@ -278,6 +283,7 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
   if (payload.mpstatus !== 'success') {
     analytics.sendEvent(self._client, 'masterpass.tokenization.closed.by-user');
     self._closeWindow();
+
     return Promise.reject(new BraintreeError(errors.MASTERPASS_POPUP_CLOSED));
   }
 
@@ -292,6 +298,7 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
     } else {
       analytics.sendEvent(self._client, 'masterpass.tokenization.success');
     }
+
     return response.masterpassCards[0];
   }).catch(function (tokenizeErr) {
     self._closeWindow();

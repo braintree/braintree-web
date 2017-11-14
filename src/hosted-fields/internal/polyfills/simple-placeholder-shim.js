@@ -1,3 +1,5 @@
+/* eslint-disable no-mixed-operators */
+
 'use strict';
 
 var assign = require('../../../lib/assign').assign;
@@ -83,6 +85,7 @@ function createPlaceholderFor(el) {
   stealStyles(el, result);
   addStyles(result);
   stealPlaceholder(el, result);
+
   return result;
 }
 
@@ -153,8 +156,8 @@ function stealPlaceholder(src, dest) {
       '';
 
   result = result.replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;');
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
   dest.innerHTML = result;
 }
 
@@ -166,6 +169,7 @@ function getStyle(elem, prop) {
   } else if (prop in elem.style) {
     return elem.style[prop];
   }
+
   return null;
 }
 

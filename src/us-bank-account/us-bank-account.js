@@ -257,6 +257,7 @@ USBankAccount.prototype._tokenizeBankLogin = function (options) {
     self._loadPlaid(function (plaidLoadErr, plaid) {
       if (plaidLoadErr) {
         reject(plaidLoadErr);
+
         return;
       }
 
@@ -328,6 +329,7 @@ function errorFrom(err) {
     error = new BraintreeError(errors.US_BANK_ACCOUNT_TOKENIZATION_NETWORK_ERROR);
   }
   error.details = {originalError: err};
+
   return error;
 }
 
@@ -347,6 +349,7 @@ USBankAccount.prototype._loadPlaid = function (callback) {
 
   if (global.Plaid) {
     callback(null, global.Plaid);
+
     return;
   }
 

@@ -277,6 +277,7 @@ describe('credit card model', function () {
       CreditCardForm.prototype.emitEvent.call({
         get: function (property) {
           if (property === 'possibleCardTypes') { return []; }
+
           return {};
         },
         _fieldKeys: []
@@ -317,6 +318,7 @@ describe('credit card model', function () {
       CreditCardForm.prototype.emitEvent.call({
         get: function (property) {
           if (property === 'possibleCardTypes') { return cards; }
+
           return {};
         },
         _fieldKeys: []
@@ -352,6 +354,7 @@ describe('credit card model', function () {
               gaps: [3, 7, 11]
             }];
           }
+
           return {};
         },
         _fieldKeys: []

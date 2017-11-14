@@ -23,6 +23,7 @@ function _handler(node) {
     global[callbackName]({status: parseInt(status, 10)});
   } else {
     node.onerror();
+
     return;
   }
 }
@@ -65,6 +66,7 @@ describe('JSONPDriver', function () {
       }, function (err, resp) {
         if (err) {
           done(err);
+
           return;
         }
 
@@ -133,6 +135,7 @@ describe('JSONPDriver', function () {
       }, function (err, resp) {
         if (err) {
           done(err);
+
           return;
         }
 

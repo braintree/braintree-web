@@ -79,7 +79,7 @@ Venmo.prototype.isBrowserSupported = function () {
   var supportsReturnToSameTab = browserDetection.isIosSafari() || isAndroidChrome;
   var supportsReturnToNewTab = isIosChrome || browserDetection.isSamsungBrowser() || browserDetection.isMobileFirefox();
 
-  return supportsReturnToSameTab || this._allowNewBrowserTab && supportsReturnToNewTab;
+  return supportsReturnToSameTab || (this._allowNewBrowserTab && supportsReturnToNewTab);
 };
 
 /**
@@ -215,6 +215,7 @@ function getFragmentParameters() {
     var value = decodeURIComponent(parts[1]);
 
     toReturn[key] = value;
+
     return toReturn;
   }, {});
 }

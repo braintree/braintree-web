@@ -181,6 +181,7 @@ ApplePay.prototype.performValidation = function (options) {
     }
   }).then(function (response) {
     analytics.sendEvent(self._client, 'applepay.performValidation.succeeded');
+
     return Promise.resolve(response);
   }).catch(function (err) {
     analytics.sendEvent(self._client, 'applepay.performValidation.failed');
@@ -269,6 +270,7 @@ ApplePay.prototype.tokenize = function (options) {
     }
   }).then(function (response) {
     analytics.sendEvent(self._client, 'applepay.tokenize.succeeded');
+
     return Promise.resolve(response.applePayCards[0]);
   }).catch(function (err) {
     analytics.sendEvent(self._client, 'applepay.tokenize.failed');

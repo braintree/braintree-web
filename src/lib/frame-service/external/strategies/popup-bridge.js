@@ -21,6 +21,7 @@ PopupBridge.prototype.initialize = function (callback) {
     if (err || popupDismissed) {
       // User clicked "Done" button of browser view
       callback(new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED));
+
       return;
     }
     // User completed popup flow (includes success and cancel cases)

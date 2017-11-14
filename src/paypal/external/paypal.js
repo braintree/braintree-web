@@ -260,6 +260,7 @@ PayPal.prototype.tokenize = function (options, callback) {
 
     if (callback) {
       callback(optionError);
+
       return this._frameService.createNoopHandler();
     }
 

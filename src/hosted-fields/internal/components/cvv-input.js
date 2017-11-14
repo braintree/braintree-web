@@ -20,6 +20,7 @@ function _getPattern(length) {
   if (!(length in PATTERN_CACHE)) {
     PATTERN_CACHE[length] = _generatePattern(length);
   }
+
   return PATTERN_CACHE[length];
 }
 

@@ -1,6 +1,6 @@
 'use strict';
 
-var atob = require('../lib/polyfill').atob;
+var atob = require('../lib/vendor/polyfill').atob;
 
 var apiUrls = {
   production: 'https://api.braintreegateway.com:443',

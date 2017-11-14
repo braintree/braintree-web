@@ -18,10 +18,6 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @param {Client} options.client A {@link Client} instance.
  * @param {callback} [callback] The second argument, `data`, is the {@link ThreeDSecure} instance. If no callback is provided, it returns a promise that resolves the {@link ThreeDSecure} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
- * @example
- * braintree.threeDSecure.create({
- *   client: client
- * }, callback);
  */
 function create(options) {
   return basicComponentVerification.verify({

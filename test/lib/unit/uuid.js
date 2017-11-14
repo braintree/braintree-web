@@ -1,6 +1,6 @@
 'use strict';
 
-var uuid = require('../../../src/lib/uuid');
+var uuid = require('../../../src/lib/vendor/uuid');
 var isUuid = require('is-uuid');
 
 describe('uuid', function () {

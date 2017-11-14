@@ -7,7 +7,7 @@ var Bus = require('../../bus');
 var events = require('../shared/events');
 var errors = require('../shared/errors');
 var constants = require('../shared/constants');
-var uuid = require('../../uuid');
+var uuid = require('../../vendor/uuid');
 var iFramer = require('@braintree/iframer');
 var BraintreeError = require('../../braintree-error');
 var browserDetection = require('../shared/browser-detection');
@@ -125,6 +125,7 @@ FrameService.prototype.open = function (options, callback) {
     if (callback) {
       callback(new BraintreeError(errors.FRAME_SERVICE_FRAME_OPEN_FAILED));
     }
+
     return;
   }
   this._pollForPopupClose();

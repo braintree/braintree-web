@@ -119,6 +119,7 @@ describe('PayPal', function () {
       this.sandbox.stub(frameService, 'create').yields(frameServiceInstance);
 
       pp = new PayPal({client: this.client});
+
       return pp._initialize().then(function (res) {
         expect(res).to.equal(pp);
       });
@@ -566,6 +567,7 @@ describe('PayPal', function () {
       });
 
       this.options.flow = 'vault';
+
       return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
         expect(this.context._frameService.redirect).to.be.calledWith('approval-url');
       }.bind(this));
@@ -1147,6 +1149,7 @@ describe('PayPal', function () {
       var fakeError = {};
 
       this.context._client.request.rejects(fakeError);
+
       return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(rejectIfResolves).catch(function () {
         expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.failed');
       }.bind(this));
@@ -1158,6 +1161,7 @@ describe('PayPal', function () {
       global.popupBridge = {};
 
       this.context._client.request.rejects(fakeError);
+
       return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(rejectIfResolves).catch(function () {
         expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.failed-popupbridge');
       }.bind(this));

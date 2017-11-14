@@ -198,19 +198,6 @@ PayPalCheckout.prototype.createPayment = function (options) {
  * @param {string} [tokenizeOptions.paymentId] Payment ID returned by PayPal `onAuthorize` callback.
  * @param {string} [tokenizeOptions.billingToken] Billing Token returned by PayPal `onAuthorize` callback.
  * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
- * @example
- * // this paypal object is created by checkout.js
- * // see https://github.com/paypal/paypal-checkout
- * paypal.Button.render({
- *   onAuthorize: function (data, actions) {
- *     return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
- *       // Submit payload.nonce to your server
- *     }).catch(function (err) {
- *       // handle error
- *     });
- *   },
- *   // Add other options, e.g. payment, env, locale
- * }, '#paypal-button');
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {

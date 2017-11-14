@@ -65,6 +65,7 @@ function configuration() {
 
 function client(options) {
   options = options || {};
+
   return {
     getConfiguration: function () {
       return options.configuration || configuration();

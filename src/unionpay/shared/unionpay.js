@@ -11,7 +11,7 @@ var events = constants.events;
 var iFramer = require('@braintree/iframer');
 var methods = require('../../lib/methods');
 var VERSION = process.env.npm_package_version;
-var uuid = require('../../lib/uuid');
+var uuid = require('../../lib/vendor/uuid');
 var Promise = require('../../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 
@@ -42,67 +42,6 @@ function UnionPay(options) {
  * @param {string} options.card.number Card number.
  * @param {HostedFields} [options.hostedFields] The Hosted Fields instance used to collect card data. Required if you are not using the `card` option.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}. If no callback is provided, `fetchCapabilities` returns a promise that resolves with a {@link UnionPay#fetchCapabilitiesPayload fetchCapabilitiesPayload}.
- * @example <caption>With raw card data</caption>
- * unionpayInstance.fetchCapabilities({
- *   card: {
- *     number: '4111111111111111'
- *   }
- * }, function (fetchErr, cardCapabilities) {
- *   if (fetchErr) {
- *     console.error(fetchErr);
- *     return;
- *   }
- *
- *   if (cardCapabilities.isUnionPay) {
- *     if (cardCapabilities.unionPay && !cardCapabilities.unionPay.isSupported) {
- *       // Braintree cannot process this UnionPay card.
- *       // Ask the user for a different card.
- *       return;
- *     }
- *
- *     if (cardCapabilities.isDebit) {
- *       // CVV and expiration date are not required
- *     } else {
- *       // CVV and expiration date are required
- *     }
- *
- *     // Show mobile phone number field for enrollment
- *   }
- * });
- * @example <caption>With Hosted Fields</caption>
- * // Fetch capabilities on `validityChange` inside of the Hosted Fields `create` callback
- * hostedFieldsInstance.on('validityChange', function (event) {
- *   // Only attempt to fetch capabilities when a valid card number has been entered
- *   if (event.emittedBy === 'number' && event.fields.number.isValid) {
- *     unionpayInstance.fetchCapabilities({
- *       hostedFields: hostedFieldsInstance
- *     }, function (fetchErr, cardCapabilities) {
- *       if (fetchErr) {
- *         console.error(fetchErr);
- *         return;
- *       }
- *
- *       if (cardCapabilities.isUnionPay) {
- *         if (cardCapabilities.unionPay && !cardCapabilities.unionPay.isSupported) {
- *           // Braintree cannot process this UnionPay card.
- *           // Ask the user for a different card.
- *           return;
- *         }
- *         if (cardCapabilities.isDebit) {
- *           // CVV and expiration date are not required
- *           // Hide the containers with your `cvv` and `expirationDate` fields
- *         } else {
- *           // CVV and expiration date are required
- *         }
- *       } else {
- *         // Not a UnionPay card
- *         // When form is complete, tokenize using your Hosted Fields instance
- *       }
- *
- *       // Show your own mobile country code and phone number inputs for enrollment
- *     });
- *   });
- * });
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 UnionPay.prototype.fetchCapabilities = function (options) {
@@ -125,6 +64,7 @@ UnionPay.prototype.fetchCapabilities = function (options) {
       }
     }).then(function (response) {
       analytics.sendEvent(client, 'unionpay.capabilities-received');
+
       return response;
     }).catch(function (err) {
       var status = err.details && err.details.httpStatus;
@@ -134,6 +74,7 @@ UnionPay.prototype.fetchCapabilities = function (options) {
       if (status === 403) {
         return Promise.reject(err);
       }
+
       return Promise.reject(new BraintreeError({
         type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
         code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
@@ -153,6 +94,7 @@ UnionPay.prototype.fetchCapabilities = function (options) {
         self._bus.emit(events.HOSTED_FIELDS_FETCH_CAPABILITIES, {hostedFields: hostedFields}, function (response) {
           if (response.err) {
             reject(new BraintreeError(response.err));
+
             return;
           }
 
@@ -187,51 +129,6 @@ UnionPay.prototype.fetchCapabilities = function (options) {
  * @param {string} options.mobile.countryCode The country code of the customer's mobile phone number.
  * @param {string} options.mobile.number The customer's mobile phone number.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link UnionPay~enrollPayload|enrollPayload}. If no callback is provided, `enroll` returns a promise that resolves with {@link UnionPay~enrollPayload|enrollPayload}.
- * @example <caption>With raw card data</caption>
- * unionpayInstance.enroll({
- *   card: {
- *     number: '4111111111111111',
- *     expirationMonth: '12',
- *     expirationYear: '2038'
- *   },
- *   mobile: {
- *     countryCode: '62',
- *     number: '111111111111'
- *   }
- * }, function (enrollErr, response) {
- *   if (enrollErr) {
- *      console.error(enrollErr);
- *      return;
- *   }
- *
- *   if (response.smsCodeRequired) {
- *     // If smsCodeRequired, wait for SMS auth code from customer
- *     // Then use response.enrollmentId during {@link UnionPay#tokenize}
- *   } else {
- *     // SMS code is not required from the user.
- *     // {@link UnionPay#tokenize} can be called immediately
- * });
- * @example <caption>With Hosted Fields</caption>
- * unionpayInstance.enroll({
- *   hostedFields: hostedFields,
- *   mobile: {
- *     countryCode: '62',
- *     number: '111111111111'
- *   }
- * }, function (enrollErr, response) {
- *   if (enrollErr) {
- *     console.error(enrollErr);
- *     return;
- *   }
- *
- *   if (response.smsCodeRequired) {
- *     // If smsCodeRequired, wait for SMS auth code from customer
- *     // Then use response.enrollmentId during {@link UnionPay#tokenize}
- *   } else {
- *     // SMS code is not required from the user.
- *     // {@link UnionPay#tokenize} can be called immediately
- *   }
- * });
  * @returns {void}
  */
 UnionPay.prototype.enroll = function (options) {
@@ -258,6 +155,7 @@ UnionPay.prototype.enroll = function (options) {
         self._bus.emit(events.HOSTED_FIELDS_ENROLL, {hostedFields: hostedFields, mobile: mobile}, function (response) {
           if (response.err) {
             reject(new BraintreeError(response.err));
+
             return;
           }
 
@@ -292,6 +190,7 @@ UnionPay.prototype.enroll = function (options) {
       data: data
     }).then(function (response) {
       analytics.sendEvent(client, 'unionpay.enrollment-succeeded');
+
       return {
         enrollmentId: response.unionPayEnrollmentId,
         smsCodeRequired: response.smsCodeRequired
@@ -311,6 +210,7 @@ UnionPay.prototype.enroll = function (options) {
       }
 
       analytics.sendEvent(client, 'unionpay.enrollment-failed');
+
       return Promise.reject(error);
     });
   }
@@ -343,37 +243,6 @@ UnionPay.prototype.enroll = function (options) {
  * @param {string} options.enrollmentId The enrollment ID from {@link UnionPay#enroll}.
  * @param {string} [options.smsCode] The SMS code received from the user if {@link UnionPay#enroll} payload have `smsCodeRequired`. if `smsCodeRequired` is false, smsCode should not be passed.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link UnionPay~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a promise that resolves with a {@link UnionPay~tokenizePayload|tokenizePayload}.
- * @example <caption>With raw card data</caption>
- * unionpayInstance.tokenize({
- *   card: {
- *     number: '4111111111111111',
- *     expirationMonth: '12',
- *     expirationYear: '2038',
- *     cvv: '123'
- *   },
- *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
- *   smsCode: '11111' // Received by customer's phone, if SMS enrollment was required. Otherwise it should be omitted
- * }, function (tokenizeErr, response) {
- *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
- *     return;
- *   }
- *
- *   // Send response.nonce to your server
- * });
- * @example <caption>With Hosted Fields</caption>
- * unionpayInstance.tokenize({
- *   hostedFields: hostedFieldsInstance,
- *   enrollmentId: enrollResponse.enrollmentId, // Returned from enroll
- *   smsCode: '11111' // Received by customer's phone, if SMS enrollment was required. Otherwise it should be omitted
- * }, function (tokenizeErr, response) {
- *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
- *     return;
- *   }
- *
- *   // Send response.nonce to your server
- * });
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 UnionPay.prototype.tokenize = function (options) {
@@ -424,6 +293,7 @@ UnionPay.prototype.tokenize = function (options) {
       delete tokenizedCard.threeDSecureInfo;
 
       analytics.sendEvent(client, 'unionpay.nonce-received');
+
       return tokenizedCard;
     }).catch(function (err) {
       var error;
@@ -453,6 +323,7 @@ UnionPay.prototype.tokenize = function (options) {
         self._bus.emit(events.HOSTED_FIELDS_TOKENIZE, options, function (response) {
           if (response.err) {
             reject(new BraintreeError(response.err));
+
             return;
           }
 
@@ -490,6 +361,7 @@ UnionPay.prototype._initializeHostedFields = function (callback) {
 
   if (this._bus) {
     callback();
+
     return;
   }
 

@@ -1,7 +1,7 @@
 'use strict';
 
 var head;
-var uuid = require('../../lib/uuid');
+var uuid = require('../../lib/vendor/uuid');
 var querystring = require('../../lib/querystring');
 var timeouts = {};
 

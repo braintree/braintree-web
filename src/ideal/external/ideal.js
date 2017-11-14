@@ -133,12 +133,14 @@ Ideal.prototype.startPayment = wrapPromise(function (options) {
   return new Promise(function (resolve, reject) {
     if (!options || hasMissingOption(options)) {
       reject(new BraintreeError(errors.IDEAL_START_PAYMENT_MISSING_REQUIRED_OPTION));
+
       return;
     }
 
     if (self._idealPaymentStatus.authInProgress) {
       analytics.sendEvent(self._client, 'ideal.start-payment.error.already-opened');
       reject(new BraintreeError(errors.IDEAL_PAYMENT_ALREADY_IN_PROGRESS));
+
       return;
     }
 
@@ -212,6 +214,7 @@ Ideal.prototype._createStartPaymentCallback = function (resolve, reject) {
           status: idealPaymentStatus
         }
       });
+
       return;
     }
 
@@ -219,9 +222,11 @@ Ideal.prototype._createStartPaymentCallback = function (resolve, reject) {
       if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
         analytics.sendEvent(self._client, 'ideal.start-payment.closed.by-user');
         reject(new BraintreeError(errors.IDEAL_WINDOW_CLOSED));
+
         return;
       } else if (err.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
         reject(new BraintreeError(errors.IDEAL_WINDOW_OPEN_FAILED));
+
         return;
       }
 
@@ -289,6 +294,7 @@ Ideal.prototype._pollForCompleteTransactionStatus = function (retryCount) {
 
   if (!this._idealPaymentStatus.id) {
     this._startPaymentCallback(errors.IDEAL_PAYMENT_ALREADY_IN_PROGRESS);
+
     return;
   }
 

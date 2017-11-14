@@ -25,6 +25,7 @@ function Kount(options) {
   if (previouslyInitializedDeviceData) {
     this.deviceData = previouslyInitializedDeviceData;
     this._isCached = true;
+
     return;
   }
 

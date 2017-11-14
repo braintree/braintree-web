@@ -17,6 +17,7 @@ Destructor.prototype.registerFunctionForTeardown = function (fn) {
 Destructor.prototype.teardown = function (callback) {
   if (this._isTearingDown) {
     callback(new Error('Destructor is already tearing down'));
+
     return;
   }
 
