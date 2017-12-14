@@ -213,10 +213,10 @@ FrameService.prototype._getFrameForEnvironment = function (options) {
 
   var initOptions = assign({}, this._options, options);
 
-  if (usePopup) {
-    return new Popup(initOptions);
-  } else if (popupBridgeExists) {
+  if (popupBridgeExists) {
     return new PopupBridge(initOptions);
+  } else if (usePopup) {
+    return new Popup(initOptions);
   }
 
   return new Modal(initOptions);
