@@ -455,6 +455,7 @@ function HostedFields(options) {
 
   failureTimeout = setTimeout(function () {
     analytics.sendEvent(self._client, 'custom.hosted-fields.load.timed-out');
+    self._emit('timeout');
   }, INTEGRATION_TIMEOUT_MS);
 
   this._bus.on(events.FRAME_READY, function (reply) {
@@ -568,6 +569,8 @@ HostedFields.prototype.teardown = function () {
  * @param {string} [options.billingAddress.company] When supplied, this company name will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.streetAddress] When supplied, this street address will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.extendedAddress] When supplied, this extended address will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.locality] When supplied, this locality (the city) will be tokenized along with the contents of the fields.
+ * @param {string} [options.billingAddress.region] When supplied, this region (the state) will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryCodeNumeric] When supplied, this numeric country code will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryCodeAlpha2] When supplied, this alpha 2 representation of a country will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryCodeAlpha3] When supplied, this alpha 3 representation of a country will be tokenized along with the contents of the fields.

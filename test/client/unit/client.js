@@ -4,6 +4,7 @@ var Client = require('../../../src/client/client');
 var VERSION = process.env.npm_package_version;
 var fake = require('../../helpers/fake');
 var BraintreeError = require('../../../src/lib/braintree-error');
+var analytics = require('../../../src/lib/analytics');
 
 describe('Client', function () {
   describe('bad instantiation', function () {
@@ -455,6 +456,23 @@ describe('Client', function () {
       expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {_meta: {source: 'custom source'}}
       }));
+    });
+
+    it('calls driver with a callable sendAnalyticsEvent function', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(analytics, 'sendEvent');
+
+      this.sandbox.stub(client, '_request').callsFake(function (options) {
+        options.sendAnalyticsEvent('my.event');
+      });
+
+      client.request({
+        method: 'post',
+        endpoint: 'payment_methods'
+      }, function () {});
+
+      expect(analytics.sendEvent).to.be.calledWith(client, 'my.event');
     });
 
     it("doesn't set headers when API is unspecified", function () {

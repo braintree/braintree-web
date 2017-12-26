@@ -29,6 +29,8 @@ var WHITELISTED_BILLING_ADDRESS_FIELDS = [
   'countryCodeAlpha3',
   'countryName',
   'extendedAddress',
+  'locality',
+  'region',
   'firstName',
   'lastName',
   'postalCode',

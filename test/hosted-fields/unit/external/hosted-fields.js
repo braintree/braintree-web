@@ -21,6 +21,7 @@ describe('HostedFields', function () {
     };
 
     this.defaultConfiguration.client._request = function () {};
+    this.sandbox.stub(analytics, 'sendEvent');
   });
 
   describe('Constructor', function () {
@@ -45,8 +46,6 @@ describe('HostedFields', function () {
     it('sends an analytics event', function () {
       var client = this.defaultConfiguration.client;
 
-      this.sandbox.stub(analytics, 'sendEvent');
-
       new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
       expect(analytics.sendEvent).to.be.calledWith(client, 'custom.hosted-fields.initialized');
@@ -56,8 +55,6 @@ describe('HostedFields', function () {
       var client = this.defaultConfiguration.client;
       var clock = this.sandbox.useFakeTimers();
 
-      this.sandbox.stub(analytics, 'sendEvent');
-
       new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
       clock.tick(59999);
@@ -65,6 +62,21 @@ describe('HostedFields', function () {
 
       clock.tick(1);
       expect(analytics.sendEvent).to.be.calledWith(client, 'custom.hosted-fields.load.timed-out');
+    });
+
+    it('emits a timeout event if the fields take too long to set up', function () {
+      var instance;
+      var clock = this.sandbox.useFakeTimers();
+
+      instance = new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+
+      this.sandbox.stub(instance, '_emit');
+
+      clock.tick(59999);
+      expect(instance._emit).not.to.be.calledWith('timeout');
+
+      clock.tick(1);
+      expect(instance._emit).to.be.calledWith('timeout');
     });
 
     it('subscribes to FRAME_READY', function () {
@@ -400,7 +412,6 @@ describe('HostedFields', function () {
       var teardownStub = {teardown: function () {}};
 
       this.sandbox.stub(teardownStub, 'teardown');
-      this.sandbox.stub(analytics, 'sendEvent');
 
       function callback() {}
 
@@ -415,8 +426,6 @@ describe('HostedFields', function () {
     it('calls teardown analytic', function (done) {
       var fakeErr = {};
       var client = this.defaultConfiguration.client;
-
-      this.sandbox.stub(analytics, 'sendEvent');
 
       HostedFields.prototype.teardown.call({
         _client: client,
@@ -436,8 +445,6 @@ describe('HostedFields', function () {
     it('returns a promise', function () {
       var client = this.defaultConfiguration.client;
       var promise;
-
-      this.sandbox.stub(analytics, 'sendEvent');
 
       promise = HostedFields.prototype.teardown.call({
         _destructor: {teardown: function () {}},

@@ -1,5 +1,6 @@
 'use strict';
 
+var GraphQL = require('./request/graphql');
 var request = require('./request');
 var isWhitelistedDomain = require('../lib/is-whitelisted-domain');
 var BraintreeError = require('../lib/braintree-error');
@@ -9,6 +10,7 @@ var Promise = require('../lib/promise');
 var once = require('../lib/once');
 var deferred = require('../lib/deferred');
 var assign = require('../lib/assign').assign;
+var analytics = require('../lib/analytics');
 var constants = require('./constants');
 var errors = require('./errors');
 var sharedErrors = require('../lib/errors');
@@ -86,6 +88,12 @@ function Client(configuration) {
         message: 'braintreeApi URL is on an invalid domain.'
       });
     }
+  }
+
+  if (gatewayConfiguration.graphQL) {
+    this._graphQL = new GraphQL({
+      graphQL: gatewayConfiguration.graphQL
+    });
   }
 }
 
@@ -206,6 +214,7 @@ Client.prototype.request = function (options, callback) {
 
     requestOptions = {
       method: options.method,
+      graphQL: self._graphQL,
       timeout: options.timeout
     };
 
@@ -235,6 +244,9 @@ Client.prototype.request = function (options, callback) {
     }
 
     requestOptions.url = baseUrl + options.endpoint;
+    requestOptions.sendAnalyticsEvent = function (kind) {
+      analytics.sendEvent(self, kind);
+    };
 
     self._request(requestOptions, function (err, data, status) {
       var resolvedData, requestError;

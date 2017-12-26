@@ -636,6 +636,30 @@ describe('credit card model', function () {
       this.card.set('postalCode.value', '4321');
       expect(this.card.invalidFieldKeys()).to.not.contain('postalCode');
     });
+
+    it('marks cvv as invalid if set minlength is not reached in cvv only integration', function () {
+      var card = new CreditCardForm(helpers.getModelConfig([
+        'cvv'
+      ]));
+
+      card.set('cvv.value', '123');
+
+      expect(card.invalidFieldKeys()).to.not.contain('cvv');
+
+      card.configuration.fields.cvv.minlength = 4;
+      card.set('cvv.value', '321');
+      expect(card.invalidFieldKeys()).to.contain('cvv');
+
+      card.set('cvv.value', '1234');
+      expect(card.invalidFieldKeys()).to.not.contain('cvv');
+    });
+
+    it('ignores cvv minlength in non-cvv only integration', function () {
+      this.card.configuration.fields.cvv.minlength = 4;
+      this.card.set('cvv.value', '123');
+
+      expect(this.card.invalidFieldKeys()).to.not.contain('cvv');
+    });
   });
 
   describe('possibleCardTypes', function () {

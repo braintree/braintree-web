@@ -3,8 +3,10 @@
 
 var HostedFields = require('./external/hosted-fields');
 var basicComponentVerification = require('../lib/basic-component-verification');
+var errors = require('./shared/errors');
 var supportsInputFormatting = require('restricted-input/supports-input-formatting');
 var wrapPromise = require('@braintree/wrap-promise');
+var BraintreeError = require('../lib/braintree-error');
 var Promise = require('../lib/promise');
 var VERSION = process.env.npm_package_version;
 
@@ -20,7 +22,9 @@ var VERSION = process.env.npm_package_version;
  * @property {object|boolean} [select] If truthy, this field becomes a `<select>` dropdown list. This can only be used for `expirationMonth` and `expirationYear` fields. If you do not use a `placeholder` property for the field, the current month/year will be the default selected value.
  * @property {string[]} [select.options] An array of 12 strings, one per month. This can only be used for the `expirationMonth` field. For example, the array can look like `['01 - January', '02 - February', ...]`.
  * @property {number} [maxlength] This option applies only to the CVV and postal code fields. Will be used as the `maxlength` attribute of the input if it is less than the default. The primary use cases for the `maxlength` option are: limiting the length of the CVV input for CVV-only verifications when the card type is known and limiting the length of the postal code input when cards are coming from a known region.
- * @property {number} [minlength=3] This option applies only to the postal code field. Will be used as the `minlength` attribute of the input. The default value is 3, representing the Icelandic postal code length. This option's primary use case is to increase the `minlength`, e.g. for US customers, the postal code `minlength` can be set to 5.
+ * @property {number} [minlength=3] This option applies only to the cvv and postal code fields. Will be used as the `minlength` attribute of the input.
+ * For postal code fields, the default value is 3, representing the Icelandic postal code length. This option's primary use case is to increase the `minlength`, e.g. for US customers, the postal code `minlength` can be set to 5.
+ * For cvv fields, the default value is 3. The `minlength` attribute only applies to integrations capturing a cvv without a number field.
  * @property {string} [prefill] A value to prefill the field with. For example, when creating an update card form, you can prefill the expiration date fields with the old expiration date data.
  */
 
@@ -167,9 +171,12 @@ function create(options) {
   }).then(function () {
     var integration = new HostedFields(options);
 
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
       integration.on('ready', function () {
         resolve(integration);
+      });
+      integration.on('timeout', function () {
+        reject(new BraintreeError(errors.HOSTED_FIELDS_TIMEOUT));
       });
     });
   });

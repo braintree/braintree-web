@@ -507,6 +507,64 @@ describe('internal', function () {
         }.bind(this));
       });
 
+      it('tokenizes locality', function (done) {
+        this.fakeOptions.billingAddress = {
+          locality: 'Chicago'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  locality: 'Chicago'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                locality: 'Chicago'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
+      it('tokenizes region', function (done) {
+        this.fakeOptions.billingAddress = {
+          region: 'IL'
+        };
+
+        create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'clientApi',
+            data: {
+              creditCard: {
+                billing_address: {
+                  region: 'IL'
+                }
+              }
+            }
+          });
+
+          expect(this.goodClient.request).to.be.calledWithMatch({
+            api: 'braintreeApi',
+            data: {
+              billing_address: {
+                region: 'IL'
+              }
+            }
+          });
+          done();
+        }.bind(this));
+      });
+
       it('tokenizes first name', function (done) {
         this.fakeOptions.billingAddress = {
           firstName: 'First'

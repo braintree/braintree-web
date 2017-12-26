@@ -3,11 +3,16 @@
 var sinon = require('sinon');
 var browserDetection = require('../../../../src/client/browser-detection');
 var AJAXDriver = require('../../../../src/client/request/ajax-driver');
+var xhr = require('../../../../src/client/request/xhr');
+var GraphQL = require('../../../../src/client/request/graphql');
 var TEST_SERVER_URL = 'http://localhost/ajax';
 
 describe('AJAXDriver', function () {
   beforeEach(function () {
     this.server = sinon.fakeServer.create({respondImmediately: true});
+    this.fakeGraphQL = {
+      isGraphQLRequest: this.sandbox.stub().returns(false)
+    };
   });
 
   afterEach(function () {
@@ -22,7 +27,8 @@ describe('AJAXDriver', function () {
 
     AJAXDriver.request({
       url: TEST_SERVER_URL,
-      timeout: 50
+      timeout: 50,
+      graphQL: this.fakeGraphQL
     }, function callback(err) {
       expect(err).to.not.eql(null);
       done();
@@ -52,7 +58,8 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'GET'
+        method: 'GET',
+        graphQL: this.fakeGraphQL
       }, function callback(err, data, status) {
         expect(err).to.not.exist;
         expect(status).to.equal(200);
@@ -79,7 +86,8 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'GET'
+        method: 'GET',
+        graphQL: this.fakeGraphQL
       }, function callback(err, data, status) {
         expect(err).to.not.exist;
         expect(status).to.equal(200);
@@ -111,7 +119,8 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'GET'
+        method: 'GET',
+        graphQL: this.fakeGraphQL
       }, function callback(err, data, status) {
         expect(err).to.equal('second');
         expect(status).to.equal(408);
@@ -138,7 +147,8 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'GET'
+        method: 'GET',
+        graphQL: this.fakeGraphQL
       }, function callback(err, data, status) {
         expect(err).to.equal('error');
         expect(status).to.equal(408);
@@ -154,7 +164,8 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'GET'
+        method: 'GET',
+        graphQL: this.fakeGraphQL
       }, function callback(err, resp) {
         if (err) {
           done(err);
@@ -172,7 +183,8 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'GET'
+        method: 'GET',
+        graphQL: this.fakeGraphQL
       }, function callback(err) {
         expect(err).to.not.eql(null);
         done();
@@ -186,7 +198,8 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'GET'
+        method: 'GET',
+        graphQL: this.fakeGraphQL
       }, function callback(err, res, status) {
         expect(status).to.equal(429);
         expect(res).to.be.null;
@@ -203,7 +216,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL + 'marco',
         data: {marco: 'polo'},
-        method: 'POST'
+        method: 'POST',
+        graphQL: this.fakeGraphQL
       }, function callback(err, resp) {
         if (err) {
           done(err);
@@ -222,7 +236,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL + 'marco',
         data: {marco: 'polo'},
-        method: 'POST'
+        method: 'POST',
+        graphQL: this.fakeGraphQL
       }, function () {});
 
       expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Content-Type', 'application/json');
@@ -238,7 +253,8 @@ describe('AJAXDriver', function () {
           Foo: 'foo',
           Bar: 'bar'
         },
-        method: 'POST'
+        method: 'POST',
+        graphQL: this.fakeGraphQL
       }, function () {});
 
       expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Foo', 'foo');
@@ -250,10 +266,203 @@ describe('AJAXDriver', function () {
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
-        method: 'POST'
+        method: 'POST',
+        graphQL: this.fakeGraphQL
       }, function callback(err) {
         expect(err).to.not.eql(null);
         done();
+      });
+    });
+
+    describe('graphql', function () {
+      beforeEach(function () {
+        this.gql = new GraphQL({
+          graphQL: {
+            url: 'http://localhost/graphql',
+            features: ['tokenize_credit_cards']
+          }
+        });
+
+        this.server.restore();
+
+        this.fakeXHR = {
+          open: this.sandbox.stub(),
+          send: this.sandbox.stub(),
+          setRequestHeader: this.sandbox.stub()
+        };
+        this.sandbox.stub(xhr, 'getRequestObject').returns(this.fakeXHR);
+      });
+
+      it('sets GraphQL required headers for GraphQL URLs', function () {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
+          data: {
+            tokenizationKey: 'fake_tokenization_key',
+            creditCard: {},
+            headers: {}
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function () {});
+
+        expect(this.fakeXHR.setRequestHeader).to.be.calledWith('Authorization', 'Bearer fake_tokenization_key');
+        expect(this.fakeXHR.setRequestHeader).to.be.calledWith('Braintree-Version', this.sandbox.match.string);
+      });
+
+      it('does not set GraphQL required headers for non GraphQL URLs', function () {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + 'non-graph-ql-endpoint',
+          data: {
+            tokenizationKey: 'fake_tokenization_key',
+            creditCard: {},
+            headers: {}
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function () {});
+
+        expect(this.fakeXHR.setRequestHeader).to.not.be.calledWith('Authorization', 'Bearer fake_tokenization_key');
+        expect(this.fakeXHR.setRequestHeader).to.not.be.calledWith('Braintree-Version', this.sandbox.match.string);
+      });
+
+      it('formats body for GraphQL URLs', function () {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
+          data: {
+            tokenizationKey: 'fake_tokenization_key',
+            creditCard: {},
+            headers: {}
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function () {});
+
+        expect(this.fakeXHR.send).to.be.calledWithMatch('mutation TokenizeCreditCard');
+      });
+
+      it('does not format body for non GraphQL URLs', function () {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + 'foo',
+          data: {
+            tokenizationKey: 'fake_tokenization_key',
+            creditCard: {},
+            headers: {}
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function () {});
+
+        expect(this.fakeXHR.send).to.not.be.calledWithMatch('mutation TokenizeCreditCard');
+      });
+
+      it('rewrites url for GraphQL URLs', function () {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
+          data: {
+            tokenizationKey: 'fake_tokenization_key',
+            creditCard: {},
+            headers: {}
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function () {});
+
+        expect(this.fakeXHR.open).to.be.calledWith('POST', 'http://localhost/graphql', true);
+      });
+
+      it('does not rewrite url for non GraphQL URLs', function () {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + 'foo',
+          data: {
+            tokenizationKey: 'fake_tokenization_key',
+            creditCard: {},
+            headers: {}
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function () {});
+
+        expect(this.fakeXHR.open).to.not.be.calledWith('POST', 'http://localhost/graphql', true);
+      });
+
+      it('provides formatted response from GraphQL', function (done) {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
+          data: {
+            tokenizationKey: 'fake_tokenization_key',
+            creditCard: {
+              number: '4111111111111111'
+            },
+            headers: {}
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function (err, body, status) {
+          expect(err).to.not.exist;
+          expect(status).to.equal(200);
+
+          expect(body).to.deep.equal({
+            creditCards: [
+              {
+                binData: {},
+                consumed: false,
+                description: 'ending in 11',
+                nonce: 'the-token',
+                details: {
+                  cardType: 'Visa',
+                  lastFour: '1111',
+                  lastTwo: '11'
+                },
+                type: 'CreditCard',
+                threeDSecureInfo: null
+              }
+            ]
+          });
+
+          done();
+        });
+
+        this.fakeXHR.readyState = 4;
+        this.fakeXHR.status = 200;
+        this.fakeXHR.responseText = JSON.stringify({
+          data: {
+            tokenizeCreditCard: {
+              token: 'the-token',
+              creditCard: {
+                binData: {},
+                brand: 'Visa',
+                last4: '1111'
+              }
+            }
+          }
+        });
+
+        this.fakeXHR.onreadystatechange();
+      });
+
+      it('does not provide formatted response from non GraphQL endpoints', function (done) {
+        AJAXDriver.request({
+          url: TEST_SERVER_URL + 'foo',
+          data: {
+            tokenizationKey: 'fake_tokenization_key'
+          },
+          method: 'POST',
+          graphQL: this.gql
+        }, function (err, body, status) {
+          expect(err).to.not.exist;
+          expect(status).to.equal(200);
+
+          expect(body).to.deep.equal({
+            foo: 'bar'
+          });
+          done();
+        });
+
+        this.fakeXHR.readyState = 4;
+        this.fakeXHR.status = 200;
+        this.fakeXHR.responseText = '{"foo":"bar"}';
+
+        this.fakeXHR.onreadystatechange();
       });
     });
   });

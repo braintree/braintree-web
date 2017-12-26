@@ -287,10 +287,23 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
     return Promise.reject(new BraintreeError(errors.MASTERPASS_POPUP_CLOSED));
   }
 
+  if (isMissingRequiredPayload(payload)) {
+    analytics.sendEvent(self._client, 'masterpass.tokenization.closed.missing-payload');
+    self._closeWindow();
+
+    return Promise.reject(new BraintreeError(errors.MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS));
+  }
+
   return self._client.request({
     endpoint: 'payment_methods/masterpass_cards',
     method: 'post',
-    data: formatTokenizeData(payload)
+    data: {
+      masterpassCard: {
+        checkoutResourceUrl: payload.checkout_resource_url,
+        requestToken: payload.oauth_token,
+        verifierToken: payload.oauth_verifier
+      }
+    }
   }).then(function (response) {
     self._closeWindow();
     if (global.popupBridge) {
@@ -312,15 +325,14 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
   });
 };
 
-function formatTokenizeData(payload) {
-  // Converts null values that can be returned as strings
-  return {
-    masterpassCard: {
-      checkoutResourceUrl: payload.checkout_resource_url,
-      requestToken: payload.oauth_token,
-      verifierToken: payload.oauth_verifier === 'null' ? null : payload.oauth_verifier
-    }
-  };
+function isMissingRequiredPayload(payload) {
+  return [
+    payload.oauth_verifier,
+    payload.oauth_token,
+    payload.checkout_resource_url
+  ].some(function (element) {
+    return element == null || element === 'null';
+  });
 }
 
 Masterpass.prototype._closeWindow = function () {

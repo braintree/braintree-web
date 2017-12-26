@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+## 3.27.0
+
+* Update card-validator to v4.2.0
+* Internal performance optimizations
+* Prefer popup bridge before browser supporting popups in frame service (#341, thanks @night)
+* Hosted Fields
+  * Send back timeout error if Hosted Fields takes longer than 60 seconds to set up
+  * Allow locality (the city) to be sent as part of billing address fields
+  * Allow region (the state) to be sent as part of billing address fields
+  * Allow cvv to have minlength be applied when using cvv only integration
+* Masterpass
+  * Throw MASTERPASS_POPUP_FAILED if required params returned by masterpass are missing
+* Payment Request - Beta
+  * Support `requestShipping` option
+* Pay with Google - Beta
+  * Support `requestShipping` option
+
 ## 3.26.0
 
 * Hosted Fields

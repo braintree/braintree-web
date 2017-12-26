@@ -59,6 +59,94 @@ var constants = require('../paypal/shared/constants');
  *
  * All UI (such as preventing actions on the parent page while authentication is in progress) is managed by {@link https://developer.paypal.com/docs/integration/direct/express-checkout/integration-jsv4|checkout.js}.
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/paypal-checkout.create|braintree-web.paypal-checkout.create} instead.</strong>
+ *
+ * You must have PayPal's checkout.js script loaded on your page to use PayPal Checkout. You can either use the [paypal-checkout package on npm](https://www.npmjs.com/package/paypal-checkout) with a build tool or use a script hosted by PayPal:
+ *
+ * ```html
+ * <script src="https://www.paypalobjects.com/api/checkout.js" data-version-4 log-level="warn"></script>
+ * ```
+ *
+ * Once you have the script loaded, there are two ways to integrate with the checkout.js library.
+ *
+ * #### Pass a Braintree object into checkout.js
+ *
+ * You can pass a `braintree` object into PayPal's checkout.js library. This will create the necessary Braintree {@link moudle:braintree-web/client.create|client} and {@link moudle:braintree-web/paypal-checkout.create|PayPal Checkout} components and automatically tokenize the authorized PayPal account. Use this integration option if you are not integrating with any other Braintree components.
+ *
+ * ```javascript
+ * paypal.Button.render({
+ *   braintree: braintree, // this object is available on the window by including the client and paypal-checkout component scripts on the page
+ *   client: {
+ *     production: 'production_authorization',
+ *     sandbox: 'sandbox_authorization'
+ *   },
+ *
+ *   env: 'production', // or 'sandbox'
+ *
+ *   payment: function (data, actions) {
+ *     return actions.braintree.create({
+ *       // your createPayment options here
+ *     });
+ *   },
+ *
+ *   onAuthorize: function (payload, actions) {
+ *     // send payload.nonce to your server
+ *
+ *     // for more data about the user's PayPal account:
+ *     // return actions.payment.get().then(function(data) { console.log(data); });
+ *   }
+ * }, '#paypal-button'); // the PayPal button will be rendered in an html element with the id `paypal-button`
+ * ```
+ *
+ * If you are using `npm` to load braintree, simply pass in the invidual components:
+ *
+ * ```javascript
+ * var btClient = require('braintree-web/client');
+ * var btPayPal = require('braintree-web/paypal-checkout');
+ *
+ * paypal.Button.render({
+ *   braintree: {
+ *     client: btClient,
+ *     paypalCheckout: btPayPal
+ *   },
+ *   client: {
+ *     production: 'production_authorization',
+ *     sandbox: 'sandbox_authorization'
+ *   },
+ *   // rest of checkout.js config
+ * ```
+ *
+ * #### Create the Braintree components manually
+ *
+ * Alternatively, you can create the Braintree {@link moudle:braintree-web/client.create|client} and {@link moudle:braintree-web/paypal-checkout.create|PayPal Checkout} components manually. Use this integration style if you prefer to have some logic between receiving the authorized PayPal account and tokenizing it.
+ *
+ * ```javascript
+ * braintree.client.create({
+ *   authorization: 'authorization'
+ * }).then(function (clientInstance) {
+ *   return braintree.paypalCheckout.create({
+ *     client: clientInstance
+ *   });
+ * }).then(function (paypalCheckoutInstance) {
+ *   return paypal.Button.render({
+ *     env: 'production', // or 'sandbox'
+ *
+ *     payment: function () {
+ *       return paypalCheckoutInstance.createPayment({
+ *         // your createPayment options here
+ *       });
+ *     },
+ *
+ *     onAuthorize: function (data, actions) {
+ *       // some logic here before tokenization happens below
+ *       return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+ *         // Submit payload.nonce to your server
+ *       });
+ *     }
+ *   }, '#paypal-button');
+ * }).catch(function (err) {
+ *  console.error('Error!', err);
+ * });
+ * ```
  */
 function PayPalCheckout(options) {
   this._client = options.client;

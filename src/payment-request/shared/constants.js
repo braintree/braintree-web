@@ -9,6 +9,10 @@ constants.events = enumerate([
   'FRAME_READY',
   'FRAME_CAN_MAKE_REQUESTS',
   'PAYMENT_REQUEST_INITIALIZED',
+  'SHIPPING_ADDRESS_CHANGE',
+  'UPDATE_SHIPPING_ADDRESS',
+  'SHIPPING_OPTION_CHANGE',
+  'UPDATE_SHIPPING_OPTION',
   'PAYMENT_REQUEST_FAILED',
   'PAYMENT_REQUEST_SUCCESSFUL'
 ], 'payment-request:');
@@ -18,6 +22,10 @@ constants.errors = {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS',
     message: 'There are no supported payment methods associated with this account.'
+  },
+  PAYMENT_REQUEST_INVALID_UPDATE_WITH_EVENT: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYMENT_REQUEST_INVALID_UPDATE_WITH_EVENT'
   },
   PAYMENT_REQUEST_CANCELED: {
     type: BraintreeError.types.CUSTOMER,

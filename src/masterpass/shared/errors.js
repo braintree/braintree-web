@@ -33,6 +33,11 @@ module.exports = {
     code: 'MASTERPASS_POPUP_OPEN_FAILED',
     message: 'Masterpass popup failed to open. Make sure to tokenize in response to a user action, such as a click.'
   },
+  MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS',
+    message: 'Masterpass popup failed to return all required parameters needed to continue tokenization.'
+  },
   MASTERPASS_POPUP_CLOSED: {
     type: BraintreeError.types.CUSTOMER,
     code: 'MASTERPASS_POPUP_CLOSED',

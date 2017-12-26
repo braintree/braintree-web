@@ -9,6 +9,7 @@ var uuid = require('../../lib/vendor/uuid');
 var useMin = require('../../lib/use-min');
 var methods = require('../../lib/methods');
 var Promise = require('../../lib/promise');
+var EventEmitter = require('../../lib/event-emitter');
 var BraintreeError = require('../../lib/braintree-error');
 var VERSION = process.env.npm_package_version;
 var events = require('../shared/constants').events;
@@ -37,6 +38,63 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @property {string} binData.productId The product id.
  */
 
+/**
+ * @typedef {object} PaymentRequestComponent~shippingEventObject
+ * @description The event payload sent from {@link PaymentRequestComponent#on|on}.
+ * @property {object} target An object which contains data about the event.
+ * @property {function} updateWith A method to call with the updated Payment Request details.
+ */
+
+/**
+ * @name PaymentRequestComponent#on
+ * @function
+ * @param {string} event The name of the event to which you are subscribing.
+ * @param {function} handler A callback to handle the event.
+ * @description Subscribes a handler function to a named event. `event` should be {@link PaymentRequestComponent#event:shippingAddressChange|shippingAddressChange} or {@link PaymentRequestComponent#event:shippingOptionChange|shippingOptionChange}. For convenience, you can also listen on `shippingaddresschange` or `shippingoptionchange` to match the event listeners in the [Payment Request API documentation](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request#shipping_in_payment_request_api). Events will emit a {@link PaymentRequestComponent~shippingEventObject|shippingEventObject}.
+ * @example
+ * <caption>Listening to a Payment Request event, in this case 'shippingAddressChange'</caption>
+ * braintree.paymentRequest.create({ ... }, function (createErr, paymentRequestInstance) {
+ *   paymentRequestInstance.on('shippingAddressChange', function (event) {
+ *     console.log(event.target.shippingAddress);
+ *   });
+ * });
+ * @returns {void}
+ */
+
+/**
+ * This event is emitted when the customer selects a shipping address.
+ * @event PaymentRequestComponent#shippingAddressChange
+ * @type {PaymentRequestComponent~shippingEventObject}
+ * @example
+ * <caption>Listening to a shipping address change event</caption>
+ * braintree.paymentRequest.create({ ... }, function (createErr, paymentRequestInstance) {
+ *   paymentRequestInstance.on('shippingAddressChange', function (event) {
+ *     // validate event.target.shippingAddress if needed
+ *
+ *     event.updateWith(paymentRequestDetails);
+ *   });
+ * });
+ */
+
+/**
+ * This event is emitted when the customer selects a shipping option.
+ * @event PaymentRequestComponent#shippingOptionChange
+ * @type {PaymentRequestComponent~shippingEventObject}
+ * @example
+ * <caption>Listening to a shipping option change event</caption>
+ * braintree.paymentRequest.create({ ... }, function (createErr, paymentRequestInstance) {
+ *   paymentRequestInstance.on('shippingOptionChange', function (event) {
+ *     // validate event.target.shippingOption if needed
+ *
+ *     paymentRequestDetails.shippingOptions.forEach(function (option) {
+ *       option.selected = option.id === event.target.shippingOption;
+ *     });
+ *
+ *     event.updateWith(paymentRequestDetails);
+ *   });
+ * });
+ */
+
 var CARD_TYPE_MAPPINGS = {
   Visa: 'visa',
   Mastercard: 'mastercard',
@@ -51,7 +109,18 @@ var CARD_TYPE_MAPPINGS = {
 var BRAINTREE_PAY_WITH_GOOGLE_MERCHANT_ID = '18278000977346790994';
 
 function composeUrl(assetsUrl, componentId, isDebug) {
-  return assetsUrl + '/web/' + VERSION + '/html/payment-request-frame' + useMin(isDebug) + '.html#' + componentId;
+  var baseUrl = assetsUrl;
+
+  // removeIf(production)
+  if (process.env.BRAINTREE_JS_ENV === 'development') {
+    // Pay with Google cannot tokenize in our dev environment
+    // so in development, we have to use a sandbox merchant
+    // but set the iFrame url to the development url
+    baseUrl = 'https://' + process.env.BT_DEV_HOST + ':9000';
+  }
+  // endRemoveIf(production)
+
+  return baseUrl + '/web/' + VERSION + '/html/payment-request-frame' + useMin(isDebug) + '.html#' + componentId;
 }
 
 /**
@@ -66,6 +135,8 @@ function composeUrl(assetsUrl, componentId, isDebug) {
 function PaymentRequestComponent(options) {
   var enabledPaymentMethods = options.enabledPaymentMethods || {};
 
+  EventEmitter.call(this);
+
   this._componentId = uuid();
   this._client = options.client;
   this._analyticsName = 'payment-request';
@@ -79,6 +150,10 @@ function PaymentRequestComponent(options) {
   }.bind(this));
   this._bus = new Bus({channel: this._componentId});
 }
+
+PaymentRequestComponent.prototype = Object.create(EventEmitter.prototype, {
+  constructor: PaymentRequestComponent
+});
 
 PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = function () {
   var configuration = this._client.getConfiguration();
@@ -140,6 +215,7 @@ PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = fun
 
 PaymentRequestComponent.prototype.initialize = function () {
   var clientConfiguration = this._client.getConfiguration();
+  var self = this;
 
   this._frame = iFramer({
     allowPaymentRequest: true,
@@ -158,20 +234,46 @@ PaymentRequestComponent.prototype.initialize = function () {
   }
 
   return new Promise(function (resolve) {
-    this._bus.on(events.FRAME_READY, function (reply) {
-      reply(this._client);
-    }.bind(this));
-    this._bus.on(events.FRAME_CAN_MAKE_REQUESTS, function () {
-      analytics.sendEvent(this._client, this._analyticsName + '.initialized');
-      resolve(this);
-    }.bind(this));
+    self._bus.on(events.FRAME_READY, function (reply) {
+      reply(self._client);
+    });
+    self._bus.on(events.FRAME_CAN_MAKE_REQUESTS, function () {
+      analytics.sendEvent(self._client, self._analyticsName + '.initialized');
+      self._bus.on(events.SHIPPING_ADDRESS_CHANGE, function (shippingAddress) {
+        var shippingAddressChangeEvent = {
+          target: {
+            shippingAddress: shippingAddress
+          },
+          updateWith: function (paymentDetails) {
+            self._bus.emit(events.UPDATE_SHIPPING_ADDRESS, paymentDetails);
+          }
+        };
+
+        self._emit('shippingAddressChange', shippingAddressChangeEvent);
+        self._emit('shippingaddresschange', shippingAddressChangeEvent);
+      });
+      self._bus.on(events.SHIPPING_OPTION_CHANGE, function (shippingOption) {
+        var shippingOptionChangeEvent = {
+          target: {
+            shippingOption: shippingOption
+          },
+          updateWith: function (paymentDetails) {
+            self._bus.emit(events.UPDATE_SHIPPING_OPTION, paymentDetails);
+          }
+        };
+
+        self._emit('shippingOptionChange', shippingOptionChangeEvent);
+        self._emit('shippingoptionchange', shippingOptionChangeEvent);
+      });
+      resolve(self);
+    });
 
     // TODO - We may need to apply the same setTimeout hack that Hosted Fields
     // uses for iframes to load correctly in Edge. See:
     // https://github.com/braintree/braintree-web/blob/0c951e5f9859c606652485de14188b6bd6656677/src/hosted-fields/external/hosted-fields.js#L449-L469
-    this._frame.src = composeUrl(clientConfiguration.gatewayConfiguration.assetsUrl, this._componentId, clientConfiguration.isDebug);
-    document.body.appendChild(this._frame);
-  }.bind(this));
+    self._frame.src = composeUrl(clientConfiguration.gatewayConfiguration.assetsUrl, self._componentId, clientConfiguration.isDebug);
+    document.body.appendChild(self._frame);
+  });
 };
 
 /**
@@ -220,8 +322,6 @@ PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration = f
  * @param {object} configuration.details The payment details. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_payment_details).
  * @param {array} [configuration.supportedPaymentMethods] The supported payment methods. If not passed in, the supported payment methods from the merchant account that generated the authorization for the client will be used. For details on this array, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_supported_payment_methods).
  * @param {object} [configuration.options] Additional payment request options. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_options_optional).
- *
- * **Note:** `requestShipping` is not supported by Braintree at this time.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link PaymentRequest~paymentPayload|paymentPayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link PaymentRequestComponent~tokenizePayload|tokenizePayload}.
  * @example
  * paymentRequestInstance.tokenize({
@@ -280,6 +380,67 @@ PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration = f
  *     requestPayerName: true,
  *     requestPayerPhone: true,
  *     requestPayerEmail: true
+ *   }
+ * }).then(function (payload) {
+ *   // send payload.nonce to your server
+ *   // collect additional info from the raw response
+ *   console.log(payload.details.rawPaymentResponse);
+ * });
+ * @example <caption>Request Shipping Information</caption>
+ * var shippingOptions = [
+ *   {
+ *     id: 'economy',
+ *     label: 'Economy Shipping (5-7 Days)',
+ *     amount: {
+ *       currency: 'USD',
+ *       value: '0',
+ *     },
+ *   }, {
+ *     id: 'express',
+ *     label: 'Express Shipping (2-3 Days)',
+ *     amount: {
+ *       currency: 'USD',
+ *       value: '5',
+ *     },
+ *   }, {
+ *     id: 'next-day',
+ *     label: 'Next Day Delivery',
+ *     amount: {
+ *       currency: 'USD',
+ *       value: '12',
+ *     },
+ *   },
+ * ];
+ * var paymentDetails = {
+ * 	 total: {
+ *     label: 'Total',
+ *     amount: {
+ *       currency: 'USD',
+ *       value: '10.00',
+ *     }
+ *   },
+ *   shippingOptions: shippingOptions
+ * };
+ *
+ * paymentRequest.on('shippingAddressChange', function (event) {
+ *   // validate shipping address on event.target.shippingAddress
+ *   // make changes to the paymentDetails or shippingOptions if necessary
+ *
+ *   event.updateWith(paymentDetails)
+ * });
+ *
+ * paymentRequest.on('shippingOptionChange', function (event) {
+ *   shippingOptions.forEach(function (option) {
+ *     option.selected = option.id === event.target.shippingOption;
+ *   });
+ *
+ *   event.updateWith(paymentDetails)
+ * });
+ *
+ * paymentRequestInstance.tokenize({
+ *   details: paymentDetails,
+ *   options: {
+ *     requestShipping: true
  *   }
  * }).then(function (payload) {
  *   // send payload.nonce to your server

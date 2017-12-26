@@ -472,10 +472,109 @@ describe('Masterpass', function () {
         });
       });
 
+      it('rejects with error if masterpass payment oauth_verifier is missing in payload', function () {
+        this.fakeClient.request.resolves({});
+        this.fakeFrameService.open.yieldsAsync(null, {
+          mpstatus: 'success',
+          oauth_token: 'token', // eslint-disable-line camelcase
+          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+        });
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function (err) {
+          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        });
+      });
+
+      it('rejects with error if masterpass payment oauth_verifier is null irrespective of mpstatus', function () {
+        this.fakeClient.request.resolves({});
+        this.fakeFrameService.open.yieldsAsync(null, {
+          mpstatus: 'success',
+          oauth_token: 'token', // eslint-disable-line camelcase
+          oauth_verifier: null, // eslint-disable-line camelcase
+          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+        });
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function (err) {
+          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        });
+      });
+
+      it('rejects with error if masterpass payment oauth_verifier is a string "null" irrespective of mpstatus', function () {
+        this.fakeClient.request.resolves({});
+        this.fakeFrameService.open.yieldsAsync(null, {
+          mpstatus: 'success',
+          oauth_token: 'token', // eslint-disable-line camelcase
+          oauth_verifier: 'null', // eslint-disable-line camelcase
+          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+        });
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function (err) {
+          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        });
+      });
+
+      it('rejects with error if masterpass payment oauth_token is null irrespective of mpstatus', function () {
+        this.fakeClient.request.resolves({});
+        this.fakeFrameService.open.yieldsAsync(null, {
+          mpstatus: 'success',
+          oauth_token: null, // eslint-disable-line camelcase
+          oauth_verifier: 'oauth-verifier', // eslint-disable-line camelcase
+          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+        });
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function (err) {
+          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        });
+      });
+
+      it('rejects with error if masterpass payment checkout resource url is null irrespective of mpstatus', function () {
+        this.fakeClient.request.resolves({});
+        this.fakeFrameService.open.yieldsAsync(null, {
+          mpstatus: 'success',
+          oauth_token: 'token', // eslint-disable-line camelcase
+          oauth_verifier: 'oauth-verifier', // eslint-disable-line camelcase
+          checkout_resource_url: null // eslint-disable-line camelcase
+        });
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function (err) {
+          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        });
+      });
+
       it('closes the popup when masterpass payment `mpstatus` is not `success`', function () {
         this.fakeFrameService.open.yieldsAsync(null, {
           mpstatus: 'failed',
           oauth_token: 'token', // eslint-disable-line camelcase
+          oauth_verifier: 'verifier', // eslint-disable-line camelcase
+          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+        });
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function () {
+          expect(this.fakeFrameService.close).to.be.calledOnce;
+        }.bind(this));
+      });
+
+      it('closes the popup when masterpass payment `mpstatus` is `success` but some params are missing', function () {
+        this.fakeFrameService.open.yieldsAsync(null, {
+          mpstatus: 'success',
           oauth_verifier: 'verifier', // eslint-disable-line camelcase
           checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
         });
@@ -557,6 +656,21 @@ describe('Masterpass', function () {
           expect(err).to.be.instanceof(BraintreeError);
           expect(err.details.originalError).to.equal(requestError);
         });
+      });
+
+      it('sends an analytics event if any masterpass payment params are missing', function () {
+        this.fakeFrameService.open.yieldsAsync(null, {
+          mpstatus: 'success',
+          oauth_verifier: 'verifier', // eslint-disable-line camelcase
+          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+        });
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function () {
+          expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.closed.missing-payload');
+        }.bind(this));
       });
 
       it('sends an analytics event if masterpass payment `mpstatus` is not `success`', function () {

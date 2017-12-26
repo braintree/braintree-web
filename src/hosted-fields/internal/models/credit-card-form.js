@@ -144,10 +144,12 @@ CreditCardForm.prototype._validateField = function (fieldKey) {
   var validate = validator[fieldKey];
 
   if (fieldKey === 'cvv') {
-    validationResult = this._validateCvv(value);
+    validationResult = this._validateCvv(value, {
+      minLength: this.configuration.fields.cvv && this.configuration.fields.cvv.minlength
+    });
   } else if (fieldKey === 'postalCode') {
     validationResult = validate(value, {
-      minLength: this.configuration.fields.postalCode.minlength
+      minLength: this.configuration.fields.postalCode && this.configuration.fields.postalCode.minlength
     });
   } else if (fieldKey === 'expirationDate') {
     validationResult = validate(splitDate(value));
@@ -169,11 +171,14 @@ function uniq(array) {
   });
 }
 
-CreditCardForm.prototype._validateCvv = function (value) {
-  var cvvSize;
+CreditCardForm.prototype._validateCvv = function (value, options) {
+  var cvvSize, minLength;
+
+  options = options || {};
+  minLength = options.minLength;
 
   if (this._fieldKeys.indexOf('number') === -1) { // CVV only
-    return validator.cvv(value, [3, 4]);
+    return validator.cvv(value, minLength || [3, 4]);
   }
 
   cvvSize = this.get('possibleCardTypes').map(function (item) {

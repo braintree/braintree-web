@@ -10,6 +10,8 @@ function constructBillingAddress(data) {
     country_code_alpha3: data.countryCodeAlpha3,
     country_name: data.countryName,
     extended_address: data.extendedAddress,
+    locality: data.locality,
+    region: data.region,
     first_name: data.firstName,
     last_name: data.lastName,
     postal_code: data.postalCode,

@@ -1,6 +1,7 @@
 'use strict';
 
 var Bus = require('../../../src/lib/bus');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var Promise = require('../../../src/lib/promise');
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var events = require('../../../src/hosted-fields/shared/constants').events;
@@ -68,6 +69,29 @@ describe('hostedFields', function () {
       });
 
       callFrameReadyHandler();
+    });
+
+    it('calls callback with timeout error', function (done) {
+      var cvvNode = document.createElement('div');
+
+      this.sandbox.stub(HostedFields.prototype, 'on').withArgs('timeout').yields();
+      cvvNode.id = 'cvv';
+      document.body.appendChild(cvvNode);
+
+      hostedFields.create({
+        client: this.fakeClient,
+        fields: {
+          cvv: {selector: '#cvv'}
+        }
+      }, function (err, thingy) {
+        expect(thingy).to.not.exist;
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('HOSTED_FIELDS_TIMEOUT');
+        expect(err.type).to.equal('UNKNOWN');
+        expect(err.message).to.equal('Hosted Fields timed out when attempting to set up.');
+
+        done();
+      });
     });
 
     it('returns a promise', function () {

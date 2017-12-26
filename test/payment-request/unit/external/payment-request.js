@@ -37,6 +37,8 @@ describe('Payment Request component', function () {
     this.instance = new PaymentRequestComponent({
       client: this.fakeClient
     });
+    this.sandbox.stub(this.instance, '_emit');
+    this.sandbox.stub(this.instance, 'on');
   });
 
   it('sets up a bus with a unique channel', function () {
@@ -182,7 +184,7 @@ describe('Payment Request component', function () {
         var iframe = document.body.appendChild.args[0][0];
 
         expect(document.body.appendChild).to.be.calledOnce;
-        expect(iframe.getAttribute('src')).to.match(/assets\.braintreegateway\.com\/web\/.*\/html\/payment-request-frame\.min\.html#.*/);
+        expect(iframe.getAttribute('src')).to.match(/html\/payment-request-frame\.min\.html#.*/);
         expect(iframe.getAttribute('allowPaymentRequest')).to.exist;
 
         done();
@@ -224,6 +226,56 @@ describe('Payment Request component', function () {
           done();
         });
       }, 100);
+    });
+
+    it('emits events for shipping address change', function (done) {
+      var shippingAddress = {foo: 'bar'};
+
+      Bus.prototype.on.withArgs('payment-request:SHIPPING_ADDRESS_CHANGE').yields(shippingAddress);
+      Bus.prototype.on.withArgs('payment-request:FRAME_CAN_MAKE_REQUESTS').yields();
+      this.instance.initialize();
+
+      setTimeout(function () {
+        expect(Bus.prototype.on).to.be.calledWith('payment-request:SHIPPING_ADDRESS_CHANGE');
+        expect(this.instance._emit).to.be.calledWith('shippingAddressChange', {
+          target: {
+            shippingAddress: shippingAddress
+          },
+          updateWith: this.sandbox.match.func
+        });
+        expect(this.instance._emit).to.be.calledWith('shippingaddresschange', {
+          target: {
+            shippingAddress: shippingAddress
+          },
+          updateWith: this.sandbox.match.func
+        });
+
+        done();
+      }.bind(this), 100);
+    });
+
+    it('emits events for shipping option change', function (done) {
+      Bus.prototype.on.withArgs('payment-request:SHIPPING_OPTION_CHANGE').yields('option');
+      Bus.prototype.on.withArgs('payment-request:FRAME_CAN_MAKE_REQUESTS').yields();
+      this.instance.initialize();
+
+      setTimeout(function () {
+        expect(Bus.prototype.on).to.be.calledWith('payment-request:SHIPPING_OPTION_CHANGE');
+        expect(this.instance._emit).to.be.calledWith('shippingOptionChange', {
+          target: {
+            shippingOption: 'option'
+          },
+          updateWith: this.sandbox.match.func
+        });
+        expect(this.instance._emit).to.be.calledWith('shippingoptionchange', {
+          target: {
+            shippingOption: 'option'
+          },
+          updateWith: this.sandbox.match.func
+        });
+
+        done();
+      }.bind(this), 100);
     });
   });
 

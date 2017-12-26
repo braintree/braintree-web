@@ -3,6 +3,11 @@
 var BraintreeError = require('../../lib/braintree-error');
 
 module.exports = {
+  HOSTED_FIELDS_TIMEOUT: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'HOSTED_FIELDS_TIMEOUT',
+    message: 'Hosted Fields timed out when attempting to set up.'
+  },
   HOSTED_FIELDS_INVALID_FIELD_KEY: {
     type: BraintreeError.types.MERCHANT,
     code: 'HOSTED_FIELDS_INVALID_FIELD_KEY'

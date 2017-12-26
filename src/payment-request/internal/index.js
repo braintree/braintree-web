@@ -18,6 +18,18 @@ function create() {
     global.client = new Client(response);
     global.bus.emit(constants.events.FRAME_CAN_MAKE_REQUESTS);
   });
+
+  global.bus.on(constants.events.UPDATE_SHIPPING_ADDRESS, function (data) {
+    if (global.shippingAddressChangeEvent) {
+      global.shippingAddressChangeEvent.updateWith(data);
+    }
+  });
+
+  global.bus.on(constants.events.UPDATE_SHIPPING_OPTION, function (data) {
+    if (global.shippingOptionChangeEvent) {
+      global.shippingOptionChangeEvent.updateWith(data);
+    }
+  });
 }
 
 function initializePaymentRequest(data) {
@@ -31,6 +43,18 @@ function initializePaymentRequest(data) {
     });
 
     return Promise.resolve();
+  }
+
+  if (data.options && data.options.requestShipping) {
+    paymentRequest.addEventListener('shippingaddresschange', function (event) {
+      global.shippingAddressChangeEvent = event;
+      global.bus.emit(constants.events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
+    });
+
+    paymentRequest.addEventListener('shippingoptionchange', function (event) {
+      global.shippingOptionChangeEvent = event;
+      global.bus.emit(constants.events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
+    });
   }
 
   return paymentRequest.show().then(function (response) {
@@ -59,6 +83,9 @@ function initializePaymentRequest(data) {
   }).catch(function (err) {
     global.bus.emit(constants.events.PAYMENT_REQUEST_FAILED, err);
   }).then(function () {
+    delete global.shippingAddressChangeEvent;
+    delete global.shippingOptionChangeEvent;
+
     if (paymentResponse) {
       paymentResponse.complete();
     }
