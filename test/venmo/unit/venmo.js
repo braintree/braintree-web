@@ -11,6 +11,7 @@ var BraintreeError = require('../../../src/lib/braintree-error');
 var Venmo = require('../../../src/venmo/venmo');
 var Promise = require('../../../src/lib/promise');
 var VERSION = require('../../../package.json').version;
+var methods = require('../../../src/lib/methods');
 
 function triggerWindowVisibilityChangeListener() {
   setTimeout(function () {
@@ -683,6 +684,48 @@ describe('Venmo', function () {
         triggerWindowVisibilityChangeListener();
 
         return promise;
+      });
+    });
+  });
+
+  describe('teardown', function () {
+    beforeEach(function () {
+      this.sandbox.stub(global.document, 'removeEventListener');
+    });
+
+    it('returns a promise', function () {
+      var promise = this.venmo.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
+    it('removes event listener from document body', function () {
+      this.venmo.teardown();
+
+      expect(global.document.removeEventListener).to.be.calledOnce;
+      expect(global.document.removeEventListener).to.be.calledWith('visibilitychange');
+    });
+
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = this.venmo;
+
+      instance.teardown(function () {
+        methods(Venmo.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
       });
     });
   });

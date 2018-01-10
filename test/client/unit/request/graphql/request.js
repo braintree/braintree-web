@@ -1269,6 +1269,31 @@ describe('GraphQL', function () {
       expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(500);
     });
 
+    it('returns 500 for unknown errors with a success body', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var fakeGraphQLResponse = {
+        data: {
+          tokenizeCreditCard: {
+            token: 'fake_token',
+            creditCard: {
+              brand: 'Visa',
+              last4: '1111',
+              binData: null
+            }
+          }
+        },
+        errors: [{
+          message: 'An unknown error occurred.',
+          extensions: {
+            errorType: 'unknown_error',
+            errorDetails: []
+          }
+        }]
+      };
+
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(500);
+    });
+
     it('returns 403 for field coercion errors', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
 
@@ -1339,7 +1364,6 @@ describe('GraphQL', function () {
 
       graphQLRequest.determineStatus(200, fakeGraphQLResponse);
 
-      console.log(JSON.stringify(analyticsEvents));
       expect(analyticsEvents).to.include('graphql.status.200');
       expect(analyticsEvents).to.include('graphql.determinedStatus.403');
     });

@@ -7,6 +7,7 @@ var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var addMetadata = require('../lib/add-metadata');
 var Promise = require('../lib/promise');
+var wrapPromise = require('@braintree/wrap-promise');
 var once = require('../lib/once');
 var deferred = require('../lib/deferred');
 var assign = require('../lib/assign').assign;
@@ -15,6 +16,8 @@ var constants = require('./constants');
 var errors = require('./errors');
 var sharedErrors = require('../lib/errors');
 var VERSION = require('../lib/constants').VERSION;
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
 
 /**
  * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
@@ -330,5 +333,25 @@ Client.prototype.toJSON = function () {
 Client.prototype.getVersion = function () {
   return VERSION;
 };
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/client.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * clientInstance.teardown();
+ * @example <caption>With callback</caption>
+ * clientInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+Client.prototype.teardown = wrapPromise(function () {
+  var self = this; // eslint-disable-line no-invalid-this
+
+  convertMethodsToError(self, methods(Client.prototype));
+
+  return Promise.resolve();
+});
 
 module.exports = Client;

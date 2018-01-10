@@ -1,7 +1,10 @@
 'use strict';
 
 var VaultManager = require('../../../src/vault-manager/vault-manager');
+var Promise = require('../../../src/lib/promise');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
+var BraintreeError = require('../../../src/lib/braintree-error');
+var methods = require('../../../src/lib/methods');
 
 describe('VaultManager', function () {
   beforeEach(function () {
@@ -166,6 +169,37 @@ describe('VaultManager', function () {
 
       return this.vaultManager.fetchPaymentMethods().then(rejectIfResolves).catch(function (err) {
         expect(err).to.equal(fakeError);
+      });
+    });
+  });
+
+  describe('teardown', function () {
+    it('returns a promise', function () {
+      var promise = this.vaultManager.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = this.vaultManager;
+
+      instance.teardown(function () {
+        methods(VaultManager.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
       });
     });
   });

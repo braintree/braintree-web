@@ -313,8 +313,6 @@ describe('dataCollector', function () {
     });
 
     it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var error;
-
       kount.setup.returns({
         deviceData: {},
         teardown: function () {}
@@ -330,7 +328,13 @@ describe('dataCollector', function () {
         kount: true
       }, function (err, data) {
         data.teardown(function () {
-          methods(data).forEach(function (method) {
+          var tornDownMethods = methods(data);
+
+          expect(tornDownMethods.length).to.be.greaterThan(0);
+
+          tornDownMethods.forEach(function (method) {
+            var error;
+
             try {
               data[method]();
             } catch (e) {

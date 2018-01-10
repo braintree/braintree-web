@@ -1421,15 +1421,19 @@ describe('UnionPay', function () {
       var up = new UnionPay({client: this.client});
 
       up.teardown(function () {
-        methods(up).forEach(function (method) {
+        methods(UnionPay.prototype).forEach(function (method) {
+          var error;
+
           try {
             up[method]();
           } catch (err) {
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal('MERCHANT');
-            expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-            expect(err.message).to.equal(method + ' cannot be called after teardown.');
+            error = err;
           }
+
+          expect(error).to.be.an.instanceof(BraintreeError);
+          expect(error.type).to.equal('MERCHANT');
+          expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(error.message).to.equal(method + ' cannot be called after teardown.');
         });
 
         done();

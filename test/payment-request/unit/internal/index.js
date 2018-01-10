@@ -520,7 +520,7 @@ describe('Payment Request Frame', function () {
         return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
           expect(global.bus.emit).to.be.calledOnce;
           expect(global.bus.emit).to.be.calledWithMatch('payment-request:PAYMENT_REQUEST_FAILED', {
-            name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_TOKENIZATION_ERROR'
+            name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR'
           });
         });
       });
@@ -540,7 +540,7 @@ describe('Payment Request Frame', function () {
         return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
           expect(global.bus.emit).to.be.calledOnce;
           expect(global.bus.emit).to.be.calledWithMatch('payment-request:PAYMENT_REQUEST_FAILED', {
-            name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_PARSING_ERROR'
+            name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR'
           });
         });
       });

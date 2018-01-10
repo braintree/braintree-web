@@ -4,6 +4,8 @@ var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var errors = require('./errors');
 var Promise = require('../lib/promise');
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
 var wrapPromise = require('@braintree/wrap-promise');
 
 /**
@@ -284,6 +286,24 @@ ApplePay.prototype.tokenize = function (options) {
       }
     }));
   });
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/apple-pay.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * applePayInstance.teardown();
+ * @example <caption>With callback</caption>
+ * applePayInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+ApplePay.prototype.teardown = function () {
+  convertMethodsToError(this, methods(ApplePay.prototype));
+
+  return Promise.resolve();
 };
 
 module.exports = wrapPromise.wrapPrototype(ApplePay);

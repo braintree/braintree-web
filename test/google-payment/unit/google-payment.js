@@ -39,7 +39,7 @@ describe('GooglePayment', function () {
       client: this.fakeClient
     });
 
-    expect(googlePayment._enabledPaymentMethods.payWithGoogle).to.equal(true);
+    expect(googlePayment._enabledPaymentMethods.googlePay).to.equal(true);
     expect(googlePayment._enabledPaymentMethods.basicCard).to.equal(false);
 
     expect(googlePayment._defaultSupportedPaymentMethods.length).to.equal(1);
@@ -113,8 +113,8 @@ describe('GooglePayment', function () {
       expect(PaymentRequestComponent.prototype.tokenize).to.not.be.called;
       expect(err).to.be.an.instanceof(BraintreeError);
       expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('PAY_WITH_GOOGLE_CAN_ONLY_TOKENIZE_WITH_PAY_WITH_GOOGLE');
-      expect(err.message).to.equal('Only Pay with Google is supported in supportedPaymentMethods.');
+      expect(err.code).to.equal('GOOGLE_PAYMENT_CAN_ONLY_TOKENIZE_WITH_GOOGLE_PAYMENT');
+      expect(err.message).to.equal('Only Google Pay is supported in supportedPaymentMethods.');
       done();
     });
   });
@@ -151,7 +151,7 @@ describe('GooglePayment', function () {
       googlePayment.createSupportedPaymentMethodsConfiguration(configuration);
 
       expect(PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration).to.be.calledOnce;
-      expect(PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration).to.be.calledWith('payWithGoogle', configuration);
+      expect(PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration).to.be.calledWith('googlePay', configuration);
     });
   });
 

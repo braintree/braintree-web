@@ -6,7 +6,7 @@ require('dotenv').config();
 
 var opt;
 var chalk = require('chalk');
-var table = require('table').default;
+var table = require('table').table;
 var posixGetopt = require('posix-getopt');
 var fs = require('fs');
 var gs = require('gzip-size');

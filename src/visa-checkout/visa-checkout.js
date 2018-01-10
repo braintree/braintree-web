@@ -4,6 +4,8 @@ var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var errors = require('./errors');
 var jsonClone = require('../lib/json-clone');
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var cardTypeTransformMap = {
@@ -170,6 +172,24 @@ VisaCheckout.prototype.tokenize = function (payment) {
       }
     }));
   });
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/visa-checkout.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * visaCheckoutInstance.teardown();
+ * @example <caption>With callback</caption>
+ * visaCheckoutInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+VisaCheckout.prototype.teardown = function () {
+  convertMethodsToError(this, methods(VisaCheckout.prototype));
+
+  return Promise.resolve();
 };
 
 module.exports = wrapPromise.wrapPrototype(VisaCheckout);

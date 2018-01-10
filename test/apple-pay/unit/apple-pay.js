@@ -5,6 +5,7 @@ var ApplePay = require('../../../src/apple-pay/apple-pay');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
+var methods = require('../../../src/lib/methods');
 
 describe('ApplePay', function () {
   beforeEach(function () {
@@ -452,6 +453,37 @@ describe('ApplePay', function () {
           expect(analytics.sendEvent).to.be.calledWith(this.client, 'applepay.tokenize.failed');
           done();
         }.bind(this));
+      });
+    });
+  });
+
+  describe('teardown', function () {
+    it('returns a promise', function () {
+      var promise = this.applePay.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = this.applePay;
+
+      instance.teardown(function () {
+        methods(ApplePay.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
       });
     });
   });

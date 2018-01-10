@@ -121,7 +121,7 @@ describe('Payment Request component', function () {
   it('can turn off pay with google', function () {
     var instance = new PaymentRequestComponent({
       enabledPaymentMethods: {
-        payWithGoogle: false
+        googlePay: false
       },
       client: this.fakeClient
     });
@@ -479,14 +479,14 @@ describe('Payment Request component', function () {
       }, 100);
     });
 
-    it('emits BraintreeError with type merchant when emitted error is BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_TOKENIZATION_ERROR', function (done) {
+    it('emits BraintreeError with type merchant when emitted error is BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR', function (done) {
       this.instance.tokenize(this.configuration).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE');
-        expect(err.message).to.equal('Something went wrong when tokenizing the Pay with Google card.');
+        expect(err.code).to.equal('PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE');
+        expect(err.message).to.equal('Something went wrong when tokenizing the Google Pay card.');
         expect(err.details.originalError).to.deep.equal({
-          name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_TOKENIZATION_ERROR',
+          name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR',
           error: {message: 'some-error'}
         });
         done();
@@ -496,20 +496,20 @@ describe('Payment Request component', function () {
         var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
 
         rejectionHandler({
-          name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_TOKENIZATION_ERROR',
+          name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR',
           error: {message: 'some-error'}
         });
       }, 100);
     });
 
-    it('emits BraintreeError with type unknown when emitted error is BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_PARSING_ERROR', function (done) {
+    it('emits BraintreeError with type unknown when emitted error is BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR', function (done) {
       this.instance.tokenize(this.configuration).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('UNKNOWN');
-        expect(err.code).to.equal('PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR');
-        expect(err.message).to.equal('Something went wrong when tokenizing the Pay with Google card.');
+        expect(err.code).to.equal('PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR');
+        expect(err.message).to.equal('Something went wrong when tokenizing the Google Pay card.');
         expect(err.details.originalError).to.deep.equal({
-          name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_PARSING_ERROR',
+          name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR',
           error: {message: 'some-error'}
         });
         done();
@@ -519,7 +519,7 @@ describe('Payment Request component', function () {
         var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
 
         rejectionHandler({
-          name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_PARSING_ERROR',
+          name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR',
           error: {message: 'some-error'}
         });
       }, 100);
@@ -570,7 +570,7 @@ describe('Payment Request component', function () {
 
     it('returns the default payment request object for provided type', function () {
       var basicCardConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('basicCard');
-      var googlePaymentConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('payWithGoogle');
+      var googlePaymentConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('googlePay');
 
       expect(basicCardConfiguration).to.deep.equal({
         supportedMethods: ['basic-card'],
@@ -608,7 +608,7 @@ describe('Payment Request component', function () {
         supportedNetworks: ['visa'],
         supportedTypes: ['credit']
       });
-      var googlePaymentConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('payWithGoogle', {
+      var googlePaymentConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('googlePay', {
         environment: 'PROD',
         apiVersion: 2
       });
@@ -649,7 +649,7 @@ describe('Payment Request component', function () {
       var basicCardConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('basicCard', {
         supportedTypes: ['credit']
       });
-      var googlePaymentConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('payWithGoogle', {
+      var googlePaymentConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('googlePay', {
         environment: 'PROD',
         apiVersion: 2
       });
@@ -727,14 +727,18 @@ describe('Payment Request component', function () {
 
       instance.teardown().then(function () {
         methods(PaymentRequestComponent.prototype).forEach(function (method) {
+          var error;
+
           try {
             instance[method]();
           } catch (err) {
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-            expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-            expect(err.message).to.equal(method + ' cannot be called after teardown.');
+            error = err;
           }
+
+          expect(error).to.be.an.instanceof(BraintreeError);
+          expect(error.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(error.message).to.equal(method + ' cannot be called after teardown.');
         });
 
         done();

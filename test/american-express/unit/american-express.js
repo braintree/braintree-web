@@ -3,6 +3,7 @@
 var AmericanExpress = require('../../../src/american-express/american-express');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var Promise = require('../../../src/lib/promise');
+var methods = require('../../../src/lib/methods');
 
 var NONCE = 'ed1704dc-e98c-427f-9836-0f1933755b6a';
 
@@ -177,6 +178,37 @@ describe('AmericanExpress', function () {
 
         done();
       }.bind(this));
+    });
+  });
+
+  describe('teardown', function () {
+    it('returns a promise', function () {
+      var promise = this.amex.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = this.amex;
+
+      instance.teardown(function () {
+        methods(AmericanExpress.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
+      });
     });
   });
 });

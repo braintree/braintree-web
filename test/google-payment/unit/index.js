@@ -42,14 +42,14 @@ describe('googlePayment', function () {
       }, function () {
         expect(basicComponentVerification.verify).to.be.calledOnce;
         expect(basicComponentVerification.verify).to.be.calledWith({
-          name: 'Pay with Google',
+          name: 'Google Pay',
           client: client
         });
         done();
       });
     });
 
-    it('instantiates a Pay with Google integration', function (done) {
+    it('instantiates a Google Pay integration', function (done) {
       googlePayment.create({
         client: this.fakeClient
       }, function (err, thingy) {
@@ -68,8 +68,8 @@ describe('googlePayment', function () {
       }, function (err) {
         expect(err).to.exist;
         expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('PAY_WITH_GOOGLE_NOT_ENABLED');
-        expect(err.message).to.equal('Pay with Google is not enabled for this merchant.');
+        expect(err.code).to.equal('GOOGLE_PAYMENT_NOT_ENABLED');
+        expect(err.message).to.equal('Google Pay is not enabled for this merchant.');
 
         done();
       });

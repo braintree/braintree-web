@@ -18,7 +18,7 @@ var VERSION = process.env.npm_package_version;
  * @param {Client} options.client A {@link Client} instance.
  * @param {object} [options.enabledPaymentMethods] An object representing which payment methods to display.
  * @param {boolean} [options.enabledPaymentMethods.basicCard=true] Whether or not to display credit card as an option in the Payment Request dialog. If left blank or set to true, credit cards will be displayed in the dialog if the merchant account is set up to process credit cards.
- * @param {boolean} [options.enabledPaymentMethods.payWithGoogle=true] Whether or not to display Pay with Google as an option in the Payment Request dialog. If left blank or set to true, Pay with Google will be displayed in the dialog if the merchant account is set up to process Pay with Google.
+ * @param {boolean} [options.enabledPaymentMethods.googlePay=true] Whether or not to display Google Pay as an option in the Payment Request dialog. If left blank or set to true, Google Pay will be displayed in the dialog if the merchant account is set up to process Google Pay.
  * @param {callback} [callback] The second argument, `data`, is the {@link PaymentRequestComponent} instance. If no callback is provided, `create` returns a promise that resolves with the {@link PaymentRequestComponent} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  * @example
@@ -34,7 +34,7 @@ var VERSION = process.env.npm_package_version;
  * braintree.paymentRequest.create({
  *   client: clientInstance,
  *   enabledPaymentMethods: {
- *     payWithGoogle: true,
+ *     googlePay: true,
  *     basicCard: false
  *   }
  * }, cb);

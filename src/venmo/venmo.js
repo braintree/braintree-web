@@ -5,6 +5,8 @@ var browserDetection = require('./shared/browser-detection');
 var constants = require('./shared/constants');
 var errors = require('./shared/errors');
 var querystring = require('../lib/querystring');
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
 var wrapPromise = require('@braintree/wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
 var Promise = require('../lib/promise');
@@ -152,13 +154,13 @@ Venmo.prototype.tokenize = function () {
     // Subscribe to document visibility change events to detect when app switch
     // has returned.
     self._visibilityChangeListener = function () {
-      if (!document.hidden) {
+      if (!global.document.hidden) {
         self._tokenizationInProgress = false;
 
         setTimeout(function () {
           self._processResults().then(resolve).catch(reject).then(function () {
             global.location.hash = self._previousHash;
-            document.removeEventListener(documentVisibilityChangeEventName(), self._visibilityChangeListener);
+            self._removeVisibilityEventListener();
             delete self._visibilityChangeListener;
           });
         }, constants.PROCESS_RESULTS_DELAY);
@@ -167,9 +169,32 @@ Venmo.prototype.tokenize = function () {
 
     // Add a brief delay to ignore visibility change events that occur right before app switch
     setTimeout(function () {
-      document.addEventListener(documentVisibilityChangeEventName(), self._visibilityChangeListener);
+      global.document.addEventListener(documentVisibilityChangeEventName(), self._visibilityChangeListener);
     }, constants.DOCUMENT_VISIBILITY_CHANGE_EVENT_DELAY);
   });
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/venmo.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * venmoInstance.teardown();
+ * @example <caption>With callback</caption>
+ * venmoInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+Venmo.prototype.teardown = function () {
+  this._removeVisibilityEventListener();
+  convertMethodsToError(this, methods(Venmo.prototype));
+
+  return Promise.resolve();
+};
+
+Venmo.prototype._removeVisibilityEventListener = function () {
+  global.document.removeEventListener(documentVisibilityChangeEventName(), this._visibilityChangeListener);
 };
 
 Venmo.prototype._processResults = function () {
@@ -240,11 +265,11 @@ function formatTokenizePayload(fragmentParams, venmoAccountData) {
 function documentVisibilityChangeEventName() {
   var visibilityChange;
 
-  if (typeof document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and later support
+  if (typeof global.document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and later support
     visibilityChange = 'visibilitychange';
-  } else if (typeof document.msHidden !== 'undefined') {
+  } else if (typeof global.document.msHidden !== 'undefined') {
     visibilityChange = 'msvisibilitychange';
-  } else if (typeof document.webkitHidden !== 'undefined') {
+  } else if (typeof global.document.webkitHidden !== 'undefined') {
     visibilityChange = 'webkitvisibilitychange';
   }
 

@@ -1,6 +1,34 @@
 CHANGELOG
 =========
 
+## 3.28.0
+* Update promise-polyfill to v7.0.0
+* American Express
+  * Add missing `teardown` method
+* Apple Pay
+  * Add missing `teardown` method
+* Client
+  * Add missing `teardown` method
+* Google Pay
+  * References to Pay with Google have now been converted to Google Pay in accordance with Google's brand guidelines
+* PayPal Checkout
+  * Add missing `teardown` method
+* Vault Manager
+  * Add missing `teardown` method
+* Venmo
+  * Add missing `teardown` method
+* Visa Checkout
+  * Add missing `teardown` method
+
+__BREAKING CHANGES__
+
+* Google Pay - Beta
+  * Error codes that included `PAY_WITH_GOOGLE` have been updated to `GOOGLE_PAYMENT`
+    * PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE -> PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE
+    * PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR -> PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR
+* Payment Request - Beta
+  * Change `payWithGoogle` property to `googlePay` property when instantiationg a Payment Request component with `enabledPaymentMethods` option
+
 ## 3.27.0
 
 * Update card-validator to v4.2.0

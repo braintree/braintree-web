@@ -18,7 +18,7 @@ function requestShouldRetry(status) {
 }
 
 function graphQLRequestShouldRetryWithClientApi(body) {
-  var errorType = body.errors &&
+  var errorType = !body.data && body.errors &&
       body.errors[0] &&
       body.errors[0].extensions &&
       body.errors[0].extensions.errorType;

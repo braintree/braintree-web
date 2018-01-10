@@ -37,15 +37,15 @@ constants.errors = {
     code: 'PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED',
     message: 'Something went wrong when configuring the payment request.'
   },
-  PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE: {
+  PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE',
-    message: 'Something went wrong when tokenizing the Pay with Google card.'
+    code: 'PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE',
+    message: 'Something went wrong when tokenizing the Google Pay card.'
   },
-  PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR: {
+  PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR',
-    message: 'Something went wrong when tokenizing the Pay with Google card.'
+    code: 'PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR',
+    message: 'Something went wrong when tokenizing the Google Pay card.'
   },
   PAYMENT_REQUEST_NOT_COMPLETED: {
     code: 'PAYMENT_REQUEST_NOT_COMPLETED',

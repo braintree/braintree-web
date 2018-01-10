@@ -106,7 +106,7 @@ var CARD_TYPE_MAPPINGS = {
   Maestro: 'maestro'
 };
 
-var BRAINTREE_PAY_WITH_GOOGLE_MERCHANT_ID = '18278000977346790994';
+var BRAINTREE_GOOGLE_PAY_MERCHANT_ID = '18278000977346790994';
 
 function composeUrl(assetsUrl, componentId, isDebug) {
   var baseUrl = assetsUrl;
@@ -142,7 +142,7 @@ function PaymentRequestComponent(options) {
   this._analyticsName = 'payment-request';
   this._enabledPaymentMethods = {
     basicCard: enabledPaymentMethods.basicCard !== false,
-    payWithGoogle: enabledPaymentMethods.payWithGoogle !== false
+    googlePay: enabledPaymentMethods.googlePay !== false
   };
   this._supportedPaymentMethods = this._constructDefaultSupportedPaymentMethods();
   this._defaultSupportedPaymentMethods = Object.keys(this._supportedPaymentMethods).map(function (key) {
@@ -174,11 +174,11 @@ PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = fun
     };
   }
 
-  if (this._enabledPaymentMethods.payWithGoogle && androidPayConfiguration && androidPayConfiguration.enabled) {
-    supportedPaymentMethods.payWithGoogle = {
+  if (this._enabledPaymentMethods.googlePay && androidPayConfiguration && androidPayConfiguration.enabled) {
+    supportedPaymentMethods.googlePay = {
       supportedMethods: ['https://google.com/pay'],
       data: {
-        merchantId: BRAINTREE_PAY_WITH_GOOGLE_MERCHANT_ID,
+        merchantId: BRAINTREE_GOOGLE_PAY_MERCHANT_ID,
         apiVersion: 1,
         environment: isProduction ? 'PRODUCTION' : 'TEST',
         allowedPaymentMethods: ['CARD', 'TOKENIZED_CARD'],
@@ -206,7 +206,7 @@ PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = fun
     };
 
     if (configuration.authorizationType === 'TOKENIZATION_KEY') {
-      supportedPaymentMethods.payWithGoogle.data.paymentMethodTokenizationParameters.parameters['braintree:clientKey'] = configuration.authorization;
+      supportedPaymentMethods.googlePay.data.paymentMethodTokenizationParameters.parameters['braintree:clientKey'] = configuration.authorization;
     }
   }
 
@@ -279,7 +279,7 @@ PaymentRequestComponent.prototype.initialize = function () {
 /**
  * Create an object to pass into tokenize to specify a custom configuration. If no overrides are provided, the default configuration will be provided.
  * @public
- * @param {string} type The supported payment method type. Possible values are `basicCard` and `payWithGoogle`.
+ * @param {string} type The supported payment method type. Possible values are `basicCard` and `googlePay`.
  * If no type is provided, the function will throw an error. If the type provided is not an enabled payemnt method for the merchant account , the function will throw an error.
  * @param {object} [overrides] The configuration overrides for the [data property on the supported payment methods objects](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request). If not passed in, the default configuration for the specified type will be provided. If a property is not provided, the value from the default configruation will be used.
  * @example <caption>Getting the default configuration for a specified type</caption>
@@ -495,20 +495,20 @@ PaymentRequestComponent.prototype.tokenize = function (configuration) {
             originalError: error
           }
         });
-      } else if (error.name === 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_TOKENIZATION_ERROR') {
+      } else if (error.name === 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR') {
         formattedError = new BraintreeError({
-          type: errors.PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE.type,
-          code: errors.PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE.code,
-          message: errors.PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE.message,
+          type: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE.type,
+          code: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE.code,
+          message: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE.message,
           details: {
             originalError: error
           }
         });
-      } else if (error.name === 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_PARSING_ERROR') {
+      } else if (error.name === 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR') {
         formattedError = new BraintreeError({
-          type: errors.PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR.type,
-          code: errors.PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR.code,
-          message: errors.PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR.message,
+          type: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR.type,
+          code: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR.code,
+          message: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR.message,
           details: {
             originalError: error
           }

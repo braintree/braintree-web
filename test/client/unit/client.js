@@ -2,9 +2,11 @@
 
 var Client = require('../../../src/client/client');
 var VERSION = process.env.npm_package_version;
+var Promise = require('../../../src/lib/promise');
 var fake = require('../../helpers/fake');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
+var methods = require('../../../src/lib/methods');
 
 describe('Client', function () {
   describe('bad instantiation', function () {
@@ -716,6 +718,38 @@ describe('Client', function () {
       var client = new Client(fake.configuration());
 
       expect(client.getVersion()).to.equal(VERSION);
+    });
+  });
+
+  describe('teardown', function () {
+    it('returns a promise', function () {
+      var client = new Client(fake.configuration());
+      var promise = client.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = new Client(fake.configuration());
+
+      instance.teardown(function () {
+        methods(Client.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
+      });
     });
   });
 });

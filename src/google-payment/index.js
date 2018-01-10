@@ -1,7 +1,7 @@
 'use strict';
 /**
  * @module braintree-web/google-payment
- * @description A component to integrate with Pay with Google.
+ * @description A component to integrate with Google Pay.
  *
  * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  * */
@@ -24,7 +24,7 @@ var VERSION = process.env.npm_package_version;
  */
 function create(options) {
   return basicComponentVerification.verify({
-    name: 'Pay with Google',
+    name: 'Google Pay',
     client: options.client
   }).then(function () {
     var googlePayment;
@@ -32,8 +32,8 @@ function create(options) {
     if (!options.client.getConfiguration().gatewayConfiguration.androidPay) {
       return Promise.reject(new BraintreeError({
         type: BraintreeError.types.MERCHANT,
-        code: 'PAY_WITH_GOOGLE_NOT_ENABLED',
-        message: 'Pay with Google is not enabled for this merchant.'
+        code: 'GOOGLE_PAYMENT_NOT_ENABLED',
+        message: 'Google Pay is not enabled for this merchant.'
       }));
     }
 
@@ -46,15 +46,15 @@ function create(options) {
 /**
  * @static
  * @function isSupported
- * @description Returns true if Pay with Google is supported in this browser.
+ * @description Returns true if Google Pay is supported in this browser.
  * @example
  * if (braintree.googlePayment.isSupported()) {
- *    // Add Pay with Google button to page and
- *    // initialize Pay with Google component
+ *    // Add Google Pay button to page and
+ *    // initialize Google Pay component
  * } else {
- *    // Do not initialize Pay with Google component
+ *    // Do not initialize Google Pay component
  * }
- * @returns {Boolean} Returns true if Pay with Google supports this browser.
+ * @returns {Boolean} Returns true if Google Pay supports this browser.
  */
 function isSupported() {
   // TODO - We limit this to android chrome for now

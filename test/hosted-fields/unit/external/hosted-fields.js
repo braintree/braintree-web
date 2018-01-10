@@ -470,14 +470,18 @@ describe('HostedFields', function () {
       instance.teardown(function () {
         methods(HostedFields.prototype).concat(methods(EventEmitter.prototype))
           .forEach(function (method) {
+            var error;
+
             try {
               instance[method]();
             } catch (err) {
-              expect(err).to.be.an.instanceof(BraintreeError);
-              expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-              expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-              expect(err.message).to.equal(method + ' cannot be called after teardown.');
+              error = err;
             }
+
+            expect(error).to.be.an.instanceof(BraintreeError);
+            expect(error.type).to.equal(BraintreeError.types.MERCHANT);
+            expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(error.message).to.equal(method + ' cannot be called after teardown.');
           });
 
         document.body.removeChild(numberNode);

@@ -1,5 +1,8 @@
 'use strict';
 
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
+var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 
 /**
@@ -77,5 +80,23 @@ function formatPaymentMethodPayload(paymentMethod) {
 
   return formattedPaymentMethod;
 }
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/vault-manager.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * vaultManagerInstance.teardown();
+ * @example <caption>With callback</caption>
+ * vaultManagerInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+VaultManager.prototype.teardown = function () {
+  convertMethodsToError(this, methods(VaultManager.prototype));
+
+  return Promise.resolve();
+};
 
 module.exports = wrapPromise.wrapPrototype(VaultManager);

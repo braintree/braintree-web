@@ -4,6 +4,8 @@ var BraintreeError = require('../lib/braintree-error');
 var errors = require('./errors');
 var assign = require('../lib/assign').assign;
 var Promise = require('../lib/promise');
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
 var wrapPromise = require('@braintree/wrap-promise');
 
 /**
@@ -121,6 +123,24 @@ AmericanExpress.prototype.getExpressCheckoutProfile = function (options) {
       }
     }));
   });
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/american-express.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * americanExpressInstance.teardown();
+ * @example <caption>With callback</caption>
+ * americanExpressInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+AmericanExpress.prototype.teardown = function () {
+  convertMethodsToError(this, methods(AmericanExpress.prototype));
+
+  return Promise.resolve();
 };
 
 module.exports = wrapPromise.wrapPrototype(AmericanExpress);

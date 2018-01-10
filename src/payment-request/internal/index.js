@@ -111,7 +111,7 @@ function tokenize(paymentResponse) {
 
       if (parsedResponse.error) {
         return Promise.reject({
-          name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_TOKENIZATION_ERROR',
+          name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR',
           error: parsedResponse.error
         });
       }
@@ -119,7 +119,7 @@ function tokenize(paymentResponse) {
       return parsedResponse.androidPayCards[0];
     } catch (err) {
       return Promise.reject({
-        name: 'BRAINTREE_GATEWAY_PAY_WITH_GOOGLE_PARSING_ERROR',
+        name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR',
         error: err
       });
     }

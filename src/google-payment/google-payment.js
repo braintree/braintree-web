@@ -22,10 +22,24 @@ var wrapPromise = require('@braintree/wrap-promise');
  */
 
 /**
+ * @name GooglePayment#teardown
+ * @function
+ * @param {callback} [callback] Called on completion.
+ * @description Cleanly remove anything set up by {@link module:braintree-web/google-payment.create|create}.
+ * @example
+ * googlePaymentInstance.teardown();
+ * @example <caption>With callback</caption>
+ * googlePaymentInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+
+/**
  * @class GooglePayment
  * @param {object} options Google Payment {@link module:braintree-web/google-payment.create create} options.
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/google-payment.create|braintree-web.google-payment.create} instead.</strong>
- * @classdesc This class represents a Google Payment component produced by {@link module:braintree-web/google-payment.create|braintree-web/google-payment.create}. Instances of this class have methods for initializing the Pay with Google flow.
+ * @classdesc This class represents a Google Payment component produced by {@link module:braintree-web/google-payment.create|braintree-web/google-payment.create}. Instances of this class have methods for initializing the Google Pay flow.
  *
  * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  */
@@ -34,7 +48,7 @@ function GooglePayment(options) {
     client: options.client,
     enabledPaymentMethods: {
       basicCard: false,
-      payWithGoogle: true
+      googlePay: true
     }
   });
 
@@ -66,15 +80,15 @@ GooglePayment.prototype = Object.create(PaymentRequestComponent.prototype, {
  * @returns {object} Returns a configuration object for use in the tokenize function.
  */
 GooglePayment.prototype.createSupportedPaymentMethodsConfiguration = function (overrides) {
-  return PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration.call(this, 'payWithGoogle', overrides);
+  return PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration.call(this, 'googlePay', overrides);
 };
 
 /**
- * Initializes a Pay with Google flow and provides a nonce payload.
+ * Initializes a Google Pay flow and provides a nonce payload.
  * @public
  * @param {object} configuration The payment details.
  * @param {object} configuration.details The payment details. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_payment_details).
- * @param {object} [configuration.options] Additional Pay with Google options. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_options_optional).
+ * @param {object} [configuration.options] Additional Google Pay options. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_options_optional).
  *
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link PaymentRequestComponent.html#~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link PaymentRequestComponent.html#~tokenizePayload|tokenizePayload}.
  * @example
@@ -92,7 +106,7 @@ GooglePayment.prototype.createSupportedPaymentMethodsConfiguration = function (o
  *   // send payload.nonce to server
  * }).catch(function (err) {
  *   if (err.code === 'PAYMENT_REQUEST_CANCELED') {
- *     // Pay with Google payment request was canceled by user
+ *     // Google Pay payment request was canceled by user
  *   } else {
  *     // an error occurred while processing
  *   }
@@ -214,8 +228,8 @@ GooglePayment.prototype.tokenize = function (configuration) {
     } else {
       return Promise.reject(new BraintreeError({
         type: BraintreeError.types.MERCHANT,
-        code: 'PAY_WITH_GOOGLE_CAN_ONLY_TOKENIZE_WITH_PAY_WITH_GOOGLE',
-        message: 'Only Pay with Google is supported in supportedPaymentMethods.'
+        code: 'GOOGLE_PAYMENT_CAN_ONLY_TOKENIZE_WITH_GOOGLE_PAYMENT',
+        message: 'Only Google Pay is supported in supportedPaymentMethods.'
       }));
     }
   }

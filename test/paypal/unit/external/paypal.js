@@ -648,14 +648,18 @@ describe('PayPal', function () {
       pp._initialize().then(function () {
         pp.teardown(function () {
           methods(PayPal.prototype).forEach(function (method) {
+            var error;
+
             try {
               pp[method]();
             } catch (err) {
-              expect(err).to.be.an.instanceof(BraintreeError);
-              expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-              expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-              expect(err.message).to.equal(method + ' cannot be called after teardown.');
+              error = err;
             }
+
+            expect(error).to.be.an.instanceof(BraintreeError);
+            expect(error.type).to.equal(BraintreeError.types.MERCHANT);
+            expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(error.message).to.equal(method + ' cannot be called after teardown.');
           });
 
           done();

@@ -1,14 +1,32 @@
 'use strict';
 
 var PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
+var Promise = require('../../../src/lib/promise');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
+var methods = require('../../../src/lib/methods');
 
 function noop() {}
 
 describe('PayPalCheckout', function () {
+  beforeEach(function () {
+    this.sandbox.stub(analytics, 'sendEvent');
+
+    this.configuration = fake.configuration();
+    this.client = {
+      request: this.sandbox.stub().resolves({
+        paymentResource: {paymentToken: 'token'},
+        agreementSetup: {tokenId: 'id'}
+      }),
+      getConfiguration: this.sandbox.stub().returns(this.configuration)
+    };
+    this.paypalCheckout = new PayPalCheckout({
+      client: this.client
+    });
+  });
+
   describe('Constructor', function () {
     it('stores its client', function () {
       var client = {};
@@ -19,22 +37,6 @@ describe('PayPalCheckout', function () {
   });
 
   describe('createPayment', function () {
-    beforeEach(function () {
-      this.sandbox.stub(analytics, 'sendEvent');
-
-      this.configuration = fake.configuration();
-      this.client = {
-        request: this.sandbox.stub().resolves({
-          paymentResource: {paymentToken: 'token'},
-          agreementSetup: {tokenId: 'id'}
-        }),
-        getConfiguration: this.sandbox.stub().returns(this.configuration)
-      };
-      this.paypalCheckout = new PayPalCheckout({
-        client: this.client
-      });
-    });
-
     context('using promises', function () {
       it('returns a Promise', function () {
         var promise = this.paypalCheckout.createPayment({flow: 'vault'});
@@ -766,19 +768,6 @@ describe('PayPalCheckout', function () {
   });
 
   describe('tokenizePayment', function () {
-    beforeEach(function () {
-      this.sandbox.stub(analytics, 'sendEvent');
-
-      this.configuration = fake.configuration();
-      this.client = {
-        request: this.sandbox.stub().resolves({}),
-        getConfiguration: this.sandbox.stub().returns(this.configuration)
-      };
-      this.paypalCheckout = new PayPalCheckout({
-        client: this.client
-      });
-    });
-
     context('using promises', function () {
       it('returns a Promise', function () {
         var promise = this.paypalCheckout.tokenizePayment({});
@@ -1178,6 +1167,37 @@ describe('PayPalCheckout', function () {
 
       return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function () {
         expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.tokenization.failed');
+      });
+    });
+  });
+
+  describe('teardown', function () {
+    it('returns a promise', function () {
+      var promise = this.paypalCheckout.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = this.paypalCheckout;
+
+      instance.teardown(function () {
+        methods(PayPalCheckout.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
       });
     });
   });

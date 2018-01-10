@@ -7,6 +7,8 @@ var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var errors = require('./errors');
 var constants = require('../paypal/shared/constants');
+var methods = require('../lib/methods');
+var convertMethodsToError = require('../lib/convert-methods-to-error');
 
 /**
  * PayPal Checkout tokenized payload. Returned in {@link PayPalCheckout#tokenizePayment}'s callback as the second argument, `data`.
@@ -423,6 +425,24 @@ PayPalCheckout.prototype._formatTokenizePayload = function (response) {
   }
 
   return payload;
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/paypal-checkout.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * paypalCheckoutInstance.teardown();
+ * @example <caption>With callback</caption>
+ * paypalCheckoutInstance.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+PayPalCheckout.prototype.teardown = function () {
+  convertMethodsToError(this, methods(PayPalCheckout.prototype));
+
+  return Promise.resolve();
 };
 
 module.exports = wrapPromise.wrapPrototype(PayPalCheckout);

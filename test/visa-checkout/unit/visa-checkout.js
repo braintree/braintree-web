@@ -1,9 +1,11 @@
 'use strict';
 
 var VisaCheckout = require('../../../src/visa-checkout/visa-checkout');
+var Promise = require('../../../src/lib/promise');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
+var methods = require('../../../src/lib/methods');
 
 describe('Visa Checkout', function () {
   beforeEach(function () {
@@ -301,6 +303,37 @@ describe('Visa Checkout', function () {
           expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.failed');
           done();
         }.bind(this));
+      });
+    });
+  });
+
+  describe('teardown', function () {
+    it('returns a promise', function () {
+      var promise = this.visaCheckout.teardown();
+
+      expect(promise).to.be.an.instanceof(Promise);
+    });
+
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = this.visaCheckout;
+
+      instance.teardown(function () {
+        methods(VisaCheckout.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
       });
     });
   });
