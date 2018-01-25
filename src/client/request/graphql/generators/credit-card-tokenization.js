@@ -23,12 +23,6 @@ var CREDIT_CARD_TOKENIZATION_MUTATION = 'mutation TokenizeCreditCard($input: Tok
 '  } ' +
 '}';
 
-var CVV_ONLY_TOKENIZATION_MUTATION = 'mutation TokenizeCvv($input: TokenizeCvvInput!) { ' +
-'  tokenizeCvv(input: $input) { ' +
-'    token' +
-'  } ' +
-'}';
-
 function createCreditCardTokenizationBody(body) {
   var cc = body.creditCard;
   var billingAddress = cc && cc.billingAddress;
@@ -77,33 +71,11 @@ function addValidationRule(body, input) {
   return input;
 }
 
-function createCvvTokenizationBody(body) {
-  var variables = {
-    input: {
-      cvv: body.creditCard && body.creditCard.cvv
-    }
-  };
-
-  return variables;
-}
-
 function creditCardTokenization(body) {
-  var query, variables, operationName;
-
-  if (body.creditCard && !body.creditCard.number && body.creditCard.cvv) {
-    query = CVV_ONLY_TOKENIZATION_MUTATION;
-    variables = createCvvTokenizationBody(body);
-    operationName = 'TokenizeCvv';
-  } else {
-    query = CREDIT_CARD_TOKENIZATION_MUTATION;
-    variables = createCreditCardTokenizationBody(body);
-    operationName = 'TokenizeCreditCard';
-  }
-
   return JSON.stringify({
-    query: query,
-    variables: variables,
-    operationName: operationName
+    query: CREDIT_CARD_TOKENIZATION_MUTATION,
+    variables: createCreditCardTokenizationBody(body),
+    operationName: 'TokenizeCreditCard'
   });
 }
 

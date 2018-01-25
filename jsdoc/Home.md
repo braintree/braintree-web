@@ -142,7 +142,7 @@ You will need to add the following directives to your policy:
 | style-src   | 'unsafe-inline'                                                                                                           | 'unsafe-inline'                                                                                   |
 | img-src     | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                                             | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                     |
 | child-src   | assets.braintreegateway.com<br/>c.paypal.com                                                                              | assets.braintreegateway.com<br/>c.paypal.com                                                      |
-| frame-src   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinal.com                                                           | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinal.com                                   |
+| frame-src   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                                                   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                           |
 | connect-src | api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>payments.sandbox.braintree-api.com | api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>payments.braintree-api.com |
 
-Including `*.cardinal.com` in `frame-src` is only required if you are using [3D Secure](module-braintree-web_three-d-secure.html).
+Including `*.cardinalcommerce.com` in `frame-src` is only required if you are using [3D Secure](module-braintree-web_three-d-secure.html).

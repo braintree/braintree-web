@@ -345,12 +345,15 @@ describe('GraphQL', function () {
       parsedBody = JSON.parse(body);
 
       expect(parsedBody.query).to.contain('mutation');
-      expect(parsedBody.query).to.contain('tokenizeCvv');
+      expect(parsedBody.query).to.contain('tokenizeCreditCard');
       expect(parsedBody.variables).to.exist;
-      expect(parsedBody.operationName).to.equal('TokenizeCvv');
+      expect(parsedBody.operationName).to.equal('TokenizeCreditCard');
 
       expect(parsedBody.variables.input).to.deep.equal({
-        cvv: '123'
+        creditCard: {
+          cvv: '123'
+        },
+        options: {}
       });
     });
 
@@ -1050,12 +1053,47 @@ describe('GraphQL', function () {
       });
     });
 
+    it('normalizes null bin data fields', function () {
+      var adaptedResponse;
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var fakeGraphQLResponse = {
+        data: {
+          tokenizeCreditCard: {
+            token: 'faketoken',
+            creditCard: {
+              brand: 'Visa',
+              last4: '1234',
+              binData: {
+                issuingBank: null,
+                countryOfIssuance: null,
+                productId: null
+              }
+            }
+          }
+        }
+      };
+
+      adaptedResponse = graphQLRequest.adaptResponseBody(fakeGraphQLResponse);
+
+      expect(adaptedResponse.creditCards[0].binData).to.deep.equal({
+        issuingBank: 'Unknown',
+        countryOfIssuance: 'Unknown',
+        productId: 'Unknown'
+      });
+    });
+
     it('normalizes a GraphQL cvv only tokenization response', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var fakeGraphQLResponse = {
         data: {
-          tokenizeCvv: {
-            token: 'faketoken'
+          tokenizeCreditCard: {
+            token: 'faketoken',
+            creditCard: {
+              brand: null,
+              brandCode: null,
+              last4: null,
+              binData: null
+            }
           },
           extensions: {
             requestId: 'fake_request_id'
@@ -1065,6 +1103,7 @@ describe('GraphQL', function () {
 
       expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
         creditCards: [{
+          binData: null,
           consumed: false,
           description: '',
           nonce: 'faketoken',
@@ -1202,7 +1241,7 @@ describe('GraphQL', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var fakeGraphQLResponse = {
         data: {
-          tokenizeCvv: {
+          tokenizeCreditCard: {
             token: 'faketoken'
           },
           extensions: {

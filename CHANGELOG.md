@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## 3.28.1
+* Update @braintree/sanitize-url to v2.1.0
+
 ## 3.28.0
 * Update promise-polyfill to v7.0.0
 * American Express
@@ -27,7 +30,7 @@ __BREAKING CHANGES__
     * PAYMENT_REQUEST_PAY_WITH_GOOGLE_FAILED_TO_TOKENIZE -> PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE
     * PAYMENT_REQUEST_PAY_WITH_GOOGLE_PARSING_ERROR -> PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR
 * Payment Request - Beta
-  * Change `payWithGoogle` property to `googlePay` property when instantiationg a Payment Request component with `enabledPaymentMethods` option
+  * Change `payWithGoogle` property to `googlePay` property when instantiating a Payment Request component with `enabledPaymentMethods` option
 
 ## 3.27.0
 
