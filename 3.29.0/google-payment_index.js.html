@@ -153,8 +153,8 @@ var VERSION = process.env.npm_package_version;
  *     });
  *
  *     paymentsClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
- *       var result = googlePaymentInstance.parseResponse(paymentData);
- *
+ *       return googlePaymentInstance.parseResponse(paymentData);
+ *     }).then(function (result) {
  *       // send result.nonce to your server
  *     }).catch(function (err) {
  *       // handle err
@@ -162,23 +162,21 @@ var VERSION = process.env.npm_package_version;
  *   });
  * });
  * @example &lt;caption>Check Browser and Customer Compatibility&lt;/caption>
- * function getPaymentsClient() {
- *   return new google.payments.api.PaymentsClient({
- *     environment: 'TEST' // or 'PRODUCTION'
- *   });
- * }
+ * var paymentsClient = new google.payments.api.PaymentsClient({
+ *   environment: 'TEST' // or 'PRODUCTION'
+ * });
  *
- * function setupGooglePayButton(helper) {
+ * function setupGooglePayButton(googlePaymentInstance) {
  *   var button = document.createElement('button');
  *
  *   button.id = 'google-pay';
  *   button.appendChild(document.createTextNode('Google Pay'));
  *   button.addEventListener('click', function (event) {
- *     var paymentRequestData, paymentsClient;
+ *     var paymentRequestData;
  *
  *     event.preventDefault();
  *
- *     paymentDataRequest = helper.createPaymentDataRequest({
+ *     paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
  *       merchantId: 'your-merchant-id-from-google',
  *       transactionInfo: {
  *         currencyCode: 'USD',
@@ -186,11 +184,10 @@ var VERSION = process.env.npm_package_version;
  *         totalPrice: '100.00' // your amount
  *       }
  *     });
- *     paymentsClient = getPaymentsClient();
  *
  *     paymentsClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
- *       var result = helper.parseResponse(paymentData);
- *
+ *       return googlePaymentInstance.parseResponse(paymentData);
+*       }).then(function (result) {
  *       // send result.nonce to your server
  *     }).catch(function (err) {
  *       // handle errors
@@ -207,8 +204,6 @@ var VERSION = process.env.npm_package_version;
  *     client: clientInstance
  *   });
  * }).then(function (googlePaymentInstance) {
- *   var paymentsClient = getPaymentsClient();
- *
  *   return paymentsClient.isReadyToPay({
  *     allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
  *   });

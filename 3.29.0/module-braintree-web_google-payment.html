@@ -250,7 +250,7 @@
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="google-payment_index.js.html">google-payment/index.js</a>, <a href="google-payment_index.js.html#line145">line 145</a>
+          <a href="google-payment_index.js.html">google-payment/index.js</a>, <a href="google-payment_index.js.html#line140">line 140</a>
         </li>
       </ul>
     </dd>
@@ -563,8 +563,8 @@ braintree.client.create({
     });
 
     paymentsClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
-      var result = googlePaymentInstance.parseResponse(paymentData);
-
+      return googlePaymentInstance.parseResponse(paymentData);
+    }).then(function (result) {
       // send result.nonce to your server
     }).catch(function (err) {
       // handle err
@@ -577,23 +577,21 @@ braintree.client.create({
   </p>
 
 
-  <pre class="prettyprint"><code>function getPaymentsClient() {
-  return new google.payments.api.PaymentsClient({
-    environment: 'TEST' // or 'PRODUCTION'
-  });
-}
+  <pre class="prettyprint"><code>var paymentsClient = new google.payments.api.PaymentsClient({
+  environment: 'TEST' // or 'PRODUCTION'
+});
 
-function setupGooglePayButton(helper) {
+function setupGooglePayButton(googlePaymentInstance) {
   var button = document.createElement('button');
 
   button.id = 'google-pay';
   button.appendChild(document.createTextNode('Google Pay'));
   button.addEventListener('click', function (event) {
-    var paymentRequestData, paymentsClient;
+    var paymentRequestData;
 
     event.preventDefault();
 
-    paymentDataRequest = helper.createPaymentDataRequest({
+    paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
       merchantId: 'your-merchant-id-from-google',
       transactionInfo: {
         currencyCode: 'USD',
@@ -601,11 +599,10 @@ function setupGooglePayButton(helper) {
         totalPrice: '100.00' // your amount
       }
     });
-    paymentsClient = getPaymentsClient();
 
     paymentsClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
-      var result = helper.parseResponse(paymentData);
-
+      return googlePaymentInstance.parseResponse(paymentData);
+      }).then(function (result) {
       // send result.nonce to your server
     }).catch(function (err) {
       // handle errors
@@ -622,8 +619,6 @@ braintree.client.create({
     client: clientInstance
   });
 }).then(function (googlePaymentInstance) {
-  var paymentsClient = getPaymentsClient();
-
   return paymentsClient.isReadyToPay({
     allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
   });
