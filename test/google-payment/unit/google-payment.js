@@ -1,11 +1,12 @@
 'use strict';
 
 var analytics = require('../../../src/lib/analytics');
-var Bus = require('../../../src/lib/bus');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var GooglePayment = require('../../../src/google-payment/google-payment');
-var PaymentRequestComponent = require('../../../src/payment-request/external/payment-request');
 var fake = require('../../helpers/fake');
+var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
+var Promise = require('../../../src/lib/promise');
+var methods = require('../../../src/lib/methods');
 
 describe('GooglePayment', function () {
   beforeEach(function () {
@@ -17,157 +18,179 @@ describe('GooglePayment', function () {
       supportedNetworks: ['visa', 'amex']
     };
 
+    this.sandbox.stub(analytics, 'sendEvent');
     this.fakeClient = fake.client({
       configuration: configuration
     });
-
-    this.sandbox.stub(Bus.prototype, 'on');
-    this.sandbox.stub(Bus.prototype, 'emit');
-    this.sandbox.stub(analytics, 'sendEvent');
-  });
-
-  it('is an instance of PaymentRequestComponent', function () {
-    var googlePayment = new GooglePayment({
+    this.googlePayment = new GooglePayment({
       client: this.fakeClient
     });
-
-    expect(googlePayment).to.be.an.instanceof(PaymentRequestComponent);
   });
 
-  it('only supports googlePayment', function () {
-    var googlePayment = new GooglePayment({
-      client: this.fakeClient
+  describe('createPaymentDataRequest', function () {
+    it('returns a payment data request object', function () {
+      var paymentDataRequest = this.googlePayment.createPaymentDataRequest();
+
+      expect(paymentDataRequest.environment).to.equal('TEST');
+      expect(paymentDataRequest.allowedPaymentMethods).to.deep.equal([
+        'CARD',
+        'TOKENIZED_CARD'
+      ]);
+      expect(paymentDataRequest.paymentMethodTokenizationParameters.tokenizationType).to.equal('PAYMENT_GATEWAY');
+      expect(paymentDataRequest.paymentMethodTokenizationParameters.parameters.gateway).to.equal('braintree');
     });
 
-    expect(googlePayment._enabledPaymentMethods.googlePay).to.equal(true);
-    expect(googlePayment._enabledPaymentMethods.basicCard).to.equal(false);
+    it('does not include a merchant id by default', function () {
+      var paymentDataRequest = this.googlePayment.createPaymentDataRequest();
 
-    expect(googlePayment._defaultSupportedPaymentMethods.length).to.equal(1);
-    expect(googlePayment._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal(['https://google.com/pay']);
-  });
-
-  it('sends analytics as google-payment instead of payment-request', function () {
-    var googlePayment = new GooglePayment({
-      client: this.fakeClient
+      expect(paymentDataRequest.merchantId).to.not.exist;
     });
 
-    Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').yields({
-      nonce: 'a-nonce',
-      details: {
-        rawPaymentResponse: {}
-      }
-    });
-
-    return googlePayment.tokenize({
-      details: {
-        total: '100.00'
-      }
-    }).then(function () {
-      expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.tokenize.succeeded');
-    }.bind(this));
-  });
-
-  it('can pass in a supportedPaymentMethods object to customize Google Payment', function () {
-    var googlePayment = new GooglePayment({
-      client: this.fakeClient
-    });
-    var configuration = {
-      supportedPaymentMethods: googlePayment.createSupportedPaymentMethodsConfiguration({
-        merchantName: 'Custom Name'
-      }),
-      details: {total: '100.00'},
-      options: {}
-    };
-
-    this.sandbox.stub(PaymentRequestComponent.prototype, 'tokenize');
-
-    googlePayment.tokenize(configuration);
-
-    expect(PaymentRequestComponent.prototype.tokenize).to.be.calledWithMatch({
-      supportedPaymentMethods: [{
-        supportedMethods: ['https://google.com/pay'],
-        data: this.sandbox.match({
-          merchantName: 'Custom Name'
-        })
-      }],
-      details: configuration.details,
-      options: configuration.options
-    });
-  });
-
-  it('cannot pass in a supportedPaymentMethods object for a non pay with google configuration', function (done) {
-    var googlePayment = new GooglePayment({
-      client: this.fakeClient
-    });
-    var configuration = {
-      supportedPaymentMethods: {
-        supportedMethods: ['basic-card']
-      },
-      details: {total: '100.00'},
-      options: {}
-    };
-
-    this.sandbox.stub(PaymentRequestComponent.prototype, 'tokenize');
-
-    googlePayment.tokenize(configuration).catch(function (err) {
-      expect(PaymentRequestComponent.prototype.tokenize).to.not.be.called;
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('GOOGLE_PAYMENT_CAN_ONLY_TOKENIZE_WITH_GOOGLE_PAYMENT');
-      expect(err.message).to.equal('Only Google Pay is supported in supportedPaymentMethods.');
-      done();
-    });
-  });
-
-  it('supports callbacks', function (done) {
-    var googlePayment = new GooglePayment({
-      client: this.fakeClient
-    });
-    var configuration = {
-      details: {total: '100.00'},
-      options: {}
-    };
-    var result = {};
-
-    this.sandbox.stub(PaymentRequestComponent.prototype, 'tokenize').resolves(result);
-
-    googlePayment.tokenize(configuration, function (err, data) {
-      expect(data).to.equal(result);
-      done();
-    });
-  });
-
-  describe('createSupportedPaymentMethodsConfiguration', function () {
-    it('calls Payment Request createSupportedPaymentMethodsConfiguration', function () {
-      var googlePayment = new GooglePayment({
-        client: this.fakeClient
+    it('can override parameters', function () {
+      var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+        merchantId: 'my-id',
+        environment: 'PRODUCTION',
+        allowedPaymentMethods: ['FOO']
       });
-      var configuration = {
-        merchantName: 'Foo'
+
+      expect(paymentDataRequest.merchantId).to.equal('my-id');
+      expect(paymentDataRequest.environment).to.equal('PRODUCTION');
+      expect(paymentDataRequest.allowedPaymentMethods).to.deep.equal([
+        'FOO'
+      ]);
+    });
+
+    it('sends an analytics event', function () {
+      this.googlePayment.createPaymentDataRequest();
+
+      expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.createPaymentDataRequest');
+    });
+  });
+
+  describe('parseResponse', function () {
+    it('resolves with parsed response from Google Pay tokenization', function () {
+      var rawResponse = {
+        cardInfo: {},
+        paymentMethodToken: {
+          token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224"},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
+          tokenizationType: 'PAYMENT_GATEWAY'
+        }
       };
 
-      this.sandbox.stub(PaymentRequestComponent.prototype, 'createSupportedPaymentMethodsConfiguration');
+      return this.googlePayment.parseResponse(rawResponse).then(function (parsedResponse) {
+        expect(parsedResponse).to.deep.equal({
+          nonce: 'nonce-1234',
+          type: 'AndroidPayCard',
+          description: 'Android Pay',
+          details: {
+            cardType: 'Visa',
+            lastFour: '7224',
+            lastTwo: '24'
+          },
+          binData: {
+            prepaid: 'No',
+            healthcare: 'Unknown',
+            debit: 'Unknown',
+            durbinRegulated: 'Unknown',
+            commercial: 'Unknown',
+            payroll: 'Unknown',
+            issuingBank: 'Unknown',
+            countryOfIssuance: '',
+            productId: 'Unknown'
+          }
+        });
+      });
+    });
 
-      googlePayment.createSupportedPaymentMethodsConfiguration(configuration);
+    it('passes back Braintree error when tokenization fails', function () {
+      var rawResponse = {
+        cardInfo: {},
+        paymentMethodToken: {
+          token: '{"error":{"message":"Record not found"},"fieldErrors":[]}',
+          tokenizationType: 'PAYMENT_GATEWAY'
+        }
+      };
 
-      expect(PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration).to.be.calledOnce;
-      expect(PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration).to.be.calledWith('googlePay', configuration);
+      return this.googlePayment.parseResponse(rawResponse).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('GOOGLE_PAYMENT_GATEWAY_ERROR');
+        expect(err.message).to.equal('There was an error when tokenizing the Google Pay payment method.');
+      });
+    });
+
+    it('passes back Braintree error when JSON parsing fails', function () {
+      var rawResponse = {
+        cardInfo: {},
+        paymentMethodToken: {
+          token: '{"foo:{}}',
+          tokenizationType: 'PAYMENT_GATEWAY'
+        }
+      };
+
+      return this.googlePayment.parseResponse(rawResponse).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('GOOGLE_PAYMENT_GATEWAY_ERROR');
+        expect(err.message).to.equal('There was an error when tokenizing the Google Pay payment method.');
+      });
+    });
+
+    it('sends an analytics event when payment method nonce payload is parsed', function () {
+      var rawResponse = {
+        cardInfo: {},
+        paymentMethodToken: {
+          token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224"},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
+          tokenizationType: 'PAYMENT_GATEWAY'
+        }
+      };
+
+      return this.googlePayment.parseResponse(rawResponse).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.parseResponse.succeeded');
+      }.bind(this));
+    });
+
+    it('sends an analytics event when tokenization results in an error', function () {
+      var rawResponse = {
+        cardInfo: {},
+        paymentMethodToken: {
+          token: '{"foo:{}}',
+          tokenizationType: 'PAYMENT_GATEWAY'
+        }
+      };
+
+      return this.googlePayment.parseResponse(rawResponse).catch(function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.parseResponse.failed');
+      }.bind(this));
     });
   });
 
   describe('teardown', function () {
-    it('calls Payment Request teardown', function () {
-      var googlePayment;
+    it('returns a promise', function () {
+      var promise = this.googlePayment.teardown();
 
-      this.sandbox.stub(PaymentRequestComponent.prototype, 'teardown');
+      expect(promise).to.be.an.instanceof(Promise);
+    });
 
-      googlePayment = new GooglePayment({
-        client: this.fakeClient
+    it('replaces all methods so error is thrown when methods are invoked', function (done) {
+      var instance = this.googlePayment;
+
+      instance.teardown(function () {
+        methods(GooglePayment.prototype).forEach(function (method) {
+          var err;
+
+          try {
+            instance[method]();
+          } catch (e) {
+            err = e;
+          }
+
+          expect(err).to.be.an.instanceof(BraintreeError);
+          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
+          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+        });
+
+        done();
       });
-
-      googlePayment.teardown();
-
-      expect(PaymentRequestComponent.prototype.teardown).to.be.calledOnce;
     });
   });
 });

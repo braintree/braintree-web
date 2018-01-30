@@ -1,38 +1,33 @@
 'use strict';
 
+var analytics = require('../lib/analytics');
+var assign = require('../lib/assign').assign;
+var convertMethodsToError = require('../lib/convert-methods-to-error');
+var generateGooglePayConfiguration = require('../lib/generate-google-pay-configuration');
 var BraintreeError = require('../lib/braintree-error');
-var PaymentRequestComponent = require('../payment-request/external/payment-request');
+var methods = require('../lib/methods');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 
 /**
- * @name GooglePayment#on
- * @function
- * @param {string} event The name of the event to which you are subscribing.
- * @param {function} handler A callback to handle the event.
- * @description Subscribes a handler function to a named event. `event` should be {@link PaymentRequestComponent#event:shippingAddressChange|shippingAddressChange} or {@link PaymentRequestComponent#event:shippingOptionChange|shippingOptionChange}. For convenience, you can also listen on `shippingaddresschange` or `shippingoptionchange` to match the event listeners in the [Payment Request API documentation](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request#shipping_in_payment_request_api). Events will emit a {@link PaymentRequestComponent~shippingEventObject|shippingEventObject}.
- * @example
- * <caption>Listening to a Google Payment event, in this case 'shippingAddressChange'</caption>
- * braintree.googlePayment.create({ ... }, function (createErr, googlePaymentInstance) {
- *   googlePaymentInstance.on('shippingAddressChange', function (event) {
- *     console.log(event.target.shippingAddress);
- *   });
- * });
- * @returns {void}
- */
-
-/**
- * @name GooglePayment#teardown
- * @function
- * @param {callback} [callback] Called on completion.
- * @description Cleanly remove anything set up by {@link module:braintree-web/google-payment.create|create}.
- * @example
- * googlePaymentInstance.teardown();
- * @example <caption>With callback</caption>
- * googlePaymentInstance.teardown(function () {
- *   // teardown is complete
- * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @typedef {object} GooglePayment~tokenizePayload
+ * @property {string} nonce The payment method nonce.
+ * @property {object} details Additional account details.
+ * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastFour Last four digits of card number.
+ * @property {string} details.lastTwo Last two digits of card number.
+ * @property {string} description A human-readable description.
+ * @property {string} type The payment method type, `CreditCard` or `AndroidPayCard`.
+ * @property {object} binData Information about the card based on the bin.
+ * @property {string} binData.commercial Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.countryOfIssuance The country of issuance.
+ * @property {string} binData.debit Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.durbinRegulated Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.healthcare Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.issuingBank The issuing bank.
+ * @property {string} binData.payroll Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.prepaid Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.productId The product id.
  */
 
 /**
@@ -44,201 +39,130 @@ var wrapPromise = require('@braintree/wrap-promise');
  * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  */
 function GooglePayment(options) {
-  PaymentRequestComponent.call(this, {
-    client: options.client,
-    enabledPaymentMethods: {
-      basicCard: false,
-      googlePay: true
-    }
-  });
+  this._client = options.client;
 
-  this._analyticsName = 'google-payment';
+  this._braintreeGeneratedPaymentRequestConfiguration = generateGooglePayConfiguration(this._client.getConfiguration());
 }
 
-GooglePayment.prototype = Object.create(PaymentRequestComponent.prototype, {
-  constructor: GooglePayment
-});
-
 /**
- * Create an object to pass into the `tokenize` method to specify a custom configuration. If no overrides are provided, the default configuration will be used in `tokenize`.
+ * Create a configuration object for use in the `loadPaymentData` method.
  * @public
- * @param {object} [overrides] The configuration overrides for the [data property on the supported payment methods objects](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request). This object will be merged with the default configuration object based on the settings in the Braintree Gateway. If no object is passed in, the default configuration object will be returned.
- * @example <caption>Getting the default configuration for a specified type</caption>
- * var configuration = googlePaymentInstance.createSupportedPaymentMethodsConfiguration();
- *
- * configuration.supportedMethods; // ['https://google.com/pay']
- *
- * configuration.data.allowedCardNetworks; // ['AMEX', 'DISCOVER', 'MASTERCARD', 'VISA'] <- whatever the supported card networks for the merchant account are
- * @example <caption>Specifying overrides</caption>
- * var configuration = googlePaymentInstance.createSupportedPaymentMethodsConfiguration({
- *   merchantName: 'My Custom Merchant Account Name',
- *   allowedCardNetworks: ['VISA']
+ * @param {object} overrides The supplied parameters for creating the Payment Data Request object. Only required parameters are the `merchantId` provided by Google and a `transactionInfo` object, but any of the parameters in the Payment Data Request can be overwritten. See https://developers.google.com/payments/web/object-reference#PaymentDataRequest
+ * @param {string} merchantId The merchant id provided by registering with Google.
+ * @param {object} transactionInfo See https://developers.google.com/payments/web/object-reference#TransactionInfo for more information.
+ * @example
+ * var configuration = googlePaymentInstance.createPaymentDataRequest({
+ *   merchantId: 'my-merchant-id-from-google',
+ *   transactionInfo: {
+ *     currencyCode: 'USD',
+ *     totalPriceStatus: 'FINAL',
+ *     totalPrice: '100.00'
+ *   }
  * });
+ * var paymentsClient = new google.payments.api.PaymentsClient({
+ *   environment: 'TEST' // or 'PRODUCTION'
+ * })
  *
- * configuration.data.merchantName; // 'My Custom Merchant Account Name'
- * configuration.data.allowedCardNetworks; // ['VISA']
- * @returns {object} Returns a configuration object for use in the tokenize function.
+ * paymentsClient.loadPaymentData(paymentDataRequest).then(function (response) {
+ *   // handle response with googlePaymentInstance.parseResponse
+ *   // (see below)
+ * });
+ * @returns {object} Returns a configuration object for Google Payment Request.
  */
-GooglePayment.prototype.createSupportedPaymentMethodsConfiguration = function (overrides) {
-  return PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration.call(this, 'googlePay', overrides);
+GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
+  analytics.sendEvent(this._client, 'google-payment.createPaymentDataRequest');
+
+  return assign({}, this._braintreeGeneratedPaymentRequestConfiguration, overrides);
 };
 
 /**
- * Initializes a Google Pay flow and provides a nonce payload.
+ * Parse the response from the tokenization.
  * @public
- * @param {object} configuration The payment details.
- * @param {object} configuration.details The payment details. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_payment_details).
- * @param {object} [configuration.options] Additional Google Pay options. For details on this object, see [Google's PaymentRequest API documentation](https://developers.google.com/web/fundamentals/discovery-and-monetization/payment-request/deep-dive-into-payment-request#defining_options_optional).
+ * @param {object} response The response back from the Google Pay tokenization.
+ * @param {callback} [callback] The second argument, <code>data</code>, is a {@link GooglePay~tokenizePayload|tokenizePayload}. If no callback is provided, `parseResponse` returns a promise that resolves with a {@link GooglePayment~tokenizePayload|tokenizePayload}.
+ * @example with callback
+ * var paymentsClient = new google.payments.api.PaymentsClient({
+ *   environment: 'TEST' // or 'PRODUCTION'
+ * })
  *
- * @param {callback} [callback] The second argument, <code>data</code>, is a {@link PaymentRequestComponent.html#~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link PaymentRequestComponent.html#~tokenizePayload|tokenizePayload}.
- * @example
- * googlePaymentInstance.tokenize({
- *   details: {
- *     total: {
- *       label: 'Price',
- *       amount: {
- *         currency: 'USD',
- *         value: '100.00'
- *       }
+ * paymentsClient.loadPaymentData(paymentDataRequestFromCreatePaymentDataRequest).then(function (response) {
+ *   googlePaymentInstance.parseResponse(response, function (err, data) {
+ *     if (err) {
+ *       // handle errors
  *     }
- *   }
- * }).then(function (payload) {
- *   // send payload.nonce to server
- * }).catch(function (err) {
- *   if (err.code === 'PAYMENT_REQUEST_CANCELED') {
- *     // Google Pay payment request was canceled by user
- *   } else {
- *     // an error occurred while processing
- *   }
- * });
- * @example <caption>Include additional payment request options</caption>
- * googlePaymentInstance.tokenize({
- *   details: {
- *     total: {
- *       label: 'Price',
- *       amount: {
- *         currency: 'USD',
- *         value: '100.00'
- *       }
- *     }
- *   },
- *   options: {
- *     requestPayerName: true,
- *     requestPayerPhone: true,
- *     requestPayerEmail: true
- *   }
- * }).then(function (payload) {
- *   // Send payload.nonce to your server
- *
- *   // Examine additional info in the raw payment response
- *   console.log(payload.details.rawPaymentResponse);
- * });
- * @example <caption>Include custom supported payment method object</caption>
- * googlePaymentInstance.tokenize({
- *   supportedPaymentMethods: googlePaymentInstance.createSupportedPaymentMethodsConfiguration({merchantName: 'Custom Name'}),
- *   details: {
- *     total: {
- *       label: 'Price',
- *       amount: {
- *         currency: 'USD',
- *         value: '100.00'
- *       }
- *     }
- *   },
- *   options: {
- *     requestPayerName: true,
- *     requestPayerPhone: true,
- *     requestPayerEmail: true
- *   }
- * }).then(function (payload) {
- *   // Send payload.nonce to your server
- *
- *   // Examine additional info in the raw payment response
- *   console.log(payload.details.rawPaymentResponse);
- * });
- * @example <caption>Request Shipping Information</caption>
- * var shippingOptions = [
- *   {
- *     id: 'economy',
- *     label: 'Economy Shipping (5-7 Days)',
- *     amount: {
- *       currency: 'USD',
- *       value: '0',
- *     },
- *   }, {
- *     id: 'express',
- *     label: 'Express Shipping (2-3 Days)',
- *     amount: {
- *       currency: 'USD',
- *       value: '5',
- *     },
- *   }, {
- *     id: 'next-day',
- *     label: 'Next Day Delivery',
- *     amount: {
- *       currency: 'USD',
- *       value: '12',
- *     },
- *   },
- * ];
- * var paymentDetails = {
- * 	 total: {
- *     label: 'Total',
- *     amount: {
- *       currency: 'USD',
- *       value: '10.00',
- *     }
- *   },
- *   shippingOptions: shippingOptions
- * };
- *
- * googlePaymentInstance.on('shippingAddressChange', function (event) {
- *   // validate shipping address on event.target.shippingAddress
- *   // make changes to the paymentDetails or shippingOptions if necessary
- *
- *   event.updateWith(paymentDetails)
- * });
- *
- * googlePaymentInstance.on('shippingOptionChange', function (event) {
- *   shippingOptions.forEach(function (option) {
- *     option.selected = option.id === event.target.shippingOption;
+ *     // send parsedResponse.nonce to your server
  *   });
- *
- *   event.updateWith(paymentDetails)
  * });
+ * @example with promise
+ * var paymentsClient = new google.payments.api.PaymentsClient({
+ *   environment: 'TEST' // or 'PRODUCTION'
+ * })
  *
- * googlePaymentInstance.tokenize({
- *   details: paymentDetails,
- *   options: {
- *     requestShipping: true
- *   }
- * }).then(function (payload) {
- *   // send payload.nonce to your server
- *   // collect shipping information from payload
- *   console.log(payload.details.rawPaymentResponse.shippingAddress);
+ * paymentsClient.loadPaymentData(paymentDataRequestFromCreatePaymentDataRequest).then(function (response) {
+ *   return googlePaymentInstance.parseResponse(response);
+ * }).then(function (parsedResponse) {
+ *   // send parsedResponse.nonce to your server
+ * }).catch(function (err) {
+ *   // handle errors
+ * });
+ * @returns {Promise|void} Returns a promise that resolves the parsed response if no callback is provided.
+ */
+GooglePayment.prototype.parseResponse = function (response) {
+  var client = this._client;
+
+  return Promise.resolve().then(function () {
+    var payload;
+    var parsedResponse = JSON.parse(response.paymentMethodToken.token);
+    var error = parsedResponse.error;
+
+    if (error) {
+      return Promise.reject(error);
+    }
+
+    payload = parsedResponse.androidPayCards[0];
+    analytics.sendEvent(client, 'google-payment.parseResponse.succeeded');
+
+    return Promise.resolve({
+      nonce: payload.nonce,
+      type: payload.type,
+      description: payload.description,
+      details: {
+        cardType: payload.details.cardType,
+        lastFour: payload.details.lastFour,
+        lastTwo: payload.details.lastTwo
+      },
+      binData: payload.binData
+    });
+  }).catch(function (error) {
+    analytics.sendEvent(client, 'google-payment.parseResponse.failed');
+
+    return Promise.reject(new BraintreeError({
+      code: 'GOOGLE_PAYMENT_GATEWAY_ERROR',
+      message: 'There was an error when tokenizing the Google Pay payment method.',
+      type: BraintreeError.types.UNKNOWN,
+      details: {
+        originalError: error
+      }
+    }));
+  });
+};
+
+/**
+ * Cleanly tear down anything set up by {@link module:braintree-web/google-payment.create|create}.
+ * @public
+ * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
+ * @example
+ * googlePaymentInstance.teardown();
+ * @example <caption>With callback</caption>
+ * googlePaymentInstance.teardown(function () {
+ *   // teardown is complete
  * });
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
-GooglePayment.prototype.tokenize = function (configuration) {
-  var supportedPaymentMethods;
+GooglePayment.prototype.teardown = function () {
+  convertMethodsToError(this, methods(GooglePayment.prototype));
 
-  if (configuration.supportedPaymentMethods) {
-    if (configuration.supportedPaymentMethods.supportedMethods[0] === 'https://google.com/pay') {
-      supportedPaymentMethods = [configuration.supportedPaymentMethods];
-    } else {
-      return Promise.reject(new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        code: 'GOOGLE_PAYMENT_CAN_ONLY_TOKENIZE_WITH_GOOGLE_PAYMENT',
-        message: 'Only Google Pay is supported in supportedPaymentMethods.'
-      }));
-    }
-  }
-
-  return PaymentRequestComponent.prototype.tokenize.call(this, {
-    supportedPaymentMethods: supportedPaymentMethods,
-    details: configuration.details,
-    options: configuration.options
-  });
+  return Promise.resolve();
 };
 
 module.exports = wrapPromise.wrapPrototype(GooglePayment);

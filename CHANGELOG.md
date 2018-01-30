@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+## 3.29.0
+* Update credit-card-type to v6.1.1
+* Update jsdoc-template to v3.2.0
+* Hosted Fields
+  * Fix issue where some series 2 Mastercard bin ranges were not being detected (internal assets for v3.19.1 forward have this fix applied)
+
+__BREAKING CHANGES__
+
+* Google Pay - Beta
+  * Switch from using iframe based solution to Google pay.js script tag solution
+    * `braintree.googlePayment.isSupported` has been removed
+    * `tokenize` and `createSupportedPaymentMethodsConfiguration` and `on` methods and has been removed. See documentation example for new integration pattern.
+
 ## 3.28.1
 * Update @braintree/sanitize-url to v2.1.0
 

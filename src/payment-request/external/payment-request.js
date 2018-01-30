@@ -4,6 +4,7 @@ var analytics = require('../../lib/analytics');
 var assign = require('../../lib/assign').assign;
 var Bus = require('../../lib/bus');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
+var generateGooglePayConfiguration = require('../../lib/generate-google-pay-configuration');
 var iFramer = require('@braintree/iframer');
 var uuid = require('../../lib/vendor/uuid');
 var useMin = require('../../lib/use-min');
@@ -139,7 +140,6 @@ function PaymentRequestComponent(options) {
 
   this._componentId = uuid();
   this._client = options.client;
-  this._analyticsName = 'payment-request';
   this._enabledPaymentMethods = {
     basicCard: enabledPaymentMethods.basicCard !== false,
     googlePay: enabledPaymentMethods.googlePay !== false
@@ -157,8 +157,6 @@ PaymentRequestComponent.prototype = Object.create(EventEmitter.prototype, {
 
 PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = function () {
   var configuration = this._client.getConfiguration();
-  var isProduction = configuration.gatewayConfiguration.environment === 'production';
-  var metadata = configuration.analyticsMetadata;
   var androidPayConfiguration = configuration.gatewayConfiguration.androidPay;
   var cardConfiguration = configuration.gatewayConfiguration.creditCards;
   var supportedPaymentMethods = {};
@@ -177,37 +175,11 @@ PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = fun
   if (this._enabledPaymentMethods.googlePay && androidPayConfiguration && androidPayConfiguration.enabled) {
     supportedPaymentMethods.googlePay = {
       supportedMethods: ['https://google.com/pay'],
-      data: {
-        merchantId: BRAINTREE_GOOGLE_PAY_MERCHANT_ID,
+      data: assign({
         apiVersion: 1,
-        environment: isProduction ? 'PRODUCTION' : 'TEST',
-        allowedPaymentMethods: ['CARD', 'TOKENIZED_CARD'],
-        paymentMethodTokenizationParameters: {
-          tokenizationType: 'PAYMENT_GATEWAY',
-          parameters: {
-            gateway: 'braintree',
-            'braintree:merchantId': configuration.gatewayConfiguration.merchantId,
-            'braintree:authorizationFingerprint': androidPayConfiguration.googleAuthorizationFingerprint,
-            'braintree:apiVersion': 'v1',
-            'braintree:sdkVersion': VERSION,
-            'braintree:metadata': JSON.stringify({
-              source: metadata.source,
-              integration: metadata.integration,
-              sessionId: metadata.sessionId,
-              version: VERSION,
-              platform: metadata.platform
-            })
-          }
-        },
-        cardRequirements: {
-          allowedCardNetworks: androidPayConfiguration.supportedNetworks.map(function (card) { return card.toUpperCase(); })
-        }
-      }
+        merchantId: BRAINTREE_GOOGLE_PAY_MERCHANT_ID
+      }, generateGooglePayConfiguration(configuration))
     };
-
-    if (configuration.authorizationType === 'TOKENIZATION_KEY') {
-      supportedPaymentMethods.googlePay.data.paymentMethodTokenizationParameters.parameters['braintree:clientKey'] = configuration.authorization;
-    }
   }
 
   return supportedPaymentMethods;
@@ -238,7 +210,7 @@ PaymentRequestComponent.prototype.initialize = function () {
       reply(self._client);
     });
     self._bus.on(events.FRAME_CAN_MAKE_REQUESTS, function () {
-      analytics.sendEvent(self._client, self._analyticsName + '.initialized');
+      analytics.sendEvent(self._client, 'payment-request.initialized');
       self._bus.on(events.SHIPPING_ADDRESS_CHANGE, function (shippingAddress) {
         var shippingAddressChangeEvent = {
           target: {
@@ -458,7 +430,7 @@ PaymentRequestComponent.prototype.tokenize = function (configuration) {
     });
 
     this._bus.on(events.PAYMENT_REQUEST_SUCCESSFUL, function (payload) {
-      analytics.sendEvent(this._client, this._analyticsName + '.tokenize.succeeded');
+      analytics.sendEvent(this._client, 'payment-request.tokenize.succeeded');
       resolve({
         nonce: payload.nonce,
         type: payload.type,
@@ -485,7 +457,7 @@ PaymentRequestComponent.prototype.tokenize = function (configuration) {
             originalError: error
           }
         });
-        analytics.sendEvent(this._client, this._analyticsName + '.tokenize.canceled');
+        analytics.sendEvent(this._client, 'payment-request.tokenize.canceled');
       } else if (error.name === 'PAYMENT_REQUEST_INITIALIZATION_FAILED') {
         formattedError = new BraintreeError({
           type: errors.PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED.type,
@@ -522,7 +494,7 @@ PaymentRequestComponent.prototype.tokenize = function (configuration) {
             originalError: error
           }
         });
-        analytics.sendEvent(this._client, this._analyticsName + '.tokenize.failed');
+        analytics.sendEvent(this._client, 'payment-request.tokenize.failed');
       }
       reject(formattedError);
     }.bind(this));
@@ -547,7 +519,7 @@ PaymentRequestComponent.prototype.teardown = function () {
 
   convertMethodsToError(this, methods(PaymentRequestComponent.prototype));
 
-  analytics.sendEvent(this._client, this._analyticsName + '.teardown-completed');
+  analytics.sendEvent(this._client, 'payment-request.teardown-completed');
 
   return Promise.resolve();
 };

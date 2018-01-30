@@ -2,7 +2,6 @@
 
 var Promise = require('../../../src/lib/promise');
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var browserDetection = require('../../../src/google-payment/browser-detection');
 var googlePayment = require('../../../src/google-payment');
 var GooglePayment = require('../../../src/google-payment/google-payment');
 var fake = require('../../helpers/fake');
@@ -22,7 +21,6 @@ describe('googlePayment', function () {
         configuration: configuration
       });
       this.fakeClient._request = function () {};
-      this.sandbox.stub(GooglePayment.prototype, 'initialize').resolves({});
       this.sandbox.stub(basicComponentVerification, 'verify').resolves();
     });
 
@@ -54,7 +52,7 @@ describe('googlePayment', function () {
         client: this.fakeClient
       }, function (err, thingy) {
         expect(err).not.to.exist;
-        expect(thingy).to.exist;
+        expect(thingy).to.be.an.instanceof(GooglePayment);
 
         done();
       });
@@ -73,44 +71,6 @@ describe('googlePayment', function () {
 
         done();
       });
-    });
-
-    it('returns error if payment request integration throws an error', function (done) {
-      var error = new Error('Failed');
-
-      GooglePayment.prototype.initialize.rejects(error);
-
-      googlePayment.create({
-        client: this.fakeClient
-      }, function (err) {
-        expect(err).to.exist;
-        expect(err).to.equal(error);
-
-        done();
-      });
-    });
-  });
-
-  describe('isSupported', function () {
-    it('returns true when in Android Chrome and Payment Request API is supported', function () {
-      this.sandbox.stub(browserDetection, 'supportsPaymentRequestApi').returns(true);
-      this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
-
-      expect(googlePayment.isSupported()).to.eql(true);
-    });
-
-    it('returns false when not in Android Chrome and Payment Request API is supported', function () {
-      this.sandbox.stub(browserDetection, 'supportsPaymentRequestApi').returns(true);
-      this.sandbox.stub(browserDetection, 'isAndroid').returns(false);
-
-      expect(googlePayment.isSupported()).to.eql(false);
-    });
-
-    it('returns false when in Android Chrome and Payment Request API is not supported', function () {
-      this.sandbox.stub(browserDetection, 'supportsPaymentRequestApi').returns(false);
-      this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
-
-      expect(googlePayment.isSupported()).to.eql(false);
     });
   });
 });
