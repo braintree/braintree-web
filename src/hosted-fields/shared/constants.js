@@ -66,6 +66,7 @@ var constants = {
     'font-weight',
     'letter-spacing',
     'line-height',
+    'padding',
     'opacity',
     'outline',
     'text-shadow',

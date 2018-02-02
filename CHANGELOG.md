@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.30.0
+* Update promise-polyfill to v7.0.2 (#350 thanks @Macavity)
+  * Fixes issues with promises not working in IE from v3.28.0-v3.29.0
+* Hosted Fields
+  * Add `padding` to supported CSS attributes (#104)
+
 ## 3.29.0
 * Update credit-card-type to v6.1.1
 * Update jsdoc-template to v3.2.0

@@ -65,6 +65,7 @@ var VERSION = process.env.npm_package_version;
  * `line-height`
  * `opacity`
  * `outline`
+ * `padding`
  * `text-shadow`
  * `transition`
  * `-moz-appearance`
