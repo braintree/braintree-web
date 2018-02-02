@@ -24,7 +24,7 @@
     "credit-card-type": "6.1.1",
     "framebus": "2.0.8",
     "inject-stylesheet": "1.0.0",
-    "promise-polyfill": "7.0.0",
+    "promise-polyfill": "7.0.2",
     "restricted-input": "1.2.7"
   },
   "devDependencies": {
