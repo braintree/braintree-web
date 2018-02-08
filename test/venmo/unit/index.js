@@ -3,9 +3,11 @@
 var analytics = require('../../../src/lib/analytics');
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var create = require('../../../src/venmo').create;
+var isBrowserSupported = require('../../../src/venmo').isBrowserSupported;
 var fake = require('../../helpers/fake');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 var BraintreeError = require('../../../src/lib/braintree-error');
+var supportsVenmo = require('../../../src/venmo/shared/supports-venmo');
 var Venmo = require('../../../src/venmo/venmo');
 var Promise = require('../../../src/lib/promise');
 
@@ -117,6 +119,26 @@ describe('venmo.create', function () {
         expect(analytics.sendEvent).to.be.calledWith(this.client, 'venmo.initialized');
         done();
       }.bind(this));
+    });
+  });
+});
+
+describe('venmo.isBrowserSupported', function () {
+  it('calls isBrowserSupported library', function () {
+    this.sandbox.stub(supportsVenmo, 'isBrowserSupported');
+
+    isBrowserSupported();
+
+    expect(supportsVenmo.isBrowserSupported).to.be.calledOnce;
+  });
+
+  it('can call isBrowserSupported with allowNewTab', function () {
+    this.sandbox.stub(supportsVenmo, 'isBrowserSupported');
+
+    isBrowserSupported({allowNewBrowserTab: true});
+
+    expect(supportsVenmo.isBrowserSupported).to.be.calledWith({
+      allowNewBrowserTab: true
     });
   });
 });

@@ -8,6 +8,7 @@ var wrapPromise = require('@braintree/wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
 var Venmo = require('./venmo');
 var Promise = require('../lib/promise');
+var supportsVenmo = require('./shared/supports-venmo');
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -47,8 +48,30 @@ function create(options) {
   });
 }
 
+/**
+ * @static
+ * @function isBrowserSupported
+ * @param {object} [options] browser support options:
+ * @param {boolean} [options.allowNewBrowserTab=true] This should be set to false if your payment flow requires returning to the same tab, e.g. single page applications.
+ * @example
+ * if (braintree.venmo.isBrowserSupported()) {
+ *   // set up Venmo
+ * }
+ * @example <caption>Explicitly require browser support returning to the same tab</caption>
+ * if (braintree.venmo.isBrowserSupported({
+ *   allowNewBrowserTab: false
+ * })) {
+ *   // set up Venmo
+ * }
+ * @returns {boolean} Whether or not the browser supports Venmo.
+ */
+function isBrowserSupported(options) {
+  return supportsVenmo.isBrowserSupported(options);
+}
+
 module.exports = {
   create: wrapPromise(create),
+  isBrowserSupported: isBrowserSupported,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

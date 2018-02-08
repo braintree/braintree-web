@@ -1,7 +1,7 @@
 'use strict';
 
 var analytics = require('../lib/analytics');
-var browserDetection = require('./shared/browser-detection');
+var isBrowserSupported = require('./shared/supports-venmo');
 var constants = require('./shared/constants');
 var errors = require('./shared/errors');
 var querystring = require('../lib/querystring');
@@ -76,12 +76,9 @@ Venmo.prototype._initialize = function () {
  * @returns {boolean} True if the current browser is supported, false if not.
  */
 Venmo.prototype.isBrowserSupported = function () {
-  var isAndroidChrome = browserDetection.isAndroid() && browserDetection.isChrome();
-  var isIosChrome = browserDetection.isIos() && browserDetection.isChrome();
-  var supportsReturnToSameTab = browserDetection.isIosSafari() || isAndroidChrome;
-  var supportsReturnToNewTab = isIosChrome || browserDetection.isSamsungBrowser() || browserDetection.isMobileFirefox();
-
-  return supportsReturnToSameTab || (this._allowNewBrowserTab && supportsReturnToNewTab);
+  return isBrowserSupported.isBrowserSupported({
+    allowNewBrowserTab: this._allowNewBrowserTab
+  });
 };
 
 /**

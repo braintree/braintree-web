@@ -2,13 +2,13 @@
 
 var atob = require('../../../src/lib/vendor/polyfill').atob;
 var analytics = require('../../../src/lib/analytics');
-var browserDetection = require('../../../src/venmo/shared/browser-detection');
 var constants = require('../../../src/venmo/shared/constants');
 var fake = require('../../helpers/fake');
 var querystring = require('../../../src/lib/querystring');
 var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 var BraintreeError = require('../../../src/lib/braintree-error');
 var Venmo = require('../../../src/venmo/venmo');
+var supportsVenmo = require('../../../src/venmo/shared/supports-venmo');
 var Promise = require('../../../src/lib/promise');
 var VERSION = require('../../../package.json').version;
 var methods = require('../../../src/lib/methods');
@@ -137,66 +137,37 @@ describe('Venmo', function () {
   });
 
   describe('isBrowserSupported', function () {
-    it('returns true for iOS Safari', function () {
-      this.sandbox.stub(browserDetection, 'isIosSafari').returns(true);
+    it('calls isBrowserSupported library', function () {
+      this.sandbox.stub(supportsVenmo, 'isBrowserSupported').returns(true);
 
       expect(this.venmo.isBrowserSupported()).to.equal(true);
-    });
 
-    it('returns true for iOS Chrome', function () {
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.sandbox.stub(browserDetection, 'isChrome').returns(true);
-
-      expect(this.venmo.isBrowserSupported()).to.equal(true);
-    });
-
-    it('returns true for Android Chrome', function () {
-      this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
-      this.sandbox.stub(browserDetection, 'isChrome').returns(true);
-
-      expect(this.venmo.isBrowserSupported()).to.equal(true);
-    });
-
-    it('returns true for Samsung Browser', function () {
-      this.sandbox.stub(browserDetection, 'isSamsungBrowser').returns(true);
-
-      expect(this.venmo.isBrowserSupported()).to.equal(true);
-    });
-
-    it('returns true for Mobile Firefox', function () {
-      this.sandbox.stub(browserDetection, 'isMobileFirefox').returns(true);
-
-      expect(this.venmo.isBrowserSupported()).to.equal(true);
-    });
-
-    it('returns false for other browsers', function () {
-      this.sandbox.stub(browserDetection, 'isIosSafari').returns(false);
-      this.sandbox.stub(browserDetection, 'isChrome').returns(false);
-      this.sandbox.stub(browserDetection, 'isSamsungBrowser').returns(false);
-      this.sandbox.stub(browserDetection, 'isMobileFirefox').returns(false);
+      supportsVenmo.isBrowserSupported.returns(false);
 
       expect(this.venmo.isBrowserSupported()).to.equal(false);
     });
 
-    context('when allowNewBrowserTab is false', function () {
-      beforeEach(function () {
-        this.venmo = new Venmo({
-          client: this.client,
-          allowNewBrowserTab: false
-        });
+    it('calls isBrowserSupported with allowNewBrowserTab: true by default', function () {
+      this.sandbox.stub(supportsVenmo, 'isBrowserSupported');
+
+      this.venmo.isBrowserSupported();
+
+      expect(supportsVenmo.isBrowserSupported).to.be.calledWith({
+        allowNewBrowserTab: true
       });
+    });
 
-      it('returns false for iOS Chrome', function () {
-        this.sandbox.stub(browserDetection, 'isIos').returns(true);
-        this.sandbox.stub(browserDetection, 'isChrome').returns(true);
-
-        expect(this.venmo.isBrowserSupported()).to.equal(false);
+    it('calls isBrowserSupported with allowNewBrowserTab: false when venmo instance is configured to do so', function () {
+      this.venmo = new Venmo({
+        client: this.client,
+        allowNewBrowserTab: false
       });
+      this.sandbox.stub(supportsVenmo, 'isBrowserSupported');
 
-      it('returns false for Mobile Firefox', function () {
-        this.sandbox.stub(browserDetection, 'isMobileFirefox').returns(true);
+      this.venmo.isBrowserSupported();
 
-        expect(this.venmo.isBrowserSupported()).to.equal(false);
+      expect(supportsVenmo.isBrowserSupported).to.be.calledWith({
+        allowNewBrowserTab: false
       });
     });
   });

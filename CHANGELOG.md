@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.31.0
+* Update credit-card-type to v6.2.0
+* Update card-validator to v4.3.0
+* Venmo
+  * Add browser support detection helper as static method on `braintree.venmo.isBrowserSuppported`
+
 ## 3.30.0
 * Update promise-polyfill to v7.0.2 (#350 thanks @Macavity)
   * Fixes issues with promises not working in IE from v3.28.0-v3.29.0
