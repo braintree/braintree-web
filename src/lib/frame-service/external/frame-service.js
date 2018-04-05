@@ -11,6 +11,7 @@ var uuid = require('../../vendor/uuid');
 var iFramer = require('@braintree/iframer');
 var BraintreeError = require('../../braintree-error');
 var browserDetection = require('../shared/browser-detection');
+var isHTTPS = require('../../is-https');
 var assign = require('./../../assign').assign;
 
 var REQUIRED_CONFIG_KEYS = [
@@ -106,6 +107,8 @@ FrameService.prototype._setBusEvents = function () {
 };
 
 FrameService.prototype.open = function (options, callback) {
+  var error;
+
   options = options || {};
   this._frame = this._getFrameForEnvironment(options);
 
@@ -123,7 +126,12 @@ FrameService.prototype.open = function (options, callback) {
   if (this.isFrameClosed()) {
     this._cleanupFrame();
     if (callback) {
-      callback(new BraintreeError(errors.FRAME_SERVICE_FRAME_OPEN_FAILED));
+      if (browserDetection.isIE() && !isHTTPS.isHTTPS()) {
+        error = new BraintreeError(errors.FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG);
+      } else {
+        error = new BraintreeError(errors.FRAME_SERVICE_FRAME_OPEN_FAILED);
+      }
+      callback(error);
     }
 
     return;

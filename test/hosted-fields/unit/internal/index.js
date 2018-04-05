@@ -11,7 +11,6 @@ var analytics = require('../../../../src/lib/analytics');
 var fake = require('../../../helpers/fake');
 var assembleIFrames = require('../../../../src/hosted-fields/internal/assemble-iframes');
 var BraintreeError = require('../../../../src/lib/braintree-error');
-var Promise = require('../../../../src/lib/promise');
 
 describe('internal', function () {
   beforeEach(function () {
@@ -40,18 +39,27 @@ describe('internal', function () {
     });
 
     it('sets up autofill inputs for number input', function () {
-      var inputs;
+      var cvv, expMonth, expYear;
 
       document.querySelector('input').remove(); // reset from beforeEach
 
       getFrameName.getFrameName.returns('number');
       internal.initialize(this.cardForm);
 
-      inputs = document.querySelectorAll('input');
+      cvv = document.querySelector('#cvv-autofill-field');
+      expMonth = document.querySelector('#expiration-month-autofill-field');
+      expYear = document.querySelector('#expiration-year-autofill-field');
 
-      expect(inputs).to.have.length(4);
+      expect(document.querySelectorAll('input')).to.have.length(4);
       expect(document.querySelector('#expiration-month-autofill-field')).to.exist;
       expect(document.querySelector('#expiration-year-autofill-field')).to.exist;
+
+      expect(cvv).to.exist;
+      expect(expMonth).to.exist;
+      expect(expYear).to.exist;
+      expect(cvv.autocomplete).to.equal('cc-csc');
+      expect(expMonth.autocomplete).to.equal('cc-exp-month');
+      expect(expYear.autocomplete).to.equal('cc-exp-year');
     });
 
     it('makes the input have a transparent background', function () {
@@ -111,6 +119,27 @@ describe('internal', function () {
       }
     });
 
+    context('supporting card types', function () {
+      it('calls CreditCardForm with supportedCardTypes', function () {
+        var config = {
+          client: fake.configuration(),
+          fields: {
+            number: {selector: '#foo'},
+            cvv: {selector: '#boo'},
+            postalCode: {selector: '#you'}
+          },
+          supportedCardTypes: ['MasterCard']
+        };
+
+        this.sandbox.stub(analytics, 'sendEvent');
+        this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+        this.orchestrate(config);
+
+        expect(global.cardForm.supportedCardTypes).to.be.not.undefined;
+      });
+    });
+
     it('posts an analytics event', function () {
       this.sandbox.stub(analytics, 'sendEvent');
       this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
@@ -142,7 +171,7 @@ describe('internal', function () {
       this.fakeOptions = {foo: 'bar'};
       this.binData = {commercial: 'Yes'};
 
-      requestStub.withArgs(this.sandbox.match({api: 'clientApi'})).resolves({
+      requestStub.resolves({
         creditCards: [{
           nonce: self.fakeNonce,
           details: self.fakeDetails,
@@ -151,15 +180,6 @@ describe('internal', function () {
           foo: 'bar',
           binData: self.binData
         }]
-      });
-      requestStub.withArgs(this.sandbox.match({api: 'braintreeApi'})).resolves({
-        data: {
-          id: 'braintreeApi-token',
-          brand: 'visa',
-          last_4: '1111', // eslint-disable-line camelcase
-          description: 'Visa credit card ending in - 1111',
-          type: 'credit_card'
-        }
       });
 
       this.fakeError = new Error('you done goofed');
@@ -178,7 +198,6 @@ describe('internal', function () {
       };
 
       this.configuration = fake.configuration();
-      delete this.configuration.gatewayConfiguration.braintreeApi;
 
       this.goodClient = {
         getConfiguration: function () {
@@ -254,59 +273,6 @@ describe('internal', function () {
 
         done();
       }.bind(this));
-    });
-
-    it('replies with an error with a non-object `gateways` option', function (done) {
-      create(this.goodClient, this.validCardForm)({
-        gateways: 'clientApi'
-      }, function (arg) {
-        var err = arg[0];
-        var result = arg[1];
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INVALID_OPTION');
-        expect(err.message).to.equal('options.gateways is invalid.');
-        expect(result).not.to.exist;
-
-        done();
-      });
-    });
-
-    it('replies with an error with an empty `gateways` option', function (done) {
-      create(this.goodClient, this.validCardForm)({
-        gateways: {}
-      }, function (arg) {
-        var err = arg[0];
-        var result = arg[1];
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INVALID_OPTION');
-        expect(err.message).to.equal('options.gateways is invalid.');
-        expect(result).not.to.exist;
-
-        done();
-      });
-    });
-
-    it('replies with an error without a clientApi gateway', function (done) {
-      create(this.goodClient, this.validCardForm)({
-        gateways: {
-          braintreeApi: true
-        }
-      }, function (arg) {
-        var err = arg[0];
-        var result = arg[1];
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('INVALID_OPTION');
-        expect(err.message).to.equal('options.gateways is invalid.');
-        expect(result).not.to.exist;
-
-        done();
-      });
     });
 
     it('sends an analytics event if tokenization fails', function (done) {
@@ -412,18 +378,7 @@ describe('internal', function () {
         this.cardFormWithPostalCode.isEmpty = function () { return false; };
         this.cardFormWithPostalCode.invalidFieldKeys = function () { return []; };
 
-        this.fakeOptions = {
-          gateways: {
-            clientApi: true,
-            braintreeApi: true
-          }
-        };
-
-        this.configuration.gatewayConfiguration.braintreeApi = {};
-        this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-          name: 'braintreeApi',
-          timeout: 2000
-        });
+        this.fakeOptions = {};
       });
 
       it('tokenizes with additional cardholder name', function (done) {
@@ -439,12 +394,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              cardholderName: 'First Last'
-            }
-          });
           done();
         }.bind(this));
       });
@@ -466,14 +415,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                street_address: '606 Elm St'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -495,14 +436,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                extended_address: 'Unit 1'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -524,14 +457,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                locality: 'Chicago'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -553,14 +478,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                region: 'IL'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -582,14 +499,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                first_name: 'First'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -611,14 +520,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                last_name: 'Last'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -640,14 +541,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                company: 'Company'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -669,14 +562,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                country_name: 'United States'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -698,14 +583,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                country_code_alpha2: 'US'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -727,14 +604,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                country_code_alpha3: 'USA'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -756,14 +625,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                country_code_numeric: '840'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -785,14 +646,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                postal_code: '33333'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -812,14 +665,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                postal_code: '11111'
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -843,14 +688,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              billing_address: {
-                postal_code: ''
-              }
-            }
-          });
           done();
         }.bind(this));
       });
@@ -870,12 +707,6 @@ describe('internal', function () {
             }
           });
 
-          expect(this.goodClient.request).to.be.calledWithMatch({
-            api: 'braintreeApi',
-            data: {
-              number: '1111 1111 1111 1111'
-            }
-          });
           done();
         }.bind(this));
       });
@@ -889,262 +720,21 @@ describe('internal', function () {
 
         create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
           var clientApiRequestArgs = this.goodClient.request.args[0][0];
-          var braintreeApiRequestArgs = this.goodClient.request.args[1][0];
 
           expect(clientApiRequestArgs.data.creditCard.billing_address.foo).to.not.exist;
           expect(clientApiRequestArgs.data.creditCard.billing_address.baz).to.not.exist;
-          expect(braintreeApiRequestArgs.data.billing_address.foo).to.not.exist;
-          expect(braintreeApiRequestArgs.data.billing_address.baz).to.not.exist;
 
           done();
         }.bind(this));
       });
     });
 
-    it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration or client-side option", function () {
-      this.fakeOptions.gateways = {
-        clientApi: true
-      };
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
-
-      expect(this.goodClient.request).not.to.be.calledWithMatch({
-        api: 'braintreeApi'
-      });
-    });
-
-    it("doesn't make a request to the Braintree API if it's not enabled by gateway configuration, even if it's enabled client-side", function () {
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
-
-      expect(this.goodClient.request).not.to.be.calledWithMatch({
-        api: 'braintreeApi'
-      });
-    });
-
-    it("doesn't make a request to the Braintree API if it's not enabled by a client-side option", function () {
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true
-      };
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {});
-
-      expect(this.goodClient.request).not.to.be.calledWithMatch({
-        api: 'braintreeApi'
-      });
-    });
-
-    it("makes a request to the Braintree API if it's enabled, in addition to the Client API", function (done) {
-      this.configuration.gatewayConfiguration.braintreeApi = {};
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'clientApi',
-          endpoint: 'payment_methods/credit_cards',
-          method: 'post'
-        });
-
-        expect(this.goodClient.request).to.be.calledWithMatch({
-          api: 'braintreeApi',
-          endpoint: 'tokens',
-          method: 'post',
-          timeout: 2000
-        });
-
-        done();
-      }.bind(this));
-    });
-
-    it('returns combined data from the Braintree and Client APIs', function (done) {
-      this.configuration.gatewayConfiguration.braintreeApi = {};
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      this.goodClient.request = this.sandbox.stub();
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).resolves({
-        creditCards: [{
-          nonce: 'clientApi-nonce',
-          details: {
-            cardType: 'Visa',
-            lastTwo: '11'
-          },
-          description: 'ending in 69',
-          type: 'CreditCard',
-          binData: {commercial: 'Yes'}
-        }]
-      });
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).resolves({
-        data: {
-          id: 'braintreeApi-token',
-          brand: 'visa',
-          last_4: '1111', // eslint-disable-line camelcase
-          description: 'Visa credit card ending in - 1111',
-          type: 'credit_card'
-        }
-      });
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
-        var err = args[0];
-        var result = args[1];
-
-        expect(err).not.to.exist;
-        expect(result).to.deep.equal({
-          nonce: 'clientApi-nonce',
-          braintreeApiToken: 'braintreeApi-token',
-          details: {
-            cardType: 'Visa',
-            lastTwo: '11'
-          },
-          description: 'ending in 69',
-          type: 'CreditCard',
-          binData: {commercial: 'Yes'}
-        });
-
-        done();
-      });
-    });
-
-    it('returns Braintree API data if Client API has a network failure and Braintree API succeeds', function (done) {
-      this.configuration.gatewayConfiguration.braintreeApi = {};
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      this.goodClient.request = function (options) {
-        if (options.api === 'clientApi') {
-          return Promise.reject(new Error('it failed'));
-        }
-
-        return Promise.resolve({
-          data: {
-            id: 'braintreeApi-token',
-            brand: 'visa',
-            last_4: '1234', // eslint-disable-line camelcase
-            description: 'Visa credit card ending in - 1234',
-            type: 'credit_card'
-          }
-        });
-      };
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
-        var err = args[0];
-        var result = args[1];
-
-        expect(err).not.to.exist;
-        expect(result).to.deep.equal({
-          braintreeApiToken: 'braintreeApi-token',
-          details: {
-            cardType: 'Visa',
-            lastTwo: '34'
-          },
-          description: 'ending in 34',
-          type: 'CreditCard'
-        });
-
-        done();
-      });
-    });
-
-    it('returns Client API data if it succeeds but Braintree API fails', function (done) {
-      this.configuration.gatewayConfiguration.braintreeApi = {};
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      this.goodClient.request = function (options) {
-        var error = new Error('it failed');
-
-        error.details = {httpStatus: 500};
-
-        if (options.api === 'clientApi') {
-          return Promise.resolve({
-            creditCards: [{
-              nonce: 'clientApi-nonce',
-              details: {
-                cardType: 'Visa',
-                lastTwo: '11'
-              },
-              description: 'ending in 69',
-              type: 'CreditCard',
-              binData: {commercial: 'Yes'}
-            }]
-          });
-        }
-
-        // braintree-api
-        return Promise.reject(error);
-      };
-
-      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
-        var err = args[0];
-        var result = args[1];
-
-        expect(err).not.to.exist;
-        expect(result).to.deep.equal({
-          nonce: 'clientApi-nonce',
-          details: {
-            cardType: 'Visa',
-            lastTwo: '11'
-          },
-          description: 'ending in 69',
-          type: 'CreditCard',
-          binData: {commercial: 'Yes'}
-        });
-
-        done();
-      });
-    });
-
-    it('sends Client API error when both Client and Braintree APIs fail', function (done) {
+    it('sends Client API error when Client API fails', function (done) {
       var fakeErr = new Error('it failed');
 
       fakeErr.details = {httpStatus: 500};
 
-      this.configuration.gatewayConfiguration.braintreeApi = {};
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      this.goodClient.request = this.sandbox.stub();
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).rejects(fakeErr);
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).rejects(fakeErr);
+      this.goodClient.request = this.sandbox.stub().rejects(fakeErr);
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
         var err = args[0];
@@ -1182,19 +772,7 @@ describe('internal', function () {
         }
       });
 
-      this.configuration.gatewayConfiguration.braintreeApi = {};
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      this.goodClient.request = this.sandbox.stub();
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.reject(fakeErr));
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.reject(fakeErr));
+      this.goodClient.request = this.sandbox.stub().rejects(fakeErr);
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
         var err = args[0];
@@ -1232,19 +810,7 @@ describe('internal', function () {
         }
       });
 
-      this.configuration.gatewayConfiguration.braintreeApi = {};
-      this.configuration.gatewayConfiguration.creditCards.supportedGateways.push({
-        name: 'braintreeApi',
-        timeout: 2000
-      });
-      this.fakeOptions.gateways = {
-        clientApi: true,
-        braintreeApi: true
-      };
-
-      this.goodClient.request = this.sandbox.stub();
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'clientApi'})).returns(Promise.reject(fakeErr));
-      this.goodClient.request.withArgs(this.sandbox.match({api: 'braintreeApi'})).returns(Promise.reject(fakeErr));
+      this.goodClient.request = this.sandbox.stub().rejects(fakeErr);
 
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (args) {
         var err = args[0];

@@ -9,6 +9,7 @@ var Modal = require('../../../../../src/lib/frame-service/external/strategies/mo
 var BraintreeBus = require('../../../../../src/lib/bus');
 var BraintreeError = require('../../../../../src/lib/braintree-error');
 var browserDetection = require('../../../../../src/lib/frame-service/shared/browser-detection');
+var isHTTPS = require('../../../../../src/lib/is-https');
 
 function noop() {}
 
@@ -41,13 +42,15 @@ describe('FrameService', function () {
         street: '123 Townsend St'
       }
     };
-
     this.options = {
       state: this.state,
       name: 'fake_name',
       dispatchFrameUrl: 'fake-url',
       openFrameUrl: 'fake-landing-frame-html'
     };
+
+    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(true);
+    this.sandbox.stub(browserDetection, 'isIE').returns(false);
   });
 
   describe('Constructor', function () {
@@ -449,6 +452,7 @@ describe('FrameService', function () {
     it('uses a Popup when the browser supports popups', function () {
       this.frameService._getFrameForEnvironment.restore();
       this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
+      this.sandbox.stub(Popup.prototype, 'isClosed').returns(false);
       this.frameService.open();
 
       expect(this.frameService._frame).to.be.an.instanceof(Popup);
@@ -467,6 +471,55 @@ describe('FrameService', function () {
     it('calls the callback with error when popup fails to open', function () {
       var mockCallback = this.sandbox.stub();
 
+      this.fakeFrame.isClosed.returns(true);
+
+      this.frameService.open({}, mockCallback);
+
+      expect(mockCallback).to.be.calledWith(this.sandbox.match({
+        type: BraintreeError.types.INTERNAL,
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
+        message: 'Frame failed to open.'
+      }));
+    });
+
+    it('calls the callback with IE specific error when popup failed to open in IE over not-https', function () {
+      var mockCallback = this.sandbox.stub();
+
+      isHTTPS.isHTTPS.returns(false);
+      browserDetection.isIE.returns(true);
+
+      this.fakeFrame.isClosed.returns(true);
+
+      this.frameService.open({}, mockCallback);
+
+      expect(mockCallback).to.be.calledWith(this.sandbox.match({
+        type: BraintreeError.types.INTERNAL,
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG',
+        message: 'Could not open frame. This may be due to a bug in IE browsers when attempting to open an HTTPS page from a HTTP page. https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11324352/'
+      }));
+    });
+
+    it('calls the callback with generic error when browser is IE and site is using HTTPS', function () {
+      var mockCallback = this.sandbox.stub();
+
+      isHTTPS.isHTTPS.returns(true);
+      browserDetection.isIE.returns(true);
+      this.fakeFrame.isClosed.returns(true);
+
+      this.frameService.open({}, mockCallback);
+
+      expect(mockCallback).to.be.calledWith(this.sandbox.match({
+        type: BraintreeError.types.INTERNAL,
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
+        message: 'Frame failed to open.'
+      }));
+    });
+
+    it('calls the callback with generic error when browser is not IE and site is not using HTTPS', function () {
+      var mockCallback = this.sandbox.stub();
+
+      isHTTPS.isHTTPS.returns(false);
+      browserDetection.isIE.returns(false);
       this.fakeFrame.isClosed.returns(true);
 
       this.frameService.open({}, mockCallback);

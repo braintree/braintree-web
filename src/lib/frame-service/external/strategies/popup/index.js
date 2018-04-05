@@ -30,7 +30,7 @@ Popup.prototype.close = function () {
 };
 
 Popup.prototype.isClosed = function () {
-  return this._frame && Boolean(this._frame.closed);
+  return !this._frame || Boolean(this._frame.closed);
 };
 
 Popup.prototype.redirect = function (redirectUrl) {

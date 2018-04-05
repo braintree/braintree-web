@@ -16,7 +16,12 @@
     }
 
     body, form, input, select {
-      position: absolute;
+      /* Roboform does not work if position is absolute
+         but does work with fixed, and the end result
+         is the same since the page is in an iframe
+         https://github.com/braintree/braintree-web/issues/356
+       */
+      position: fixed;
       top: 0;
       left: 0;
       height: 100%;

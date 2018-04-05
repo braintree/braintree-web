@@ -34,9 +34,10 @@ gulp.task('build:integration', function (done) {
 gulp.task('watch:integration', function () {
   process.env.npm_package_version = VERSION;
 
-  gulp.watch([
-    'src/**/*'
-  ], ['build'])
+  COMPONENTS.forEach(function (component) {
+    gulp.watch(['src/' + component + '/**', 'src/lib/**'], ['build:' + component]);
+  });
+
   gulp.watch([
     'src/**/*',
     'jsdoc/*'

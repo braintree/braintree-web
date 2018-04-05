@@ -178,7 +178,7 @@ describe('Base Input', function () {
             });
 
             it('applies autocomplete', function () {
-              expect(this.instance.element.getAttribute('autocomplete')).to.equal('off');
+              expect(this.instance.element.getAttribute('autocomplete')).to.exist;
             });
 
             it('applies autocorrect', function () {

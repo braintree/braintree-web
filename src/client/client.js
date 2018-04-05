@@ -218,7 +218,8 @@ Client.prototype.request = function (options, callback) {
     requestOptions = {
       method: options.method,
       graphQL: self._graphQL,
-      timeout: options.timeout
+      timeout: options.timeout,
+      metadata: self._configuration.analyticsMetadata
     };
 
     if (api === 'clientApi') {

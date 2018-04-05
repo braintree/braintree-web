@@ -19,6 +19,10 @@ describe('CVV Input', function () {
         expect(this.input.element.getAttribute('type')).to.equal('tel');
       });
 
+      it('has autocomplete cc-csc', function () {
+        expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-csc');
+      });
+
       it('sets the maxLength to 4 when no custom maxlength is provided', function () {
         expect(this.input.element.getAttribute('maxlength')).to.equal('4');
       });

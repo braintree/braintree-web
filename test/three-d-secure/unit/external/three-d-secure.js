@@ -270,7 +270,7 @@ describe('ThreeDSecure', function () {
       });
     });
 
-    it('makes a request to the 3DS lookup endpoint', function (done) {
+    it('makes a request to the 3DS lookup endpoint without customer data', function (done) {
       var self = this;
 
       this.client.request.resolves({paymentMethod: {}});
@@ -285,7 +285,65 @@ describe('ThreeDSecure', function () {
         expect(self.client.request).to.be.calledWithMatch({
           endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
           method: 'post',
-          data: {amount: 100}
+          data: {
+            amount: 100
+          }
+        });
+
+        done();
+      });
+    });
+
+    it('makes a request to the 3DS lookup endpoint', function (done) {
+      var self = this;
+
+      this.client.request.resolves({paymentMethod: {}});
+
+      this.instance.verifyCard({
+        nonce: 'abcdef',
+        amount: 100,
+        customer: {
+          mobilePhoneNumber: '8101234567',
+          email: 'test@example.com',
+          shippingMethod: '01',
+          billingAddress: {
+            firstName: 'Jill',
+            lastName: 'Gal',
+            streetAddress: '555 Smith street',
+            extendedAddress: '#5',
+            locality: 'Oakland',
+            region: 'CA',
+            postalCode: '12345',
+            countryCodeAlpha2: 'US',
+            phoneNumber: '1234567'
+          }
+        },
+        addFrame: noop,
+        removeFrame: noop
+      }, function () {
+        expect(self.client.request).to.be.calledOnce;
+        expect(self.client.request).to.be.calledWithMatch({
+          endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
+          method: 'post',
+          data: {
+            amount: 100,
+            customer: {
+              mobilePhoneNumber: '8101234567',
+              email: 'test@example.com',
+              shippingMethod: '01',
+              billingAddress: {
+                firstName: 'Jill',
+                lastName: 'Gal',
+                line1: '555 Smith street',
+                line2: '#5',
+                city: 'Oakland',
+                state: 'CA',
+                postalCode: '12345',
+                countryCode: 'US',
+                phoneNumber: '1234567'
+              }
+            }
+          }
         });
 
         done();

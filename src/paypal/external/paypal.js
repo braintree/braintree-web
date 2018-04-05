@@ -332,8 +332,15 @@ PayPal.prototype._createFrameServiceCallback = function (options, resolve, rejec
       if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
         analytics.sendEvent(client, 'paypal.tokenization.closed.by-user');
         reject(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
-      } else if (err.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
-        reject(new BraintreeError(errors.PAYPAL_POPUP_OPEN_FAILED));
+      } else if (err.code && err.code.indexOf('FRAME_SERVICE_FRAME_OPEN_FAILED') > -1) {
+        reject(new BraintreeError({
+          code: errors.PAYPAL_POPUP_OPEN_FAILED.code,
+          type: errors.PAYPAL_POPUP_OPEN_FAILED.type,
+          message: errors.PAYPAL_POPUP_OPEN_FAILED.message,
+          details: {
+            originalError: err
+          }
+        }));
       }
     } else if (params) {
       self._tokenizePayPal(options, params).then(resolve).catch(reject);

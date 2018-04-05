@@ -102,7 +102,6 @@ describe('Venmo', function () {
 
       it('contains correct Braintree configuration options in query params', function () {
         /* eslint-disable camelcase */
-        var params;
         var braintreeConfig = {
           braintree_merchant_id: 'pwv-merchant-id',
           braintree_access_token: 'pwv-access-token',
@@ -110,10 +109,34 @@ describe('Venmo', function () {
         };
 
         return this.venmo._initialize().then(function (venmoInstance) {
-          params = querystring.parse(venmoInstance._url);
+          var params = querystring.parse(venmoInstance._url);
+
           expect(params.braintree_merchant_id).to.equal(braintreeConfig.braintree_merchant_id);
           expect(params.braintree_access_token).to.equal(braintreeConfig.braintree_access_token);
           expect(params.braintree_environment).to.equal(braintreeConfig.braintree_environment);
+        });
+        /* eslint-enable camelcase */
+      });
+
+      it('overrides Braintree merchant ID in query params when a non-default Venmo profile ID is specified', function () {
+        /* eslint-disable camelcase */
+        var expectedParams = {
+          braintree_merchant_id: 'pwv-profile-id',
+          braintree_access_token: 'pwv-access-token',
+          braintree_environment: 'sandbox'
+        };
+
+        this.venmo = new Venmo({
+          client: this.client,
+          profileId: 'pwv-profile-id'
+        });
+
+        return this.venmo._initialize().then(function (venmoInstance) {
+          var params = querystring.parse(venmoInstance._url);
+
+          expect(params.braintree_merchant_id).to.equal(expectedParams.braintree_merchant_id);
+          expect(params.braintree_access_token).to.equal(expectedParams.braintree_access_token);
+          expect(params.braintree_environment).to.equal(expectedParams.braintree_environment);
         });
         /* eslint-enable camelcase */
       });

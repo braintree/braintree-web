@@ -98,7 +98,7 @@ var wrapPromise = require('@braintree/wrap-promise');
 
 var CARD_TYPE_MAPPINGS = {
   Visa: 'visa',
-  Mastercard: 'mastercard',
+  MasterCard: 'mastercard',
   'American Express': 'amex',
   'Diners Club': 'diners',
   Discover: 'discover',
@@ -165,9 +165,13 @@ PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = fun
     supportedPaymentMethods.basicCard = {
       supportedMethods: ['basic-card'],
       data: {
-        supportedNetworks: cardConfiguration.supportedCardTypes.map(function (cardType) {
-          return CARD_TYPE_MAPPINGS[cardType];
-        })
+        supportedNetworks: cardConfiguration.supportedCardTypes.reduce(function (types, cardType) {
+          if (cardType in CARD_TYPE_MAPPINGS) {
+            types.push(CARD_TYPE_MAPPINGS[cardType]);
+          }
+
+          return types;
+        }, [])
       }
     };
   }

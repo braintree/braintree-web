@@ -90,6 +90,27 @@ describe('Payment Request component', function () {
     });
   });
 
+  it('filters undefined values from supportedMethods', function () {
+    var configuration = fake.configuration();
+    var instance, fakeClient;
+
+    configuration.gatewayConfiguration.creditCards.supportedCardTypes = [
+      'American Express',
+      'Discover',
+      'Apple Pay - Visa',
+      'Visa'
+    ];
+    fakeClient = fake.client({
+      configuration: configuration
+    });
+
+    instance = new PaymentRequestComponent({
+      client: fakeClient
+    });
+
+    expect(instance._defaultSupportedPaymentMethods[0].data.supportedNetworks).to.deep.equal(['amex', 'discover', 'visa']);
+  });
+
   it('sets pay with google to have a clientKey param when using a tokenization key', function () {
     var instance;
     var conf = this.fakeClient.getConfiguration();

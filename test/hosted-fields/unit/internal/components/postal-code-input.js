@@ -22,6 +22,10 @@ describe('Postal Code Input', function () {
       expect(this.input.element.getAttribute('type')).to.equal('text');
     });
 
+    it('has autocomplete postal-code', function () {
+      expect(this.input.element.getAttribute('autocomplete')).to.equal('billing postal-code');
+    });
+
     it('sets the maxLength to 10 when no custom maxlength is provided', function () {
       expect(this.input.element.getAttribute('maxlength')).to.equal('10');
     });

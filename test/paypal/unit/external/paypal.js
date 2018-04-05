@@ -1006,7 +1006,24 @@ describe('PayPal', function () {
       expect(err.type).to.equal('MERCHANT');
       expect(err.code).to.equal('PAYPAL_POPUP_OPEN_FAILED');
       expect(err.message).to.equal('PayPal popup failed to open, make sure to tokenize in response to a user action.');
-      expect(err.details).not.to.exist;
+      expect(err.details.originalError.code).to.equal('FRAME_SERVICE_FRAME_OPEN_FAILED');
+    });
+
+    it('calls the callback with error when frame fails to open because of IE bug', function () {
+      var err;
+      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
+
+      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG);
+
+      err = this.reject.getCall(0).args[0];
+
+      expect(this.resolve).to.not.be.called;
+      expect(this.reject).to.be.calledOnce;
+      expect(err).to.be.an.instanceOf(BraintreeError);
+      expect(err.type).to.equal('MERCHANT');
+      expect(err.code).to.equal('PAYPAL_POPUP_OPEN_FAILED');
+      expect(err.message).to.equal('PayPal popup failed to open, make sure to tokenize in response to a user action.');
+      expect(err.details.originalError.code).to.equal('FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG');
     });
 
     it('calls _tokenizePayPal when successful', function () {

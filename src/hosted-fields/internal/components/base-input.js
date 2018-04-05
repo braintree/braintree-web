@@ -81,7 +81,7 @@ BaseInput.prototype.constructElement = function () {
 
   var attributes = constructAttributes({
     type: this.getConfiguration().type,
-    autocomplete: 'off',
+    autocomplete: constants.autocompleteMappings[name],
     autocorrect: 'off',
     autocapitalize: 'none',
     spellcheck: 'false',
@@ -163,17 +163,18 @@ BaseInput.prototype._getDOMChangeEvent = function () {
 
 BaseInput.prototype._addDOMFocusListeners = function () {
   var element = this.element;
+  var self = this;
 
   if ('onfocusin' in document) {
     document.documentElement.addEventListener('focusin', function (event) {
       if (event.fromElement === element) { return; }
       if (event.relatedTarget) { return; }
 
-      element.focus();
+      self.focus();
     }, false);
   } else {
     document.addEventListener('focus', function () {
-      element.focus();
+      self.focus();
     }, false);
   }
 
@@ -207,6 +208,11 @@ BaseInput.prototype._addDOMFocusListeners = function () {
   }
 };
 
+BaseInput.prototype.focus = function () {
+  this.element.focus();
+  this.updateModel('isFocused', true);
+};
+
 BaseInput.prototype.addModelEventListeners = function () {
   this.modelOnChange('isValid', this.render);
   this.modelOnChange('isPotentiallyValid', this.render);
@@ -230,7 +236,7 @@ BaseInput.prototype.removeAttribute = function (type, attribute) {
 
 BaseInput.prototype.addBusEventListeners = function () {
   global.bus.on(events.TRIGGER_INPUT_FOCUS, function (type) {
-    if (type === this.type) { this.element.focus(); }
+    if (type === this.type) { this.focus(); }
   }.bind(this));
 
   global.bus.on(events.SET_ATTRIBUTE, this.setAttribute.bind(this));

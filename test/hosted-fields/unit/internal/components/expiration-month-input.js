@@ -367,5 +367,9 @@ describe('Expiration Month Input', function () {
         expect(input.element.selectedIndex).to.equal(currentMonth);
       });
     });
+
+    it('has autocomplete cc-exp-month', function () {
+      expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-exp-month');
+    });
   });
 });

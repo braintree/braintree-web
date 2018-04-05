@@ -16,6 +16,10 @@ function CreditCardForm(configuration) {
 
   this.configuration = configuration;
 
+  if (configuration.supportedCardTypes) {
+    this.supportedCardTypes = configuration.supportedCardTypes.map(normalizeCardType);
+  }
+
   EventedModel.apply(this, arguments);
 
   this._fieldKeys.forEach(function (field) {
@@ -68,7 +72,7 @@ CreditCardForm.prototype.resetAttributes = function () {
     result[field].isEmpty = result[field].value === '';
 
     return result;
-  }.bind(this), {possibleCardTypes: getCardTypes('')});
+  }.bind(this), {possibleCardTypes: this.getCardTypes('')});
 };
 
 CreditCardForm.prototype.emitEvent = function (fieldKey, eventType) {
@@ -91,7 +95,8 @@ CreditCardForm.prototype.emitEvent = function (fieldKey, eventType) {
     return {
       niceType: cardType.niceType,
       type: cardType.type,
-      code: cardType.code
+      code: cardType.code,
+      supported: cardType.supported
     };
   });
 
@@ -130,7 +135,7 @@ CreditCardForm.prototype._onSplitDateChange = function () {
 };
 
 CreditCardForm.prototype._onNumberChange = function (number) {
-  var newPossibleCardTypes = getCardTypes(number.replace(/[-\s]/g, ''));
+  var newPossibleCardTypes = this.getCardTypes(number);
   var oldPossibleCardTypes = this.get('possibleCardTypes');
 
   if (!comparePossibleCardTypes(newPossibleCardTypes, oldPossibleCardTypes)) {
@@ -153,6 +158,8 @@ CreditCardForm.prototype._validateField = function (fieldKey) {
     });
   } else if (fieldKey === 'expirationDate') {
     validationResult = validate(splitDate(value));
+  } else if (fieldKey === 'number' && this.supportedCardTypes) {
+    validationResult = this._validateNumber(value);
   } else {
     validationResult = validate(value);
   }
@@ -170,6 +177,23 @@ function uniq(array) {
     return arr.indexOf(item) === position;
   });
 }
+
+CreditCardForm.prototype._validateNumber = function (value) {
+  var validationResult = validator.number(value);
+  var card = validationResult.card;
+  var possibleCardTypes = this.getCardTypes(value).filter(function (cardType) {
+    return card && cardType.type === card.type;
+  });
+  var possibleCardType = possibleCardTypes[0];
+
+  if (possibleCardType && Boolean(possibleCardType.supported) === false) {
+    delete validationResult.card;
+    validationResult.isValid = false;
+    validationResult.isPotentiallyValid = false;
+  }
+
+  return validationResult;
+};
 
 CreditCardForm.prototype._validateCvv = function (value, options) {
   var cvvSize, minLength;
@@ -242,6 +266,18 @@ CreditCardForm.prototype.invalidFieldKeys = function () {
   }.bind(this));
 };
 
+CreditCardForm.prototype.getCardTypes = function (value) {
+  return getCardTypes(removeIgnorableCharacters(value)).map(function (cardType) {
+    var type = normalizeCardType(cardType.type);
+
+    if (this.supportedCardTypes) {
+      cardType.supported = this.supportedCardTypes.indexOf(type) >= 0;
+    }
+
+    return cardType;
+  }.bind(this));
+};
+
 function onFieldValueChange(form, fieldKey) {
   return function () {
     form.set(fieldKey + '.isEmpty', form.get(fieldKey + '.value') === '');
@@ -297,6 +333,18 @@ function splitDate(date) {
   }
 
   return {month: month, year: year};
+}
+
+function normalizeCardType(type) {
+  return removeIgnorableCharacters(type).toLowerCase();
+}
+
+function removeIgnorableCharacters(str) {
+  if (str) {
+    return str.replace(/[-\s]/g, '');
+  }
+
+  return '';
 }
 
 module.exports = {

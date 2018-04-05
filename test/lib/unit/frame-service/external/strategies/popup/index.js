@@ -87,6 +87,14 @@ describe('Popup', function () {
       expect(popup.isClosed()).to.equal(false);
     });
 
+    it('returns true if there is no handle for the popup (such as from a popup blocker)', function () {
+      var popup = new Popup();
+
+      delete popup._frame;
+
+      expect(popup.isClosed()).to.equal(true);
+    });
+
     it('returns true when Window is closed', function () {
       var popup;
       var fakeWindow = {

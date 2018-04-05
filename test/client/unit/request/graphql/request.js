@@ -19,6 +19,12 @@ describe('GraphQL', function () {
       url: this.tokenizeUrl,
       headers: {
         FAKE_HEADER: 'Fake header'
+      },
+      metadata: {
+        source: 'my-source',
+        integration: 'my-integration',
+        sessionId: 'my-session-id',
+        extraneousProperty: 'dummy-value'
       }
     };
   });
@@ -176,6 +182,41 @@ describe('GraphQL', function () {
           }
         },
         options: {}
+      });
+    });
+
+    it('includes client sdk metadata', function () {
+      var graphQLRequest, body, parsedBody;
+
+      this.options.data = {
+        creditCard: {
+          number: '4111111111111111',
+          expirationYear: '12',
+          expirationMonth: '2020',
+          cvv: '123',
+          cardholderName: 'Brian Treep',
+          billingAddress: {
+            company: 'Braintree',
+            streetAddress: '123 Townsend St.',
+            extendedAddress: '8th Floor',
+            firstName: 'Dale',
+            lastName: 'Cooper',
+            locality: 'San Francisco',
+            region: 'CA',
+            postalCode: '94107',
+            countryCodeAlpha3: 'USA'
+          }
+        }
+      };
+
+      graphQLRequest = new GraphQLRequest(this.options);
+      body = graphQLRequest.getBody();
+      parsedBody = JSON.parse(body);
+
+      expect(parsedBody.clientSdkMetadata).to.deep.equal({
+        source: 'my-source',
+        integration: 'my-integration',
+        sessionId: 'my-session-id'
       });
     });
 
@@ -1028,7 +1069,7 @@ describe('GraphQL', function () {
           tokenizeCreditCard: {
             token: 'faketoken',
             creditCard: {
-              brand: 'Visa',
+              brandCode: 'visa',
               last4: '1234',
               binData: binData
             }
@@ -1053,6 +1094,48 @@ describe('GraphQL', function () {
       });
     });
 
+    it('remaps card brand codes', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var binData = {
+        prepaid: 'Yes',
+        healthcare: null,
+        debit: 'No',
+        durbinRegulated: 'Yes',
+        commercial: 'No',
+        payroll: 'Unknown',
+        issuingBank: 'Fake Bank',
+        countryOfIssuance: 'USA',
+        productId: '123'
+      };
+
+      function makeResponse(brandCode) {
+        return {
+          data: {
+            tokenizeCreditCard: {
+              token: 'faketoken',
+              creditCard: {
+                brandCode: brandCode,
+                last4: '1234',
+                binData: binData
+              }
+            }
+          }
+        };
+      }
+
+      expect(graphQLRequest.adaptResponseBody(makeResponse('mastercard')).creditCards[0].details.cardType).to.equal('MasterCard');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('diners')).creditCards[0].details.cardType).to.equal('Discover');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('discover')).creditCards[0].details.cardType).to.equal('Discover');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('international_maestro')).creditCards[0].details.cardType).to.equal('Maestro');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('uk_maestro')).creditCards[0].details.cardType).to.equal('Maestro');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('jcb')).creditCards[0].details.cardType).to.equal('JCB');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('union_pay')).creditCards[0].details.cardType).to.equal('Union Pay');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('visa')).creditCards[0].details.cardType).to.equal('Visa');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('solo')).creditCards[0].details.cardType).to.equal('Unknown');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('unknown')).creditCards[0].details.cardType).to.equal('Unknown');
+      expect(graphQLRequest.adaptResponseBody(makeResponse()).creditCards[0].details.cardType).to.equal('Unknown');
+    });
+
     it('normalizes null bin data fields', function () {
       var adaptedResponse;
       var graphQLRequest = new GraphQLRequest(this.options);
@@ -1061,7 +1144,7 @@ describe('GraphQL', function () {
           tokenizeCreditCard: {
             token: 'faketoken',
             creditCard: {
-              brand: 'Visa',
+              brandCode: 'visa',
               last4: '1234',
               binData: {
                 issuingBank: null,
@@ -1315,7 +1398,7 @@ describe('GraphQL', function () {
           tokenizeCreditCard: {
             token: 'fake_token',
             creditCard: {
-              brand: 'Visa',
+              brandCode: 'visa',
               last4: '1111',
               binData: null
             }

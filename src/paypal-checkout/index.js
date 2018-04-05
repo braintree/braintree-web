@@ -46,7 +46,7 @@ function create(options) {
       return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
     }
 
-    if (!config.gatewayConfiguration.paypal.clientId) {
+    if (config.gatewayConfiguration.paypal.environmentNoNetwork === true) {
       return Promise.reject(new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED));
     }
 

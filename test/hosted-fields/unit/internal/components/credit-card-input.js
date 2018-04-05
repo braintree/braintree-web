@@ -17,6 +17,10 @@ describe('Credit Card Input', function () {
     it('has type="tel"', function () {
       expect(this.input.element.getAttribute('type')).to.equal('tel');
     });
+
+    it('has autocomplete cc-number', function () {
+      expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-number');
+    });
   });
 
   describe('maxlength', function () {

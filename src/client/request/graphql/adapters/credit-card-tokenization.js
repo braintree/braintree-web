@@ -2,6 +2,20 @@
 
 var errorResponseAdapter = require('./error');
 
+var CARD_BRAND_MAP = {
+  /* eslint-disable camelcase */
+  american_express: 'American Express',
+  diners: 'Discover',
+  discover: 'Discover',
+  international_maestro: 'Maestro',
+  jcb: 'JCB',
+  mastercard: 'MasterCard',
+  uk_maestro: 'Maestro',
+  union_pay: 'Union Pay',
+  visa: 'Visa'
+  /* eslint-enable camelcase */
+};
+
 function creditCardTokenizationResponseAdapter(responseBody) {
   var adaptedResponse;
 
@@ -35,7 +49,7 @@ function adaptTokenizeCreditCardResponseBody(body) {
         description: lastTwo ? 'ending in ' + lastTwo : '',
         nonce: data.token,
         details: {
-          cardType: creditCard.brand || 'Unknown',
+          cardType: CARD_BRAND_MAP[creditCard.brandCode] || 'Unknown',
           lastFour: creditCard.last4 || '',
           lastTwo: lastTwo
         },

@@ -1,5 +1,6 @@
 'use strict';
 
+var assign = require('../../../../../src/lib/assign').assign;
 var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
 var getCardTypes = require('credit-card-type');
 var nextYear = (new Date().getFullYear() + 1).toString();
@@ -50,6 +51,41 @@ describe('credit card model', function () {
       var cardForm = new CreditCardForm(configuration);
 
       expect(cardForm.configuration).to.equal(configuration);
+    });
+
+    context('supporting card types', function () {
+      it('sets a supportedCardTypes property', function () {
+        var configuration = assign({}, helpers.getModelConfig(), {
+          supportedCardTypes: []
+        });
+        var cardForm = new CreditCardForm(configuration);
+
+        expect(cardForm.supportedCardTypes).to.not.be.undefined;
+      });
+
+      it('normalizes supportedCardTypes', function () {
+        var configuration = assign({}, helpers.getModelConfig(), {
+          supportedCardTypes: [
+            'discover',
+            'Master-Card',
+            'VISA'
+          ]
+        });
+        var cardForm = new CreditCardForm(configuration);
+
+        expect(cardForm.supportedCardTypes).to.be.deep.equal([
+          'discover',
+          'mastercard',
+          'visa'
+        ]);
+      });
+
+      it('does not set supportedCardTypes when not specified', function () {
+        var configuration = helpers.getModelConfig();
+        var cardForm = new CreditCardForm(configuration);
+
+        expect(cardForm.supportedCardTypes).to.be.undefined;
+      });
     });
 
     it('attaches change events for each field (cvv only)', function () {
@@ -134,6 +170,7 @@ describe('credit card model', function () {
     beforeEach(function () {
       this.scope = {
         _fieldKeys: ['number', 'cvv', 'expirationMonth', 'expirationYear'],
+        getCardTypes: CreditCardForm.prototype.getCardTypes,
         configuration: {
           fields: {
             number: {},
@@ -159,7 +196,7 @@ describe('credit card model', function () {
         cvv: this.emptyProperty,
         expirationDate: this.emptyProperty,
         postalCode: this.emptyProperty,
-        possibleCardTypes: getCardTypes('')
+        possibleCardTypes: this.scope.getCardTypes('')
       });
     });
 
@@ -302,7 +339,8 @@ describe('credit card model', function () {
             size: 3,
             name: 'CVV'
           },
-          gaps: [3, 7, 11]
+          gaps: [3, 7, 11],
+          supported: true
         },
         {
           niceType: 'Discover',
@@ -311,7 +349,8 @@ describe('credit card model', function () {
             size: 3,
             name: 'CID'
           },
-          gaps: [3, 7, 11]
+          gaps: [3, 7, 11],
+          supported: true
         }
       ];
 
@@ -330,7 +369,8 @@ describe('credit card model', function () {
             return {
               niceType: card.niceType,
               type: card.type,
-              code: card.code
+              code: card.code,
+              supported: true
             };
           }),
           emittedBy: 'number',
@@ -351,7 +391,8 @@ describe('credit card model', function () {
                 size: 3,
                 name: 'CVV'
               },
-              gaps: [3, 7, 11]
+              gaps: [3, 7, 11],
+              supported: true
             }];
           }
 
@@ -368,7 +409,8 @@ describe('credit card model', function () {
             code: {
               size: 3,
               name: 'CVV'
-            }
+            },
+            supported: true
           }],
           emittedBy: 'number',
           fields: {}
@@ -553,6 +595,35 @@ describe('credit card model', function () {
 
       card.set('postalCode.value', '');
       expect(card.getCardData().postalCode).to.be.undefined;
+    });
+  });
+
+  describe('getCardTypes', function () {
+    it('returns a list of card types', function () {
+      var mastercardOrMaestroCard = '5';
+      var expected = getCardTypes(mastercardOrMaestroCard);
+      var actual = CreditCardForm.prototype.getCardTypes.call({}, mastercardOrMaestroCard);
+
+      expect(actual).to.deep.equal(expected);
+    });
+
+    it('sets supported for supported card types', function () {
+      var mastercardOrMaestroCard = '5';
+      var context = {
+        supportedCardTypes: ['mastercard']
+      };
+      var cardTypes = CreditCardForm.prototype.getCardTypes.call(
+        context,
+        mastercardOrMaestroCard
+      );
+
+      expect(cardTypes.length).to.equal(2);
+      expect(cardTypes[0].niceType).to.equal('Mastercard');
+      expect(cardTypes[0].type).to.equal('master-card');
+      expect(cardTypes[0].supported).to.equal(true);
+      expect(cardTypes[1].niceType).to.equal('Maestro');
+      expect(cardTypes[1].type).to.equal('maestro');
+      expect(cardTypes[1].supported).to.equal(false);
     });
   });
 
@@ -761,6 +832,82 @@ describe('credit card model', function () {
         }
       }
       expect(callCount).to.equal(3);
+    });
+
+    it('emits a VALIDITY_CHANGE event', function () {
+      var i;
+      var callCount = 0;
+
+      this.sandbox.stub(this.card, 'emitEvent');
+
+      this.card.set('number.value', '');
+      this.card.set('number.value', '411111111111111');
+      this.card.set('number.value', '4111111111111111');
+      this.card.set('number.value', '411111111111111123');
+
+      expect(this.card.emitEvent).to.be.calledWith('number', externalEvents.VALIDITY_CHANGE);
+
+      for (i = 0; i < this.card.emitEvent.callCount; i++) {
+        if (this.card.emitEvent.getCall(i).args[1] === externalEvents.VALIDITY_CHANGE) {
+          callCount++;
+        }
+      }
+      expect(callCount).to.equal(2);
+    });
+
+    context('supporting card types', function () {
+      beforeEach(function () {
+        var config = assign({}, helpers.getModelConfig(['number']), {
+          supportedCardTypes: ['Discover']
+        });
+
+        this.supportedCardForm = new CreditCardForm(config);
+      });
+
+      it('sets supported property for all card types', function () {
+        var possibleCardTypes = this.supportedCardForm.get('possibleCardTypes');
+
+        possibleCardTypes.forEach(function (cardType) {
+          if (cardType.type === 'discover') {
+            expect(cardType.supported).to.be.true;
+          } else {
+            expect(cardType.supported).to.be.false;
+          }
+        });
+      });
+
+      it('sets number to potentially valid after removing an unsupported card number', function () {
+        var visa = '41';
+        var empty = '';
+
+        this.supportedCardForm.set('number.value', visa);
+        expect(this.supportedCardForm.get('number.value')).to.equal(visa);
+        expect(this.supportedCardForm.get('number.isValid')).to.be.false;
+        expect(this.supportedCardForm.get('number.isPotentiallyValid')).to.be.false;
+
+        this.supportedCardForm.set('number.value', empty);
+        expect(this.supportedCardForm.get('number.value')).to.equal(empty);
+        expect(this.supportedCardForm.get('number.isValid')).to.be.false;
+        expect(this.supportedCardForm.get('number.isPotentiallyValid')).to.be.true;
+      });
+
+      it('is not valid nor potentially valid when using a unsupported card type', function () {
+        var mastercard = '5555555555554444';
+
+        this.supportedCardForm.set('number.value', mastercard);
+        expect(this.supportedCardForm.get('number.value')).to.equal(mastercard);
+        expect(this.supportedCardForm.get('number.isValid')).to.be.false;
+        expect(this.supportedCardForm.get('number.isPotentiallyValid')).to.be.false;
+      });
+
+      it('is valid and potentially valid when using a supported card type', function () {
+        var discover = '6011000000000004';
+
+        this.supportedCardForm.set('number.value', discover);
+        expect(this.supportedCardForm.get('number.value')).to.equal(discover);
+        expect(this.supportedCardForm.get('number.isValid')).to.be.true;
+        expect(this.supportedCardForm.get('number.isPotentiallyValid')).to.be.true;
+      });
     });
   });
 

@@ -72,11 +72,11 @@ function addValidationRule(body, input) {
 }
 
 function creditCardTokenization(body) {
-  return JSON.stringify({
+  return {
     query: CREDIT_CARD_TOKENIZATION_MUTATION,
     variables: createCreditCardTokenizationBody(body),
     operationName: 'TokenizeCreditCard'
-  });
+  };
 }
 
 module.exports = creditCardTokenization;

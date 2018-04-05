@@ -21,6 +21,11 @@ function GraphQLRequest(options) {
   this._data = options.data;
   this._method = options.method;
   this._headers = options.headers;
+  this._clientSdkMetadata = {
+    source: options.metadata.source,
+    integration: options.metadata.integration,
+    sessionId: options.metadata.sessionId
+  };
   this._sendAnalyticsEvent = options.sendAnalyticsEvent || Function.prototype;
 
   this._generator = generators[clientApiPath];
@@ -35,8 +40,10 @@ GraphQLRequest.prototype.getUrl = function () {
 
 GraphQLRequest.prototype.getBody = function () {
   var formattedBody = formatBodyKeys(this._data);
+  var generatedBody = this._generator(formattedBody);
+  var body = assign({clientSdkMetadata: this._clientSdkMetadata}, generatedBody);
 
-  return this._generator(formattedBody);
+  return JSON.stringify(body);
 };
 
 GraphQLRequest.prototype.getMethod = function () {

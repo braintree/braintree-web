@@ -893,6 +893,11 @@ describe('iDEAL', function () {
 
     it('throws iDEAL specific error for FRAME_SERVICE_FRAME_OPEN_FAILED error', function (done) {
       var fn;
+      var originalError = new BraintreeError({
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
+        message: 'foo',
+        type: 'INTERNAL'
+      });
 
       this.ideal._idealPaymentStatus.id = 'id';
       this.ideal._idealPaymentStatus.status = 'PENDING';
@@ -901,15 +906,35 @@ describe('iDEAL', function () {
         throw new Error('should not get here');
       }, function (err) {
         expect(err.code).to.equal('IDEAL_WINDOW_OPEN_FAILED');
+        expect(err.details.originalError).to.equal(originalError);
 
         done();
       });
 
-      fn(new BraintreeError({
-        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
+      fn(originalError);
+    });
+
+    it('throws iDEAL specific error for FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG error', function (done) {
+      var fn;
+      var originalError = new BraintreeError({
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG',
         message: 'foo',
         type: 'INTERNAL'
-      }));
+      });
+
+      this.ideal._idealPaymentStatus.id = 'id';
+      this.ideal._idealPaymentStatus.status = 'PENDING';
+
+      fn = this.ideal._createStartPaymentCallback(function () {
+        throw new Error('should not get here');
+      }, function (err) {
+        expect(err.code).to.equal('IDEAL_WINDOW_OPEN_FAILED');
+        expect(err.details.originalError).to.equal(originalError);
+
+        done();
+      });
+
+      fn(originalError);
     });
 
     it('closes the frame', function (done) {

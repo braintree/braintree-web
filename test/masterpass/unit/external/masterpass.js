@@ -624,6 +624,28 @@ describe('Masterpass', function () {
           expect(err.code).to.equal('MASTERPASS_POPUP_OPEN_FAILED');
           expect(err.type).to.equal('MERCHANT');
           expect(err.message).to.equal('Masterpass popup failed to open. Make sure to tokenize in response to a user action, such as a click.');
+          expect(err.details.originalError).to.equal(expectedError);
+        });
+      });
+
+      it('rejects with error if popup fails to open because of IE bug', function () {
+        var expectedError = new BraintreeError({
+          type: 'INTERNAL',
+          code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG',
+          message: 'Frame closed'
+        });
+
+        this.fakeFrameService.open.yieldsAsync(expectedError);
+
+        return this.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).then(rejectIfResolves).catch(function (err) {
+          expect(err).to.be.instanceof(BraintreeError);
+          expect(err.code).to.equal('MASTERPASS_POPUP_OPEN_FAILED');
+          expect(err.type).to.equal('MERCHANT');
+          expect(err.message).to.equal('Masterpass popup failed to open. Make sure to tokenize in response to a user action, such as a click.');
+          expect(err.details.originalError).to.equal(expectedError);
         });
       });
 

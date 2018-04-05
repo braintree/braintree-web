@@ -259,9 +259,16 @@ Masterpass.prototype._createFrameOpenHandler = function (resolve, reject) {
         return;
       }
 
-      if (frameServiceErr.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
+      if (frameServiceErr.code && frameServiceErr.code.indexOf('FRAME_SERVICE_FRAME_OPEN_FAILED') > -1) {
         analytics.sendEvent(self._client, 'masterpass.tokenization.failed.to-open');
-        reject(new BraintreeError(errors.MASTERPASS_POPUP_OPEN_FAILED));
+        reject(new BraintreeError({
+          code: errors.MASTERPASS_POPUP_OPEN_FAILED.code,
+          type: errors.MASTERPASS_POPUP_OPEN_FAILED.type,
+          message: errors.MASTERPASS_POPUP_OPEN_FAILED.message,
+          details: {
+            originalError: frameServiceErr
+          }
+        }));
 
         return;
       }

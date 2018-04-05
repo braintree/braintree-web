@@ -1,6 +1,24 @@
 CHANGELOG
 =========
 
+## 3.32.0
+* Venmo
+  * Add support for Venmo profile IDs
+* Google Pay is no longer in beta.
+* Masterpass
+  * Fix issue where error would not surface correctly for window being blocked by a popup blocker
+* PayPal
+  * Fix issue where error would not surface correctly for window being blocked by a popup blocker
+* Hosted Fields
+  * Fix issue where autocomplete properties were not applied (closes #353)
+  * Ensure that focus state is maintained when focus is called programatically
+  * Cards that cannot be processed by the merchant can invalidate Hosted Fields by adding a `fields.number.rejectUnsupportedCards` option to the object passed into Hosted Fields `create`. See documentation for adding this property.
+  * Fix issue where Roboform could not autofill cards [#356](https://github.com/braintree/braintree-web/issues/356)
+* PayPal Checkout
+  * Fix error handling around not having a linked PayPal sandbox account
+* 3D Secure
+  * Add support for American Express SafeKey params
+
 ## 3.31.0
 * Update credit-card-type to v6.2.0
 * Update card-validator to v4.3.0

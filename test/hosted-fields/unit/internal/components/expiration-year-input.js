@@ -169,5 +169,9 @@ describe('Expiration Year Input', function () {
         expect(input.element.selectedIndex).to.equal(0);
       });
     });
+
+    it('has autocomplete cc-exp-year', function () {
+      expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-exp-year');
+    });
   });
 });

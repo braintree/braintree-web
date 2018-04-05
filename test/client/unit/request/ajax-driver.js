@@ -28,7 +28,8 @@ describe('AJAXDriver', function () {
     AJAXDriver.request({
       url: TEST_SERVER_URL,
       timeout: 50,
-      graphQL: this.fakeGraphQL
+      graphQL: this.fakeGraphQL,
+      metadata: this.fakeMetadata
     }, function callback(err) {
       expect(err).to.not.eql(null);
       done();
@@ -59,7 +60,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err, data, status) {
         expect(err).to.not.exist;
         expect(status).to.equal(200);
@@ -87,7 +89,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err, data, status) {
         expect(err).to.not.exist;
         expect(status).to.equal(200);
@@ -120,7 +123,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err, data, status) {
         expect(err).to.equal('second');
         expect(status).to.equal(408);
@@ -148,7 +152,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err, data, status) {
         expect(err).to.equal('error');
         expect(status).to.equal(408);
@@ -165,7 +170,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err, resp) {
         if (err) {
           done(err);
@@ -184,7 +190,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err) {
         expect(err).to.not.eql(null);
         done();
@@ -199,7 +206,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err, res, status) {
         expect(status).to.equal(429);
         expect(res).to.be.null;
@@ -217,7 +225,8 @@ describe('AJAXDriver', function () {
         url: TEST_SERVER_URL + 'marco',
         data: {marco: 'polo'},
         method: 'POST',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err, resp) {
         if (err) {
           done(err);
@@ -237,7 +246,8 @@ describe('AJAXDriver', function () {
         url: TEST_SERVER_URL + 'marco',
         data: {marco: 'polo'},
         method: 'POST',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function () {});
 
       expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Content-Type', 'application/json');
@@ -254,7 +264,8 @@ describe('AJAXDriver', function () {
           Bar: 'bar'
         },
         method: 'POST',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function () {});
 
       expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Foo', 'foo');
@@ -267,7 +278,8 @@ describe('AJAXDriver', function () {
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'POST',
-        graphQL: this.fakeGraphQL
+        graphQL: this.fakeGraphQL,
+        metadata: this.fakeMetadata
       }, function callback(err) {
         expect(err).to.not.eql(null);
         done();
@@ -276,6 +288,11 @@ describe('AJAXDriver', function () {
 
     describe('graphql', function () {
       beforeEach(function () {
+        this.fakeMetadata = {
+          source: 'my-source',
+          integration: 'my-integration',
+          sessionId: 'my-session-id'
+        };
         this.gql = new GraphQL({
           graphQL: {
             url: 'http://localhost/graphql',
@@ -302,7 +319,8 @@ describe('AJAXDriver', function () {
             headers: {}
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function () {});
 
         expect(this.fakeXHR.setRequestHeader).to.be.calledWith('Authorization', 'Bearer fake_tokenization_key');
@@ -318,7 +336,8 @@ describe('AJAXDriver', function () {
             headers: {}
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function () {});
 
         expect(this.fakeXHR.setRequestHeader).to.not.be.calledWith('Authorization', 'Bearer fake_tokenization_key');
@@ -334,7 +353,8 @@ describe('AJAXDriver', function () {
             headers: {}
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function () {});
 
         expect(this.fakeXHR.send).to.be.calledWithMatch('mutation TokenizeCreditCard');
@@ -349,7 +369,8 @@ describe('AJAXDriver', function () {
             headers: {}
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function () {});
 
         expect(this.fakeXHR.send).to.not.be.calledWithMatch('mutation TokenizeCreditCard');
@@ -364,7 +385,8 @@ describe('AJAXDriver', function () {
             headers: {}
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function () {});
 
         expect(this.fakeXHR.open).to.be.calledWith('POST', 'http://localhost/graphql', true);
@@ -379,7 +401,8 @@ describe('AJAXDriver', function () {
             headers: {}
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function () {});
 
         expect(this.fakeXHR.open).to.not.be.calledWith('POST', 'http://localhost/graphql', true);
@@ -396,7 +419,8 @@ describe('AJAXDriver', function () {
             headers: {}
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function (err, body, status) {
           expect(err).to.not.exist;
           expect(status).to.equal(200);
@@ -430,7 +454,7 @@ describe('AJAXDriver', function () {
               token: 'the-token',
               creditCard: {
                 binData: {},
-                brand: 'Visa',
+                brandCode: 'visa',
                 last4: '1111'
               }
             }
@@ -447,7 +471,8 @@ describe('AJAXDriver', function () {
             tokenizationKey: 'fake_tokenization_key'
           },
           method: 'POST',
-          graphQL: this.gql
+          graphQL: this.gql,
+          metadata: this.fakeMetadata
         }, function (err, body, status) {
           expect(err).to.not.exist;
           expect(status).to.equal(200);

@@ -126,6 +126,50 @@ describe('HostedFields', function () {
       expect(replyStub).to.be.calledWith(configuration);
     });
 
+    context('supported card types', function () {
+      it('replies with configuration including supportedCardTypes', function () {
+        var instance, i, frameReadyHandler;
+        var configuration = this.defaultConfiguration;
+        var replyStub = this.sandbox.stub();
+        var numberNode = document.createElement('div');
+
+        numberNode.id = 'number';
+
+        document.body.appendChild(numberNode);
+
+        configuration.fields = {
+          number: {
+            rejectUnsupportedCards: true,
+            selector: '#number'
+          }
+        };
+
+        instance = new HostedFields(configuration);
+
+        for (i = 0; i < instance._bus.on.callCount; i++) {
+          if (instance._bus.on.getCall(0).args[0] === events.FRAME_READY) {
+            frameReadyHandler = instance._bus.on.getCall(0).args[1];
+            break;
+          }
+        }
+
+        frameReadyHandler(replyStub);
+        expect(replyStub).not.to.have.beenCalled;
+
+        frameReadyHandler(replyStub);
+        expect(replyStub).not.to.have.beenCalled;
+
+        frameReadyHandler(replyStub);
+        expect(replyStub).to.be.calledWithMatch({
+          supportedCardTypes: [
+            'American Express',
+            'Discover',
+            'Visa'
+          ]
+        });
+      });
+    });
+
     it('emits "ready" when the final FRAME_READY is emitted', function (done) {
       var instance, i, frameReadyHandler;
       var configuration = this.defaultConfiguration;

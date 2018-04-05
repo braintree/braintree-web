@@ -35,6 +35,7 @@ function Venmo(options) {
   this._isDebug = configuration.isDebug;
   this._assetsUrl = configuration.gatewayConfiguration.assetsUrl + '/web/' + VERSION;
   this._allowNewBrowserTab = options.allowNewBrowserTab !== false;
+  this._profileId = options.profileId;
 }
 
 Venmo.prototype._initialize = function () {
@@ -57,7 +58,7 @@ Venmo.prototype._initialize = function () {
   params['x-error'] = currentUrl + '#venmoError=1';
   params.ua = global.navigator.userAgent;
   /* eslint-disable camelcase */
-  params.braintree_merchant_id = venmoConfiguration.merchantId;
+  params.braintree_merchant_id = this._profileId || venmoConfiguration.merchantId;
   params.braintree_access_token = venmoConfiguration.accessToken;
   params.braintree_environment = venmoConfiguration.environment;
   params.braintree_sdk_data = btoa(JSON.stringify(braintreeData));

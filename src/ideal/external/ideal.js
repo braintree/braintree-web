@@ -224,8 +224,15 @@ Ideal.prototype._createStartPaymentCallback = function (resolve, reject) {
         reject(new BraintreeError(errors.IDEAL_WINDOW_CLOSED));
 
         return;
-      } else if (err.code === 'FRAME_SERVICE_FRAME_OPEN_FAILED') {
-        reject(new BraintreeError(errors.IDEAL_WINDOW_OPEN_FAILED));
+      } else if (err.code && err.code.indexOf('FRAME_SERVICE_FRAME_OPEN_FAILED') > -1) {
+        reject(new BraintreeError({
+          code: errors.IDEAL_WINDOW_OPEN_FAILED.code,
+          type: errors.IDEAL_WINDOW_OPEN_FAILED.type,
+          message: errors.IDEAL_WINDOW_OPEN_FAILED.message,
+          details: {
+            originalError: err
+          }
+        }));
 
         return;
       }

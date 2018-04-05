@@ -17,7 +17,7 @@ describe('paypalCheckout', function () {
 
       configuration.gatewayConfiguration.paypalEnabled = true;
       configuration.gatewayConfiguration.paypal = {
-        clientId: 'fake-id'
+        environmentNoNetwork: false
       };
 
       this.configuration = configuration;
@@ -78,7 +78,7 @@ describe('paypalCheckout', function () {
       });
 
       it('errors out if paypal account is not linked in sandbox', function () {
-        this.configuration.gatewayConfiguration.paypal.clientId = null;
+        this.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
 
         return create({client: this.client}).then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);

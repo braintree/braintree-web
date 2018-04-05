@@ -41,6 +41,10 @@ describe('Expiration Date Input', function () {
       expect(this.input.element.getAttribute('type')).to.equal('tel');
     });
 
+    it('has autocomplete cc-exp', function () {
+      expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-exp');
+    });
+
     it('sets the maxLength to 9', function () {
       expect(this.input.element.getAttribute('maxlength')).to.equal('9');
     });
