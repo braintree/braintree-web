@@ -240,7 +240,7 @@ describe('Payment Request Frame', function () {
     });
 
     it('emits raw error when paymentRequest.show fails', function () {
-      var showError = new Error('DomException');
+      var showError = new Error();
 
       showError.name = 'AbortError';
       this.showStub.rejects(showError);
@@ -249,10 +249,9 @@ describe('Payment Request Frame', function () {
         var error = global.bus.emit.args[0][1];
 
         expect(global.bus.emit).to.be.calledOnce;
-        expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED');
-
-        expect(error).to.equal(showError);
-      });
+        expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED', this.sandbox.match({name: 'AbortError'}));
+        expect(error.name).to.equal(showError.name);
+      }.bind(this));
     });
 
     it('completes payment request when it succeeds', function () {
@@ -289,10 +288,10 @@ describe('Payment Request Frame', function () {
 
       return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
         expect(global.bus.emit).to.be.calledOnce;
-        expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED', {
+        expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED', this.sandbox.match({
           name: 'UNSUPPORTED_METHOD_NAME'
-        });
-      });
+        }));
+      }.bind(this));
     });
 
     context('basic-card', function () {
@@ -461,7 +460,7 @@ describe('Payment Request Frame', function () {
 
         return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
           expect(global.bus.emit).to.be.calledOnce;
-          expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED', error);
+          expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED');
         });
       });
     });

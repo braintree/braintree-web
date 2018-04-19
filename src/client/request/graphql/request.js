@@ -1,6 +1,6 @@
 'use strict';
 
-var BRAINTREE_VERSION = '2017-12-15';
+var BRAINTREE_VERSION = '2018-03-05';
 
 var assign = require('../../../lib/assign').assign;
 

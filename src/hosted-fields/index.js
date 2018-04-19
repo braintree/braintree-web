@@ -181,7 +181,8 @@ var VERSION = process.env.npm_package_version;
  *   client: clientInstance,
  *   fields: {
  *     number: {
- *       selector: '#card-number'
+ *       selector: '#card-number',
+ *       rejectUnsupportedCards: true
  *     },
  *     cvv: {
  *       selector: '#cvv',
@@ -192,7 +193,6 @@ var VERSION = process.env.npm_package_version;
  *       type: 'month'
  *     }
  *   },
- *   rejectUnsupportedCards: true
  * }, callback);
  */
 function create(options) {

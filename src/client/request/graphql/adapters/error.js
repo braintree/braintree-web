@@ -23,19 +23,16 @@ function errorWithTypeResponseAdapter(responseBody) {
 }
 
 function userErrorResponseAdapter(responseBody) {
-  var error = responseBody.errors[0];
-  var message = error.extensions.legacyMessage;
-  var errorDetails = error.extensions.errorDetails;
-  var fieldErrors = buildFieldErrors(errorDetails);
+  var fieldErrors = buildFieldErrors(responseBody.errors);
 
-  return {error: {message: message}, fieldErrors: fieldErrors};
+  return {error: {message: getLegacyMessage(fieldErrors)}, fieldErrors: fieldErrors};
 }
 
-function buildFieldErrors(errorDetails) {
+function buildFieldErrors(errors) {
   var fieldErrors = [];
 
-  errorDetails.forEach(function (detail) {
-    addFieldError(detail.inputPath.slice(1), detail, fieldErrors);
+  errors.forEach(function (error) {
+    addFieldError(error.extensions.inputPath.slice(1), error, fieldErrors);
   });
 
   return fieldErrors;
@@ -43,7 +40,7 @@ function buildFieldErrors(errorDetails) {
 
 function addFieldError(inputPath, errorDetail, fieldErrors) {
   var fieldError;
-  var legacyCode = errorDetail.legacyCode;
+  var legacyCode = errorDetail.extensions.legacyCode;
   var inputField = inputPath[0];
 
   if (inputPath.length === 1) {
@@ -68,6 +65,16 @@ function addFieldError(inputPath, errorDetail, fieldErrors) {
   }
 
   addFieldError(inputPath.slice(1), errorDetail, fieldError.fieldErrors);
+}
+
+function getLegacyMessage(errors) {
+  var legacyMessages = {
+    creditCard: 'Credit card is invalid'
+  };
+
+  var field = errors[0].field;
+
+  return legacyMessages[field];
 }
 
 module.exports = errorResponseAdapter;

@@ -6,7 +6,7 @@ var CREDIT_CARD_TOKENIZATION_MUTATION = 'mutation TokenizeCreditCard($input: Tok
 '  tokenizeCreditCard(input: $input) { ' +
 '    token ' +
 '    creditCard { ' +
-'      brand ' +
+'      brandCode ' +
 '      last4 ' +
 '      binData { ' +
 '        prepaid ' +

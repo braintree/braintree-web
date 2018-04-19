@@ -1207,29 +1207,33 @@ describe('GraphQL', function () {
         data: {tokenizeCreditCard: null},
         errors: [
           {
-            message: 'Input is invalid.',
+            message: 'Expiration year error 1',
             locations: [{line: 2, column: 9}],
             path: ['tokenizeCreditCard'],
             extensions: {
-              legacyMessage: 'Credit card is invalid',
               errorType: 'user_error',
-              errorDetails: [
-                {
-                  message: 'Expiration year error 1',
-                  legacyCode: '001',
-                  inputPath: ['input', 'creditCard', 'expirationYear']
-                },
-                {
-                  message: 'Expiration year error 2',
-                  legacyCode: '002',
-                  inputPath: ['input', 'creditCard', 'expirationYear']
-                },
-                {
-                  message: 'Street address error',
-                  legacyCode: '003',
-                  inputPath: ['input', 'creditCard', 'billingAddress', 'streetAddress']
-                }
-              ]
+              inputPath: ['input', 'creditCard', 'expirationYear'],
+              legacyCode: '001'
+            }
+          },
+          {
+            message: 'Expiration year error 2',
+            locations: [{line: 2, column: 9}],
+            path: ['tokenizeCreditCard'],
+            extensions: {
+              errorType: 'user_error',
+              inputPath: ['input', 'creditCard', 'expirationYear'],
+              legacyCode: '002'
+            }
+          },
+          {
+            message: 'Street address error',
+            locations: [{line: 2, column: 9}],
+            path: ['tokenizeCreditCard'],
+            extensions: {
+              errorType: 'user_error',
+              inputPath: ['input', 'creditCard', 'billingAddress', 'streetAddress'],
+              legacyCode: '003'
             }
           }
         ]

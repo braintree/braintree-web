@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.32.1
+* Payment Request
+  * Expose errors more gracefully
+* Hosted Fields
+  * Revert fix issue where Roboform could not autofill cards [#356](https://github.com/braintree/braintree-web/issues/356). It was causing an issue where the inputs would be hidden in Safari if their container was changed from `display: none` to `display: block`
+
 ## 3.32.0
 * Venmo
   * Add support for Venmo profile IDs

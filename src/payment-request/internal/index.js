@@ -81,7 +81,11 @@ function initializePaymentRequest(data) {
 
     global.bus.emit(constants.events.PAYMENT_REQUEST_SUCCESSFUL, payload);
   }).catch(function (err) {
-    global.bus.emit(constants.events.PAYMENT_REQUEST_FAILED, err);
+    global.bus.emit(constants.events.PAYMENT_REQUEST_FAILED, {
+      code: err.code,
+      message: err.message,
+      name: err.name
+    });
   }).then(function () {
     delete global.shippingAddressChangeEvent;
     delete global.shippingOptionChangeEvent;
