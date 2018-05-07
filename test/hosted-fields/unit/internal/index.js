@@ -695,14 +695,14 @@ describe('internal', function () {
       it('does not override other parts of the form with options', function (done) {
         this.fakeOptions.number = '3333 3333 3333 3333';
 
-        this.cardFormWithPostalCode.set('number.value', '1111 1111 1111 1111');
+        this.cardFormWithPostalCode.set('number.value', '1111111111111111');
 
         create(this.goodClient, this.cardFormWithPostalCode)(this.fakeOptions, function () {
           expect(this.goodClient.request).to.be.calledWithMatch({
             api: 'clientApi',
             data: {
               creditCard: {
-                number: '1111 1111 1111 1111'
+                number: '1111111111111111'
               }
             }
           });

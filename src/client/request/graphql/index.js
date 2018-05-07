@@ -3,7 +3,8 @@
 var browserDetection = require('../../browser-detection');
 
 var features = {
-  tokenize_credit_cards: 'payment_methods/credit_cards' // eslint-disable-line camelcase
+  tokenize_credit_cards: 'payment_methods/credit_cards', // eslint-disable-line camelcase
+  configuration: 'configuration'
 };
 
 var blacklistedInputPaths = [

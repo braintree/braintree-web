@@ -7,6 +7,7 @@ var iFramer = require('@braintree/iframer');
 var Bus = require('../../lib/bus');
 var BraintreeError = require('../../lib/braintree-error');
 var composeUrl = require('./compose-url');
+var getStylesFromClass = require('./get-styles-from-class');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
@@ -21,7 +22,7 @@ var whitelistedFields = constants.whitelistedFields;
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var sharedErrors = require('../../lib/errors');
-var getCardTypes = require('credit-card-type');
+var getCardTypes = require('../shared/get-card-types');
 var attributeValidationError = require('./attribute-validation-error');
 var Promise = require('../../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -314,7 +315,7 @@ function HostedFields(options) {
   var failureTimeout, clientConfig;
   var self = this;
   var fields = {};
-  var internalOptions = {};
+  var busOptions = assign({}, options);
   var fieldCount = 0;
   var componentId = uuid();
 
@@ -457,7 +458,17 @@ function HostedFields(options) {
 
   // TODO rejecting unsupported cards should be the default behavior after the next major revision
   if (options.fields.number && options.fields.number.rejectUnsupportedCards) {
-    internalOptions.supportedCardTypes = clientConfig.gatewayConfiguration.creditCards.supportedCardTypes;
+    busOptions.supportedCardTypes = clientConfig.gatewayConfiguration.creditCards.supportedCardTypes;
+  }
+
+  if (busOptions.styles) {
+    Object.keys(busOptions.styles).forEach(function (selector) {
+      var className = busOptions.styles[selector];
+
+      if (typeof className === 'string') {
+        busOptions.styles[selector] = getStylesFromClass(className);
+      }
+    });
   }
 
   failureTimeout = setTimeout(function () {
@@ -466,8 +477,6 @@ function HostedFields(options) {
   }, INTEGRATION_TIMEOUT_MS);
 
   this._bus.on(events.FRAME_READY, function (reply) {
-    var busOptions = assign({}, options, internalOptions);
-
     fieldCount--;
     if (fieldCount === 0) {
       clearTimeout(failureTimeout);
@@ -1057,7 +1066,7 @@ HostedFields.prototype.focus = function (field) {
  * @public
  * @returns {object} {@link HostedFields~stateObject|stateObject}
  * @example <caption>Check if all fields are valid</caption>
- * var state = hostedFields.getState();
+ * var state = hostedFieldsInstance.getState();
  *
  * var formValid = Object.keys(state.fields).every(function (key) {
  *   return state.fields[key].isValid;

@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.33.0
+* Internal performance optimizations
+* Update framebus to v3.0.1
+* Update credit-card-type to v6.3.0
+* Hosted Fields
+  * Allow passing in class name for style configuration (#361)
+  * Fix issue where tokenization could not take place because the `window.length` variable had been overwritten
+  * Fix regression where sending card numbers with - or spaces would result in cardType unknown in the payload (#241)
+* Payment Request
+  * Fix issue with changing shipping address and shipping options which could cause Chrome to crash
+
 ## 3.32.1
 * Payment Request
   * Expose errors more gracefully

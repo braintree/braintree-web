@@ -20,14 +20,14 @@ function create() {
   });
 
   global.bus.on(constants.events.UPDATE_SHIPPING_ADDRESS, function (data) {
-    if (global.shippingAddressChangeEvent) {
-      global.shippingAddressChangeEvent.updateWith(data);
+    if (global.shippingAddressChangeResolveFunction) {
+      global.shippingAddressChangeResolveFunction(data);
     }
   });
 
   global.bus.on(constants.events.UPDATE_SHIPPING_OPTION, function (data) {
-    if (global.shippingOptionChangeEvent) {
-      global.shippingOptionChangeEvent.updateWith(data);
+    if (global.shippingOptionChangeResolveFunction) {
+      global.shippingOptionChangeResolveFunction(data);
     }
   });
 }
@@ -47,12 +47,18 @@ function initializePaymentRequest(data) {
 
   if (data.options && data.options.requestShipping) {
     paymentRequest.addEventListener('shippingaddresschange', function (event) {
-      global.shippingAddressChangeEvent = event;
+      event.updateWith(new Promise(function (resolve) {
+        global.shippingAddressChangeResolveFunction = resolve;
+      }));
+
       global.bus.emit(constants.events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
     });
 
     paymentRequest.addEventListener('shippingoptionchange', function (event) {
-      global.shippingOptionChangeEvent = event;
+      event.updateWith(new Promise(function (resolve) {
+        global.shippingOptionChangeResolveFunction = resolve;
+      }));
+
       global.bus.emit(constants.events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
     });
   }
@@ -87,8 +93,8 @@ function initializePaymentRequest(data) {
       name: err.name
     });
   }).then(function () {
-    delete global.shippingAddressChangeEvent;
-    delete global.shippingOptionChangeEvent;
+    delete global.shippingAddressChangeResolveFunction;
+    delete global.shippingOptionChangeResolveFunction;
 
     if (paymentResponse) {
       paymentResponse.complete();

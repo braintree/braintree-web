@@ -75,14 +75,12 @@ describe('Payment Request Frame', function () {
     it('calls update with on shipping address change event', function () {
       var data = {};
 
-      global.shippingAddressChangeEvent = {
-        updateWith: this.sandbox.stub()
-      };
+      global.shippingAddressChangeResolveFunction = this.sandbox.stub();
       Bus.prototype.on.withArgs('payment-request:UPDATE_SHIPPING_ADDRESS').yields(data);
       paymentRequestFrame.create();
 
-      expect(global.shippingAddressChangeEvent.updateWith).to.be.calledOnce;
-      expect(global.shippingAddressChangeEvent.updateWith).to.be.calledWith(data);
+      expect(global.shippingAddressChangeResolveFunction).to.be.calledOnce;
+      expect(global.shippingAddressChangeResolveFunction).to.be.calledWith(data);
     });
 
     it('listens for shipping option change event', function () {
@@ -94,14 +92,12 @@ describe('Payment Request Frame', function () {
     it('calls update with on shipping option change event', function () {
       var data = {};
 
-      global.shippingOptionChangeEvent = {
-        updateWith: this.sandbox.stub()
-      };
+      global.shippingOptionChangeResolveFunction = this.sandbox.stub();
       Bus.prototype.on.withArgs('payment-request:UPDATE_SHIPPING_OPTION').yields(data);
       paymentRequestFrame.create();
 
-      expect(global.shippingOptionChangeEvent.updateWith).to.be.calledOnce;
-      expect(global.shippingOptionChangeEvent.updateWith).to.be.calledWith(data);
+      expect(global.shippingOptionChangeResolveFunction).to.be.calledOnce;
+      expect(global.shippingOptionChangeResolveFunction).to.be.calledWith(data);
     });
   });
 
@@ -182,11 +178,12 @@ describe('Payment Request Frame', function () {
       }.bind(this));
     });
 
-    it('emits shiping address when shippingaddresschange event occurs', function () {
+    it('emits shipping address when shippingaddresschange event occurs', function () {
       var event = {
         target: {
           shippingAddress: {}
-        }
+        },
+        updateWith: this.sandbox.stub()
       };
 
       this.showStub.resolves({
@@ -199,14 +196,17 @@ describe('Payment Request Frame', function () {
 
       return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
         expect(global.bus.emit).to.be.calledWith('payment-request:SHIPPING_ADDRESS_CHANGE', event.target.shippingAddress);
+        expect(event.updateWith).to.be.calledOnce;
+        expect(global.shippingAddressChangeResolveFunction).to.be.undefined;
       });
     });
 
-    it('emits selected shipping option when shippinoptionchange event occurs', function () {
+    it('emits selected shipping option when shippingoptionchange event occurs', function () {
       var event = {
         target: {
           shippingOption: 'option'
-        }
+        },
+        updateWith: this.sandbox.stub()
       };
 
       this.showStub.resolves({
@@ -219,6 +219,8 @@ describe('Payment Request Frame', function () {
 
       return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
         expect(global.bus.emit).to.be.calledWith('payment-request:SHIPPING_OPTION_CHANGE', event.target.shippingOption);
+        expect(event.updateWith).to.be.calledOnce;
+        expect(global.shippingOptionChangeResolveFunction).to.be.undefined;
       });
     });
 

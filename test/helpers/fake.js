@@ -1,8 +1,9 @@
 'use strict';
 
-var clientToken;
+var clientToken, clientTokenWithGraphQL;
 var tokenizationKey = 'development_testing_merchant_id';
 var constants = require('../../src/lib/constants');
+var assign = require('../../src/lib/assign').assign;
 
 function configuration() {
   return {
@@ -78,11 +79,18 @@ function client(options) {
 
 clientToken = configuration().gatewayConfiguration;
 clientToken.authorizationFingerprint = 'encoded_auth_fingerprint';
+
+clientTokenWithGraphQL = assign({
+  graphQLUrl: 'https://localhost/graphql'
+}, clientToken);
+
+clientTokenWithGraphQL = btoa(JSON.stringify(clientTokenWithGraphQL));
 clientToken = btoa(JSON.stringify(clientToken));
 
 module.exports = {
   tokenizationKey: tokenizationKey,
   clientToken: clientToken,
+  clientTokenWithGraphQL: clientTokenWithGraphQL,
   configuration: configuration,
   client: client
 };

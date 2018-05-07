@@ -3,29 +3,22 @@
 var fraudNet = require('../../../src/data-collector/fraudnet');
 
 describe('FraudNet', function () {
-  var instance, el, frames;
+  var instance, el, script;
   var parsedData = {};
 
-  beforeEach(function () {
-    instance = fraudNet.setup();
-    el = document.querySelector('[fncls][type="application/json"]');
-    frames = document.querySelectorAll('iframe[src="about:blank"]');
-    parsedData = JSON.parse(el.text);
+  before(function () {
+    this.originalBody = document.body.innerHTML;
+
+    return fraudNet.setup().then(function (result) {
+      instance = result;
+      el = document.querySelector('[fncls][type="application/json"]');
+      script = document.querySelector('script[src="https://c.paypal.com/da/r/fb.js"]');
+      parsedData = JSON.parse(el.text);
+    });
   });
 
-  afterEach(function () {
-    var iframe, iframes, i;
-
-    if (document.body.contains(el)) {
-      document.body.removeChild(el);
-    }
-
-    iframes = document.getElementsByTagName('iframe');
-
-    for (i = 0; i < iframes.length; i++) {
-      iframe = iframes[i];
-      iframe.parentNode.removeChild(iframe);
-    }
+  after(function () {
+    document.body.innerHTML = this.originalBody;
   });
 
   it('appends a script type of "application/json" to the document', function () {
@@ -33,8 +26,7 @@ describe('FraudNet', function () {
   });
 
   it('appends the FraudNet library to the document', function () {
-    expect(frames).not.to.be.null;
-    expect(frames.length).to.equal(1);
+    expect(script).not.to.be.null;
   });
 
   it('contains expected values in parsed data', function () {

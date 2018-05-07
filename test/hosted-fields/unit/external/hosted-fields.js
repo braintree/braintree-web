@@ -170,6 +170,52 @@ describe('HostedFields', function () {
       });
     });
 
+    it('converts class name to computed style', function () {
+      var instance, i, frameReadyHandler;
+      var configuration = this.defaultConfiguration;
+      var replyStub = this.sandbox.stub();
+      var style = document.createElement('style');
+      var numberNode = document.createElement('div');
+
+      style.innerText = '.class-name { color: rgb(0, 0, 255); }';
+      numberNode.id = 'number';
+
+      document.body.appendChild(style);
+      document.body.appendChild(numberNode);
+
+      configuration.fields = {
+        number: {selector: '#number'}
+      };
+
+      configuration.styles = {
+        input: 'class-name'
+      };
+
+      instance = new HostedFields(configuration);
+
+      for (i = 0; i < instance._bus.on.callCount; i++) {
+        if (instance._bus.on.getCall(0).args[0] === events.FRAME_READY) {
+          frameReadyHandler = instance._bus.on.getCall(0).args[1];
+          break;
+        }
+      }
+
+      frameReadyHandler(replyStub);
+      expect(replyStub).not.to.have.beenCalled;
+
+      frameReadyHandler(replyStub);
+      expect(replyStub).not.to.have.beenCalled;
+
+      frameReadyHandler(replyStub);
+      expect(replyStub).to.be.calledWithMatch({
+        styles: {
+          input: this.sandbox.match({
+            color: 'rgb(0, 0, 255)'
+          })
+        }
+      });
+    });
+
     it('emits "ready" when the final FRAME_READY is emitted', function (done) {
       var instance, i, frameReadyHandler;
       var configuration = this.defaultConfiguration;

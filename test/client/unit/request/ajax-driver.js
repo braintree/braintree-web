@@ -428,7 +428,17 @@ describe('AJAXDriver', function () {
           expect(body).to.deep.equal({
             creditCards: [
               {
-                binData: {},
+                binData: {
+                  commercial: 'Unknown',
+                  debit: 'No',
+                  durbinRegulated: 'Yes',
+                  healthcare: 'Unknown',
+                  payroll: 'No',
+                  prepaid: 'Yes',
+                  issuingBank: 'issuing-bank',
+                  countryOfIssuance: 'USA',
+                  productId: 'product-id'
+                },
                 consumed: false,
                 description: 'ending in 11',
                 nonce: 'the-token',
@@ -453,8 +463,18 @@ describe('AJAXDriver', function () {
             tokenizeCreditCard: {
               token: 'the-token',
               creditCard: {
-                binData: {},
-                brandCode: 'visa',
+                binData: {
+                  commercial: 'UNKNOWN',
+                  debit: 'NO',
+                  durbinRegulated: 'YES',
+                  healthcare: null,
+                  payroll: 'NO',
+                  prepaid: 'YES',
+                  issuingBank: 'issuing-bank',
+                  countryOfIssuance: 'USA',
+                  productId: 'product-id'
+                },
+                brandCode: 'VISA',
                 last4: '1111'
               }
             }

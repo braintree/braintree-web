@@ -4,16 +4,22 @@ var errorResponseAdapter = require('./error');
 
 var CARD_BRAND_MAP = {
   /* eslint-disable camelcase */
-  american_express: 'American Express',
-  diners: 'Discover',
-  discover: 'Discover',
-  international_maestro: 'Maestro',
-  jcb: 'JCB',
-  mastercard: 'MasterCard',
-  uk_maestro: 'Maestro',
-  union_pay: 'Union Pay',
-  visa: 'Visa'
+  AMERICAN_EXPRESS: 'American Express',
+  DINERS: 'Discover',
+  DISCOVER: 'Discover',
+  INTERNATIONAL_MAESTRO: 'Maestro',
+  JCB: 'JCB',
+  MASTERCARD: 'MasterCard',
+  UK_MAESTRO: 'Maestro',
+  UNION_PAY: 'Union Pay',
+  VISA: 'Visa'
   /* eslint-enable camelcase */
+};
+
+var BIN_DATA_MAP = {
+  YES: 'Yes',
+  NO: 'No',
+  UNKNOWN: 'Unknown'
 };
 
 function creditCardTokenizationResponseAdapter(responseBody) {
@@ -36,8 +42,16 @@ function adaptTokenizeCreditCardResponseBody(body) {
   var response;
 
   if (binData) {
+    ['commercial', 'debit', 'durbinRegulated', 'healthcare', 'payroll', 'prepaid'].forEach(function (key) {
+      if (binData[key]) {
+        binData[key] = BIN_DATA_MAP[binData[key]];
+      } else {
+        binData[key] = 'Unknown';
+      }
+    });
+
     ['issuingBank', 'countryOfIssuance', 'productId'].forEach(function (key) {
-      if (binData[key] === null) { binData[key] = 'Unknown'; }
+      if (!binData[key]) { binData[key] = 'Unknown'; }
     });
   }
 

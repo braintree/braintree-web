@@ -23,6 +23,12 @@ describe('formatCardRequestData', function () {
     expect(result).to.deep.equal({number: '4111111111111111'});
   });
 
+  it('ignores spaces and dashes in card number', function () {
+    var result = formatCardRequestData({number: '411-111 111---111    1111-'});
+
+    expect(result).to.deep.equal({number: '4111111111111111'});
+  });
+
   it('includes expiration month', function () {
     var result = formatCardRequestData({expirationMonth: '04'});
 

@@ -5,6 +5,7 @@ var Promise = require('../../../src/lib/promise');
 var getConfiguration = require('../../../src/client/get-configuration').getConfiguration;
 var AJAXDriver = require('../../../src/client/request/ajax-driver');
 var fake = require('../../helpers/fake');
+var GraphQL = require('../../../src/client/request/graphql');
 
 describe('getConfiguration', function () {
   it('returns a promise when no callback is passed', function () {
@@ -171,6 +172,39 @@ describe('getConfiguration', function () {
       });
 
       getConfiguration({authorization: fake.clientToken});
+    });
+  });
+
+  describe('GraphQL configuration', function () {
+    describe('client token', function () {
+      it('creates a GraphQL instance when GraphQL URL is present', function (done) {
+        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
+          expect(options.graphQL).to.be.instanceof(GraphQL);
+          done();
+        });
+
+        getConfiguration({authorization: fake.clientTokenWithGraphQL});
+      });
+
+      it('does not create a GraphQL instance when GraphQL URL is not present', function (done) {
+        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
+          expect(options.graphQL).not.to.exist;
+          done();
+        });
+
+        getConfiguration({authorization: fake.clientToken});
+      });
+    });
+
+    describe('tokenization key', function () {
+      it('does not create a GraphQL instance', function (done) {
+        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
+          expect(options.graphQL).not.to.exist;
+          done();
+        });
+
+        getConfiguration({authorization: fake.tokenizationKey});
+      });
     });
   });
 });

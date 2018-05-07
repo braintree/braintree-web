@@ -5,10 +5,10 @@ var GraphQLRequest = require('../../../../../src/client/request/graphql/request'
 
 describe('GraphQL', function () {
   beforeEach(function () {
-    this.tokenizeUrl = 'https://localhost:3443/merchant_id/client_api/v1/payment_methods/credit_cards?12312';
+    this.tokenizeUrl = 'https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312';
     this.config = {
       graphQL: {
-        url: 'http://localhost:8080/graphql',
+        url: 'http://localhost/graphql',
         features: [
           'tokenize_credit_cards'
         ]
@@ -218,6 +218,39 @@ describe('GraphQL', function () {
         integration: 'my-integration',
         sessionId: 'my-session-id'
       });
+    });
+
+    it('creates a GraphQL query for configuration', function () {
+      var graphQLRequest, body, parsedBody;
+      var options = {
+        graphQL: new GraphQL({
+          graphQL: {
+            url: 'http://localhost/graphql',
+            features: [
+              'configuration'
+            ]
+          }
+        }),
+        url: 'https://localhost/merchant_id/client_api/v1/configuration',
+        headers: {
+          FAKE_HEADER: 'Fake header'
+        },
+        data: {},
+        metadata: {
+          source: 'my-source',
+          integration: 'my-integration',
+          sessionId: 'my-session-id',
+          extraneousProperty: 'dummy-value'
+        }
+      };
+
+      graphQLRequest = new GraphQLRequest(options);
+      body = graphQLRequest.getBody();
+      parsedBody = JSON.parse(body);
+
+      expect(parsedBody.query).to.contain('query');
+      expect(parsedBody.query).to.contain('clientConfiguration');
+      expect(parsedBody.operationName).to.equal('ClientConfiguration');
     });
 
     it('handles snake case keys', function () {
@@ -1055,7 +1088,7 @@ describe('GraphQL', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var binData = {
         prepaid: 'Yes',
-        healthcare: null,
+        healthcare: 'Unknown',
         debit: 'No',
         durbinRegulated: 'Yes',
         commercial: 'No',
@@ -1069,9 +1102,19 @@ describe('GraphQL', function () {
           tokenizeCreditCard: {
             token: 'faketoken',
             creditCard: {
-              brandCode: 'visa',
+              brandCode: 'VISA',
               last4: '1234',
-              binData: binData
+              binData: {
+                prepaid: 'YES',
+                healthcare: null,
+                debit: 'NO',
+                durbinRegulated: 'YES',
+                commercial: 'NO',
+                payroll: 'UNKNOWN',
+                issuingBank: 'Fake Bank',
+                countryOfIssuance: 'USA',
+                productId: '123'
+              }
             }
           }
         }
@@ -1097,12 +1140,12 @@ describe('GraphQL', function () {
     it('remaps card brand codes', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var binData = {
-        prepaid: 'Yes',
-        healthcare: null,
-        debit: 'No',
-        durbinRegulated: 'Yes',
-        commercial: 'No',
-        payroll: 'Unknown',
+        prepaid: 'YES',
+        healthcare: 'UNKNOWN',
+        debit: 'NO',
+        durbinRegulated: 'YES',
+        commercial: 'NO',
+        payroll: 'UNKNOWN',
         issuingBank: 'Fake Bank',
         countryOfIssuance: 'USA',
         productId: '123'
@@ -1123,16 +1166,16 @@ describe('GraphQL', function () {
         };
       }
 
-      expect(graphQLRequest.adaptResponseBody(makeResponse('mastercard')).creditCards[0].details.cardType).to.equal('MasterCard');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('diners')).creditCards[0].details.cardType).to.equal('Discover');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('discover')).creditCards[0].details.cardType).to.equal('Discover');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('international_maestro')).creditCards[0].details.cardType).to.equal('Maestro');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('uk_maestro')).creditCards[0].details.cardType).to.equal('Maestro');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('jcb')).creditCards[0].details.cardType).to.equal('JCB');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('union_pay')).creditCards[0].details.cardType).to.equal('Union Pay');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('visa')).creditCards[0].details.cardType).to.equal('Visa');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('solo')).creditCards[0].details.cardType).to.equal('Unknown');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('unknown')).creditCards[0].details.cardType).to.equal('Unknown');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('MASTERCARD')).creditCards[0].details.cardType).to.equal('MasterCard');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('DINERS')).creditCards[0].details.cardType).to.equal('Discover');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('DISCOVER')).creditCards[0].details.cardType).to.equal('Discover');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('INTERNATIONAL_MAESTRO')).creditCards[0].details.cardType).to.equal('Maestro');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('UK_MAESTRO')).creditCards[0].details.cardType).to.equal('Maestro');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('JCB')).creditCards[0].details.cardType).to.equal('JCB');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('UNION_PAY')).creditCards[0].details.cardType).to.equal('Union Pay');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('VISA')).creditCards[0].details.cardType).to.equal('Visa');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('SOLO')).creditCards[0].details.cardType).to.equal('Unknown');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('UNKNOWN')).creditCards[0].details.cardType).to.equal('Unknown');
       expect(graphQLRequest.adaptResponseBody(makeResponse()).creditCards[0].details.cardType).to.equal('Unknown');
     });
 
@@ -1159,6 +1202,12 @@ describe('GraphQL', function () {
       adaptedResponse = graphQLRequest.adaptResponseBody(fakeGraphQLResponse);
 
       expect(adaptedResponse.creditCards[0].binData).to.deep.equal({
+        prepaid: 'Unknown',
+        healthcare: 'Unknown',
+        debit: 'Unknown',
+        durbinRegulated: 'Unknown',
+        commercial: 'Unknown',
+        payroll: 'Unknown',
         issuingBank: 'Unknown',
         countryOfIssuance: 'Unknown',
         productId: 'Unknown'

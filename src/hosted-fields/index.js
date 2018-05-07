@@ -43,6 +43,8 @@ var VERSION = process.env.npm_package_version;
 /**
  * An object that represents CSS that will be applied in each hosted field. This object looks similar to CSS. Typically, these styles involve fonts (such as `font-family` or `color`).
  *
+ * You may also pass the name of a class on your site that contains the styles you would like to apply. The style properties will be automatically pulled off the class and applied to the Hosted Fields inputs. Note: this is recomended for `input` elements only. If using a `select` for the expiration date, unexpected styling may occur.
+ *
  * These are the CSS properties that Hosted Fields supports. Any other CSS should be specified on your page and outside of any Braintree configuration. Trying to set unsupported properties will fail and put a warning in the console.
  *
  * Supported CSS properties are:
@@ -86,7 +88,7 @@ var VERSION = process.env.npm_package_version;
  * @param {object} options Creation options:
  * @param {Client} options.client A {@link Client} instance.
  * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}.
- * @param {styleOptions} options.styles {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
+ * @param {styleOptions} [options.styles] {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
  * @param {callback} [callback] The second argument, `data`, is the {@link HostedFields} instance. If no callback is provided, `create` returns a promise that resolves with the {@link HostedFields} instance.
  * @returns {void}
  * @example
@@ -116,6 +118,38 @@ var VERSION = process.env.npm_package_version;
  *       selector: '#expiration-date',
  *       type: 'month'
  *     }
+ *   }
+ * }, callback);
+ * @example <caption>Applying styles with a class name</caption>
+ * // in document head
+ * <style>
+ *   .braintree-input-class {
+ *     color: black;
+ *   }
+ *   .braintree-valid-class {
+ *     color: green;
+ *   }
+ *   .braintree-invalid-class {
+ *     color: red;
+ *   }
+ * </style>
+ * // in a script tag
+ * braintree.hostedFields.create({
+ *   client: clientInstance,
+ *   styles: {
+ *     'input': 'braintree-input-class',
+ *     '.invalid': 'braintree-invalid-class',
+ *     '.valid': {
+ *       // you can also use the object syntax alongside
+ *       // the class name syntax
+ *       color: green;
+ *     }
+ *   },
+ *   fields: {
+ *     number: {
+ *       selector: '#card-number'
+ *     },
+ *     // etc...
  *   }
  * }, callback);
  * @example <caption>Right to Left Language Support</caption>

@@ -138,7 +138,7 @@ describe('dataCollector', function () {
         sessionId: 'thingy'
       };
 
-      fraudnet.setup.returns(mockData);
+      fraudnet.setup.resolves(mockData);
 
       return dataCollector.create({
         client: this.client,
@@ -158,7 +158,7 @@ describe('dataCollector', function () {
       };
 
       kount.setup.returns(mockData);
-      fraudnet.setup.returns({
+      fraudnet.setup.resolves({
         sessionId: mockPPid
       });
 
@@ -187,7 +187,7 @@ describe('dataCollector', function () {
       };
 
       kount.setup.returns(mockData);
-      fraudnet.setup.returns({
+      fraudnet.setup.resolves({
         sessionId: mockPPid
       });
 
@@ -198,7 +198,7 @@ describe('dataCollector', function () {
       }).then(function (actual) {
         actual1 = actual;
         kount.setup.returns({deviceData: {newStuff: 'anything'}});
-        fraudnet.setup.returns({
+        fraudnet.setup.resolves({
           sessionId: 'newid'
         });
 
@@ -222,7 +222,7 @@ describe('dataCollector', function () {
       };
 
       kount.setup.returns(mockData);
-      fraudnet.setup.returns({
+      fraudnet.setup.resolves({
         sessionId: mockPPid
       });
 
@@ -238,6 +238,26 @@ describe('dataCollector', function () {
         });
       });
     });
+
+    it('does not add correlation id if fraudnet.setup resolves without an instance', function () {
+      var mockData = {
+        deviceData: {
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: 'fmid' // eslint-disable-line camelcase
+        }
+      };
+
+      kount.setup.returns(mockData);
+      fraudnet.setup.resolves(null);
+
+      return dataCollector.create({
+        client: this.client,
+        kount: true,
+        paypal: true
+      }).then(function (actual) {
+        expect(actual.deviceData).to.equal(JSON.stringify(mockData.deviceData));
+      });
+    });
   });
 
   describe('teardown', function () {
@@ -249,7 +269,7 @@ describe('dataCollector', function () {
         deviceData: {},
         teardown: kountTeardown
       });
-      fraudnet.setup.returns({
+      fraudnet.setup.resolves({
         sessionId: 'anything',
         teardown: fraudnetTeardown
       });
@@ -275,7 +295,7 @@ describe('dataCollector', function () {
         deviceData: {},
         teardown: function () {}
       });
-      fraudnet.setup.returns({
+      fraudnet.setup.resolves({
         sessionId: 'anything',
         teardown: function () {}
       });
@@ -296,7 +316,7 @@ describe('dataCollector', function () {
         deviceData: {},
         teardown: function () {}
       });
-      fraudnet.setup.returns({
+      fraudnet.setup.resolves({
         sessionId: 'anything',
         teardown: function () {}
       });
@@ -317,7 +337,7 @@ describe('dataCollector', function () {
         deviceData: {},
         teardown: function () {}
       });
-      fraudnet.setup.returns({
+      fraudnet.setup.resolves({
         sessionId: 'anything',
         teardown: function () {}
       });

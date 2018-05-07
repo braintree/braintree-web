@@ -33,7 +33,7 @@ module.exports = function (data) {
   var hasBillingAddress = Object.keys(billingAddress).length > 0;
 
   if ('number' in data) {
-    result.number = data.number;
+    result.number = data.number.replace(/[-\s]/g, '');
   }
 
   if ('cvv' in data) {

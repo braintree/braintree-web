@@ -398,14 +398,14 @@ PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration = f
  *   shippingOptions: shippingOptions
  * };
  *
- * paymentRequest.on('shippingAddressChange', function (event) {
+ * paymentRequestInstance.on('shippingAddressChange', function (event) {
  *   // validate shipping address on event.target.shippingAddress
  *   // make changes to the paymentDetails or shippingOptions if necessary
  *
  *   event.updateWith(paymentDetails)
  * });
  *
- * paymentRequest.on('shippingOptionChange', function (event) {
+ * paymentRequestInstance.on('shippingOptionChange', function (event) {
  *   shippingOptions.forEach(function (option) {
  *     option.selected = option.id === event.target.shippingOption;
  *   });

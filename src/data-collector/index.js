@@ -68,13 +68,13 @@ var errors = require('./errors');
 function create(options) {
   var result = {};
   var instances = [];
-  var teardown = createTeardownMethod(result, instances);
+  var data;
 
   return basicComponentVerification.verify({
     name: 'Data Collector',
     client: options.client
   }).then(function () {
-    var data, kountInstance, fraudnetInstance;
+    var kountInstance;
     var config = options.client.getConfiguration();
 
     if (options.kount === true) {
@@ -101,19 +101,26 @@ function create(options) {
       data = {};
     }
 
-    if (options.paypal === true) {
-      fraudnetInstance = fraudnet.setup();
-      data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
-      instances.push(fraudnetInstance);
+    return Promise.resolve();
+  }).then(function () {
+    if (options.paypal !== true) {
+      return Promise.resolve();
     }
 
+    return fraudnet.setup().then(function (fraudnetInstance) {
+      if (fraudnetInstance) {
+        data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
+        instances.push(fraudnetInstance);
+      }
+    });
+  }).then(function () {
     if (instances.length === 0) {
       return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
     }
 
     result.deviceData = JSON.stringify(data);
     result.rawDeviceData = data;
-    result.teardown = teardown;
+    result.teardown = createTeardownMethod(result, instances);
 
     return result;
   });
@@ -122,11 +129,11 @@ function create(options) {
 function createTeardownMethod(result, instances) {
   return wrapPromise(function teardown() {
     return new Promise(function (resolve) {
-      var i;
-
-      for (i = 0; i < instances.length; i++) {
-        instances[i].teardown();
-      }
+      instances.forEach(function (instance) {
+        if (instance) {
+          instance.teardown();
+        }
+      });
 
       convertMethodsToError(result, methods(result));
 

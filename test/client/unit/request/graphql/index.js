@@ -5,11 +5,11 @@ var GraphQL = require('../../../../../src/client/request/graphql');
 
 describe('GraphQL', function () {
   beforeEach(function () {
-    this.tokenizeUrl = 'https://localhost:3443/merchant_id/client_api/v1/payment_methods/credit_cards?12312';
-    this.tokenizePayPalUrl = 'https://localhost:3443/merchant_id/client_api/v1/payment_methods/paypal?12312';
+    this.tokenizeUrl = 'https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312';
+    this.tokenizePayPalUrl = 'https://localhost/merchant_id/client_api/v1/payment_methods/paypal?12312';
     this.config = {
       graphQL: {
-        url: 'http://localhost:8080/graphql',
+        url: 'http://localhost/graphql',
         features: [
           'tokenize_credit_cards'
         ]
@@ -41,13 +41,13 @@ describe('GraphQL', function () {
     it('returns false if url is not a GraphQL url', function () {
       var gql = new GraphQL(this.config);
 
-      expect(gql.isGraphQLRequest('https://localhost:3443/other', {})).to.equal(false);
+      expect(gql.isGraphQLRequest('https://localhost/other', {})).to.equal(false);
     });
 
     it('returns false if GraphQL configuration is not present', function () {
       var gql = new GraphQL({});
 
-      expect(gql.isGraphQLRequest('https://localhost:3443/other', {})).to.equal(false);
+      expect(gql.isGraphQLRequest('https://localhost/other', {})).to.equal(false);
     });
 
     it('returns false if browser is IE9', function () {

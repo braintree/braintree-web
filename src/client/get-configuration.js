@@ -8,10 +8,11 @@ var uuid = require('../lib/vendor/uuid');
 var constants = require('../lib/constants');
 var createAuthorizationData = require('../lib/create-authorization-data');
 var errors = require('./errors');
+var GraphQL = require('./request/graphql');
 
 function getConfiguration(options) {
   return new Promise(function (resolve, reject) {
-    var configuration, authData, attrs, configUrl;
+    var configuration, authData, attrs, configUrl, reqOptions;
     var sessionId = uuid();
     var analyticsMetadata = {
       merchantAppId: global.location.host,
@@ -37,11 +38,24 @@ function getConfiguration(options) {
     attrs.braintreeLibraryVersion = constants.BRAINTREE_LIBRARY_VERSION;
     attrs.configVersion = '3';
 
-    request({
+    reqOptions = {
       url: configUrl,
       method: 'GET',
       data: attrs
-    }, function (err, response, status) {
+    };
+
+    if (attrs.authorizationFingerprint && authData.graphQLUrl) {
+      reqOptions.graphQL = new GraphQL({
+        graphQL: {
+          url: authData.graphQLUrl,
+          features: ['configuration']
+        }
+      });
+
+      reqOptions.metadata = analyticsMetadata;
+    }
+
+    request(reqOptions, function (err, response, status) {
       var errorTemplate;
 
       if (err) {

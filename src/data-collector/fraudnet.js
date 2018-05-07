@@ -1,19 +1,55 @@
 'use strict';
 
+var Promise = require('../lib/promise');
+var constants = require('./constants');
+
 function setup() {
-  return new Fraudnet();
+  var fraudNet = new Fraudnet();
+
+  return fraudNet.initialize();
 }
 
 function Fraudnet() {
   this.sessionId = _generateSessionId();
   this._beaconId = _generateBeaconId(this.sessionId);
-
-  this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId);
-  this._thirdPartyBlock = _createThirdPartyBlock();
 }
 
+Fraudnet.prototype.initialize = function () {
+  var self = this;
+
+  this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId);
+
+  return _createThirdPartyBlock().then(function (block) {
+    self._thirdPartyBlock = block;
+
+    return self;
+  }).catch(function () {
+    // if the fraudnet script fails to load
+    // we just resolve with nothing
+    // and data collector ignores it
+    return null;
+  });
+};
+
 Fraudnet.prototype.teardown = function () {
-  this._thirdPartyBlock.parentNode.removeChild(this._thirdPartyBlock);
+  var iframe = document.querySelector('iframe[title="ppfniframe"]');
+
+  if (iframe) {
+    iframe.parentNode.removeChild(iframe);
+  }
+
+  iframe = document.querySelector('iframe[title="pbf"]');
+  if (iframe) {
+    iframe.parentNode.removeChild(iframe);
+  }
+
+  if (this._parameterBlock) {
+    this._parameterBlock.parentNode.removeChild(this._parameterBlock);
+  }
+
+  if (this._thirdPartyBlock) {
+    this._thirdPartyBlock.parentNode.removeChild(this._thirdPartyBlock);
+  }
 };
 
 function _generateSessionId() {
@@ -52,48 +88,28 @@ function _createParameterBlock(sessionId, beaconId) {
 }
 
 function _createThirdPartyBlock() {
-  var dom, doc;
-  var scriptBaseURL = 'https://www.paypalobjects.com/webstatic/r/fb/';
-  var iframe = document.createElement('iframe');
+  return new Promise(function (resolve, reject) {
+    var script = document.querySelector('script[src="' + constants.FRAUDNET_LINK_JS + '"]');
 
-  iframe.src = 'about:blank';
-  iframe.title = '';
-  iframe.role = 'presentation'; // a11y
-  (iframe.frameElement || iframe).style.cssText = 'width: 0; height: 0; border: 0; position: absolute; z-index: -999';
-  document.body.appendChild(iframe);
+    if (script) {
+      resolve(script);
 
-  try {
-    doc = iframe.contentWindow.document;
-  } catch (e) {
-    dom = document.domain;
-    iframe.src = 'javascript:var d=document.open();d.domain="' + dom + '";void(0);'; // eslint-disable-line no-script-url
-    doc = iframe.contentWindow.document;
-  }
-
-  doc.open()._l = function () {
-    var js = this.createElement('script');
-
-    if (dom) {
-      this.domain = dom;
+      return;
     }
-    js.id = 'js-iframe-async';
-    js.src = scriptBaseURL + 'fb-all-prod.pp.min.js';
-    this.body.appendChild(js);
-  };
 
-  function listener() { doc._l(); }
+    script = document.createElement('script');
 
-  if (iframe.addEventListener) {
-    iframe.addEventListener('load', listener, false);
-  } else if (iframe.attachEvent) {
-    iframe.attachEvent('onload', listener);
-  } else {
-    doc.write('<body onload="document._l();">');
-  }
+    script.onload = function () {
+      resolve(script);
+    };
+    script.onerror = function () {
+      reject();
+    };
+    script.src = constants.FRAUDNET_LINK_JS;
+    script.async = true;
 
-  doc.close();
-
-  return iframe;
+    document.body.appendChild(script);
+  });
 }
 
 module.exports = {

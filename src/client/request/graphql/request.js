@@ -1,17 +1,22 @@
 'use strict';
 
-var BRAINTREE_VERSION = '2018-03-05';
+var BRAINTREE_VERSION = '2018-05-04';
 
 var assign = require('../../../lib/assign').assign;
 
 var creditCardTokenizationBodyGenerator = require('./generators/credit-card-tokenization');
 var creditCardTokenizationResponseAdapter = require('./adapters/credit-card-tokenization');
 
+var configurationBodyGenerator = require('./generators/configuration');
+var configurationResponseAdapter = require('./adapters/configuration');
+
 var generators = {
-  'payment_methods/credit_cards': creditCardTokenizationBodyGenerator
+  'payment_methods/credit_cards': creditCardTokenizationBodyGenerator,
+  configuration: configurationBodyGenerator
 };
 var adapters = {
-  'payment_methods/credit_cards': creditCardTokenizationResponseAdapter
+  'payment_methods/credit_cards': creditCardTokenizationResponseAdapter,
+  configuration: configurationResponseAdapter
 };
 
 function GraphQLRequest(options) {
@@ -70,7 +75,7 @@ GraphQLRequest.prototype.getHeaders = function () {
 };
 
 GraphQLRequest.prototype.adaptResponseBody = function (parsedBody) {
-  return this._adapter(parsedBody);
+  return this._adapter(parsedBody, this);
 };
 
 GraphQLRequest.prototype.determineStatus = function (httpStatus, parsedResponse) {

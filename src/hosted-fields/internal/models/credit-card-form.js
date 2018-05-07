@@ -1,7 +1,7 @@
 'use strict';
 
 var EventedModel = require('./evented-model');
-var getCardTypes = require('credit-card-type');
+var getCardTypes = require('../../shared/get-card-types');
 var validator = require('card-validator');
 var comparePossibleCardTypes = require('../compare-possible-card-types');
 var constants = require('../../shared/constants');
