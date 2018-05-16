@@ -179,24 +179,24 @@ BaseInput.prototype._addDOMFocusListeners = function () {
   }
 
   element.addEventListener('focus', function () {
+    this.updateModel('isFocused', true);
+  }.bind(this), false);
+
+  element.addEventListener('blur', function () {
+    this.updateModel('isFocused', false);
+  }.bind(this), false);
+
+  global.addEventListener('focus', function () {
     if (this.shouldMask) {
       this.unmaskValue();
     }
     this.updateModel('isFocused', true);
   }.bind(this), false);
 
-  element.addEventListener('blur', function () {
+  global.addEventListener('blur', function () {
     if (this.shouldMask) {
       this.maskValue();
     }
-    this.updateModel('isFocused', false);
-  }.bind(this), false);
-
-  global.addEventListener('focus', function () {
-    this.updateModel('isFocused', true);
-  }.bind(this), false);
-
-  global.addEventListener('blur', function () {
     this.updateModel('isFocused', false);
   }.bind(this), false);
 

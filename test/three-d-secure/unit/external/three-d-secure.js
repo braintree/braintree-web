@@ -368,7 +368,7 @@ describe('ThreeDSecure', function () {
     });
 
     context('when no authentication is required', function () {
-      it('retains verifiaction details object for backwards compatibility', function (done) {
+      it('retains verification details object for backwards compatibility', function (done) {
         // when porting this code from v2, we accdientally put the 3ds info under verifiaction details
         // instead of at the top level
         var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
@@ -395,7 +395,7 @@ describe('ThreeDSecure', function () {
         var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
 
         this.client.request.resolves({
-          paymentMethod: {nonce: 'upgraded-nonce'},
+          paymentMethod: {nonce: 'upgraded-nonce', details: {cardType: 'Visa'}},
           threeDSecureInfo: threeDSecureInfo
         });
 
@@ -407,6 +407,7 @@ describe('ThreeDSecure', function () {
         }, function (err, data) {
           expect(err).not.to.exist;
           expect(data.nonce).to.equal('upgraded-nonce');
+          expect(data.details).to.deep.equal({cardType: 'Visa'});
           expect(data.liabilityShiftPossible).to.equal(threeDSecureInfo.liabilityShiftPossible);
           expect(data.liabilityShifted).to.equal(threeDSecureInfo.liabilityShifted);
 
@@ -667,6 +668,17 @@ describe('ThreeDSecure', function () {
             success: true,
             paymentMethod: {
               nonce: 'auth-success-nonce',
+              binData: {
+                prepaid: 'No',
+                healthcare: 'Unknown',
+                debit: 'Unknown',
+                durbinRegulated: 'Unknown',
+                commercial: 'Unknown',
+                payroll: 'Unknown',
+                issuingBank: 'Unknown',
+                countryOfIssuance: 'CAN',
+                productId: 'Unknown'
+              },
               details: {
                 last2: 11
               },
@@ -721,6 +733,17 @@ describe('ThreeDSecure', function () {
             expect(err).not.to.exist;
             expect(data).to.deep.equal({
               nonce: 'auth-success-nonce',
+              binData: {
+                prepaid: 'No',
+                healthcare: 'Unknown',
+                debit: 'Unknown',
+                durbinRegulated: 'Unknown',
+                commercial: 'Unknown',
+                payroll: 'Unknown',
+                issuingBank: 'Unknown',
+                countryOfIssuance: 'CAN',
+                productId: 'Unknown'
+              },
               details: {
                 last2: 11
               },
@@ -728,6 +751,20 @@ describe('ThreeDSecure', function () {
               liabilityShiftPossible: true,
               liabilityShifted: true
             });
+
+            done();
+          });
+        });
+
+        it('replaces + with a space in description parameter', function (done) {
+          this.authResponse.paymentMethod.description = 'A+description+with+pluses';
+          this.threeDSecure.verifyCard({
+            nonce: 'abc123',
+            amount: 100,
+            addFrame: this.makeAddFrameFunction(this.authResponse),
+            removeFrame: noop
+          }, function (err, data) {
+            expect(data.description).to.equal('A description with pluses');
 
             done();
           });

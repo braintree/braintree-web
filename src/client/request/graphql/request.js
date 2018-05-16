@@ -1,6 +1,6 @@
 'use strict';
 
-var BRAINTREE_VERSION = '2018-05-04';
+var BRAINTREE_VERSION = require('../../constants').BRAINTREE_VERSION;
 
 var assign = require('../../../lib/assign').assign;
 

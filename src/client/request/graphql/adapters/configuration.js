@@ -18,7 +18,7 @@ var cardTypeTransforms = {
   },
   applePayWeb: {
     VISA: 'visa',
-    MASTERCARD: 'masterCard',
+    MASTERCARD: 'mastercard',
     DISCOVER: 'discover',
     AMERICAN_EXPRESS: 'amex'
   },
@@ -88,7 +88,9 @@ function adaptConfigurationResponseBody(body, ctx) {
 
   if (configuration.applePayWeb) {
     response.applePayWeb = configuration.applePayWeb;
-    response.applePayWeb.supportedCardBrands = mapCardTypes(configuration.applePayWeb.supportedCardBrands, cardTypeTransforms.applePayWeb);
+    response.applePayWeb.supportedNetworks = mapCardTypes(configuration.applePayWeb.supportedCardBrands, cardTypeTransforms.applePayWeb);
+
+    delete response.applePayWeb.supportedCardBrands;
   }
 
   if (configuration.ideal) {

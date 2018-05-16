@@ -1,5 +1,15 @@
 CHANGELOG
 =========
+## 3.34.0
+* Apple Pay
+  * Fix issue with Apple Pay configuration [#365](https://github.com/braintree/braintree-web/issues/365)
+* Hosted Fields
+  * Include data about the containers for invalid fields in tokenization error (#359)
+  * Fix issue where inputs would not mask in iOS
+* 3D Secure
+  * Fix issue where payment method details were not provided in the flow where an iframe is not needed
+  * Fix issue where description in verify card payload was coming back with `+` symbols instead of spaces
+  * Add binData property to verify card payload
 
 ## 3.33.0
 * Internal performance optimizations

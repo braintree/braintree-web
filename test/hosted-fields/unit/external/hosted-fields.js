@@ -9,6 +9,7 @@ var EventEmitter = require('../../../../src/lib/event-emitter');
 var BraintreeError = require('../../../../src/lib/braintree-error');
 var Promise = require('../../../../src/lib/promise');
 var fake = require('../../../helpers/fake');
+var rejectIfResolves = require('../../../helpers/promise-helper').rejectIfResolves;
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
 var getCardTypes = require('credit-card-type');
@@ -448,27 +449,76 @@ describe('HostedFields', function () {
       });
     });
 
-    it('emits TOKENIZATION_REQUEST with empty options', function () {
+    it('emits TOKENIZATION_REQUEST with empty options', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance.tokenize(this.sandbox.stub());
-      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, {}, this.sandbox.match.func);
+      instance._bus.emit.yieldsAsync([]);
+      instance.tokenize(function () {
+        expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, {}, this.sandbox.match.func);
+        done();
+      }.bind(this));
     });
 
-    it('emits TOKENIZATION_REQUEST with options', function () {
+    it('emits TOKENIZATION_REQUEST with options', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
       var options = {foo: 'bar'};
 
-      instance.tokenize(options, this.sandbox.stub());
-      expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, options, this.sandbox.match.func);
+      instance._bus.emit.yieldsAsync([]);
+      instance.tokenize(options, function () {
+        expect(instance._bus.emit).to.be.calledWith(events.TOKENIZATION_REQUEST, options, this.sandbox.match.func);
+        done();
+      }.bind(this));
+    });
+
+    it('rejects with a Braintree error object', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+      var error = {
+        name: 'BraintreeError',
+        code: 'HOSTED_FIELDS_FIELDS_INVALID',
+        message: 'Something',
+        type: 'CUSTOMER'
+      };
+
+      instance._bus.emit.yieldsAsync([error]);
+
+      return instance.tokenize().then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+      });
+    });
+
+    it('rejects with an object of invalid field containers', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+      var error = {
+        name: 'BraintreeError',
+        code: 'HOSTED_FIELDS_FIELDS_INVALID',
+        message: 'Something',
+        type: 'CUSTOMER',
+        details: {
+          invalidFieldKeys: ['cvv', 'number']
+        }
+      };
+
+      instance._fields = {
+        cvv: {containerElement: {}},
+        number: {containerElement: {}}
+      };
+
+      instance._bus.emit.yieldsAsync([error]);
+
+      return instance.tokenize().then(rejectIfResolves).catch(function (err) {
+        expect(err.details.invalidFields).to.deep.equal({
+          cvv: instance._fields.cvv.containerElement,
+          number: instance._fields.number.containerElement
+        });
+      });
     });
 
     it('calls the callback when options are not provided', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yieldsAsync(['foo']);
+      instance._bus.emit.yieldsAsync([null, 'foo']);
 
-      instance.tokenize(function (data) {
+      instance.tokenize(function (err, data) {
         expect(data).to.equal('foo');
         done();
       });
@@ -477,9 +527,9 @@ describe('HostedFields', function () {
     it('calls the callback when options are provided', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yieldsAsync(['foo']);
+      instance._bus.emit.yieldsAsync([null, 'foo']);
 
-      instance.tokenize({foo: 'bar'}, function (data) {
+      instance.tokenize({foo: 'bar'}, function (err, data) {
         expect(data).to.equal('foo');
         done();
       });
@@ -489,11 +539,15 @@ describe('HostedFields', function () {
       var promise;
       var instance = new HostedFields(this.defaultConfiguration);
 
-      instance._bus.emit.yieldsAsync(['foo']);
+      instance._bus.emit.yieldsAsync([null, 'foo']);
 
       promise = instance.tokenize();
 
       expect(promise).to.be.an.instanceof(Promise);
+
+      return promise.then(function (data) {
+        expect(data).to.equal('foo');
+      });
     });
   });
 

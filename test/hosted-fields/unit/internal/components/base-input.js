@@ -117,7 +117,6 @@ describe('Base Input', function () {
               // and polluting other tests
               this.sandbox.stub(document.documentElement, 'addEventListener');
               this.sandbox.stub(document, 'addEventListener');
-              this.sandbox.stub(global, 'addEventListener');
             });
 
             it('applies if provided', function () {
@@ -127,21 +126,21 @@ describe('Base Input', function () {
               instance = new BaseInput({model: this.model});
               instance._addDOMFocusListeners();
 
-              triggerEvent('focus', instance.element);
+              triggerEvent('focus', global);
               instance.element.value = 'abc 1234-asdf /asdf';
-              triggerEvent('blur', instance.element);
+              triggerEvent('blur', global);
 
               expect(instance.element.value).to.equal('••• ••••-•••• /••••');
-              triggerEvent('focus', instance.element);
+              triggerEvent('focus', global);
               expect(instance.element.value).to.equal('abc 1234-asdf /asdf');
             });
 
             it('does not apply if not defined', function () {
               this.instance._addDOMFocusListeners();
 
-              triggerEvent('focus', this.instance.element);
+              triggerEvent('focus', global);
               this.instance.element.value = 'abc 1234-asdf /asdf';
-              triggerEvent('blur', this.instance.element);
+              triggerEvent('blur', global);
 
               expect(this.instance.element.value).to.equal('abc 1234-asdf /asdf');
             });

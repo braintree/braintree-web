@@ -81,7 +81,10 @@ clientToken = configuration().gatewayConfiguration;
 clientToken.authorizationFingerprint = 'encoded_auth_fingerprint';
 
 clientTokenWithGraphQL = assign({
-  graphQLUrl: 'https://localhost/graphql'
+  graphQL: {
+    url: 'https://localhost/graphql',
+    date: '2018-05-08'
+  }
 }, clientToken);
 
 clientTokenWithGraphQL = btoa(JSON.stringify(clientTokenWithGraphQL));

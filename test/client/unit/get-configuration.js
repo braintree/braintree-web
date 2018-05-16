@@ -177,7 +177,7 @@ describe('getConfiguration', function () {
 
   describe('GraphQL configuration', function () {
     describe('client token', function () {
-      it('creates a GraphQL instance when GraphQL URL is present', function (done) {
+      it('creates a GraphQL instance when GraphQLConfiguration is present', function (done) {
         this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
           expect(options.graphQL).to.be.instanceof(GraphQL);
           done();
@@ -186,7 +186,7 @@ describe('getConfiguration', function () {
         getConfiguration({authorization: fake.clientTokenWithGraphQL});
       });
 
-      it('does not create a GraphQL instance when GraphQL URL is not present', function (done) {
+      it('does not create a GraphQL instance when GraphQLConfiguration is not present', function (done) {
         this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
           expect(options.graphQL).not.to.exist;
           done();

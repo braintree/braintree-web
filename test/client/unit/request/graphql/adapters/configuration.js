@@ -137,7 +137,7 @@ describe('GraphQL Configuration', function () {
           countryCode: 'US',
           currencyCode: 'USD',
           merchantIdentifier: 'merchant_id',
-          supportedCardBrands: ['visa', 'masterCard', 'amex', 'discover']
+          supportedNetworks: ['visa', 'mastercard', 'amex', 'discover']
         },
         kount: {
           kountMerchantId: '600000'

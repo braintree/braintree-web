@@ -28,6 +28,16 @@ var IFRAME_WIDTH = 400;
  * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
  * @property {string} description A human-readable description.
+ * @property {object} binData Information about the card based on the bin.
+ * @property {string} binData.commercial Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.countryOfIssuance The country of issuance.
+ * @property {string} binData.debit Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.durbinRegulated Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.healthcare Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.issuingBank The issuing bank.
+ * @property {string} binData.payroll Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.prepaid Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.productId The product id.
  * @property {boolean} liabilityShiftPossible Indicates whether the card was eligible for 3D Secure.
  * @property {boolean} liabilityShifted Indicates whether the liability for fraud has been shifted away from the merchant.
  */
@@ -240,6 +250,7 @@ ThreeDSecure.prototype.cancelVerifyCard = function () {
 };
 
 ThreeDSecure.prototype._handleLookupResponse = function (options) {
+  var details;
   var lookupResponse = options.lookupResponse;
 
   if (lookupResponse.lookup && lookupResponse.lookup.acsUrl && lookupResponse.lookup.acsUrl.length > 0) {
@@ -249,12 +260,10 @@ ThreeDSecure.prototype._handleLookupResponse = function (options) {
       removeFrame: options.removeFrame
     }));
   } else {
-    this._verifyCardCallback(null, {
-      nonce: lookupResponse.paymentMethod.nonce,
-      liabilityShiftPossible: lookupResponse.threeDSecureInfo.liabilityShiftPossible,
-      liabilityShifted: lookupResponse.threeDSecureInfo.liabilityShifted,
-      verificationDetails: lookupResponse.threeDSecureInfo
-    });
+    details = this._formatAuthResponse(lookupResponse.paymentMethod, lookupResponse.threeDSecureInfo);
+    details.verificationDetails = lookupResponse.threeDSecureInfo;
+
+    this._verifyCardCallback(null, details);
   }
 };
 
@@ -326,8 +335,9 @@ ThreeDSecure.prototype._handleAuthResponse = function (data, options) {
 ThreeDSecure.prototype._formatAuthResponse = function (paymentMethod, threeDSecureInfo) {
   return {
     nonce: paymentMethod.nonce,
+    binData: paymentMethod.binData,
     details: paymentMethod.details,
-    description: paymentMethod.description,
+    description: paymentMethod.description && paymentMethod.description.replace(/\+/g, ' '),
     liabilityShifted: threeDSecureInfo.liabilityShifted,
     liabilityShiftPossible: threeDSecureInfo.liabilityShiftPossible
   };
