@@ -12,7 +12,7 @@ var fake = require('../../../helpers/fake');
 var rejectIfResolves = require('../../../helpers/promise-helper').rejectIfResolves;
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
-var getCardTypes = require('credit-card-type');
+var getCardTypes = require('../../../../src/hosted-fields/shared/get-card-types');
 
 describe('HostedFields', function () {
   beforeEach(function () {

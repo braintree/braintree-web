@@ -30,7 +30,7 @@ function forkBrowserify(options, done) {
   }
 
   buildCmdArray = [
-    `browserify -p browserify-derequire --no-builtins ${flags} ${standalone} ${transforms} "${options.main}"`,
+    `browserify -p browserify-derequire --no-builtins --insert-global-vars global ${flags} ${standalone} ${transforms} "${options.main}"`,
     '|',
     `cat ${prependFiles} - ${appendFiles} > ${unminifiedFile}`
   ];

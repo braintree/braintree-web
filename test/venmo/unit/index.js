@@ -68,6 +68,18 @@ describe('venmo.create', function () {
       });
     });
 
+    it('errors out if options.profileId is present but not a string', function () {
+      return create({
+        client: this.client,
+        profileId: 1234
+      }).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('VENMO_INVALID_PROFILE_ID');
+        expect(err.message).to.equal('Venmo profile ID is invalid.');
+      });
+    });
+
     it('sends an analytics event when successful', function () {
       return create({client: this.client}).then(function () {
         expect(analytics.sendEvent).to.be.calledOnce;
@@ -108,6 +120,20 @@ describe('venmo.create', function () {
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('VENMO_NOT_ENABLED');
         expect(err.message).to.equal('Venmo is not enabled for this merchant.');
+        expect(thingy).not.to.exist;
+        done();
+      });
+    });
+
+    it('errors out if options.profileId is present but not a string', function (done) {
+      create({
+        client: this.client,
+        profileId: 1234
+      }, function (err, thingy) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('VENMO_INVALID_PROFILE_ID');
+        expect(err.message).to.equal('Venmo profile ID is invalid.');
         expect(thingy).not.to.exist;
         done();
       });

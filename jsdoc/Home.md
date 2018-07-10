@@ -137,12 +137,12 @@ If you happen to call this method while the instance's `teardown` is in progress
 You will need to add the following directives to your policy:
 
 |             | Sandbox                                                                                                                   | Production                                                                                        |
-|-------------|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| script-src  | js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com                                         | js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com                 |
-| style-src   | 'unsafe-inline'                                                                                                           | 'unsafe-inline'                                                                                   |
-| img-src     | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                                             | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                     |
-| child-src   | assets.braintreegateway.com<br/>c.paypal.com                                                                              | assets.braintreegateway.com<br/>c.paypal.com                                                      |
-| frame-src   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                                                   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                           |
-| connect-src | api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>payments.sandbox.braintree-api.com | api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>payments.braintree-api.com |
+|-------------|---------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| script-src  | js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com<br/>c.paypal.com                        | js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com<br/>c.paypal.com |
+| style-src   | 'unsafe-inline'                                                                                                           | 'unsafe-inline'                                                                                    |
+| img-src     | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                                             | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                      |
+| child-src   | assets.braintreegateway.com<br/>c.paypal.com                                                                              | assets.braintreegateway.com<br/>c.paypal.com                                                       |
+| frame-src   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                                                   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                            |
+| connect-src | api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>payments.sandbox.braintree-api.com | api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>payments.braintree-api.com  |
 
 Including `*.cardinalcommerce.com` in `frame-src` is only required if you are using [3D Secure](module-braintree-web_three-d-secure.html).

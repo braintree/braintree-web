@@ -1,5 +1,18 @@
 CHANGELOG
 =========
+## 3.34.1
+* Update credit-card-type to v7.0.0
+* Update card-validator to v5.0.0
+* Client
+  * Fix client cache issue when using teardown
+* Data Collector
+  * Hide 1px Kount iframe
+* Hosted Fields
+  * Fix improper validation on iPad keyboards for expiration date field [#369](https://github.com/braintree/braintree-web/issues/369)
+  * Fix issue where extra history events would be added in Chrome and Firefox
+* Venmo
+  * Add validation for profile ids (must be strings)
+
 ## 3.34.0
 * Apple Pay
   * Fix issue with Apple Pay configuration [#365](https://github.com/braintree/braintree-web/issues/365)

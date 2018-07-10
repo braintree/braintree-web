@@ -2,7 +2,7 @@
 
 var assign = require('../../../../../src/lib/assign').assign;
 var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
-var getCardTypes = require('credit-card-type');
+var getCardTypes = require('../../../../../src/hosted-fields/shared/get-card-types');
 var nextYear = (new Date().getFullYear() + 1).toString();
 var events = require('../../../../../src/hosted-fields/shared/constants').events;
 var externalEvents = require('../../../../../src/hosted-fields/shared/constants').externalEvents;

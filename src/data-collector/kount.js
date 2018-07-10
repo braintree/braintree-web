@@ -89,6 +89,9 @@ Kount.prototype._setupIFrame = function () {
   iframe.height = 1;
   iframe.frameBorder = 0;
   iframe.scrolling = 'no';
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-999999px';
+  iframe.style.top = '-999999px';
 
   document.body.appendChild(iframe);
   setTimeout(function () {

@@ -41,6 +41,10 @@ function create(options) {
       return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
     }
 
+    if (options.profileId && typeof options.profileId !== 'string') {
+      return Promise.reject(new BraintreeError(errors.VENMO_INVALID_PROFILE_ID));
+    }
+
     instance = new Venmo(options);
 
     analytics.sendEvent(options.client, 'venmo.initialized');

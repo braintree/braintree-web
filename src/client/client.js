@@ -72,6 +72,7 @@ function Client(configuration) {
     return JSON.parse(configurationJSON);
   };
 
+  this._activeCache = true;
   this._request = request;
   this._configuration = this.getConfiguration();
 
@@ -349,6 +350,8 @@ Client.prototype.getVersion = function () {
  */
 Client.prototype.teardown = wrapPromise(function () {
   var self = this; // eslint-disable-line no-invalid-this
+
+  self._activeCache = false;
 
   convertMethodsToError(self, methods(Client.prototype));
 

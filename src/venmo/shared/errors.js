@@ -27,5 +27,10 @@ module.exports = {
     type: BraintreeError.types.CUSTOMER,
     code: 'VENMO_CANCELED',
     message: 'User canceled Venmo authorization, or Venmo app is not available.'
+  },
+  VENMO_INVALID_PROFILE_ID: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'VENMO_INVALID_PROFILE_ID',
+    message: 'Venmo profile ID is invalid.'
   }
 };

@@ -38,7 +38,7 @@ function create(options) {
     }));
   }
 
-  if (cachedClients[options.authorization]) {
+  if (cachedClients[options.authorization] && cachedClients[options.authorization]._activeCache) {
     return Promise.resolve(cachedClients[options.authorization]);
   }
 

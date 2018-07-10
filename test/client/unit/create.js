@@ -84,6 +84,16 @@ describe('client.create', function () {
     });
   });
 
+  it('invalidates cached client on teardown', function () {
+    return client.create({authorization: fake.tokenizationKey}).then(function (firstFakeClient) {
+      firstFakeClient.teardown();
+
+      return client.create({authorization: fake.tokenizationKey}).then(function (secondFakeClient) {
+        expect(firstFakeClient).to.not.equal(secondFakeClient);
+      });
+    });
+  });
+
   it('errors out when configuration endpoint is not reachable', function () {
     this.getSpy.restore();
     this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields({errors: 'Unknown error'});

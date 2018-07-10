@@ -181,10 +181,20 @@ function uniq(array) {
 CreditCardForm.prototype._validateNumber = function (value) {
   var validationResult = validator.number(value);
   var card = validationResult.card;
-  var possibleCardTypes = this.getCardTypes(value).filter(function (cardType) {
+  var possibleCardTypes, possibleCardType;
+
+  // TODO credit-card-type fixed the mastercard enum
+  // but we still pass master-card in the braintree API
+  // in a major version bump, we can remove this and
+  // this will be mastercard instead of master-card
+  if (card && card.type === 'mastercard') {
+    card.type = 'master-card';
+  }
+
+  possibleCardTypes = this.getCardTypes(value).filter(function (cardType) {
     return card && cardType.type === card.type;
   });
-  var possibleCardType = possibleCardTypes[0];
+  possibleCardType = possibleCardTypes[0];
 
   if (possibleCardType && Boolean(possibleCardType.supported) === false) {
     delete validationResult.card;
