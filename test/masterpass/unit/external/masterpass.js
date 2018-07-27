@@ -854,7 +854,7 @@ describe('Masterpass', function () {
 
           return this.masterpass.tokenize(this.options).then(function () {
             expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=development&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6$/));
+            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6$/));
           }.bind(this));
         });
 
@@ -876,7 +876,7 @@ describe('Masterpass', function () {
 
           return this.masterpass.tokenize(options).then(function () {
             expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=development&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=OTHER_MERCHANT_ID&allowedCardTypes=visa&version=v6&paramKey=paramValue$/));
+            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=OTHER_MERCHANT_ID&allowedCardTypes=visa&version=v6&paramKey=paramValue$/));
           }.bind(this));
         });
 
@@ -897,7 +897,7 @@ describe('Masterpass', function () {
 
           return this.masterpass.tokenize(options).then(function () {
             expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=development&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v7&paramKey=paramValue$/));
+            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v7&paramKey=paramValue$/));
           }.bind(this));
         });
 
@@ -918,7 +918,7 @@ describe('Masterpass', function () {
 
           return this.masterpass.tokenize(options).then(function () {
             expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=development&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6&paramKey=paramValue$/));
+            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6&paramKey=paramValue$/));
           }.bind(this));
         });
       });

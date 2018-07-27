@@ -303,7 +303,8 @@ ThreeDSecure.prototype._createIframe = function (options) {
     src: url,
     height: IFRAME_HEIGHT,
     width: IFRAME_WIDTH,
-    name: constants.LANDING_FRAME_NAME + '_' + this._bus.channel
+    name: constants.LANDING_FRAME_NAME + '_' + this._bus.channel,
+    title: '3D Secure Authorization Frame'
   });
 
   return this._bankIframe;

@@ -40,6 +40,11 @@ module.exports = {
     code: 'CLIENT_REQUEST_ERROR',
     message: 'There was a problem with your request.'
   },
+  CLIENT_GRAPHQL_REQUEST_ERROR: {
+    type: BraintreeError.types.NETWORK,
+    code: 'CLIENT_GRAPHQL_REQUEST_ERROR',
+    message: 'There was a problem with your request.'
+  },
   CLIENT_RATE_LIMITED: {
     type: BraintreeError.types.MERCHANT,
     code: 'CLIENT_RATE_LIMITED',

@@ -1,5 +1,10 @@
 CHANGELOG
 =========
+## 3.35.0
+* Add title attribute to iframes to improve accessibility for screenreaders (#374)
+* Vault Manager
+  * Expose if fetched payment methods have an associated subscription
+
 ## 3.34.1
 * Update credit-card-type to v7.0.0
 * Update card-validator to v5.0.0

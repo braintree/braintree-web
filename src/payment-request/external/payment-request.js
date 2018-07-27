@@ -202,7 +202,8 @@ PaymentRequestComponent.prototype.initialize = function () {
     style: {
       position: 'absolute',
       left: '-9999px'
-    }
+    },
+    title: 'Secure Payment Frame'
   });
 
   if (this._defaultSupportedPaymentMethods.length === 0) {

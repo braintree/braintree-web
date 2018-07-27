@@ -1,9 +1,18 @@
 'use strict';
 
-var methods = require('../lib/methods');
+var analytics = require('../lib/analytics');
+var BraintreeError = require('../lib/braintree-error');
+var errors = require('./errors');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
+var methods = require('../lib/methods');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
+
+var DELETE_PAYMENT_METHOD_MUTATION = 'mutation DeletePaymentMethodFromSingleUseToken($input: DeletePaymentMethodFromSingleUseTokenInput!) {' +
+'  deletePaymentMethodFromSingleUseToken(input: $input) {' +
+'    clientMutationId' +
+'  }' +
+'}';
 
 /**
  * @typedef {array} VaultManager~fetchPaymentMethodsPayload The customer's payment methods.
@@ -58,7 +67,76 @@ VaultManager.prototype.fetchPaymentMethods = function (options) {
       defaultFirst: defaultFirst
     }
   }).then(function (paymentMethodsPayload) {
+    analytics.sendEvent(this._client, 'vault-manager.fetch-payment-methods.succeeded');
+
     return paymentMethodsPayload.paymentMethods.map(formatPaymentMethodPayload);
+  }.bind(this));
+};
+
+/**
+ * Deletes a payment method owned by the customer whose id was used to generate the client token used to create the {@link module:braintree-web/client|client}.
+ * @public
+ * @ignore TODO hide from jsdoc for now until the GraphQL API is on for all merchants by default
+ * @param {string} paymentMethodNonce The payment method nonce that references a vaulted payment method.
+ * @param {callback} [callback] No data is returned if the operation is successful.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @example
+ * vaultManagerInstance.deletePaymentMethod('nonce-to-delete', function (err) {
+ *   // handle err if it exists
+ * });
+ */
+VaultManager.prototype.deletePaymentMethod = function (paymentMethodNonce) {
+  var client = this._client;
+  var usesClientToken = this._client.getConfiguration().authorizationType === 'CLIENT_TOKEN';
+
+  if (!usesClientToken) {
+    return Promise.reject(new BraintreeError(errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN));
+  }
+
+  return this._client.request({
+    api: 'graphQLApi',
+    data: {
+      query: DELETE_PAYMENT_METHOD_MUTATION,
+      variables: {
+        input: {
+          singleUseTokenId: paymentMethodNonce
+        }
+      },
+      operationName: 'DeletePaymentMethodFromSingleUseToken'
+    }
+  }).then(function () {
+    analytics.sendEvent(client, 'vault-manager.delete-payment-method.succeeded');
+
+    // noop to prevent sending back the raw graphql data
+  }).catch(function (error) {
+    var originalError = error.details.originalError;
+    var formattedError;
+
+    analytics.sendEvent(client, 'vault-manager.delete-payment-method.failed');
+
+    if (originalError[0] && originalError[0].extensions.errorClass === 'NOT_FOUND') {
+      formattedError = new BraintreeError({
+        type: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.type,
+        code: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.code,
+        message: 'A payment method for payment method nonce `' + paymentMethodNonce + '` could not be found.',
+        details: {
+          originalError: originalError
+        }
+      });
+    }
+
+    if (!formattedError) {
+      formattedError = new BraintreeError({
+        type: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.type,
+        code: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.code,
+        message: 'An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `' + paymentMethodNonce + '`.',
+        details: {
+          originalError: originalError
+        }
+      });
+    }
+
+    return Promise.reject(formattedError);
   });
 };
 
@@ -67,6 +145,7 @@ function formatPaymentMethodPayload(paymentMethod) {
     nonce: paymentMethod.nonce,
     'default': paymentMethod.default,
     details: paymentMethod.details,
+    hasSubscription: paymentMethod.hasSubscription,
     type: paymentMethod.type
   };
 

@@ -1,0 +1,17 @@
+'use strict';
+
+module.exports = {
+  VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN: {
+    type: 'MERCHANT',
+    code: 'VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN',
+    message: 'A client token with a customer id must be used to delete a payment method nonce.'
+  },
+  VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND: {
+    type: 'MERCHANT',
+    code: 'VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND'
+  },
+  VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR: {
+    type: 'UNKNOWN',
+    code: 'VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR'
+  }
+};

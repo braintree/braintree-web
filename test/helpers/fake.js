@@ -10,7 +10,7 @@ function configuration() {
     gatewayConfiguration: {
       merchantId: 'merchant-id',
       assetsUrl: 'https://assets.braintreegateway.com',
-      environment: 'development',
+      environment: 'sandbox',
       configUrl: 'https://braintreegateway.com/config',
       clientApiUrl: 'https://braintreegateway.com',
       creditCards: {
@@ -73,7 +73,8 @@ function client(options) {
     },
     getVersion: function () {
       return options.version || constants.VERSION;
-    }
+    },
+    request: function () {}
   };
 }
 

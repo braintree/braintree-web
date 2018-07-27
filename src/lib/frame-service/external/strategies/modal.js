@@ -35,7 +35,8 @@ Modal.prototype.open = function () {
     scrolling: 'yes',
     height: '100%',
     width: '100%',
-    style: assign({}, ELEMENT_STYLES)
+    style: assign({}, ELEMENT_STYLES),
+    title: 'Lightbox Frame'
   };
 
   if (browserDetection.isIos()) {

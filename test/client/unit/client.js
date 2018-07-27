@@ -1,6 +1,7 @@
 'use strict';
 
 var Client = require('../../../src/client/client');
+var BRAINTREE_VERSION = require('../../../src/client/constants').BRAINTREE_VERSION;
 var VERSION = process.env.npm_package_version;
 var Promise = require('../../../src/lib/promise');
 var fake = require('../../helpers/fake');
@@ -176,6 +177,37 @@ describe('Client', function () {
       });
     });
 
+    it('does not require a method and endpoint when using graphQLApi', function (done) {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request').yields(null, {}, 200);
+
+      client.request({
+        api: 'graphQLApi'
+      }, function (err) {
+        expect(err).to.not.exist;
+        expect(client._request).to.be.calledOnce;
+        done();
+      });
+    });
+
+    it('rejects with error when graphQLApi request comes back with a 200 and an errors object', function (done) {
+      var client = new Client(fake.configuration());
+      var errors = [{}];
+
+      this.sandbox.stub(client, '_request').yields(null, {errors: errors}, 200);
+
+      client.request({
+        api: 'graphQLApi'
+      }, function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_GRAPHQL_REQUEST_ERROR');
+        expect(err.details.originalError).to.equal(errors);
+        done();
+      });
+    });
+
     it('calls callback with an error when passed a bogus API', function (done) {
       var client = new Client(fake.configuration());
 
@@ -296,6 +328,57 @@ describe('Client', function () {
       expect(client._request).to.be.calledWith(this.sandbox.match({
         method: 'get',
         url: 'https://example.braintree-api.com/status'
+      }));
+    });
+
+    it('calls driver with GraphQL formatted request when using graphQLApi', function () {
+      var client = new Client(fake.configuration());
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'graphQLApi',
+        data: {foo: 'bar'}
+      }, function () {});
+
+      expect(client._request).to.be.calledWith(this.sandbox.match({
+        data: {
+          clientSdkMetadata: {
+            source: 'client',
+            integration: 'custom',
+            sessionId: 'fakeSessionId'
+          },
+          foo: 'bar'
+        },
+        method: 'post',
+        url: 'https://payments.sandbox.braintree-api.com/graphql',
+        headers: {
+          Authorization: 'Bearer development_testing_merchant_id',
+          'Braintree-Version': BRAINTREE_VERSION
+        }
+      }));
+    });
+
+    it('uses authorization fingerprint for auth header if available in graphQLApi', function () {
+      var conf = fake.configuration();
+      var client;
+
+      conf.authorization = fake.clientToken;
+
+      client = new Client(conf);
+
+      this.sandbox.stub(client, '_request');
+
+      client.request({
+        api: 'graphQLApi',
+        data: {foo: 'bar'}
+      }, function () {});
+
+      expect(client._request).to.be.calledWith(this.sandbox.match({
+        headers: {
+          Authorization: 'Bearer encoded_auth_fingerprint',
+          'Braintree-Version': BRAINTREE_VERSION
+        }
       }));
     });
 
