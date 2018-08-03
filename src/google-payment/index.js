@@ -1,7 +1,7 @@
 'use strict';
 /**
  * @module braintree-web/google-payment
- * @description A component to integrate with Google Pay. The majority of the integration uses [Google's pay.js JavaScript file](https://payments.developers.google.com/js/apis/pay.js). The Braintree component generates the configuration object necessary for Google Pay to initiate the Payment Request and parse the returned data to retrieve the payment method nonce which is used to process the transaction on the server.
+ * @description A component to integrate with Google Pay. The majority of the integration uses [Google's pay.js JavaScript file](https://pay.google.com/gp/p/js/pay.js). The Braintree component generates the configuration object necessary for Google Pay to initiate the Payment Request and parse the returned data to retrieve the payment method nonce which is used to process the transaction on the server.
  */
 
 var basicComponentVerification = require('../lib/basic-component-verification');
@@ -18,8 +18,8 @@ var VERSION = process.env.npm_package_version;
  * @param {Client} options.client A {@link Client} instance.
  * @param {callback} [callback] The second argument, `data`, is the {@link GooglePayment} instance. If no callback is provided, `create` returns a promise that resolves with the {@link GooglePayment} instance.
  * @example <caption>Simple Example</caption>
- * // include https://payments.developers.google.com/js/apis/pay.js in a script tag
- * // on your page to load the `google.api.PaymentsClient` global object.
+ * // include https://pay.google.com/gp/p/js/pay.js in a script tag
+ * // on your page to load the `google.payments.api.PaymentsClient` global object.
  *
  * var paymentButton = document.querySelector('#google-pay-button');
  * var paymentsClient = new google.payments.api.PaymentsClient({
