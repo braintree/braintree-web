@@ -45,9 +45,9 @@ function GooglePayment(options) {
 /**
  * Create a configuration object for use in the `loadPaymentData` method.
  * @public
- * @param {object} overrides The supplied parameters for creating the Payment Data Request object. Only required parameters are the `merchantId` provided by Google and a `transactionInfo` object, but any of the parameters in the Payment Data Request can be overwritten. See https://developers.google.com/payments/web/object-reference#PaymentDataRequest
+ * @param {object} overrides The supplied parameters for creating the PaymentDataRequest object. Only required parameters are the `merchantId` provided by Google and a `transactionInfo` object, but any of the parameters in the PaymentDataRequest can be overwritten. See https://developers.google.com/pay/api/web/reference/object#PaymentDataRequest
  * @param {string} merchantId The merchant id provided by registering with Google.
- * @param {object} transactionInfo See https://developers.google.com/payments/web/object-reference#TransactionInfo for more information.
+ * @param {object} transactionInfo See https://developers.google.com/pay/api/web/reference/object#TransactionInfo for more information.
  * @example
  * var configuration = googlePaymentInstance.createPaymentDataRequest({
  *   merchantId: 'my-merchant-id-from-google',
@@ -65,7 +65,7 @@ function GooglePayment(options) {
  *   // handle response with googlePaymentInstance.parseResponse
  *   // (see below)
  * });
- * @returns {object} Returns a configuration object for Google Payment Request.
+ * @returns {object} Returns a configuration object for Google PaymentDataRequest.
  */
 GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
   analytics.sendEvent(this._client, 'google-payment.createPaymentDataRequest');
