@@ -1,5 +1,26 @@
 'use strict';
 
+/**
+ * @name BraintreeError.Shared Interal Error Codes
+ * @ignore
+ * @description These codes should never be experienced by the mechant directly.
+ * @property {INTERNAL} INVALID_USE_OF_INTERNAL_FUNCTION Occurs when the client is created without a gateway configuration. Should never happen.
+ */
+
+/**
+ * @name BraintreeError.Shared Errors - Component Creation Error Codes
+ * @description Errors that occur when creating components.
+ * @property {MERCHANT} INSTANTIATION_OPTION_REQUIRED Occurs when a compoennt is created that is missing a required option.
+ * @property {MERCHANT} INCOMPATIBLE_VERSIONS Occurs when a component is created with a client with a different version than the component.
+ */
+
+/**
+ * @name BraintreeError.Shared Errors - Component Instance Error Codes
+ * @description Errors that occur when using instances of components.
+ * @property {MERCHANT} METHOD_CALLED_AFTER_TEARDOWN Occurs when a method is called on a component instance after it has been torn down.
+ * @property {MERCHANT} BRAINTREE_API_ACCESS_RESTRICTED Occurs when the client token or tokenization key does not have the correct permissions.
+ */
+
 var BraintreeError = require('./braintree-error');
 
 module.exports = {
@@ -7,17 +28,9 @@ module.exports = {
     type: BraintreeError.types.INTERNAL,
     code: 'INVALID_USE_OF_INTERNAL_FUNCTION'
   },
-  CALLBACK_REQUIRED: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'CALLBACK_REQUIRED'
-  },
   INSTANTIATION_OPTION_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
     code: 'INSTANTIATION_OPTION_REQUIRED'
-  },
-  INVALID_OPTION: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'INVALID_OPTION'
   },
   INCOMPATIBLE_VERSIONS: {
     type: BraintreeError.types.MERCHANT,

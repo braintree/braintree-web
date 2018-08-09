@@ -71,4 +71,49 @@ describe('Credit Card Input', function () {
       expect(this.input.element.getAttribute('maxlength')).to.equal('19');
     });
   });
+
+  describe('maskValue', function () {
+    beforeEach(function () {
+      this.input = helpers.createInput('number');
+    });
+
+    it('calls mask value on BaseInput', function () {
+      this.sandbox.stub(BaseInput.prototype, 'maskValue');
+
+      this.input.maskValue('1234');
+
+      expect(BaseInput.prototype.maskValue).to.be.calledOnce;
+      expect(BaseInput.prototype.maskValue).to.be.calledWith('1234');
+    });
+
+    it('reveals last four in element value if card is valid and unmaskLastFour is set', function () {
+      this.sandbox.stub(this.input.model, 'get').returns({
+        isValid: true
+      });
+      this.input.unmaskLastFour = true;
+      this.input.maskValue('4111 1111 1111 1236');
+
+      expect(this.input.element.value).to.equal('•••• •••• •••• 1236');
+    });
+
+    it('does not reveal last four in element value if card is not valid and unmaskLastFour is set', function () {
+      this.sandbox.stub(this.input.model, 'get').returns({
+        isValid: false
+      });
+      this.input.unmaskLastFour = true;
+      this.input.maskValue('4111 1111 1111 123');
+
+      expect(this.input.element.value).to.equal('•••• •••• •••• •••');
+    });
+
+    it('does not reveal last four in element value if card is not valid and unmaskLastFour is set', function () {
+      this.sandbox.stub(this.input.model, 'get').returns({
+        isValid: true
+      });
+      this.input.unmaskLastFour = false;
+      this.input.maskValue('4111 1111 1111 1236');
+
+      expect(this.input.element.value).to.equal('•••• •••• •••• ••••');
+    });
+  });
 });

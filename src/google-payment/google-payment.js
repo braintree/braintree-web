@@ -5,6 +5,7 @@ var assign = require('../lib/assign').assign;
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var generateGooglePayConfiguration = require('../lib/generate-google-pay-configuration');
 var BraintreeError = require('../lib/braintree-error');
+var errors = require('./errors');
 var methods = require('../lib/methods');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -68,9 +69,18 @@ function GooglePayment(options) {
  * @returns {object} Returns a configuration object for Google PaymentDataRequest.
  */
 GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
+  var overrideCardNetworks = overrides && overrides.cardRequirements && overrides.cardRequirements.allowedCardNetworks;
+  var defaultCardNetworks = this._braintreeGeneratedPaymentRequestConfiguration.cardRequirements.allowedCardNetworks;
+  var allowedCardNetworks = overrideCardNetworks || defaultCardNetworks;
+  var paymentDataRequest = assign({}, this._braintreeGeneratedPaymentRequestConfiguration, overrides);
+
+  // this way we can preserve allowedCardNetworks from default integration
+  // if merchant did not pass any in `cardRequirements`
+  paymentDataRequest.cardRequirements.allowedCardNetworks = allowedCardNetworks;
+
   analytics.sendEvent(this._client, 'google-payment.createPaymentDataRequest');
 
-  return assign({}, this._braintreeGeneratedPaymentRequestConfiguration, overrides);
+  return paymentDataRequest;
 };
 
 /**
@@ -135,9 +145,9 @@ GooglePayment.prototype.parseResponse = function (response) {
     analytics.sendEvent(client, 'google-payment.parseResponse.failed');
 
     return Promise.reject(new BraintreeError({
-      code: 'GOOGLE_PAYMENT_GATEWAY_ERROR',
-      message: 'There was an error when tokenizing the Google Pay payment method.',
-      type: BraintreeError.types.UNKNOWN,
+      code: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.code,
+      message: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.message,
+      type: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.type,
       details: {
         originalError: error
       }

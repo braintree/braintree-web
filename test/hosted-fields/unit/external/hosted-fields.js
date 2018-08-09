@@ -16,13 +16,25 @@ var getCardTypes = require('../../../../src/hosted-fields/shared/get-card-types'
 
 describe('HostedFields', function () {
   beforeEach(function () {
+    this.numberDiv = document.createElement('div');
+    this.numberDiv.id = 'number';
+    document.body.appendChild(this.numberDiv);
+
     this.defaultConfiguration = {
       client: fake.client(),
-      fields: {}
+      fields: {
+        number: {
+          selector: '#number'
+        }
+      }
     };
 
     this.defaultConfiguration.client._request = function () {};
     this.sandbox.stub(analytics, 'sendEvent');
+  });
+
+  afterEach(function () {
+    this.numberDiv.parentNode.removeChild(this.numberDiv);
   });
 
   describe('Constructor', function () {
@@ -50,6 +62,36 @@ describe('HostedFields', function () {
       new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
       expect(analytics.sendEvent).to.be.calledWith(client, 'custom.hosted-fields.initialized');
+    });
+
+    it('errors if no fields are provided', function () {
+      var error;
+
+      delete this.defaultConfiguration.fields;
+
+      try {
+        new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.be.an.instanceof(BraintreeError);
+      expect(error.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
+    });
+
+    it('errors if no fields keys are provided', function () {
+      var error;
+
+      this.defaultConfiguration.fields = {};
+
+      try {
+        new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.be.an.instanceof(BraintreeError);
+      expect(error.code).to.equal('INSTANTIATION_OPTION_REQUIRED');
     });
 
     it('sends a timeout event if the fields take too long to set up', function () {

@@ -322,7 +322,7 @@ function HostedFields(options) {
   clientConfig = options.client.getConfiguration();
   hostedFieldsUrl = composeUrl(clientConfig.gatewayConfiguration.assetsUrl, componentId, clientConfig.isDebug);
 
-  if (!options.fields) {
+  if (!options.fields || Object.keys(options.fields).length === 0) {
     throw new BraintreeError({
       type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
       code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,

@@ -1,5 +1,32 @@
 'use strict';
 
+/**
+ * @name BraintreeError.Client - Interal Error Codes
+ * @ignore
+ * @description These codes should never be experienced by the mechant directly.
+ * @property {MERCHANT} CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN An error to prevent client creation for domains that are not whitelisted in the JS.
+ * @property {INTERNAL} CLIENT_MISSING_GATEWAY_CONFIGURATION Occurs when the client is created without a gateway configuration. Should never happen.
+ */
+
+/**
+ * @name BraintreeError.Client - Create Error Codes
+ * @description Errors that may occur when [creating the client](/current/module-braintree-web_client.html#.create)
+ * @property {MERCHANT} CLIENT_INVALID_AUTHORIZATION Occurs when client token cannot be parsed.
+ */
+
+/**
+ * @name BraintreeError.Client - Request Error Codes
+ * @description Errors that may occur when [using the request method](/current/Client.html#request)
+ * @property {MERCHANT} CLIENT_OPTION_REQUIRED An option required in the request method was not provided. Usually `options.method` or `options.endpoint`
+ * @property {MERCHANT} CLIENT_OPTION_INVALID The request option provided is invalid.
+ * @property {MERCHANT} CLIENT_GATEWAY_NETWORK The Braintree gateway could not be contacted.
+ * @property {NETWORK} CLIENT_REQUEST_TIMEOUT The request took too long to complete and timed out.
+ * @property {NETWORK} CLIENT_REQUEST_ERROR The response from a request had status 400 or greater.
+ * @property {NETWORK} CLIENT_GRAPHQL_REQUEST_ERROR The response from a request to GraphQL contained an error.
+ * @property {MERCHANT} CLIENT_RATE_LIMITED The response from a request had a status of 429, indicating rate limiting.
+ * @property {MERCHANT} CLIENT_AUTHORIZATION_INSUFFICIENT The user assocaited with the client token or tokenization key does not have permissions to make the request.
+ */
+
 var BraintreeError = require('../lib/braintree-error');
 
 module.exports = {

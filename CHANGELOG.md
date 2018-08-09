@@ -1,5 +1,14 @@
 CHANGELOG
 =========
+## 3.36.0
+* Update promise-polyfill to v8.0.0
+* Provide browser compatible file on npm in `dist/browser`
+* Google Pay
+  * Preserve `allowedCardNetworks` from default configuration in `cardRequirements` if not overwritten in `createPaymentDataRequest`
+* Hosted Fields
+  * Add option to reveal last four of credit card number when masking input
+  * Expose error when no field keys are passed into fields object (#355)
+
 ## 3.35.0
 * Add title attribute to iframes to improve accessibility for screenreaders (#374)
 * Vault Manager

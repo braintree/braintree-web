@@ -37,10 +37,15 @@ function _generatePattern(card) {
 }
 
 function CreditCardInput() {
+  var configuration;
+
   this.maxLength = DEFAULT_MAX_LENGTH;
 
   BaseInput.apply(this, arguments);
   this.formatter.setPattern(_generatePattern());
+
+  configuration = this.getConfiguration();
+  this.unmaskLastFour = Boolean(configuration.maskInput && configuration.maskInput.showLastFour);
 
   this.model.on('change:possibleCardTypes', function (possibleCardTypes) {
     var card;
@@ -61,6 +66,19 @@ function CreditCardInput() {
 
 CreditCardInput.prototype = Object.create(BaseInput.prototype);
 CreditCardInput.prototype.constructor = CreditCardInput;
+
+CreditCardInput.prototype.maskValue = function (value) {
+  var maskedValue, cardValue;
+
+  BaseInput.prototype.maskValue.call(this, value);
+
+  maskedValue = this.element.value;
+  cardValue = this.hiddenMaskedValue;
+
+  if (this.unmaskLastFour && this.model.get(this.type).isValid) {
+    this.element.value = maskedValue.substring(0, maskedValue.length - 4) + cardValue.substring(cardValue.length - 4, cardValue.length);
+  }
+};
 
 module.exports = {
   CreditCardInput: CreditCardInput

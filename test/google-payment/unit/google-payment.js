@@ -50,13 +50,39 @@ describe('GooglePayment', function () {
       var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
         merchantId: 'my-id',
         environment: 'PRODUCTION',
-        allowedPaymentMethods: ['FOO']
+        allowedPaymentMethods: ['FOO'],
+        cardRequirements: {
+          allowedCardNetworks: ['foo', 'bar'],
+          prop: 'value'
+        }
       });
 
       expect(paymentDataRequest.merchantId).to.equal('my-id');
       expect(paymentDataRequest.environment).to.equal('PRODUCTION');
       expect(paymentDataRequest.allowedPaymentMethods).to.deep.equal([
         'FOO'
+      ]);
+      expect(paymentDataRequest.cardRequirements.allowedCardNetworks).to.deep.equal([
+        'foo',
+        'bar'
+      ]);
+      expect(paymentDataRequest.cardRequirements.prop).to.equal('value');
+    });
+
+    it('retains allowed card networks from default if not passed in', function () {
+      var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+        merchantId: 'my-id',
+        environment: 'PRODUCTION',
+        allowedPaymentMethods: ['FOO'],
+        cardRequirements: {
+          prop: 'value'
+        }
+      });
+
+      expect(paymentDataRequest.cardRequirements.prop).to.equal('value');
+      expect(paymentDataRequest.cardRequirements.allowedCardNetworks).to.deep.equal([
+        'VISA',
+        'AMEX'
       ]);
     });
 

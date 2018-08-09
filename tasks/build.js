@@ -53,6 +53,7 @@ gulp.task('build:npm:packagejson', function (done) {
 
   pkg.name = 'braintree-web';
   pkg.main = 'index.js';
+  pkg.browser = './dist/browser/index.js';
   pkg.description = 'A suite of tools for integrating Braintree in the browser',
   pkg.repository = {
     type: 'git',
@@ -83,6 +84,12 @@ gulp.task('build:npm:src', function () {
     .pipe(removeCode({production: true}))
     .pipe(envify(process.env))
     .pipe(gulp.dest(NPM_DIST));
+});
+
+gulp.task('build:npm:browser', function () {
+  return gulp.src([
+    'dist/hosted/web/' + VERSION + '/js/index.js'
+  ]).pipe(gulp.dest(NPM_DIST + '/dist/browser'));
 });
 
 gulp.task('build:bower:js', function () {
@@ -150,10 +157,14 @@ gulp.task('build:hosted', function (done) {
   );
 });
 
-gulp.task('build:npm', [
-  'build:npm:statics',
-  'build:npm:src'
-]);
+gulp.task('build:npm', function (done) {
+  sequence(
+    'build:npm:statics',
+    'build:npm:src',
+    'build:npm:browser',
+    done
+  );
+});
 
 gulp.task('build', function (done) {
   sequence(

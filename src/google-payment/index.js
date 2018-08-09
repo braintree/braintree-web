@@ -6,6 +6,7 @@
 
 var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
+var errors = require('./errors');
 var GooglePayment = require('./google-payment');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -118,11 +119,7 @@ function create(options) {
     client: options.client
   }).then(function () {
     if (!options.client.getConfiguration().gatewayConfiguration.androidPay) {
-      return Promise.reject(new BraintreeError({
-        type: BraintreeError.types.MERCHANT,
-        code: 'GOOGLE_PAYMENT_NOT_ENABLED',
-        message: 'Google Pay is not enabled for this merchant.'
-      }));
+      return Promise.reject(new BraintreeError(errors.GOOGLE_PAYMENT_NOT_ENABLED));
     }
 
     return new GooglePayment(options);

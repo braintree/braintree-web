@@ -68,6 +68,16 @@ confirm_destination() {
   fi
 }
 
+confirm_error_code_documentation() {
+  echo -en "${YELLOW}Check if any new error codes were added to any components. If there were, were they also added to JSDoc? If no error codes were added in this release, just press y to skip this check. (y/n)? $RESET"
+  read message
+  if [[ ! "$message" =~ $YES ]]; then
+    >&2 echo -e "${RED}You should do that before proceeding.$RESET"
+    exit 1
+  fi
+  echo
+}
+
 reinstall_dependencies() {
   set +e
   source ~/.nvm/nvm.sh
@@ -139,6 +149,7 @@ main() {
   case "$TASK" in
     hosted)
       confirm_destination "$BRAINTREE_JS_HOSTED_DEST"
+      confirm_error_code_documentation
       reinstall_dependencies
       run_unit_tests
       confirm_version

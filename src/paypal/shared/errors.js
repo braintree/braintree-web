@@ -1,5 +1,23 @@
 'use strict';
 
+/**
+ * @name BraintreeError.PayPal - Creation Error Codes
+ * @description Errors that occur when [creating the PayPal component](/current/module-braintree-web_paypal.html#.create).
+ * @property {MERCHANT} PAYPAL_NOT_ENABLED Occurs when PayPal is not enabled on the Braintree control panel.
+ */
+
+/**
+ * @name BraintreeError.PayPal - tokenize Error Codes
+ * @description Errors that occur when using the [`tokenize` method](/current/PayPal.html#tokenize).
+ * @property {MERCHANT} PAYPAL_TOKENIZATION_REQUEST_ACTIVE Occurs when a tokenization request is already in progress.
+ * @property {MERCHANT} PAYPAL_FLOW_OPTION_REQUIRED Occurs when flow option is not provdided.
+ * @property {NETWORK} PAYPAL_ACCOUNT_TOKENIZATION_FAILED Occurs when PayPal account could not be tokenized.
+ * @property {NETWORK} PAYPAL_FLOW_FAILED Occurs when PayPal flow could not be initiated.
+ * @property {MERCHANT} PAYPAL_POPUP_OPEN_FAILED Occurs when PayPal window could not be opened.
+ * @property {CUSTOMER} PAYPAL_POPUP_CLOSED Occurs when customer closes the PayPal window before completing the flow.
+ * @property {MERCHANT} PAYPAL_INVALID_PAYMENT_OPTION Occurs when an invalid payment option is passed.
+ */
+
 var BraintreeError = require('../../lib/braintree-error');
 
 module.exports = {
@@ -27,11 +45,6 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYPAL_FLOW_OPTION_REQUIRED',
     message: 'PayPal flow property is invalid or missing.'
-  },
-  PAYPAL_BROWSER_NOT_SUPPORTED: {
-    type: BraintreeError.types.CUSTOMER,
-    code: 'PAYPAL_BROWSER_NOT_SUPPORTED',
-    message: 'Browser is not supported.'
   },
   PAYPAL_POPUP_OPEN_FAILED: {
     type: BraintreeError.types.MERCHANT,

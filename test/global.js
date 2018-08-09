@@ -9,7 +9,7 @@ global.expect = chai.expect;
 global.Promise = require('../src/lib/promise');
 
 beforeEach(function () {
-  this.sandbox = sinon.sandbox.create();
+  this.sandbox = sinon.createSandbox();
 });
 
 afterEach(function () {
