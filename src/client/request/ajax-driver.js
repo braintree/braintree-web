@@ -18,12 +18,12 @@ function requestShouldRetry(status) {
 }
 
 function graphQLRequestShouldRetryWithClientApi(body) {
-  var errorType = !body.data && body.errors &&
+  var errorClass = !body.data && body.errors &&
       body.errors[0] &&
       body.errors[0].extensions &&
-      body.errors[0].extensions.errorType;
+      body.errors[0].extensions.errorClass;
 
-  return errorType === 'unknown_error';
+  return errorClass === 'UNKNOWN' || errorClass === 'INTERNAL';
 }
 
 function _requestWithRetry(options, tcpRetryCount, cb) {
@@ -118,7 +118,7 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
     req.open(method, url, true);
   } catch (requestOpenError) {
     // If a merchant has a Content Security Policy and they have
-    // not whitelisted our endpoints, some browsers may
+    // not allowed our endpoints, some browsers may
     // synchronously throw an error. If it is not a GraphQL
     // request, we throw the error. If it is a GraphQL request
     // we remove the GraphQL option and try the request against

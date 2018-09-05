@@ -7,7 +7,7 @@ var RestrictedInput = require('restricted-input');
 var FakeRestrictedInput = require('../../../../../src/lib/fake-restricted-input');
 
 describe('Base Input', function () {
-  Object.keys(constants.whitelistedFields).forEach(function (key) {
+  Object.keys(constants.allowedFields).forEach(function (key) {
     describe(key, function () {
       beforeEach(function () {
         var config = {};
@@ -193,11 +193,11 @@ describe('Base Input', function () {
             });
 
             it('applies name', function () {
-              expect(this.instance.element.getAttribute('name')).to.equal(constants.whitelistedFields[key].name);
+              expect(this.instance.element.getAttribute('name')).to.equal(constants.allowedFields[key].name);
             });
 
             it('applies id', function () {
-              expect(this.instance.element.getAttribute('id')).to.equal(constants.whitelistedFields[key].name);
+              expect(this.instance.element.getAttribute('id')).to.equal(constants.allowedFields[key].name);
             });
           });
 
@@ -230,7 +230,7 @@ describe('Base Input', function () {
               expect(this.instance.element.setAttribute).to.not.be.called;
             });
 
-            it('does not call element.setAttribute when attribute is not whitelisted', function () {
+            it('does not call element.setAttribute when attribute is not allowed', function () {
               this.instance.setAttribute(this.type, 'maxlength', 0);
 
               expect(this.instance.element.setAttribute).to.not.be.called;
@@ -291,7 +291,7 @@ describe('Base Input', function () {
               expect(this.instance.element.removeAttribute).to.not.be.called;
             });
 
-            it('does not call element.removeAttribute when attribute is not whitelisted', function () {
+            it('does not call element.removeAttribute when attribute is not allowed', function () {
               this.instance.element.removeAttribute = this.sandbox.stub();
 
               this.instance.removeAttribute(this.type, 'maxlength');

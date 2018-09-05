@@ -7,7 +7,7 @@ var features = {
   configuration: 'configuration'
 };
 
-var blacklistedInputPaths = [
+var disallowedInputPaths = [
   'creditCard.options.unionPayEnrollment'
 ];
 
@@ -31,7 +31,7 @@ GraphQL.prototype.isGraphQLRequest = function (url, body) {
     return features[feature] === path;
   });
 
-  if (containsBlacklistedKeys(body)) {
+  if (containsDisallowedlistedKeys(body)) {
     return false;
   }
 
@@ -54,8 +54,8 @@ GraphQL.prototype._isGraphQLEnabled = function () {
   return Boolean(this._config);
 };
 
-function containsBlacklistedKeys(body) {
-  return blacklistedInputPaths.some(function (keys) {
+function containsDisallowedlistedKeys(body) {
+  return disallowedInputPaths.some(function (keys) {
     var value = keys.split('.').reduce(function (accumulator, key) {
       return accumulator && accumulator[key];
     }, body);

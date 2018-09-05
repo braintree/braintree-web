@@ -2,15 +2,15 @@
 
 function errorResponseAdapter(responseBody) {
   var response;
-  var errorType = responseBody.errors &&
+  var errorClass = responseBody.errors &&
     responseBody.errors[0] &&
     responseBody.errors[0].extensions &&
-    responseBody.errors[0].extensions.errorType;
+    responseBody.errors[0].extensions.errorClass;
 
-  if (errorType === 'user_error') {
+  if (errorClass === 'VALIDATION') {
     response = userErrorResponseAdapter(responseBody);
-  } else if (errorType) {
-    response = errorWithTypeResponseAdapter(responseBody);
+  } else if (errorClass) {
+    response = errorWithClassResponseAdapter(responseBody);
   } else {
     response = {error: {message: 'There was a problem serving your request'}, fieldErrors: []};
   }
@@ -18,7 +18,7 @@ function errorResponseAdapter(responseBody) {
   return response;
 }
 
-function errorWithTypeResponseAdapter(responseBody) {
+function errorWithClassResponseAdapter(responseBody) {
   return {error: {message: responseBody.errors[0].message}, fieldErrors: []};
 }
 

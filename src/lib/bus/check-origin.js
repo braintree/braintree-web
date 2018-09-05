@@ -1,6 +1,6 @@
 'use strict';
 
-var isWhitelistedDomain = require('../is-whitelisted-domain');
+var isVerifiedDomain = require('../is-verified-domain');
 
 function checkOrigin(postMessageOrigin, merchantUrl) {
   var merchantOrigin, merchantHost;
@@ -22,7 +22,7 @@ function checkOrigin(postMessageOrigin, merchantUrl) {
 
   a.href = postMessageOrigin;
 
-  return isWhitelistedDomain(postMessageOrigin);
+  return isVerifiedDomain(postMessageOrigin);
 }
 
 module.exports = {

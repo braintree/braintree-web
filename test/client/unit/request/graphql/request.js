@@ -1260,7 +1260,7 @@ describe('GraphQL', function () {
             locations: [{line: 2, column: 9}],
             path: ['tokenizeCreditCard'],
             extensions: {
-              errorType: 'user_error',
+              errorClass: 'VALIDATION',
               inputPath: ['input', 'creditCard', 'expirationYear'],
               legacyCode: '001'
             }
@@ -1270,7 +1270,7 @@ describe('GraphQL', function () {
             locations: [{line: 2, column: 9}],
             path: ['tokenizeCreditCard'],
             extensions: {
-              errorType: 'user_error',
+              errorClass: 'VALIDATION',
               inputPath: ['input', 'creditCard', 'expirationYear'],
               legacyCode: '002'
             }
@@ -1280,7 +1280,7 @@ describe('GraphQL', function () {
             locations: [{line: 2, column: 9}],
             path: ['tokenizeCreditCard'],
             extensions: {
-              errorType: 'user_error',
+              errorClass: 'VALIDATION',
               inputPath: ['input', 'creditCard', 'billingAddress', 'streetAddress'],
               legacyCode: '003'
             }
@@ -1322,7 +1322,7 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL error response with a non-user_error errorType', function () {
+    it('normalizes a GraphQL error response with a non-VALIDATION errorClass', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var fakeGraphQLResponse = {
         data: null,
@@ -1330,7 +1330,7 @@ describe('GraphQL', function () {
           {
             message: 'Some developer error',
             extensions: {
-              errorType: 'developer_error'
+              errorClass: 'AUTHORIZATION'
             }
           }
         ]
@@ -1342,7 +1342,7 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL error response without an errorType', function () {
+    it('normalizes a GraphQL error response without an errorClass', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var fakeGraphQLResponse = {
         data: null,
@@ -1389,7 +1389,7 @@ describe('GraphQL', function () {
       expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(200);
     });
 
-    it('returns 422 for user errors', function () {
+    it('returns 422 for validation errors', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var fakeGraphQLResponse = {
         data: {tokenizeCreditCard: null},
@@ -1400,7 +1400,7 @@ describe('GraphQL', function () {
             path: ['tokenizeCreditCard'],
             extensions: {
               legacyMessage: 'Credit card is invalid',
-              errorType: 'user_error',
+              errorClass: 'VALIDATION',
               errorDetails: []
             }
           }
@@ -1410,7 +1410,7 @@ describe('GraphQL', function () {
       expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(422);
     });
 
-    it('returns 403 for developer errors', function () {
+    it('returns 403 for AUTHORIZATION errors', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var fakeGraphQLResponse = {
         data: null,
@@ -1418,7 +1418,7 @@ describe('GraphQL', function () {
           {
             message: 'Some developer error',
             extensions: {
-              errorType: 'developer_error'
+              errorClass: 'AUTHORIZATION'
             }
           }
         ]
@@ -1435,7 +1435,7 @@ describe('GraphQL', function () {
           {
             message: 'Some unknown error',
             extensions: {
-              errorType: 'unknown_error'
+              errorClass: 'UNKNOWN'
             }
           }
         ]
@@ -1460,7 +1460,7 @@ describe('GraphQL', function () {
         errors: [{
           message: 'An unknown error occurred.',
           extensions: {
-            errorType: 'unknown_error',
+            errorClass: 'UNKNOWN',
             errorDetails: []
           }
         }]
@@ -1531,7 +1531,7 @@ describe('GraphQL', function () {
           {
             message: 'Some developer error',
             extensions: {
-              errorType: 'developer_error'
+              errorClass: 'AUTHORIZATION'
             }
           }
         ]

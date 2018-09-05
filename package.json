@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.36.0",
+  "version": "3.37.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -21,7 +21,7 @@
     "@braintree/sanitize-url": "2.1.0",
     "@braintree/wrap-promise": "1.1.1",
     "card-validator": "5.0.0",
-    "credit-card-type": "7.0.0",
+    "credit-card-type": "7.1.0",
     "framebus": "3.0.1",
     "inject-stylesheet": "1.0.0",
     "promise-polyfill": "8.0.0",

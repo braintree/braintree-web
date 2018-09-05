@@ -82,8 +82,8 @@ describe('internal', function () {
 
       triggerEvent('focus', input);
       triggerEvent('blur', input);
-      triggerEvent('click', input);  // not whitelisted
-      triggerEvent('keyup', input);  // not whitelisted
+      triggerEvent('click', input);  // not allowed
+      triggerEvent('keyup', input);  // not allowed
 
       expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'focus');
       expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'blur');
@@ -711,7 +711,7 @@ describe('internal', function () {
         }.bind(this));
       });
 
-      it('does not attempt to tokenize non-whitelisted billing address options', function (done) {
+      it('does not attempt to tokenize non-allowed billing address options', function (done) {
         this.cardFormWithPostalCode.set('number.value', '1111 1111 1111 1111');
         this.fakeOptions.billingAddress = {
           foo: 'bar',

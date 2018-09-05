@@ -701,7 +701,7 @@ describe('HostedFields', function () {
       this.instance.addClass('number', 'my-class', done);
     });
 
-    it('calls errback when given non-whitelisted field', function (done) {
+    it('calls errback when given non-allowed field', function (done) {
       this.instance.addClass('rogue-field', 'my-class', function (err) {
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
@@ -750,7 +750,7 @@ describe('HostedFields', function () {
       this.instance.removeClass('number', 'my-class', done);
     });
 
-    it('calls errback when given non-whitelisted field', function (done) {
+    it('calls errback when given non-allowed field', function (done) {
       this.instance.removeClass('rogue-field', 'my-class', function (err) {
         expect(err).to.be.an.instanceOf(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
@@ -818,7 +818,7 @@ describe('HostedFields', function () {
       }, done);
     });
 
-    it('calls errback when given non-whitelisted field', function (done) {
+    it('calls errback when given non-allowed field', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setAttribute({
@@ -841,7 +841,7 @@ describe('HostedFields', function () {
       }.bind(this));
     });
 
-    it('does not emit SET_ATTRIBUTE event when given non-whitelisted field', function (done) {
+    it('does not emit SET_ATTRIBUTE event when given non-allowed field', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setAttribute({
@@ -965,7 +965,7 @@ describe('HostedFields', function () {
       }, done);
     });
 
-    it('calls errback when given non-whitelisted field', function (done) {
+    it('calls errback when given non-allowed field', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.removeAttribute({
@@ -981,7 +981,7 @@ describe('HostedFields', function () {
       });
     });
 
-    it('does not emit REMOVE_ATTRIBUTE event when given non-whitelisted field', function (done) {
+    it('does not emit REMOVE_ATTRIBUTE event when given non-allowed field', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.removeAttribute({
@@ -1031,7 +1031,7 @@ describe('HostedFields', function () {
       }.bind(this));
     });
 
-    it('calls errback when given non-whitelisted attribute', function (done) {
+    it('calls errback when given non-allowed attribute', function (done) {
       var instance;
       var configuration = this.defaultConfiguration;
       var numberNode = document.createElement('div');
@@ -1056,7 +1056,7 @@ describe('HostedFields', function () {
       });
     });
 
-    it('does not emit REMOVE_ATTRIBUTE event when given non-whitelisted attribute', function (done) {
+    it('does not emit REMOVE_ATTRIBUTE event when given non-allowed attribute', function (done) {
       var instance;
       var configuration = this.defaultConfiguration;
       var numberNode = document.createElement('div');
@@ -1118,7 +1118,7 @@ describe('HostedFields', function () {
       instance.setPlaceholder('number', 'great-placeholder', done);
     });
 
-    it('calls errback when given non-whitelisted field', function (done) {
+    it('calls errback when given non-allowed field', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('rogue-field', 'rogue-placeholder', function (err) {
@@ -1137,7 +1137,7 @@ describe('HostedFields', function () {
       }.bind(this));
     });
 
-    it('does not emit SET_ATTRIBUTE event when given non-whitelisted field', function (done) {
+    it('does not emit SET_ATTRIBUTE event when given non-allowed field', function (done) {
       var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('rogue-field', 'rogue-placeholder', function () {
@@ -1219,7 +1219,7 @@ describe('HostedFields', function () {
       instance.clear('number', done);
     });
 
-    it('calls errback when given non-whitelisted field', function (done) {
+    it('calls errback when given non-allowed field', function (done) {
       var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 
@@ -1284,7 +1284,7 @@ describe('HostedFields', function () {
       instance.focus('number', done);
     });
 
-    it('calls errback when given non-whitelisted field', function (done) {
+    it('calls errback when given non-allowed field', function (done) {
       var self = this;
       var instance = new HostedFields(this.defaultConfiguration);
 

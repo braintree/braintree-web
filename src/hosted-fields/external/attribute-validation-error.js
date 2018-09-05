@@ -2,12 +2,12 @@
 
 var BraintreeError = require('../../lib/braintree-error');
 var errors = require('../shared/errors');
-var whitelist = require('../shared/constants').whitelistedAttributes;
+var allowedAttributes = require('../shared/constants').allowedAttributes;
 
 function attributeValidationError(attribute, value) {
   var err;
 
-  if (!whitelist.hasOwnProperty(attribute)) {
+  if (!allowedAttributes.hasOwnProperty(attribute)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED.type,
       code: errors.HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED.code,
@@ -25,9 +25,9 @@ function attributeValidationError(attribute, value) {
 }
 
 function _isValid(attribute, value) {
-  if (whitelist[attribute] === 'string') {
+  if (allowedAttributes[attribute] === 'string') {
     return typeof value === 'string' || typeof value === 'number';
-  } else if (whitelist[attribute] === 'boolean') {
+  } else if (allowedAttributes[attribute] === 'boolean') {
     return String(value) === 'true' || String(value) === 'false';
   }
 

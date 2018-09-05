@@ -6,7 +6,7 @@ var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
 var frameName = require('./get-frame-name');
 var assembleIFrames = require('./assemble-iframes');
 var Client = require('../../client/client');
-var injectWithWhitelist = require('inject-stylesheet').injectWithWhitelist;
+var injectWithAllowList = require('inject-stylesheet').injectWithWhitelist; // TODO update inject-stylesheet to alias method name
 var CreditCardForm = require('./models/credit-card-form').CreditCardForm;
 var FieldComponent = require('./components/field-component').FieldComponent;
 var analytics = require('../../lib/analytics');
@@ -14,12 +14,12 @@ var BraintreeError = require('../../lib/braintree-error');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
 var events = constants.events;
-var whitelistedStyles = constants.whitelistedStyles;
+var allowedStyles = constants.allowedStyles;
 var tokenizationErrorCodes = constants.tokenizationErrorCodes;
 var formatCardRequestData = require('./format-card-request-data');
 
 var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
-var WHITELISTED_BILLING_ADDRESS_FIELDS = [
+var ALLOWED_BILLING_ADDRESS_FIELDS = [
   'company',
   'countryCodeNumeric',
   'countryCodeAlpha2',
@@ -44,9 +44,9 @@ function initialize(cardForm) {
     event.preventDefault();
   });
 
-  injectWithWhitelist(
+  injectWithAllowList(
     cardForm.configuration.styles,
-    whitelistedStyles
+    allowedStyles
   );
 
   fieldComponent = new FieldComponent({
@@ -312,7 +312,7 @@ function mergeCardData(cardData, options) {
   var cardholderName = options.cardholderName;
 
   Object.keys(userProvidedCardData).forEach(function (field) {
-    if (WHITELISTED_BILLING_ADDRESS_FIELDS.indexOf(field) === -1 || cardData.hasOwnProperty(field)) {
+    if (ALLOWED_BILLING_ADDRESS_FIELDS.indexOf(field) === -1 || cardData.hasOwnProperty(field)) {
       delete userProvidedCardData[field];
     }
   });

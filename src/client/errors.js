@@ -4,7 +4,7 @@
  * @name BraintreeError.Client - Interal Error Codes
  * @ignore
  * @description These codes should never be experienced by the mechant directly.
- * @property {MERCHANT} CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN An error to prevent client creation for domains that are not whitelisted in the JS.
+ * @property {MERCHANT} CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN An error to prevent client creation for domains that are not allowed in the JS.
  * @property {INTERNAL} CLIENT_MISSING_GATEWAY_CONFIGURATION Occurs when the client is created without a gateway configuration. Should never happen.
  */
 

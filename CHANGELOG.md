@@ -1,8 +1,16 @@
 CHANGELOG
 =========
+## 3.37.0
+* Provide browser compatible files on npm for each component in `dist/browser/component-name.js` (#366)
+* Update credit-card-type to v7.1.0
+* Hosted Fields
+  * Detect if `Mir` credit card is entered
+  * Fix issue where Android text field would be selected when focused after inputting data (#379)
+  * Fix error emitted by Chrome (in verbose logging mode) for not using a passive flag for `touchstart` event
+
 ## 3.36.0
 * Update promise-polyfill to v8.0.0
-* Provide browser compatible file on npm in `dist/browser`
+* Provide browser compatible file on npm in `dist/browser` (#366)
 * Google Pay
   * Preserve `allowedCardNetworks` from default configuration in `cardRequirements` if not overwritten in `createPaymentDataRequest`
 * Hosted Fields

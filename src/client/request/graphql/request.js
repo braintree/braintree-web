@@ -79,23 +79,23 @@ GraphQLRequest.prototype.adaptResponseBody = function (parsedBody) {
 };
 
 GraphQLRequest.prototype.determineStatus = function (httpStatus, parsedResponse) {
-  var status, errorType;
+  var status, errorClass;
 
   if (httpStatus === 200) {
-    errorType = parsedResponse.errors &&
+    errorClass = parsedResponse.errors &&
       parsedResponse.errors[0] &&
       parsedResponse.errors[0].extensions &&
-      parsedResponse.errors[0].extensions.errorType;
+      parsedResponse.errors[0].extensions.errorClass;
 
     if (parsedResponse.data && !parsedResponse.errors) {
       status = 200;
-    } else if (errorType === 'user_error') {
+    } else if (errorClass === 'VALIDATION') {
       status = 422;
-    } else if (errorType === 'developer_error') {
+    } else if (errorClass === 'AUTHORIZATION') {
       status = 403;
-    } else if (errorType === 'unknown_error') {
-      status = 500;
-    } else if (isCoercionOrValidationError(errorType, parsedResponse)) {
+    } else if (errorClass === 'AUTHENTICATION') {
+      status = 401;
+    } else if (isGraphQLError(errorClass, parsedResponse)) {
       status = 403;
     } else {
       status = 500;
@@ -112,8 +112,8 @@ GraphQLRequest.prototype.determineStatus = function (httpStatus, parsedResponse)
   return status;
 };
 
-function isCoercionOrValidationError(errorType, parsedResponse) {
-  return !errorType && parsedResponse.errors[0].message;
+function isGraphQLError(errorClass, parsedResponse) {
+  return !errorClass && parsedResponse.errors[0].message;
 }
 
 function snakeCaseToCamelCase(snakeString) {

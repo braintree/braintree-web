@@ -3,10 +3,11 @@
 var attributeValidationError = require('../../external/attribute-validation-error');
 var constants = require('../../shared/constants');
 var classlist = require('../../../lib/classlist');
+var supportsPassiveEventListener = require('../../../lib/supports-passive-event-listener');
 var browserDetection = require('../../shared/browser-detection');
 var createRestrictedInput = require('../../../lib/create-restricted-input');
 var events = constants.events;
-var whitelistedFields = constants.whitelistedFields;
+var allowedFields = constants.allowedFields;
 var ENTER_KEY_CODE = 13;
 var DEFAULT_MASK_CHARACTER = '•';
 
@@ -77,7 +78,7 @@ BaseInput.prototype.constructElement = function () {
   var element = document.createElement('input');
 
   var placeholder = this.getConfiguration().placeholder;
-  var name = whitelistedFields[type] ? whitelistedFields[type].name : null;
+  var name = allowedFields[type] ? allowedFields[type].name : null;
 
   var attributes = constructAttributes({
     type: this.getConfiguration().type,
@@ -201,10 +202,10 @@ BaseInput.prototype._addDOMFocusListeners = function () {
   }.bind(this), false);
 
   // select inputs don't have a select function
-  if (typeof element.select === 'function' && !browserDetection.isIosWebview()) {
+  if (typeof element.select === 'function' && (browserDetection.isIos() && !browserDetection.isIosWebview())) {
     element.addEventListener('touchstart', function () {
       element.select();
-    });
+    }, supportsPassiveEventListener ? {passive: true} : false);
   }
 };
 

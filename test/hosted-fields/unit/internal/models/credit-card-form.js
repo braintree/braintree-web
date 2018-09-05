@@ -36,7 +36,7 @@ describe('credit card model', function () {
         expect(cardForm._fieldKeys).to.exist;
       });
 
-      it('assigns only whitelisted fields', function () {
+      it('assigns only allowed fields', function () {
         var cardForm = new CreditCardForm(helpers.getModelConfig([
           'number',
           'foo'
@@ -608,18 +608,18 @@ describe('credit card model', function () {
     });
 
     it('sets supported for supported card types', function () {
-      var mastercardOrMaestroCard = '5';
+      var discoverOrMaestroCard = '60';
       var context = {
-        supportedCardTypes: ['mastercard']
+        supportedCardTypes: ['discover']
       };
       var cardTypes = CreditCardForm.prototype.getCardTypes.call(
         context,
-        mastercardOrMaestroCard
+        discoverOrMaestroCard
       );
 
       expect(cardTypes.length).to.equal(2);
-      expect(cardTypes[0].niceType).to.equal('Mastercard');
-      expect(cardTypes[0].type).to.equal('master-card');
+      expect(cardTypes[0].niceType).to.equal('Discover');
+      expect(cardTypes[0].type).to.equal('discover');
       expect(cardTypes[0].supported).to.equal(true);
       expect(cardTypes[1].niceType).to.equal('Maestro');
       expect(cardTypes[1].type).to.equal('maestro');

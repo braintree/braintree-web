@@ -2,7 +2,7 @@
 
 var BaseInput = require('./base-input').BaseInput;
 var constants = require('../../shared/constants');
-var whitelistedFields = constants.whitelistedFields;
+var allowedFields = constants.allowedFields;
 var sanitizeHtml = require('../../../lib/sanitize-html');
 
 function ExpirationSplitInput() {
@@ -22,7 +22,7 @@ ExpirationSplitInput.prototype.constructElement = function () {
   }
 
   element = document.createElement('select');
-  field = whitelistedFields[type];
+  field = allowedFields[type];
 
   attributes = {
     'class': type,

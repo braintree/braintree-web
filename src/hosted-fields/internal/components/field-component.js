@@ -1,7 +1,7 @@
 'use strict';
 
 var InputComponents = require('./index');
-var whitelistedFields = require('../../shared/constants').whitelistedFields;
+var allowedFields = require('../../shared/constants').allowedFields;
 var LabelComponent = require('./label').LabelComponent;
 var events = require('../../shared/constants').events;
 var classlist = require('../../../lib/classlist');
@@ -9,7 +9,7 @@ var classlist = require('../../../lib/classlist');
 module.exports = {
   FieldComponent: function FieldComponent(options) {
     var type = options.type;
-    var attribution = whitelistedFields[type];
+    var attribution = allowedFields[type];
 
     this.element = document.createDocumentFragment();
 

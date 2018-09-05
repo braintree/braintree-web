@@ -1,7 +1,7 @@
 'use strict';
 
 var Bus = require('../../lib/bus');
-var isWhitelistedDomain = require('../../lib/is-whitelisted-domain');
+var isVerifiedDomain = require('../../lib/is-verified-domain');
 var queryString = require('../../lib/querystring');
 var BraintreeError = require('../../lib/braintree-error');
 var sanitizeUrl = require('@braintree/sanitize-url').sanitizeUrl;
@@ -25,7 +25,7 @@ function handleConfiguration(configuration) {
   var fields = {pareq: 'PaReq', md: 'MD', termUrl: 'TermUrl'};
   var form = document.createElement('form');
 
-  if (!isWhitelistedDomain(configuration.termUrl)) {
+  if (!isVerifiedDomain(configuration.termUrl)) {
     throw new BraintreeError(errors.THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN);
   }
 

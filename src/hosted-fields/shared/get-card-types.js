@@ -2,8 +2,6 @@
 
 var creditCardType = require('credit-card-type');
 
-creditCardType.removeCard(creditCardType.types.MIR);
-
 module.exports = function (number) {
   var results = creditCardType(number);
 

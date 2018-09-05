@@ -7,11 +7,11 @@ var comparePossibleCardTypes = require('../compare-possible-card-types');
 var constants = require('../../shared/constants');
 var events = constants.events;
 var externalEvents = constants.externalEvents;
-var whitelistedFields = constants.whitelistedFields;
+var allowedFields = constants.allowedFields;
 
 function CreditCardForm(configuration) {
   this._fieldKeys = Object.keys(configuration.fields).filter(function (key) {
-    return whitelistedFields.hasOwnProperty(key);
+    return allowedFields.hasOwnProperty(key);
   });
 
   this.configuration = configuration;

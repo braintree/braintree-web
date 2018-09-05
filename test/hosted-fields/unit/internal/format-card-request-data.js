@@ -11,7 +11,7 @@ describe('formatCardRequestData', function () {
     expect(result).to.deep.equal({});
   });
 
-  it('does not include non-whitelisted data', function () {
+  it('does not include non-allowed data', function () {
     var result = formatCardRequestData({foo: 'bar'});
 
     expect(result).to.deep.equal({});

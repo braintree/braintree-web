@@ -4,7 +4,7 @@ var BRAINTREE_VERSION = require('./constants').BRAINTREE_VERSION;
 
 var GraphQL = require('./request/graphql');
 var request = require('./request');
-var isWhitelistedDomain = require('../lib/is-whitelisted-domain');
+var isVerifiedDomain = require('../lib/is-verified-domain');
 var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var createAuthorizationData = require('../lib/create-authorization-data');
@@ -58,7 +58,7 @@ function Client(configuration) {
     'clientApiUrl',
     'configUrl'
   ].forEach(function (property) {
-    if (property in gatewayConfiguration && !isWhitelistedDomain(gatewayConfiguration[property])) {
+    if (property in gatewayConfiguration && !isVerifiedDomain(gatewayConfiguration[property])) {
       throw new BraintreeError({
         type: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
         code: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
@@ -89,7 +89,7 @@ function Client(configuration) {
       accessToken: braintreeApiConfiguration.accessToken
     };
 
-    if (!isWhitelistedDomain(this._braintreeApi.baseUrl)) {
+    if (!isVerifiedDomain(this._braintreeApi.baseUrl)) {
       throw new BraintreeError({
         type: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
         code: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,

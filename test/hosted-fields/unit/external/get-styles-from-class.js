@@ -1,6 +1,6 @@
 'use strict';
 
-var whitelistedStyles = require('../../../../src/hosted-fields/shared/constants').whitelistedStyles;
+var allowedStyles = require('../../../../src/hosted-fields/shared/constants').allowedStyles;
 var getStylesFromClass = require('../../../../src/hosted-fields/external/get-styles-from-class');
 
 describe('getStylesFromClass', function () {
@@ -39,7 +39,7 @@ describe('getStylesFromClass', function () {
     expect(styles['font-size']).to.equal('5px');
   });
 
-  it('ignores styles that are not part of the whitelist', function () {
+  it('ignores styles that are not part of the allowed styles', function () {
     var styles = getStylesFromClass('invalid-class');
 
     expect(styles.color).to.equal('rgb(0, 255, 0)');
@@ -56,10 +56,10 @@ describe('getStylesFromClass', function () {
     expect(global.document.body.removeChild).to.be.calledOnce;
   });
 
-  it('hidden properties in hidden dom node do not interfere with whitelisted styles', function () {
-    expect(whitelistedStyles).to.not.include('display');
-    expect(whitelistedStyles).to.not.include('position');
-    expect(whitelistedStyles).to.not.include('left');
-    expect(whitelistedStyles).to.not.include('top');
+  it('hidden properties in hidden dom node do not interfere with allowed styles', function () {
+    expect(allowedStyles).to.not.include('display');
+    expect(allowedStyles).to.not.include('position');
+    expect(allowedStyles).to.not.include('left');
+    expect(allowedStyles).to.not.include('top');
   });
 });

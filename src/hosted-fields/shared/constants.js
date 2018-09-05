@@ -39,7 +39,7 @@ var constants = {
     81724: errors.HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE,
     81736: errors.HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED
   },
-  whitelistedStyles: [
+  allowedStyles: [
     '-moz-appearance',
     '-moz-osx-font-smoothing',
     '-moz-tap-highlight-color',
@@ -72,7 +72,7 @@ var constants = {
     'text-shadow',
     'transition'
   ],
-  whitelistedFields: {
+  allowedFields: {
     number: {
       name: 'credit-card-number',
       label: 'Credit Card Number'
@@ -98,7 +98,7 @@ var constants = {
       label: 'Postal Code'
     }
   },
-  whitelistedAttributes: {
+  allowedAttributes: {
     'aria-invalid': 'boolean',
     'aria-required': 'boolean',
     disabled: 'boolean',

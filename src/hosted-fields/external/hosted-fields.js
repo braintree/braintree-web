@@ -18,7 +18,7 @@ var events = constants.events;
 var EventEmitter = require('../../lib/event-emitter');
 var injectFrame = require('./inject-frame');
 var analytics = require('../../lib/analytics');
-var whitelistedFields = constants.whitelistedFields;
+var allowedFields = constants.allowedFields;
 var methods = require('../../lib/methods');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var sharedErrors = require('../../lib/errors');
@@ -356,7 +356,7 @@ function HostedFields(options) {
   Object.keys(options.fields).forEach(function (key) {
     var field, container, frame;
 
-    if (!constants.whitelistedFields.hasOwnProperty(key)) {
+    if (!constants.allowedFields.hasOwnProperty(key)) {
       throw new BraintreeError({
         type: errors.HOSTED_FIELDS_INVALID_FIELD_KEY.type,
         code: errors.HOSTED_FIELDS_INVALID_FIELD_KEY.code,
@@ -416,7 +416,7 @@ function HostedFields(options) {
       type: key,
       name: 'braintree-hosted-field-' + key,
       style: constants.defaultIFrameStyle,
-      title: 'Secure Credit Card Frame - ' + constants.whitelistedFields[key].label
+      title: 'Secure Credit Card Frame - ' + constants.allowedFields[key].label
     });
 
     this._injectedNodes = this._injectedNodes.concat(injectFrame(frame, container));
@@ -753,7 +753,7 @@ HostedFields.prototype.tokenize = function (options) {
 HostedFields.prototype.addClass = function (field, classname) {
   var err;
 
-  if (!whitelistedFields.hasOwnProperty(field)) {
+  if (!allowedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
       code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
@@ -798,7 +798,7 @@ HostedFields.prototype.addClass = function (field, classname) {
 HostedFields.prototype.removeClass = function (field, classname) {
   var err;
 
-  if (!whitelistedFields.hasOwnProperty(field)) {
+  if (!allowedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
       code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
@@ -859,7 +859,7 @@ HostedFields.prototype.removeClass = function (field, classname) {
 HostedFields.prototype.setAttribute = function (options) {
   var attributeErr, err;
 
-  if (!whitelistedFields.hasOwnProperty(options.field)) {
+  if (!allowedFields.hasOwnProperty(options.field)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
       code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
@@ -938,7 +938,7 @@ HostedFields.prototype.setMessage = function (options) {
 HostedFields.prototype.removeAttribute = function (options) {
   var attributeErr, err;
 
-  if (!whitelistedFields.hasOwnProperty(options.field)) {
+  if (!allowedFields.hasOwnProperty(options.field)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
       code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
@@ -1006,7 +1006,7 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder) {
 HostedFields.prototype.clear = function (field) {
   var err;
 
-  if (!whitelistedFields.hasOwnProperty(field)) {
+  if (!allowedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
       code: errors.HOSTED_FIELDS_FIELD_INVALID.code,
@@ -1056,7 +1056,7 @@ HostedFields.prototype.clear = function (field) {
 HostedFields.prototype.focus = function (field) {
   var err;
 
-  if (!whitelistedFields.hasOwnProperty(field)) {
+  if (!allowedFields.hasOwnProperty(field)) {
     err = new BraintreeError({
       type: errors.HOSTED_FIELDS_FIELD_INVALID.type,
       code: errors.HOSTED_FIELDS_FIELD_INVALID.code,

@@ -48,7 +48,7 @@ describe('sandbox approval frame', function () {
     }
   });
 
-  it('requires redirect url to be a white listed url', function (done) {
+  it('requires redirect url to be an allowed url', function (done) {
     var params = {
       redirect_url: 'https://foo.com'
     };
@@ -58,7 +58,7 @@ describe('sandbox approval frame', function () {
     try {
       sandboxApprovalFrame.start();
     } catch (err) {
-      expect(err.message).to.equal('https://foo.com is not a valid whitelisted url');
+      expect(err.message).to.equal('https://foo.com is not a valid verified url');
 
       done();
     }

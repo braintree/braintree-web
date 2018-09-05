@@ -1,6 +1,6 @@
 'use strict';
 
-var whitelistedStyles = require('../shared/constants').whitelistedStyles;
+var allowedStyles = require('../shared/constants').allowedStyles;
 
 module.exports = function getStylesFromClass(cssClass) {
   var element = document.createElement('input');
@@ -20,7 +20,7 @@ module.exports = function getStylesFromClass(cssClass) {
 
   computedStyles = global.getComputedStyle(element);
 
-  whitelistedStyles.forEach(function (style) {
+  allowedStyles.forEach(function (style) {
     var value = computedStyles[style];
 
     if (value) {

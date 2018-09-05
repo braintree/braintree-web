@@ -1,7 +1,7 @@
 'use strict';
 
 var querystring = require('../../lib/querystring');
-var isWhitelistedDomain = require('../../lib/is-whitelisted-domain');
+var isVerifiedDomain = require('../../lib/is-verified-domain');
 
 var REQUIRED_PARAMS = ['redirect_url'];
 
@@ -12,8 +12,8 @@ function verifyParams(data) {
     }
   });
 
-  if (!isWhitelistedDomain(data.redirect_url)) {
-    throw new Error(data.redirect_url + ' is not a valid whitelisted url');
+  if (!isVerifiedDomain(data.redirect_url)) {
+    throw new Error(data.redirect_url + ' is not a valid verified url');
   }
 }
 

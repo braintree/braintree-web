@@ -58,7 +58,7 @@ describe('GraphQL', function () {
       expect(gql.isGraphQLRequest(this.tokenizeUrl, {})).to.equal(false);
     });
 
-    it('returns false if body contains blacklisted key', function () {
+    it('returns false if body contains disallowed key', function () {
       var gql = new GraphQL(this.config);
       var body = {
         creditCard: {
@@ -74,7 +74,7 @@ describe('GraphQL', function () {
       expect(gql.isGraphQLRequest(this.tokenizeUrl, body)).to.equal(false);
     });
 
-    it('returns false if body contains blacklisted key with falsy, but not undefined value', function () {
+    it('returns false if body contains disallowed key with falsy, but not undefined value', function () {
       var gql = new GraphQL(this.config);
 
       expect(gql.isGraphQLRequest(this.tokenizeUrl, {

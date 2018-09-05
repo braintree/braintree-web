@@ -50,7 +50,7 @@ var testCases = {
 };
 
 describe('attributeValidationError', function () {
-  it('returns an error for attributes not in whitelist', function (done) {
+  it('returns an error for attributes not in allowed list', function (done) {
     var err;
 
     err = attributeValidationError('garbage', true);

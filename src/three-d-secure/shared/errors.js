@@ -25,7 +25,7 @@
  * @name BraintreeError.3D Secure - Internal Error Codes
  * @ignore
  * @description Errors that occur internally
- * @property {INTERNAL} THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN Occurs when iframe is initialized on a non-whitelisted domain.
+ * @property {INTERNAL} THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN Occurs when iframe is initialized on a non-verified domain.
  */
 
 var BraintreeError = require('../../lib/braintree-error');
