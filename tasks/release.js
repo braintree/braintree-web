@@ -7,6 +7,7 @@ var sequence = require('run-sequence');
 var spawn = require('child_process').spawn;
 var HOSTED_DEST = process.env.BRAINTREE_JS_HOSTED_DEST;
 var BOWER_DEST = process.env.BRAINTREE_JS_BOWER_DEST;
+var NPM_DEST = './dist/npm';
 
 gulp.task('release:hosted:copy', function () {
   return gulp.src([
@@ -21,9 +22,9 @@ gulp.task('release:hosted-static:copy', function () {
     .pipe(gulp.dest(HOSTED_DEST + '/web/static'));
 });
 
-gulp.task('release:hosted', function (done) {
+gulp.task('release:hosted', ['clean'], function (done) {
   sequence(
-    'build',
+    'build:hosted',
     'release:hosted-static:copy',
     'release:hosted:copy',
     endingMessage(HOSTED_DEST, done)
@@ -37,11 +38,39 @@ gulp.task('release:bower:copy', function () {
   ]).pipe(gulp.dest(BOWER_DEST));
 });
 
-gulp.task('release:bower', function (done) {
+gulp.task('release:bower', ['clean'], function (done) {
   sequence(
-    'build',
+    'build:hosted',
+    'build:bower',
     'release:bower:copy',
     endingMessage(BOWER_DEST, done)
+  );
+});
+
+gulp.task('release:npm', ['clean'], function (done) {
+  sequence(
+    'build:hosted',
+    'build:npm',
+    endingMessage(NPM_DEST, function () {
+      console.log();
+      console.log(
+        'Run',
+        chalk.yellow('cd dist/npm')
+      );
+      console.log();
+      console.log(
+        'Run',
+        chalk.yellow('nvm install 8'),
+        '(node 6 does not allow 2fa)'
+      );
+      console.log();
+      console.log(
+        'Run',
+        chalk.yellow('npm publish')
+      );
+
+      done()
+    })
   );
 });
 

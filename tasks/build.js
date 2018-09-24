@@ -92,16 +92,18 @@ gulp.task('build:npm:src', function () {
 });
 
 gulp.task('build:npm:browser', function () {
-  return gulp.src([
-    'dist/hosted/web/' + VERSION + '/js/*'
-  ]).pipe(gulp.dest(NPM_DIST + '/dist/browser'));
+  var files = COMPONENTS.concat('index').map(function (component) {
+    return JS_PATH + component + '.js';
+  });
+
+  return gulp.src(files)
+    .pipe(gulp.dest(NPM_DIST + '/dist/browser'));
 });
 
 gulp.task('build:bower:js', function () {
-  var files = COMPONENTS.concat('index').reduce(function (result, component) {
-    result.push(JS_PATH + component + '.min.js');
-    return result;
-  }, []);
+  var files = COMPONENTS.concat('index').map(function (component) {
+    return JS_PATH + component + '.min.js';
+  });
 
   return gulp.src(files)
     .pipe(rename(function (path) {
@@ -171,13 +173,10 @@ gulp.task('build:npm', function (done) {
   );
 });
 
-gulp.task('build', function (done) {
+gulp.task('build', ['clean'], function (done) {
   sequence(
-    'clean',
-    [
-      'build:hosted',
-      'build:npm'
-    ],
+    'build:hosted',
+    'build:npm',
     'build:bower',
     done
   );

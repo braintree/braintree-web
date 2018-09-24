@@ -179,7 +179,7 @@ function uniq(array) {
 }
 
 CreditCardForm.prototype._validateNumber = function (value) {
-  var validationResult = validator.number(value);
+  var validationResult = validator.number(value, {luhnValidateUnionPay: true});
   var card = validationResult.card;
   var possibleCardTypes, possibleCardType;
 

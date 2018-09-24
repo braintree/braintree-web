@@ -1,5 +1,11 @@
 CHANGELOG
 =========
+## 3.38.0
+* Hosted Fields
+  * Only accepts Luhn valid UnionPay cards. Previously, non-Luhn valid card numbers were accepted even though they were not supported by Braintree
+* Payment Request
+  * Fix issue where npm browser builds could not load payment request (#388)
+
 ## 3.37.0
 * Provide browser compatible files on npm for each component in `dist/browser/component-name.js` (#366)
 * Update credit-card-type to v7.1.0

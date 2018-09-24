@@ -161,6 +161,11 @@ main() {
       confirm_version
       env BRAINTREE_JS_ENV=production gulp release:bower
       ;;
+    npm)
+      reinstall_dependencies
+      confirm_version
+      env BRAINTREE_JS_ENV=production gulp release:npm
+      ;;
     jsdoc)
       ./scripts/deploy-jsdoc
       ;;
@@ -171,6 +176,7 @@ main() {
     *)
       echo "${YELLOW}${TASK}${RED} is not a valid option. Choose from the following:${RESET}"
       echo "* hosted"
+      echo "* npm"
       echo "* bower"
       echo "* jsdoc"
       echo "* source"

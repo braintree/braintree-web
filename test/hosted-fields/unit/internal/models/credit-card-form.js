@@ -6,6 +6,7 @@ var getCardTypes = require('../../../../../src/hosted-fields/shared/get-card-typ
 var nextYear = (new Date().getFullYear() + 1).toString();
 var events = require('../../../../../src/hosted-fields/shared/constants').events;
 var externalEvents = require('../../../../../src/hosted-fields/shared/constants').externalEvents;
+var validator = require('card-validator');
 
 describe('credit card model', function () {
   beforeEach(function () {
@@ -907,6 +908,21 @@ describe('credit card model', function () {
         expect(this.supportedCardForm.get('number.value')).to.equal(discover);
         expect(this.supportedCardForm.get('number.isValid')).to.be.true;
         expect(this.supportedCardForm.get('number.isPotentiallyValid')).to.be.true;
+      });
+    });
+
+    context('luhn validity', function () {
+      it('passes option to card validator', function () {
+        var invalidCard = '6212345000000001';
+        var config = assign({}, helpers.getModelConfig(['number']), {
+          supportedCardTypes: ['UnionPay']
+        });
+
+        this.supportedCardForm = new CreditCardForm(config);
+        this.sandbox.spy(validator, 'number');
+        this.supportedCardForm.set('number.value', invalidCard);
+
+        expect(validator.number).to.be.calledWith(invalidCard, {luhnValidateUnionPay: true});
       });
     });
   });
