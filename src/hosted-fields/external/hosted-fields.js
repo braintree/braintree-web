@@ -1,16 +1,20 @@
 'use strict';
 
 var assign = require('../../lib/assign').assign;
+var createAuthorizationData = require('../../lib/create-authorization-data');
 var Destructor = require('../../lib/destructor');
 var classlist = require('../../lib/classlist');
 var iFramer = require('@braintree/iframer');
 var Bus = require('../../lib/bus');
+var assets = require('../../lib/assets');
 var BraintreeError = require('../../lib/braintree-error');
 var composeUrl = require('./compose-url');
 var getStylesFromClass = require('./get-styles-from-class');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
+var VERSION = require('../../lib/constants').VERSION;
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
+var ASSETS_URLS = require('../../lib/constants').ASSETS_URLS;
 var uuid = require('../../lib/vendor/uuid');
 var findParentTags = require('../shared/find-parent-tags');
 var browserDetection = require('../shared/browser-detection');
@@ -312,15 +316,41 @@ function performBlurFixForIos(container) {
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
 function HostedFields(options) {
-  var failureTimeout, clientConfig, hostedFieldsUrl;
+  var failureTimeout, clientConfig, assetsUrl, isDebug, hostedFieldsUrl, authData;
   var self = this;
   var fields = {};
   var busOptions = assign({}, options);
-  var fieldCount = 0;
+  var frameReadyPromiseResolveFunctions = {};
+  var frameReadyPromises = [];
   var componentId = uuid();
 
-  clientConfig = options.client.getConfiguration();
-  hostedFieldsUrl = composeUrl(clientConfig.gatewayConfiguration.assetsUrl, componentId, clientConfig.isDebug);
+  if (options.client) {
+    clientConfig = options.client.getConfiguration();
+    assetsUrl = clientConfig.gatewayConfiguration.assetsUrl;
+    isDebug = clientConfig.isDebug;
+    this._clientInstanceOrPromise = options.client;
+  } else {
+    authData = createAuthorizationData(options.authorization);
+    assetsUrl = ASSETS_URLS[authData.environment || 'production'];
+    isDebug = Boolean(options.debug);
+
+    if (!(global.braintree && global.braintree.client)) {
+      this._clientInstanceOrPromise = assets.loadScript({
+        src: assetsUrl + '/web/' + VERSION + '/js/client.min.js'
+      });
+    } else {
+      this._clientInstanceOrPromise = Promise.resolve();
+    }
+
+    this._clientInstanceOrPromise = this._clientInstanceOrPromise.then(function () {
+      return global.braintree.client.create({
+        authorization: options.authorization,
+        debug: isDebug
+      });
+    });
+  }
+
+  hostedFieldsUrl = composeUrl(assetsUrl, componentId, isDebug);
 
   if (!options.fields || Object.keys(options.fields).length === 0) {
     throw new BraintreeError({
@@ -349,12 +379,10 @@ function HostedFields(options) {
     self._bus.teardown();
   });
 
-  this._client = options.client;
-
-  analytics.sendEvent(this._client, 'custom.hosted-fields.initialized');
+  analytics.sendEvent(this._clientInstanceOrPromise, 'custom.hosted-fields.initialized');
 
   Object.keys(options.fields).forEach(function (key) {
-    var field, container, frame;
+    var field, container, frame, frameReadyPromise;
 
     if (!constants.allowedFields.hasOwnProperty(key)) {
       throw new BraintreeError({
@@ -419,13 +447,16 @@ function HostedFields(options) {
       title: 'Secure Credit Card Frame - ' + constants.allowedFields[key].label
     });
 
-    this._injectedNodes = this._injectedNodes.concat(injectFrame(frame, container));
+    this._injectedNodes.push.apply(this._injectedNodes, injectFrame(frame, container));
     this._setupLabelFocus(key, container);
     fields[key] = {
       frameElement: frame,
       containerElement: container
     };
-    fieldCount++;
+    frameReadyPromise = new Promise(function (resolve) {
+      frameReadyPromiseResolveFunctions[key] = resolve;
+    });
+    frameReadyPromises.push(frameReadyPromise);
 
     this._state.fields[key] = {
       isEmpty: true,
@@ -455,11 +486,6 @@ function HostedFields(options) {
     }, 0);
   }.bind(this));
 
-  // TODO rejecting unsupported cards should be the default behavior after the next major revision
-  if (options.fields.number && options.fields.number.rejectUnsupportedCards) {
-    busOptions.supportedCardTypes = clientConfig.gatewayConfiguration.creditCards.supportedCardTypes;
-  }
-
   if (busOptions.styles) {
     Object.keys(busOptions.styles).forEach(function (selector) {
       var className = busOptions.styles[selector];
@@ -471,17 +497,20 @@ function HostedFields(options) {
   }
 
   failureTimeout = setTimeout(function () {
-    analytics.sendEvent(self._client, 'custom.hosted-fields.load.timed-out');
+    analytics.sendEvent(self._clientInstanceOrPromise, 'custom.hosted-fields.load.timed-out');
     self._emit('timeout');
   }, INTEGRATION_TIMEOUT_MS);
 
-  this._bus.on(events.FRAME_READY, function (reply) {
-    fieldCount--;
-    if (fieldCount === 0) {
-      clearTimeout(failureTimeout);
-      reply(busOptions);
-      self._emit('ready');
-    }
+  Promise.all(frameReadyPromises).then(function (results) {
+    var reply = results[0];
+
+    clearTimeout(failureTimeout);
+    reply(busOptions);
+    self._emit('ready');
+  });
+
+  this._bus.on(events.FRAME_READY, function (data, reply) {
+    frameReadyPromiseResolveFunctions[data.field](reply);
   });
 
   this._bus.on(
@@ -573,7 +602,7 @@ HostedFields.prototype.teardown = function () {
 
   return new Promise(function (resolve, reject) {
     self._destructor.teardown(function (err) {
-      analytics.sendEvent(self._client, 'custom.hosted-fields.teardown-completed');
+      analytics.sendEvent(self._clientInstanceOrPromise, 'custom.hosted-fields.teardown-completed');
 
       if (err) {
         reject(err);

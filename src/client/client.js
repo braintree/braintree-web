@@ -8,6 +8,7 @@ var isVerifiedDomain = require('../lib/is-verified-domain');
 var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var createAuthorizationData = require('../lib/create-authorization-data');
+var getGatewayConfiguration = require('./get-configuration').getConfiguration;
 var addMetadata = require('../lib/add-metadata');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -22,6 +23,8 @@ var VERSION = require('../lib/constants').VERSION;
 var GRAPHQL_URLS = require('../lib/constants').GRAPHQL_URLS;
 var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
+
+var cachedClients = {};
 
 /**
  * This object is returned by {@link Client#getConfiguration|getConfiguration}. This information is used extensively by other Braintree modules to properly configure themselves.
@@ -76,7 +79,6 @@ function Client(configuration) {
     return JSON.parse(configurationJSON);
   };
 
-  this._activeCache = true;
   this._request = request;
   this._configuration = this.getConfiguration();
 
@@ -104,6 +106,30 @@ function Client(configuration) {
     });
   }
 }
+
+Client.initialize = function (options) {
+  if (cachedClients[options.authorization]) {
+    return Promise.resolve(cachedClients[options.authorization]);
+  }
+
+  return getGatewayConfiguration(options).then(function (configuration) {
+    var client;
+
+    if (options.debug) {
+      configuration.isDebug = true;
+    }
+
+    client = new Client(configuration);
+    cachedClients[options.authorization] = client;
+
+    return client;
+  });
+};
+
+// Primarily used for testing the client initalization call
+Client.clearCache = function () {
+  cachedClients = {};
+};
 
 /**
  * Used by other modules to formulate all network requests to the Braintree gateway. It is also capable of being used directly from your own form to tokenize credit card information. However, be sure to satisfy PCI compliance if you use direct card tokenization.
@@ -380,8 +406,7 @@ Client.prototype.getVersion = function () {
 Client.prototype.teardown = wrapPromise(function () {
   var self = this; // eslint-disable-line no-invalid-this
 
-  self._activeCache = false;
-
+  delete cachedClients[self.getConfiguration().authorization];
   convertMethodsToError(self, methods(Client.prototype));
 
   return Promise.resolve();

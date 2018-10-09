@@ -2,6 +2,7 @@
 
 var assign = require('../../lib/assign').assign;
 var Bus = require('../../lib/bus');
+var Promise = require('../../lib/promise');
 var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
 var frameName = require('./get-frame-name');
 var assembleIFrames = require('./assemble-iframes');
@@ -186,73 +187,78 @@ function shimPlaceholder() {
 
 function create() {
   var componentId = location.hash.slice(1, location.hash.length);
+  var name = frameName.getFrameName();
 
   global.bus = new Bus({channel: componentId});
 
-  global.bus.emit(events.FRAME_READY, orchestrate);
+  global.bus.emit(events.FRAME_READY, {
+    field: name
+  }, orchestrate);
 }
 
-function createTokenizationHandler(client, cardForm) {
+function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
   return function (options, reply) {
-    var mergedCardData, creditCardDetails;
-    var isEmpty = cardForm.isEmpty();
-    var invalidFieldKeys = cardForm.invalidFieldKeys();
-    var isValid = invalidFieldKeys.length === 0;
+    Promise.resolve(clientInstanceOrPromise).then(function (client) {
+      var mergedCardData, creditCardDetails;
+      var isEmpty = cardForm.isEmpty();
+      var invalidFieldKeys = cardForm.invalidFieldKeys();
+      var isValid = invalidFieldKeys.length === 0;
 
-    if (isEmpty) {
-      reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
+      if (isEmpty) {
+        reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
 
-      return;
-    } else if (!isValid) {
-      reply([new BraintreeError({
-        type: errors.HOSTED_FIELDS_FIELDS_INVALID.type,
-        code: errors.HOSTED_FIELDS_FIELDS_INVALID.code,
-        message: errors.HOSTED_FIELDS_FIELDS_INVALID.message,
-        details: {invalidFieldKeys: invalidFieldKeys}
-      })]);
+        return Promise.resolve();
+      } else if (!isValid) {
+        reply([new BraintreeError({
+          type: errors.HOSTED_FIELDS_FIELDS_INVALID.type,
+          code: errors.HOSTED_FIELDS_FIELDS_INVALID.code,
+          message: errors.HOSTED_FIELDS_FIELDS_INVALID.message,
+          details: {invalidFieldKeys: invalidFieldKeys}
+        })]);
 
-      return;
-    }
-
-    options = options || {};
-
-    mergedCardData = mergeCardData(cardForm.getCardData(), options);
-
-    creditCardDetails = formatCardRequestData(mergedCardData);
-
-    creditCardDetails.options = {
-      validate: options.vault === true
-    };
-
-    client.request({
-      api: 'clientApi',
-      method: 'post',
-      endpoint: 'payment_methods/credit_cards',
-      data: {
-        _meta: {
-          source: 'hosted-fields'
-        },
-        creditCard: creditCardDetails
+        return Promise.resolve();
       }
-    }).then(function (clientApiResult) {
-      var clientApiCreditCard = clientApiResult.creditCards[0];
-      var result = {
-        nonce: clientApiCreditCard.nonce,
-        details: clientApiCreditCard.details,
-        description: clientApiCreditCard.description,
-        type: clientApiCreditCard.type,
-        binData: clientApiCreditCard.binData
+
+      options = options || {};
+
+      mergedCardData = mergeCardData(cardForm.getCardData(), options);
+
+      creditCardDetails = formatCardRequestData(mergedCardData);
+
+      creditCardDetails.options = {
+        validate: options.vault === true
       };
 
-      analytics.sendEvent(client, 'custom.hosted-fields.tokenization.succeeded');
+      return client.request({
+        api: 'clientApi',
+        method: 'post',
+        endpoint: 'payment_methods/credit_cards',
+        data: {
+          _meta: {
+            source: 'hosted-fields'
+          },
+          creditCard: creditCardDetails
+        }
+      }).then(function (clientApiResult) {
+        var clientApiCreditCard = clientApiResult.creditCards[0];
+        var result = {
+          nonce: clientApiCreditCard.nonce,
+          details: clientApiCreditCard.details,
+          description: clientApiCreditCard.description,
+          type: clientApiCreditCard.type,
+          binData: clientApiCreditCard.binData
+        };
 
-      reply([null, result]);
-    }).catch(function (clientApiError) {
-      var formattedError = formatTokenizationError(clientApiError);
+        analytics.sendEvent(clientInstanceOrPromise, 'custom.hosted-fields.tokenization.succeeded');
 
-      analytics.sendEvent(client, 'custom.hosted-fields.tokenization.failed');
+        reply([null, result]);
+      }).catch(function (clientApiError) {
+        var formattedError = formatTokenizationError(clientApiError);
 
-      reply([formattedError]);
+        analytics.sendEvent(clientInstanceOrPromise, 'custom.hosted-fields.tokenization.failed');
+
+        reply([formattedError]);
+      });
     });
   };
 }
@@ -286,24 +292,45 @@ function formatTokenizationError(err) {
 }
 
 function orchestrate(configuration) {
-  var client = new Client(configuration.client);
   var cardForm = new CreditCardForm(configuration);
   var iframes = assembleIFrames.assembleIFrames(window.parent);
+  var clientPromise;
 
-  iframes.forEach(function (iframe) {
-    iframe.braintree.hostedFields.initialize(cardForm);
+  if (configuration.client) {
+    clientPromise = Promise.resolve(new Client(configuration.client));
+  } else {
+    clientPromise = Client.initialize(configuration);
+  }
+
+  clientPromise = clientPromise.then(function (client) {
+    if (configuration.fields.number && configuration.fields.number.rejectUnsupportedCards) {
+      // NEXT_MAJOR_VERSION rejecting unsupported cards should be the default behavior after the next major revision
+      cardForm.setSupportedCardTypes(client.getConfiguration().gatewayConfiguration.creditCards.supportedCardTypes);
+      // force a validation now that the validation rules have changed
+      cardForm.validateField('number');
+    }
+
+    return client;
   });
 
-  analytics.sendEvent(client, 'custom.hosted-fields.load.succeeded');
+  iframes.forEach(function (iframe) {
+    try {
+      iframe.braintree.hostedFields.initialize(cardForm);
+    } catch (e) { /* noop */ }
+  });
+
+  analytics.sendEvent(clientPromise, 'custom.hosted-fields.load.succeeded');
 
   global.bus.on(events.TOKENIZATION_REQUEST, function (options, reply) {
-    var tokenizationHandler = createTokenizationHandler(client, cardForm);
+    var tokenizationHandler = createTokenizationHandler(clientPromise, cardForm);
 
     tokenizationHandler(options, reply);
   });
 
   // Globalize cardForm is global so other components (UnionPay) can access it
   global.cardForm = cardForm;
+
+  return clientPromise;
 }
 
 function mergeCardData(cardData, options) {
@@ -329,6 +356,7 @@ function mergeCardData(cardData, options) {
 module.exports = {
   initialize: initialize,
   create: create,
+  orchestrate: orchestrate,
   createTokenizationHandler: createTokenizationHandler,
   autofillHandler: autofillHandler
 };

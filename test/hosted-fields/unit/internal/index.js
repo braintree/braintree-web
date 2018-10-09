@@ -3,10 +3,11 @@
 'use strict';
 
 var internal = require('../../../../src/hosted-fields/internal/index');
+var Promise = require('../../../../src/lib/promise');
+var Client = require('../../../../src/client/client');
 var getFrameName = require('../../../../src/hosted-fields/internal/get-frame-name');
 var events = require('../../../../src/hosted-fields/shared/constants').events;
 var CreditCardForm = require('../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
-var Bus = require('../../../../src/lib/bus');
 var analytics = require('../../../../src/lib/analytics');
 var fake = require('../../../helpers/fake');
 var assembleIFrames = require('../../../../src/hosted-fields/internal/assemble-iframes');
@@ -102,21 +103,20 @@ describe('internal', function () {
 
       location.hash = originalLocationHash;
     });
+
+    it('emits that the frame is ready', function () {
+      internal.create();
+
+      expect(global.bus.emit).to.be.calledOnce;
+      expect(global.bus.emit).to.be.calledWith(events.FRAME_READY, {
+        field: 'cvv'
+      }, this.sandbox.match.func);
+    });
   });
 
   describe('orchestrate', function () {
-    beforeEach(function () {
-      var i, args;
-
-      internal.create();
-
-      for (i = 0; i < Bus.prototype.emit.callCount; i++) {
-        args = Bus.prototype.emit.getCall(i).args;
-        if (args[0] === events.FRAME_READY) {
-          this.orchestrate = args[1];
-          break;
-        }
-      }
+    afterEach(function () {
+      delete global.cardForm;
     });
 
     context('supporting card types', function () {
@@ -134,9 +134,76 @@ describe('internal', function () {
         this.sandbox.stub(analytics, 'sendEvent');
         this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
-        this.orchestrate(config);
+        internal.orchestrate(config);
 
         expect(global.cardForm.supportedCardTypes).to.be.not.undefined;
+      });
+
+      it('sets supported card types asyncronously with authorization', function () {
+        var config = {
+          authorization: fake.clientToken,
+          fields: {
+            number: {selector: '#foo', rejectUnsupportedCards: true},
+            cvv: {selector: '#boo'},
+            postalCode: {selector: '#you'}
+          }
+        };
+
+        this.sandbox.stub(Client, 'initialize').resolves(fake.client());
+        this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
+        this.sandbox.stub(CreditCardForm.prototype, 'validateField');
+        this.sandbox.stub(analytics, 'sendEvent');
+        this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+        return internal.orchestrate(config).then(function () {
+          expect(CreditCardForm.prototype.validateField).to.be.calledOnce;
+          expect(CreditCardForm.prototype.validateField).to.be.calledWith('number');
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledOnce;
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith([
+            'American Express',
+            'Discover',
+            'Visa'
+          ]);
+        });
+      });
+
+      it('does not set supported card types with authorization if rejectUnsupportedCards is not set', function () {
+        var config = {
+          authorization: fake.clientToken,
+          fields: {
+            number: {selector: '#foo'},
+            cvv: {selector: '#boo'},
+            postalCode: {selector: '#you'}
+          }
+        };
+
+        this.sandbox.stub(Client, 'initialize').resolves(fake.client());
+        this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
+        this.sandbox.stub(analytics, 'sendEvent');
+        this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+        return internal.orchestrate(config).then(function () {
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.not.be.called;
+        });
+      });
+
+      it('does not set supported card types with authorization if number field is not provided', function () {
+        var config = {
+          authorization: fake.clientToken,
+          fields: {
+            cvv: {selector: '#boo'},
+            postalCode: {selector: '#you'}
+          }
+        };
+
+        this.sandbox.stub(Client, 'initialize').resolves(fake.client());
+        this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
+        this.sandbox.stub(analytics, 'sendEvent');
+        this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+        return internal.orchestrate(config).then(function () {
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.not.be.called;
+        });
       });
     });
 
@@ -144,7 +211,7 @@ describe('internal', function () {
       this.sandbox.stub(analytics, 'sendEvent');
       this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
-      this.orchestrate({
+      internal.orchestrate({
         client: fake.configuration(),
         fields: {
           number: {selector: '#foo'},
@@ -154,6 +221,121 @@ describe('internal', function () {
       });
 
       expect(analytics.sendEvent).to.be.calledWith(this.sandbox.match.object, 'custom.hosted-fields.load.succeeded');
+    });
+
+    it('calls initialize on each frame that has an initalize function', function () {
+      var frame1 = {
+        braintree: {
+          hostedFields: {
+            initialize: this.sandbox.stub()
+          }
+        }
+      };
+      var frame2 = {
+        braintree: {
+          hostedFields: {
+            initialize: this.sandbox.stub()
+          }
+        }
+      };
+      var frameWithoutInitialize = {
+        braintree: {
+          hostedFields: {
+          }
+        }
+      };
+      var frameWithoutBraintreeGlobal = {
+      };
+
+      this.sandbox.stub(analytics, 'sendEvent');
+      this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([
+        frame1,
+        frameWithoutInitialize,
+        frameWithoutBraintreeGlobal,
+        frame2
+      ]);
+
+      internal.orchestrate({
+        client: fake.configuration(),
+        fields: {
+          number: {selector: '#foo'},
+          cvv: {selector: '#boo'},
+          postalCode: {selector: '#you'}
+        }
+      });
+
+      expect(frame1.braintree.hostedFields.initialize).to.be.calledOnce;
+      expect(frame1.braintree.hostedFields.initialize).to.be.calledWith(this.sandbox.match.instanceOf(CreditCardForm));
+      expect(frame2.braintree.hostedFields.initialize).to.be.calledOnce;
+      expect(frame2.braintree.hostedFields.initialize).to.be.calledWith(this.sandbox.match.instanceOf(CreditCardForm));
+    });
+
+    it('sets up a tokenization handler', function () {
+      this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+      internal.orchestrate({
+        client: fake.configuration(),
+        fields: {
+          number: {selector: '#foo'},
+          cvv: {selector: '#boo'},
+          postalCode: {selector: '#you'}
+        }
+      });
+
+      expect(global.bus.on).to.be.calledOnce;
+      expect(global.bus.on).to.be.calledWith(events.TOKENIZATION_REQUEST, this.sandbox.match.func);
+    });
+
+    it('sets up a global card form', function () {
+      expect(global.cardForm).to.not.exist;
+
+      this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+      internal.orchestrate({
+        client: fake.configuration(),
+        fields: {
+          number: {selector: '#foo'},
+          cvv: {selector: '#boo'},
+          postalCode: {selector: '#you'}
+        }
+      });
+
+      expect(global.cardForm).to.be.an.instanceof(CreditCardForm);
+    });
+
+    it('creates a client instance from client option', function () {
+      this.sandbox.stub(Client, 'initialize');
+      this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+      internal.orchestrate({
+        client: fake.configuration(),
+        fields: {
+          number: {selector: '#foo'},
+          cvv: {selector: '#boo'},
+          postalCode: {selector: '#you'}
+        }
+      });
+
+      expect(Client.initialize).to.not.be.called;
+    });
+
+    it('creates a client initialization promise from authorization option', function () {
+      this.sandbox.stub(Client, 'initialize').resolves(fake.client());
+      this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+      internal.orchestrate({
+        authorization: 'auth',
+        fields: {
+          number: {selector: '#foo'},
+          cvv: {selector: '#boo'},
+          postalCode: {selector: '#you'}
+        }
+      });
+
+      expect(Client.initialize).to.be.calledOnce;
+      expect(Client.initialize).to.be.calledWithMatch({
+        authorization: 'auth'
+      });
     });
   });
 
@@ -826,6 +1008,35 @@ describe('internal', function () {
 
         done();
       });
+    });
+
+    it('can take a client initialization promise to defer the request until the client is ready', function (done) {
+      var clock = this.sandbox.useFakeTimers();
+      var client = this.goodClient;
+      var clientPromise = new Promise(function (resolve) {
+        setTimeout(function () {
+          resolve(client);
+        }, 1000);
+      });
+
+      create(clientPromise, this.validCardForm)(this.fakeOptions, function (arg) {
+        expect(client.request).to.be.calledOnce;
+        expect(arg).to.deep.equal([null, {
+          nonce: this.fakeNonce,
+          details: this.fakeDetails,
+          description: this.fakeDescription,
+          type: this.fakeType,
+          binData: this.binData
+        }]);
+
+        done();
+      }.bind(this));
+
+      clock.tick(950);
+
+      expect(client.request).to.not.be.called;
+
+      clock.tick(100);
     });
   });
 

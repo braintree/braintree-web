@@ -27,10 +27,12 @@ function createAuthorizationData(authorization) {
 
   if (_isTokenizationKey(authorization)) {
     parsedTokenizationKey = _parseTokenizationKey(authorization);
+    data.environment = parsedTokenizationKey.environment;
     data.attrs.tokenizationKey = authorization;
     data.configUrl = CLIENT_API_URLS[parsedTokenizationKey.environment] + '/merchants/' + parsedTokenizationKey.merchantId + '/client_api/v1/configuration';
   } else {
     parsedClientToken = JSON.parse(atob(authorization));
+    data.environment = parsedClientToken.environment;
     data.attrs.authorizationFingerprint = parsedClientToken.authorizationFingerprint;
     data.configUrl = parsedClientToken.configUrl;
     data.graphQL = parsedClientToken.graphQL;

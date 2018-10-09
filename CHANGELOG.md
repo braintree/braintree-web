@@ -1,5 +1,9 @@
 CHANGELOG
 =========
+## 3.38.1
+* Update credit-card-type to v8.0.0
+* Update card-validator to v6.0.0
+
 ## 3.38.0
 * Hosted Fields
   * Only accepts Luhn valid UnionPay cards. Previously, non-Luhn valid card numbers were accepted even though they were not supported by Braintree

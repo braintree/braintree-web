@@ -1,9 +1,11 @@
 'use strict';
 
+var AJAXDriver = require('../../../src/client/request/ajax-driver');
 var Client = require('../../../src/client/client');
 var BRAINTREE_VERSION = require('../../../src/client/constants').BRAINTREE_VERSION;
 var VERSION = process.env.npm_package_version;
 var Promise = require('../../../src/lib/promise');
+var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 var fake = require('../../helpers/fake');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
@@ -96,6 +98,76 @@ describe('Client', function () {
         expect(err.message).to.equal('braintreeApi URL is on an invalid domain.');
         done();
       }
+    });
+  });
+
+  describe('initialize', function () {
+    beforeEach(function () {
+      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, fake.configuration().gatewayConfiguration);
+      Client.clearCache();
+    });
+
+    it('gets the configuration from the gateway', function () {
+      var self = this;
+
+      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
+        expect(self.getSpy).to.be.calledWith(self.sandbox.match({
+          url: self.sandbox.match(/client_api\/v1\/configuration$/)
+        }));
+      });
+    });
+
+    it('errors out when configuration endpoint is not reachable', function () {
+      this.getSpy.restore();
+      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields({errors: 'Unknown error'});
+
+      return Client.initialize({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
+        expect(err.message).to.equal('Cannot contact the gateway at this time.');
+      });
+    });
+
+    it('errors out when the Client fails to initialize', function () {
+      this.getSpy.restore();
+      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, null);
+
+      return Client.initialize({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('INTERNAL');
+        expect(err.code).to.equal('CLIENT_MISSING_GATEWAY_CONFIGURATION');
+        expect(err.message).to.equal('Missing gatewayConfiguration.');
+      });
+    });
+
+    it('can pass debug: true onto configuration', function () {
+      return Client.initialize({authorization: fake.clientToken, debug: true}).then(function (thingy) {
+        expect(thingy).to.be.an.instanceof(Client);
+        expect(thingy.getConfiguration().isDebug).to.be.true;
+      });
+    });
+
+    it('caches client when created with the same authorization', function () {
+      return Client.initialize({authorization: fake.tokenizationKey}).then(function (firstFakeClient) {
+        return Client.initialize({authorization: fake.clientToken}).then(function (secondFakeClient) {
+          expect(firstFakeClient).to.not.equal(secondFakeClient);
+
+          return Client.initialize({authorization: fake.tokenizationKey});
+        }).then(function (thirdFakeClient) {
+          expect(firstFakeClient).to.equal(thirdFakeClient);
+        });
+      });
+    });
+
+    it('invalidates cached client on teardown', function () {
+      return Client.initialize({authorization: fake.tokenizationKey}).then(function (firstFakeClient) {
+        firstFakeClient.teardown();
+
+        return Client.initialize({authorization: fake.tokenizationKey}).then(function (secondFakeClient) {
+          expect(firstFakeClient).to.not.equal(secondFakeClient);
+        });
+      });
     });
   });
 

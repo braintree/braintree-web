@@ -1,6 +1,6 @@
 'use strict';
 
-var clientToken, clientTokenWithGraphQL;
+var clientToken, clientTokenWithGraphQL, clientTokenWithoutEnvironment;
 var tokenizationKey = 'development_testing_merchant_id';
 var constants = require('../../src/lib/constants');
 var assign = require('../../src/lib/assign').assign;
@@ -74,12 +74,14 @@ function client(options) {
     getVersion: function () {
       return options.version || constants.VERSION;
     },
-    request: function () {}
+    request: function () {},
+    teardown: function () {}
   };
 }
 
 clientToken = configuration().gatewayConfiguration;
 clientToken.authorizationFingerprint = 'encoded_auth_fingerprint';
+clientToken.environment = 'development';
 
 clientTokenWithGraphQL = assign({
   graphQL: {
@@ -88,13 +90,18 @@ clientTokenWithGraphQL = assign({
   }
 }, clientToken);
 
+clientTokenWithoutEnvironment = assign({}, clientToken);
+delete clientTokenWithoutEnvironment.environment;
+
 clientTokenWithGraphQL = btoa(JSON.stringify(clientTokenWithGraphQL));
 clientToken = btoa(JSON.stringify(clientToken));
+clientTokenWithoutEnvironment = btoa(JSON.stringify(clientTokenWithoutEnvironment));
 
 module.exports = {
   tokenizationKey: tokenizationKey,
   clientToken: clientToken,
   clientTokenWithGraphQL: clientTokenWithGraphQL,
+  clientTokenWithoutEnvironment: clientTokenWithoutEnvironment,
   configuration: configuration,
   client: client
 };

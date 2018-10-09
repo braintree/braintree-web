@@ -233,6 +233,7 @@ var VERSION = process.env.npm_package_version;
 function create(options) {
   return basicComponentVerification.verify({
     name: 'Hosted Fields',
+    authorization: options.authorization,
     client: options.client
   }).then(function () {
     var integration = new HostedFields(options);

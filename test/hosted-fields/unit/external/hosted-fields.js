@@ -4,6 +4,7 @@ var Bus = require('../../../../src/lib/bus');
 var HostedFields = require('../../../../src/hosted-fields/external/hosted-fields');
 var constants = require('../../../../src/hosted-fields/shared/constants');
 var events = constants.events;
+var assets = require('../../../../src/lib/assets');
 var Destructor = require('../../../../src/lib/destructor');
 var EventEmitter = require('../../../../src/lib/event-emitter');
 var BraintreeError = require('../../../../src/lib/braintree-error');
@@ -128,7 +129,7 @@ describe('HostedFields', function () {
       expect(instance._bus.on).to.be.calledWith(events.FRAME_READY, this.sandbox.match.func);
     });
 
-    it('replies with configuration, only to the final FRAME_READY', function () {
+    it('replies with configuration, only to the final FRAME_READY', function (done) {
       var instance, i, frameReadyHandler;
       var configuration = this.defaultConfiguration;
       var replyStub = this.sandbox.stub();
@@ -159,61 +160,18 @@ describe('HostedFields', function () {
         }
       }
 
-      frameReadyHandler(replyStub);
-      expect(replyStub).not.to.have.beenCalled;
+      instance.on('ready', function () {
+        expect(replyStub).to.be.calledWith(configuration);
 
-      frameReadyHandler(replyStub);
-      expect(replyStub).not.to.have.beenCalled;
-
-      frameReadyHandler(replyStub);
-      expect(replyStub).to.be.calledWith(configuration);
-    });
-
-    context('supported card types', function () {
-      it('replies with configuration including supportedCardTypes', function () {
-        var instance, i, frameReadyHandler;
-        var configuration = this.defaultConfiguration;
-        var replyStub = this.sandbox.stub();
-        var numberNode = document.createElement('div');
-
-        numberNode.id = 'number';
-
-        document.body.appendChild(numberNode);
-
-        configuration.fields = {
-          number: {
-            rejectUnsupportedCards: true,
-            selector: '#number'
-          }
-        };
-
-        instance = new HostedFields(configuration);
-
-        for (i = 0; i < instance._bus.on.callCount; i++) {
-          if (instance._bus.on.getCall(0).args[0] === events.FRAME_READY) {
-            frameReadyHandler = instance._bus.on.getCall(0).args[1];
-            break;
-          }
-        }
-
-        frameReadyHandler(replyStub);
-        expect(replyStub).not.to.have.beenCalled;
-
-        frameReadyHandler(replyStub);
-        expect(replyStub).not.to.have.beenCalled;
-
-        frameReadyHandler(replyStub);
-        expect(replyStub).to.be.calledWithMatch({
-          supportedCardTypes: [
-            'American Express',
-            'Discover',
-            'Visa'
-          ]
-        });
+        done();
       });
+
+      frameReadyHandler({field: 'number'}, replyStub);
+      frameReadyHandler({field: 'cvv'}, replyStub);
+      frameReadyHandler({field: 'expirationDate'}, replyStub);
     });
 
-    it('converts class name to computed style', function () {
+    it('converts class name to computed style', function (done) {
       var instance, i, frameReadyHandler;
       var configuration = this.defaultConfiguration;
       var replyStub = this.sandbox.stub();
@@ -243,20 +201,19 @@ describe('HostedFields', function () {
         }
       }
 
-      frameReadyHandler(replyStub);
-      expect(replyStub).not.to.have.beenCalled;
+      instance.on('ready', function () {
+        expect(replyStub).to.be.calledWithMatch({
+          styles: {
+            input: this.sandbox.match({
+              color: 'rgb(0, 0, 255)'
+            })
+          }
+        });
 
-      frameReadyHandler(replyStub);
-      expect(replyStub).not.to.have.beenCalled;
+        done();
+      }.bind(this));
 
-      frameReadyHandler(replyStub);
-      expect(replyStub).to.be.calledWithMatch({
-        styles: {
-          input: this.sandbox.match({
-            color: 'rgb(0, 0, 255)'
-          })
-        }
-      });
+      frameReadyHandler({field: 'number'}, replyStub);
     });
 
     it('emits "ready" when the final FRAME_READY is emitted', function (done) {
@@ -293,9 +250,9 @@ describe('HostedFields', function () {
 
       instance.on('ready', done);
 
-      frameReadyHandler(noop);
-      frameReadyHandler(noop);
-      frameReadyHandler(noop);
+      frameReadyHandler({field: 'number'}, noop);
+      frameReadyHandler({field: 'cvv'}, noop);
+      frameReadyHandler({field: 'expirationDate'}, noop);
     });
 
     it('subscribes to INPUT_EVENT', function () {
@@ -376,6 +333,165 @@ describe('HostedFields', function () {
       var state = instance.getState();
 
       expect(state.cards).to.deep.equal(getCardTypes(''));
+    });
+
+    it('loads client script from cdn if using an authorization instead of a client', function (done) {
+      var instance, i, frameReadyHandler;
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var cvvNode = document.createElement('div');
+      var expirationDateNode = document.createElement('div');
+
+      function noop() {}
+
+      this.sandbox.stub(assets, 'loadScript').callsFake(function () {
+        global.braintree = global.braintree || {};
+        global.braintree.client = {
+          create: this.sandbox.stub().resolves(fake.client())
+        };
+
+        return Promise.resolve();
+      }.bind(this));
+
+      numberNode.id = 'number';
+      cvvNode.id = 'cvv';
+      expirationDateNode.id = 'expirationDate';
+
+      document.body.appendChild(numberNode);
+      document.body.appendChild(cvvNode);
+      document.body.appendChild(expirationDateNode);
+
+      configuration.fields = {
+        number: {selector: '#number'},
+        cvv: {selector: '#cvv'},
+        expirationDate: {selector: '#expirationDate'}
+      };
+
+      delete configuration.client;
+      configuration.authorization = fake.clientToken;
+
+      instance = new HostedFields(configuration);
+
+      for (i = 0; i < instance._bus.on.callCount; i++) {
+        if (instance._bus.on.getCall(0).args[0] === events.FRAME_READY) {
+          frameReadyHandler = instance._bus.on.getCall(0).args[1];
+          break;
+        }
+      }
+
+      instance.on('ready', function () {
+        expect(assets.loadScript).to.be.calledOnce;
+        expect(assets.loadScript).to.be.calledWith({
+          src: this.sandbox.match(/client.min.js/)
+        });
+        delete global.braintree;
+
+        done();
+      }.bind(this));
+
+      frameReadyHandler({field: 'number'}, noop);
+      frameReadyHandler({field: 'cvv'}, noop);
+      frameReadyHandler({field: 'expirationDate'}, noop);
+    });
+
+    it('uses existing client creation script if it exists on the window when using an authorization', function (done) {
+      var instance, i, frameReadyHandler;
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createElement('div');
+      var cvvNode = document.createElement('div');
+      var expirationDateNode = document.createElement('div');
+
+      function noop() {}
+
+      global.braintree = global.braintree || {};
+      global.braintree.client = {
+        create: this.sandbox.stub().resolves(fake.client())
+      };
+
+      this.sandbox.stub(assets, 'loadScript');
+
+      numberNode.id = 'number';
+      cvvNode.id = 'cvv';
+      expirationDateNode.id = 'expirationDate';
+
+      document.body.appendChild(numberNode);
+      document.body.appendChild(cvvNode);
+      document.body.appendChild(expirationDateNode);
+
+      configuration.fields = {
+        number: {selector: '#number'},
+        cvv: {selector: '#cvv'},
+        expirationDate: {selector: '#expirationDate'}
+      };
+
+      delete configuration.client;
+      configuration.authorization = fake.clientToken;
+
+      instance = new HostedFields(configuration);
+
+      for (i = 0; i < instance._bus.on.callCount; i++) {
+        if (instance._bus.on.getCall(0).args[0] === events.FRAME_READY) {
+          frameReadyHandler = instance._bus.on.getCall(0).args[1];
+          break;
+        }
+      }
+
+      instance.on('ready', function () {
+        expect(assets.loadScript).to.not.be.called;
+        delete global.braintree;
+
+        done();
+      });
+
+      frameReadyHandler({field: 'number'}, noop);
+      frameReadyHandler({field: 'cvv'}, noop);
+      frameReadyHandler({field: 'expirationDate'}, noop);
+    });
+
+    it('uses production asset url if client token does not have an environment property', function (done) {
+      var instance, i, frameReadyHandler;
+      var configuration = this.defaultConfiguration;
+      var numberNode = this.numberDiv;
+      var cvvNode = document.createElement('div');
+      var expirationDateNode = document.createElement('div');
+
+      function noop() {}
+
+      cvvNode.id = 'cvv';
+      expirationDateNode.id = 'expirationDate';
+
+      document.body.appendChild(cvvNode);
+      document.body.appendChild(expirationDateNode);
+
+      configuration.fields = {
+        number: {selector: '#number'},
+        cvv: {selector: '#cvv'},
+        expirationDate: {selector: '#expirationDate'}
+      };
+
+      delete configuration.client;
+      configuration.authorization = fake.clientTokenWithoutEnvironment;
+
+      instance = new HostedFields(configuration);
+
+      for (i = 0; i < instance._bus.on.callCount; i++) {
+        if (instance._bus.on.getCall(0).args[0] === events.FRAME_READY) {
+          frameReadyHandler = instance._bus.on.getCall(0).args[1];
+          break;
+        }
+      }
+
+      instance.on('ready', function () {
+        expect(numberNode.querySelector('iframe').src).to.match(/^https:\/\/assets.braintreegateway.com.*/);
+        done();
+      });
+
+      // allow iframes to be added to DOM
+      setTimeout(function () {
+        frameReadyHandler({field: 'number'}, noop);
+        frameReadyHandler({field: 'cvv'}, noop);
+        frameReadyHandler({field: 'expirationDate'}, noop);
+      }, 10);
     });
   });
 
@@ -603,7 +719,7 @@ describe('HostedFields', function () {
 
       HostedFields.prototype.teardown.call({
         _destructor: teardownStub,
-        _client: function () {}
+        _clientInstanceOrPromise: function () {}
       }, callback);
 
       expect(teardownStub.teardown).to.be.calledWith(this.sandbox.match.func);
@@ -614,7 +730,7 @@ describe('HostedFields', function () {
       var client = this.defaultConfiguration.client;
 
       HostedFields.prototype.teardown.call({
-        _client: client,
+        _clientInstanceOrPromise: client,
         _destructor: {
           teardown: function (callback) {
             callback(fakeErr);
@@ -634,7 +750,7 @@ describe('HostedFields', function () {
 
       promise = HostedFields.prototype.teardown.call({
         _destructor: {teardown: function () {}},
-        _client: client
+        _clientInstanceOrPromise: client
       });
 
       expect(promise).to.be.an.instanceof(Promise);

@@ -8,6 +8,11 @@ var CLIENT_API_URLS = {
   sandbox: 'https://api.sandbox.braintreegateway.com:443'
 };
 
+var ASSETS_URLS = {
+  production: 'https://assets.braintreegateway.com',
+  sandbox: 'https://assets.braintreegateway.com'
+};
+
 var GRAPHQL_URLS = {
   production: 'https://payments.braintree-api.com/graphql',
   sandbox: 'https://payments.sandbox.braintree-api.com/graphql'
@@ -17,12 +22,14 @@ var GRAPHQL_URLS = {
 if (process.env.BRAINTREE_JS_ENV === 'development') {
   CLIENT_API_URLS.development = process.env.BRAINTREE_JS_API_PROTOCOL + '://' + process.env.BRAINTREE_JS_API_HOST + ':' + process.env.BRAINTREE_JS_API_PORT;
   GRAPHQL_URLS.development = process.env.BRAINTREE_JS_GRAPH_QL_ENDPOINT;
+  ASSETS_URLS.development = process.env.BRAINTREE_JS_ASSET_URL;
 }
 // endRemoveIf(production)
 
 module.exports = {
   ANALYTICS_PREFIX: PLATFORM + '.',
   ANALYTICS_REQUEST_TIMEOUT_MS: 2000,
+  ASSETS_URLS: ASSETS_URLS,
   CLIENT_API_URLS: CLIENT_API_URLS,
   GRAPHQL_URLS: GRAPHQL_URLS,
   INTEGRATION_TIMEOUT_MS: 60000,

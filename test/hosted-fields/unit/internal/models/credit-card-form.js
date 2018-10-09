@@ -54,39 +54,27 @@ describe('credit card model', function () {
       expect(cardForm.configuration).to.equal(configuration);
     });
 
-    context('supporting card types', function () {
-      it('sets a supportedCardTypes property', function () {
-        var configuration = assign({}, helpers.getModelConfig(), {
-          supportedCardTypes: []
-        });
-        var cardForm = new CreditCardForm(configuration);
+    it('does not set supportedCardTypes when not specified', function () {
+      var configuration = helpers.getModelConfig();
 
-        expect(cardForm.supportedCardTypes).to.not.be.undefined;
-      });
+      this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
 
-      it('normalizes supportedCardTypes', function () {
-        var configuration = assign({}, helpers.getModelConfig(), {
-          supportedCardTypes: [
-            'discover',
-            'Master-Card',
-            'VISA'
-          ]
-        });
-        var cardForm = new CreditCardForm(configuration);
+      new CreditCardForm(configuration); // eslint-disable-line no-new
 
-        expect(cardForm.supportedCardTypes).to.be.deep.equal([
-          'discover',
-          'mastercard',
-          'visa'
-        ]);
-      });
+      expect(CreditCardForm.prototype.setSupportedCardTypes).to.not.be.called;
+    });
 
-      it('does not set supportedCardTypes when not specified', function () {
-        var configuration = helpers.getModelConfig();
-        var cardForm = new CreditCardForm(configuration);
+    it('does set supportedCardTypes when specified', function () {
+      var configuration = helpers.getModelConfig();
 
-        expect(cardForm.supportedCardTypes).to.be.undefined;
-      });
+      configuration.supportedCardTypes = ['VISA'];
+
+      this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
+
+      new CreditCardForm(configuration); // eslint-disable-line no-new
+
+      expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledOnce;
+      expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith(['VISA']);
     });
 
     it('attaches change events for each field (cvv only)', function () {
@@ -943,6 +931,36 @@ describe('credit card model', function () {
       this.card.set('number.value', '4');
 
       expect(this.card.emitEvent).to.be.calledWith('number', externalEvents.NOT_EMPTY);
+    });
+  });
+
+  describe('setSupportedCardTypes', function () {
+    it('sets a supportedCardTypes property', function () {
+      var configuration = helpers.getModelConfig();
+      var cardForm = new CreditCardForm(configuration);
+
+      expect(cardForm.supportedCardTypes).to.be.undefined;
+
+      cardForm.setSupportedCardTypes(['VISA']);
+
+      expect(cardForm.supportedCardTypes).to.deep.equal(['visa']);
+    });
+
+    it('normalizes supportedCardTypes', function () {
+      var configuration = helpers.getModelConfig();
+      var supportedCardTypes = [
+        'discover',
+        'Master-Card',
+        'VISA'
+      ];
+      var cardForm = new CreditCardForm(configuration);
+
+      cardForm.setSupportedCardTypes(supportedCardTypes);
+      expect(cardForm.supportedCardTypes).to.be.deep.equal([
+        'discover',
+        'mastercard',
+        'visa'
+      ]);
     });
   });
 });

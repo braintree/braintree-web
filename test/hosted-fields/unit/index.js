@@ -20,7 +20,7 @@ function callFrameReadyHandler() {
       }
     }
 
-    frameReadyHandler(function () {});
+    frameReadyHandler({field: 'cvv'}, function () {});
   }, 100);
 }
 
@@ -28,11 +28,12 @@ describe('hostedFields', function () {
   describe('create', function () {
     beforeEach(function () {
       this.fakeClient = fake.client();
+      this.fakeAuthorization = fake.clientToken;
       this.fakeClient._request = function () {};
       this.sandbox.stub(basicComponentVerification, 'verify').resolves();
     });
 
-    it('verifies with basicComponentVerification', function (done) {
+    it('verifies with basicComponentVerification with client', function (done) {
       var client = this.fakeClient;
 
       hostedFields.create({
@@ -42,9 +43,27 @@ describe('hostedFields', function () {
         }
       }, function () {
         expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWith({
+        expect(basicComponentVerification.verify).to.be.calledWithMatch({
           name: 'Hosted Fields',
           client: client
+        });
+        done();
+      });
+    });
+
+    it('verifies with basicComponentVerification with authorization', function (done) {
+      var authorization = this.fakeAuthorization;
+
+      hostedFields.create({
+        authorization: authorization,
+        fields: {
+          cvv: {selector: '#cvv'}
+        }
+      }, function () {
+        expect(basicComponentVerification.verify).to.be.calledOnce;
+        expect(basicComponentVerification.verify).to.be.calledWithMatch({
+          name: 'Hosted Fields',
+          authorization: authorization
         });
         done();
       });

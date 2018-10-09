@@ -17,7 +17,7 @@ function CreditCardForm(configuration) {
   this.configuration = configuration;
 
   if (configuration.supportedCardTypes) {
-    this.supportedCardTypes = configuration.supportedCardTypes.map(normalizeCardType);
+    this.setSupportedCardTypes(configuration.supportedCardTypes);
   }
 
   EventedModel.apply(this, arguments);
@@ -34,12 +34,16 @@ function CreditCardForm(configuration) {
   }.bind(this));
 
   this.on('change:number.value', this._onNumberChange);
-  this.on('change:possibleCardTypes', function () { this._validateField('cvv'); }.bind(this));
+  this.on('change:possibleCardTypes', function () { this.validateField('cvv'); }.bind(this));
   this.on('change:possibleCardTypes', onCardTypeChange(this, 'number'));
 }
 
 CreditCardForm.prototype = Object.create(EventedModel.prototype);
 CreditCardForm.prototype.constructor = CreditCardForm;
+
+CreditCardForm.prototype.setSupportedCardTypes = function (supportedCardTypes) {
+  this.supportedCardTypes = supportedCardTypes.map(normalizeCardType);
+};
 
 CreditCardForm.prototype.resetAttributes = function () {
   var thisMonth = (new Date().getMonth() + 1).toString();
@@ -143,7 +147,7 @@ CreditCardForm.prototype._onNumberChange = function (number) {
   }
 };
 
-CreditCardForm.prototype._validateField = function (fieldKey) {
+CreditCardForm.prototype.validateField = function (fieldKey) {
   var validationResult;
   var value = this.get(fieldKey + '.value');
   var validate = validator[fieldKey];
@@ -183,7 +187,7 @@ CreditCardForm.prototype._validateNumber = function (value) {
   var card = validationResult.card;
   var possibleCardTypes, possibleCardType;
 
-  // TODO credit-card-type fixed the mastercard enum
+  // NEXT_MAJOR_VERSION credit-card-type fixed the mastercard enum
   // but we still pass master-card in the braintree API
   // in a major version bump, we can remove this and
   // this will be mastercard instead of master-card
@@ -291,7 +295,7 @@ CreditCardForm.prototype.getCardTypes = function (value) {
 function onFieldValueChange(form, fieldKey) {
   return function () {
     form.set(fieldKey + '.isEmpty', form.get(fieldKey + '.value') === '');
-    form._validateField(fieldKey);
+    form.validateField(fieldKey);
   };
 }
 

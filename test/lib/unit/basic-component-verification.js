@@ -3,12 +3,29 @@
 var verify = require('../../../src/lib/basic-component-verification').verify;
 var BraintreeError = require('../../../src/lib/braintree-error');
 var sharedErrors = require('../../../src/lib/errors');
-
-function rejectIfResolves() {
-  throw new Error('should not get here');
-}
+var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
 
 describe('basicComponentVerification', function () {
+  it('resolves when client checks pass', function () {
+    return verify({
+      name: 'Component',
+      client: {
+        getVersion: this.sandbox.stub().returns(process.env.npm_package_version)
+      }
+    }).catch(function (err) {
+      expect(err.message).to.not.exist;
+    });
+  });
+
+  it('resolves when authorization checks pass', function () {
+    return verify({
+      name: 'Component',
+      authorization: 'auth'
+    }).catch(function (err) {
+      expect(err.message).to.not.exist;
+    });
+  });
+
   it('rejects with an internal error if options are not provided', function () {
     return verify().then(rejectIfResolves).catch(function (err) {
       expect(err).to.be.an.instanceof(BraintreeError);
@@ -18,7 +35,7 @@ describe('basicComponentVerification', function () {
     });
   });
 
-  it('rejects with a braintree error if client is not provided', function () {
+  it('rejects with a braintree error if client or authorization are not provided', function () {
     return verify({
       name: 'Component'
     }).then(rejectIfResolves).catch(function (err) {
@@ -29,7 +46,7 @@ describe('basicComponentVerification', function () {
     });
   });
 
-  it('rejects with a braintree error if clientversion does not match provided version', function () {
+  it('rejects with a braintree error if no authorization is provided and clientversion does not match provided version', function () {
     var client = {
       getVersion: this.sandbox.stub().returns('3.1.0')
     };
