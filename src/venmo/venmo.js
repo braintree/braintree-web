@@ -244,7 +244,7 @@ function getFragmentParameters() {
 }
 
 function clearFragmentParameters() {
-  if (typeof global.history.replaceState === 'function') {
+  if (typeof global.history.replaceState === 'function' && global.location.href.indexOf('#') !== -1) {
     history.pushState({}, '', global.location.href.slice(0, global.location.href.indexOf('#')));
   }
 }
