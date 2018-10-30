@@ -103,8 +103,37 @@ describe('Client', function () {
 
   describe('initialize', function () {
     beforeEach(function () {
+      this.sandbox.stub(analytics, 'sendEvent');
       this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, fake.configuration().gatewayConfiguration);
       Client.clearCache();
+    });
+
+    it('sends an analytics event on initalization', function () {
+      var self = this;
+
+      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.object, 'custom.client.load.initialized');
+      });
+    });
+
+    it('sends an analytics event on success', function () {
+      var self = this;
+
+      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.object, 'custom.client.load.succeeded');
+      });
+    });
+
+    it('sends an analytics event when client is cached', function () {
+      var self = this;
+
+      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
+        expect(analytics.sendEvent).to.not.be.calledWith(self.sandbox.match.object, 'custom.client.load.cached');
+
+        return Client.initialize({authorization: fake.tokenizationKey});
+      }).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.object, 'custom.client.load.cached');
+      });
     });
 
     it('gets the configuration from the gateway', function () {
@@ -126,6 +155,25 @@ describe('Client', function () {
         expect(err.type).to.equal('NETWORK');
         expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
         expect(err.message).to.equal('Cannot contact the gateway at this time.');
+      });
+    });
+
+    it('deletes client from cache when configuration request errors', function () {
+      var self = this;
+
+      this.getSpy.yieldsAsync({errors: 'Unknown error'});
+
+      return Client.initialize({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('NETWORK');
+        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
+        expect(err.message).to.equal('Cannot contact the gateway at this time.');
+
+        self.getSpy.yieldsAsync(null, fake.configuration().gatewayConfiguration);
+
+        return Client.initialize({authorization: fake.tokenizationKey});
+      }).then(function () {
+        expect(self.getSpy).to.be.calledTwice;
       });
     });
 
@@ -217,6 +265,14 @@ describe('Client', function () {
   });
 
   describe('request', function () {
+    beforeEach(function () {
+      this.originalBody = document.body.innerHTML;
+    });
+
+    afterEach(function () {
+      document.body.innerHTML = this.originalBody;
+    });
+
     it('calls callback with an error when passed no HTTP method', function (done) {
       var client = new Client(fake.configuration());
 
@@ -863,6 +919,78 @@ describe('Client', function () {
           foo: 'bar',
           _httpStatus: 200
         });
+        done();
+      });
+    });
+
+    it('fraudnet json is added to dom when collect device data is enabled for card transactions', function (done) {
+      var expectedData = {foo: 'boo'};
+      var configuration = fake.configuration();
+      var client;
+
+      configuration.gatewayConfiguration.creditCards.collectDeviceData = true;
+      client = new Client(configuration);
+
+      this.sandbox.stub(client, '_request').yieldsAsync(null, {creditCards: [{nonce: 'fake-nonce'}]}, 200);
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'payment_methods/credit_cards',
+        data: expectedData,
+        method: 'post'
+      }, function () {
+        var script = document.querySelector('script[type="application/json"]');
+
+        expect(script.getAttribute('fncls')).to.equal('fnparams-dede7cc5-15fd-4c75-a9f4-36c430ee3a99');
+        expect(script.innerHTML).to.equal('{"f":"fake-nonce","fp":{"rda_tenant":"bt_card","mid":"merchant-id"},"bu":false,"s":"BRAINTREE_SIGNIN"}');
+        done();
+      });
+    });
+
+    it('fraudnet json is NOT added to dom when collect device data is disabled for card transactions', function (done) {
+      var expectedData = {foo: 'boo'};
+      var configuration = fake.configuration();
+      var client;
+
+      configuration.gatewayConfiguration.creditCards.collectDeviceData = false;
+      client = new Client(configuration);
+
+      this.sandbox.stub(client, '_request').yieldsAsync(null, {creditCards: [{nonce: 'fake-nonce'}]}, 200);
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'payment_methods/credit_cards',
+        data: expectedData,
+        method: 'post'
+      }, function () {
+        var script = document.querySelector('script[type="application/json"]');
+
+        expect(script).to.equal(null);
+
+        done();
+      });
+    });
+
+    it('fraudnet json is NOT added to dom when collect device data is enabled but gateway response does not contain creditCards array', function (done) {
+      var expectedData = {foo: 'boo'};
+      var configuration = fake.configuration();
+      var client;
+
+      configuration.gatewayConfiguration.creditCards.collectDeviceData = true;
+      client = new Client(configuration);
+
+      this.sandbox.stub(client, '_request').yieldsAsync(null, {}, 200);
+
+      client.request({
+        api: 'braintreeApi',
+        endpoint: 'payment_methods/credit_cards',
+        data: expectedData,
+        method: 'post'
+      }, function () {
+        var script = document.querySelector('script[type="application/json"]');
+
+        expect(script).to.equal(null);
+
         done();
       });
     });

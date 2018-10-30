@@ -1,5 +1,16 @@
 CHANGELOG
 =========
+## 3.39.0
+* PayPal Checkout
+  * Add `merchantAccountId` to PayPal `options`
+* Update promise-polyfill to v8.1.0
+* Use @braintree/class-list for manipulating classes
+* Use @braintree/asset-loader for loading assets
+* Client
+  * Speed up client creation caching and prevent race conditions
+* Hosted Fields
+  * Fix issue where analytics in iframe could be out of sync with analytics on merchant page
+
 ## 3.38.1
 * Update credit-card-type to v8.0.0
 * Update card-validator to v6.0.0

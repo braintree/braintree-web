@@ -152,6 +152,7 @@ var convertMethodsToError = require('../lib/convert-methods-to-error');
  */
 function PayPalCheckout(options) {
   this._client = options.client;
+  this._merchantAccountId = options.merchantAccountId;
 }
 
 /**
@@ -341,6 +342,7 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
     returnUrl: 'x',
     cancelUrl: 'x',
     offerPaypalCredit: options.offerCredit === true,
+    merchantAccountId: this._merchantAccountId,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
       localeCode: options.locale,
@@ -396,6 +398,9 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
 
     if (options.intent) {
       data.paypalAccount.intent = options.intent;
+    }
+    if (this._merchantAccountId) {
+      data.merchantAccountId = this._merchantAccountId;
     }
   }
 

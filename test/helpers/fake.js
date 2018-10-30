@@ -14,6 +14,7 @@ function configuration() {
       configUrl: 'https://braintreegateway.com/config',
       clientApiUrl: 'https://braintreegateway.com',
       creditCards: {
+        collectDeviceData: false,
         supportedCardTypes: [
           'American Express',
           'Discover',

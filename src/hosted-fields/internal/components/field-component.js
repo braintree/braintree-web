@@ -4,7 +4,7 @@ var InputComponents = require('./index');
 var allowedFields = require('../../shared/constants').allowedFields;
 var LabelComponent = require('./label').LabelComponent;
 var events = require('../../shared/constants').events;
-var classlist = require('../../../lib/classlist');
+var classList = require('@braintree/class-list');
 
 module.exports = {
   FieldComponent: function FieldComponent(options) {
@@ -25,7 +25,7 @@ module.exports = {
 
     this.description = document.createElement('div');
     this.description.id = 'field-description-' + type;
-    classlist.add(this.description, 'field-description');
+    classList.add(this.description, 'field-description');
     this.description.style.height = '1px';
     this.description.style.width = '1px';
     this.description.style.overflow = 'hidden';

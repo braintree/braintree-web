@@ -2,7 +2,7 @@
 
 var attributeValidationError = require('../../external/attribute-validation-error');
 var constants = require('../../shared/constants');
-var classlist = require('../../../lib/classlist');
+var classList = require('@braintree/class-list');
 var supportsPassiveEventListener = require('../../../lib/supports-passive-event-listener');
 var browserDetection = require('../../shared/browser-detection');
 var createRestrictedInput = require('../../../lib/create-restricted-input');
@@ -244,11 +244,11 @@ BaseInput.prototype.addBusEventListeners = function () {
   global.bus.on(events.REMOVE_ATTRIBUTE, this.removeAttribute.bind(this));
 
   global.bus.on(events.ADD_CLASS, function (type, classname) {
-    if (type === this.type) { classlist.add(this.element, classname); }
+    if (type === this.type) { classList.add(this.element, classname); }
   }.bind(this));
 
   global.bus.on(events.REMOVE_CLASS, function (type, classname) {
-    if (type === this.type) { classlist.remove(this.element, classname); }
+    if (type === this.type) { classList.remove(this.element, classname); }
   }.bind(this));
 
   global.bus.on(events.CLEAR_FIELD, function (type) {
@@ -265,8 +265,8 @@ BaseInput.prototype.render = function () {
   var isValid = modelData.isValid;
   var isPotentiallyValid = modelData.isPotentiallyValid;
 
-  classlist.toggle(this.element, 'valid', isValid);
-  classlist.toggle(this.element, 'invalid', !isPotentiallyValid);
+  classList.toggle(this.element, 'valid', isValid);
+  classList.toggle(this.element, 'invalid', !isPotentiallyValid);
 
   if (this.maxLength) {
     this.element.setAttribute('maxlength', this.maxLength);

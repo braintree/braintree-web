@@ -294,15 +294,11 @@ function formatTokenizationError(err) {
 function orchestrate(configuration) {
   var cardForm = new CreditCardForm(configuration);
   var iframes = assembleIFrames.assembleIFrames(window.parent);
-  var clientPromise;
-
-  if (configuration.client) {
-    clientPromise = Promise.resolve(new Client(configuration.client));
-  } else {
-    clientPromise = Client.initialize(configuration);
-  }
-
-  clientPromise = clientPromise.then(function (client) {
+  var clientPromise = new Promise(function (resolve) {
+    global.bus.emit(events.READY_FOR_CLIENT, function (configurationFromMerchantPage) {
+      resolve(new Client(configurationFromMerchantPage));
+    });
+  }).then(function (client) {
     if (configuration.fields.number && configuration.fields.number.rejectUnsupportedCards) {
       // NEXT_MAJOR_VERSION rejecting unsupported cards should be the default behavior after the next major revision
       cardForm.setSupportedCardTypes(client.getConfiguration().gatewayConfiguration.creditCards.supportedCardTypes);

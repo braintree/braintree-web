@@ -189,6 +189,21 @@ describe('PayPalCheckout', function () {
           }.bind(this));
         });
 
+        it('contains the merchant account ID if set', function () {
+          this.paypalCheckoutWithMerchantAccountId = new PayPalCheckout({
+            client: this.client,
+            merchantAccountId: 'alt-merchant-account-id'
+          });
+
+          return this.paypalCheckoutWithMerchantAccountId.createPayment(this.options).then(function () {
+            expect(this.client.request).to.be.calledWith(this.sandbox.match({
+              data: {
+                merchantAccountId: 'alt-merchant-account-id'
+              }
+            }));
+          }.bind(this));
+        });
+
         it('uses configuration\'s display name for PayPal brand name by default', function () {
           return this.paypalCheckout.createPayment(this.options).then(function () {
             expect(this.client.request).to.be.calledWith(this.sandbox.match({
@@ -873,6 +888,33 @@ describe('PayPalCheckout', function () {
               paypalAccount: {
                 intent: 'sale'
               }
+            }
+          });
+        }.bind(this));
+      });
+
+      it('passes along merchantAccountId if set', function () {
+        var accountDetails = {
+          creditFinancingOffered: {foo: 'bar'}
+        };
+
+        this.paypalCheckoutWithMerchantAccountId = new PayPalCheckout({
+          client: this.client,
+          merchantAccountId: 'alt-merchant-account-id'
+        });
+
+        this.client.request.resolves({
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: accountDetails
+          }]
+        });
+
+        return this.paypalCheckoutWithMerchantAccountId.tokenizePayment({}).then(function () {
+          expect(this.client.request).to.be.calledWithMatch({
+            data: {
+              merchantAccountId: 'alt-merchant-account-id'
             }
           });
         }.bind(this));

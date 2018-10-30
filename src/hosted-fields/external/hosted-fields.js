@@ -3,7 +3,7 @@
 var assign = require('../../lib/assign').assign;
 var createAuthorizationData = require('../../lib/create-authorization-data');
 var Destructor = require('../../lib/destructor');
-var classlist = require('../../lib/classlist');
+var classList = require('@braintree/class-list');
 var iFramer = require('@braintree/iframer');
 var Bus = require('../../lib/bus');
 var assets = require('../../lib/assets');
@@ -261,9 +261,9 @@ function createInputEventHandler(fields) {
       performBlurFixForIos(container);
     }
 
-    classlist.toggle(container, constants.externalClasses.FOCUSED, field.isFocused);
-    classlist.toggle(container, constants.externalClasses.VALID, field.isValid);
-    classlist.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
+    classList.toggle(container, constants.externalClasses.FOCUSED, field.isFocused);
+    classList.toggle(container, constants.externalClasses.VALID, field.isValid);
+    classList.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
 
     this._state = { // eslint-disable-line no-invalid-this
       cards: merchantPayload.cards,
@@ -328,21 +328,21 @@ function HostedFields(options) {
     clientConfig = options.client.getConfiguration();
     assetsUrl = clientConfig.gatewayConfiguration.assetsUrl;
     isDebug = clientConfig.isDebug;
-    this._clientInstanceOrPromise = options.client;
+    this._clientPromise = Promise.resolve(options.client);
   } else {
     authData = createAuthorizationData(options.authorization);
     assetsUrl = ASSETS_URLS[authData.environment || 'production'];
     isDebug = Boolean(options.debug);
 
     if (!(global.braintree && global.braintree.client)) {
-      this._clientInstanceOrPromise = assets.loadScript({
+      this._clientPromise = assets.loadScript({
         src: assetsUrl + '/web/' + VERSION + '/js/client.min.js'
       });
     } else {
-      this._clientInstanceOrPromise = Promise.resolve();
+      this._clientPromise = Promise.resolve();
     }
 
-    this._clientInstanceOrPromise = this._clientInstanceOrPromise.then(function () {
+    this._clientPromise = this._clientPromise.then(function () {
       return global.braintree.client.create({
         authorization: options.authorization,
         debug: isDebug
@@ -379,7 +379,7 @@ function HostedFields(options) {
     self._bus.teardown();
   });
 
-  analytics.sendEvent(this._clientInstanceOrPromise, 'custom.hosted-fields.initialized');
+  analytics.sendEvent(this._clientPromise, 'custom.hosted-fields.initialized');
 
   Object.keys(options.fields).forEach(function (key) {
     var field, container, frame, frameReadyPromise;
@@ -496,8 +496,14 @@ function HostedFields(options) {
     });
   }
 
+  this._bus.on(events.READY_FOR_CLIENT, function (reply) {
+    self._clientPromise.then(function (client) {
+      reply(client);
+    });
+  });
+
   failureTimeout = setTimeout(function () {
-    analytics.sendEvent(self._clientInstanceOrPromise, 'custom.hosted-fields.load.timed-out');
+    analytics.sendEvent(self._clientPromise, 'custom.hosted-fields.load.timed-out');
     self._emit('timeout');
   }, INTEGRATION_TIMEOUT_MS);
 
@@ -527,7 +533,7 @@ function HostedFields(options) {
 
       parent.removeChild(node);
 
-      classlist.remove(
+      classList.remove(
         parent,
         constants.externalClasses.FOCUSED,
         constants.externalClasses.INVALID,
@@ -602,7 +608,7 @@ HostedFields.prototype.teardown = function () {
 
   return new Promise(function (resolve, reject) {
     self._destructor.teardown(function (err) {
-      analytics.sendEvent(self._clientInstanceOrPromise, 'custom.hosted-fields.teardown-completed');
+      analytics.sendEvent(self._clientPromise, 'custom.hosted-fields.teardown-completed');
 
       if (err) {
         reject(err);

@@ -115,6 +115,7 @@ var constants = {
 };
 
 constants.events = enumerate([
+  'READY_FOR_CLIENT',
   'FRAME_READY',
   'VALIDATE_STRICT',
   'CONFIGURATION',

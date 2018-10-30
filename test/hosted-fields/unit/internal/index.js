@@ -4,7 +4,6 @@
 
 var internal = require('../../../../src/hosted-fields/internal/index');
 var Promise = require('../../../../src/lib/promise');
-var Client = require('../../../../src/client/client');
 var getFrameName = require('../../../../src/hosted-fields/internal/get-frame-name');
 var events = require('../../../../src/hosted-fields/shared/constants').events;
 var CreditCardForm = require('../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
@@ -139,9 +138,8 @@ describe('internal', function () {
         expect(global.cardForm.supportedCardTypes).to.be.not.undefined;
       });
 
-      it('sets supported card types asyncronously with authorization', function () {
+      it('sets supported card types asyncronously', function () {
         var config = {
-          authorization: fake.clientToken,
           fields: {
             number: {selector: '#foo', rejectUnsupportedCards: true},
             cvv: {selector: '#boo'},
@@ -149,7 +147,7 @@ describe('internal', function () {
           }
         };
 
-        this.sandbox.stub(Client, 'initialize').resolves(fake.client());
+        global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
         this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
         this.sandbox.stub(CreditCardForm.prototype, 'validateField');
         this.sandbox.stub(analytics, 'sendEvent');
@@ -167,9 +165,8 @@ describe('internal', function () {
         });
       });
 
-      it('does not set supported card types with authorization if rejectUnsupportedCards is not set', function () {
+      it('does not set supported card types if rejectUnsupportedCards is not set', function () {
         var config = {
-          authorization: fake.clientToken,
           fields: {
             number: {selector: '#foo'},
             cvv: {selector: '#boo'},
@@ -177,7 +174,7 @@ describe('internal', function () {
           }
         };
 
-        this.sandbox.stub(Client, 'initialize').resolves(fake.client());
+        global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
         this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
         this.sandbox.stub(analytics, 'sendEvent');
         this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
@@ -187,16 +184,15 @@ describe('internal', function () {
         });
       });
 
-      it('does not set supported card types with authorization if number field is not provided', function () {
+      it('does not set supported card types if number field is not provided', function () {
         var config = {
-          authorization: fake.clientToken,
           fields: {
             cvv: {selector: '#boo'},
             postalCode: {selector: '#you'}
           }
         };
 
-        this.sandbox.stub(Client, 'initialize').resolves(fake.client());
+        global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
         this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
         this.sandbox.stub(analytics, 'sendEvent');
         this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
@@ -303,12 +299,11 @@ describe('internal', function () {
       expect(global.cardForm).to.be.an.instanceof(CreditCardForm);
     });
 
-    it('creates a client instance from client option', function () {
-      this.sandbox.stub(Client, 'initialize');
+    it('creates a client initialization promise', function () {
+      global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
       this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
       internal.orchestrate({
-        client: fake.configuration(),
         fields: {
           number: {selector: '#foo'},
           cvv: {selector: '#boo'},
@@ -316,26 +311,7 @@ describe('internal', function () {
         }
       });
 
-      expect(Client.initialize).to.not.be.called;
-    });
-
-    it('creates a client initialization promise from authorization option', function () {
-      this.sandbox.stub(Client, 'initialize').resolves(fake.client());
-      this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
-
-      internal.orchestrate({
-        authorization: 'auth',
-        fields: {
-          number: {selector: '#foo'},
-          cvv: {selector: '#boo'},
-          postalCode: {selector: '#you'}
-        }
-      });
-
-      expect(Client.initialize).to.be.calledOnce;
-      expect(Client.initialize).to.be.calledWithMatch({
-        authorization: 'auth'
-      });
+      expect(global.bus.emit.withArgs(events.READY_FOR_CLIENT)).to.be.calledOnce;
     });
   });
 

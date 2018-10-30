@@ -249,9 +249,9 @@ function clearFragmentParameters() {
   }
 }
 
-function formatTokenizePayload(fragmentParams, venmoAccountData) {
+function formatTokenizePayload(fragmentParams) {
   return {
-    nonce: venmoAccountData ? venmoAccountData.nonce : fragmentParams.paymentMethodNonce,
+    nonce: fragmentParams.paymentMethodNonce,
     type: 'VenmoAccount',
     details: {
       username: fragmentParams.username

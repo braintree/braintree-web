@@ -20,6 +20,7 @@ var VERSION = process.env.npm_package_version;
  *
  * @param {object} options Creation options:
  * @param {Client} options.client A {@link Client} instance.
+ * @param {string} [options.merchantAccountId] A non-default merchant account ID to use for tokenization.
  * @param {callback} [callback] The second argument, `data`, is the {@link PayPalCheckout} instance.
  * @example
  * braintree.client.create({

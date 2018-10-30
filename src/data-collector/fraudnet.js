@@ -1,7 +1,9 @@
 'use strict';
 
-var Promise = require('../lib/promise');
-var constants = require('./constants');
+var FRAUDNET_FNCLS = require('../lib/constants').FRAUDNET_FNCLS;
+var FRAUDNET_SOURCE = require('../lib/constants').FRAUDNET_SOURCE;
+var FRAUDNET_URL = require('../lib/constants').FRAUDNET_URL;
+var loadScript = require('../lib/assets').loadScript;
 
 function setup() {
   var fraudNet = new Fraudnet();
@@ -19,7 +21,9 @@ Fraudnet.prototype.initialize = function () {
 
   this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId);
 
-  return _createThirdPartyBlock().then(function (block) {
+  return loadScript({
+    src: FRAUDNET_URL
+  }).then(function (block) {
     self._thirdPartyBlock = block;
 
     return self;
@@ -77,39 +81,14 @@ function _createParameterBlock(sessionId, beaconId) {
   var el = document.body.appendChild(document.createElement('script'));
 
   el.type = 'application/json';
-  el.setAttribute('fncls', 'fnparams-dede7cc5-15fd-4c75-a9f4-36c430ee3a99');
+  el.setAttribute('fncls', FRAUDNET_FNCLS);
   el.text = JSON.stringify({
     f: sessionId,
-    s: 'BRAINTREE_SIGNIN',
+    s: FRAUDNET_SOURCE,
     b: beaconId
   });
 
   return el;
-}
-
-function _createThirdPartyBlock() {
-  return new Promise(function (resolve, reject) {
-    var script = document.querySelector('script[src="' + constants.FRAUDNET_LINK_JS + '"]');
-
-    if (script) {
-      resolve(script);
-
-      return;
-    }
-
-    script = document.createElement('script');
-
-    script.onload = function () {
-      resolve(script);
-    };
-    script.onerror = function () {
-      reject();
-    };
-    script.src = constants.FRAUDNET_LINK_JS;
-    script.async = true;
-
-    document.body.appendChild(script);
-  });
 }
 
 module.exports = {

@@ -11,14 +11,7 @@ var fake = require('../../helpers/fake');
 
 function callFrameReadyHandler() {
   setTimeout(function () { // allow hosted fields to begin set up before finding bus handler
-    var i, frameReadyHandler;
-
-    for (i = 0; i < Bus.prototype.on.callCount; i++) {
-      if (Bus.prototype.on.getCall(0).args[0] === events.FRAME_READY) {
-        frameReadyHandler = Bus.prototype.on.getCall(0).args[1];
-        break;
-      }
-    }
+    var frameReadyHandler = Bus.prototype.on.withArgs(events.FRAME_READY).getCall(0).args[1];
 
     frameReadyHandler({field: 'cvv'}, function () {});
   }, 100);
