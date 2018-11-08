@@ -437,6 +437,18 @@ describe('Venmo', function () {
 
         return promise;
       });
+
+      it('preserves URL if fragments are never set', function () {
+        var originalURL = window.location.href;
+
+        var promise = this.venmo.tokenize().then(rejectIfResolves).catch(function () {
+          expect(window.location.href).to.equal(originalURL);
+        });
+
+        triggerWindowVisibilityChangeListener();
+
+        return promise;
+      });
     });
 
     context('with callbacks', function () {
@@ -627,6 +639,14 @@ describe('Venmo', function () {
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
         triggerWindowVisibilityChangeListener();
+      });
+
+      it('preserves URL if fragments are never set', function () {
+        var originalURL = window.location.href;
+
+        return this.venmo.tokenize(function () {
+          expect(window.location.href).to.equal(originalURL);
+        });
       });
     });
 
