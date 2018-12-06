@@ -4,6 +4,8 @@
 var ThreeDSecure = require('./external/three-d-secure');
 var isHTTPS = require('../lib/is-https').isHTTPS;
 var basicComponentVerification = require('../lib/basic-component-verification');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var errors = require('./shared/errors');
@@ -15,17 +17,31 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @static
  * @function create
  * @param {object} options Creation options:
- * @param {Client} options.client A {@link Client} instance.
+ * @param {Client} [options.client] A {@link Client} instance.
+ * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {callback} [callback] The second argument, `data`, is the {@link ThreeDSecure} instance. If no callback is provided, it returns a promise that resolves the {@link ThreeDSecure} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
+  var name = '3D Secure';
+
   return basicComponentVerification.verify({
-    name: '3D Secure',
-    client: options.client
+    name: name,
+    client: options.client,
+    authorization: options.authorization
   }).then(function () {
+    return createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    });
+  }).then(function (client) {
     var error, isProduction;
-    var config = options.client.getConfiguration();
+    var config = client.getConfiguration();
+
+    options.client = client;
 
     if (!config.gatewayConfiguration.threeDSecureEnabled) {
       error = errors.THREEDS_NOT_ENABLED;

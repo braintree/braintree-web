@@ -5,6 +5,8 @@ var kount = require('./kount');
 var fraudnet = require('./fraudnet');
 var BraintreeError = require('../lib/braintree-error');
 var basicComponentVerification = require('../lib/basic-component-verification');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var VERSION = process.env.npm_package_version;
@@ -57,7 +59,8 @@ var errors = require('./errors');
  * @function create
  * @description Creates a DataCollector instance. Requires advanced fraud protection to be enabled in the Braintree gateway. Contact our [support team](mailto:support@braintreepayments.com) to configure your Kount ID.
  * @param {object} options Creation options:
- * @param {Client} options.client A {@link Client} instance.
+ * @param {Client} [options.client] A {@link Client} instance.
+ * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled.
  *
  * **Note:** the data sent to Kount is asynchronous and may not have completed by the time the data collector create call is complete. In most cases, this will not matter, but if you create the data collector instance and immediately navigate away from the page, the device information may fail to be sent to Kount.
@@ -66,16 +69,26 @@ var errors = require('./errors');
  * @returns {Promise|void} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
  */
 function create(options) {
+  var name = 'Data Collector';
   var result = {};
   var instances = [];
   var data;
 
   return basicComponentVerification.verify({
-    name: 'Data Collector',
-    client: options.client
+    name: name,
+    client: options.client,
+    authorization: options.authorization
   }).then(function () {
+    return createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    });
+  }).then(function (client) {
     var kountInstance;
-    var config = options.client.getConfiguration();
+    var config = client.getConfiguration();
 
     if (options.kount === true) {
       if (!config.gatewayConfiguration.kount) {

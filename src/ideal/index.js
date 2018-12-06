@@ -4,6 +4,8 @@
 var BraintreeError = require('../lib/braintree-error');
 var browserDetection = require('./shared/browser-detection');
 var basicComponentVerification = require('../lib/basic-component-verification');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var Ideal = require('./external/ideal');
 var VERSION = process.env.npm_package_version;
 var errors = require('./shared/errors');
@@ -16,7 +18,8 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @static
  * @function create
  * @param {object} options Creation options:
- * @param {Client} options.client A {@link Client} instance.
+ * @param {Client} [options.client] A {@link Client} instance.
+ * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {callback} [callback] The second argument, `data`, is the {@link Ideal} instance. If no callback is passed in, the create function returns a promise that resolves the {@link Ideal} instance.
  * @example
  * braintree.ideal.create({
@@ -34,16 +37,28 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @returns {Promise|void} Resolves with the iDEAL Payment instance.
  */
 function create(options) {
+  var name = 'iDEAL';
+
   return basicComponentVerification.verify({
-    name: 'iDEAL',
-    client: options.client
+    name: name,
+    client: options.client,
+    authorization: options.authorization
   }).then(function () {
+    return createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    });
+  }).then(function (client) {
     var idealInstance, configuration;
 
     if (!browserDetection.supportsPopups()) {
       return Promise.reject(new BraintreeError(errors.IDEAL_BROWSER_NOT_SUPPORTED));
     }
 
+    options.client = client;
     configuration = options.client.getConfiguration().gatewayConfiguration;
     if (!configuration.braintreeApi) {
       return Promise.reject(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));

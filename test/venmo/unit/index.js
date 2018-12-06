@@ -2,6 +2,8 @@
 
 var analytics = require('../../../src/lib/analytics');
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
+var createDeferredClient = require('../../../src/lib/create-deferred-client');
+var createAssetsUrl = require('../../../src/lib/create-assets-url');
 var create = require('../../../src/venmo').create;
 var isBrowserSupported = require('../../../src/venmo').isBrowserSupported;
 var fake = require('../../helpers/fake');
@@ -19,6 +21,8 @@ describe('venmo.create', function () {
     });
     this.sandbox.stub(analytics, 'sendEvent');
     this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+    this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
+    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
   });
 
   it('verifies with basicComponentVerification', function (done) {
@@ -28,12 +32,34 @@ describe('venmo.create', function () {
       client: client
     }, function () {
       expect(basicComponentVerification.verify).to.be.calledOnce;
-      expect(basicComponentVerification.verify).to.be.calledWith({
+      expect(basicComponentVerification.verify).to.be.calledWithMatch({
         name: 'Venmo',
         client: client
       });
       done();
     });
+  });
+
+  it('can create with an authorization instead of a client', function (done) {
+    create({
+      authorization: fake.clientToken,
+      debug: true
+    }, function (err, instance) {
+      expect(err).not.to.exist;
+
+      expect(createDeferredClient.create).to.be.calledOnce;
+      expect(createDeferredClient.create).to.be.calledWith({
+        authorization: fake.clientToken,
+        client: this.sandbox.match.typeOf('undefined'),
+        debug: true,
+        assetsUrl: 'https://example.com/assets',
+        name: 'Venmo'
+      });
+
+      expect(instance).to.be.an.instanceof(Venmo);
+
+      done();
+    }.bind(this));
   });
 
   context('with promises', function () {
@@ -77,6 +103,18 @@ describe('venmo.create', function () {
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('VENMO_INVALID_PROFILE_ID');
         expect(err.message).to.equal('Venmo profile ID is invalid.');
+      });
+    });
+
+    it('errors out if options.deepLinkReturnUrl is present but not a string', function () {
+      return create({
+        client: this.client,
+        deepLinkReturnUrl: 1234
+      }).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('VENMO_INVALID_DEEP_LINK_RETURN_URL');
+        expect(err.message).to.equal('Venmo deep link return URL is invalid.');
       });
     });
 
@@ -134,6 +172,20 @@ describe('venmo.create', function () {
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('VENMO_INVALID_PROFILE_ID');
         expect(err.message).to.equal('Venmo profile ID is invalid.');
+        expect(thingy).not.to.exist;
+        done();
+      });
+    });
+
+    it('errors out if options.deepLinkReturnUrl is present but not a string', function (done) {
+      create({
+        client: this.client,
+        deepLinkReturnUrl: 1234
+      }, function (err, thingy) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('VENMO_INVALID_DEEP_LINK_RETURN_URL');
+        expect(err.message).to.equal('Venmo deep link return URL is invalid.');
         expect(thingy).not.to.exist;
         done();
       });

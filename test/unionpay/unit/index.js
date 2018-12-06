@@ -2,6 +2,8 @@
 
 var Promise = require('../../../src/lib/promise');
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
+var createDeferredClient = require('../../../src/lib/create-deferred-client');
+var createAssetsUrl = require('../../../src/lib/create-assets-url');
 var create = require('../../../src/unionpay').create;
 var analytics = require('../../../src/lib/analytics');
 var fake = require('../../helpers/fake');
@@ -19,6 +21,8 @@ describe('unionPay.create', function () {
     });
     this.sandbox.stub(analytics, 'sendEvent');
     this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+    this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
+    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
   });
 
   it('verifies with basicComponentVerification', function (done) {
@@ -28,12 +32,34 @@ describe('unionPay.create', function () {
       client: client
     }, function () {
       expect(basicComponentVerification.verify).to.be.calledOnce;
-      expect(basicComponentVerification.verify).to.be.calledWith({
+      expect(basicComponentVerification.verify).to.be.calledWithMatch({
         name: 'UnionPay',
         client: client
       });
       done();
     });
+  });
+
+  it('can create with an authorization instead of a client', function (done) {
+    create({
+      authorization: fake.clientToken,
+      debug: true
+    }, function (err, instance) {
+      expect(err).not.to.exist;
+
+      expect(createDeferredClient.create).to.be.calledOnce;
+      expect(createDeferredClient.create).to.be.calledWith({
+        authorization: fake.clientToken,
+        client: this.sandbox.match.typeOf('undefined'),
+        debug: true,
+        assetsUrl: 'https://example.com/assets',
+        name: 'UnionPay'
+      });
+
+      expect(instance).to.be.an.instanceof(UnionPay);
+
+      done();
+    }.bind(this));
   });
 
   it('returns a promise', function () {

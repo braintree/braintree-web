@@ -7,6 +7,8 @@
 var BraintreeError = require('../lib/braintree-error');
 var analytics = require('../lib/analytics');
 var basicComponentVerification = require('../lib/basic-component-verification');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var errors = require('./errors');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -19,7 +21,8 @@ var VERSION = process.env.npm_package_version;
  * @description There are two ways to integrate the PayPal Checkout component. See the [PayPal Checkout constructor documentation](PayPalCheckout.html#PayPalCheckout) for more information and examples.
  *
  * @param {object} options Creation options:
- * @param {Client} options.client A {@link Client} instance.
+ * @param {Client} [options.client] A {@link Client} instance.
+ * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {string} [options.merchantAccountId] A non-default merchant account ID to use for tokenization.
  * @param {callback} [callback] The second argument, `data`, is the {@link PayPalCheckout} instance.
  * @example
@@ -37,18 +40,36 @@ var VERSION = process.env.npm_package_version;
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
+  var name = 'PayPal Checkout';
+
   return basicComponentVerification.verify({
-    name: 'PayPal Checkout',
-    client: options.client
+    name: name,
+    client: options.client,
+    authorization: options.authorization
   }).then(function () {
-    var config = options.client.getConfiguration();
+    return createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    });
+  }).then(function (client) {
+    var config = client.getConfiguration();
 
-    if (!config.gatewayConfiguration.paypalEnabled) {
-      return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
-    }
+    options.client = client;
 
-    if (config.gatewayConfiguration.paypal.environmentNoNetwork === true) {
-      return Promise.reject(new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED));
+    // we skip these checks if a merchant account id is
+    // passed in, because the default merchant account
+    // may not have paypal enabled
+    if (!options.merchantAccountId) {
+      if (!config.gatewayConfiguration.paypalEnabled) {
+        return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
+      }
+
+      if (config.gatewayConfiguration.paypal.environmentNoNetwork === true) {
+        return Promise.reject(new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED));
+      }
     }
 
     analytics.sendEvent(options.client, 'paypal-checkout.initialized');

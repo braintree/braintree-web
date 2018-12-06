@@ -3,12 +3,15 @@
 var analytics = require('../lib/analytics');
 var assign = require('../lib/assign').assign;
 var convertMethodsToError = require('../lib/convert-methods-to-error');
+var find = require('../lib/find');
 var generateGooglePayConfiguration = require('../lib/generate-google-pay-configuration');
 var BraintreeError = require('../lib/braintree-error');
 var errors = require('./errors');
 var methods = require('../lib/methods');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
+
+var DEFAULT_CARD_NETWORKS = ['AMEX', 'DISCOVER', 'MASTERCARD', 'VISA'];
 
 /**
  * @typedef {object} GooglePayment~tokenizePayload
@@ -39,25 +42,87 @@ var wrapPromise = require('@braintree/wrap-promise');
  */
 function GooglePayment(options) {
   this._client = options.client;
-
-  this._braintreeGeneratedPaymentRequestConfiguration = generateGooglePayConfiguration(this._client.getConfiguration());
+  this._googlePayVersion = options.googlePayVersion || 1;
+  this._googleMerchantId = options.googleMerchantId;
 }
+
+GooglePayment.prototype._createV1PaymentDataRequest = function (defaultConfig, paymentDataRequest) {
+  var overrideCardNetworks = paymentDataRequest.cardRequirements && paymentDataRequest.cardRequirements.allowedCardNetworks;
+  var defaultConfigCardNetworks = defaultConfig.cardRequirements.allowedCardNetworks;
+  var allowedCardNetworks = overrideCardNetworks || defaultConfigCardNetworks;
+
+  paymentDataRequest = assign({}, defaultConfig, paymentDataRequest);
+
+  // this way we can preserve allowedCardNetworks from default integration
+  // if merchant did not pass any in `cardRequirements`
+  paymentDataRequest.cardRequirements.allowedCardNetworks = allowedCardNetworks;
+
+  return paymentDataRequest;
+};
+
+GooglePayment.prototype._createV2PaymentDataRequest = function (defaultConfig, paymentDataRequest) {
+  var newCardPaymentMethod, defaultConfigCardPaymentMethod, parameters;
+  var defaultConfigPaymentMethods = defaultConfig.allowedPaymentMethods;
+
+  // For the CARD allowed payment method, ensure allowedCardNetworks is set.
+  if (paymentDataRequest.allowedPaymentMethods) {
+    newCardPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'CARD');
+    defaultConfigCardPaymentMethod = find(defaultConfigPaymentMethods, 'type', 'CARD');
+
+    if (newCardPaymentMethod) {
+      newCardPaymentMethod.parameters = assign({}, newCardPaymentMethod.parameters);
+      parameters = newCardPaymentMethod.parameters;
+      if (!parameters.allowedCardNetworks || (parameters.allowedCardNetworks && parameters.allowedCardNetworks.length === 0)) {
+        if (defaultConfigCardPaymentMethod &&
+          defaultConfigCardPaymentMethod.parameters &&
+          defaultConfigCardPaymentMethod.parameters.allowedCardNetworks
+        ) {
+          parameters.allowedCardNetworks = defaultConfigCardPaymentMethod.parameters.allowedCardNetworks;
+        } else {
+          parameters.allowedCardNetworks = DEFAULT_CARD_NETWORKS;
+        }
+      }
+    }
+  }
+  paymentDataRequest = assign({}, defaultConfig, paymentDataRequest);
+
+  return paymentDataRequest;
+};
 
 /**
  * Create a configuration object for use in the `loadPaymentData` method.
+ *
+ * **Note**: Version 1 of the Google Pay Api is deprecated and will become unsupported in a future version. Until then, version 1 will continue to be used by default, and version 1 schema parameters and overrides will remain functional on existing integrations. However, new integrations and all following examples will be presented in the GooglePay version 2 schema. See [Google Pay's upgrade guide](https://developers.google.com/pay/api/web/guides/resources/update-to-latest-version) to see how to update your integration.
+ *
+ * If `options.googlePayVersion === 2` was set during the initial {@link module:braintree-web/google-payment.create|create} call, overrides must match the Google Pay v2 schema to be valid.
+ *
  * @public
- * @param {object} overrides The supplied parameters for creating the PaymentDataRequest object. Only required parameters are the `merchantId` provided by Google and a `transactionInfo` object, but any of the parameters in the PaymentDataRequest can be overwritten. See https://developers.google.com/pay/api/web/reference/object#PaymentDataRequest
- * @param {string} merchantId The merchant id provided by registering with Google.
- * @param {object} transactionInfo See https://developers.google.com/pay/api/web/reference/object#TransactionInfo for more information.
+ * @param {object} overrides The supplied parameters for creating the PaymentDataRequest object. Required parameters are:
+ *  @param {object} overrides.transactionInfo Object according to the [Google Pay Transaction Info](https://developers.google.com/pay/api/web/reference/object#TransactionInfo) spec.
+ *  Optionally, any of the parameters in the [PaymentDataRequest](https://developers.google.com/pay/api/web/reference/object#PaymentDataRequest) parameters can be overridden, but note that it is recommended only to override top level parameters to avoid squashing deeply nested configuration objects. An example can be found below showing how to safely edit these deeply nested objects.
  * @example
- * var configuration = googlePaymentInstance.createPaymentDataRequest({
- *   merchantId: 'my-merchant-id-from-google',
+ * var paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
+ *   merchantInfo: {
+ *     merchantId: 'my-merchant-id-from-google'
+ *   },
  *   transactionInfo: {
  *     currencyCode: 'USD',
  *     totalPriceStatus: 'FINAL',
  *     totalPrice: '100.00'
  *   }
  * });
+ *
+ * // Update all payment methods to require billing address
+ * paymentDataRequest.allowedPaymentMethods.map(function (paymentMethod) {
+ *   paymentMethod.parameters.billingAddressRequired = true;
+ *   paymentMethod.parameters.billingAddressParameters = {
+ *     format: 'FULL',
+ *     phoneNumberRequired: true
+ *   };
+ *
+ *   return paymentMethod;
+ * });
+ *
  * var paymentsClient = new google.payments.api.PaymentsClient({
  *   environment: 'TEST' // or 'PRODUCTION'
  * })
@@ -69,16 +134,17 @@ function GooglePayment(options) {
  * @returns {object} Returns a configuration object for Google PaymentDataRequest.
  */
 GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
-  var overrideCardNetworks = overrides && overrides.cardRequirements && overrides.cardRequirements.allowedCardNetworks;
-  var defaultCardNetworks = this._braintreeGeneratedPaymentRequestConfiguration.cardRequirements.allowedCardNetworks;
-  var allowedCardNetworks = overrideCardNetworks || defaultCardNetworks;
-  var paymentDataRequest = assign({}, this._braintreeGeneratedPaymentRequestConfiguration, overrides);
+  var paymentDataRequest = assign({}, overrides);
+  var defaultConfig = generateGooglePayConfiguration(this._client.getConfiguration(), this._googlePayVersion, this._googleMerchantId);
 
-  // this way we can preserve allowedCardNetworks from default integration
-  // if merchant did not pass any in `cardRequirements`
-  paymentDataRequest.cardRequirements.allowedCardNetworks = allowedCardNetworks;
-
-  analytics.sendEvent(this._client, 'google-payment.createPaymentDataRequest');
+  // Default to using v1 config. If apiVersion is specifically set to 2, use v2 config.
+  if (this._googlePayVersion === 2) {
+    paymentDataRequest = this._createV2PaymentDataRequest(defaultConfig, paymentDataRequest);
+    analytics.sendEvent(this._client, 'google-payment.v2.createPaymentDataRequest');
+  } else {
+    paymentDataRequest = this._createV1PaymentDataRequest(defaultConfig, paymentDataRequest);
+    analytics.sendEvent(this._client, 'google-payment.v1.createPaymentDataRequest');
+  }
 
   return paymentDataRequest;
 };
@@ -120,15 +186,30 @@ GooglePayment.prototype.parseResponse = function (response) {
 
   return Promise.resolve().then(function () {
     var payload;
-    var parsedResponse = JSON.parse(response.paymentMethodToken.token);
+    var rawResponse = response.apiVersion === 2 ?
+      response.paymentMethodData.tokenizationData.token :
+      response.paymentMethodToken.token;
+    var parsedResponse = JSON.parse(rawResponse);
     var error = parsedResponse.error;
 
     if (error) {
       return Promise.reject(error);
     }
 
-    payload = parsedResponse.androidPayCards[0];
     analytics.sendEvent(client, 'google-payment.parseResponse.succeeded');
+
+    if (parsedResponse.paypalAccounts) {
+      payload = parsedResponse.paypalAccounts[0];
+      analytics.sendEvent(client, 'google-payment.parseResponse.succeeded.paypal');
+
+      return Promise.resolve({
+        nonce: payload.nonce,
+        type: payload.type,
+        description: payload.description
+      });
+    }
+    payload = parsedResponse.androidPayCards[0];
+    analytics.sendEvent(client, 'google-payment.parseResponse.succeeded.google-payment');
 
     return Promise.resolve({
       nonce: payload.nonce,

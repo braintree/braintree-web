@@ -2,6 +2,8 @@
 
 var create = require('../../../src/ideal').create;
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
+var createDeferredClient = require('../../../src/lib/create-deferred-client');
+var createAssetsUrl = require('../../../src/lib/create-assets-url');
 var browserDetection = require('../../../src/ideal/shared/browser-detection');
 var Ideal = require('../../../src/ideal/external/ideal');
 var BraintreeError = require('../../../src/lib/braintree-error');
@@ -22,6 +24,8 @@ describe('ideal', function () {
     this.sandbox.stub(Ideal.prototype, '_initialize').resolves(this.idealInstance);
     this.sandbox.stub(analytics, 'sendEvent');
     this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+    this.sandbox.stub(createDeferredClient, 'create').resolves(this.fakeClient);
+    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
   });
 
   describe('create', function () {
@@ -39,12 +43,34 @@ describe('ideal', function () {
         client: client
       }, function () {
         expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWith({
+        expect(basicComponentVerification.verify).to.be.calledWithMatch({
           name: 'iDEAL',
           client: client
         });
         done();
       });
+    });
+
+    it('can create with an authorization instead of a client', function (done) {
+      create({
+        authorization: fake.clientToken,
+        debug: true
+      }, function (err) {
+        expect(err).not.to.exist;
+
+        expect(createDeferredClient.create).to.be.calledOnce;
+        expect(createDeferredClient.create).to.be.calledWith({
+          authorization: fake.clientToken,
+          client: this.sandbox.match.typeOf('undefined'),
+          debug: true,
+          assetsUrl: 'https://example.com/assets',
+          name: 'iDEAL'
+        });
+
+        expect(Ideal.prototype._initialize).to.be.calledOnce;
+
+        done();
+      }.bind(this));
     });
 
     context('with promises', function () {

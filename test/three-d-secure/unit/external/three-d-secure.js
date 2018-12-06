@@ -585,6 +585,7 @@ describe('ThreeDSecure', function () {
         var threeDSecure = new ThreeDSecure({
           client: this.client
         });
+        var removeFrameSpy = this.sandbox.stub();
 
         this.client.request.resolves({
           paymentMethod: {},
@@ -600,24 +601,18 @@ describe('ThreeDSecure', function () {
           nonce: 'abc123',
           amount: 100,
           addFrame: function () {
-            var i, authenticationCompleteHandler;
-
-            for (i = 0; i < Bus.prototype.on.callCount; i++) {
-              if (Bus.prototype.on.getCall(i).args[0] === events.AUTHENTICATION_COMPLETE) {
-                authenticationCompleteHandler = Bus.prototype.on.getCall(i).args[1];
-              }
-            }
+            var authenticationCompleteHandler = Bus.prototype.on.withArgs(events.AUTHENTICATION_COMPLETE).getCall(0).args[1];
 
             authenticationCompleteHandler({
-              auth_response: '{}'  // eslint-disable-line camelcase
+              auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"some-fake-nonce","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
             });
           },
-          removeFrame: function () {
-            expect(arguments).to.have.lengthOf(0);
+          removeFrame: removeFrameSpy
+        }, function () {
+          expect(removeFrameSpy).to.be.calledOnce;
 
-            done();
-          }
-        }, noop);
+          done();
+        });
       });
 
       it('tears down the bus when receiving an AUTHENTICATION_COMPLETE event', function (done) {
@@ -639,16 +634,10 @@ describe('ThreeDSecure', function () {
           nonce: 'abc123',
           amount: 100,
           addFrame: function () {
-            var i, authenticationCompleteHandler;
-
-            for (i = 0; i < Bus.prototype.on.callCount; i++) {
-              if (Bus.prototype.on.getCall(i).args[0] === events.AUTHENTICATION_COMPLETE) {
-                authenticationCompleteHandler = Bus.prototype.on.getCall(i).args[1];
-              }
-            }
+            var authenticationCompleteHandler = Bus.prototype.on.withArgs(events.AUTHENTICATION_COMPLETE).getCall(0).args[1];
 
             authenticationCompleteHandler({
-              auth_response: '{}'  // eslint-disable-line camelcase
+              auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"some-fake-nonce","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
             });
           },
           removeFrame: function () {
@@ -708,13 +697,7 @@ describe('ThreeDSecure', function () {
 
           this.makeAddFrameFunction = function (authResponse) {
             return function () {
-              var i, authenticationCompleteHandler;
-
-              for (i = 0; i < Bus.prototype.on.callCount; i++) {
-                if (Bus.prototype.on.getCall(i).args[0] === events.AUTHENTICATION_COMPLETE) {
-                  authenticationCompleteHandler = Bus.prototype.on.getCall(i).args[1];
-                }
-              }
+              var authenticationCompleteHandler = Bus.prototype.on.withArgs(events.AUTHENTICATION_COMPLETE).getCall(0).args[1];
 
               authenticationCompleteHandler({
                 auth_response: JSON.stringify(authResponse) // eslint-disable-line camelcase

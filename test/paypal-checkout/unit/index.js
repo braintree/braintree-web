@@ -1,6 +1,8 @@
 'use strict';
 
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
+var createDeferredClient = require('../../../src/lib/create-deferred-client');
+var createAssetsUrl = require('../../../src/lib/create-assets-url');
 var create = require('../../../src/paypal-checkout').create;
 var isSupported = require('../../../src/paypal-checkout').isSupported;
 var PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
@@ -26,6 +28,8 @@ describe('paypalCheckout', function () {
       });
       this.client._request = this.sandbox.stub();
       this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+      this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
+      this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
     });
 
     it('sends an analytics event on component creation', function (done) {
@@ -51,12 +55,34 @@ describe('paypalCheckout', function () {
         client: client
       }, function () {
         expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWith({
+        expect(basicComponentVerification.verify).to.be.calledWithMatch({
           name: 'PayPal Checkout',
           client: client
         });
         done();
       });
+    });
+
+    it('can create with an authorization instead of a client', function (done) {
+      create({
+        authorization: fake.clientToken,
+        debug: true
+      }, function (err, instance) {
+        expect(err).not.to.exist;
+
+        expect(createDeferredClient.create).to.be.calledOnce;
+        expect(createDeferredClient.create).to.be.calledWith({
+          authorization: fake.clientToken,
+          client: this.sandbox.match.typeOf('undefined'),
+          debug: true,
+          assetsUrl: 'https://example.com/assets',
+          name: 'PayPal Checkout'
+        });
+
+        expect(instance).to.be.an.instanceof(PayPalCheckout);
+
+        done();
+      }.bind(this));
     });
 
     context('with promises', function () {
@@ -77,6 +103,17 @@ describe('paypalCheckout', function () {
         });
       });
 
+      it('ignores PayPal enabled check if merchantAccountId is passed in', function () {
+        this.configuration.gatewayConfiguration.paypalEnabled = false;
+
+        return create({
+          client: this.client,
+          merchantAccountId: 'id'
+        }).then(function (instance) {
+          expect(instance).to.be.an.instanceof(PayPalCheckout);
+        });
+      });
+
       it('errors out if paypal account is not linked in sandbox', function () {
         this.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
 
@@ -85,6 +122,17 @@ describe('paypalCheckout', function () {
           expect(err.type).to.equal('MERCHANT');
           expect(err.code).to.equal('PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED');
           expect(err.message).to.equal('A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developers.braintreepayments.com/guides/paypal/testing-go-live/#linked-paypal-testing for details on linking your PayPal sandbox with Braintree.');
+        });
+      });
+
+      it('ignores linked sandbox check if merchantAccountId is passed in', function () {
+        this.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
+
+        return create({
+          client: this.client,
+          merchantAccountId: 'id'
+        }).then(function (instance) {
+          expect(instance).to.be.an.instanceof(PayPalCheckout);
         });
       });
 

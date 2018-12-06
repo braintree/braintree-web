@@ -72,6 +72,28 @@ describe('Venmo', function () {
         });
       });
 
+      it('contains custom return URLs in query params when deepLinkReturnUrl is specified', function () {
+        var params;
+        var deepLinkReturnUrl = 'com.braintreepayments.test://';
+        var expectedReturnUrls = {
+          'x-success': deepLinkReturnUrl + '#venmoSuccess=1',
+          'x-cancel': deepLinkReturnUrl + '#venmoCancel=1',
+          'x-error': deepLinkReturnUrl + '#venmoError=1'
+        };
+
+        var venmo = new Venmo({
+          client: this.client,
+          deepLinkReturnUrl: deepLinkReturnUrl
+        });
+
+        return venmo._initialize().then(function (venmoInstance) {
+          params = querystring.parse(venmoInstance._url);
+          expect(params['x-success']).to.equal(expectedReturnUrls['x-success']);
+          expect(params['x-cancel']).to.equal(expectedReturnUrls['x-cancel']);
+          expect(params['x-error']).to.equal(expectedReturnUrls['x-error']);
+        });
+      });
+
       it('contains correct return URLs in query params when checkout page URL has query params', function () {
         var expectedReturnUrls, params;
 

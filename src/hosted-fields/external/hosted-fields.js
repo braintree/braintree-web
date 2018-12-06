@@ -1,20 +1,18 @@
 'use strict';
 
 var assign = require('../../lib/assign').assign;
-var createAuthorizationData = require('../../lib/create-authorization-data');
+var createAssetsUrl = require('../../lib/create-assets-url');
 var Destructor = require('../../lib/destructor');
 var classList = require('@braintree/class-list');
 var iFramer = require('@braintree/iframer');
 var Bus = require('../../lib/bus');
-var assets = require('../../lib/assets');
+var createDeferredClient = require('../../lib/create-deferred-client');
 var BraintreeError = require('../../lib/braintree-error');
 var composeUrl = require('./compose-url');
 var getStylesFromClass = require('./get-styles-from-class');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
-var VERSION = require('../../lib/constants').VERSION;
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
-var ASSETS_URLS = require('../../lib/constants').ASSETS_URLS;
 var uuid = require('../../lib/vendor/uuid');
 var findParentTags = require('../shared/find-parent-tags');
 var browserDetection = require('../shared/browser-detection');
@@ -316,7 +314,7 @@ function performBlurFixForIos(container) {
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
 function HostedFields(options) {
-  var failureTimeout, clientConfig, assetsUrl, isDebug, hostedFieldsUrl, authData;
+  var failureTimeout, clientConfig, assetsUrl, isDebug, hostedFieldsUrl;
   var self = this;
   var fields = {};
   var busOptions = assign({}, options);
@@ -328,27 +326,18 @@ function HostedFields(options) {
     clientConfig = options.client.getConfiguration();
     assetsUrl = clientConfig.gatewayConfiguration.assetsUrl;
     isDebug = clientConfig.isDebug;
-    this._clientPromise = Promise.resolve(options.client);
   } else {
-    authData = createAuthorizationData(options.authorization);
-    assetsUrl = ASSETS_URLS[authData.environment || 'production'];
-    isDebug = Boolean(options.debug);
-
-    if (!(global.braintree && global.braintree.client)) {
-      this._clientPromise = assets.loadScript({
-        src: assetsUrl + '/web/' + VERSION + '/js/client.min.js'
-      });
-    } else {
-      this._clientPromise = Promise.resolve();
-    }
-
-    this._clientPromise = this._clientPromise.then(function () {
-      return global.braintree.client.create({
-        authorization: options.authorization,
-        debug: isDebug
-      });
-    });
+    assetsUrl = createAssetsUrl.create(options.authorization);
+    isDebug = Boolean(options.isDebug);
   }
+
+  this._clientPromise = createDeferredClient.create({
+    client: options.client,
+    authorization: options.authorization,
+    debug: isDebug,
+    assetsUrl: assetsUrl,
+    name: 'Hosted Fields'
+  });
 
   hostedFieldsUrl = composeUrl(assetsUrl, componentId, isDebug);
 

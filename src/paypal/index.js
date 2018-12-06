@@ -7,6 +7,8 @@
 
 var analytics = require('../lib/analytics');
 var basicComponentVerification = require('../lib/basic-component-verification');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var BraintreeError = require('../lib/braintree-error');
 var errors = require('./shared/errors');
 var PayPal = require('./external/paypal');
@@ -18,7 +20,8 @@ var Promise = require('../lib/promise');
  * @static
  * @function create
  * @param {object} options Creation options:
- * @param {Client} options.client A {@link Client} instance.
+ * @param {Client} [options.client] A {@link Client} instance.
+ * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {callback} callback The second argument, `data`, is the {@link PayPal} instance.
  * @example
  * // We recomend creating your PayPal button with button.js
@@ -70,12 +73,25 @@ var Promise = require('../lib/promise');
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
+  var name = 'PayPal';
+
   return basicComponentVerification.verify({
-    name: 'PayPal',
-    client: options.client
+    name: name,
+    client: options.client,
+    authorization: options.authorization
   }).then(function () {
+    return createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    });
+  }).then(function (client) {
     var pp;
-    var config = options.client.getConfiguration();
+    var config = client.getConfiguration();
+
+    options.client = client;
 
     if (config.gatewayConfiguration.paypalEnabled !== true) {
       return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));

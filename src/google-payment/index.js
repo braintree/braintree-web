@@ -8,6 +8,8 @@ var basicComponentVerification = require('../lib/basic-component-verification');
 var BraintreeError = require('../lib/braintree-error');
 var errors = require('./errors');
 var GooglePayment = require('./google-payment');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var VERSION = process.env.npm_package_version;
@@ -16,7 +18,10 @@ var VERSION = process.env.npm_package_version;
  * @static
  * @function create
  * @param {object} options Creation options:
- * @param {Client} options.client A {@link Client} instance.
+ * @param {Client} [options.client] A {@link Client} instance.
+ * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
+ * @param {Number} [options.googlePayVersion] The version of the Google Pay API to use. Value of 2 is required to accept parameters documented [by Google](https://developers.google.com/pay/api/web/reference/object). Omit this parameter to use the deprecated Google Pay Version 1.
+ * @param {String} [options.googleMerchantId] A Google merchant identifier issued after your website is approved by Google. Required when PaymentsClient is initialized with an environment property of PRODUCTION, but may be omitted in TEST environment.
  * @param {callback} [callback] The second argument, `data`, is the {@link GooglePayment} instance. If no callback is provided, `create` returns a promise that resolves with the {@link GooglePayment} instance.
  * @example <caption>Simple Example</caption>
  * // include https://pay.google.com/gp/p/js/pay.js in a script tag
@@ -31,7 +36,9 @@ var VERSION = process.env.npm_package_version;
  *   authorization: 'tokenization-key-or-client-token'
  * }).then(function (clientInstance) {
  *   return braintree.googlePayment.create({
- *     client: clientInstance
+ *     client: clientInstance,
+*      googlePayVersion: 2,
+*      googleMerchantId: 'your-merchant-id-from-google'
  *   });
  * }).then(function (googlePaymentInstance) {
  *   paymentButton.addEventListener('click', function (event) {
@@ -40,7 +47,6 @@ var VERSION = process.env.npm_package_version;
  *     event.preventDefault();
  *
  *     paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
- *       merchantId: 'your-merchant-id-from-google',
  *       transactionInfo: {
  *         currencyCode: 'USD',
  *         totalPriceStatus: 'FINAL',
@@ -73,7 +79,6 @@ var VERSION = process.env.npm_package_version;
  *     event.preventDefault();
  *
  *     paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
- *       merchantId: 'your-merchant-id-from-google',
  *       transactionInfo: {
  *         currencyCode: 'USD',
  *         totalPriceStatus: 'FINAL',
@@ -97,10 +102,15 @@ var VERSION = process.env.npm_package_version;
  *   authorization: 'tokenization-key-or-client-token'
  * }).then(function (clientInstance) {
  *   return braintree.googlePayment.create({
- *     client: clientInstance
+ *     client: clientInstance,
+ *     googlePayVersion: 2,
+ *     googleMerchantId: 'your-merchant-id-from-google'
  *   });
  * }).then(function (googlePaymentInstance) {
+ *
  *   return paymentsClient.isReadyToPay({
+ *     apiVersion: 2,
+ *     apiVersionMinor: 0,
  *     allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
  *   });
  * }).then(function (response) {
@@ -114,10 +124,23 @@ var VERSION = process.env.npm_package_version;
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 function create(options) {
+  var name = 'Google Pay';
+
   return basicComponentVerification.verify({
-    name: 'Google Pay',
-    client: options.client
+    name: name,
+    client: options.client,
+    authorization: options.authorization
   }).then(function () {
+    return createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    });
+  }).then(function (client) {
+    options.client = client;
+
     if (!options.client.getConfiguration().gatewayConfiguration.androidPay) {
       return Promise.reject(new BraintreeError(errors.GOOGLE_PAYMENT_NOT_ENABLED));
     }

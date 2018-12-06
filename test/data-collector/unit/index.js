@@ -2,6 +2,8 @@
 
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var dataCollector = require('../../../src/data-collector');
+var createDeferredClient = require('../../../src/lib/create-deferred-client');
+var createAssetsUrl = require('../../../src/lib/create-assets-url');
 var kount = require('../../../src/data-collector/kount');
 var fraudnet = require('../../../src/data-collector/fraudnet');
 var BraintreeError = require('../../../src/lib/braintree-error');
@@ -18,6 +20,8 @@ describe('dataCollector', function () {
     });
     this.sandbox.stub(kount, 'setup');
     this.sandbox.stub(fraudnet, 'setup');
+    this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
+    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
     this.sandbox.stub(basicComponentVerification, 'verify').resolves();
   });
 
@@ -52,12 +56,43 @@ describe('dataCollector', function () {
         client: client
       }, function () {
         expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWith({
+        expect(basicComponentVerification.verify).to.be.calledWithMatch({
           name: 'Data Collector',
           client: client
         });
         done();
       });
+    });
+
+    it('can create with an authorization instead of a client', function (done) {
+      var mockData = {
+        deviceData: {
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: '12345' // eslint-disable-line camelcase
+        }
+      };
+
+      kount.setup.returns(mockData);
+
+      dataCollector.create({
+        kount: true,
+        authorization: fake.clientToken,
+        debug: true
+      }, function (err, dtInstance) {
+        expect(err).not.to.exist;
+        expect(dtInstance).to.exist;
+
+        expect(createDeferredClient.create).to.be.calledOnce;
+        expect(createDeferredClient.create).to.be.calledWith({
+          authorization: fake.clientToken,
+          client: this.sandbox.match.typeOf('undefined'),
+          debug: true,
+          assetsUrl: 'https://example.com/assets',
+          name: 'Data Collector'
+        });
+
+        done();
+      }.bind(this));
     });
 
     it('returns an error if merchant is not enabled for kount but specified kount', function () {

@@ -48,5 +48,10 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'VENMO_INVALID_PROFILE_ID',
     message: 'Venmo profile ID is invalid.'
+  },
+  VENMO_INVALID_DEEP_LINK_RETURN_URL: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'VENMO_INVALID_DEEP_LINK_RETURN_URL',
+    message: 'Venmo deep link return URL is invalid.'
   }
 };

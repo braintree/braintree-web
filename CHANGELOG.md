@@ -1,5 +1,44 @@
 CHANGELOG
 =========
+
+## 3.40.0
+* Update framebus to v3.0.2
+* 3D Secure
+  * Allow creating component with an `authorization` instead of a `client`
+* American Express
+  * Allow creating component with an `authorization` instead of a `client`
+* Apple Pay
+  * Allow creating component with an `authorization` instead of a `client`
+* Data Collector
+  * Allow creating component with an `authorization` instead of a `client`
+* Google Payment
+  * Allow Google Pay Version 2 requests
+  * Allow direct tokenization of PayPal accounts
+  * Allow creating component with an `authorization` instead of a `client`
+* Hosted Fields
+  * Allow creating component with an `authorization` instead of a `client` (added in v3.38.1, documented in v3.40.0)
+* Masterpass
+  * Allow creating component with an `authorization` instead of a `client`
+* Payment Request
+  * Allow creating component with an `authorization` instead of a `client`
+* PayPal
+  * Allow creating component with an `authorization` instead of a `client`
+* PayPal Checkout
+  * Fix issue where `merchantAccountId` option could not be used when the default Merchant Account did not have PayPal enabled
+  * Allow creating component with an `authorization` instead of a `client`
+* UnionPay
+  * Allow creating component with an `authorization` instead of a `client`
+* US Bank Account
+  * Allow creating component with an `authorization` instead of a `client`
+* Vault Manager
+  * Allow creating component with an `authorization` instead of a `client`
+* Venmo
+  * Fix issue where url may be overwritten when a hash is not present #394 (thanks @arettberg)
+  * Add `deepLinkReturnUrl` to `venmo.create`
+  * Allow creating component with an `authorization` instead of a `client`
+* Visa Checkout
+  * Allow creating component with an `authorization` instead of a `client`
+
 ## 3.39.0
 * PayPal Checkout
   * Add `merchantAccountId` to PayPal `options`

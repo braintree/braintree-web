@@ -36,11 +36,12 @@ function Venmo(options) {
   this._assetsUrl = configuration.gatewayConfiguration.assetsUrl + '/web/' + VERSION;
   this._allowNewBrowserTab = options.allowNewBrowserTab !== false;
   this._profileId = options.profileId;
+  this._deepLinkReturnUrl = options.deepLinkReturnUrl;
 }
 
 Venmo.prototype._initialize = function () {
-  var currentUrl = global.location.href.replace(global.location.hash, '');
-  var params = querystring.parse(global.location.href);
+  var params = {};
+  var currentUrl = this._deepLinkReturnUrl || global.location.href.replace(global.location.hash, '');
   var configuration = this._client.getConfiguration();
   var venmoConfiguration = configuration.gatewayConfiguration.payWithVenmo;
   var analyticsMetadata = this._client.getConfiguration().analyticsMetadata;
@@ -147,7 +148,12 @@ Venmo.prototype.tokenize = function () {
     self._tokenizationInProgress = true;
     self._previousHash = global.location.hash;
 
-    global.open(self._url);
+    // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open.
+    if (self._deepLinkReturnUrl) {
+      global.location = self._url;
+    } else {
+      global.open(self._url);
+    }
 
     // Subscribe to document visibility change events to detect when app switch
     // has returned.

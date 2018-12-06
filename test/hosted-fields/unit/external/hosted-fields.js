@@ -5,7 +5,8 @@ var Bus = require('../../../../src/lib/bus');
 var HostedFields = require('../../../../src/hosted-fields/external/hosted-fields');
 var constants = require('../../../../src/hosted-fields/shared/constants');
 var events = constants.events;
-var assets = require('../../../../src/lib/assets');
+var createDeferredClient = require('../../../../src/lib/create-deferred-client');
+var createAssetsUrl = require('../../../..//src/lib/create-assets-url');
 var Destructor = require('../../../../src/lib/destructor');
 var EventEmitter = require('../../../../src/lib/event-emitter');
 var BraintreeError = require('../../../../src/lib/braintree-error');
@@ -18,12 +19,13 @@ var getCardTypes = require('../../../../src/hosted-fields/shared/get-card-types'
 
 describe('HostedFields', function () {
   beforeEach(function () {
+    this.fakeClient = fake.client();
     this.numberDiv = document.createElement('div');
     this.numberDiv.id = 'number';
     document.body.appendChild(this.numberDiv);
 
     this.defaultConfiguration = {
-      client: fake.client(),
+      client: this.fakeClient,
       fields: {
         number: {
           selector: '#number'
@@ -33,6 +35,8 @@ describe('HostedFields', function () {
 
     this.defaultConfiguration.client._request = function () {};
     this.sandbox.stub(analytics, 'sendEvent');
+    this.sandbox.stub(createDeferredClient, 'create').resolves(this.fakeClient);
+    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
   });
 
   afterEach(function () {
@@ -320,7 +324,7 @@ describe('HostedFields', function () {
       expect(state.cards).to.deep.equal(getCardTypes(''));
     });
 
-    it('loads client script from cdn if using an authorization instead of a client', function (done) {
+    it('loads deferred when using an authorization instead of a client', function (done) {
       var instance, frameReadyHandler;
       var configuration = this.defaultConfiguration;
       var numberNode = document.createElement('div');
@@ -328,15 +332,6 @@ describe('HostedFields', function () {
       var expirationDateNode = document.createElement('div');
 
       function noop() {}
-
-      this.sandbox.stub(assets, 'loadScript').callsFake(function () {
-        global.braintree = global.braintree || {};
-        global.braintree.client = {
-          create: this.sandbox.stub().resolves(fake.client())
-        };
-
-        return Promise.resolve();
-      }.bind(this));
 
       numberNode.id = 'number';
       cvvNode.id = 'cvv';
@@ -360,9 +355,13 @@ describe('HostedFields', function () {
       frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
 
       instance.on('ready', function () {
-        expect(assets.loadScript).to.be.calledOnce;
-        expect(assets.loadScript).to.be.calledWith({
-          src: this.sandbox.match(/client.min.js/)
+        expect(createDeferredClient.create).to.be.calledOnce;
+        expect(createDeferredClient.create).to.be.calledWith({
+          name: 'Hosted Fields',
+          client: this.sandbox.match.typeOf('undefined'),
+          authorization: configuration.authorization,
+          debug: false,
+          assetsUrl: 'https://example.com/assets'
         });
 
         done();
@@ -373,68 +372,15 @@ describe('HostedFields', function () {
       frameReadyHandler({field: 'expirationDate'}, noop);
     });
 
-    it('uses existing client creation script if it exists on the window when using an authorization', function (done) {
-      var instance, frameReadyHandler;
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var cvvNode = document.createElement('div');
-      var expirationDateNode = document.createElement('div');
-
-      function noop() {}
-
-      global.braintree = global.braintree || {};
-      global.braintree.client = {
-        create: this.sandbox.stub().resolves(fake.client())
-      };
-
-      this.sandbox.stub(assets, 'loadScript');
-
-      numberNode.id = 'number';
-      cvvNode.id = 'cvv';
-      expirationDateNode.id = 'expirationDate';
-
-      document.body.appendChild(numberNode);
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
-
-      configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
-      };
-
-      delete configuration.client;
-      configuration.authorization = fake.clientToken;
-
-      instance = new HostedFields(configuration);
-
-      frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
-
-      instance.on('ready', function () {
-        expect(assets.loadScript).to.not.be.called;
-
-        done();
-      });
-
-      frameReadyHandler({field: 'number'}, noop);
-      frameReadyHandler({field: 'cvv'}, noop);
-      frameReadyHandler({field: 'expirationDate'}, noop);
-    });
-
     it('sends client to orchestrator frame when it requests the client', function (done) {
       var instance, frameReadyHandler, clientReadyHandler;
+      var fakeClient = this.fakeClient;
       var configuration = this.defaultConfiguration;
       var numberNode = document.createElement('div');
       var cvvNode = document.createElement('div');
       var expirationDateNode = document.createElement('div');
-      var fakeClient = fake.client();
 
       function noop() {}
-
-      global.braintree = global.braintree || {};
-      global.braintree.client = {
-        create: this.sandbox.stub().resolves(fakeClient)
-      };
 
       numberNode.id = 'number';
       cvvNode.id = 'cvv';
@@ -460,13 +406,8 @@ describe('HostedFields', function () {
 
       instance.on('ready', function () {
         clientReadyHandler(function (client) {
-          try {
-            expect(client).to.deep.equal(fakeClient);
-          } catch (e) {
-            done(e);
+          expect(client).to.equal(fakeClient);
 
-            return;
-          }
           done();
         });
       });
@@ -474,47 +415,6 @@ describe('HostedFields', function () {
       frameReadyHandler({field: 'number'}, noop);
       frameReadyHandler({field: 'cvv'}, noop);
       frameReadyHandler({field: 'expirationDate'}, noop);
-    });
-
-    it('uses production asset url if client token does not have an environment property', function (done) {
-      var instance, frameReadyHandler;
-      var configuration = this.defaultConfiguration;
-      var numberNode = this.numberDiv;
-      var cvvNode = document.createElement('div');
-      var expirationDateNode = document.createElement('div');
-
-      function noop() {}
-
-      cvvNode.id = 'cvv';
-      expirationDateNode.id = 'expirationDate';
-
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
-
-      configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
-      };
-
-      delete configuration.client;
-      configuration.authorization = fake.clientTokenWithoutEnvironment;
-
-      instance = new HostedFields(configuration);
-
-      frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
-
-      instance.on('ready', function () {
-        expect(numberNode.querySelector('iframe').src).to.match(/^https:\/\/assets.braintreegateway.com.*/);
-        done();
-      });
-
-      // allow iframes to be added to DOM
-      setTimeout(function () {
-        frameReadyHandler({field: 'number'}, noop);
-        frameReadyHandler({field: 'cvv'}, noop);
-        frameReadyHandler({field: 'expirationDate'}, noop);
-      }, 10);
     });
   });
 

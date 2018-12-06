@@ -8,6 +8,8 @@
 
 var PaymentRequestComponent = require('./external/payment-request');
 var basicComponentVerification = require('../lib/basic-component-verification');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var wrapPromise = require('@braintree/wrap-promise');
 var VERSION = process.env.npm_package_version;
 
@@ -15,7 +17,8 @@ var VERSION = process.env.npm_package_version;
  * @static
  * @function create
  * @param {object} options Creation options:
- * @param {Client} options.client A {@link Client} instance.
+ * @param {Client} [options.client] A {@link Client} instance.
+ * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {object} [options.enabledPaymentMethods] An object representing which payment methods to display.
  * @param {boolean} [options.enabledPaymentMethods.basicCard=true] Whether or not to display credit card as an option in the Payment Request dialog. If left blank or set to true, credit cards will be displayed in the dialog if the merchant account is set up to process credit cards.
  * @param {boolean} [options.enabledPaymentMethods.googlePay=true] Whether or not to display Google Pay as an option in the Payment Request dialog. If left blank or set to true, Google Pay will be displayed in the dialog if the merchant account is set up to process Google Pay.
@@ -40,11 +43,25 @@ var VERSION = process.env.npm_package_version;
  * }, cb);
  */
 function create(options) {
+  var name = 'Payment Request';
+
   return basicComponentVerification.verify({
-    name: 'Payment Request',
-    client: options.client
+    name: name,
+    client: options.client,
+    authorization: options.authorization
   }).then(function () {
-    var paymentRequestInstance = new PaymentRequestComponent(options);
+    return createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    });
+  }).then(function (client) {
+    var paymentRequestInstance;
+
+    options.client = client;
+    paymentRequestInstance = new PaymentRequestComponent(options);
 
     return paymentRequestInstance.initialize();
   });

@@ -79,12 +79,6 @@ confirm_error_code_documentation() {
 }
 
 reinstall_dependencies() {
-  set +e
-  source ~/.nvm/nvm.sh
-  set -e
-  nvm install
-  nvm use
-
   echo -en "${YELLOW}Reinstall${RESET} npm/bundle dependencies (y/n)? "
   read message
 
