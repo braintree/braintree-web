@@ -6,6 +6,7 @@
   "google-payment",
   "hosted-fields",
   "ideal",
+  "local-payment",
   "masterpass",
   "payment-request",
   "paypal",

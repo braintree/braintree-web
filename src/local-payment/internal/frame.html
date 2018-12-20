@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <style>
+      #container {
+        text-align: center;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        margin-top: 100px;
+      }
+      #redirect {
+        color: #fff;
+        background-color: #009be1;
+        font-size: 1.2rem;
+        font-weight: 600;
+        padding-top: 1.375em;
+        padding-bottom: 1.375em;
+        margin-bottom: 1.5em;
+        width: 100%;
+        line-height: 1.7144;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-block;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+    @BUILT_FILE
+    </script>
+    <script>
+      braintree.localPayment.start();
+    </script>
+  </body>
+</html>

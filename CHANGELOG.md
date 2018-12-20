@@ -1,5 +1,12 @@
 CHANGELOG
 =========
+## unreleased
+* Add Local Payments component
+* PayPal Checkout
+  * Add support for `lineItems`
+* Payment Request
+  * Support Google Pay v2
+  * Support PayPal in Google Pay
 
 ## 3.40.0
 * Update framebus to v3.0.2

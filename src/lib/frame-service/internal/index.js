@@ -4,7 +4,7 @@ var events = require('../shared/events');
 var constants = require('../shared/constants');
 
 function getServiceId() {
-  return global.name.split('_')[1];
+  return global.name.split('_')[1].split('?')[0];
 }
 
 function getFrame() {
@@ -20,7 +20,17 @@ function getFrame() {
 }
 
 function report(err, payload, callback) {
-  var frame = getFrame();
+  var frame;
+
+  try {
+    frame = getFrame();
+  } catch (frameError) {
+    if (callback) {
+      callback(frameError);
+    }
+
+    return;
+  }
 
   frame.bus.emit(events.DISPATCH_FRAME_REPORT, {
     err: err,

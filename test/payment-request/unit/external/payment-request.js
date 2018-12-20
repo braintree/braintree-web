@@ -151,6 +151,138 @@ describe('Payment Request component', function () {
     expect(instance._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal(['basic-card']);
   });
 
+  it('can use google pay v2 when requested', function () {
+    var instance = new PaymentRequestComponent({
+      googlePayVersion: 2,
+      client: this.fakeClient
+    });
+
+    expect(instance._defaultSupportedPaymentMethods.length).to.equal(2);
+    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal(['https://google.com/pay']);
+    expect(instance._defaultSupportedPaymentMethods[1].data).to.deep.equal({
+      merchantInfo: {
+        merchantId: '18278000977346790994'
+      },
+      apiVersion: 2,
+      apiVersionMinor: 0,
+      environment: 'TEST',
+      allowedPaymentMethods: [{
+        type: 'CARD',
+        parameters: {
+          allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+          allowedCardNetworks: ['VISA', 'AMEX']
+        },
+        tokenizationSpecification: {
+          type: 'PAYMENT_GATEWAY',
+          parameters: {
+            gateway: 'braintree',
+            'braintree:merchantId': 'merchant-id',
+            'braintree:apiVersion': 'v1',
+            'braintree:sdkVersion': VERSION,
+            'braintree:metadata': JSON.stringify({
+              source: constants.SOURCE,
+              integration: constants.INTEGRATION,
+              sessionId: 'fakeSessionId',
+              version: VERSION,
+              platform: constants.PLATFORM
+            }),
+            'braintree:authorizationFingerprint': 'fingerprint'
+          }
+        }
+      }]
+    });
+  });
+
+  it('can use paypal closed loop tokens via google pay v2 when authorized', function () {
+    var client, instance;
+    var configuration = fake.configuration();
+
+    configuration.gatewayConfiguration.androidPay = {
+      enabled: true,
+      googleAuthorizationFingerprint: 'fingerprint',
+      supportedNetworks: ['visa', 'amex']
+    };
+    configuration.gatewayConfiguration.paypalEnabled = true;
+    configuration.gatewayConfiguration.paypal = {};
+    configuration.gatewayConfiguration.paypal.clientId = 'paypal_client_id';
+    configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
+
+    client = fake.client({
+      configuration: configuration
+    });
+
+    instance = new PaymentRequestComponent({
+      googlePayVersion: 2,
+      client: client
+    });
+
+    expect(instance._defaultSupportedPaymentMethods.length).to.equal(2);
+    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal(['https://google.com/pay']);
+    expect(instance._defaultSupportedPaymentMethods[1].data).to.deep.equal({
+      merchantInfo: {
+        merchantId: '18278000977346790994'
+      },
+      apiVersion: 2,
+      apiVersionMinor: 0,
+      environment: 'TEST',
+      allowedPaymentMethods: [{
+        type: 'CARD',
+        parameters: {
+          allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+          allowedCardNetworks: ['VISA', 'AMEX']
+        },
+        tokenizationSpecification: {
+          type: 'PAYMENT_GATEWAY',
+          parameters: {
+            gateway: 'braintree',
+            'braintree:merchantId': 'merchant-id',
+            'braintree:apiVersion': 'v1',
+            'braintree:sdkVersion': VERSION,
+            'braintree:metadata': JSON.stringify({
+              source: constants.SOURCE,
+              integration: constants.INTEGRATION,
+              sessionId: 'fakeSessionId',
+              version: VERSION,
+              platform: constants.PLATFORM
+            }),
+            'braintree:authorizationFingerprint': 'fingerprint'
+          }
+        }
+      }, {
+        type: 'PAYPAL',
+        parameters: {
+          /* eslint-disable camelcase */
+          purchase_context: {
+            purchase_units: [{
+              payee: {
+                client_id: 'paypal_client_id'
+              },
+              recurring_payment: true
+            }]
+          }
+          /* eslint-enable camelcase */
+        },
+        tokenizationSpecification: {
+          type: 'PAYMENT_GATEWAY',
+          parameters: {
+            gateway: 'braintree',
+            'braintree:merchantId': 'merchant-id',
+            'braintree:apiVersion': 'v1',
+            'braintree:sdkVersion': VERSION,
+            'braintree:metadata': JSON.stringify({
+              source: constants.SOURCE,
+              integration: constants.INTEGRATION,
+              sessionId: 'fakeSessionId',
+              version: VERSION,
+              platform: constants.PLATFORM
+            }),
+            'braintree:paypalClientId': 'paypal_client_id'
+          }
+        }
+      }]
+    });
+  });
+
   describe('initialize', function () {
     beforeEach(function () {
       this.sandbox.stub(document.body, 'appendChild');

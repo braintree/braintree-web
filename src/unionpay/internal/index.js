@@ -107,7 +107,7 @@ function initialize(clientConfiguration) {
 }
 
 function getFrameName() {
-  return global.name.split('_')[1];
+  return global.name.split('_')[1].split('?')[0];
 }
 
 module.exports = {

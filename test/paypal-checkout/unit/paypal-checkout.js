@@ -281,6 +281,18 @@ describe('PayPalCheckout', function () {
               phone: '111-1111',
               recipientName: 'Joe Bloggs'
             };
+            this.options.lineItems = [
+              {
+                quantity: '1',
+                unitAmount: '1',
+                unitTaxAmount: '1',
+                name: 'Shirt',
+                description: 'cotton',
+                kind: 'debit',
+                productCode: '123xyz',
+                url: 'example.com'
+              }
+            ];
 
             return this.paypalCheckout.createPayment(this.options).then(function () {
               expect(this.client.request).to.be.calledWith(this.sandbox.match({
@@ -293,7 +305,19 @@ describe('PayPalCheckout', function () {
                   postalCode: '94107',
                   countryCode: 'USA',
                   phone: '111-1111',
-                  recipientName: 'Joe Bloggs'
+                  recipientName: 'Joe Bloggs',
+                  lineItems: [
+                    {
+                      quantity: '1',
+                      unitAmount: '1',
+                      unitTaxAmount: '1',
+                      name: 'Shirt',
+                      description: 'cotton',
+                      kind: 'debit',
+                      productCode: '123xyz',
+                      url: 'example.com'
+                    }
+                  ]
                 }
               }));
             }.bind(this));

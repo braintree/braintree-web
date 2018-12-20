@@ -41,6 +41,18 @@ describe('frame-service', function () {
       expect(frameService.getFrame()).to.equal('frame');
     });
 
+    it('ignores query params in frame name', function () {
+      delete global.opener;
+      global.parent = {
+        frames: {}
+      };
+
+      global.name = constants.DISPATCH_FRAME_NAME + '_' + this.id + '?query=param';
+      global.parent.frames[constants.DISPATCH_FRAME_NAME + '_' + this.id] = 'frame';
+
+      expect(frameService.getFrame()).to.equal('frame');
+    });
+
     it('throws an error when frame is empty', function () {
       expect(function () {
         return frameService.getFrame();
@@ -66,6 +78,16 @@ describe('frame-service', function () {
       expect(frame.bus.emit).to.be.calledWith(events.DISPATCH_FRAME_REPORT, {
         err: 'err',
         payload: 'payload'
+      });
+    });
+
+    it('passes an error back to the callback if getFrame errors', function (done) {
+      global.name = constants.DISPATCH_FRAME_NAME + '_wont_find_it';
+
+      frameService.report('err', 'payload', function (err) {
+        expect(err.message).to.equal('Braintree is inactive');
+
+        done();
       });
     });
   });

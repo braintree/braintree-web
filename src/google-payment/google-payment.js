@@ -112,16 +112,13 @@ GooglePayment.prototype._createV2PaymentDataRequest = function (defaultConfig, p
  *   }
  * });
  *
- * // Update all payment methods to require billing address
- * paymentDataRequest.allowedPaymentMethods.map(function (paymentMethod) {
- *   paymentMethod.parameters.billingAddressRequired = true;
- *   paymentMethod.parameters.billingAddressParameters = {
- *     format: 'FULL',
- *     phoneNumberRequired: true
- *   };
- *
- *   return paymentMethod;
- * });
+ * // Update card payment methods to require billing address
+ * var cardPaymentMethod = paymentDataRequest.allowedPaymentMethods;
+ * cardPaymentMethod.parameters.billingAddressRequired = true;
+ * cardPaymentMethod.parameters.billingAddressParameters = {
+ *   format: 'FULL',
+ *   phoneNumberRequired: true
+ * };
  *
  * var paymentsClient = new google.payments.api.PaymentsClient({
  *   environment: 'TEST' // or 'PRODUCTION'

@@ -5,7 +5,7 @@ var events = require('../../shared/events');
 var clone = require('../../../json-clone');
 
 function start() {
-  var serviceChannel = global.name.split('_')[1];
+  var serviceChannel = global.name.split('_')[1].split('?')[0];
   var configuration;
 
   global.bus = new Bus({channel: serviceChannel});

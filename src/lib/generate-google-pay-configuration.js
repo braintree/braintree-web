@@ -115,6 +115,10 @@ module.exports = function (configuration, googlePayVersion, googleMerchantId) {
     if (googleMerchantId) {
       data.merchantId = googleMerchantId;
     }
+
+    if (googlePayVersion) {
+      data.apiVersion = googlePayVersion;
+    }
   }
 
   return data;

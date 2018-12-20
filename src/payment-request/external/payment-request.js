@@ -144,6 +144,8 @@ function PaymentRequestComponent(options) {
     basicCard: enabledPaymentMethods.basicCard !== false,
     googlePay: enabledPaymentMethods.googlePay !== false
   };
+  this._googlePayVersion = options.googlePayVersion === 2 ? 2 : 1;
+  this._googleMerchantId = BRAINTREE_GOOGLE_PAY_MERCHANT_ID;
   this._supportedPaymentMethods = this._constructDefaultSupportedPaymentMethods();
   this._defaultSupportedPaymentMethods = Object.keys(this._supportedPaymentMethods).map(function (key) {
     return this._supportedPaymentMethods[key];
@@ -179,10 +181,9 @@ PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = fun
   if (this._enabledPaymentMethods.googlePay && androidPayConfiguration && androidPayConfiguration.enabled) {
     supportedPaymentMethods.googlePay = {
       supportedMethods: ['https://google.com/pay'],
-      data: assign({
-        apiVersion: 1,
-        merchantId: BRAINTREE_GOOGLE_PAY_MERCHANT_ID
-      }, generateGooglePayConfiguration(configuration))
+      data: generateGooglePayConfiguration(
+        configuration, this._googlePayVersion, this._googleMerchantId
+      )
     };
   }
 
