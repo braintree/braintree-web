@@ -1,6 +1,6 @@
 CHANGELOG
 =========
-## unreleased
+## 3.41.0
 * Add Local Payments component
 * PayPal Checkout
   * Add support for `lineItems`
