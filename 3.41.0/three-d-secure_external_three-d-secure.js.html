@@ -1,0 +1,520 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+      three-d-secure/external/three-d-secure.js - Documentation
+  </title>
+
+  <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+  <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+  
+
+  <!-- start Mixpanel -->
+  <script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+  0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+  for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+  mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script>
+  <!-- end Mixpanel -->
+</head>
+
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="linkIcon" fill="#706d77" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+  <label for="nav-trigger" class="navicon-button x">
+    <div class="navicon"></div>
+  </label>
+
+  <label for="nav-trigger" class="overlay"></label>
+
+  <div class="top-nav-wrapper">
+    <ul>
+      <li >
+        <a href="index.html">
+          
+            <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+          
+          
+        </a>
+      </li>
+
+      
+      <li>
+        <div class="search-wrapper">
+          <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            <path d="M0 0h24v24H0z" fill="none"/>
+
+          </svg>
+          <input type="text" placeholder="Search" class="search-input">
+        </div>
+      </li>
+      
+
+    </ul>
+  </div>
+
+  <nav>
+    <h3 class="reference-title">
+      Braintree SDK Client Reference
+    </h3>
+
+    <h3>Classes</h3><ul><li id="AmericanExpress-nav"><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type="method" id="AmericanExpress-getExpressCheckoutProfile-nav"><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type="method" id="AmericanExpress-getRewardsBalance-nav"><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li><li data-type="method" id="AmericanExpress-teardown-nav"><a href="AmericanExpress.html#teardown">teardown</a></li></ul></li><li id="ApplePay-nav"><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type="method" id="ApplePay-createPaymentRequest-nav"><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type="method" id="ApplePay-performValidation-nav"><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type="method" id="ApplePay-teardown-nav"><a href="ApplePay.html#teardown">teardown</a></li><li data-type="method" id="ApplePay-tokenize-nav"><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li id="BraintreeError-nav"><a href="BraintreeError.html">BraintreeError</a></li><li id="Client-nav"><a href="Client.html">Client</a><ul class='methods'><li data-type="method" id="Client-getConfiguration-nav"><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type="method" id="Client-getVersion-nav"><a href="Client.html#getVersion">getVersion</a></li><li data-type="method" id="Client-request-nav"><a href="Client.html#request">request</a></li></ul></li><li id="DataCollector-nav"><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type="method" id="DataCollector-teardown-nav"><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li id="GooglePayment-nav"><a href="GooglePayment.html">GooglePayment</a><ul class='methods'><li data-type="method" id="GooglePayment-createPaymentDataRequest-nav"><a href="GooglePayment.html#createPaymentDataRequest">createPaymentDataRequest</a></li><li data-type="method" id="GooglePayment-parseResponse-nav"><a href="GooglePayment.html#parseResponse">parseResponse</a></li><li data-type="method" id="GooglePayment-teardown-nav"><a href="GooglePayment.html#teardown">teardown</a></li></ul></li><li id="HostedFields-nav"><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type="method" id="HostedFields-addClass-nav"><a href="HostedFields.html#addClass">addClass</a></li><li data-type="method" id="HostedFields-clear-nav"><a href="HostedFields.html#clear">clear</a></li><li data-type="method" id="HostedFields-focus-nav"><a href="HostedFields.html#focus">focus</a></li><li data-type="method" id="HostedFields-getState-nav"><a href="HostedFields.html#getState">getState</a></li><li data-type="method" id="HostedFields-on-nav"><a href="HostedFields.html#on">on</a></li><li data-type="method" id="HostedFields-removeAttribute-nav"><a href="HostedFields.html#removeAttribute">removeAttribute</a></li><li data-type="method" id="HostedFields-removeClass-nav"><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type="method" id="HostedFields-setAttribute-nav"><a href="HostedFields.html#setAttribute">setAttribute</a></li><li data-type="method" id="HostedFields-setMessage-nav"><a href="HostedFields.html#setMessage">setMessage</a></li><li data-type="method" id="HostedFields-setPlaceholder-nav"><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type="method" id="HostedFields-teardown-nav"><a href="HostedFields.html#teardown">teardown</a></li><li data-type="method" id="HostedFields-tokenize-nav"><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li id="LocalPayment-nav"><a href="LocalPayment.html">LocalPayment</a><ul class='methods'><li data-type="method" id="LocalPayment-closeWindow-nav"><a href="LocalPayment.html#closeWindow">closeWindow</a></li><li data-type="method" id="LocalPayment-focusWindow-nav"><a href="LocalPayment.html#focusWindow">focusWindow</a></li><li data-type="method" id="LocalPayment-hasTokenizationParams-nav"><a href="LocalPayment.html#hasTokenizationParams">hasTokenizationParams</a></li><li data-type="method" id="LocalPayment-startPayment-nav"><a href="LocalPayment.html#startPayment">startPayment</a></li><li data-type="method" id="LocalPayment-tokenize-nav"><a href="LocalPayment.html#tokenize">tokenize</a></li></ul></li><li id="Masterpass-nav"><a href="Masterpass.html">Masterpass</a><ul class='methods'><li data-type="method" id="Masterpass-teardown-nav"><a href="Masterpass.html#teardown">teardown</a></li><li data-type="method" id="Masterpass-tokenize-nav"><a href="Masterpass.html#tokenize">tokenize</a></li></ul></li><li id="PaymentRequestComponent-nav"><a href="PaymentRequestComponent.html">PaymentRequestComponent</a><ul class='methods'><li data-type="method" id="PaymentRequestComponent-createSupportedPaymentMethodsConfiguration-nav"><a href="PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration">createSupportedPaymentMethodsConfiguration</a></li><li data-type="method" id="PaymentRequestComponent-on-nav"><a href="PaymentRequestComponent.html#on">on</a></li><li data-type="method" id="PaymentRequestComponent-teardown-nav"><a href="PaymentRequestComponent.html#teardown">teardown</a></li><li data-type="method" id="PaymentRequestComponent-tokenize-nav"><a href="PaymentRequestComponent.html#tokenize">tokenize</a></li></ul></li><li id="PayPal-nav"><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type="method" id="PayPal-closeWindow-nav"><a href="PayPal.html#closeWindow">closeWindow</a></li><li data-type="method" id="PayPal-focusWindow-nav"><a href="PayPal.html#focusWindow">focusWindow</a></li><li data-type="method" id="PayPal-tokenize-nav"><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li id="PayPalCheckout-nav"><a href="PayPalCheckout.html">PayPalCheckout</a><ul class='methods'><li data-type="method" id="PayPalCheckout-createPayment-nav"><a href="PayPalCheckout.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckout-teardown-nav"><a href="PayPalCheckout.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckout-tokenizePayment-nav"><a href="PayPalCheckout.html#tokenizePayment">tokenizePayment</a></li></ul></li><li id="ThreeDSecure-nav"><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type="method" id="ThreeDSecure-cancelVerifyCard-nav"><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type="method" id="ThreeDSecure-teardown-nav"><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type="method" id="ThreeDSecure-verifyCard-nav"><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li id="UnionPay-nav"><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type="method" id="UnionPay-enroll-nav"><a href="UnionPay.html#enroll">enroll</a></li><li data-type="method" id="UnionPay-fetchCapabilities-nav"><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type="method" id="UnionPay-teardown-nav"><a href="UnionPay.html#teardown">teardown</a></li><li data-type="method" id="UnionPay-tokenize-nav"><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li><li id="USBankAccount-nav"><a href="USBankAccount.html">USBankAccount</a><ul class='methods'><li data-type="method" id="USBankAccount-teardown-nav"><a href="USBankAccount.html#teardown">teardown</a></li><li data-type="method" id="USBankAccount-tokenize-nav"><a href="USBankAccount.html#tokenize">tokenize</a></li></ul></li><li id="VaultManager-nav"><a href="VaultManager.html">VaultManager</a><ul class='methods'><li data-type="method" id="VaultManager-fetchPaymentMethods-nav"><a href="VaultManager.html#fetchPaymentMethods">fetchPaymentMethods</a></li><li data-type="method" id="VaultManager-teardown-nav"><a href="VaultManager.html#teardown">teardown</a></li></ul></li><li id="Venmo-nav"><a href="Venmo.html">Venmo</a><ul class='methods'><li data-type="method" id="Venmo-hasTokenizationResult-nav"><a href="Venmo.html#hasTokenizationResult">hasTokenizationResult</a></li><li data-type="method" id="Venmo-isBrowserSupported-nav"><a href="Venmo.html#isBrowserSupported">isBrowserSupported</a></li><li data-type="method" id="Venmo-teardown-nav"><a href="Venmo.html#teardown">teardown</a></li><li data-type="method" id="Venmo-tokenize-nav"><a href="Venmo.html#tokenize">tokenize</a></li></ul></li><li id="VisaCheckout-nav"><a href="VisaCheckout.html">VisaCheckout</a><ul class='methods'><li data-type="method" id="VisaCheckout-createInitOptions-nav"><a href="VisaCheckout.html#createInitOptions">createInitOptions</a></li><li data-type="method" id="VisaCheckout-teardown-nav"><a href="VisaCheckout.html#teardown">teardown</a></li><li data-type="method" id="VisaCheckout-tokenize-nav"><a href="VisaCheckout.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li id="braintree-web-nav"><a href="module-braintree-web.html">braintree-web</a></li><li id="braintree-web_american-express-nav"><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type="method" id="braintree-web_american-express-create-nav"><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li id="braintree-web_apple-pay-nav"><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type="method" id="braintree-web_apple-pay-create-nav"><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li id="braintree-web_client-nav"><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type="method" id="braintree-web_client-create-nav"><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li id="braintree-web_data-collector-nav"><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type="method" id="braintree-web_data-collector-create-nav"><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li id="braintree-web_google-payment-nav"><a href="module-braintree-web_google-payment.html">braintree-web/google-payment</a><ul class='methods'><li data-type="method" id="braintree-web_google-payment-create-nav"><a href="module-braintree-web_google-payment.html#.create">create</a></li></ul></li><li id="braintree-web_hosted-fields-nav"><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type="method" id="braintree-web_hosted-fields-create-nav"><a href="module-braintree-web_hosted-fields.html#.create">create</a></li><li data-type="method" id="braintree-web_hosted-fields-supportsInputFormatting-nav"><a href="module-braintree-web_hosted-fields.html#.supportsInputFormatting">supportsInputFormatting</a></li></ul></li><li id="braintree-web_local-payment-nav"><a href="module-braintree-web_local-payment.html">braintree-web/local-payment</a><ul class='methods'><li data-type="method" id="braintree-web_local-payment-create-nav"><a href="module-braintree-web_local-payment.html#.create">create</a></li></ul></li><li id="braintree-web_masterpass-nav"><a href="module-braintree-web_masterpass.html">braintree-web/masterpass</a><ul class='methods'><li data-type="method" id="braintree-web_masterpass-create-nav"><a href="module-braintree-web_masterpass.html#.create">create</a></li><li data-type="method" id="braintree-web_masterpass-isSupported-nav"><a href="module-braintree-web_masterpass.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_payment-request-nav"><a href="module-braintree-web_payment-request.html">braintree-web/payment-request</a><ul class='methods'><li data-type="method" id="braintree-web_payment-request-create-nav"><a href="module-braintree-web_payment-request.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-nav"><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-create-nav"><a href="module-braintree-web_paypal.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-isSupported-nav"><a href="module-braintree-web_paypal.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-nav"><a href="module-braintree-web_paypal-checkout.html">braintree-web/paypal-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-create-nav"><a href="module-braintree-web_paypal-checkout.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-isSupported-nav"><a href="module-braintree-web_paypal-checkout.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_three-d-secure-nav"><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type="method" id="braintree-web_three-d-secure-create-nav"><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li id="braintree-web_unionpay-nav"><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type="method" id="braintree-web_unionpay-create-nav"><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li><li id="braintree-web_us-bank-account-nav"><a href="module-braintree-web_us-bank-account.html">braintree-web/us-bank-account</a><ul class='methods'><li data-type="method" id="braintree-web_us-bank-account-create-nav"><a href="module-braintree-web_us-bank-account.html#.create">create</a></li></ul></li><li id="braintree-web_vault-manager-nav"><a href="module-braintree-web_vault-manager.html">braintree-web/vault-manager</a><ul class='methods'><li data-type="method" id="braintree-web_vault-manager-create-nav"><a href="module-braintree-web_vault-manager.html#.create">create</a></li></ul></li><li id="braintree-web_venmo-nav"><a href="module-braintree-web_venmo.html">braintree-web/venmo</a><ul class='methods'><li data-type="method" id="braintree-web_venmo-create-nav"><a href="module-braintree-web_venmo.html#.create">create</a></li><li data-type="method" id="braintree-web_venmo-isBrowserSupported-nav"><a href="module-braintree-web_venmo.html#.isBrowserSupported">isBrowserSupported</a></li></ul></li><li id="braintree-web_visa-checkout-nav"><a href="module-braintree-web_visa-checkout.html">braintree-web/visa-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_visa-checkout-create-nav"><a href="module-braintree-web_visa-checkout.html#.create">create</a></li></ul></li></ul><h3 id="global-nav"><a href="global.html">Global</a></h3>
+  </nav>
+
+  <div id="main">
+    
+      <h1 class="page-title">
+        three-d-secure/external/three-d-secure.js
+      </h1>
+    
+
+    
+      
+
+<section>
+  <article>
+    <pre class="prettyprint source linenums"><code>'use strict';
+
+var BraintreeError = require('../../lib/braintree-error');
+var analytics = require('../../lib/analytics');
+var assign = require('../../lib/assign').assign;
+var methods = require('../../lib/methods');
+var convertMethodsToError = require('../../lib/convert-methods-to-error');
+var constants = require('../shared/constants');
+var useMin = require('../../lib/use-min');
+var Bus = require('../../lib/bus');
+var uuid = require('../../lib/vendor/uuid');
+var deferred = require('../../lib/deferred');
+var errors = require('../shared/errors');
+var events = require('../shared/events');
+var VERSION = process.env.npm_package_version;
+var iFramer = require('@braintree/iframer');
+var Promise = require('../../lib/promise');
+var wrapPromise = require('@braintree/wrap-promise');
+
+var IFRAME_HEIGHT = 400;
+var IFRAME_WIDTH = 400;
+
+/**
+ * @typedef {object} ThreeDSecure~verifyPayload
+ * @property {string} nonce The new payment method nonce produced by the 3D Secure lookup. The original nonce passed into {@link ThreeDSecure#verifyCard|verifyCard} was consumed. This new nonce should be used to transact on your server.
+ * @property {object} details Additional account details.
+ * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.lastFour Last four digits of card number.
+ * @property {string} details.lastTwo Last two digits of card number.
+ * @property {string} description A human-readable description.
+ * @property {object} binData Information about the card based on the bin.
+ * @property {string} binData.commercial Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.countryOfIssuance The country of issuance.
+ * @property {string} binData.debit Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.durbinRegulated Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.healthcare Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.issuingBank The issuing bank.
+ * @property {string} binData.payroll Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.prepaid Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.productId The product id.
+ * @property {boolean} liabilityShiftPossible Indicates whether the card was eligible for 3D Secure.
+ * @property {boolean} liabilityShifted Indicates whether the liability for fraud has been shifted away from the merchant.
+ */
+
+/**
+ * @class
+ * @param {object} options 3D Secure {@link module:braintree-web/three-d-secure.create create} options
+ * @description &lt;strong>Do not use this constructor directly. Use {@link module:braintree-web/three-d-secure.create|braintree.threeDSecure.create} instead.&lt;/strong>
+ * @classdesc This class represents a ThreeDSecure component produced by {@link module:braintree-web/three-d-secure.create|braintree.threeDSecure.create}. Instances of this class have a method for launching a 3D Secure authentication flow.
+ */
+function ThreeDSecure(options) {
+  this._options = options;
+  this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.assetsUrl;
+  this._isDebug = options.client.getConfiguration().isDebug;
+  this._client = options.client;
+}
+
+/**
+ * @callback ThreeDSecure~addFrameCallback
+ * @param {?BraintreeError} [err] `null` or `undefined` if there was no error.
+ * @param {HTMLIFrameElement} iframe An iframe element containing the bank's authentication page that you must put on your page.
+ * @description The callback used for options.addFrame in {@link ThreeDSecure#verifyCard|verifyCard}.
+ * @returns {void}
+ */
+
+/**
+ * @callback ThreeDSecure~removeFrameCallback
+ * @description The callback used for options.removeFrame in {@link ThreeDSecure#verifyCard|verifyCard}.
+ * @returns {void}
+ */
+
+/**
+ * Launch the 3D Secure login flow, returning a nonce payload.
+ * @public
+ * @param {object} options Options for card verification.
+ * @param {string} options.nonce A nonce referencing the card to be verified. For example, this can be a nonce that was returned by Hosted Fields.
+ * @param {number} options.amount The amount of the transaction in the current merchant account's currency. For example, if you are running a transaction of $123.45 US dollars, `amount` would be 123.45.
+ * @param {callback} options.addFrame This {@link ThreeDSecure~addFrameCallback|addFrameCallback} will be called when the bank frame needs to be added to your page.
+ * @param {callback} options.removeFrame This {@link ThreeDSecure~removeFrameCallback|removeFrameCallback} will be called when the bank frame needs to be removed from your page.
+ * @param {string} [options.customer.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, paranthesis and other characters.
+ * @param {string} [options.customer.email] The email used for verification.
+ * @param {string} [options.customer.shippingMethod] The 2-digit string indicating the shipping method chosen for the transaction.
+ * @param {string} [options.customer.billingAddress.firstName] The first name associated with the address.
+ * @param {string} [options.customer.billingAddress.lastName] The last name associated with the address.
+ * @param {string} [options.customer.billingAddress.streetAddress] Line 1 of the Address (eg. number, street, etc).
+ * @param {string} [options.customer.billingAddress.extendedAddress] Line 2 of the Address (eg. suite, apt #, etc.).
+ * @param {string} [options.customer.billingAddress.locality] The locality (city) name associated with the address.
+ * @param {string} [options.customer.billingAddress.region] The 2 letter code for US states, and the equivalent for other countries.
+ * @param {string} [options.customer.billingAddress.postalCode] The zip code or equivalent for countries that have them.
+ * @param {string} [options.customer.billingAddress.countryCodeAlpha2] The 2 character country code.
+ * @param {string} [options.customer.billingAddress.phoneNumber] The phone number associated with the address. Only numbers; remove dashes, paranthesis and other characters.
+ * @param {boolean} [options.showLoader=true] Whether to show the loader icon while the bank frame is loading.
+ * @param {callback} [callback] The second argument, &lt;code>data&lt;/code>, is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If no callback is provided, it will return a promise that resolves {@link ThreeDSecure~verifyPayload|verifyPayload}.
+
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @example
+ * &lt;caption>Verifying an existing nonce with 3DS&lt;/caption>
+ * var my3DSContainer;
+ *
+ * threeDSecure.verifyCard({
+ *   nonce: existingNonce,
+ *   amount: 123.45,
+ *   addFrame: function (err, iframe) {
+ *     // Set up your UI and add the iframe.
+ *     my3DSContainer = document.createElement('div');
+ *     my3DSContainer.appendChild(iframe);
+ *     document.body.appendChild(my3DSContainer);
+ *   },
+ *   removeFrame: function () {
+ *     // Remove UI that you added in addFrame.
+ *     document.body.removeChild(my3DSContainer);
+ *   }
+ * }, function (err, payload) {
+ *   if (err) {
+ *     console.error(err);
+ *     return;
+ *   }
+ *
+ *   if (payload.liabilityShifted) {
+ *     // Liablity has shifted
+ *     submitNonceToServer(payload.nonce);
+ *   } else if (payload.liabilityShiftPossible) {
+ *     // Liablity may still be shifted
+ *     // Decide if you want to submit the nonce
+ *   } else {
+ *     // Liablity has not shifted and will not shift
+ *     // Decide if you want to submit the nonce
+ *   }
+ * });
+ */
+ThreeDSecure.prototype.verifyCard = function (options) {
+  var url, showLoader, addFrame, removeFrame, error, errorOption;
+  var self = this;
+
+  options = assign({}, options);
+
+  if (options.customer &amp;&amp; options.customer.billingAddress) {
+    // map from public API to the API that the Gateway expects
+    options.customer.billingAddress.line1 = options.customer.billingAddress.streetAddress;
+    options.customer.billingAddress.line2 = options.customer.billingAddress.extendedAddress;
+    options.customer.billingAddress.city = options.customer.billingAddress.locality;
+    options.customer.billingAddress.state = options.customer.billingAddress.region;
+    options.customer.billingAddress.countryCode = options.customer.billingAddress.countryCodeAlpha2;
+    delete options.customer.billingAddress.streetAddress;
+    delete options.customer.billingAddress.extendedAddress;
+    delete options.customer.billingAddress.locality;
+    delete options.customer.billingAddress.region;
+    delete options.customer.billingAddress.countryCodeAlpha2;
+  }
+
+  if (this._verifyCardInProgress === true) {
+    error = errors.THREEDS_AUTHENTICATION_IN_PROGRESS;
+  } else if (!options.nonce) {
+    errorOption = 'a nonce';
+  } else if (!options.amount) {
+    errorOption = 'an amount';
+  } else if (typeof options.addFrame !== 'function') {
+    errorOption = 'an addFrame function';
+  } else if (typeof options.removeFrame !== 'function') {
+    errorOption = 'a removeFrame function';
+  }
+
+  if (errorOption) {
+    error = {
+      type: errors.THREEDS_MISSING_VERIFY_CARD_OPTION.type,
+      code: errors.THREEDS_MISSING_VERIFY_CARD_OPTION.code,
+      message: 'verifyCard options must include ' + errorOption + '.'
+    };
+  }
+
+  if (error) {
+    return Promise.reject(new BraintreeError(error));
+  }
+
+  showLoader = options.showLoader !== false;
+
+  this._verifyCardInProgress = true;
+
+  addFrame = deferred(options.addFrame);
+  removeFrame = deferred(options.removeFrame);
+
+  url = 'payment_methods/' + options.nonce + '/three_d_secure/lookup';
+
+  return this._client.request({
+    endpoint: url,
+    method: 'post',
+    data: {amount: options.amount, customer: options.customer}
+  }).then(function (response) {
+    self._lookupPaymentMethod = response.paymentMethod;
+
+    return new Promise(function (resolve, reject) {
+      self._verifyCardCallback = function (verifyErr, payload) {
+        self._verifyCardInProgress = false;
+
+        if (verifyErr) {
+          reject(verifyErr);
+        } else {
+          resolve(payload);
+        }
+      };
+
+      self._handleLookupResponse({
+        showLoader: showLoader,
+        lookupResponse: response,
+        addFrame: addFrame,
+        removeFrame: removeFrame
+      });
+    });
+  }).catch(function (err) {
+    self._verifyCardInProgress = false;
+
+    return Promise.reject(err);
+  });
+};
+
+/**
+ * Cancel the 3DS flow and return the verification payload if available.
+ * @public
+ * @param {callback} [callback] The second argument is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If there is no verifyPayload (the initial lookup did not complete), an error will be returned. If no callback is passed, `cancelVerifyCard` will return a promise.
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @example
+ * threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
+ *   if (err) {
+ *     // Handle error
+ *     console.log(err.message); // No verification payload available
+ *     return;
+ *   }
+ *
+ *   verifyPayload.nonce; // The nonce returned from the 3ds lookup call
+ *   verifyPayload.liabilityShifted; // boolean
+ *   verifyPayload.liabilityShiftPossible; // boolean
+ * });
+ */
+ThreeDSecure.prototype.cancelVerifyCard = function () {
+  var response;
+
+  this._verifyCardInProgress = false;
+
+  if (!this._lookupPaymentMethod) {
+    return Promise.reject(new BraintreeError(errors.THREEDS_NO_VERIFICATION_PAYLOAD));
+  }
+
+  response = assign({}, this._lookupPaymentMethod, {
+    liabilityShiftPossible: this._lookupPaymentMethod.threeDSecureInfo.liabilityShiftPossible,
+    liabilityShifted: this._lookupPaymentMethod.threeDSecureInfo.liabilityShifted,
+    verificationDetails: this._lookupPaymentMethod.threeDSecureInfo.verificationDetails
+  });
+
+  return Promise.resolve(response);
+};
+
+ThreeDSecure.prototype._handleLookupResponse = function (options) {
+  var details;
+  var lookupResponse = options.lookupResponse;
+
+  if (lookupResponse.lookup &amp;&amp; lookupResponse.lookup.acsUrl &amp;&amp; lookupResponse.lookup.acsUrl.length > 0) {
+    options.addFrame(null, this._createIframe({
+      showLoader: options.showLoader,
+      response: lookupResponse.lookup,
+      removeFrame: options.removeFrame
+    }));
+  } else {
+    details = this._formatAuthResponse(lookupResponse.paymentMethod, lookupResponse.threeDSecureInfo);
+    details.verificationDetails = lookupResponse.threeDSecureInfo;
+
+    this._verifyCardCallback(null, details);
+  }
+};
+
+ThreeDSecure.prototype._createIframe = function (options) {
+  var url, authenticationCompleteBaseUrl;
+  var parentURL = window.location.href;
+  var response = options.response;
+
+  this._bus = new Bus({
+    channel: uuid(),
+    merchantUrl: location.href
+  });
+
+  authenticationCompleteBaseUrl = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-authentication-complete-frame.html?channel=' + encodeURIComponent(this._bus.channel) + '&amp;';
+
+  if (parentURL.indexOf('#') > -1) {
+    parentURL = parentURL.split('#')[0];
+  }
+
+  this._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
+    reply({
+      acsUrl: response.acsUrl,
+      pareq: response.pareq,
+      termUrl: response.termUrl + '&amp;three_d_secure_version=' + VERSION + '&amp;authentication_complete_base_url=' + encodeURIComponent(authenticationCompleteBaseUrl),
+      md: response.md,
+      parentUrl: parentURL
+    });
+  });
+
+  this._bus.on(events.AUTHENTICATION_COMPLETE, function (data) {
+    this._handleAuthResponse(data, options);
+  }.bind(this));
+
+  url = this._assetsUrl + '/web/' + VERSION + '/html/three-d-secure-bank-frame' + useMin(this._isDebug) + '.html?showLoader=' + options.showLoader;
+
+  this._bankIframe = iFramer({
+    src: url,
+    height: IFRAME_HEIGHT,
+    width: IFRAME_WIDTH,
+    name: constants.LANDING_FRAME_NAME + '_' + this._bus.channel,
+    title: '3D Secure Authorization Frame'
+  });
+
+  return this._bankIframe;
+};
+
+ThreeDSecure.prototype._handleAuthResponse = function (data, options) {
+  var authResponse = JSON.parse(data.auth_response);
+
+  this._bus.teardown();
+
+  options.removeFrame();
+
+  // This also has to be in a setTimeout so it executes after the `removeFrame`.
+  deferred(function () {
+    if (authResponse.success) {
+      this._verifyCardCallback(null, this._formatAuthResponse(authResponse.paymentMethod, authResponse.threeDSecureInfo));
+    } else if (authResponse.threeDSecureInfo &amp;&amp; authResponse.threeDSecureInfo.liabilityShiftPossible) {
+      this._verifyCardCallback(null, this._formatAuthResponse(this._lookupPaymentMethod, authResponse.threeDSecureInfo));
+    } else {
+      this._verifyCardCallback(new BraintreeError({
+        type: BraintreeError.types.UNKNOWN,
+        code: 'UNKNOWN_AUTH_RESPONSE',
+        message: authResponse.error.message
+      }));
+    }
+  }.bind(this))();
+};
+
+ThreeDSecure.prototype._formatAuthResponse = function (paymentMethod, threeDSecureInfo) {
+  return {
+    nonce: paymentMethod.nonce,
+    binData: paymentMethod.binData,
+    details: paymentMethod.details,
+    description: paymentMethod.description &amp;&amp; paymentMethod.description.replace(/\+/g, ' '),
+    liabilityShifted: threeDSecureInfo.liabilityShifted,
+    liabilityShiftPossible: threeDSecureInfo.liabilityShiftPossible
+  };
+};
+
+/**
+ * Cleanly remove anything set up by {@link module:braintree-web/three-d-secure.create|create}.
+ * @public
+ * @param {callback} [callback] Called on completion. If no callback is passed, `teardown` will return a promise.
+ * @example
+ * threeDSecure.teardown();
+ * @example &lt;caption>With callback&lt;/caption>
+ * threeDSecure.teardown(function () {
+ *   // teardown is complete
+ * });
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+ThreeDSecure.prototype.teardown = function () {
+  var iframeParent;
+
+  convertMethodsToError(this, methods(ThreeDSecure.prototype));
+
+  analytics.sendEvent(this._options.client, 'threedsecure.teardown-completed');
+
+  if (this._bus) {
+    this._bus.teardown();
+  }
+
+  if (this._bankIframe) {
+    iframeParent = this._bankIframe.parentNode;
+
+    if (iframeParent) {
+      iframeParent.removeChild(this._bankIframe);
+    }
+  }
+
+  return Promise.resolve();
+};
+
+module.exports = wrapPromise.wrapPrototype(ThreeDSecure);
+</code></pre>
+  </article>
+</section>
+
+    
+
+
+  </div>
+
+  <br class="clear">
+
+  <footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a>
+  </footer>
+
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/pagelocation.js"></script>
+
+  
+  <script>
+    $(function () {
+      window.docsearch({
+        apiKey: '1097a5c904574f31dd6d5d174a658739',
+        indexName: 'braintree',
+        inputSelector: '.search-input',
+        debug: false, // Set debug to true if you want to inspect the dropdown
+        algoliaOptions: {
+          hitsPerPage: 7
+        }
+      });
+    });
+  </script>
+  
+  
+</body>
+</html>
