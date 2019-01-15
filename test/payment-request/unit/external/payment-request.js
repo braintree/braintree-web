@@ -7,6 +7,7 @@ var constants = require('../../../../src/lib/constants');
 var methods = require('../../../../src/lib/methods');
 var PaymentRequestComponent = require('../../../../src/payment-request/external/payment-request');
 var fake = require('../../../helpers/fake');
+var rejectIfResolves = require('../../../helpers/promise-helper').rejectIfResolves;
 var VERSION = process.env.npm_package_version;
 
 function stubPaymentRequestBusHandler() {
@@ -57,11 +58,11 @@ describe('Payment Request component', function () {
       client: this.fakeClient
     });
 
-    expect(instance._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal(['basic-card']);
+    expect(instance._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal('basic-card');
     expect(instance._defaultSupportedPaymentMethods[0].data).to.deep.equal({
       supportedNetworks: ['amex', 'discover', 'visa']
     });
-    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal(['https://google.com/pay']);
+    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal('https://google.com/pay');
     expect(instance._defaultSupportedPaymentMethods[1].data).to.deep.equal({
       merchantId: '18278000977346790994',
       apiVersion: 1,
@@ -136,7 +137,7 @@ describe('Payment Request component', function () {
     });
 
     expect(instance._defaultSupportedPaymentMethods.length).to.equal(1);
-    expect(instance._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal(['https://google.com/pay']);
+    expect(instance._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal('https://google.com/pay');
   });
 
   it('can turn off pay with google', function () {
@@ -148,7 +149,7 @@ describe('Payment Request component', function () {
     });
 
     expect(instance._defaultSupportedPaymentMethods.length).to.equal(1);
-    expect(instance._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal(['basic-card']);
+    expect(instance._defaultSupportedPaymentMethods[0].supportedMethods).to.deep.equal('basic-card');
   });
 
   it('can use google pay v2 when requested', function () {
@@ -158,7 +159,7 @@ describe('Payment Request component', function () {
     });
 
     expect(instance._defaultSupportedPaymentMethods.length).to.equal(2);
-    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal(['https://google.com/pay']);
+    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal('https://google.com/pay');
     expect(instance._defaultSupportedPaymentMethods[1].data).to.deep.equal({
       merchantInfo: {
         merchantId: '18278000977346790994'
@@ -217,7 +218,7 @@ describe('Payment Request component', function () {
     });
 
     expect(instance._defaultSupportedPaymentMethods.length).to.equal(2);
-    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal(['https://google.com/pay']);
+    expect(instance._defaultSupportedPaymentMethods[1].supportedMethods).to.deep.equal('https://google.com/pay');
     expect(instance._defaultSupportedPaymentMethods[1].data).to.deep.equal({
       merchantInfo: {
         merchantId: '18278000977346790994'
@@ -322,9 +323,7 @@ describe('Payment Request component', function () {
     it('fails if there are no supported payment methods on merchant account', function () {
       this.instance._defaultSupportedPaymentMethods = [];
 
-      return this.instance.initialize().then(function () {
-        throw new Error('should not get here');
-      }).catch(function (err) {
+      return this.instance.initialize().then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS');
@@ -436,7 +435,7 @@ describe('Payment Request component', function () {
     beforeEach(function () {
       this.configuration = {
         supportedPaymentMethods: [{
-          supportedMethods: ['basic-card'],
+          supportedMethods: 'basic-card',
           data: {
             supportedNetworks: ['amex', 'visa']
           }
@@ -446,93 +445,58 @@ describe('Payment Request component', function () {
         },
         options: {}
       };
+
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([null, {
+        nonce: 'a-nonce',
+        details: {
+          rawPaymentResponse: {}
+        }
+      }]);
     });
 
-    it('uses default supportedPaymentMethods if no supportedPaymentMethods are passed in', function (done) {
+    it('uses default supportedPaymentMethods if no supportedPaymentMethods are passed in', function () {
       delete this.configuration.supportedPaymentMethods;
 
-      this.instance.tokenize(this.configuration).then(function () {
+      return this.instance.tokenize(this.configuration).then(function () {
         expect(Bus.prototype.emit).to.have.been.calledWith('payment-request:PAYMENT_REQUEST_INITIALIZED', {
           supportedPaymentMethods: this.instance._defaultSupportedPaymentMethods,
           details: this.configuration.details,
           options: this.configuration.options
         });
-        done();
       }.bind(this));
-
-      setTimeout(function () {
-        var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
-
-        successHandler({
-          nonce: 'a-nonce',
-          details: {
-            rawPaymentResponse: {}
-          }
-        });
-      }, 100);
     });
 
-    it('emits PAYMENT_REQUEST_INITIALIZED', function (done) {
-      this.instance.tokenize(this.configuration).then(function () {
+    it('emits PAYMENT_REQUEST_INITIALIZED', function () {
+      return this.instance.tokenize(this.configuration).then(function () {
         expect(Bus.prototype.emit).to.have.been.calledWith('payment-request:PAYMENT_REQUEST_INITIALIZED', {
           supportedPaymentMethods: this.configuration.supportedPaymentMethods,
           details: this.configuration.details,
           options: this.configuration.options
         });
-        done();
       }.bind(this));
-
-      setTimeout(function () {
-        var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
-
-        successHandler({
-          nonce: 'a-nonce',
-          details: {
-            rawPaymentResponse: {}
-          }
-        });
-      }, 100);
     });
 
-    it('sends analytics event on success', function (done) {
-      this.instance.tokenize(this.configuration).then(function () {
+    it('sends analytics event on success', function () {
+      return this.instance.tokenize(this.configuration).then(function () {
         expect(analytics.sendEvent).to.be.calledOnce;
         expect(analytics.sendEvent).to.be.calledWith(this.instance._client, 'payment-request.tokenize.succeeded');
-        done();
       }.bind(this));
-
-      setTimeout(function () {
-        var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
-
-        successHandler({
-          nonce: 'a-nonce',
-          details: {
-            rawPaymentResponse: {}
-          }
-        });
-      }, 100);
     });
 
-    it('resolves with payload on success', function (done) {
-      this.instance.tokenize(this.configuration).then(function (payload) {
+    it('resolves with payload on success', function () {
+      return this.instance.tokenize(this.configuration).then(function (payload) {
         expect(payload.nonce).to.equal('a-nonce');
-        done();
       });
-
-      setTimeout(function () {
-        var successHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_SUCCESSFUL').args[0][1];
-
-        successHandler({
-          nonce: 'a-nonce',
-          details: {
-            rawPaymentResponse: {}
-          }
-        });
-      }, 100);
     });
 
-    it('rejects with error on failure', function (done) {
-      this.instance.tokenize(this.configuration).catch(function (err) {
+    it('rejects with error on failure', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        code: 'A_BT_ERROR',
+        type: 'MERCHANT',
+        message: 'some error'
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('PAYMENT_REQUEST_NOT_COMPLETED');
@@ -542,56 +506,39 @@ describe('Payment Request component', function () {
           type: 'MERCHANT',
           message: 'some error'
         });
-        done();
       });
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          code: 'A_BT_ERROR',
-          type: 'MERCHANT',
-          message: 'some error'
-        });
-      }, 100);
     });
 
-    it('sends analytics event on failure', function (done) {
-      this.instance.tokenize(this.configuration).catch(function () {
+    it('sends analytics event on failure', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        code: 'A_BT_ERROR',
+        type: 'MERCHANT',
+        message: 'some error'
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function () {
         expect(analytics.sendEvent).to.be.calledOnce;
         expect(analytics.sendEvent).to.be.calledWith(this.instance._client, 'payment-request.tokenize.failed');
-        done();
       }.bind(this));
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          code: 'A_BT_ERROR',
-          type: 'MERCHANT',
-          message: 'some error'
-        });
-      }, 100);
     });
 
-    it('sends analytics event on payment request cancelled', function (done) {
-      this.instance.tokenize(this.configuration).catch(function () {
+    it('sends analytics event on payment request cancelled', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        name: 'AbortError'
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function () {
         expect(analytics.sendEvent).to.be.calledOnce;
         expect(analytics.sendEvent).to.be.calledWith(this.instance._client, 'payment-request.tokenize.canceled');
-        done();
       }.bind(this));
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          name: 'AbortError'
-        });
-      }, 100);
     });
 
-    it('emits BraintreeError with type customer when customer cancels the payment request', function (done) {
-      this.instance.tokenize(this.configuration).catch(function (err) {
+    it('emits BraintreeError with type customer when customer cancels the payment request', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        name: 'AbortError'
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('CUSTOMER');
         expect(err.code).to.equal('PAYMENT_REQUEST_CANCELED');
@@ -599,20 +546,15 @@ describe('Payment Request component', function () {
         expect(err.details.originalError).to.deep.equal({
           name: 'AbortError'
         });
-        done();
       });
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          name: 'AbortError'
-        });
-      }, 100);
     });
 
-    it('emits BraintreeError with type merchant when merchant misconfigures payment request', function (done) {
-      this.instance.tokenize(this.configuration).catch(function (err) {
+    it('emits BraintreeError with type merchant when merchant misconfigures payment request', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED');
@@ -620,20 +562,16 @@ describe('Payment Request component', function () {
         expect(err.details.originalError).to.deep.equal({
           name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
         });
-        done();
       });
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
-        });
-      }, 100);
     });
 
-    it('emits BraintreeError with type merchant when emitted error is BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR', function (done) {
-      this.instance.tokenize(this.configuration).catch(function (err) {
+    it('emits BraintreeError with type merchant when emitted error is BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR',
+        error: {message: 'some-error'}
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('MERCHANT');
         expect(err.code).to.equal('PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE');
@@ -642,21 +580,16 @@ describe('Payment Request component', function () {
           name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR',
           error: {message: 'some-error'}
         });
-        done();
       });
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR',
-          error: {message: 'some-error'}
-        });
-      }, 100);
     });
 
-    it('emits BraintreeError with type unknown when emitted error is BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR', function (done) {
-      this.instance.tokenize(this.configuration).catch(function (err) {
+    it('emits BraintreeError with type unknown when emitted error is BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR',
+        error: {message: 'some-error'}
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal('UNKNOWN');
         expect(err.code).to.equal('PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR');
@@ -665,34 +598,19 @@ describe('Payment Request component', function () {
           name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR',
           error: {message: 'some-error'}
         });
-        done();
       });
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR',
-          error: {message: 'some-error'}
-        });
-      }, 100);
     });
 
-    it('defaults payment request error to customer if not type is passed', function (done) {
-      this.instance.tokenize(this.configuration).catch(function (err) {
+    it('defaults payment request error to customer if not type is passed', function () {
+      Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
+        code: 'A_BT_ERROR',
+        type: 'CUSTOMER',
+        message: 'some error'
+      }]);
+
+      return this.instance.tokenize(this.configuration).then(rejectIfResolves).catch(function (err) {
         expect(err.type).to.equal('CUSTOMER');
-        done();
       });
-
-      setTimeout(function () {
-        var rejectionHandler = Bus.prototype.on.withArgs('payment-request:PAYMENT_REQUEST_FAILED').args[0][1];
-
-        rejectionHandler({
-          code: 'A_BT_ERROR',
-          type: 'CUSTOMER',
-          message: 'some error'
-        });
-      }, 100);
     });
   });
 
@@ -726,13 +644,13 @@ describe('Payment Request component', function () {
       var googlePaymentConfiguration = this.instance.createSupportedPaymentMethodsConfiguration('googlePay');
 
       expect(basicCardConfiguration).to.deep.equal({
-        supportedMethods: ['basic-card'],
+        supportedMethods: 'basic-card',
         data: {
           supportedNetworks: ['amex', 'discover', 'visa']
         }
       });
       expect(googlePaymentConfiguration).to.deep.equal({
-        supportedMethods: ['https://google.com/pay'],
+        supportedMethods: 'https://google.com/pay',
         data: {
           merchantId: '18278000977346790994',
           apiVersion: 1,
@@ -767,14 +685,14 @@ describe('Payment Request component', function () {
       });
 
       expect(basicCardConfiguration).to.deep.equal({
-        supportedMethods: ['basic-card'],
+        supportedMethods: 'basic-card',
         data: {
           supportedNetworks: ['visa'],
           supportedTypes: ['credit']
         }
       });
       expect(googlePaymentConfiguration).to.deep.equal({
-        supportedMethods: ['https://google.com/pay'],
+        supportedMethods: 'https://google.com/pay',
         data: {
           merchantId: '18278000977346790994',
           apiVersion: 2,
@@ -808,7 +726,7 @@ describe('Payment Request component', function () {
       });
 
       expect(basicCardConfiguration).to.deep.equal({
-        supportedMethods: ['basic-card'],
+        supportedMethods: 'basic-card',
         data: {
           supportedNetworks: ['amex', 'discover', 'visa'],
           supportedTypes: ['credit']
@@ -816,7 +734,7 @@ describe('Payment Request component', function () {
       });
 
       expect(googlePaymentConfiguration).to.deep.equal({
-        supportedMethods: ['https://google.com/pay'],
+        supportedMethods: 'https://google.com/pay',
         data: {
           merchantId: '18278000977346790994',
           apiVersion: 2,
@@ -838,6 +756,184 @@ describe('Payment Request component', function () {
           }
         }
       });
+    });
+  });
+
+  describe('canMakePayment', function () {
+    beforeEach(function () {
+      this.originalPaymentRequest = global.PaymentRequest;
+      global.PaymentRequest = this.originalPaymentRequest || {};
+
+      this.configuration = {
+        details: {},
+        options: {}
+      };
+      this.pr = new PaymentRequestComponent({
+        client: this.fakeClient
+      });
+
+      Bus.prototype.emit.yieldsAsync([null, true]);
+    });
+
+    afterEach(function () {
+      global.PaymentRequest = this.originalPaymentRequest;
+    });
+
+    it('emits a canMakePayment event', function () {
+      return this.pr.canMakePayment(this.configuration).then(function () {
+        expect(Bus.prototype.emit).to.be.calledOnce;
+        expect(Bus.prototype.emit).to.be.calledWith('payment-request:CAN_MAKE_PAYMENT', this.sandbox.match(this.configuration));
+      }.bind(this));
+    });
+
+    it('defaults to default supported payment methods if not passed in with configuration', function () {
+      delete this.configuration.supportedPaymentMethods;
+      this.pr._defaultSupportedPaymentMethods = ['googlepay'];
+
+      return this.pr.canMakePayment(this.configuration).then(function () {
+        expect(Bus.prototype.emit).to.be.calledOnce;
+        expect(Bus.prototype.emit).to.be.calledWithMatch('payment-request:CAN_MAKE_PAYMENT', {
+          supportedPaymentMethods: ['googlepay']
+        });
+      });
+    });
+
+    it('resolves with `true` if Bus responds with `true`', function () {
+      Bus.prototype.emit.yieldsAsync([null, true]);
+
+      return this.pr.canMakePayment(this.configuration).then(function (result) {
+        expect(result).to.equal(true);
+        expect(analytics.sendEvent).to.be.calledOnce;
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'payment-request.can-make-payment.true');
+      }.bind(this));
+    });
+
+    it('resolves with `false` if Bus responds with `false`', function () {
+      Bus.prototype.emit.yieldsAsync([null, false]);
+
+      return this.pr.canMakePayment(this.configuration).then(function (result) {
+        expect(result).to.equal(false);
+        expect(analytics.sendEvent).to.be.calledOnce;
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'payment-request.can-make-payment.false');
+      }.bind(this));
+    });
+
+    it('resolves with `false` if Payment Request global is not present', function () {
+      Bus.prototype.emit.yieldsAsync([null, true]);
+
+      delete global.PaymentRequest;
+
+      return this.pr.canMakePayment(this.configuration).then(function (result) {
+        expect(result).to.equal(false);
+        expect(analytics.sendEvent).to.be.calledOnce;
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'payment-request.can-make-payment.not-available');
+      }.bind(this));
+    });
+
+    it('rejects if supportedPaymentMethods that are not compatible with the SDK are passed in', function () {
+      this.configuration.supportedPaymentMethods = [{
+        supportedMethods: 'basic-card'
+      }, {
+        supportedMethods: 'foopay'
+      }, {
+        supportedMethods: 'https://google.com/pay'
+      }];
+
+      return this.pr.canMakePayment(this.configuration).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD');
+        expect(err.message).to.equal('foopay is not a supported payment method.');
+      });
+    });
+
+    it('resolves if supportedPaymentMethods that are compatible with the SDK are passed in', function () {
+      Bus.prototype.emit.yieldsAsync([null, true]);
+
+      this.configuration.supportedPaymentMethods = [{
+        supportedMethods: 'basic-card'
+      }, {
+        supportedMethods: 'https://google.com/pay'
+      }];
+
+      return this.pr.canMakePayment(this.configuration).then(function (result) {
+        expect(result).to.equal(true);
+      });
+    });
+
+    it('rejects if supportedPaymentMethods in array notation that are not compatible with the SDK are passed in', function () {
+      this.configuration.supportedPaymentMethods = [{
+        supportedMethods: ['basic-card']
+      }, {
+        supportedMethods: ['foopay']
+      }, {
+        supportedMethods: ['https://google.com/pay']
+      }];
+
+      return this.pr.canMakePayment(this.configuration).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD');
+        expect(err.message).to.equal('foopay is not a supported payment method.');
+      });
+    });
+
+    it('resolves if supportedPaymentMethods in array notation that are compatible with the SDK are passed in', function () {
+      Bus.prototype.emit.yieldsAsync([null, true]);
+
+      this.configuration.supportedPaymentMethods = [{
+        supportedMethods: ['basic-card']
+      }, {
+        supportedMethods: ['https://google.com/pay']
+      }];
+
+      return this.pr.canMakePayment(this.configuration).then(function (result) {
+        expect(result).to.equal(true);
+      });
+    });
+
+    it('rejects if bus replies with an error', function () {
+      var error = new Error('error');
+
+      Bus.prototype.emit.yieldsAsync([error]);
+
+      return this.pr.canMakePayment(this.configuration).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED');
+        expect(err.details.originalError).to.equal(error);
+        expect(analytics.sendEvent).to.be.calledOnce;
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'payment-request.can-make-payment.failed');
+      }.bind(this));
+    });
+
+    it('rejects with a payment request initialization failed error', function () {
+      var error = new Error('error');
+
+      error.name = 'PAYMENT_REQUEST_INITIALIZATION_FAILED';
+
+      Bus.prototype.emit.yieldsAsync([error]);
+
+      return this.pr.canMakePayment(this.configuration).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED');
+        expect(err.details.originalError).to.equal(error);
+        expect(analytics.sendEvent).to.be.calledOnce;
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'payment-request.can-make-payment.failed');
+      }.bind(this));
+    });
+
+    it('rejects with a not allowed error', function () {
+      var error = new Error('error');
+
+      error.name = 'NotAllowedError';
+
+      Bus.prototype.emit.yieldsAsync([error]);
+
+      return this.pr.canMakePayment(this.configuration).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED');
+        expect(err.details.originalError).to.equal(error);
+        expect(analytics.sendEvent).to.be.calledOnce;
+        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'payment-request.can-make-payment.failed');
+      }.bind(this));
     });
   });
 

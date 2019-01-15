@@ -10,7 +10,7 @@
 /**
  * @name BraintreeError.Shared Errors - Component Creation Error Codes
  * @description Errors that occur when creating components.
- * @property {MERCHANT} INSTANTIATION_OPTION_REQUIRED Occurs when a compoennt is created that is missing a required option.
+ * @property {MERCHANT} INSTANTIATION_OPTION_REQUIRED Occurs when a component is created that is missing a required option.
  * @property {MERCHANT} INCOMPATIBLE_VERSIONS Occurs when a component is created with a client with a different version than the component.
  * @property {NETWORK} CLIENT_SCRIPT_FAILED_TO_LOAD Occurs when a component attempts to load the Braintree client script, but the request fails.
  */

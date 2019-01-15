@@ -201,11 +201,19 @@ BaseInput.prototype._addDOMFocusListeners = function () {
     this.updateModel('isFocused', false);
   }.bind(this), false);
 
-  // select inputs don't have a select function
-  if (typeof element.select === 'function' && (browserDetection.isIos() && !browserDetection.isIosWebview())) {
-    element.addEventListener('touchstart', function () {
-      element.select();
-    }, supportsPassiveEventListener ? {passive: true} : false);
+  if (browserDetection.isIos()) {
+    // select inputs don't have a select function
+    if (typeof element.select === 'function' && !browserDetection.isIosWebview()) {
+      element.addEventListener('touchstart', function () {
+        element.select();
+      }, supportsPassiveEventListener ? {passive: true} : false);
+    }
+
+    // fixes the issue on iOS where the input doesn't focus properly
+    // on touch events after the initial one
+    global.addEventListener('touchend', function () {
+      global.focus();
+    });
   }
 };
 

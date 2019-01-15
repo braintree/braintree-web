@@ -14,6 +14,8 @@ function create() {
 
   global.bus.on(constants.events.PAYMENT_REQUEST_INITIALIZED, initializePaymentRequest);
 
+  global.bus.on(constants.events.CAN_MAKE_PAYMENT, canMakePayment);
+
   global.bus.emit(constants.events.FRAME_READY, function (response) {
     global.client = new Client(response);
     global.bus.emit(constants.events.FRAME_CAN_MAKE_REQUESTS);
@@ -32,41 +34,63 @@ function create() {
   });
 }
 
-function initializePaymentRequest(data) {
-  var paymentRequest, paymentResponse;
+function makePaymentRequest(data) {
+  var paymentRequest;
 
   try {
-    paymentRequest = new PaymentRequest(data.supportedPaymentMethods, data.details, data.options); // eslint-disable-line no-undef
+    paymentRequest = new global.PaymentRequest(data.supportedPaymentMethods, data.details, data.options);
   } catch (err) {
-    global.bus.emit(constants.events.PAYMENT_REQUEST_FAILED, {
-      name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
-    });
-
-    return Promise.resolve();
-  }
-
-  if (data.options && data.options.requestShipping) {
-    paymentRequest.addEventListener('shippingaddresschange', function (event) {
-      event.updateWith(new Promise(function (resolve) {
-        global.shippingAddressChangeResolveFunction = resolve;
-      }));
-
-      global.bus.emit(constants.events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
-    });
-
-    paymentRequest.addEventListener('shippingoptionchange', function (event) {
-      event.updateWith(new Promise(function (resolve) {
-        global.shippingOptionChangeResolveFunction = resolve;
-      }));
-
-      global.bus.emit(constants.events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
+    return Promise.reject({
+      name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED',
+      message: err.message,
+      code: err.code
     });
   }
 
-  return paymentRequest.show().then(function (response) {
-    paymentResponse = response;
+  return Promise.resolve(paymentRequest);
+}
 
-    return paymentResponse;
+function canMakePayment(data, reply) {
+  return makePaymentRequest(data).then(function (paymentRequest) {
+    return paymentRequest.canMakePayment();
+  }).then(function (result) {
+    reply([null, result]);
+  }).catch(function (err) {
+    reply([{
+      code: err.code,
+      name: err.name,
+      message: err.message
+    }]);
+  });
+}
+
+function initializePaymentRequest(data, reply) {
+  var paymentResponse;
+
+  return makePaymentRequest(data).then(function (paymentRequest) {
+    if (data.options && data.options.requestShipping) {
+      paymentRequest.addEventListener('shippingaddresschange', function (event) {
+        event.updateWith(new Promise(function (resolve) {
+          global.shippingAddressChangeResolveFunction = resolve;
+        }));
+
+        global.bus.emit(constants.events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
+      });
+
+      paymentRequest.addEventListener('shippingoptionchange', function (event) {
+        event.updateWith(new Promise(function (resolve) {
+          global.shippingOptionChangeResolveFunction = resolve;
+        }));
+
+        global.bus.emit(constants.events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
+      });
+    }
+
+    return paymentRequest.show().then(function (response) {
+      paymentResponse = response;
+
+      return paymentResponse;
+    });
   }).then(tokenize).then(function (payload) {
     var rawPaymentResponse = clone(paymentResponse);
     var billingAddress = rawPaymentResponse.details.billingAddress;
@@ -85,13 +109,13 @@ function initializePaymentRequest(data) {
 
     payload.details.rawPaymentResponse = rawPaymentResponse;
 
-    global.bus.emit(constants.events.PAYMENT_REQUEST_SUCCESSFUL, payload);
+    reply([null, payload]);
   }).catch(function (err) {
-    global.bus.emit(constants.events.PAYMENT_REQUEST_FAILED, {
+    reply([{
       code: err.code,
       message: err.message,
       name: err.name
-    });
+    }]);
   }).then(function () {
     delete global.shippingAddressChangeResolveFunction;
     delete global.shippingOptionChangeResolveFunction;
@@ -173,5 +197,6 @@ function formatPaymentResponse(rawPaymentResponse) {
 
 module.exports = {
   create: create,
-  initializePaymentRequest: initializePaymentRequest
+  initializePaymentRequest: initializePaymentRequest,
+  canMakePayment: canMakePayment
 };

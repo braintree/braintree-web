@@ -23,6 +23,15 @@
  * @property {CUSTOMER} PAYMENT_REQUEST_NOT_COMPLETED Occurs when an error prevented the Payment Request from being completed.
  */
 
+/**
+ * @name BraintreeError.Payment Request - canMakePayment  Error Codes
+ * @description Errors that occur when using the [`canMakePayment` method](/current/PaymentRequestComponent.html#canMakePayment)
+ * @property {MERCHANT} PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED Occurs when the Payment Request is intatiated with misconfigured options.
+ * @property {MERCHANT} PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED Occurs when `canMakePayment` results in a `DomException` with a `NotAllowedError`. This usually occurs when `canMakePayment` is called multiple times with different supported payment options.
+ * @property {MERCHANT} PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD Occurs when `canMakePayment` is called with a `supportedPaymentMethods` array that contains a payment method that is not supported by the Braintree SDK.
+ * @property {UNKNOWN} PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED Occurs when `canMakePayment` fails for any reason other than a misconfigured Payment Request object.
+ */
+
 var BraintreeError = require('../../lib/braintree-error');
 
 module.exports = {
@@ -40,6 +49,20 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED',
     message: 'Something went wrong when configuring the payment request.'
+  },
+  PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED',
+    message: 'Something went wrong when calling `canMakePayment`'
+  },
+  PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED',
+    message: 'Something went wrong when calling `canMakePayment`. Most likely, `canMakePayment` was called multiple times with different supportedMethods configurations.'
+  },
+  PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD'
   },
   PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE: {
     type: BraintreeError.types.MERCHANT,

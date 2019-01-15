@@ -16,9 +16,7 @@ function CreditCardForm(configuration) {
 
   this.configuration = configuration;
 
-  if (configuration.supportedCardTypes) {
-    this.setSupportedCardTypes(configuration.supportedCardTypes);
-  }
+  this.setSupportedCardTypes(configuration.supportedCardTypes);
 
   EventedModel.apply(this, arguments);
 
@@ -42,6 +40,12 @@ CreditCardForm.prototype = Object.create(EventedModel.prototype);
 CreditCardForm.prototype.constructor = CreditCardForm;
 
 CreditCardForm.prototype.setSupportedCardTypes = function (supportedCardTypes) {
+  if (!supportedCardTypes) {
+    supportedCardTypes = getCardTypes('').map(function (card) {
+      return card.type;
+    });
+  }
+
   this.supportedCardTypes = supportedCardTypes.map(normalizeCardType);
 };
 
@@ -162,7 +166,7 @@ CreditCardForm.prototype.validateField = function (fieldKey) {
     });
   } else if (fieldKey === 'expirationDate') {
     validationResult = validate(splitDate(value));
-  } else if (fieldKey === 'number' && this.supportedCardTypes) {
+  } else if (fieldKey === 'number') {
     validationResult = this._validateNumber(value);
   } else {
     validationResult = validate(value);
@@ -183,7 +187,10 @@ function uniq(array) {
 }
 
 CreditCardForm.prototype._validateNumber = function (value) {
-  var validationResult = validator.number(value, {luhnValidateUnionPay: true});
+  var validationResult = validator.number(value, {
+    luhnValidateUnionPay: true,
+    maxLength: this.configuration.fields.number.maxCardLength
+  });
   var card = validationResult.card;
   var possibleCardTypes, possibleCardType;
 
@@ -284,9 +291,7 @@ CreditCardForm.prototype.getCardTypes = function (value) {
   return getCardTypes(removeIgnorableCharacters(value)).map(function (cardType) {
     var type = normalizeCardType(cardType.type);
 
-    if (this.supportedCardTypes) {
-      cardType.supported = this.supportedCardTypes.indexOf(type) >= 0;
-    }
+    cardType.supported = this.supportedCardTypes.indexOf(type) >= 0;
 
     return cardType;
   }.bind(this));

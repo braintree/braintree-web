@@ -66,6 +66,12 @@ describe('Payment Request Frame', function () {
       expect(Bus.prototype.on).to.be.calledWith('payment-request:PAYMENT_REQUEST_INITIALIZED');
     });
 
+    it('listens for can make payment event', function () {
+      paymentRequestFrame.create();
+
+      expect(Bus.prototype.on).to.be.calledWith('payment-request:CAN_MAKE_PAYMENT');
+    });
+
     it('listens for shipping address change event', function () {
       paymentRequestFrame.create();
 
@@ -114,6 +120,7 @@ describe('Payment Request Frame', function () {
         details: {},
         options: {}
       };
+      this.replyStub = this.sandbox.stub();
       global.bus = {
         on: this.sandbox.stub(),
         emit: this.sandbox.stub()
@@ -145,7 +152,7 @@ describe('Payment Request Frame', function () {
         details: {}
       });
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
         expect(this.showStub).to.be.calledOnce;
       }.bind(this));
     });
@@ -158,7 +165,7 @@ describe('Payment Request Frame', function () {
       });
       this.fakeDetails.options.requestShipping = true;
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
         expect(this.addEventListenerStub).to.be.calledTwice;
         expect(this.addEventListenerStub).to.be.calledWith('shippingaddresschange');
         expect(this.addEventListenerStub).to.be.calledWith('shippingoptionchange');
@@ -173,7 +180,7 @@ describe('Payment Request Frame', function () {
       });
       this.fakeDetails.options.requestShipping = false;
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
         expect(this.addEventListenerStub).to.not.be.called;
       }.bind(this));
     });
@@ -194,7 +201,7 @@ describe('Payment Request Frame', function () {
       this.fakeDetails.options.requestShipping = true;
       this.addEventListenerStub.withArgs('shippingaddresschange').yields(event);
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
         expect(global.bus.emit).to.be.calledWith('payment-request:SHIPPING_ADDRESS_CHANGE', event.target.shippingAddress);
         expect(event.updateWith).to.be.calledOnce;
         expect(global.shippingAddressChangeResolveFunction).to.be.undefined;
@@ -217,28 +224,26 @@ describe('Payment Request Frame', function () {
       this.fakeDetails.options.requestShipping = true;
       this.addEventListenerStub.withArgs('shippingoptionchange').yields(event);
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
         expect(global.bus.emit).to.be.calledWith('payment-request:SHIPPING_OPTION_CHANGE', event.target.shippingOption);
         expect(event.updateWith).to.be.calledOnce;
         expect(global.shippingOptionChangeResolveFunction).to.be.undefined;
       });
     });
 
-    it('emits payment request failed event with TypeError when payment request is misconfigured', function () {
+    it('replies with TypeError when payment request is misconfigured', function () {
       var paymentRequestError = new Error('TypeError');
 
       global.PaymentRequest = function FailingPR() {
         throw paymentRequestError;
       };
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-        var error = global.bus.emit.args[0][1];
-
-        expect(global.bus.emit).to.be.calledOnce;
-        expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED');
-
-        expect(error.name).to.equal('PAYMENT_REQUEST_INITIALIZATION_FAILED');
-      });
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+          name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
+        })]);
+      }.bind(this));
     });
 
     it('emits raw error when paymentRequest.show fails', function () {
@@ -247,12 +252,11 @@ describe('Payment Request Frame', function () {
       showError.name = 'AbortError';
       this.showStub.rejects(showError);
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-        var error = global.bus.emit.args[0][1];
-
-        expect(global.bus.emit).to.be.calledOnce;
-        expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED', this.sandbox.match({name: 'AbortError'}));
-        expect(error.name).to.equal(showError.name);
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+          name: 'AbortError'
+        })]);
       }.bind(this));
     });
 
@@ -263,8 +267,18 @@ describe('Payment Request Frame', function () {
         details: {}
       });
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
         expect(this.completeStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([null, {
+          nonce: 'a-nonce',
+          details: {
+            rawPaymentResponse: {
+              details: {},
+              methodName: 'basic-card'
+            }
+          }
+        }]);
       }.bind(this));
     });
 
@@ -276,7 +290,7 @@ describe('Payment Request Frame', function () {
       });
       global.client.request.rejects(new Error('some error'));
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
         expect(this.completeStub).to.be.calledOnce;
       }.bind(this));
     });
@@ -288,11 +302,11 @@ describe('Payment Request Frame', function () {
         details: {}
       });
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-        expect(global.bus.emit).to.be.calledOnce;
-        expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED', this.sandbox.match({
+      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
           name: 'UNSUPPORTED_METHOD_NAME'
-        }));
+        })]);
       }.bind(this));
     });
 
@@ -311,7 +325,7 @@ describe('Payment Request Frame', function () {
       });
 
       it('tokenizes result of payment request', function () {
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
           expect(global.client.request).to.be.calledOnce;
           expect(global.client.request).to.be.calledWith({
             endpoint: 'payment_methods/credit_cards',
@@ -355,7 +369,7 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
           expect(global.client.request).to.be.calledOnce;
           expect(global.client.request).to.be.calledWith({
             endpoint: 'payment_methods/credit_cards',
@@ -390,7 +404,7 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
           expect(global.client.request).to.be.calledOnce;
           expect(global.client.request).to.be.calledWith({
             endpoint: 'payment_methods/credit_cards',
@@ -426,9 +440,9 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-          expect(global.bus.emit).to.be.calledOnce;
-          expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_SUCCESSFUL', {
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+          expect(this.replyStub).to.be.calledOnce;
+          expect(this.replyStub).to.be.calledWith([null, {
             nonce: 'a-nonce',
             details: {
               rawPaymentResponse: {
@@ -447,8 +461,8 @@ describe('Payment Request Frame', function () {
                 shippingOption: null
               }
             }
-          });
-        });
+          }]);
+        }.bind(this));
       });
 
       it('emits tokenization error with a payment request failed event', function () {
@@ -460,10 +474,14 @@ describe('Payment Request Frame', function () {
 
         global.client.request.rejects(error);
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-          expect(global.bus.emit).to.be.calledOnce;
-          expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_FAILED');
-        });
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+          expect(this.replyStub).to.be.calledOnce;
+          expect(this.replyStub).to.be.calledWith([{
+            code: 'SOME_CODE',
+            message: 'a message',
+            name: 'BraintreeError'
+          }]);
+        }.bind(this));
       });
     });
 
@@ -488,9 +506,9 @@ describe('Payment Request Frame', function () {
       });
 
       it('emits tokenized payload with a payment request successful event', function () {
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-          expect(global.bus.emit).to.be.calledOnce;
-          expect(global.bus.emit).to.be.calledWith('payment-request:PAYMENT_REQUEST_SUCCESSFUL', {
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+          expect(this.replyStub).to.be.calledOnce;
+          expect(this.replyStub).to.be.calledWith([null, {
             nonce: 'a-nonce',
             type: 'AndroidPay',
             details: {
@@ -500,8 +518,8 @@ describe('Payment Request Frame', function () {
                 requestId: '68a2ac68-3f7e-42e4-82f9-a690d9166a16'
               }
             }
-          });
-        });
+          }]);
+        }.bind(this));
       });
 
       it('emits an error when gateway returns an error', function () {
@@ -518,12 +536,12 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-          expect(global.bus.emit).to.be.calledOnce;
-          expect(global.bus.emit).to.be.calledWithMatch('payment-request:PAYMENT_REQUEST_FAILED', {
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+          expect(this.replyStub).to.be.calledOnce;
+          expect(this.replyStub).to.be.calledWith([this.sandbox.match({
             name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR'
-          });
-        });
+          })]);
+        }.bind(this));
       });
 
       it('emits an error when Gateway response is not parsable', function () {
@@ -538,13 +556,91 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails).then(function () {
-          expect(global.bus.emit).to.be.calledOnce;
-          expect(global.bus.emit).to.be.calledWithMatch('payment-request:PAYMENT_REQUEST_FAILED', {
+        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
+          expect(this.replyStub).to.be.calledOnce;
+          expect(this.replyStub).to.be.calledWith([this.sandbox.match({
             name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR'
-          });
-        });
+          })]);
+        }.bind(this));
       });
+    });
+  });
+
+  describe('makePaymentRequest', function () {
+    beforeEach(function () {
+      var canMakePaymentStub;
+
+      this.completeStub = this.sandbox.stub();
+      canMakePaymentStub = this.canMakePaymentStub = this.sandbox.stub();
+
+      this.fakeDetails = {
+        supportedPaymentMethods: ['basic-card'],
+        details: {},
+        options: {}
+      };
+      this.replyStub = this.sandbox.stub();
+      global.bus = {
+        on: this.sandbox.stub(),
+        emit: this.sandbox.stub()
+      };
+      global.PaymentRequest = function PR() {
+        this.canMakePayment = canMakePaymentStub;
+      };
+    });
+
+    it('initializes a payment request', function () {
+      this.canMakePaymentStub.resolves(true);
+
+      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.canMakePaymentStub).to.be.calledOnce;
+      }.bind(this));
+    });
+
+    it('replies with true when canMakePayment resolves with true', function () {
+      this.canMakePaymentStub.resolves(true);
+
+      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([null, true]);
+      }.bind(this));
+    });
+
+    it('replies with false when canMakePayment resolves with false', function () {
+      this.canMakePaymentStub.resolves(false);
+
+      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([null, false]);
+      }.bind(this));
+    });
+
+    it('replies with error when payment request initialization fails', function () {
+      var paymentRequestError = new Error('TypeError');
+
+      global.PaymentRequest = function FailingPR() {
+        throw paymentRequestError;
+      };
+
+      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+          name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
+        })]);
+      }.bind(this));
+    });
+
+    it('replies with error when canMakePayment fails', function () {
+      var paymentRequestError = new Error('canMakePaymentError');
+
+      paymentRequestError.name = 'CanMakePaymentError';
+      this.canMakePaymentStub.rejects(paymentRequestError);
+
+      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
+        expect(this.replyStub).to.be.calledOnce;
+        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+          name: 'CanMakePaymentError'
+        })]);
+      }.bind(this));
     });
   });
 });

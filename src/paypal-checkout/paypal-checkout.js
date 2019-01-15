@@ -1,6 +1,8 @@
 'use strict';
 
 var analytics = require('../lib/analytics');
+var createDeferredClient = require('../lib/create-deferred-client');
+var createAssetsUrl = require('../lib/create-assets-url');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
@@ -151,9 +153,49 @@ var convertMethodsToError = require('../lib/convert-methods-to-error');
  * ```
  */
 function PayPalCheckout(options) {
-  this._client = options.client;
   this._merchantAccountId = options.merchantAccountId;
 }
+
+PayPalCheckout.prototype._initialize = function (options) {
+  this._clientPromise = createDeferredClient.create({
+    authorization: options.authorization,
+    client: options.client,
+    debug: options.debug,
+    assetsUrl: createAssetsUrl.create(options.authorization),
+    name: 'PayPal Checkout'
+  }).then(function (client) {
+    this._configuration = client.getConfiguration();
+
+    // we skip these checks if a merchant account id is
+    // passed in, because the default merchant account
+    // may not have paypal enabled
+    if (!this._merchantAccountId) {
+      if (!this._configuration.gatewayConfiguration.paypalEnabled) {
+        this._setupError = new BraintreeError(errors.PAYPAL_NOT_ENABLED);
+      } else if (this._configuration.gatewayConfiguration.paypal.environmentNoNetwork === true) {
+        this._setupError = new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED);
+      }
+    }
+
+    if (this._setupError) {
+      return Promise.reject(this._setupError);
+    }
+
+    analytics.sendEvent(client, 'paypal-checkout.initialized');
+
+    return client;
+  }.bind(this));
+
+  // if client was passed in, let config checks happen before
+  // resolving the instance. Otherwise, just resolve the instance
+  if (options.client) {
+    return this._clientPromise.then(function () {
+      return this;
+    }.bind(this));
+  }
+
+  return Promise.resolve(this);
+};
 
 /**
  * @typedef {object} PayPalCheckout~lineItem
@@ -244,6 +286,7 @@ function PayPalCheckout(options) {
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.createPayment = function (options) {
+  var self = this;
   var endpoint;
 
   if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
@@ -252,15 +295,17 @@ PayPalCheckout.prototype.createPayment = function (options) {
 
   endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
 
-  analytics.sendEvent(this._client, 'paypal-checkout.createPayment');
+  analytics.sendEvent(this._clientPromise, 'paypal-checkout.createPayment');
   if (options.offerCredit === true) {
-    analytics.sendEvent(this._client, 'paypal-checkout.credit.offered');
+    analytics.sendEvent(this._clientPromise, 'paypal-checkout.credit.offered');
   }
 
-  return this._client.request({
-    endpoint: endpoint,
-    method: 'post',
-    data: this._formatPaymentResourceData(options)
+  return this._clientPromise.then(function (client) {
+    return client.request({
+      endpoint: endpoint,
+      method: 'post',
+      data: self._formatPaymentResourceData(options)
+    });
   }).then(function (response) {
     var flowToken;
 
@@ -272,7 +317,13 @@ PayPalCheckout.prototype.createPayment = function (options) {
 
     return flowToken;
   }).catch(function (err) {
-    var status = err.details && err.details.httpStatus;
+    var status;
+
+    if (self._setupError) {
+      return Promise.reject(self._setupError);
+    }
+
+    status = err.details && err.details.httpStatus;
 
     if (status === 422) {
       return Promise.reject(new BraintreeError({
@@ -307,7 +358,6 @@ PayPalCheckout.prototype.createPayment = function (options) {
 PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
   var self = this;
   var payload;
-  var client = this._client;
   var options = {
     flow: tokenizeOptions.billingToken ? 'vault' : 'checkout',
     intent: tokenizeOptions.intent
@@ -320,23 +370,29 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     paymentId: tokenizeOptions.paymentID
   };
 
-  analytics.sendEvent(client, 'paypal-checkout.tokenization.started');
+  analytics.sendEvent(this._clientPromise, 'paypal-checkout.tokenization.started');
 
-  return client.request({
-    endpoint: 'payment_methods/paypal_accounts',
-    method: 'post',
-    data: self._formatTokenizeData(options, params)
+  return this._clientPromise.then(function (client) {
+    return client.request({
+      endpoint: 'payment_methods/paypal_accounts',
+      method: 'post',
+      data: self._formatTokenizeData(options, params)
+    });
   }).then(function (response) {
     payload = self._formatTokenizePayload(response);
 
-    analytics.sendEvent(client, 'paypal-checkout.tokenization.success');
+    analytics.sendEvent(self._clientPromise, 'paypal-checkout.tokenization.success');
     if (payload.creditFinancingOffered) {
-      analytics.sendEvent(client, 'paypal-checkout.credit.accepted');
+      analytics.sendEvent(self._clientPromise, 'paypal-checkout.credit.accepted');
     }
 
     return payload;
   }).catch(function (err) {
-    analytics.sendEvent(client, 'paypal-checkout.tokenization.failed');
+    if (self._setupError) {
+      return Promise.reject(self._setupError);
+    }
+
+    analytics.sendEvent(self._clientPromise, 'paypal-checkout.tokenization.failed');
 
     return Promise.reject(convertToBraintreeError(err, {
       type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
@@ -348,7 +404,7 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
 
 PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
   var key;
-  var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
+  var gatewayConfiguration = this._configuration.gatewayConfiguration;
   var paymentResource = {
     // returnUrl and cancelUrl are required in hermes create_payment_resource route
     // but are not validated and are not actually used with checkout.js
@@ -394,7 +450,7 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
 };
 
 PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
-  var clientConfiguration = this._client.getConfiguration();
+  var clientConfiguration = this._configuration;
   var gatewayConfiguration = clientConfiguration.gatewayConfiguration;
   var isTokenizationKey = clientConfiguration.authorizationType === 'TOKENIZATION_KEY';
   var data = {

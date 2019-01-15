@@ -4,13 +4,7 @@
  * @description A component to integrate with the [PayPal Checkout.js library](https://github.com/paypal/paypal-checkout).
  */
 
-var BraintreeError = require('../lib/braintree-error');
-var analytics = require('../lib/analytics');
 var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var errors = require('./errors');
-var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var PayPalCheckout = require('./paypal-checkout');
 var VERSION = process.env.npm_package_version;
@@ -47,34 +41,9 @@ function create(options) {
     client: options.client,
     authorization: options.authorization
   }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
-      client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
-    });
-  }).then(function (client) {
-    var config = client.getConfiguration();
+    var instance = new PayPalCheckout(options);
 
-    options.client = client;
-
-    // we skip these checks if a merchant account id is
-    // passed in, because the default merchant account
-    // may not have paypal enabled
-    if (!options.merchantAccountId) {
-      if (!config.gatewayConfiguration.paypalEnabled) {
-        return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
-      }
-
-      if (config.gatewayConfiguration.paypal.environmentNoNetwork === true) {
-        return Promise.reject(new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED));
-      }
-    }
-
-    analytics.sendEvent(options.client, 'paypal-checkout.initialized');
-
-    return new PayPalCheckout(options);
+    return instance._initialize(options);
   });
 }
 

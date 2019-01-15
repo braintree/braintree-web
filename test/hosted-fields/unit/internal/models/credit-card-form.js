@@ -54,22 +54,12 @@ describe('credit card model', function () {
       expect(cardForm.configuration).to.equal(configuration);
     });
 
-    it('does not set supportedCardTypes when not specified', function () {
-      var configuration = helpers.getModelConfig();
-
-      this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
-
-      new CreditCardForm(configuration); // eslint-disable-line no-new
-
-      expect(CreditCardForm.prototype.setSupportedCardTypes).to.not.be.called;
-    });
-
     it('does set supportedCardTypes when specified', function () {
       var configuration = helpers.getModelConfig();
 
       configuration.supportedCardTypes = ['VISA'];
 
-      this.sandbox.stub(CreditCardForm.prototype, 'setSupportedCardTypes');
+      this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
 
       new CreditCardForm(configuration); // eslint-disable-line no-new
 
@@ -160,6 +150,7 @@ describe('credit card model', function () {
       this.scope = {
         _fieldKeys: ['number', 'cvv', 'expirationMonth', 'expirationYear'],
         getCardTypes: CreditCardForm.prototype.getCardTypes,
+        supportedCardTypes: ['visa'],
         configuration: {
           fields: {
             number: {},
@@ -169,6 +160,8 @@ describe('credit card model', function () {
           }
         }
       };
+
+      this.sandbox.stub(CreditCardForm.prototype, 'getCardTypes').returns([]);
 
       this.emptyProperty = {
         value: '',
@@ -185,7 +178,7 @@ describe('credit card model', function () {
         cvv: this.emptyProperty,
         expirationDate: this.emptyProperty,
         postalCode: this.emptyProperty,
-        possibleCardTypes: this.scope.getCardTypes('')
+        possibleCardTypes: []
       });
     });
 
@@ -591,9 +584,12 @@ describe('credit card model', function () {
     it('returns a list of card types', function () {
       var mastercardOrMaestroCard = '5';
       var expected = getCardTypes(mastercardOrMaestroCard);
-      var actual = CreditCardForm.prototype.getCardTypes.call({}, mastercardOrMaestroCard);
+      var actual = this.card.getCardTypes(mastercardOrMaestroCard);
 
-      expect(actual).to.deep.equal(expected);
+      expect(actual.length).to.equal(expected.length);
+      expect(actual[0].type).to.deep.equal(expected[0].type);
+      expect(actual[1].type).to.deep.equal(expected[1].type);
+      expect(actual[2].type).to.deep.equal(expected[2].type);
     });
 
     it('sets supported for supported card types', function () {
@@ -727,8 +723,13 @@ describe('credit card model', function () {
       var assert = function () {
         var types = this.card.get('possibleCardTypes');
         var number = this.card.get('number').value;
+        var typesForNumber = getCardTypes(number);
 
-        expect(types).to.deep.equal(getCardTypes(number));
+        expect(typesForNumber.length).to.be.greaterThan(0);
+
+        typesForNumber.forEach(function (card, index) {
+          expect(card.type).to.equal(types[index].type);
+        });
       }.bind(this);
 
       assert();
@@ -910,7 +911,7 @@ describe('credit card model', function () {
         this.sandbox.spy(validator, 'number');
         this.supportedCardForm.set('number.value', invalidCard);
 
-        expect(validator.number).to.be.calledWith(invalidCard, {luhnValidateUnionPay: true});
+        expect(validator.number).to.be.calledWithMatch(invalidCard, {luhnValidateUnionPay: true});
       });
     });
   });
@@ -939,11 +940,18 @@ describe('credit card model', function () {
       var configuration = helpers.getModelConfig();
       var cardForm = new CreditCardForm(configuration);
 
-      expect(cardForm.supportedCardTypes).to.be.undefined;
-
       cardForm.setSupportedCardTypes(['VISA']);
 
       expect(cardForm.supportedCardTypes).to.deep.equal(['visa']);
+    });
+
+    it('defaults to call card types if no card types passed in', function () {
+      var configuration = helpers.getModelConfig();
+      var cardForm = new CreditCardForm(configuration);
+
+      cardForm.setSupportedCardTypes();
+
+      expect(cardForm.supportedCardTypes.length).to.be.greaterThan(9);
     });
 
     it('normalizes supportedCardTypes', function () {

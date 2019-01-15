@@ -70,6 +70,51 @@ describe('Credit Card Input', function () {
       this.input.model.set('number.value', '5555555555554444');
       expect(this.input.element.getAttribute('maxlength')).to.equal('19');
     });
+
+    it('can configure custom max length with maxCardLength option', function () {
+      this.input.model.configuration.fields.number.maxCardLength = 16;
+      this.input.element.value = '4111';
+      this.input.model.set('number.value', '4111');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+
+      this.input.element.value = '';
+      this.input.model.set('number.value', '');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+
+      // amex have a max length of 15, so that takes precedence
+      // over configure max length
+      this.input.element.value = '3782';
+      this.input.model.set('number.value', '3782');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('17');
+
+      this.input.element.value = '5063';
+      this.input.model.set('number.value', '5063');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+
+      this.input.element.value = '6304000000000000';
+      this.input.model.set('number.value', '6304000000000000');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+
+      this.input.element.value = '63040 0000 0000 000';
+      this.input.model.set('number.value', '63040 0000 0000 000');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+
+      this.input.element.value = '411';
+      this.input.model.set('number.value', '411');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+
+      this.input.element.value = '6282001509099283';
+      this.input.model.set('number.value', '6282001509099283');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+
+      this.input.element.value = '6011 1111 1111 1117';
+      this.input.model.set('number.value', '6011111111111117');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+
+      this.input.model.set('number.value', '5555 5555 5555 4444');
+      this.input.model.set('number.value', '5555555555554444');
+      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+    });
   });
 
   describe('maskValue', function () {

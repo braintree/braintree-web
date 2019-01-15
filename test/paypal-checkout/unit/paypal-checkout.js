@@ -1,6 +1,8 @@
 'use strict';
 
 var PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
+var createDeferredClient = require('../../../src/lib/create-deferred-client');
+var createAssetsUrl = require('../../../src/lib/create-assets-url');
 var Promise = require('../../../src/lib/promise');
 var BraintreeError = require('../../../src/lib/braintree-error');
 var analytics = require('../../../src/lib/analytics');
@@ -15,6 +17,10 @@ describe('PayPalCheckout', function () {
     this.sandbox.stub(analytics, 'sendEvent');
 
     this.configuration = fake.configuration();
+
+    this.configuration.gatewayConfiguration.paypalEnabled = true;
+    this.configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
+
     this.client = {
       request: this.sandbox.stub().resolves({
         paymentResource: {paymentToken: 'token'},
@@ -22,17 +28,99 @@ describe('PayPalCheckout', function () {
       }),
       getConfiguration: this.sandbox.stub().returns(this.configuration)
     };
-    this.paypalCheckout = new PayPalCheckout({
+    this.paypalCheckout = new PayPalCheckout({});
+
+    return this.paypalCheckout._initialize({
       client: this.client
+    }).then(function () {
+      analytics.sendEvent.resetHistory();
     });
   });
 
-  describe('Constructor', function () {
-    it('stores its client', function () {
-      var client = {};
-      var options = {client: client};
+  describe('_initialize', function () {
+    beforeEach(function () {
+      this.options = {
+        client: this.client
+      };
 
-      expect(new PayPalCheckout(options)._client).to.equal(client);
+      this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
+      this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
+    });
+
+    it('sends an analytics event on component creation', function () {
+      var instance = new PayPalCheckout({});
+
+      return instance._initialize({
+        client: this.client
+      }).then(function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.initialized');
+      }.bind(this));
+    });
+
+    it('errors out if paypal is not enabled for the merchant', function () {
+      var instance = new PayPalCheckout({});
+
+      this.configuration.gatewayConfiguration.paypalEnabled = false;
+
+      return instance._initialize({
+        client: this.client
+      }).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('PAYPAL_NOT_ENABLED');
+        expect(err.message).to.equal('PayPal is not enabled for this merchant.');
+      });
+    });
+
+    it('ignores PayPal enabled check if merchantAccountId is passed in', function () {
+      var instance = new PayPalCheckout({
+        merchantAccountId: 'id'
+      });
+
+      this.configuration.gatewayConfiguration.paypalEnabled = false;
+
+      return instance._initialize({
+        client: this.client
+      }).then(function (pp) {
+        expect(pp).to.be.an.instanceof(PayPalCheckout);
+      });
+    });
+
+    it('errors out if paypal account is not linked in sandbox', function () {
+      var instance = new PayPalCheckout({});
+
+      this.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
+
+      return instance._initialize({
+        client: this.client
+      }).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED');
+        expect(err.message).to.equal('A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developers.braintreepayments.com/guides/paypal/testing-go-live/#linked-paypal-testing for details on linking your PayPal sandbox with Braintree.');
+      });
+    });
+
+    it('ignores linked sandbox check if merchantAccountId is passed in', function () {
+      var instance = new PayPalCheckout({
+        merchantAccountId: 'id'
+      });
+
+      this.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
+
+      return instance._initialize({
+        client: this.client
+      }).then(function (pp) {
+        expect(pp).to.be.an.instanceof(PayPalCheckout);
+      });
+    });
+
+    it('resolves with paypalCheckoutInstance', function () {
+      var instance = new PayPalCheckout({});
+
+      return instance._initialize({client: this.client}).then(function (pp) {
+        expect(pp).to.be.an.instanceof(PayPalCheckout);
+      });
     });
   });
 
@@ -43,6 +131,8 @@ describe('PayPalCheckout', function () {
 
         expect(promise).to.respondTo('then');
         expect(promise).to.respondTo('catch');
+
+        return promise;
       });
 
       it('rejects with error if options are not passed in', function () {
@@ -191,11 +281,14 @@ describe('PayPalCheckout', function () {
 
         it('contains the merchant account ID if set', function () {
           this.paypalCheckoutWithMerchantAccountId = new PayPalCheckout({
-            client: this.client,
             merchantAccountId: 'alt-merchant-account-id'
           });
 
-          return this.paypalCheckoutWithMerchantAccountId.createPayment(this.options).then(function () {
+          return this.paypalCheckoutWithMerchantAccountId._initialize({
+            client: this.client
+          }).then(function (pp) {
+            return pp.createPayment(this.options);
+          }.bind(this)).then(function () {
             expect(this.client.request).to.be.calledWith(this.sandbox.match({
               data: {
                 merchantAccountId: 'alt-merchant-account-id'
@@ -501,19 +594,19 @@ describe('PayPalCheckout', function () {
       this.paypalCheckout.createPayment({flow: 'vault'});
 
       expect(analytics.sendEvent).to.be.calledOnce;
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.createPayment');
+      expect(analytics.sendEvent).to.be.calledWith(this.paypalCheckout._clientPromise, 'paypal-checkout.createPayment');
     });
 
     it('sends analytics event when offerCredit is true and using checkout flow', function () {
       this.paypalCheckout.createPayment({flow: 'checkout', offerCredit: true});
 
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.offered');
+      expect(analytics.sendEvent).to.be.calledWith(this.paypalCheckout._clientPromise, 'paypal-checkout.credit.offered');
     });
 
     it('sends analytics event when offerCredit is true and using vault flow', function () {
       this.paypalCheckout.createPayment({flow: 'vault', offerCredit: true});
 
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.credit.offered');
+      expect(analytics.sendEvent).to.be.calledWith(this.paypalCheckout._clientPromise, 'paypal-checkout.credit.offered');
     });
 
     it('does not send analytics event when offerCredit is false and using checkout flow', function () {
@@ -529,94 +622,96 @@ describe('PayPalCheckout', function () {
     });
 
     it('requests setup_billing_agreement url with vault flow', function () {
-      this.paypalCheckout.createPayment({flow: 'vault'});
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        method: 'post',
-        endpoint: 'paypal_hermes/setup_billing_agreement'
-      });
+      return this.paypalCheckout.createPayment({flow: 'vault'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          method: 'post',
+          endpoint: 'paypal_hermes/setup_billing_agreement'
+        });
+      }.bind(this));
     });
 
     it('requests create_payment_resource url with checkout flow', function () {
-      this.paypalCheckout.createPayment({flow: 'checkout'});
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        method: 'post',
-        endpoint: 'paypal_hermes/create_payment_resource'
-      });
+      return this.paypalCheckout.createPayment({flow: 'checkout'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          method: 'post',
+          endpoint: 'paypal_hermes/create_payment_resource'
+        });
+      }.bind(this));
     });
 
     it('formats request', function () {
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'checkout',
         locale: 'FOO',
+        amount: '10.00',
         enableShippingAddress: true,
         shippingAddressEditable: false
-      });
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          returnUrl: 'x',
-          cancelUrl: 'x',
-          experienceProfile: {
-            brandName: 'Name',
-            localeCode: 'FOO',
-            noShipping: 'false',
-            addressOverride: true
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            amount: '10.00',
+            returnUrl: 'x',
+            cancelUrl: 'x',
+            experienceProfile: {
+              brandName: 'Name',
+              localeCode: 'FOO',
+              noShipping: 'false',
+              addressOverride: true
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('allows override of displayName', function () {
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'checkout',
         displayName: 'OVERRIDE NAME'
-      });
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          experienceProfile: {
-            brandName: 'OVERRIDE NAME'
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            experienceProfile: {
+              brandName: 'OVERRIDE NAME'
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     ['authorize', 'order', 'sale'].forEach(function (intent) {
       it('assigns intent "' + intent + '" for one-time checkout', function () {
-        this.paypalCheckout.createPayment({
+        return this.paypalCheckout.createPayment({
           flow: 'checkout',
           intent: intent
-        });
-
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWithMatch({
-          data: {
-            intent: intent
-          }
-        });
+        }).then(function () {
+          expect(this.client.request).to.be.calledOnce;
+          expect(this.client.request).to.be.calledWithMatch({
+            data: {
+              intent: intent
+            }
+          });
+        }.bind(this));
       });
     });
 
     it('does not assign intent for one-time checkout if not provided', function () {
       var arg;
 
-      this.paypalCheckout.createPayment({flow: 'checkout'});
+      return this.paypalCheckout.createPayment({flow: 'checkout'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
 
-      expect(this.client.request).to.be.calledOnce;
+        arg = this.client.request.args[0][0];
 
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data).to.not.have.property('intent');
+        expect(arg.data).to.not.have.property('intent');
+      }.bind(this));
     });
 
     it('assigns shipping address for one-time checkout', function () {
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'checkout',
         shippingAddressOverride: {
           line1: 'line1',
@@ -626,19 +721,19 @@ describe('PayPalCheckout', function () {
           countryCode: 'countryCode',
           postalCode: 'postal'
         }
-      });
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          line1: 'line1',
-          line2: 'line2',
-          city: 'city',
-          state: 'state',
-          countryCode: 'countryCode',
-          postalCode: 'postal'
-        }
-      });
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            line1: 'line1',
+            line2: 'line2',
+            city: 'city',
+            state: 'state',
+            countryCode: 'countryCode',
+            postalCode: 'postal'
+          }
+        });
+      }.bind(this));
     });
 
     it('assigns shipping address for billing agreements', function () {
@@ -651,90 +746,90 @@ describe('PayPalCheckout', function () {
         postalCode: 'postal'
       };
 
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'vault',
         shippingAddressOverride: shippingAddress
-      });
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          shippingAddress: shippingAddress
-        }
-      });
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            shippingAddress: shippingAddress
+          }
+        });
+      }.bind(this));
     });
 
     it('sets offerPaypalCredit to false if offerCredit is unspecified with checkout flow', function () {
       var arg;
 
-      this.paypalCheckout.createPayment({flow: 'checkout'});
+      return this.paypalCheckout.createPayment({flow: 'checkout'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
 
-      expect(this.client.request).to.be.calledOnce;
+        arg = this.client.request.args[0][0];
 
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data.offerPaypalCredit).to.equal(false);
+        expect(arg.data.offerPaypalCredit).to.equal(false);
+      }.bind(this));
     });
 
     it('sets offerPaypalCredit to false if offerCredit is unspecified with vault flow', function () {
       var arg;
 
-      this.paypalCheckout.createPayment({flow: 'vault'});
+      return this.paypalCheckout.createPayment({flow: 'vault'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
 
-      expect(this.client.request).to.be.calledOnce;
+        arg = this.client.request.args[0][0];
 
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data.offerPaypalCredit).to.equal(false);
+        expect(arg.data.offerPaypalCredit).to.equal(false);
+      }.bind(this));
     });
 
     it('sets offerPaypalCredit to false if offerCredit is not a boolean true', function () {
       var arg;
 
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'checkout',
         offerCredit: 'true'
-      });
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
 
-      expect(this.client.request).to.be.calledOnce;
+        arg = this.client.request.args[0][0];
 
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data.offerPaypalCredit).to.equal(false);
+        expect(arg.data.offerPaypalCredit).to.equal(false);
+      }.bind(this));
     });
 
     it('sets offerPaypalCredit to true if offerCredit is true with checkout flow', function () {
       var arg;
 
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'checkout',
         offerCredit: true
-      });
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
 
-      expect(this.client.request).to.be.calledOnce;
+        arg = this.client.request.args[0][0];
 
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data.offerPaypalCredit).to.equal(true);
+        expect(arg.data.offerPaypalCredit).to.equal(true);
+      }.bind(this));
     });
 
     it('sets offerPaypalCredit to true if offerCredit is true with vault flow', function () {
       var arg;
 
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'vault',
         offerCredit: true
-      });
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
 
-      expect(this.client.request).to.be.calledOnce;
+        arg = this.client.request.args[0][0];
 
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data.offerPaypalCredit).to.equal(true);
+        expect(arg.data.offerPaypalCredit).to.equal(true);
+      }.bind(this));
     });
 
     it('sets addressOverride to true if shippingAddressEditable is false', function () {
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'vault',
         shippingAddressOverride: {
           line1: 'line1',
@@ -745,19 +840,19 @@ describe('PayPalCheckout', function () {
           postalCode: 'postal'
         },
         shippingAddressEditable: false
-      });
-
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          experienceProfile: {
-            addressOverride: true
+      }).then(function () {
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            experienceProfile: {
+              addressOverride: true
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('sets addressOverride to false if shippingAddressEditable is true', function () {
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'vault',
         shippingAddressOverride: {
           line1: 'line1',
@@ -768,41 +863,41 @@ describe('PayPalCheckout', function () {
           postalCode: 'postal'
         },
         shippingAddressEditable: true
-      });
-
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          experienceProfile: {
-            addressOverride: false
+      }).then(function () {
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            experienceProfile: {
+              addressOverride: false
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('assigns billing agreement description for billing agreements', function () {
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'vault',
         billingAgreementDescription: 'Fancy Schmancy Description'
-      });
-
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          description: 'Fancy Schmancy Description'
-        }
-      });
+      }).then(function () {
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            description: 'Fancy Schmancy Description'
+          }
+        });
+      }.bind(this));
     });
 
     it('does not assign billing agreement description for one-time checkout', function () {
       var arg;
 
-      this.paypalCheckout.createPayment({
+      return this.paypalCheckout.createPayment({
         flow: 'checkout',
         billingAgreementDescription: 'Fancy Schmancy Description'
-      });
+      }).then(function () {
+        arg = this.client.request.args[0][0];
 
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data).to.not.have.property('description');
+        expect(arg.data).to.not.have.property('description');
+      }.bind(this));
     });
   });
 
@@ -813,6 +908,8 @@ describe('PayPalCheckout', function () {
 
         expect(promise).to.respondTo('then');
         expect(promise).to.respondTo('catch');
+
+        return promise;
       });
 
       it('rejects with a BraintreeError if a non-Braintree error comes back from the client', function () {
@@ -923,7 +1020,6 @@ describe('PayPalCheckout', function () {
         };
 
         this.paypalCheckoutWithMerchantAccountId = new PayPalCheckout({
-          client: this.client,
           merchantAccountId: 'alt-merchant-account-id'
         });
 
@@ -935,7 +1031,11 @@ describe('PayPalCheckout', function () {
           }]
         });
 
-        return this.paypalCheckoutWithMerchantAccountId.tokenizePayment({}).then(function () {
+        return this.paypalCheckoutWithMerchantAccountId._initialize({
+          client: this.client
+        }).then(function (pp) {
+          return pp.tokenizePayment({});
+        }).then(function () {
           expect(this.client.request).to.be.calledWithMatch({
             data: {
               merchantAccountId: 'alt-merchant-account-id'
@@ -1063,18 +1163,18 @@ describe('PayPalCheckout', function () {
 
     it('sends a tokenization event when tokenization starts', function () {
       return this.paypalCheckout.tokenizePayment({billingToken: 'token'}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal-checkout.tokenization.started');
+        expect(analytics.sendEvent).to.be.calledWith(this.paypalCheckout._clientPromise, 'paypal-checkout.tokenization.started');
       }.bind(this));
     });
 
     it('sends a request to payment_methods/paypal_accounts', function () {
-      this.paypalCheckout.tokenizePayment({billingToken: 'token'});
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        endpoint: 'payment_methods/paypal_accounts',
-        method: 'post'
-      });
+      return this.paypalCheckout.tokenizePayment({billingToken: 'token'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          endpoint: 'payment_methods/paypal_accounts',
+          method: 'post'
+        });
+      }.bind(this));
     });
 
     it('calls analytics event when tokenization succeeds', function () {
@@ -1083,8 +1183,8 @@ describe('PayPalCheckout', function () {
       client.request.resolves({});
 
       return this.paypalCheckout.tokenizePayment({}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.tokenization.success');
-      });
+        expect(analytics.sendEvent).to.be.calledWith(this.paypalCheckout._clientPromise, 'paypal-checkout.tokenization.success');
+      }.bind(this));
     });
 
     it('calls analytics event when credit offer is accepted', function () {
@@ -1101,129 +1201,129 @@ describe('PayPalCheckout', function () {
       });
 
       return this.paypalCheckout.tokenizePayment({}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.credit.accepted');
-      });
+        expect(analytics.sendEvent).to.be.calledWith(this.paypalCheckout._clientPromise, 'paypal-checkout.credit.accepted');
+      }.bind(this));
     });
 
     it('passes the BA token as the correlationId when present', function () {
-      this.paypalCheckout.tokenizePayment({billingToken: 'BA-1234'});
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          paypalAccount: {
-            correlationId: 'BA-1234'
+      return this.paypalCheckout.tokenizePayment({billingToken: 'BA-1234'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            paypalAccount: {
+              correlationId: 'BA-1234'
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('passes the EC token as the correlationId when present', function () {
-      this.paypalCheckout.tokenizePayment({paymentToken: 'EC-1234'});
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          paypalAccount: {
-            correlationId: 'EC-1234'
+      return this.paypalCheckout.tokenizePayment({paymentToken: 'EC-1234'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            paypalAccount: {
+              correlationId: 'EC-1234'
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('validates if flow is vault and auth is not tokenization key', function () {
       this.configuration.authorizationType = 'CLIENT_TOKEN';
-      this.paypalCheckout.tokenizePayment({billingToken: 'token'});
 
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          paypalAccount: {
-            options: {
-              validate: true
+      return this.paypalCheckout.tokenizePayment({billingToken: 'token'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            paypalAccount: {
+              options: {
+                validate: true
+              }
             }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('does not validate if flow is vault and auth is tokenization key', function () {
       this.configuration.authorizationType = 'TOKENIZATION_KEY';
-      this.paypalCheckout.tokenizePayment({billingToken: 'token'});
 
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          paypalAccount: {
-            options: {
-              validate: false
+      return this.paypalCheckout.tokenizePayment({billingToken: 'token'}).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            paypalAccount: {
+              options: {
+                validate: false
+              }
             }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('sends along checkout params', function () {
-      this.paypalCheckout.tokenizePayment({
+      return this.paypalCheckout.tokenizePayment({
         payerID: 'payer id',
         paymentID: 'payment id'
-      });
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          paypalAccount: {
-            paymentToken: 'payment id',
-            payerId: 'payer id'
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            paypalAccount: {
+              paymentToken: 'payment id',
+              payerId: 'payer id'
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('passes along unvettedMerchant param as true', function () {
       this.configuration.gatewayConfiguration.paypal.unvettedMerchant = true;
 
-      this.paypalCheckout.tokenizePayment({
+      return this.paypalCheckout.tokenizePayment({
         payerID: 'payer id',
         paymentID: 'payment id'
-      });
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          paypalAccount: {
-            unilateral: true
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            paypalAccount: {
+              unilateral: true
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('passes along unvettedMerchant param as false', function () {
       this.configuration.gatewayConfiguration.paypal.unvettedMerchant = false;
 
-      this.paypalCheckout.tokenizePayment({
+      return this.paypalCheckout.tokenizePayment({
         payerID: 'payer id',
         paymentID: 'payment id'
-      });
-
-      expect(this.client.request).to.be.calledOnce;
-      expect(this.client.request).to.be.calledWithMatch({
-        data: {
-          paypalAccount: {
-            unilateral: false
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            paypalAccount: {
+              unilateral: false
+            }
           }
-        }
-      });
+        });
+      }.bind(this));
     });
 
     it('does not send along billing token if no token is provided', function () {
-      var arg;
+      return this.paypalCheckout.tokenizePayment({}).then(function () {
+        var arg = this.client.request.args[0][0];
 
-      this.paypalCheckout.tokenizePayment({});
-
-      arg = this.client.request.args[0][0];
-
-      expect(arg.data.paypalAccount).to.not.have.property('billingAgreementToken');
+        expect(arg.data.paypalAccount).to.not.have.property('billingAgreementToken');
+      }.bind(this));
     });
 
     it('sends a tokenization failure event when request fails', function () {
@@ -1232,8 +1332,8 @@ describe('PayPalCheckout', function () {
       client.request.rejects(new Error('Error'));
 
       return this.paypalCheckout.tokenizePayment({}).then(rejectIfResolves).catch(function () {
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal-checkout.tokenization.failed');
-      });
+        expect(analytics.sendEvent).to.be.calledWith(this.paypalCheckout._clientPromise, 'paypal-checkout.tokenization.failed');
+      }.bind(this));
     });
   });
 
