@@ -9,6 +9,8 @@ var events = constants.events;
 var externalEvents = constants.externalEvents;
 var allowedFields = constants.allowedFields;
 
+var cardFormHasStartedBeingFilled = false;
+
 function CreditCardForm(configuration) {
   this._fieldKeys = Object.keys(configuration.fields).filter(function (key) {
     return allowedFields.hasOwnProperty(key);
@@ -297,6 +299,10 @@ CreditCardForm.prototype.getCardTypes = function (value) {
   }.bind(this));
 };
 
+CreditCardForm.prototype._resetCardFormHasStartedBeingFilled = function () {
+  cardFormHasStartedBeingFilled = false;
+};
+
 function onFieldValueChange(form, fieldKey) {
   return function () {
     form.set(fieldKey + '.isEmpty', form.get(fieldKey + '.value') === '');
@@ -306,6 +312,11 @@ function onFieldValueChange(form, fieldKey) {
 
 function onFieldFocusChange(form, field) {
   return function (isFocused) {
+    if (!cardFormHasStartedBeingFilled) {
+      cardFormHasStartedBeingFilled = true;
+      global.bus.emit(events.CARD_FORM_ENTRY_HAS_BEGUN);
+    }
+
     form._fieldKeys.forEach(function (key) {
       if (key === field) { return; }
       form.set(key + '.isFocused', false);

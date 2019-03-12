@@ -109,9 +109,11 @@ var VERSION = process.env.npm_package_version;
  * }).then(function (googlePaymentInstance) {
  *
  *   return paymentsClient.isReadyToPay({
+ *     // see https://developers.google.com/pay/api/web/reference/object#IsReadyToPayRequest for all options
  *     apiVersion: 2,
  *     apiVersionMinor: 0,
- *     allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
+ *     allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods,
+ *     existingPaymentMethodRequired: true
  *   });
  * }).then(function (response) {
  *   if (response.result) {

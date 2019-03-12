@@ -1,5 +1,16 @@
 CHANGELOG
 =========
+## 3.43.0
+* Update credit-card-type to v8.1.0
+* Client
+  * Add bin to credit card tokenization payload
+* Hosted Fields
+  * Add bin to credit card tokenization payload
+* Payment Request
+  * Add bin to credit card tokenization payload
+* PayPal Checkout
+  * Update component for compatibility with https://www.paypal.com/sdk/js
+
 ## 3.42.0
 * Update @braintree/sanitize-url to v3.0.0
 * Hosted Fields

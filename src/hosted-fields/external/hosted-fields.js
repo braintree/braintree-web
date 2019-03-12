@@ -33,6 +33,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @typedef {object} HostedFields~tokenizePayload
  * @property {string} nonce The payment method nonce.
  * @property {object} details Additional account details.
+ * @property {string} details.bin The BIN number of the card.
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
  * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
@@ -489,6 +490,10 @@ function HostedFields(options) {
     self._clientPromise.then(function (client) {
       reply(client);
     });
+  });
+
+  this._bus.on(events.CARD_FORM_ENTRY_HAS_BEGUN, function () {
+    analytics.sendEvent(self._clientPromise, 'hosted-fields.input.started');
   });
 
   failureTimeout = setTimeout(function () {

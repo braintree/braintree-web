@@ -1104,6 +1104,7 @@ describe('GraphQL', function () {
             creditCard: {
               brandCode: 'VISA',
               last4: '1234',
+              bin: '401111',
               binData: {
                 prepaid: 'YES',
                 healthcare: null,
@@ -1127,6 +1128,7 @@ describe('GraphQL', function () {
           description: 'ending in 34',
           nonce: 'faketoken',
           details: {
+            bin: '401111',
             cardType: 'Visa',
             lastFour: '1234',
             lastTwo: '34'
@@ -1240,6 +1242,7 @@ describe('GraphQL', function () {
           description: '',
           nonce: 'faketoken',
           details: {
+            bin: '',
             cardType: 'Unknown',
             lastFour: '',
             lastTwo: ''

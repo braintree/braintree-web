@@ -96,7 +96,7 @@ function ApplePay(options) {
  *     }
  *   });
  *
- *   var session = new ApplePaySession(2, paymentRequest);
+ *   var session = new ApplePaySession(3, paymentRequest);
  *
  *   // ...
  */
@@ -138,7 +138,7 @@ ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
  *       amount: '19.99'
  *     }
  *   });
- *   var session = new ApplePaySession(2, paymentRequest);
+ *   var session = new ApplePaySession(3, paymentRequest);
  *
  *   session.onvalidatemerchant = function (event) {
  *     applePayInstance.performValidation({
@@ -232,7 +232,7 @@ ApplePay.prototype.performValidation = function (options) {
  *       amount: '19.99'
  *     }
  *   });
- *   var session = new ApplePaySession(2, paymentRequest);
+ *   var session = new ApplePaySession(3, paymentRequest);
  *
  *   session.onpaymentauthorized = function (event) {
  *     applePayInstance.tokenize({
@@ -242,9 +242,11 @@ ApplePay.prototype.performValidation = function (options) {
  *         session.completePayment(ApplePaySession.STATUS_FAILURE);
  *         return;
  *       }
- *       session.completePayment(ApplePaySession.STATUS_SUCCESS);
- *
  *       // Send the tokenizedPayload to your server here!
+ *
+ *       // Once the transaction is complete, call completePayment
+ *       // to close the Apple Pay sheet
+ *       session.completePayment(ApplePaySession.STATUS_SUCCESS);
  *     });
  *   };
  *

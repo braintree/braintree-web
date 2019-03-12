@@ -443,6 +443,7 @@ describe('AJAXDriver', function () {
                 description: 'ending in 11',
                 nonce: 'the-token',
                 details: {
+                  bin: '',
                   cardType: 'Visa',
                   lastFour: '1111',
                   lastTwo: '11'

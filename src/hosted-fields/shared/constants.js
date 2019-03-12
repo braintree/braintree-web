@@ -37,6 +37,9 @@ var constants = {
   },
   tokenizationErrorCodes: {
     81724: errors.HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE,
+    // NEXT_MAJOR_VERSION this error triggers for both AVS and CVV errors
+    // but the code name implies that it would only trigger for CVV verification
+    // failures
     81736: errors.HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED
   },
   allowedStyles: [
@@ -117,6 +120,7 @@ var constants = {
 constants.events = enumerate([
   'READY_FOR_CLIENT',
   'FRAME_READY',
+  'CARD_FORM_ENTRY_HAS_BEGUN',
   'VALIDATE_STRICT',
   'CONFIGURATION',
   'TOKENIZATION_REQUEST',

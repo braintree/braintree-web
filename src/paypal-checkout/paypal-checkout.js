@@ -59,69 +59,114 @@ var convertMethodsToError = require('../lib/convert-methods-to-error');
 /**
  * @class
  * @param {object} options see {@link module:braintree-web/paypal-checkout.create|paypal-checkout.create}
- * @classdesc This class represents a PayPal Checkout component that coordinates with the {@link https://developer.paypal.com/docs/integration/direct/express-checkout/integration-jsv4|PayPal checkout.js} library. Instances of this class can generate payment data and tokenize authorized payments.
+ * @classdesc This class represents a PayPal Checkout component that coordinates with the {@link https://developer.paypal.com/docs/checkout/integrate/#2-add-the-paypal-script-to-your-web-page|PayPal SDK}. Instances of this class can generate payment data and tokenize authorized payments.
  *
- * All UI (such as preventing actions on the parent page while authentication is in progress) is managed by {@link https://developer.paypal.com/docs/integration/direct/express-checkout/integration-jsv4|checkout.js}.
+ * All UI (such as preventing actions on the parent page while authentication is in progress) is managed by the {@link https://developer.paypal.com/docs/checkout/integrate/#2-add-the-paypal-script-to-your-web-page|PayPal SDK}. You must provide your PayPal `client-id` as a query parameter. You can [retrieve this value from the PayPal Dashboard](https://developer.paypal.com/docs/checkout/integrate/#1-get-paypal-rest-api-credentials).
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/paypal-checkout.create|braintree-web.paypal-checkout.create} instead.</strong>
  *
- * You must have PayPal's checkout.js script loaded on your page to use PayPal Checkout. You can either use the [paypal-checkout package on npm](https://www.npmjs.com/package/paypal-checkout) with a build tool or use a script hosted by PayPal:
+ * #### Integrate Checkout Flow with PayPal SDK
+ *
+ * You must have [PayPal's script, configured with various query parameters](https://developer.paypal.com/docs/checkout/integrate/#2-add-the-paypal-script-to-your-web-page), loaded on your page:
+ *
+ * ```html
+ * <script src="https://www.paypal.com/sdk/js?client-id=your-sandbox-or-prod-client-id"></script>
+ * <div id="paypal-button"></div>
+ * ```
+ *
+ * When passing values in the `createPayment` method, make sure they match the [corresponding parameters in the query parameters for the PayPal SDK script](https://developer.paypal.com/docs/checkout/reference/customize-sdk/).
+ *
+ * ```javascript
+ * braintree.client.create({
+ *   authorization: 'authorization'
+ * }).then(function (clientInstance) {
+ *   return braintree.paypalCheckout.create({
+ *     client: clientInstance
+ *   });
+ * }).then(function (paypalCheckoutInstance) {
+ *   return paypal.Buttons({
+ *     createOrder: function () {
+ *       return paypalCheckoutInstance.createPayment({
+ *         flow: 'checkout',
+ *         currency: 'USD',
+ *         amount: '10.00'
+ *         // your other createPayment options here
+ *       });
+ *     },
+ *
+ *     onApprove: function (data, actions) {
+ *       // some logic here before tokenization happens below
+ *       return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+ *         // Submit payload.nonce to your server
+ *       });
+ *     },
+ *
+ *     onCancel: function () {
+ *       // handle case where user cancels
+ *     },
+ *
+ *     onError: function (err) {
+ *       // handle case where error occurs
+ *     }
+ *   }).render('#paypal-button');
+ * }).catch(function (err) {
+ *  console.error('Error!', err);
+ * });
+ * ```
+ *
+ * #### Integrate Vault Flow with PayPal SDK
+ *
+ * You must have [PayPal's script, configured with various query parameters](https://developer.paypal.com/docs/checkout/integrate/#2-add-the-paypal-script-to-your-web-page), loaded on your page:
+ *
+ * ```html
+ * <script src="https://www.paypal.com/sdk/js?client-id=your-sandbox-or-prod-client-id&vault=true"></script>
+ * <div id="paypal-button"></div>
+ * ```
+ *
+ * When passing values in the `createPayment` method, make sure they match the [corresponding parameters in the query parameters for the PayPal SDK script](https://developer.paypal.com/docs/checkout/reference/customize-sdk/).
+ *
+ * ```javascript
+ * braintree.client.create({
+ *   authorization: 'authorization'
+ * }).then(function (clientInstance) {
+ *   return braintree.paypalCheckout.create({
+ *     client: clientInstance
+ *   });
+ * }).then(function (paypalCheckoutInstance) {
+ *   return paypal.Buttons({
+ *     createBillingAgreement: function () {
+ *       return paypalCheckoutInstance.createPayment({
+ *         flow: 'vault'
+ *         // your other createPayment options here
+ *       });
+ *     },
+ *
+ *     onApprove: function (data, actions) {
+ *       // some logic here before tokenization happens below
+ *       return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+ *         // Submit payload.nonce to your server
+ *       });
+ *     },
+ *
+ *     onCancel: function () {
+ *       // handle case where user cancels
+ *     },
+ *
+ *     onError: function (err) {
+ *       // handle case where error occurs
+ *     }
+ *   }).render('#paypal-button');
+ * }).catch(function (err) {
+ *  console.error('Error!', err);
+ * });
+ * ```
+ *
+ * #### Integrate with Checkout.js (deprecated PayPal SDK)
+ *
+ * You must have PayPal's checkout.js script loaded on your page. You can either use the [paypal-checkout package on npm](https://www.npmjs.com/package/paypal-checkout) with a build tool or use a script hosted by PayPal:
  *
  * ```html
  * <script src="https://www.paypalobjects.com/api/checkout.js" data-version-4 log-level="warn"></script>
  * ```
- *
- * Once you have the script loaded, there are two ways to integrate with the checkout.js library.
- *
- * #### Pass a Braintree object into checkout.js
- *
- * You can pass a `braintree` object into PayPal's checkout.js library. This will create the necessary Braintree {@link moudle:braintree-web/client.create|client} and {@link moudle:braintree-web/paypal-checkout.create|PayPal Checkout} components and automatically tokenize the authorized PayPal account. Use this integration option if you are not integrating with any other Braintree components.
- *
- * ```javascript
- * paypal.Button.render({
- *   braintree: braintree, // this object is available on the window by including the client and paypal-checkout component scripts on the page
- *   client: {
- *     production: 'production_authorization',
- *     sandbox: 'sandbox_authorization'
- *   },
- *
- *   env: 'production', // or 'sandbox'
- *
- *   payment: function (data, actions) {
- *     return actions.braintree.create({
- *       // your createPayment options here
- *     });
- *   },
- *
- *   onAuthorize: function (payload, actions) {
- *     // send payload.nonce to your server
- *
- *     // for more data about the user's PayPal account:
- *     // return actions.payment.get().then(function(data) { console.log(data); });
- *   }
- * }, '#paypal-button'); // the PayPal button will be rendered in an html element with the id `paypal-button`
- * ```
- *
- * If you are using `npm` to load braintree, simply pass in the invidual components:
- *
- * ```javascript
- * var btClient = require('braintree-web/client');
- * var btPayPal = require('braintree-web/paypal-checkout');
- *
- * paypal.Button.render({
- *   braintree: {
- *     client: btClient,
- *     paypalCheckout: btPayPal
- *   },
- *   client: {
- *     production: 'production_authorization',
- *     sandbox: 'sandbox_authorization'
- *   },
- *   // rest of checkout.js config
- * ```
- *
- * #### Create the Braintree components manually
- *
- * Alternatively, you can create the Braintree {@link moudle:braintree-web/client.create|client} and {@link moudle:braintree-web/paypal-checkout.create|PayPal Checkout} components manually. Use this integration style if you prefer to have some logic between receiving the authorized PayPal account and tokenizing it.
  *
  * ```javascript
  * braintree.client.create({
@@ -218,7 +263,7 @@ PayPalCheckout.prototype._initialize = function (options) {
  * @param {string} [options.intent=authorize]
  * * `authorize` - Submits the transaction for authorization but not settlement.
  * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed. Only available for Checkout flow.
- * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
+ * * `capture` - Payment will be immediately submitted for settlement upon creating a transaction. `sale` can be used as an alias for this value.
  * @param {boolean} [options.offerCredit=false] Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.
  * @param {string|number} [options.amount] The amount of the transaction. Required when using the Checkout flow.
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
@@ -270,18 +315,18 @@ PayPalCheckout.prototype._initialize = function (options) {
  * @example
  * // this paypal object is created by checkout.js
  * // see https://github.com/paypal/paypal-checkout
- * paypal.Button.render({
- *   // when createPayment resolves, it is automatically passed to checkout.js
- *   payment: function () {
- *    return paypalCheckoutInstance.createPayment({
+ * paypal.Buttons({
+ *   createOrder: function () {
+ *     // when createPayment resolves, it is automatically passed to checkout.js
+ *     return paypalCheckoutInstance.createPayment({
  *       flow: 'checkout',
  *       amount: '10.00',
  *       currency: 'USD',
- *       intent: 'sale'
+ *       intent: 'capture'
  *     });
  *   },
- *   // Add other options, e.g. onAuthorize, env, locale
- * }, '#paypal-button');
+ *   // Add other options, e.g. onApproved, onCancel, onError
+ * }).render('#paypal-button');
  *
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
@@ -310,7 +355,7 @@ PayPalCheckout.prototype.createPayment = function (options) {
     var flowToken;
 
     if (options.flow === 'checkout') {
-      flowToken = response.paymentResource.paymentToken;
+      flowToken = response.paymentResource.redirectUrl.match(/EC-\w+/)[0];
     } else {
       flowToken = response.agreementSetup.tokenId;
     }
@@ -349,9 +394,9 @@ PayPalCheckout.prototype.createPayment = function (options) {
  * When a {@link callback} is defined, invokes the callback with {@link PayPalCheckout~tokenizePayload|tokenizePayload} and returns undefined. Otherwise, returns a Promise that resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @public
  * @param {object} tokenizeOptions Tokens and IDs required to tokenize the payment.
- * @param {string} tokenizeOptions.payerId Payer ID returned by PayPal `onAuthorize` callback.
- * @param {string} [tokenizeOptions.paymentId] Payment ID returned by PayPal `onAuthorize` callback.
- * @param {string} [tokenizeOptions.billingToken] Billing Token returned by PayPal `onAuthorize` callback.
+ * @param {string} tokenizeOptions.payerId Payer ID returned by PayPal `onApproved` callback.
+ * @param {string} [tokenizeOptions.paymentId] Payment ID returned by PayPal `onApproved` callback.
+ * @param {string} [tokenizeOptions.billingToken] Billing Token returned by PayPal `onApproved` callback.
  * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
@@ -405,11 +450,15 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
 PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
   var key;
   var gatewayConfiguration = this._configuration.gatewayConfiguration;
+  // NEXT_MAJOR_VERSION default value for intent in PayPal SDK is capture
+  // but our integrations default value is authorize. Default this to capture
+  // in the next major version.
+  var intent = options.intent;
   var paymentResource = {
     // returnUrl and cancelUrl are required in hermes create_payment_resource route
-    // but are not validated and are not actually used with checkout.js
-    returnUrl: 'x',
-    cancelUrl: 'x',
+    // but are not used by the PayPal sdk, except to redirect to an error page
+    returnUrl: 'https://www.paypal.com/checkoutnow/error',
+    cancelUrl: 'https://www.paypal.com/checkoutnow/error',
     offerPaypalCredit: options.offerCredit === true,
     merchantAccountId: this._merchantAccountId,
     experienceProfile: {
@@ -425,8 +474,14 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
     paymentResource.amount = options.amount;
     paymentResource.currencyIsoCode = options.currency;
 
-    if (options.hasOwnProperty('intent')) {
-      paymentResource.intent = options.intent;
+    if (intent) {
+      // 'sale' has been changed to 'capture' in PayPal's backend, but
+      // we use an old version with 'sale'. We provide capture as an alias
+      // to match the PayPal SDK
+      if (intent === 'capture') {
+        intent = 'sale';
+      }
+      paymentResource.intent = intent;
     }
 
     if (options.hasOwnProperty('lineItems')) {

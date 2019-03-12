@@ -113,10 +113,8 @@ describe('HostedFields', function () {
     });
 
     it('emits a timeout event if the fields take too long to set up', function () {
-      var instance;
       var clock = this.sandbox.useFakeTimers();
-
-      instance = new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+      var instance = new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
 
       this.sandbox.stub(instance, '_emit');
 
@@ -137,15 +135,12 @@ describe('HostedFields', function () {
       var instance, frameReadyHandler;
       var configuration = this.defaultConfiguration;
       var replyStub = this.sandbox.stub();
-      var numberNode = document.createElement('div');
       var cvvNode = document.createElement('div');
       var expirationDateNode = document.createElement('div');
 
-      numberNode.id = 'number';
       cvvNode.id = 'cvv';
       expirationDateNode.id = 'expirationDate';
 
-      document.body.appendChild(numberNode);
       document.body.appendChild(cvvNode);
       document.body.appendChild(expirationDateNode);
 
@@ -170,22 +165,31 @@ describe('HostedFields', function () {
       frameReadyHandler({field: 'expirationDate'}, replyStub);
     });
 
+    it('subscribes to CARD_FORM_ENTRY_HAS_BEGUN', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      expect(instance._bus.on).to.be.calledWith(events.CARD_FORM_ENTRY_HAS_BEGUN, this.sandbox.match.func);
+    });
+
+    it('sends analytic event for tokenization starting when CARD_FORM_ENTRY_HAS_BEGUN event fires', function () {
+      var instance;
+
+      Bus.prototype.on.withArgs(events.CARD_FORM_ENTRY_HAS_BEGUN).yields();
+
+      instance = new HostedFields(this.defaultConfiguration);
+
+      expect(analytics.sendEvent).to.be.calledWith(instance._clientPromise, 'hosted-fields.input.started');
+    });
+
     it('converts class name to computed style', function (done) {
       var instance, frameReadyHandler;
       var configuration = this.defaultConfiguration;
       var replyStub = this.sandbox.stub();
       var style = document.createElement('style');
-      var numberNode = document.createElement('div');
 
       style.innerText = '.class-name { color: rgb(0, 0, 255); }';
-      numberNode.id = 'number';
 
       document.body.appendChild(style);
-      document.body.appendChild(numberNode);
-
-      configuration.fields = {
-        number: {selector: '#number'}
-      };
 
       configuration.styles = {
         input: 'class-name'
@@ -213,17 +217,14 @@ describe('HostedFields', function () {
     it('emits "ready" when the final FRAME_READY is emitted', function (done) {
       var instance, frameReadyHandler;
       var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
       var cvvNode = document.createElement('div');
       var expirationDateNode = document.createElement('div');
 
       function noop() {}
 
-      numberNode.id = 'number';
       cvvNode.id = 'cvv';
       expirationDateNode.id = 'expirationDate';
 
-      document.body.appendChild(numberNode);
       document.body.appendChild(cvvNode);
       document.body.appendChild(expirationDateNode);
 
@@ -253,15 +254,12 @@ describe('HostedFields', function () {
     it('calls _setupLabelFocus', function () {
       var instance;
       var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
       var cvvNode = document.createElement('div');
       var expirationDateNode = document.createElement('div');
 
-      numberNode.id = 'number';
       cvvNode.id = 'cvv';
       expirationDateNode.id = 'expirationDate';
 
-      document.body.appendChild(numberNode);
       document.body.appendChild(cvvNode);
       document.body.appendChild(expirationDateNode);
 
@@ -283,15 +281,12 @@ describe('HostedFields', function () {
     it('_state.fields is in default configuration on instantiation', function () {
       var instance, fields;
       var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
       var cvvNode = document.createElement('div');
       var expirationDateNode = document.createElement('div');
 
-      numberNode.id = 'number';
       cvvNode.id = 'cvv';
       expirationDateNode.id = 'expirationDate';
 
-      document.body.appendChild(numberNode);
       document.body.appendChild(cvvNode);
       document.body.appendChild(expirationDateNode);
 
@@ -327,17 +322,14 @@ describe('HostedFields', function () {
     it('loads deferred when using an authorization instead of a client', function (done) {
       var instance, frameReadyHandler;
       var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
       var cvvNode = document.createElement('div');
       var expirationDateNode = document.createElement('div');
 
       function noop() {}
 
-      numberNode.id = 'number';
       cvvNode.id = 'cvv';
       expirationDateNode.id = 'expirationDate';
 
-      document.body.appendChild(numberNode);
       document.body.appendChild(cvvNode);
       document.body.appendChild(expirationDateNode);
 
@@ -376,17 +368,14 @@ describe('HostedFields', function () {
       var instance, frameReadyHandler, clientReadyHandler;
       var fakeClient = this.fakeClient;
       var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
       var cvvNode = document.createElement('div');
       var expirationDateNode = document.createElement('div');
 
       function noop() {}
 
-      numberNode.id = 'number';
       cvvNode.id = 'cvv';
       expirationDateNode.id = 'expirationDate';
 
-      document.body.appendChild(numberNode);
       document.body.appendChild(cvvNode);
       document.body.appendChild(expirationDateNode);
 
@@ -680,17 +669,7 @@ describe('HostedFields', function () {
     });
 
     it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.teardown(function () {
         methods(HostedFields.prototype).concat(methods(EventEmitter.prototype))
@@ -709,8 +688,6 @@ describe('HostedFields', function () {
             expect(error.message).to.equal(method + ' cannot be called after teardown.');
           });
 
-        document.body.removeChild(numberNode);
-
         done();
       });
     });
@@ -718,17 +695,7 @@ describe('HostedFields', function () {
 
   describe('addClass', function () {
     beforeEach(function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-
-      this.instance = new HostedFields(configuration);
+      this.instance = new HostedFields(this.defaultConfiguration);
     });
 
     it('emits ADD_CLASS event', function () {
@@ -767,17 +734,7 @@ describe('HostedFields', function () {
 
   describe('removeClass', function () {
     beforeEach(function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-
-      this.instance = new HostedFields(configuration);
+      this.instance = new HostedFields(this.defaultConfiguration);
     });
 
     it('emits REMOVE_CLASS event', function () {
@@ -816,17 +773,7 @@ describe('HostedFields', function () {
 
   describe('setAttribute', function () {
     it('emits SET_ATTRIBUTE event if options are valid', function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setAttribute({
         field: 'number',
@@ -838,17 +785,7 @@ describe('HostedFields', function () {
     });
 
     it('calls callback if provided', function (done) {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setAttribute({
         field: 'number',
@@ -942,17 +879,7 @@ describe('HostedFields', function () {
 
   describe('setMessage', function () {
     it('emits SET_MESSAGE event if options are valid', function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setMessage({
         field: 'number',
@@ -965,17 +892,7 @@ describe('HostedFields', function () {
 
   describe('removeAttribute', function () {
     it('emits REMOVE_ATTRIBUTE event if options are valid', function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.removeAttribute({
         field: 'number',
@@ -986,17 +903,7 @@ describe('HostedFields', function () {
     });
 
     it('calls callback if provided', function (done) {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.removeAttribute({
         field: 'number',
@@ -1071,16 +978,7 @@ describe('HostedFields', function () {
     });
 
     it('calls errback when given non-allowed attribute', function (done) {
-      var instance;
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-
-      numberNode.id = 'number';
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.removeAttribute({
         field: 'number',
@@ -1096,16 +994,7 @@ describe('HostedFields', function () {
     });
 
     it('does not emit REMOVE_ATTRIBUTE event when given non-allowed attribute', function (done) {
-      var instance;
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-
-      numberNode.id = 'number';
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.removeAttribute({
         field: 'number',
@@ -1124,17 +1013,8 @@ describe('HostedFields', function () {
 
   describe('setPlaceholder', function () {
     it('calls setAttribute', function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
+      var instance = new HostedFields(this.defaultConfiguration);
 
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
       this.sandbox.stub(HostedFields.prototype, 'setAttribute');
 
       instance.setPlaceholder('number', 'great-placeholder');
@@ -1142,17 +1022,7 @@ describe('HostedFields', function () {
     });
 
     it('calls callback if provided', function (done) {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.setPlaceholder('number', 'great-placeholder', done);
     });
@@ -1226,34 +1096,14 @@ describe('HostedFields', function () {
 
   describe('clear', function () {
     it('emits CLEAR_FIELD event', function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.clear('number');
       expect(instance._bus.emit).to.be.calledWith(events.CLEAR_FIELD, this.sandbox.match.string);
     });
 
     it('calls callback if provided', function (done) {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.clear('number', done);
     });
@@ -1291,34 +1141,14 @@ describe('HostedFields', function () {
 
   describe('focus', function () {
     it('emits TRIGGER_INPUT_FOCUS event', function () {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.focus('number');
       expect(instance._bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, this.sandbox.match.string);
     });
 
     it('calls callback if provided', function (done) {
-      var configuration = this.defaultConfiguration;
-      var numberNode = document.createElement('div');
-      var instance;
-
-      numberNode.id = 'number';
-
-      document.body.appendChild(numberNode);
-      configuration.fields.number = {
-        selector: '#number'
-      };
-      instance = new HostedFields(configuration);
+      var instance = new HostedFields(this.defaultConfiguration);
 
       instance.focus('number', done);
     });

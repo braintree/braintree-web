@@ -23,7 +23,10 @@ describe('PayPalCheckout', function () {
 
     this.client = {
       request: this.sandbox.stub().resolves({
-        paymentResource: {paymentToken: 'token'},
+        paymentResource: {
+          paymentToken: 'token',
+          redirectUrl: 'https://example.com?foo=bar&EC-token&foo2=bar2'
+        },
         agreementSetup: {tokenId: 'id'}
       }),
       getConfiguration: this.sandbox.stub().returns(this.configuration)
@@ -217,16 +220,15 @@ describe('PayPalCheckout', function () {
       });
 
       it('resolves with a paymentID for checkout flow', function () {
-        var paymentId = 'PAY-XXXXXXXXXX';
-
         this.client.request.resolves({
           paymentResource: {
-            paymentToken: paymentId
+            paymentToken: 'PAY-XXXXXXXXXX',
+            redirectUrl: 'https://example.com?foo=bar&EC-token&foo2=bar2'
           }
         });
 
         return this.paypalCheckout.createPayment({flow: 'checkout'}).then(function (payload) {
-          expect(payload).to.equal(paymentId);
+          expect(payload).to.equal('EC-token');
         });
       });
 
@@ -254,7 +256,8 @@ describe('PayPalCheckout', function () {
               tokenId: 'stub'
             },
             paymentResource: {
-              paymentToken: 'stub'
+              paymentToken: 'stub',
+              redirectUrl: 'https://example.com?foo=bar&EC-token&foo2=bar2'
             }
           });
         });
@@ -558,16 +561,15 @@ describe('PayPalCheckout', function () {
       });
 
       it('calls callback with a paymentID for checkout flow', function (done) {
-        var paymentId = 'PAY-XXXXXXXXXX';
-
         this.client.request.resolves({
           paymentResource: {
-            paymentToken: paymentId
+            paymentToken: 'PAY-XXXXXXXXXX',
+            redirectUrl: 'https://example.com?foo=bar&EC-token&foo2=bar2'
           }
         });
 
         this.paypalCheckout.createPayment({flow: 'checkout'}, function (err, payload) {
-          expect(payload).to.equal(paymentId);
+          expect(payload).to.equal('EC-token');
 
           done();
         });
@@ -653,8 +655,8 @@ describe('PayPalCheckout', function () {
         expect(this.client.request).to.be.calledWithMatch({
           data: {
             amount: '10.00',
-            returnUrl: 'x',
-            cancelUrl: 'x',
+            returnUrl: 'https://www.paypal.com/checkoutnow/error',
+            cancelUrl: 'https://www.paypal.com/checkoutnow/error',
             experienceProfile: {
               brandName: 'Name',
               localeCode: 'FOO',
@@ -696,6 +698,20 @@ describe('PayPalCheckout', function () {
           });
         }.bind(this));
       });
+    });
+
+    it('assigns capture intent to sale when making request', function () {
+      return this.paypalCheckout.createPayment({
+        flow: 'checkout',
+        intent: 'capture'
+      }).then(function () {
+        expect(this.client.request).to.be.calledOnce;
+        expect(this.client.request).to.be.calledWithMatch({
+          data: {
+            intent: 'sale'
+          }
+        });
+      }.bind(this));
     });
 
     it('does not assign intent for one-time checkout if not provided', function () {

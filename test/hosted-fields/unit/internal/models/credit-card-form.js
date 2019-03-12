@@ -400,6 +400,27 @@ describe('credit card model', function () {
         type: 'foo'
       }));
     });
+
+    it('emits CARD_FORM_ENTRY_HAS_BEGUN when field is focussed the first time', function () {
+      var card = new CreditCardForm(helpers.getModelConfig([
+        'cvv',
+        'expirationMonth',
+        'expirationYear'
+      ]));
+
+      card._resetCardFormHasStartedBeingFilled();
+
+      card.set('cvv.isFocused', true);
+
+      expect(global.bus.emit).to.be.calledWith(events.CARD_FORM_ENTRY_HAS_BEGUN);
+
+      global.bus.emit.resetHistory();
+
+      card.set('cvv.isFocused', false);
+      card.set('cvv.isFocused', true);
+
+      expect(global.bus.emit).to.not.be.calledWith(events.CARD_FORM_ENTRY_HAS_BEGUN);
+    });
   });
 
   describe('getCardData', function () {
@@ -602,13 +623,16 @@ describe('credit card model', function () {
         discoverOrMaestroCard
       );
 
-      expect(cardTypes.length).to.equal(2);
+      expect(cardTypes.length).to.equal(3);
       expect(cardTypes[0].niceType).to.equal('Discover');
       expect(cardTypes[0].type).to.equal('discover');
       expect(cardTypes[0].supported).to.equal(true);
       expect(cardTypes[1].niceType).to.equal('Maestro');
       expect(cardTypes[1].type).to.equal('maestro');
       expect(cardTypes[1].supported).to.equal(false);
+      expect(cardTypes[2].niceType).to.equal('Hipercard');
+      expect(cardTypes[2].type).to.equal('hipercard');
+      expect(cardTypes[2].supported).to.equal(false);
     });
   });
 
