@@ -191,7 +191,8 @@ var convertMethodsToError = require('../lib/convert-methods-to-error');
  *       return paypalCheckoutInstance.createPayment({
  *         flow: 'checkout',
  *         currency: 'USD',
- *         amount: '10.00'
+ *         amount: '10.00',
+ *         intent: 'capture' // this value must either be `capture` or match the intent passed into the PayPal SDK intent query parameter
  *         // your other createPayment options here
  *       });
  *     },
@@ -425,7 +426,7 @@ PayPalCheckout.prototype._initialize = function (options) {
  *       flow: 'checkout',
  *       amount: '10.00',
  *       currency: 'USD',
- *       intent: 'capture'
+ *       intent: 'capture' // this value must either be `capture` or match the intent passed into the PayPal SDK intent query parameter
  *     });
  *   },
  *   // Add other options, e.g. onApproved, onCancel, onError

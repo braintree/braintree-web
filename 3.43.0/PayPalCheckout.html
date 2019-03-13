@@ -156,7 +156,8 @@
       return paypalCheckoutInstance.createPayment({
         flow: 'checkout',
         currency: 'USD',
-        amount: '10.00'
+        amount: '10.00',
+        intent: 'capture' // this value must either be `capture` or match the intent passed into the PayPal SDK intent query parameter
         // your other createPayment options here
       });
     },
@@ -337,7 +338,7 @@
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line200">line 200</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line201">line 201</a>
         </li>
       </ul>
     </dd>
@@ -1541,7 +1542,7 @@ and <code>zh_TW</code>.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line333">line 333</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line334">line 334</a>
         </li>
       </ul>
     </dd>
@@ -1584,7 +1585,7 @@ paypal.Buttons({
       flow: 'checkout',
       amount: '10.00',
       currency: 'USD',
-      intent: 'capture'
+      intent: 'capture' // this value must either be `capture` or match the intent passed into the PayPal SDK intent query parameter
     });
   },
   // Add other options, e.g. onApproved, onCancel, onError
@@ -1726,7 +1727,7 @@ paypal.Buttons({
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line575">line 575</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line576">line 576</a>
         </li>
       </ul>
     </dd>
@@ -2088,7 +2089,7 @@ When a <a href="global.html#callback">callback</a> is defined, invokes the callb
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line403">line 403</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line404">line 404</a>
         </li>
       </ul>
     </dd>
@@ -2500,7 +2501,7 @@ When a <a href="global.html#callback">callback</a> is defined, invokes the callb
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line245">line 245</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line246">line 246</a>
         </li>
       </ul>
     </dd>
