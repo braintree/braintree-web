@@ -1,5 +1,13 @@
 CHANGELOG
 =========
+## 3.44.0
+* Data Collector
+  * Fix issue where PayPal data collection could not teardown all scripts
+  * Fix issue where PayPal data collection would not setup correctly when initialized more than once
+  * Speed up PayPal data collection setup when initialized more than once
+* Local Payment
+  * Fix issue where fallback URL was not decoded correctly
+
 ## 3.43.0
 * Update credit-card-type to v8.1.0
 * Client

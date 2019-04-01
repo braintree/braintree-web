@@ -4,21 +4,34 @@ var FRAUDNET_FNCLS = require('../lib/constants').FRAUDNET_FNCLS;
 var FRAUDNET_SOURCE = require('../lib/constants').FRAUDNET_SOURCE;
 var FRAUDNET_URL = require('../lib/constants').FRAUDNET_URL;
 var loadScript = require('../lib/assets').loadScript;
+var Promise = require('../lib/promise');
+
+var cachedSessionId;
 
 function setup() {
   var fraudNet = new Fraudnet();
 
+  if (cachedSessionId) {
+    fraudNet.sessionId = cachedSessionId;
+
+    return Promise.resolve(fraudNet);
+  }
+
   return fraudNet.initialize();
 }
 
+function clearSessionIdCache() {
+  cachedSessionId = null;
+}
+
 function Fraudnet() {
-  this.sessionId = _generateSessionId();
-  this._beaconId = _generateBeaconId(this.sessionId);
 }
 
 Fraudnet.prototype.initialize = function () {
   var self = this;
 
+  this.sessionId = cachedSessionId = _generateSessionId();
+  this._beaconId = _generateBeaconId(this.sessionId);
   this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId);
 
   return loadScript({
@@ -36,25 +49,18 @@ Fraudnet.prototype.initialize = function () {
 };
 
 Fraudnet.prototype.teardown = function () {
-  var iframe = document.querySelector('iframe[title="ppfniframe"]');
+  removeElementIfOnPage(document.querySelector('iframe[title="ppfniframe"]'));
+  removeElementIfOnPage(document.querySelector('iframe[title="pbf"]'));
 
-  if (iframe) {
-    iframe.parentNode.removeChild(iframe);
-  }
-
-  iframe = document.querySelector('iframe[title="pbf"]');
-  if (iframe) {
-    iframe.parentNode.removeChild(iframe);
-  }
-
-  if (this._parameterBlock) {
-    this._parameterBlock.parentNode.removeChild(this._parameterBlock);
-  }
-
-  if (this._thirdPartyBlock) {
-    this._thirdPartyBlock.parentNode.removeChild(this._thirdPartyBlock);
-  }
+  removeElementIfOnPage(this._parameterBlock);
+  removeElementIfOnPage(this._thirdPartyBlock);
 };
+
+function removeElementIfOnPage(element) {
+  if (element && element.parentNode) {
+    element.parentNode.removeChild(element);
+  }
+}
 
 function _generateSessionId() {
   var i;
@@ -92,5 +98,6 @@ function _createParameterBlock(sessionId, beaconId) {
 }
 
 module.exports = {
-  setup: setup
+  setup: setup,
+  clearSessionIdCache: clearSessionIdCache
 };

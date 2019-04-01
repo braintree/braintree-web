@@ -15,7 +15,7 @@ function start(cb) {
   var params = querystring.parse();
 
   if (params.r && params.t) {
-    redirectUrl = global.decodeURIComponent(sanitizeUrl(params.r));
+    redirectUrl = sanitizeUrl(global.decodeURIComponent(params.r));
     returnText = global.decodeURIComponent(params.t);
   }
 

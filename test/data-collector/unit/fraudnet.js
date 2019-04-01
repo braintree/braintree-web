@@ -19,6 +19,7 @@ describe('FraudNet', function () {
 
   after(function () {
     document.body.innerHTML = this.originalBody;
+    fraudNet.clearSessionIdCache();
   });
 
   it('appends a script type of "application/json" to the document', function () {
@@ -35,5 +36,14 @@ describe('FraudNet', function () {
     expect(parsedData.b).to.contain(sessionId);
     expect(parsedData.f).to.equal(sessionId);
     expect(parsedData.s).to.equal('BRAINTREE_SIGNIN');
+  });
+
+  it('re-uses session id when initialized more than once', function () {
+    var originalSessionId = instance.sessionId;
+
+    return fraudNet.setup().then(function (result) {
+      expect(result.sessionId).to.exist;
+      expect(result.sessionId).to.equal(originalSessionId);
+    });
   });
 });
