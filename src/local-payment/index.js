@@ -60,7 +60,7 @@ var errors = require('./shared/errors');
  *         payerEmail: 'payer@example.com',
  *         phone: '123456789',
  *         postalCode: '1234 AA',
- *         currency: 'EUR',
+ *         currencyCode: 'EUR',
  *         onPaymentStart: function (data, continueCallback) {
  *           // Do any preprocessing to store the ID and setup webhook
  *           // Call start to initiate the popup

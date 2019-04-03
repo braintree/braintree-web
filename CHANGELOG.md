@@ -1,5 +1,12 @@
 CHANGELOG
 =========
+## 3.44.1
+* Hosted Fields
+  * Fix issue tabbing between fields on mobile devices
+  * Update credit-card-type to v8.2.0, fixes an issue where UnionPay cards of lengths 14 or 15 were not marked as valid
+* Local Payment
+  * Fix typo where the fallback scenario could not succesfully tokenize
+
 ## 3.44.0
 * Data Collector
   * Fix issue where PayPal data collection could not teardown all scripts

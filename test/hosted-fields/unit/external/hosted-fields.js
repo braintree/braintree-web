@@ -149,6 +149,7 @@ describe('HostedFields', function () {
         cvv: {selector: '#cvv'},
         expirationDate: {selector: '#expirationDate'}
       };
+      configuration.orderedFields = ['number', 'cvv', 'expirationDate'];
 
       instance = new HostedFields(configuration);
 

@@ -38,7 +38,7 @@ describe('redirect-frame', function () {
       redirectFrame.start(function () {
         var link = document.querySelector('#container a');
 
-        expect(link.href).to.equal('https://example.com/fallback-url?btLpToken=token&btLpPamentId=payment-id&btLpPayerId=payer-id');
+        expect(link.href).to.equal('https://example.com/fallback-url?btLpToken=token&btLpPaymentId=payment-id&btLpPayerId=payer-id');
         expect(link.innerText).to.equal('Return to Site');
 
         done();
@@ -79,7 +79,7 @@ describe('redirect-frame', function () {
       redirectFrame.start(function () {
         var link = document.querySelector('#container a');
 
-        expect(link.href).to.equal('about:blank?btLpToken=token&btLpPamentId=payment-id&btLpPayerId=payer-id');
+        expect(link.href).to.equal('about:blank?btLpToken=token&btLpPaymentId=payment-id&btLpPayerId=payer-id');
         expect(link.innerText).to.equal('Return to Site');
 
         done();

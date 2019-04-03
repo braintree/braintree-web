@@ -31,7 +31,7 @@ function start(cb) {
       container.id = 'container';
       link.href = querystring.queryify(redirectUrl, {
         btLpToken: params.token,
-        btLpPamentId: params.paymentId,
+        btLpPaymentId: params.paymentId,
         btLpPayerId: params.PayerID
       });
       link.innerText = returnText;

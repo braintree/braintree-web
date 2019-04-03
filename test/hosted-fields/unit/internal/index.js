@@ -20,75 +20,120 @@ describe('internal', function () {
       fields: {
         number: {},
         cvv: {}
-      }
+      },
+      orderedFields: ['number', 'cvv']
     };
     this.cardForm = new CreditCardForm(this.fakeConfig);
-
-    this.sandbox.stub(getFrameName, 'getFrameName').returns('cvv');
+    this.sandbox.stub(getFrameName, 'getFrameName');
   });
 
   describe('initialize', function () {
-    beforeEach(function () {
-      internal.initialize(this.cardForm);
+    context('text inputs', function () {
+      beforeEach(function () {
+        getFrameName.getFrameName.returns('cvv');
+        internal.initialize(this.cardForm);
+      });
+
+      it('creates an input element', function () {
+        var input = document.getElementById('cvv');
+
+        expect(input.tagName).to.equal('INPUT');
+      });
+
+      it('sets up autofill inputs for number input', function () {
+        var cvv, expMonth, expYear;
+
+        document.body.innerHTML = ''; // reset from beforeEach
+
+        getFrameName.getFrameName.returns('number');
+        internal.initialize(this.cardForm);
+
+        cvv = document.querySelector('#cvv-autofill-field');
+        expMonth = document.querySelector('#expiration-month-autofill-field');
+        expYear = document.querySelector('#expiration-year-autofill-field');
+
+        expect(cvv).to.exist;
+        expect(expMonth).to.exist;
+        expect(expYear).to.exist;
+        expect(cvv.autocomplete).to.equal('cc-csc');
+        expect(expMonth.autocomplete).to.equal('cc-exp-month');
+        expect(expYear.autocomplete).to.equal('cc-exp-year');
+      });
+
+      it('makes the input have a transparent background', function () {
+        var input = document.getElementById('cvv');
+        var background = window.getComputedStyle(input, null).getPropertyValue('background-color');
+
+        expect(background.replace(/\s/g, '')).to.equal('rgba(0,0,0,0)');
+      });
+
+      it('gives the input a class of the proper type', function () {
+        var input = document.getElementById('cvv');
+
+        expect(input.classList.contains('cvv')).to.be.true;
+      });
+
+      it('triggers events on the bus when events occur', function () {
+        var input = document.getElementById('cvv');
+
+        this.sandbox.stub(CreditCardForm.prototype, 'emitEvent');
+
+        triggerEvent('focus', input);
+        triggerEvent('blur', input);
+        triggerEvent('click', input);  // not allowed
+        triggerEvent('keyup', input);  // not allowed
+
+        expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'focus');
+        expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'blur');
+        expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'click');
+        expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'keyup');
+      });
     });
 
-    it('creates an input element', function () {
-      var inputs = document.querySelectorAll('input');
+    context('mobile tab targets', function () {
+      beforeEach(function () {
+        getFrameName.getFrameName.returns('number');
+        internal.initialize(this.cardForm);
+        getFrameName.getFrameName.returns('cvv');
+        internal.initialize(this.cardForm);
+      });
 
-      expect(inputs).to.have.length(1);
-    });
+      it('does not create a "prev" tab target in the first field\'s form', function () {
+        var inputs = document.forms[0].getElementsByTagName('input');
+        var length = inputs.length;
 
-    it('sets up autofill inputs for number input', function () {
-      var cvv, expMonth, expYear;
+        while (length--) {
+          expect(inputs.item(length).id).not.to.contain('prev');
+        }
+      });
 
-      document.querySelector('input').remove(); // reset from beforeEach
+      it('creates a next input at the end of the first field\'s form', function () {
+        var inputs = document.forms[0].getElementsByTagName('input');
+        var lastInput = inputs[inputs.length - 1];
 
-      getFrameName.getFrameName.returns('number');
-      internal.initialize(this.cardForm);
+        expect(lastInput.id).to.contain('next');
+      });
 
-      cvv = document.querySelector('#cvv-autofill-field');
-      expMonth = document.querySelector('#expiration-month-autofill-field');
-      expYear = document.querySelector('#expiration-year-autofill-field');
+      it('creates a previous input at the beginning of the last field\'s form', function () {
+        var forms = document.forms;
+        var firstInput = forms[forms.length - 1].getElementsByTagName('input')[0];
 
-      expect(document.querySelectorAll('input')).to.have.length(4);
-      expect(document.querySelector('#expiration-month-autofill-field')).to.exist;
-      expect(document.querySelector('#expiration-year-autofill-field')).to.exist;
+        expect(firstInput.id).to.contain('prev');
+      });
 
-      expect(cvv).to.exist;
-      expect(expMonth).to.exist;
-      expect(expYear).to.exist;
-      expect(cvv.autocomplete).to.equal('cc-csc');
-      expect(expMonth.autocomplete).to.equal('cc-exp-month');
-      expect(expYear.autocomplete).to.equal('cc-exp-year');
-    });
+      it('creates a submit instead of text input at the end of the last field\'s form', function () {
+        var forms = document.forms;
+        var inputs = forms[forms.length - 1].getElementsByTagName('input');
+        var lastInput = inputs[inputs.length - 1];
 
-    it('makes the input have a transparent background', function () {
-      var input = document.querySelector('input');
-      var background = window.getComputedStyle(input, null).getPropertyValue('background-color');
+        expect(lastInput.getAttribute('type')).to.be.string('submit');
+      });
 
-      expect(background.replace(/\s/g, '')).to.equal('rgba(0,0,0,0)');
-    });
+      it('fires the correct focus event when tabbing between fields', function () {
+        document.querySelector('input[id*="target"]').focus();
 
-    it('gives the input a class of the proper type', function () {
-      var input = document.querySelector('input');
-
-      expect(input.classList.contains('cvv')).to.be.true;
-    });
-
-    it('triggers events on the bus when events occur', function () {
-      var input = document.querySelector('input');
-
-      this.sandbox.stub(CreditCardForm.prototype, 'emitEvent');
-
-      triggerEvent('focus', input);
-      triggerEvent('blur', input);
-      triggerEvent('click', input);  // not allowed
-      triggerEvent('keyup', input);  // not allowed
-
-      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'focus');
-      expect(CreditCardForm.prototype.emitEvent).to.be.calledWith('cvv', 'blur');
-      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'click');
-      expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'keyup');
+        expect(global.bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, this.sandbox.match.string);
+      });
     });
   });
 
@@ -104,6 +149,7 @@ describe('internal', function () {
     });
 
     it('emits that the frame is ready', function () {
+      getFrameName.getFrameName.returns('cvv');
       internal.create();
 
       expect(global.bus.emit).to.be.calledOnce;
@@ -1021,6 +1067,7 @@ describe('internal', function () {
 
   describe('autofillHandler', function () {
     beforeEach(function () {
+      getFrameName.getFrameName.returns('cvv');
       this.fieldComponent = {
         input: {
           maskValue: this.sandbox.stub(),

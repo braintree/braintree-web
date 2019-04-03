@@ -91,7 +91,7 @@ LocalPayment.prototype._initialize = function () {
  *       url: 'https://example.com/my-checkout-page'
  *     },
  *     amount: '10.00',
- *     currency: 'EUR',
+ *     currencyCode: 'EUR',
  *     onPaymentStart: function (data, continueCallback) {
  *       // Do any preprocessing before starting the flow
  *       // data.paymentId is the ID of the localPayment
