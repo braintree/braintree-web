@@ -196,7 +196,8 @@ describe('GooglePayment', function () {
           allowedPaymentMethods: [{
             type: 'CARD',
             parameters: {
-              allowedAuthMethods: ['foo', 'bar']
+              allowedAuthMethods: ['foo', 'bar'],
+              billingAddressRequired: true
             }
           }]
         });
@@ -210,10 +211,12 @@ describe('GooglePayment', function () {
           'foo',
           'bar'
         ]);
+        expect(cardPaymentMethod.parameters.billingAddressRequired).to.equal(true);
         expect(cardPaymentMethod.parameters.allowedCardNetworks).to.deep.equal([
           'VISA',
           'AMEX'
         ]);
+        expect(cardPaymentMethod.tokenizationSpecification).to.exist;
       });
 
       it('can add new parameters with v2 schema overrides and return a v2 schema config', function () {

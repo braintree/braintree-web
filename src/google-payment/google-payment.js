@@ -11,8 +11,6 @@ var methods = require('../lib/methods');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 
-var DEFAULT_CARD_NETWORKS = ['AMEX', 'DISCOVER', 'MASTERCARD', 'VISA'];
-
 /**
  * @typedef {object} GooglePayment~tokenizePayload
  * @property {string} nonce The payment method nonce.
@@ -61,29 +59,16 @@ GooglePayment.prototype._createV1PaymentDataRequest = function (defaultConfig, p
 };
 
 GooglePayment.prototype._createV2PaymentDataRequest = function (defaultConfig, paymentDataRequest) {
-  var newCardPaymentMethod, defaultConfigCardPaymentMethod, parameters;
-  var defaultConfigPaymentMethods = defaultConfig.allowedPaymentMethods;
-
-  // For the CARD allowed payment method, ensure allowedCardNetworks is set.
   if (paymentDataRequest.allowedPaymentMethods) {
-    newCardPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'CARD');
-    defaultConfigCardPaymentMethod = find(defaultConfigPaymentMethods, 'type', 'CARD');
+    paymentDataRequest.allowedPaymentMethods.forEach(function (paymentMethod) {
+      var defaultPaymentMethod = find(defaultConfig.allowedPaymentMethods, 'type', paymentMethod.type);
 
-    if (newCardPaymentMethod) {
-      newCardPaymentMethod.parameters = assign({}, newCardPaymentMethod.parameters);
-      parameters = newCardPaymentMethod.parameters;
-      if (!parameters.allowedCardNetworks || (parameters.allowedCardNetworks && parameters.allowedCardNetworks.length === 0)) {
-        if (defaultConfigCardPaymentMethod &&
-          defaultConfigCardPaymentMethod.parameters &&
-          defaultConfigCardPaymentMethod.parameters.allowedCardNetworks
-        ) {
-          parameters.allowedCardNetworks = defaultConfigCardPaymentMethod.parameters.allowedCardNetworks;
-        } else {
-          parameters.allowedCardNetworks = DEFAULT_CARD_NETWORKS;
-        }
+      if (defaultPaymentMethod) {
+        applyDefaultsToPaymentMethodConfiguration(paymentMethod, defaultPaymentMethod);
       }
-    }
+    });
   }
+
   paymentDataRequest = assign({}, defaultConfig, paymentDataRequest);
 
   return paymentDataRequest;
@@ -250,5 +235,19 @@ GooglePayment.prototype.teardown = function () {
 
   return Promise.resolve();
 };
+
+function applyDefaultsToPaymentMethodConfiguration(merchantSubmittedPaymentMethod, defaultPaymentMethod) {
+  Object.keys(defaultPaymentMethod).forEach(function (parameter) {
+    if (typeof defaultPaymentMethod[parameter] === 'object') {
+      merchantSubmittedPaymentMethod[parameter] = assign(
+        {},
+        defaultPaymentMethod[parameter],
+        merchantSubmittedPaymentMethod[parameter]
+      );
+    } else {
+      merchantSubmittedPaymentMethod[parameter] = merchantSubmittedPaymentMethod[parameter] || defaultPaymentMethod[parameter];
+    }
+  });
+}
 
 module.exports = wrapPromise.wrapPrototype(GooglePayment);

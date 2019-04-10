@@ -1,5 +1,14 @@
 CHANGELOG
 =========
+## 3.44.2
+* Update @braintree/sanitize-url to v3.1.0
+* Google Pay
+  * Fix issue where tokenization details for Google Payments could accidentally be dropped
+* Masterpass
+  * Fix issue with invalid callback url
+* PayPal Checkout
+  * Fix bug where merchant account id was not being applied in vault flows
+
 ## 3.44.1
 * Hosted Fields
   * Fix issue tabbing between fields on mobile devices

@@ -528,9 +528,10 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
     if (options.intent) {
       data.paypalAccount.intent = options.intent;
     }
-    if (this._merchantAccountId) {
-      data.merchantAccountId = this._merchantAccountId;
-    }
+  }
+
+  if (this._merchantAccountId) {
+    data.merchantAccountId = this._merchantAccountId;
   }
 
   return data;

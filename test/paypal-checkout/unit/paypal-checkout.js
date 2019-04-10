@@ -1030,7 +1030,7 @@ describe('PayPalCheckout', function () {
         }.bind(this));
       });
 
-      it('passes along merchantAccountId if set', function () {
+      it('passes along merchantAccountId without billing token', function () {
         var accountDetails = {
           creditFinancingOffered: {foo: 'bar'}
         };
@@ -1051,6 +1051,38 @@ describe('PayPalCheckout', function () {
           client: this.client
         }).then(function (pp) {
           return pp.tokenizePayment({});
+        }).then(function () {
+          expect(this.client.request).to.be.calledWithMatch({
+            data: {
+              merchantAccountId: 'alt-merchant-account-id'
+            }
+          });
+        }.bind(this));
+      });
+
+      it('passes along merchantAccountId with billing token', function () {
+        var accountDetails = {
+          creditFinancingOffered: {foo: 'bar'}
+        };
+
+        this.paypalCheckoutWithMerchantAccountId = new PayPalCheckout({
+          merchantAccountId: 'alt-merchant-account-id'
+        });
+
+        this.client.request.resolves({
+          paypalAccounts: [{
+            nonce: 'nonce',
+            type: 'PayPal',
+            details: accountDetails
+          }]
+        });
+
+        return this.paypalCheckoutWithMerchantAccountId._initialize({
+          client: this.client
+        }).then(function (pp) {
+          return pp.tokenizePayment({
+            billingToken: 'token'
+          });
         }).then(function () {
           expect(this.client.request).to.be.calledWithMatch({
             data: {
