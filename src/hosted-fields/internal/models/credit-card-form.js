@@ -236,32 +236,34 @@ CreditCardForm.prototype._validateCvv = function (value, options) {
   return validator.cvv(value, cvvSize);
 };
 
-CreditCardForm.prototype.getCardData = function () {
+CreditCardForm.prototype.getCardData = function (fieldKeys) {
   var expirationData;
   var result = {};
   var keys = [];
 
-  if (this._fieldKeys.indexOf('number') !== -1) {
+  fieldKeys = this._filterCustomFieldKeys(fieldKeys);
+
+  if (fieldKeys.indexOf('number') !== -1) {
     keys.push('number');
   }
 
-  if (this._fieldKeys.indexOf('cvv') !== -1) {
+  if (fieldKeys.indexOf('cvv') !== -1) {
     keys.push('cvv');
   }
 
-  if (this._fieldKeys.indexOf('postalCode') !== -1) {
+  if (fieldKeys.indexOf('postalCode') !== -1) {
     keys.push('postalCode');
   }
 
-  if (this._fieldKeys.indexOf('expirationMonth') !== -1) {
+  if (fieldKeys.indexOf('expirationMonth') !== -1) {
     keys.push('expirationMonth');
   }
 
-  if (this._fieldKeys.indexOf('expirationYear') !== -1) {
+  if (fieldKeys.indexOf('expirationYear') !== -1) {
     keys.push('expirationYear');
   }
 
-  if (this._fieldKeys.indexOf('expirationDate') !== -1) {
+  if (fieldKeys.indexOf('expirationDate') !== -1) {
     expirationData = splitDate(this.get('expirationDate.value'));
 
     result.expirationMonth = expirationData.month;
@@ -277,14 +279,18 @@ CreditCardForm.prototype.getCardData = function () {
   return result;
 };
 
-CreditCardForm.prototype.isEmpty = function () {
-  return this._fieldKeys.every(function (key) {
+CreditCardForm.prototype.isEmpty = function (fields) {
+  fields = this._filterCustomFieldKeys(fields);
+
+  return fields.every(function (key) {
     return this.get(key).value.length === 0;
   }.bind(this));
 };
 
-CreditCardForm.prototype.invalidFieldKeys = function () {
-  return this._fieldKeys.filter(function (key) {
+CreditCardForm.prototype.invalidFieldKeys = function (keys) {
+  keys = this._filterCustomFieldKeys(keys);
+
+  return keys.filter(function (key) {
     return !this.get(key).isValid;
   }.bind(this));
 };
@@ -301,6 +307,16 @@ CreditCardForm.prototype.getCardTypes = function (value) {
 
 CreditCardForm.prototype._resetCardFormHasStartedBeingFilled = function () {
   cardFormHasStartedBeingFilled = false;
+};
+
+CreditCardForm.prototype._filterCustomFieldKeys = function (keys) {
+  if (!keys) {
+    return this._fieldKeys;
+  }
+
+  return keys.filter(function (key) {
+    return this._fieldKeys.indexOf(key) > -1;
+  }.bind(this));
 };
 
 function onFieldValueChange(form, fieldKey) {

@@ -163,7 +163,7 @@ LocalPayment.prototype.startPayment = wrapPromise(function (options) {
 
     self._client.request({
       method: 'post',
-      endpoint: 'paypal_hermes/create_payment_resource',
+      endpoint: 'local_payments/create',
       data: params
     }).then(function (response) {
       analytics.sendEvent(self._client, self._paymentType + '.local-payment.start-payment.opened');

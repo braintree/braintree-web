@@ -542,6 +542,26 @@ describe('internal', function () {
       });
     });
 
+    it('passes in fieldsToTokenize option to card form', function (done) {
+      var fields = ['number', 'cvv'];
+      var invalidFieldKeys = this.sandbox.spy(this.validCardForm, 'invalidFieldKeys');
+      var getCardData = this.sandbox.spy(this.validCardForm, 'getCardData');
+      var isEmpty = this.sandbox.spy(this.validCardForm, 'isEmpty');
+
+      this.fakeOptions.fieldsToTokenize = fields;
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
+        expect(invalidFieldKeys).to.be.calledOnce;
+        expect(invalidFieldKeys).to.be.calledWith(fields);
+        expect(getCardData).to.be.calledOnce;
+        expect(getCardData).to.be.calledWith(fields);
+        expect(isEmpty).to.be.calledOnce;
+        expect(isEmpty).to.be.calledWith(fields);
+
+        done();
+      });
+    });
+
     it('makes a client request with validate false if the vault option is not provided', function (done) {
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function () {
         expect(this.goodClient.request).to.be.calledWithMatch({

@@ -350,7 +350,7 @@ describe('GooglePayment', function () {
         };
         configuration.gatewayConfiguration.paypalEnabled = true;
         configuration.gatewayConfiguration.paypal = {};
-        configuration.gatewayConfiguration.paypal.clientId = 'paypal_client_id';
+        configuration.gatewayConfiguration.androidPay.paypalClientId = 'paypal_client_id';
         configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
 
         client = fake.client({

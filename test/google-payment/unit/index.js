@@ -1,6 +1,7 @@
 'use strict';
 
 var Promise = require('../../../src/lib/promise');
+var BraintreeError = require('../../../src/lib/braintree-error');
 var basicComponentVerification = require('../../../src/lib/basic-component-verification');
 var createDeferredClient = require('../../../src/lib/create-deferred-client');
 var createAssetsUrl = require('../../../src/lib/create-assets-url');
@@ -111,6 +112,23 @@ describe('googlePayment', function () {
         expect(thingy).to.be.an.instanceof(GooglePayment);
         expect(thingy._googlePayVersion).to.equal(2);
         expect(thingy._googleMerchantId).to.equal('some-merchant-id');
+        done();
+      });
+    });
+
+    it('errors if an unsupported Google Pay API version is passed', function (done) {
+      googlePayment.create({
+        client: this.fakeClient,
+        googlePayVersion: 9001,
+        googleMerchantId: 'some-merchant-id'
+      }, function (err, thingy) {
+        expect(err).to.exist;
+        expect(thingy).to.not.exist;
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('GOOGLE_PAYMENT_UNSUPPORTED_VERSION');
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.message).to.equal('The Braintree SDK does not support Google Pay version 9001. Please upgrade the version of your Braintree SDK and contact support if this error persists.');
+
         done();
       });
     });

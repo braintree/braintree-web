@@ -5,9 +5,8 @@ var fs = require('fs');
 var gulp = require('gulp');
 var rename = require('gulp-rename');
 var replace = require('gulp-replace');
-var run = require('run-sequence');
 var browserify = require('./browserify');
-var minify = require('gulp-minifier');
+var minifyHTML = require('./minify').minifyHTML;
 var VERSION = require('../package.json').version;
 
 var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
@@ -36,25 +35,14 @@ FRAMES.forEach(function (frame) {
   gulp.task(htmlTaskName, function () {
     var jsFilePath = DIST_DIR + 'js/masterpass-' + frame + '-frame';
     var jsFile = fs.readFileSync(jsFilePath + '.js');
-
-    return gulp.src('src/masterpass/internal/frame.html')
+    var stream = gulp.src('src/masterpass/internal/frame.html')
       .pipe(replace('@BUILT_FILE', jsFile))
       .pipe(rename(function (path) {
         path.basename = 'masterpass-' + frame + '-' + path.basename;
       }))
-      .pipe(replace('@FRAME', frame))
-      .pipe(gulp.dest(DIST_DIR + 'html'))
-      .pipe(minify({
-        minify: true,
-        collapseWhitespace: true,
-        conservativeCollapse: false,
-        minifyJS: true,
-        minifyCSS: true
-      }))
-      .pipe(rename({
-        extname: '.min.html'
-      }))
-      .pipe(gulp.dest(DIST_DIR + 'html'));
+      .pipe(replace('@FRAME', frame));
+
+    return minifyHTML(stream, DIST_DIR + 'html');
   });
 
   HTML_TASKS.push(htmlTaskName);
@@ -77,10 +65,12 @@ gulp.task('build:masterpass:js', function (done) {
   }, done);
 });
 
-gulp.task('build:masterpass:frame:html', HTML_TASKS);
-gulp.task('build:masterpass:frame:js', JS_TASKS);
-gulp.task('build:masterpass:frame:js:delete', DELETE_INTERNAL_JS_TASKS);
-gulp.task('build:masterpass:frame', function (done) {
-  run('build:masterpass:frame:js', 'build:masterpass:frame:html', 'build:masterpass:frame:js:delete', done);
-});
-gulp.task('build:masterpass', ['build:masterpass:js', 'build:masterpass:frame']);
+gulp.task('build:masterpass:frame:html', gulp.parallel(HTML_TASKS));
+gulp.task('build:masterpass:frame:js', gulp.parallel(JS_TASKS));
+gulp.task('build:masterpass:frame:js:delete', gulp.parallel(DELETE_INTERNAL_JS_TASKS));
+gulp.task('build:masterpass:frame', gulp.series(
+  'build:masterpass:frame:js',
+  'build:masterpass:frame:html',
+  'build:masterpass:frame:js:delete'
+));
+gulp.task('build:masterpass', gulp.parallel('build:masterpass:js', 'build:masterpass:frame'));

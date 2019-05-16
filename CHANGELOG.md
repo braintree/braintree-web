@@ -1,5 +1,17 @@
 CHANGELOG
 =========
+## 3.45.0
+* Update @braintree/wrap-promise to v2.0.0 - errors thrown inside developer supplied callback functions will log to the console
+* Update restricted-input to v2.0.0
+* Google Pay
+ * Throw an error if an unsupported version of Google Pay API is used
+ * Use GooglePayment PayPal client ID
+* Hosted Fields
+  * Allow specifying only a subset of fields to be validated and tokenized
+  * Fix issue where Chrome iOS autofill would not fill in full card number
+* Local Payments
+  * Update endpoint for creating local payments
+
 ## 3.44.2
 * Update @braintree/sanitize-url to v3.1.0
 * Google Pay
@@ -732,7 +744,7 @@ __BREAKING CHANGES__
   * Add `addClass` and `removeClass` for updating classes on fields
   * Stop applying `invalid` CSS classes to `potentiallyValid` fields on tokenization attempts
 * PayPal
-  * Consistently return `BraintreeError` objects when the PayPal flow is cancelled
+  * Consistently return `BraintreeError` objects when the PayPal flow is canceled
   * Return error during `create` when using a webview
 * UnionPay
   * Add `type` to tokenize payload

@@ -11,6 +11,11 @@ var methods = require('../lib/methods');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 
+var CREATE_PAYMENT_DATA_REQUEST_METHODS = {
+  1: '_createV1PaymentDataRequest',
+  2: '_createV2PaymentDataRequest'
+};
+
 /**
  * @typedef {object} GooglePayment~tokenizePayload
  * @property {string} nonce The payment method nonce.
@@ -44,7 +49,34 @@ function GooglePayment(options) {
   this._googleMerchantId = options.googleMerchantId;
 }
 
-GooglePayment.prototype._createV1PaymentDataRequest = function (defaultConfig, paymentDataRequest) {
+GooglePayment.prototype._initialize = function () {
+  if (this._isUnsupportedGooglePayAPIVersion()) {
+    return Promise.reject(new BraintreeError({
+      code: errors.GOOGLE_PAYMENT_UNSUPPORTED_VERSION.code,
+      message: 'The Braintree SDK does not support Google Pay version ' + this._googlePayVersion + '. Please upgrade the version of your Braintree SDK and contact support if this error persists.',
+      type: errors.GOOGLE_PAYMENT_UNSUPPORTED_VERSION.type
+    }));
+  }
+
+  return Promise.resolve(this);
+};
+
+GooglePayment.prototype._isUnsupportedGooglePayAPIVersion = function () {
+  // if we don't have createPaymentDatqRequest method for the specific
+  // API version, then the version is not supported
+  return !(this._googlePayVersion in CREATE_PAYMENT_DATA_REQUEST_METHODS);
+};
+
+GooglePayment.prototype._getDefaultConfig = function () {
+  if (!this._defaultConfig) {
+    this._defaultConfig = generateGooglePayConfiguration(this._client.getConfiguration(), this._googlePayVersion, this._googleMerchantId);
+  }
+
+  return this._defaultConfig;
+};
+
+GooglePayment.prototype._createV1PaymentDataRequest = function (paymentDataRequest) {
+  var defaultConfig = this._getDefaultConfig();
   var overrideCardNetworks = paymentDataRequest.cardRequirements && paymentDataRequest.cardRequirements.allowedCardNetworks;
   var defaultConfigCardNetworks = defaultConfig.cardRequirements.allowedCardNetworks;
   var allowedCardNetworks = overrideCardNetworks || defaultConfigCardNetworks;
@@ -58,7 +90,9 @@ GooglePayment.prototype._createV1PaymentDataRequest = function (defaultConfig, p
   return paymentDataRequest;
 };
 
-GooglePayment.prototype._createV2PaymentDataRequest = function (defaultConfig, paymentDataRequest) {
+GooglePayment.prototype._createV2PaymentDataRequest = function (paymentDataRequest) {
+  var defaultConfig = this._getDefaultConfig();
+
   if (paymentDataRequest.allowedPaymentMethods) {
     paymentDataRequest.allowedPaymentMethods.forEach(function (paymentMethod) {
       var defaultPaymentMethod = find(defaultConfig.allowedPaymentMethods, 'type', paymentMethod.type);
@@ -117,18 +151,12 @@ GooglePayment.prototype._createV2PaymentDataRequest = function (defaultConfig, p
  */
 GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
   var paymentDataRequest = assign({}, overrides);
-  var defaultConfig = generateGooglePayConfiguration(this._client.getConfiguration(), this._googlePayVersion, this._googleMerchantId);
+  var version = this._googlePayVersion;
+  var createPaymentDataRequestMethod = CREATE_PAYMENT_DATA_REQUEST_METHODS[version];
 
-  // Default to using v1 config. If apiVersion is specifically set to 2, use v2 config.
-  if (this._googlePayVersion === 2) {
-    paymentDataRequest = this._createV2PaymentDataRequest(defaultConfig, paymentDataRequest);
-    analytics.sendEvent(this._client, 'google-payment.v2.createPaymentDataRequest');
-  } else {
-    paymentDataRequest = this._createV1PaymentDataRequest(defaultConfig, paymentDataRequest);
-    analytics.sendEvent(this._client, 'google-payment.v1.createPaymentDataRequest');
-  }
+  analytics.sendEvent(this._client, 'google-payment.v' + version + '.createPaymentDataRequest');
 
-  return paymentDataRequest;
+  return this[createPaymentDataRequestMethod](paymentDataRequest);
 };
 
 /**

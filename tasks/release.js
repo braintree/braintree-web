@@ -3,7 +3,6 @@
 var gulp = require('gulp');
 var chalk = require('chalk');
 var VERSION = require('../package.json').version;
-var sequence = require('run-sequence');
 var spawn = require('child_process').spawn;
 var HOSTED_DEST = process.env.BRAINTREE_JS_HOSTED_DEST;
 var BOWER_DEST = process.env.BRAINTREE_JS_BOWER_DEST;
@@ -22,14 +21,13 @@ gulp.task('release:hosted-static:copy', function () {
     .pipe(gulp.dest(HOSTED_DEST + '/web/static'));
 });
 
-gulp.task('release:hosted', ['clean'], function (done) {
-  sequence(
-    'build:hosted',
-    'release:hosted-static:copy',
-    'release:hosted:copy',
-    endingMessage(HOSTED_DEST, done)
-  );
-});
+gulp.task('release:hosted', gulp.series(
+  'clean',
+  'build:hosted',
+  'release:hosted-static:copy',
+  'release:hosted:copy',
+  endingMessage(HOSTED_DEST)
+));
 
 gulp.task('release:bower:copy', function () {
   return gulp.src([
@@ -38,43 +36,33 @@ gulp.task('release:bower:copy', function () {
   ]).pipe(gulp.dest(BOWER_DEST));
 });
 
-gulp.task('release:bower', ['clean'], function (done) {
-  sequence(
-    'build:hosted',
-    'build:bower',
-    'release:bower:copy',
-    endingMessage(BOWER_DEST, done)
-  );
-});
+gulp.task('release:bower', gulp.series(
+  'clean',
+  'build:hosted',
+  'build:bower',
+  'release:bower:copy',
+  endingMessage(BOWER_DEST)
+));
 
-gulp.task('release:npm', ['clean'], function (done) {
-  sequence(
-    'build:hosted',
-    'build:npm',
-    endingMessage(NPM_DEST, function () {
-      console.log();
-      console.log(
-        'Run',
-        chalk.yellow('cd dist/npm')
-      );
-      console.log();
-      console.log(
-        'Run',
-        chalk.yellow('nvm install 8'),
-        '(node 6 does not allow 2fa)'
-      );
-      console.log();
-      console.log(
-        'Run',
-        chalk.yellow('npm publish')
-      );
+gulp.task('release:npm', gulp.series(
+  'clean',
+  'build:hosted',
+  'build:npm',
+  endingMessage(NPM_DEST, function () {
+    console.log();
+    console.log(
+      'Run',
+      chalk.yellow('cd dist/npm')
+    );
+    console.log();
+    console.log(
+      'Run',
+      chalk.yellow('npm publish')
+    );
+  })
+));
 
-      done()
-    })
-  );
-});
-
-function endingMessage(destination, done) {
+function endingMessage(destination, additionalTask) {
   return function () {
     console.log();
     console.log(
@@ -82,6 +70,10 @@ function endingMessage(destination, done) {
       chalk.green(destination)
     );
     console.log();
-    done();
+
+    if (additionalTask) {
+      additionalTask();
+    }
+    return Promise.resolve();
   }
 }

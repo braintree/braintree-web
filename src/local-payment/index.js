@@ -21,7 +21,7 @@ var errors = require('./shared/errors');
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {string} [options.merchantAccountId] A non-default merchant account ID to use for tokenization.
+ * @param {string} [options.merchantAccountId] A non-default merchant account ID to use for tokenization and creation of the authorizing transaction. Braintree strongly recommends specifying this parameter.
  * @param {callback} callback The second argument, `data`, is the {@link LocalPayment} instance.
  * @example <caption>Using the local payment component to set up an iDEAL button</caption>
  * var idealButton = document.querySelector('.ideal-button');
@@ -35,7 +35,8 @@ var errors = require('./shared/errors');
  *   }
  *
  *   braintree.localPayment.create({
- *     client: clientInstance
+ *     client: clientInstance,
+ *     merchantAccountId: 'merchantAccountEUR',
  *   }, function (localPaymentErr, localPaymentInstance) {
  *     if (localPaymentErr) {
  *       console.error('Error creating local payment component:', localPaymentErr);

@@ -5,9 +5,8 @@ var fs = require('fs');
 var gulp = require('gulp');
 var rename = require('gulp-rename');
 var replace = require('gulp-replace');
-var run = require('run-sequence');
 var browserify = require('./browserify');
-var minifyHTML = require('gulp-minifier');
+var minifyHTML = require('./minify').minifyHTML;
 var VERSION = require('../package.json').version;
 
 var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
@@ -36,25 +35,14 @@ FRAMES.forEach(function (frame) {
 
   gulp.task(htmlTaskName, function () {
     var jsFile = fs.readFileSync(DIST_DIR + 'js/paypal-' + frame + '-frame.js', 'utf8');
-
-    return gulp.src('src/paypal/internal/frame.html')
+    var stream = gulp.src('src/paypal/internal/frame.html')
       .pipe(replace('@BUILT_FILE', jsFile))
       .pipe(rename(function (path) {
         path.basename = 'paypal-' + frame + '-' + path.basename;
       }))
-      .pipe(replace('@FRAME', frame))
-      .pipe(gulp.dest(DIST_DIR + 'html'))
-      .pipe(minifyHTML({
-        minify: true,
-        collapseWhitespace: true,
-        conservativeCollapse: false,
-        minifyJS: true,
-        minifyCSS: true
-      }))
-      .pipe(rename({
-        extname: '.min.html'
-      }))
-      .pipe(gulp.dest(DIST_DIR + 'html'));
+      .pipe(replace('@FRAME', frame));
+
+    return minifyHTML(stream, DIST_DIR + 'html');
   });
 
   HTML_TASKS.push(htmlTaskName);
@@ -71,18 +59,10 @@ FRAMES.forEach(function (frame) {
 
 HTML_TASKS.push('build:paypal:frame:html:landing-frame');
 gulp.task('build:paypal:frame:html:landing-frame', function () {
-  return gulp.src('src/paypal/internal/landing-frame.html')
-    .pipe(rename('paypal-landing-frame.html'))
-    .pipe(gulp.dest(DIST_DIR + 'html'))
-    .pipe(minifyHTML({
-      minify: true,
-      collapseWhitespace: true,
-      conservativeCollapse: false,
-      minifyJS: true,
-      minifyCSS: true
-    }))
-    .pipe(rename({extname: '.min.html'}))
-    .pipe(gulp.dest(DIST_DIR + 'html'));
+  var stream = gulp.src('src/paypal/internal/landing-frame.html')
+    .pipe(rename('paypal-landing-frame.html'));
+
+  return minifyHTML(stream, DIST_DIR + 'html');
 });
 
 gulp.task('build:paypal:js', function (done) {
@@ -94,10 +74,12 @@ gulp.task('build:paypal:js', function (done) {
   }, done);
 });
 
-gulp.task('build:paypal:frame:html', HTML_TASKS);
-gulp.task('build:paypal:frame:js', JS_TASKS);
-gulp.task('build:paypal:frame:js:delete', JS_DELETE_TASKS);
-gulp.task('build:paypal:frame', function (done) {
-  run('build:paypal:frame:js', 'build:paypal:frame:html', 'build:paypal:frame:js:delete', done);
-});
-gulp.task('build:paypal', ['build:paypal:js', 'build:paypal:frame']);
+gulp.task('build:paypal:frame:html', gulp.parallel(HTML_TASKS));
+gulp.task('build:paypal:frame:js', gulp.parallel(JS_TASKS));
+gulp.task('build:paypal:frame:js:delete', gulp.parallel(JS_DELETE_TASKS));
+gulp.task('build:paypal:frame', gulp.series(
+  'build:paypal:frame:js',
+  'build:paypal:frame:html',
+  'build:paypal:frame:js:delete'
+));
+gulp.task('build:paypal', gulp.parallel('build:paypal:js', 'build:paypal:frame'));

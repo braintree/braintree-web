@@ -6,7 +6,6 @@ var rename = require('gulp-rename');
 var removeCode = require('gulp-remove-code');
 var replace = require('gulp-replace');
 var mkdirp = require('mkdirp');
-var sequence = require('run-sequence');
 var browserify = require('./browserify');
 var clone = require('../src/lib/json-clone');
 var COMPONENTS = require('../components');
@@ -18,6 +17,8 @@ var BOWER_DIST = 'dist/bower';
 var NPM_DIST = 'dist/npm';
 var fs = require('fs');
 var JS_COMMENT_REGEX = /(\/\*[\s\S]*?\*\/\n*|\/\/.*?\n)/gm;
+
+var BUILD_TASKS = COMPONENTS.concat(['index', 'frame-service']).map(name => 'build:' + name);
 
 gulp.task('build:index', function (done) {
   browserify({
@@ -37,15 +38,6 @@ gulp.task('build:bower:statics', function () {
     './README.md'
   ]).pipe(replace('@VERSION', VERSION))
     .pipe(gulp.dest(BOWER_DIST));
-});
-
-gulp.task('build:npm:statics', ['build:npm:packagejson'], function () {
-  return gulp.src([
-    './publishing/.gitignore',
-    './CHANGELOG.md',
-    './LICENSE',
-    './README.md'
-  ]).pipe(gulp.dest(NPM_DIST));
 });
 
 gulp.task('build:npm:packagejson', function (done) {
@@ -80,6 +72,15 @@ gulp.task('build:npm:packagejson', function (done) {
 
   fs.writeFile(NPM_DIST + '/' + 'package.json', JSON.stringify(pkg, null, 2), done);
 });
+
+gulp.task('build:npm:statics', gulp.series('build:npm:packagejson', function () {
+  return gulp.src([
+    './publishing/.gitignore',
+    './CHANGELOG.md',
+    './LICENSE',
+    './README.md'
+  ]).pipe(gulp.dest(NPM_DIST));
+}));
 
 gulp.task('build:npm:src', function () {
   return gulp.src([
@@ -126,11 +127,11 @@ gulp.task('build:bower:debugs', function () {
   return merge(components, debug);
 });
 
-gulp.task('build:bower', [
+gulp.task('build:bower', gulp.series(
   'build:bower:js',
   'build:bower:debugs',
   'build:bower:statics'
-]);
+));
 
 gulp.task('build:html:unmin', function () {
   return gulp.src([
@@ -151,33 +152,22 @@ gulp.task('build:hosted:link-latest', function (done) {
   fs.symlink(VERSION, 'dist/hosted/web/dev', done);
 });
 
-gulp.task('build:hosted', function (done) {
-  var buildTasks = COMPONENTS.concat(['index', 'frame-service']).map(name => 'build:' + name);
+gulp.task('build:hosted', gulp.series(
+  gulp.parallel(BUILD_TASKS),
+  'build:hosted:link-latest',
+  'build:html:min',
+  'build:html:unmin'
+));
 
-  sequence(
-    buildTasks, [
-      'build:hosted:link-latest',
-      'build:html:min',
-      'build:html:unmin'
-    ],
-    done
-  );
-});
+gulp.task('build:npm', gulp.series(
+  'build:npm:statics',
+  'build:npm:src',
+  'build:npm:browser',
+));
 
-gulp.task('build:npm', function (done) {
-  sequence(
-    'build:npm:statics',
-    'build:npm:src',
-    'build:npm:browser',
-    done
-  );
-});
-
-gulp.task('build', ['clean'], function (done) {
-  sequence(
-    'build:hosted',
-    'build:npm',
-    'build:bower',
-    done
-  );
-});
+gulp.task('build', gulp.series(
+  'clean',
+  'build:hosted',
+  'build:npm',
+  'build:bower',
+));

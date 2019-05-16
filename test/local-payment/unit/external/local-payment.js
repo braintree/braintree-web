@@ -238,7 +238,7 @@ describe('LocalPayment', function () {
       return this.localPayment.startPayment(this.options).then(function () {
         expect(client.request).to.be.calledWith({
           method: 'post',
-          endpoint: 'paypal_hermes/create_payment_resource',
+          endpoint: 'local_payments/create',
           data: {
             cancelUrl: 'https://example.com:9292/web/' + VERSION + '/html/local-payment-cancel-frame.min.html?channel=service-id',
             returnUrl: 'https://example.com:9292/web/' + VERSION + '/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text',
@@ -283,7 +283,7 @@ describe('LocalPayment', function () {
 
       this.frameServiceInstance.open.reset();
       this.client.request.reset();
-      this.client.request.withArgs(this.sandbox.match({endpoint: 'paypal_hermes/create_payment_resource'})).rejects(requestError);
+      this.client.request.withArgs(this.sandbox.match({endpoint: 'local_payments/create'})).rejects(requestError);
 
       return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
         expect(err.code).to.equal('LOCAL_PAYMENT_START_PAYMENT_FAILED');

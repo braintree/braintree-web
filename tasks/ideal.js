@@ -5,9 +5,9 @@ var gulp = require('gulp');
 var fs = require('fs');
 var rename = require('gulp-rename');
 var replace = require('gulp-replace');
-var run = require('run-sequence');
 var browserify = require('./browserify');
 var minify = require('gulp-minifier');
+var minifyHTML = require('./minify').minifyHTML;
 var VERSION = require('../package.json').version;
 
 var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
@@ -63,24 +63,13 @@ internalFrames.forEach(function (frame) {
   HTML_TASKS.push(htmlTaskName);
   gulp.task(htmlTaskName, function () {
     var jsFile = fs.readFileSync(DIST_DIR + 'js/ideal-' + frame + '-frame.js');
+    var stream = gulp.src('src/ideal/internal/' + frame + '-frame.html')
+    .pipe(replace('@BUILT_FILE', jsFile))
+    .pipe(rename(function (path) {
+      path.basename = 'ideal-' + path.basename;
+    }));
 
-    return gulp.src('src/ideal/internal/' + frame + '-frame.html')
-      .pipe(replace('@BUILT_FILE', jsFile))
-      .pipe(rename(function (path) {
-        path.basename = 'ideal-' + path.basename;
-      }))
-      .pipe(gulp.dest(DIST_DIR + 'html'))
-      .pipe(minify({
-        minify: true,
-        collapseWhitespace: true,
-        conservativeCollapse: false,
-        minifyJS: true,
-        minifyCSS: true
-      }))
-      .pipe(rename({
-        extname: '.min.html'
-      }))
-      .pipe(gulp.dest(DIST_DIR + 'html'));
+    return minifyHTML(stream, DIST_DIR + 'html');
   });
 
   DELETE_INTERNAL_JS_TASKS.push(deleteInternalJSTaskName);
@@ -128,10 +117,12 @@ staticFrames.forEach(function (frame) {
       }))
       .pipe(minify({
         minify: true,
-        collapseWhitespace: true,
-        conservativeCollapse: false,
-        minifyJS: true,
-        minifyCSS: true
+        minifyHTML: {
+          collapseWhitespace: true,
+          conservativeCollapse: false,
+          minifyJS: true,
+          minifyCSS: true
+        }
       }))
       .pipe(gulp.dest(STATIC_DIR + 'html'));
   });
@@ -156,12 +147,16 @@ gulp.task('build:ideal:js', function (done) {
   }, done);
 });
 
-gulp.task('build:ideal:frame:html', HTML_TASKS);
-gulp.task('build:ideal:frame:js', JS_TASKS);
-gulp.task('build:ideal:frame:css', CSS_TASKS);
-gulp.task('build:ideal:frame:img', IMG_TASKS);
-gulp.task('build:ideal:frame:js:delete', DELETE_INTERNAL_JS_TASKS);
-gulp.task('build:ideal:frame', ['build:ideal:frame:css', 'build:ideal:frame:img'], function (done) {
-  run('build:ideal:frame:js', 'build:ideal:frame:html', 'build:ideal:frame:js:delete', done);
-});
-gulp.task('build:ideal', ['build:ideal:js', 'build:ideal:frame']);
+gulp.task('build:ideal:frame:html', gulp.parallel(HTML_TASKS));
+gulp.task('build:ideal:frame:js', gulp.parallel(JS_TASKS));
+gulp.task('build:ideal:frame:css', gulp.parallel(CSS_TASKS));
+gulp.task('build:ideal:frame:img', gulp.parallel(IMG_TASKS));
+gulp.task('build:ideal:frame:js:delete', gulp.parallel(DELETE_INTERNAL_JS_TASKS));
+gulp.task('build:ideal:frame', gulp.series(
+  'build:ideal:frame:css',
+  'build:ideal:frame:img',
+  'build:ideal:frame:js',
+  'build:ideal:frame:html',
+  'build:ideal:frame:js:delete'
+));
+gulp.task('build:ideal', gulp.parallel('build:ideal:js', 'build:ideal:frame'));

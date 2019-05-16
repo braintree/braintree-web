@@ -205,7 +205,7 @@ describe('Payment Request component', function () {
     };
     configuration.gatewayConfiguration.paypalEnabled = true;
     configuration.gatewayConfiguration.paypal = {};
-    configuration.gatewayConfiguration.paypal.clientId = 'paypal_client_id';
+    configuration.gatewayConfiguration.androidPay.paypalClientId = 'paypal_client_id';
     configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
 
     client = fake.client({
@@ -522,7 +522,7 @@ describe('Payment Request component', function () {
       }.bind(this));
     });
 
-    it('sends analytics event on payment request cancelled', function () {
+    it('sends analytics event on payment request canceled', function () {
       Bus.prototype.emit.withArgs('payment-request:PAYMENT_REQUEST_INITIALIZED').yieldsAsync([{
         name: 'AbortError'
       }]);

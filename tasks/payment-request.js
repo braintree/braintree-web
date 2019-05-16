@@ -1,4 +1,4 @@
-'use strict';
+'use strict';;
 
 var browserify = require('./browserify');
 var del = require('del');
@@ -7,7 +7,7 @@ var gulp = require('gulp');
 var path = require('path');
 var rename = require('gulp-rename');
 var replace = require('gulp-replace');
-var run = require('run-sequence');
+var minifyHTML = require('./minify').minifyHTML;
 var VERSION = require('../package.json').version;
 
 var BASE_PATH = path.resolve(__dirname, '..', 'src', 'payment-request');
@@ -39,31 +39,17 @@ gulp.task('build:payment-request:frame:js:delete', function () {
 });
 
 gulp.task('build:payment-request:frame:html', function () {
-  var minifyHTML = require('gulp-minifier');
   var jsFile = fs.readFileSync(DIST_PATH + '/js/payment-request-internal.js', 'utf8');
+  var stream = gulp.src(BASE_PATH + '/internal/payment-request-frame.html')
+    .pipe(replace('@BUILT_FILE', jsFile));
 
-  return gulp.src(BASE_PATH + '/internal/payment-request-frame.html')
-    .pipe(replace('@BUILT_FILE', jsFile))
-    .pipe(gulp.dest(DIST_PATH + '/html'))
-    .pipe(minifyHTML({
-      minify: true,
-      collapseWhitespace: true,
-      conservativeCollapse: false,
-      minifyJS: true,
-      minifyCSS: true
-    }))
-    .pipe(rename({
-      extname: '.min.html'
-    }))
-    .pipe(gulp.dest(DIST_PATH + '/html'));
+  return minifyHTML(stream, DIST_PATH + '/html');
 });
 
-gulp.task('build:payment-request:frame', function (done) {
-  run(
+gulp.task('build:payment-request:frame', gulp.series(
   'build:payment-request:frame:js',
   'build:payment-request:frame:html',
   'build:payment-request:frame:js:delete',
-  done)
-});
+));
 
-gulp.task('build:payment-request', ['build:payment-request:js', 'build:payment-request:frame']);
+gulp.task('build:payment-request', gulp.parallel('build:payment-request:js', 'build:payment-request:frame'));

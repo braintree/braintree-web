@@ -95,24 +95,21 @@ describe('analytics.sendEvent', function () {
 
   it('sets timestamp to the time when the event was initialized, not when it was sent', function (done) {
     var client = this.client;
-    var clock = this.sandbox.useFakeTimers();
     var clientPromise = new Promise(function (resolve) {
       setTimeout(function () {
         resolve(client);
-      }, 5000);
+      }, 1000);
     });
 
     analytics.sendEvent(clientPromise, 'test.event.kind', function () {
       var currentTimestamp = Date.now() / 1000;
       var postArgs = client._request.firstCall.args;
 
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(6);
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(4.5);
+      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2);
+      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0.9);
       expect(postArgs[0].data.analytics[0].isAsync).to.equal(true);
 
       done();
     });
-
-    clock.tick(5500);
   });
 });

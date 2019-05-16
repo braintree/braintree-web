@@ -141,13 +141,17 @@ function create(options) {
       name: name
     });
   }).then(function (client) {
+    var gp;
+
     options.client = client;
 
     if (!options.client.getConfiguration().gatewayConfiguration.androidPay) {
       return Promise.reject(new BraintreeError(errors.GOOGLE_PAYMENT_NOT_ENABLED));
     }
 
-    return new GooglePayment(options);
+    gp = new GooglePayment(options);
+
+    return gp._initialize();
   });
 }
 

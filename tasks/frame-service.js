@@ -5,10 +5,9 @@ var del = require('del');
 var fs = require('fs');
 var gulp = require('gulp');
 var rename = require('gulp-rename');
-var run = require('run-sequence');
 var replace = require('gulp-replace');
 var browserify = require('./browserify');
-var minifyHTML = require('gulp-minifier');
+var minifyHTML = require('./minify').minifyHTML;
 var VERSION = require('../package.json').version;
 
 var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
@@ -36,25 +35,14 @@ FRAMES.forEach(function (frame) {
 
   gulp.task(htmlTaskName, function () {
     var jsFile = fs.readFileSync(DIST_DIR + 'js/frame-service-dispatch-frame.js');
-
-    return gulp.src('src/lib/frame-service/internal/dispatch-frame/index.html')
+    var stream = gulp.src('src/lib/frame-service/internal/dispatch-frame/index.html')
       .pipe(replace('@BUILT_FILE', jsFile))
       .pipe(rename(function (path) {
         path.basename = 'dispatch-frame';
       }))
-      .pipe(replace('@FRAME', frame))
-      .pipe(gulp.dest(DIST_DIR + 'html'))
-      .pipe(minifyHTML({
-        minify: true,
-        collapseWhitespace: true,
-        conservativeCollapse: false,
-        minifyJS: true,
-        minifyCSS: true
-      }))
-      .pipe(rename({
-        extname: '.min.html'
-      }))
-      .pipe(gulp.dest(DIST_DIR + 'html'));
+      .pipe(replace('@FRAME', frame));
+
+    return minifyHTML(stream, DIST_DIR + 'html');
   });
 
   HTML_TASKS.push(htmlTaskName);
@@ -68,9 +56,11 @@ FRAMES.forEach(function (frame) {
   JS_DELETE_TASKS.push(jsDeleteTaskName);
 });
 
-gulp.task('build:frame-service:html', HTML_TASKS);
-gulp.task('build:frame-service:js', JS_TASKS);
-gulp.task('build:frame-service:js:delete', JS_DELETE_TASKS);
-gulp.task('build:frame-service', function (done) {
-  run('build:frame-service:js', 'build:frame-service:html', 'build:frame-service:js:delete', done);
-});
+gulp.task('build:frame-service:html', gulp.parallel(HTML_TASKS));
+gulp.task('build:frame-service:js', gulp.parallel(JS_TASKS));
+gulp.task('build:frame-service:js:delete', gulp.parallel(JS_DELETE_TASKS));
+gulp.task('build:frame-service', gulp.series(
+  'build:frame-service:js',
+  'build:frame-service:html',
+  'build:frame-service:js:delete'
+));

@@ -257,8 +257,9 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
   return function (options, reply) {
     Promise.resolve(clientInstanceOrPromise).then(function (client) {
       var mergedCardData, creditCardDetails;
-      var isEmpty = cardForm.isEmpty();
-      var invalidFieldKeys = cardForm.invalidFieldKeys();
+      var fieldsToTokenize = options.fieldsToTokenize;
+      var isEmpty = cardForm.isEmpty(fieldsToTokenize);
+      var invalidFieldKeys = cardForm.invalidFieldKeys(fieldsToTokenize);
       var isValid = invalidFieldKeys.length === 0;
 
       if (isEmpty) {
@@ -278,7 +279,7 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
 
       options = options || {};
 
-      mergedCardData = mergeCardData(cardForm.getCardData(), options);
+      mergedCardData = mergeCardData(cardForm.getCardData(fieldsToTokenize), options);
 
       creditCardDetails = formatCardRequestData(mergedCardData);
 

@@ -65,7 +65,7 @@ describe('ThreeDSecure', function () {
       expect(promise).to.be.an.instanceof(Promise);
     });
 
-    it('can be called multiple times if cancelled in between', function () {
+    it('can be called multiple times if canceled in between', function () {
       var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
       var self = this;
 

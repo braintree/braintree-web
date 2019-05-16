@@ -5,9 +5,8 @@ var fs = require('fs');
 var gulp = require('gulp');
 var rename = require('gulp-rename');
 var replace = require('gulp-replace');
-var run = require('run-sequence');
 var browserify = require('./browserify');
-var minifyHTML = require('gulp-minifier');
+var minifyHTML = require('./minify').minifyHTML;
 var VERSION = require('../package.json').version;
 
 var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
@@ -36,25 +35,14 @@ FRAMES.forEach(function (frame) {
 
   gulp.task(htmlTaskName, function () {
     var jsFile = fs.readFileSync(DIST_DIR + 'js/local-payment-' + frame + '-frame.js', 'utf8');
-
-    return gulp.src('src/local-payment/internal/frame.html')
+    var stream = gulp.src('src/local-payment/internal/frame.html')
       .pipe(replace('@BUILT_FILE', jsFile))
       .pipe(rename(function (path) {
         path.basename = 'local-payment-' + frame + '-' + path.basename;
       }))
-      .pipe(replace('@FRAME', frame))
-      .pipe(gulp.dest(DIST_DIR + 'html'))
-      .pipe(minifyHTML({
-        minify: true,
-        collapseWhitespace: true,
-        conservativeCollapse: false,
-        minifyJS: true,
-        minifyCSS: true
-      }))
-      .pipe(rename({
-        extname: '.min.html'
-      }))
-      .pipe(gulp.dest(DIST_DIR + 'html'));
+      .pipe(replace('@FRAME', frame));
+
+    return minifyHTML(stream, DIST_DIR + 'html');
   });
 
   HTML_TASKS.push(htmlTaskName);
@@ -71,18 +59,10 @@ FRAMES.forEach(function (frame) {
 
 HTML_TASKS.push('build:local-payment:frame:html:landing-frame');
 gulp.task('build:local-payment:frame:html:landing-frame', function () {
-  return gulp.src('src/local-payment/internal/landing-frame.html')
-    .pipe(rename('local-payment-landing-frame.html'))
-    .pipe(gulp.dest(DIST_DIR + 'html'))
-    .pipe(minifyHTML({
-      minify: true,
-      collapseWhitespace: true,
-      conservativeCollapse: false,
-      minifyJS: true,
-      minifyCSS: true
-    }))
-    .pipe(rename({extname: '.min.html'}))
-    .pipe(gulp.dest(DIST_DIR + 'html'));
+  var stream = gulp.src('src/local-payment/internal/landing-frame.html')
+    .pipe(rename('local-payment-landing-frame.html'));
+
+  return minifyHTML(stream, DIST_DIR + 'html');
 });
 
 gulp.task('build:local-payment:js', function (done) {
@@ -94,10 +74,12 @@ gulp.task('build:local-payment:js', function (done) {
   }, done);
 });
 
-gulp.task('build:local-payment:frame:html', HTML_TASKS);
-gulp.task('build:local-payment:frame:js', JS_TASKS);
-gulp.task('build:local-payment:frame:js:delete', JS_DELETE_TASKS);
-gulp.task('build:local-payment:frame', function (done) {
-  run('build:local-payment:frame:js', 'build:local-payment:frame:html', 'build:local-payment:frame:js:delete', done);
-});
-gulp.task('build:local-payment', ['build:local-payment:js', 'build:local-payment:frame']);
+gulp.task('build:local-payment:frame:html', gulp.parallel(HTML_TASKS));
+gulp.task('build:local-payment:frame:js', gulp.parallel(JS_TASKS));
+gulp.task('build:local-payment:frame:js:delete', gulp.parallel(JS_DELETE_TASKS));
+gulp.task('build:local-payment:frame', gulp.series(
+  'build:local-payment:frame:js',
+  'build:local-payment:frame:html',
+  'build:local-payment:frame:js:delete'
+));
+gulp.task('build:local-payment', gulp.parallel('build:local-payment:js', 'build:local-payment:frame'));

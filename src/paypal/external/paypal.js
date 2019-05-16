@@ -310,12 +310,12 @@ PayPal.prototype._createFrameServiceCallback = function (options, resolve, rejec
 
   if (global.popupBridge) {
     return function (err, payload) {
-      var cancelled = payload && payload.path && payload.path.substring(0, 7) === '/cancel';
+      var canceled = payload && payload.path && payload.path.substring(0, 7) === '/cancel';
 
       self._authorizationInProgress = false;
 
       // `err` exists when the user clicks "Done" button of browser view
-      if (err || cancelled) {
+      if (err || canceled) {
         analytics.sendEvent(client, 'paypal.tokenization.closed-popupbridge.by-user');
         // Call merchant's tokenize callback with an error
         reject(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));

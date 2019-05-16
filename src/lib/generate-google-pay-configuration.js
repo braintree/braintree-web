@@ -65,28 +65,27 @@ module.exports = function (configuration, googlePayVersion, googleMerchantId) {
       }
     }
 
-    if (configuration.gatewayConfiguration.paypal &&
-      configuration.gatewayConfiguration.paypal.clientId &&
-      configuration.gatewayConfiguration.paypal.environmentNoNetwork === false
-    ) {
+    if (androidPayConfiguration.paypalClientId) {
       paypalPaymentMethod = {
         type: 'PAYPAL',
         parameters: {
-          purchase_context: { // eslint-disable-line camelcase
-            purchase_units: [ // eslint-disable-line camelcase
+          /* eslint-disable camelcase */
+          purchase_context: {
+            purchase_units: [
               {
                 payee: {
-                  client_id: configuration.gatewayConfiguration.paypal.clientId // eslint-disable-line camelcase
+                  client_id: androidPayConfiguration.paypalClientId
                 },
-                recurring_payment: true // eslint-disable-line camelcase
+                recurring_payment: true
               }
             ]
           }
+          /* eslint-enable camelcase */
         },
         tokenizationSpecification: {
           type: 'PAYMENT_GATEWAY',
           parameters: generateTokenizationParameters(configuration, {
-            'braintree:paypalClientId': configuration.gatewayConfiguration.paypal.clientId
+            'braintree:paypalClientId': androidPayConfiguration.paypalClientId
           })
         }
       };

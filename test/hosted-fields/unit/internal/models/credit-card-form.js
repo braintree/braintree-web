@@ -446,6 +446,13 @@ describe('credit card model', function () {
       expect(card.getCardData().number).to.be.undefined;
     });
 
+    it('skips fields if explicit fields are passed', function () {
+      this.card.set('number.value', '4111111111111111');
+      this.card.set('cvv.value', '123');
+      expect(this.card.getCardData(['cvv']).number).to.not.exist;
+      expect(this.card.getCardData(['cvv']).cvv).to.equal('123');
+    });
+
     it('skips CVV if not in the config', function () {
       var card = new CreditCardForm(helpers.getModelConfig([
         'number',
@@ -667,6 +674,15 @@ describe('credit card model', function () {
 
       expect(this.card.isEmpty()).to.equal(false);
     });
+
+    it('returns true when passed in fields are empty, but non-passed in fields are not', function () {
+      this.card.set('number.value', '');
+      this.card.set('cvv.value', '');
+      this.card.set('expirationDate.value', '07' + nextYear);
+      this.card.set('postalCode.value', '30303');
+
+      expect(this.card.isEmpty(['cvv'])).to.equal(true);
+    });
   });
 
   describe('invalidFieldKeys', function () {
@@ -739,6 +755,40 @@ describe('credit card model', function () {
       this.card.set('cvv.value', '123');
 
       expect(this.card.invalidFieldKeys()).to.not.contain('cvv');
+    });
+
+    it('returns subset of invalid keys when all fields are invalid, but specific keys are passed in', function () {
+      var result;
+
+      this.card.set('number.value', 'not-a-card-number');
+      this.card.set('cvv.value', 'not-a-cvv');
+      this.card.set('expirationDate.value', '041789');
+      this.card.set('postalCode.value', '');
+
+      result = this.card.invalidFieldKeys(['number', 'postalCode']);
+
+      expect(result.length).to.equal(2);
+      expect(result).to.contain('number');
+      expect(result).to.not.contain('cvv');
+      expect(result).to.not.contain('expirationDate');
+      expect(result).to.contain('postalCode');
+    });
+
+    it('ignores keys that do not exist within card form', function () {
+      var result;
+
+      this.card.set('number.value', 'not-a-card-number');
+      this.card.set('cvv.value', 'not-a-cvv');
+      this.card.set('expirationDate.value', '041789');
+      this.card.set('postalCode.value', '');
+
+      result = this.card.invalidFieldKeys(['foo', 'number', 'bar', 'postalCode', 'baz']);
+
+      expect(result.length).to.equal(2);
+      expect(result).to.contain('number');
+      expect(result).to.not.contain('cvv');
+      expect(result).to.not.contain('expirationDate');
+      expect(result).to.contain('postalCode');
     });
   });
 

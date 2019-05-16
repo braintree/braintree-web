@@ -2,7 +2,6 @@
 
 var spawn = require('child_process').spawn;
 var gulp = require('gulp');
-var sequence = require('run-sequence');
 var del = require('del');
 var VERSION = require('../package.json').version;
 var DIST_DIR = 'dist/jsdoc/';
@@ -77,17 +76,11 @@ gulp.task('jsdoc:link-current', function (done) {
   fs.symlink(VERSION, CURRENT_LINK, done);
 });
 
-gulp.task('jsdoc', function (done) {
-  sequence(
-    'jsdoc:clean',
-    'jsdoc:generate',
-    [
-      'jsdoc:link-current',
-      'jsdoc:statics',
-    ],
-    done
-  );
-});
+gulp.task('jsdoc', gulp.series(
+  'jsdoc:clean',
+  'jsdoc:generate',
+  gulp.series('jsdoc:link-current', 'jsdoc:statics')
+));
 
 module.exports = {
   jsdoc: jsdoc

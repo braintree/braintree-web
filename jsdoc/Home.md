@@ -49,8 +49,6 @@ function callback(err, clientInstance) { ... }
 <a id="promises"></a>
 ### Promises
 
-This SDK uses the Node.js callback style, with callbacks passed as the last argument to a function. Callbacks are expected to receive possible errors as the first parameter, and any returned data as the second:
-
 In addition to callbacks, all asyncronous methods will return a `Promise` if no callback is provided:
 
 ```javascript

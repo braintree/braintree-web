@@ -2,7 +2,6 @@
 
 var gulp = require('gulp');
 var Karma = require('karma').Server;
-var run = require('run-sequence');
 var path = require('path');
 var fs = require('fs');
 var spawn = require('child_process').spawn;
@@ -68,9 +67,7 @@ KARMA_SUITES.forEach(function (suite) {
   gulp.task(lintTask, function (done) {
     _lint(suite, suite, done);
   });
-  gulp.task(standaloneTestTask, function (done) {
-    run(lintTask, karmaTask, done);
-  });
+  gulp.task(standaloneTestTask, gulp.series(lintTask, karmaTask));
 });
 
 gulp.task('mocha:publishing', function (done) {
@@ -79,9 +76,11 @@ gulp.task('mocha:publishing', function (done) {
 gulp.task('lint:publishing', function (done) {
   _lint('index.js', 'publishing', done);
 });
-gulp.task('test:publishing', function (done) {
-  run('build', 'lint:publishing', 'mocha:publishing', done);
-});
+gulp.task('test:publishing', gulp.series(
+  'build',
+  'lint:publishing',
+  'mocha:publishing'
+));
 
 gulp.task('test:node-parsing', function (done) {
   var error, bt;
@@ -113,7 +112,4 @@ gulp.task('cleanup', function (done) {
   });
 });
 
-gulp.task('test', ['build', 'cleanup'], function (done) {
-  TEST_TASKS.push(done);
-  run.apply(null, TEST_TASKS);
-});
+gulp.task('test', gulp.series('build', 'cleanup', gulp.series(TEST_TASKS)));

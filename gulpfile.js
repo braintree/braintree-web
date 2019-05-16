@@ -1,45 +1,46 @@
 'use strict';
 
+var gulp = require('gulp');
+var del = require('del');
+var VERSION = require('./package.json').version;
+
 var COMPONENTS = require('./components.json');
 
 require('dotenv').config();
-
-COMPONENTS.forEach(function (component) {
-  require('./tasks/' + component);
-});
-require('./tasks/build');
-require('./tasks/frame-service');
-require('./tasks/release');
-require('./tasks/jsdoc');
-require('./tasks/test');
-
-var gulp = require('gulp');
-var del = require('del');
-var sequence = require('run-sequence');
-var VERSION = require('./package.json').version;
 
 gulp.task('clean', function () {
   return del(['./dist']);
 });
 
-gulp.task('build:integration', function (done) {
-  process.env.npm_package_version = VERSION;
-
-  sequence(
-    ['build', 'jsdoc'],
-    done
-  );
+COMPONENTS.forEach(function (component) {
+  require('./tasks/' + component);
 });
+require('./tasks/frame-service');
+require('./tasks/build');
+require('./tasks/release');
+require('./tasks/jsdoc');
+require('./tasks/test');
 
-gulp.task('watch:integration', function () {
+function setNpmVersion () {
   process.env.npm_package_version = VERSION;
 
+  return Promise.resolve();
+}
+
+function watch () {
   COMPONENTS.forEach(function (component) {
-    gulp.watch(['src/' + component + '/**', 'src/lib/**'], ['build:' + component]);
+    gulp.watch([
+      'src/' + component + '/**',
+      'src/lib/**'
+    ]).on('change', gulp.series('build:' + component));
   });
 
   gulp.watch([
     'src/**/*',
     'jsdoc/*'
-  ], ['jsdoc']);
-});
+  ], gulp.series('jsdoc'));
+}
+
+gulp.task('build:integration', gulp.series(setNpmVersion, 'build', 'jsdoc'));
+
+gulp.task('watch:integration', gulp.series(setNpmVersion, watch));
