@@ -73,7 +73,9 @@ FrameService.prototype._writeDispatchFrame = function () {
   var frameSrc = this._options.dispatchFrameUrl;
 
   this._dispatchFrame = iFramer({
+    'aria-hidden': true,
     name: frameName,
+    title: frameName,
     src: frameSrc,
     'class': constants.DISPATCH_FRAME_CLASS,
     height: 0,
