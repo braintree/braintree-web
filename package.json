@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.45.0",
+  "version": "3.46.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -22,12 +22,12 @@
     "@braintree/iframer": "1.0.3",
     "@braintree/sanitize-url": "3.1.0",
     "@braintree/wrap-promise": "2.0.0",
-    "card-validator": "6.1.0",
+    "card-validator": "^6.2.0",
     "credit-card-type": "8.2.0",
     "framebus": "3.0.2",
-    "inject-stylesheet": "1.0.0",
+    "inject-stylesheet": "2.0.0",
     "promise-polyfill": "8.1.0",
-    "restricted-input": "2.0.0"
+    "restricted-input": "^2.0.1"
   },
   "devDependencies": {
     "async": "^2.6.2",
@@ -47,7 +47,7 @@
     "gulp-remove-code": "^3.0.2",
     "gulp-rename": "^1.4.0",
     "gulp-replace": "1.0.0",
-    "gzip-size": "^5.1.0",
+    "gzip-size": "^5.1.1",
     "is-uuid": "1.0.2",
     "jsdoc": "^3.6.2",
     "jsdoc-template": "braintree/jsdoc-template#3.2.0",
@@ -65,9 +65,9 @@
     "requirejs": "^2.3.6",
     "sinon": "^7.3.2",
     "sinon-chai": "^3.3.0",
-    "table": "^5.3.3",
+    "table": "^5.4.0",
     "tmp": "^0.1.0",
-    "uglify-js": "^3.5.12",
+    "uglify-js": "^3.6.0",
     "unreachable-branch-transform": "0.5.1",
     "watchify": "^3.11.1"
   },

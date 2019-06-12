@@ -28,7 +28,22 @@ var VERSION = process.env.npm_package_version;
  * For postal code fields, the default value is 3, representing the Icelandic postal code length. This option's primary use case is to increase the `minlength`, e.g. for US customers, the postal code `minlength` can be set to 5.
  * For cvv fields, the default value is 3. The `minlength` attribute only applies to integrations capturing a cvv without a number field.
  * @property {string} [prefill] A value to prefill the field with. For example, when creating an update card form, you can prefill the expiration date fields with the old expiration date data.
- * @property {boolean} [rejectUnsupportedCards=false] Only allow card types that your merchant account is able to process. Unsupported card types will invalidate the card form. e.g. if you only process Visa cards, a customer entering a American Express card would get an invalid card field. This can only be used for the `number` field.
+ * @property {boolean} [rejectUnsupportedCards=false] Deprecated since version 3.46.0, use `supportedCardBrands` instead. Only allow card types that your merchant account is able to process. Unsupported card types will invalidate the card form. e.g. if you only process Visa cards, a customer entering a American Express card would get an invalid card field. This can only be used for the `number` field.
+ * @property {object} [supportedCardBrands] Override card brands that are supported by the card form. Pass `'card-brand-id': true` to override the default in the merchant configuration and enable a card brand. Pass `'card-brand-id': false` to disable a card brand. Unsupported card types will invalidate the card form. e.g. if you only process Visa cards, a customer entering an American Express card would get an invalid card field. This can only be used for the  `number` field. (Note: only allow card types that your merchant account is actually able to process.)
+ *
+ * Valid card brand ids are:
+ * * visa
+ * * mastercard
+ * * american-express
+ * * diners-club
+ * * discover
+ * * jcb
+ * * union-pay
+ * * maestro
+ * * elo
+ * * mir
+ * * hiper
+ * * hipercard
  */
 
 /**
@@ -118,8 +133,7 @@ var VERSION = process.env.npm_package_version;
  *       placeholder: '•••'
  *     },
  *     expirationDate: {
- *       selector: '#expiration-date',
- *       type: 'month'
+ *       selector: '#expiration-date'
  *     }
  *   }
  * }, callback);
@@ -219,7 +233,10 @@ var VERSION = process.env.npm_package_version;
  *   fields: {
  *     number: {
  *       selector: '#card-number',
- *       rejectUnsupportedCards: true
+ *       supportedCardBrands: {
+ *         visa: false, // prevents Visas from showing up as valid even when the Braintree control panel is configured to allow them
+ *         'diners-club': true // allow Diners Club cards to be valid (processed as Discover cards on the Braintree backend)
+ *       }
  *     },
  *     cvv: {
  *       selector: '#cvv',

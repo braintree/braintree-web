@@ -922,7 +922,9 @@ describe('credit card model', function () {
     context('supporting card types', function () {
       beforeEach(function () {
         var config = assign({}, helpers.getModelConfig(['number']), {
-          supportedCardTypes: ['Discover']
+          supportedCardTypes: {
+            Discover: true
+          }
         });
 
         this.supportedCardForm = new CreditCardForm(config);
@@ -978,7 +980,9 @@ describe('credit card model', function () {
       it('passes option to card validator', function () {
         var invalidCard = '6212345000000001';
         var config = assign({}, helpers.getModelConfig(['number']), {
-          supportedCardTypes: ['UnionPay']
+          supportedCardTypes: {
+            UnionPay: true
+          }
         });
 
         this.supportedCardForm = new CreditCardForm(config);
@@ -1014,7 +1018,9 @@ describe('credit card model', function () {
       var configuration = helpers.getModelConfig();
       var cardForm = new CreditCardForm(configuration);
 
-      cardForm.setSupportedCardTypes(['VISA']);
+      cardForm.setSupportedCardTypes({
+        VISA: true
+      });
 
       expect(cardForm.supportedCardTypes).to.deep.equal(['visa']);
     });
@@ -1030,11 +1036,11 @@ describe('credit card model', function () {
 
     it('normalizes supportedCardTypes', function () {
       var configuration = helpers.getModelConfig();
-      var supportedCardTypes = [
-        'discover',
-        'Master-Card',
-        'VISA'
-      ];
+      var supportedCardTypes = {
+        discover: true,
+        'Master-Card': true,
+        VISA: true
+      };
       var cardForm = new CreditCardForm(configuration);
 
       cardForm.setSupportedCardTypes(supportedCardTypes);

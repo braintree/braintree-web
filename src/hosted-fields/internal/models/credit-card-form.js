@@ -5,6 +5,9 @@ var getCardTypes = require('../../shared/get-card-types');
 var validator = require('card-validator');
 var comparePossibleCardTypes = require('../compare-possible-card-types');
 var constants = require('../../shared/constants');
+var normalizeCardType = require('../normalize-card-type');
+var removeIgnorableCharacters = require('../remove-ignorable-characters');
+
 var events = constants.events;
 var externalEvents = constants.externalEvents;
 var allowedFields = constants.allowedFields;
@@ -42,7 +45,15 @@ CreditCardForm.prototype = Object.create(EventedModel.prototype);
 CreditCardForm.prototype.constructor = CreditCardForm;
 
 CreditCardForm.prototype.setSupportedCardTypes = function (supportedCardTypes) {
-  if (!supportedCardTypes) {
+  if (supportedCardTypes) {
+    supportedCardTypes = Object.keys(supportedCardTypes).reduce(function (brands, cardBrand) {
+      if (supportedCardTypes[cardBrand]) {
+        brands.push(cardBrand);
+      }
+
+      return brands;
+    }, []);
+  } else {
     supportedCardTypes = getCardTypes('').map(function (card) {
       return card.type;
     });
@@ -379,18 +390,6 @@ function splitDate(date) {
   }
 
   return {month: month, year: year};
-}
-
-function normalizeCardType(type) {
-  return removeIgnorableCharacters(type).toLowerCase();
-}
-
-function removeIgnorableCharacters(str) {
-  if (str) {
-    return str.replace(/[-\s]/g, '');
-  }
-
-  return '';
 }
 
 module.exports = {

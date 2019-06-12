@@ -41,7 +41,6 @@ var applePay = require('./apple-pay');
 var client = require('./client');
 var dataCollector = require('./data-collector');
 var hostedFields = require('./hosted-fields');
-var ideal = require('./ideal');
 var localPayment = require('./local-payment');
 var masterpass = require('./masterpass');
 var paymentRequest = require('./payment-request');
@@ -67,8 +66,6 @@ module.exports = {
   dataCollector: dataCollector,
   /** @type {module:braintree-web/hosted-fields} */
   hostedFields: hostedFields,
-  /** @type {module:braintree-web/ideal} */
-  ideal: ideal,
   /** @type {module:braintree-web/local-payment} */
   localPayment: localPayment,
   /** @type {module:braintree-web/masterpass} */

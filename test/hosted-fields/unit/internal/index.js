@@ -25,6 +25,7 @@ describe('internal', function () {
     };
     this.cardForm = new CreditCardForm(this.fakeConfig);
     this.sandbox.stub(getFrameName, 'getFrameName');
+    this.sandbox.stub(analytics, 'sendEvent');
   });
 
   describe('initialize', function () {
@@ -165,26 +166,26 @@ describe('internal', function () {
     });
 
     context('supporting card types', function () {
-      it('calls CreditCardForm with supportedCardTypes', function () {
+      it('calls CreditCardForm with supportedCardTypes even when no supported card types are passed', function () {
         var config = {
           client: fake.configuration(),
           fields: {
             number: {selector: '#foo'},
             cvv: {selector: '#boo'},
             postalCode: {selector: '#you'}
-          },
-          supportedCardTypes: ['MasterCard']
+          }
         };
 
-        this.sandbox.stub(analytics, 'sendEvent');
+        this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
         this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
         internal.orchestrate(config);
 
-        expect(global.cardForm.supportedCardTypes).to.be.not.undefined;
+        expect(global.cardForm.supportedCardTypes.length).to.be.greaterThan(9);
+        expect(global.cardForm.setSupportedCardTypes).to.be.calledOnce;
       });
 
-      it('sets supported card types asyncronously', function () {
+      it('sets supported card types asyncronously when rejectUnsupportedCards is set', function () {
         var config = {
           fields: {
             number: {selector: '#foo', rejectUnsupportedCards: true},
@@ -196,7 +197,6 @@ describe('internal', function () {
         global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
         this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
         this.sandbox.stub(CreditCardForm.prototype, 'validateField');
-        this.sandbox.stub(analytics, 'sendEvent');
         this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
         return internal.orchestrate(config).then(function () {
@@ -205,15 +205,120 @@ describe('internal', function () {
           expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledTwice;
           expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith(this.sandbox.match.typeOf('undefined')); // on initialization
           // when client is ready
-          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith([
-            'American Express',
-            'Discover',
-            'Visa'
-          ]);
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith({
+            americanexpress: true,
+            discover: true,
+            visa: true
+          });
         }.bind(this));
       });
 
-      it('does not call set supported card types an additional time if rejectUnsupportedCards is not set', function () {
+      it('sets supported card types asyncronously when supportedCardBrands is set', function () {
+        var config = {
+          fields: {
+            number: {
+              selector: '#foo',
+              supportedCardBrands: {
+                visa: false,
+                'diners-club': true
+              }
+            },
+            cvv: {selector: '#boo'},
+            postalCode: {selector: '#you'}
+          }
+        };
+
+        global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
+        this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
+        this.sandbox.stub(CreditCardForm.prototype, 'validateField');
+        this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+        return internal.orchestrate(config).then(function () {
+          expect(CreditCardForm.prototype.validateField).to.be.calledOnce;
+          expect(CreditCardForm.prototype.validateField).to.be.calledWith('number');
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledTwice;
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith(this.sandbox.match.typeOf('undefined')); // on initialization
+          // when client is ready
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith({
+            americanexpress: true,
+            discover: true,
+            visa: false,
+            dinersclub: true
+          });
+        }.bind(this));
+      });
+
+      it('can set supported card brands even without supported cards in merchant gateway configuration', function () {
+        var config = {
+          fields: {
+            number: {
+              selector: '#foo',
+              supportedCardBrands: {
+                visa: false,
+                'diners-club': true
+              }
+            },
+            cvv: {selector: '#boo'},
+            postalCode: {selector: '#you'}
+          }
+        };
+        var gwConfig = fake.configuration();
+
+        delete gwConfig.gatewayConfiguration.creditCards;
+
+        global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(gwConfig);
+        this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
+        this.sandbox.stub(CreditCardForm.prototype, 'validateField');
+        this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+        return internal.orchestrate(config).then(function () {
+          expect(CreditCardForm.prototype.validateField).to.be.calledOnce;
+          expect(CreditCardForm.prototype.validateField).to.be.calledWith('number');
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledTwice;
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith(this.sandbox.match.typeOf('undefined')); // on initialization
+          // when client is ready
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith({
+            visa: false,
+            dinersclub: true
+          });
+        }.bind(this));
+      });
+
+      it('prefers supportedCardBrands config if rejectedUnsupportedCards is also set', function () {
+        var config = {
+          fields: {
+            number: {
+              selector: '#foo',
+              rejectedUnsupportedCards: true,
+              supportedCardBrands: {
+                visa: false,
+                'diners-club': true
+              }
+            },
+            cvv: {selector: '#boo'},
+            postalCode: {selector: '#you'}
+          }
+        };
+
+        global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
+        this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
+        this.sandbox.stub(CreditCardForm.prototype, 'validateField');
+        this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
+
+        return internal.orchestrate(config).then(function () {
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledTwice;
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith(this.sandbox.match.typeOf('undefined')); // on initialization
+          // when client is ready
+          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith({
+            americanexpress: true,
+            discover: true,
+            visa: false,
+            dinersclub: true
+          });
+        }.bind(this));
+      });
+
+      it('does not call set supported card types an additional time if rejectUnsupportedCards or supportedCardTypes are not set', function () {
         var config = {
           fields: {
             number: {selector: '#foo'},
@@ -224,11 +329,9 @@ describe('internal', function () {
 
         global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
         this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
-        this.sandbox.stub(analytics, 'sendEvent');
         this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
         return internal.orchestrate(config).then(function () {
-          expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledOnce;
           expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledOnce;
         });
       });
@@ -243,7 +346,6 @@ describe('internal', function () {
 
         global.bus.emit.withArgs(events.READY_FOR_CLIENT).yieldsAsync(fake.configuration());
         this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
-        this.sandbox.stub(analytics, 'sendEvent');
         this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
         return internal.orchestrate(config).then(function () {
@@ -253,7 +355,6 @@ describe('internal', function () {
     });
 
     it('posts an analytics event', function () {
-      this.sandbox.stub(analytics, 'sendEvent');
       this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([]);
 
       internal.orchestrate({
@@ -292,7 +393,6 @@ describe('internal', function () {
       var frameWithoutBraintreeGlobal = {
       };
 
-      this.sandbox.stub(analytics, 'sendEvent');
       this.sandbox.stub(assembleIFrames, 'assembleIFrames').returns([
         frame1,
         frameWithoutInitialize,
@@ -395,8 +495,6 @@ describe('internal', function () {
       this.fakeError.details = {
         httpStatus: 500
       };
-
-      this.sandbox.stub(analytics, 'sendEvent');
 
       this.details = {
         isValid: true,

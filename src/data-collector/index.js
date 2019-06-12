@@ -19,7 +19,7 @@ var errors = require('./errors');
  * @global
  * @name DataCollector
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/data-collector.create|braintree-web.data-collector.create} instead.</strong>
- * @classdesc This class is used for advanced fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions. Before using DataCollector, make sure you have enabled advanced fraud protection in the Braintree gateway. To use your own Kount ID, contact our support team ([support@braintreepayments.com](mailto:support@braintreepayments.com) or [877.434.2894](tel:877.434.2894)).
+ * @classdesc This class is used for fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions.
  */
 
 /**
@@ -57,11 +57,11 @@ var errors = require('./errors');
 /**
  * @static
  * @function create
- * @description Creates a DataCollector instance. Requires advanced fraud protection to be enabled in the Braintree gateway. Contact our [support team](mailto:support@braintreepayments.com) to configure your Kount ID.
+ * @description Creates a DataCollector instance.
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled.
+ * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled. Before using the `kount` option, make sure you have enabled advanced fraud protection in the Braintree gateway. To use your own Kount ID, contact our support team ([support@braintreepayments.com](mailto:support@braintreepayments.com) or [877.434.2894](tel:877.434.2894)).
  *
  * **Note:** the data sent to Kount is asynchronous and may not have completed by the time the data collector create call is complete. In most cases, this will not matter, but if you create the data collector instance and immediately navigate away from the page, the device information may fail to be sent to Kount.
  * @param {boolean} [options.paypal] If true, PayPal fraud data collection is enabled.

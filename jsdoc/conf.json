@@ -9,6 +9,6 @@
   },
   "plugins": ["version-interpolator-plugin", "plugins/markdown"],
   "source": {
-    "excludePattern": "(ideal)"
+    "excludePattern": "(beta-component-here)"
   }
 }

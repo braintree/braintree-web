@@ -79,22 +79,14 @@ confirm_error_code_documentation() {
 }
 
 reinstall_dependencies() {
-  echo -en "${YELLOW}Reinstall${RESET} npm/bundle dependencies (y/n)? "
+  echo -en "${YELLOW}Reinstall${RESET} npm dependencies (y/n)? "
   read message
 
   if [[ "$message" =~ $YES ]]; then
-    npm cache clean
-    echo '✔ npm cache cleared'
-
     rm -rf ./node_modules
     echo '✔ npm modules removed'
 
     npm install
-
-    if [ -e Gemfile ]; then
-      gem install bundler
-      bundle install
-    fi
   fi
 }
 

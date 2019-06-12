@@ -7,7 +7,7 @@ var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
 var frameName = require('./get-frame-name');
 var assembleIFrames = require('./assemble-iframes');
 var Client = require('../../client/client');
-var injectWithAllowList = require('inject-stylesheet').injectWithWhitelist; // TODO update inject-stylesheet to alias method name
+var injectWithAllowList = require('inject-stylesheet').injectWithAllowlist;
 var CreditCardForm = require('./models/credit-card-form').CreditCardForm;
 var FieldComponent = require('./components/field-component').FieldComponent;
 var analytics = require('../../lib/analytics');
@@ -18,6 +18,7 @@ var events = constants.events;
 var allowedStyles = constants.allowedStyles;
 var tokenizationErrorCodes = constants.tokenizationErrorCodes;
 var formatCardRequestData = require('./format-card-request-data');
+var normalizeCardType = require('./normalize-card-type');
 var classList = require('@braintree/class-list');
 
 var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
@@ -357,9 +358,14 @@ function orchestrate(configuration) {
       resolve(new Client(configurationFromMerchantPage));
     });
   }).then(function (client) {
-    if (configuration.fields.number && configuration.fields.number.rejectUnsupportedCards) {
+    var supportedCardBrands;
+    var numberConfig = configuration.fields.number;
+
+    if (numberConfig && (numberConfig.supportedCardBrands || numberConfig.rejectUnsupportedCards)) {
+      supportedCardBrands = getSupportedCardBrands(client, numberConfig.supportedCardBrands);
+
       // NEXT_MAJOR_VERSION rejecting unsupported cards should be the default behavior after the next major revision
-      cardForm.setSupportedCardTypes(client.getConfiguration().gatewayConfiguration.creditCards.supportedCardTypes);
+      cardForm.setSupportedCardTypes(supportedCardBrands);
       // force a validation now that the validation rules have changed
       cardForm.validateField('number');
     }
@@ -385,6 +391,28 @@ function orchestrate(configuration) {
   global.cardForm = cardForm;
 
   return clientPromise;
+}
+
+function getSupportedCardBrands(client, merchantConfiguredCardBrands) {
+  var supportedCardBrands;
+  var gwConfiguration = client.getConfiguration().gatewayConfiguration.creditCards;
+  var gwSupportedCards = gwConfiguration && gwConfiguration.supportedCardTypes.map(normalizeCardType);
+
+  // when using the forward api, there may not be
+  // a merchant configuration for credit cards
+  gwSupportedCards = gwSupportedCards || [];
+  merchantConfiguredCardBrands = merchantConfiguredCardBrands || {};
+
+  supportedCardBrands = gwSupportedCards.reduce(function (brands, cardBrand) {
+    brands[cardBrand] = true;
+
+    return brands;
+  }, {});
+  Object.keys(merchantConfiguredCardBrands).forEach(function (brand) {
+    supportedCardBrands[normalizeCardType(brand)] = merchantConfiguredCardBrands[brand];
+  });
+
+  return supportedCardBrands;
 }
 
 function mergeCardData(cardData, options) {

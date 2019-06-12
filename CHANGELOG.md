@@ -1,7 +1,11 @@
 CHANGELOG
 =========
-## unreleased
-* Add `title` and `aria-hidden` attributes to iframes created within `frameService` for accessibility
+## 3.46.0
+* Update restricted-input to v2.0.1
+* Update inject-stylesheet to v2.0.0
+* Add `title` and `aria-hidden` attributes to iframes created within `frameService` for accessibility (#434, thanks @TomPridham)
+* Hosted Fields
+  * Add configuration to validate specific card brands, overriding merchant control panel settings
 
 ## 3.45.0
 * Update @braintree/wrap-promise to v2.0.0 - errors thrown inside developer supplied callback functions will log to the console

@@ -65,7 +65,7 @@ npm run build
 For a single component
 
 ```
-npm run build -- <component>
+npm run build <component>
 ```
 
 This will create the following `dist` structure:
@@ -131,7 +131,7 @@ npm run lint
 For a single component
 
 ```
-npm run lint -- <component>
+npm run lint <component>
 ```
 
 ## Testing
@@ -145,7 +145,13 @@ npm test
 For a single component
 
 ```
-npm test -- <component>
+npm test <component>
+```
+
+For the lib directory
+
+```
+npm test lib
 ```
 
 ## Generating Documentation

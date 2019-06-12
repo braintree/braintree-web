@@ -71,6 +71,17 @@ describe('HostedFields', function () {
       expect(analytics.sendEvent).to.be.calledWith(hf._clientPromise, 'custom.hosted-fields.initialized');
     });
 
+    it('appends `deferred-client` to initailized analytics event if client is deferred', function () {
+      var hf;
+
+      delete this.defaultConfiguration.client;
+      this.defaultConfiguration.authorization = 'auth';
+
+      hf = new HostedFields(this.defaultConfiguration);
+
+      expect(analytics.sendEvent).to.be.calledWith(hf._clientPromise, 'custom.hosted-fields.initialized.deferred-client');
+    });
+
     it('errors if no fields are provided', function () {
       var error;
 

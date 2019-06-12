@@ -125,7 +125,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @function
  * @param {string} event The name of the event to which you are subscribing.
  * @param {function} handler A callback to handle the event.
- * @description Subscribes a handler function to a named event. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, or {@link HostedFields#event:validityChange|validityChange}. Events will emit a {@link HostedFields~stateObject|stateObject}.
+ * @description Subscribes a handler function to a named event. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, {@link HostedFields#event:validityChange|validityChange}, or {@link HostedFields#event:inputSubmitRequest|inputSubmitRequest}. Events will emit a {@link HostedFields~stateObject|stateObject}.
  * @example
  * <caption>Listening to a Hosted Field event, in this case 'focus'</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -417,7 +417,12 @@ function HostedFields(options) {
     self._bus.teardown();
   });
 
-  analytics.sendEvent(this._clientPromise, 'custom.hosted-fields.initialized');
+  // NEXT_MAJOR_VERSION analytics events should have present tense verbs
+  if (!options.client) {
+    analytics.sendEvent(this._clientPromise, 'custom.hosted-fields.initialized.deferred-client');
+  } else {
+    analytics.sendEvent(this._clientPromise, 'custom.hosted-fields.initialized');
+  }
 
   Object.keys(options.fields).forEach(function (key) {
     var field, container, frame, frameReadyPromise;
