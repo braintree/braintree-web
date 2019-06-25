@@ -1,0 +1,9 @@
+language: node_js
+notifications:
+  email: false
+  slack:
+    on_success: change
+    on_failure: always
+    on_pull_requests: false
+    rooms:
+      - secure: BjUZCy02pe1jEbYsKe2JssTGRM7yMsP8bzPMppiKM3H6WQOHhMxjsdKMfgoOpLv3gFI/dLebO+L89e6pGle8LJl+z8mWuNTIzoacM9USG8R/GIUpZguAI5HWL8AKJIlRO5Iu2eA13jLpI7C/I2g488mKU44Tc1XDC2d1BvTxdkA=
