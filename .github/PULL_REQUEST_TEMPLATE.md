@@ -1,6 +1,3 @@
-| [Jira ticket]() |
-|---|
-
 ### Summary
 
 
