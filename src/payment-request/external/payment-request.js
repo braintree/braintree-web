@@ -10,7 +10,7 @@ var uuid = require('../../lib/vendor/uuid');
 var useMin = require('../../lib/use-min');
 var methods = require('../../lib/methods');
 var Promise = require('../../lib/promise');
-var EventEmitter = require('../../lib/event-emitter');
+var EventEmitter = require('@braintree/event-emitter');
 var BraintreeError = require('../../lib/braintree-error');
 var VERSION = process.env.npm_package_version;
 var constants = require('../shared/constants');
@@ -67,6 +67,26 @@ var wrapPromise = require('@braintree/wrap-promise');
  *   paymentRequestInstance.on('shippingAddressChange', function (event) {
  *     console.log(event.target.shippingAddress);
  *   });
+ * });
+ * @returns {void}
+ */
+
+/**
+ * @name PaymentRequestComponent#off
+ * @function
+ * @param {string} event The name of the event to which you are unsubscribing.
+ * @param {function} handler The callback for the event you are unsubscribing from.
+ * @description Unsubscribes the handler function to a named event.
+ * @example
+ * <caption>Subscribing and then unsubscribing from a Payment Request event, in this case 'shippingAddressChange'</caption>
+ * braintree.paymentRequest.create({ ... }, function (createErr, paymentRequestInstance) {
+ *   var callback = function (event) {
+ *     console.log(event.target.shippingAddress);
+ *   };
+ *   paymentRequestInstance.on('shippingAddressChange', callback);
+ *
+ *   // later on
+ *   paymentRequestInstance.off('shippingAddressChange', callback);
  * });
  * @returns {void}
  */
@@ -162,9 +182,7 @@ function PaymentRequestComponent(options) {
   this._bus = new Bus({channel: this._componentId});
 }
 
-PaymentRequestComponent.prototype = Object.create(EventEmitter.prototype, {
-  constructor: PaymentRequestComponent
-});
+EventEmitter.createChild(PaymentRequestComponent);
 
 PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = function () {
   var configuration = this._client.getConfiguration();

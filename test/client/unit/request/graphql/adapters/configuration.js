@@ -55,7 +55,10 @@ describe('GraphQL Configuration', function () {
                 'VISA'
               ],
               challenges: ['CVV'],
-              threeDSecureEnabled: false
+              threeDSecureEnabled: false,
+              threeDSecure: {
+                cardinalAuthenticationJWT: '3ds-jwt'
+              }
             },
             supportedFeatures: ['TOKENIZE_CREDIT_CARDS'],
             applePayWeb: {
@@ -126,6 +129,9 @@ describe('GraphQL Configuration', function () {
       var configurationResponse = {
         challenges: ['cvv'],
         threeDSecureEnabled: false,
+        threeDSecure: {
+          cardinalAuthenticationJWT: '3ds-jwt'
+        },
         analytics: {
           url: 'https://localhost/analytics'
         },

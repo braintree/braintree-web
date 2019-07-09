@@ -17,7 +17,7 @@ var uuid = require('../../lib/vendor/uuid');
 var findParentTags = require('../shared/find-parent-tags');
 var browserDetection = require('../shared/browser-detection');
 var events = constants.events;
-var EventEmitter = require('../../lib/event-emitter');
+var EventEmitter = require('@braintree/event-emitter');
 var injectFrame = require('./inject-frame');
 var analytics = require('../../lib/analytics');
 var allowedFields = constants.allowedFields;
@@ -132,6 +132,26 @@ var wrapPromise = require('@braintree/wrap-promise');
  *   hostedFieldsInstance.on('focus', function (event) {
  *     console.log(event.emittedBy, 'has been focused');
  *   });
+ * });
+ * @returns {void}
+ */
+
+/**
+ * @name HostedFields#off
+ * @function
+ * @param {string} event The name of the event to which you are unsubscribing.
+ * @param {function} handler The callback for the event you are unsubscribing from.
+ * @description Unsubscribes the handler function to a named event.
+ * @example
+ * <caption>Subscribing and then unsubscribing from a Hosted Field event, in this case 'focus'</caption>
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   var callback = function (event) {
+ *     console.log(event.emittedBy, 'has been focused');
+ *   };
+ *   hostedFieldsInstance.on('focus', callback);
+ *
+ *   // later on
+ *   hostedFieldsInstance.off('focus', callback);
  * });
  * @returns {void}
  */
@@ -366,10 +386,11 @@ function HostedFields(options) {
   var failureTimeout, clientConfig, assetsUrl, isDebug, hostedFieldsUrl;
   var self = this;
   var fields = {};
-  var busOptions = assign({}, options);
   var frameReadyPromiseResolveFunctions = {};
   var frameReadyPromises = [];
   var componentId = uuid();
+
+  this._merchantConfigurationOptions = assign({}, options);
 
   if (options.client) {
     clientConfig = options.client.getConfiguration();
@@ -436,16 +457,22 @@ function HostedFields(options) {
     }
 
     field = options.fields[key];
+    // NEXT_MAJOR_VERSION remove selector as an option
+    // and simply make the API take a container
+    container = field.container || field.selector;
 
-    container = document.querySelector(field.selector);
+    if (typeof container === 'string') {
+      container = document.querySelector(container);
+    }
 
-    if (!container) {
+    if (!container || container.nodeType !== 1) {
       throw new BraintreeError({
         type: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.type,
         code: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.code,
         message: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.message,
         details: {
           fieldSelector: field.selector,
+          fieldContainer: field.container,
           fieldKey: key
         }
       });
@@ -456,6 +483,7 @@ function HostedFields(options) {
         message: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.message,
         details: {
           fieldSelector: field.selector,
+          fieldContainer: field.container,
           fieldKey: key
         }
       });
@@ -529,14 +557,14 @@ function HostedFields(options) {
     }, 0);
   }.bind(this));
 
-  busOptions.orderedFields = fieldsDOMOrder(this._state.fields);
+  this._merchantConfigurationOptions.orderedFields = fieldsDOMOrder(this._state.fields);
 
-  if (busOptions.styles) {
-    Object.keys(busOptions.styles).forEach(function (selector) {
-      var className = busOptions.styles[selector];
+  if (this._merchantConfigurationOptions.styles) {
+    Object.keys(this._merchantConfigurationOptions.styles).forEach(function (selector) {
+      var className = self._merchantConfigurationOptions.styles[selector];
 
       if (typeof className === 'string') {
-        busOptions.styles[selector] = getStylesFromClass(className);
+        self._merchantConfigurationOptions.styles[selector] = getStylesFromClass(className);
       }
     });
   }
@@ -560,7 +588,7 @@ function HostedFields(options) {
     var reply = results[0];
 
     clearTimeout(failureTimeout);
-    reply(busOptions);
+    reply(self._merchantConfigurationOptions);
     self._emit('ready');
   });
 
@@ -613,9 +641,7 @@ function HostedFields(options) {
   });
 }
 
-HostedFields.prototype = Object.create(EventEmitter.prototype, {
-  constructor: HostedFields
-});
+EventEmitter.createChild(HostedFields);
 
 HostedFields.prototype._setupLabelFocus = function (type, container) {
   var labels, i;
@@ -687,7 +713,7 @@ HostedFields.prototype.teardown = function () {
  * Tokenizes fields and returns a nonce payload.
  * @public
  * @param {object} [options] All tokenization options for the Hosted Fields component.
- * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID.
+ * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID. Note: merchants using Advanced Fraud Tools should not use this option, as device data will not be included.
  * @param {array} [options.fieldsToTokenize] By default, all fields will be tokenized. You may specify which fields specifically you wish to tokenize with this property. Valid options are `'number'`, `'cvv'`, `'expirationDate'`, `'expirationMonth'`, `'expirationYear'`, `'postalCode'`.
  * @param {string} [options.cardholderName] When supplied, the cardholder name to be tokenized with the contents of the fields.
  * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.
@@ -986,6 +1012,55 @@ HostedFields.prototype.setAttribute = function (options) {
   }
 
   return Promise.resolve();
+};
+
+/**
+ * Sets the month options for the expiration month field when presented as a select element.
+ *
+ * @public
+ * @param {array} options An array of 12 entries corresponding to the 12 months.
+ * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the options are updated succesfully. Errors if expirationMonth is not configured on the Hosted Fields instance or if the expirationMonth field is not configured to be a select input.
+ *
+ * @example <caption>Update the month options to spanish</caption>
+ * hostedFieldsInstance.setMonthOptions([
+ *   '01 - enero',
+ *   '02 - febrero',
+ *   '03 - marzo',
+ *   '04 - abril',
+ *   '05 - mayo',
+ *   '06 - junio',
+ *   '07 - julio',
+ *   '08 - agosto',
+ *   '09 - septiembre',
+ *   '10 - octubre',
+ *   '11 - noviembre',
+ *   '12 - diciembre'
+ * ]);
+ *
+ * @returns {Promise|void} Returns a promise if no callback is provided.
+ */
+HostedFields.prototype.setMonthOptions = function (options) {
+  var self = this;
+  var merchantOptions = this._merchantConfigurationOptions.fields;
+  var errorMessage;
+
+  if (!merchantOptions.expirationMonth) {
+    errorMessage = 'Expiration month field must exist to use setMonthOptions.';
+  } else if (!merchantOptions.expirationMonth.select) {
+    errorMessage = 'Expiration month field must be a select element.';
+  }
+
+  if (errorMessage) {
+    return Promise.reject(new BraintreeError({
+      type: errors.HOSTED_FIELDS_FIELD_PROPERTY_INVALID.type,
+      code: errors.HOSTED_FIELDS_FIELD_PROPERTY_INVALID.code,
+      message: errorMessage
+    }));
+  }
+
+  return new Promise(function (resolve) {
+    self._bus.emit(events.SET_MONTH_OPTIONS, options, resolve);
+  });
 };
 
 /**

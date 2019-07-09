@@ -492,6 +492,7 @@ describe('Client', function () {
       var client;
 
       conf.authorization = fake.clientToken;
+      conf.authorizationFingerprint = 'encoded_auth_fingerprint';
 
       client = new Client(conf);
 

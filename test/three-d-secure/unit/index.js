@@ -51,6 +51,56 @@ describe('three-d-secure.create', function () {
     });
   });
 
+  it('sets up songbird when v2 is passed', function (done) {
+    var client = this.client;
+
+    this.configuration.gatewayConfiguration.threeDSecure = {
+      cardinalAuthenticationJWT: 'some-jwt'
+    };
+
+    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
+
+    threeDSecure.create({
+      client: client,
+      version: 2
+    }, function () {
+      expect(ThreeDSecure.prototype._setupSongbird).to.be.calledOnce;
+      done();
+    });
+  });
+
+  it('does not set up songbird when v2 is not passed', function (done) {
+    var client = this.client;
+
+    this.configuration.gatewayConfiguration.threeDSecure = {
+      cardinalAuthenticationJWT: 'some-jwt'
+    };
+    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
+
+    threeDSecure.create({
+      client: client
+    }, function () {
+      expect(ThreeDSecure.prototype._setupSongbird).to.not.be.called;
+      done();
+    });
+  });
+
+  it('errors if merchant does not have a jwt to setup songbird', function (done) {
+    var client = this.client;
+
+    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
+    this.configuration.gatewayConfiguration.threeDSecure = {};
+
+    threeDSecure.create({
+      client: client,
+      version: 2
+    }, function (err) {
+      expect(err.message).to.equal('3D Secure version 2 is not enabled for this merchant.');
+      expect(ThreeDSecure.prototype._setupSongbird).to.not.be.called;
+      done();
+    });
+  });
+
   it('can create with an authorization instead of a client', function (done) {
     threeDSecure.create({
       authorization: fake.clientToken,
@@ -132,7 +182,7 @@ describe('three-d-secure.create', function () {
 
     threeDSecure.create({client: client}, function (err) {
       expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'threedsecure.initialized');
+      expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialized');
 
       done();
     });

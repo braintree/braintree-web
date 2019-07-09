@@ -1,6 +1,7 @@
 'use strict';
 
 var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
+var ExpirationSplitInput = require('../../../../../src/hosted-fields/internal/components/expiration-split-input').ExpirationSplitInput;
 var ExpirationMonthInput = require('../../../../../src/hosted-fields/internal/components/expiration-month-input').ExpirationMonthInput;
 var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
 
@@ -370,6 +371,272 @@ describe('Expiration Month Input', function () {
 
     it('has autocomplete cc-exp-month', function () {
       expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-exp-month');
+    });
+  });
+
+  describe('addBusEventListeners', function () {
+    beforeEach(function () {
+      this.sandbox.stub(ExpirationSplitInput.prototype, 'addBusEventListeners');
+    });
+
+    it('calls parent class method', function () {
+      new ExpirationMonthInput({ // eslint-disable-line no-new
+        type: 'expirationMonth',
+        model: new CreditCardForm({
+          fields: {
+            expirationMonth: {
+              selector: '#expiration-month'
+            }
+          }
+        })
+      });
+
+      expect(ExpirationSplitInput.prototype.addBusEventListeners).to.be.calledOnce;
+    });
+
+    it('sets up listener for SET_MONTH_OPTIONS if expiration month is a select', function () {
+      new ExpirationMonthInput({ // eslint-disable-line no-new
+        type: 'expirationMonth',
+        model: new CreditCardForm({
+          fields: {
+            expirationMonth: {
+              selector: '#expiration-month',
+              select: true
+            }
+          }
+        })
+      });
+
+      expect(global.bus.on).to.be.calledWith('hosted-fields:SET_MONTH_OPTIONS');
+    });
+
+    it('does not set up listener for SET_MONTH_OPTIONS if expiration month is not a select', function () {
+      new ExpirationMonthInput({ // eslint-disable-line no-new
+        type: 'expirationMonth',
+        model: new CreditCardForm({
+          fields: {
+            expirationMonth: {
+              selector: '#expiration-month'
+            }
+          }
+        })
+      });
+
+      expect(global.bus.on).to.not.be.calledWith('hosted-fields:SET_MONTH_OPTIONS');
+    });
+
+    it('renames the options when SET_MONTH_OPTIONS is emitted', function (done) {
+      var callback;
+      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+        type: 'expirationMonth',
+        model: new CreditCardForm({
+          fields: {
+            expirationMonth: {
+              selector: '#expiration-month',
+              select: {
+                options: [
+                  'January',
+                  'February',
+                  'March',
+                  'April',
+                  'May',
+                  'June',
+                  'July',
+                  'August',
+                  'September',
+                  'October',
+                  'November',
+                  'December'
+                ]
+              }
+            }
+          }
+        })
+      });
+
+      expect(input.element.querySelectorAll('option')[0].innerText).to.equal('January');
+      expect(input.element.querySelectorAll('option')[11].innerText).to.equal('December');
+
+      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+
+      callback([
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'June',
+        'July',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ], function () {
+        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Jan');
+        expect(input.element.querySelectorAll('option')[11].innerText).to.equal('Dec');
+
+        done();
+      });
+    });
+
+    it('defaults to existing value if passed options are less than the options', function (done) {
+      var callback;
+      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+        type: 'expirationMonth',
+        model: new CreditCardForm({
+          fields: {
+            expirationMonth: {
+              selector: '#expiration-month',
+              select: {
+                options: [
+                  'January',
+                  'February',
+                  'March',
+                  'April',
+                  'May',
+                  'June',
+                  'July',
+                  'August',
+                  'September',
+                  'October',
+                  'November',
+                  'December'
+                ]
+              }
+            }
+          }
+        })
+      });
+
+      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+
+      callback([
+        'Jan'
+      ], function () {
+        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Jan');
+        expect(input.element.querySelectorAll('option')[1].innerText).to.equal('February');
+        expect(input.element.querySelectorAll('option')[11].innerText).to.equal('December');
+
+        done();
+      });
+    });
+
+    it('ignores options beyond the 12th', function (done) {
+      var callback;
+      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+        type: 'expirationMonth',
+        model: new CreditCardForm({
+          fields: {
+            expirationMonth: {
+              selector: '#expiration-month',
+              select: {
+                options: [
+                  'January',
+                  'February',
+                  'March',
+                  'April',
+                  'May',
+                  'June',
+                  'July',
+                  'August',
+                  'September',
+                  'October',
+                  'November',
+                  'December'
+                ]
+              }
+            }
+          }
+        })
+      });
+
+      expect(input.element.querySelectorAll('option')[0].innerText).to.equal('January');
+      expect(input.element.querySelectorAll('option')[11].innerText).to.equal('December');
+
+      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+
+      callback([
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'June',
+        'July',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+        'foo',
+        'bar',
+        'baz'
+      ], function () {
+        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Jan');
+        expect(input.element.querySelectorAll('option')[11].innerText).to.equal('Dec');
+        expect(input.element.querySelectorAll('option')[12]).to.not.exist;
+
+        done();
+      });
+    });
+
+    it('does not override the placeholder if set', function (done) {
+      var callback;
+      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+        type: 'expirationMonth',
+        model: new CreditCardForm({
+          fields: {
+            expirationMonth: {
+              selector: '#expiration-month',
+              placeholder: 'Month',
+              select: {
+                options: [
+                  'January',
+                  'February',
+                  'March',
+                  'April',
+                  'May',
+                  'June',
+                  'July',
+                  'August',
+                  'September',
+                  'October',
+                  'November',
+                  'December'
+                ]
+              }
+            }
+          }
+        })
+      });
+
+      expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Month');
+      expect(input.element.querySelectorAll('option')[1].innerText).to.equal('January');
+      expect(input.element.querySelectorAll('option')[12].innerText).to.equal('December');
+
+      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+
+      callback([
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'June',
+        'July',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ], function () {
+        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Month');
+        expect(input.element.querySelectorAll('option')[1].innerText).to.equal('Jan');
+        expect(input.element.querySelectorAll('option')[12].innerText).to.equal('Dec');
+
+        done();
+      });
     });
   });
 });

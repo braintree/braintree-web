@@ -8,7 +8,7 @@ var events = constants.events;
 var createDeferredClient = require('../../../../src/lib/create-deferred-client');
 var createAssetsUrl = require('../../../..//src/lib/create-assets-url');
 var Destructor = require('../../../../src/lib/destructor');
-var EventEmitter = require('../../../../src/lib/event-emitter');
+var EventEmitter = require('@braintree/event-emitter');
 var BraintreeError = require('../../../../src/lib/braintree-error');
 var Promise = require('../../../../src/lib/promise');
 var fake = require('../../../helpers/fake');
@@ -28,7 +28,7 @@ describe('HostedFields', function () {
       client: this.fakeClient,
       fields: {
         number: {
-          selector: '#number'
+          container: '#number'
         }
       }
     };
@@ -156,9 +156,9 @@ describe('HostedFields', function () {
       document.body.appendChild(expirationDateNode);
 
       configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
+        number: {container: '#number'},
+        cvv: {container: '#cvv'},
+        expirationDate: {container: '#expirationDate'}
       };
       configuration.orderedFields = ['number', 'cvv', 'expirationDate'];
 
@@ -177,6 +177,64 @@ describe('HostedFields', function () {
       frameReadyHandler({field: 'expirationDate'}, replyStub);
     });
 
+    it('can pass DOM node directly as container', function (done) {
+      var instance, frameReadyHandler;
+      var configuration = this.defaultConfiguration;
+      var replyStub = this.sandbox.stub();
+      var cvvNode = document.createElement('div');
+      var numberNode = document.createElement('div');
+      var expirationDateNode = document.createElement('div');
+
+      cvvNode.id = 'cvv';
+      expirationDateNode.id = 'expirationDate';
+      numberNode.id = 'number';
+
+      document.body.appendChild(cvvNode);
+      document.body.appendChild(numberNode);
+      document.body.appendChild(expirationDateNode);
+
+      configuration.fields = {
+        number: {container: numberNode},
+        cvv: {container: cvvNode},
+        expirationDate: {container: expirationDateNode}
+      };
+      configuration.orderedFields = ['number', 'cvv', 'expirationDate'];
+
+      instance = new HostedFields(configuration);
+
+      frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+
+      instance.on('ready', function () {
+        done();
+      });
+
+      frameReadyHandler({field: 'number'}, replyStub);
+      frameReadyHandler({field: 'cvv'}, replyStub);
+      frameReadyHandler({field: 'expirationDate'}, replyStub);
+    });
+
+    it('must pass a DOM node of type 1', function () {
+      var instance, error;
+      var configuration = this.defaultConfiguration;
+      var numberNode = document.createDocumentFragment();
+
+      document.body.appendChild(numberNode);
+
+      configuration.fields = {
+        number: {container: numberNode}
+      };
+
+      try {
+        instance = new HostedFields(configuration);
+      } catch (e) {
+        error = e;
+      }
+
+      expect(instance).to.not.exist;
+      expect(error).to.be.an.instanceof(BraintreeError);
+      expect(error.code).to.equal('HOSTED_FIELDS_INVALID_FIELD_SELECTOR');
+    });
+
     it('subscribes to CARD_FORM_ENTRY_HAS_BEGUN', function () {
       var instance = new HostedFields(this.defaultConfiguration);
 
@@ -191,6 +249,21 @@ describe('HostedFields', function () {
       instance = new HostedFields(this.defaultConfiguration);
 
       expect(analytics.sendEvent).to.be.calledWith(instance._clientPromise, 'hosted-fields.input.started');
+    });
+
+    it('can pass selector instead of container for field', function () {
+      var error;
+
+      this.defaultConfiguration.fields.number.selector = this.defaultConfiguration.fields.number.container;
+      delete this.defaultConfiguration.fields.number.container;
+
+      try {
+        new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).to.not.exist;
     });
 
     it('converts class name to computed style', function (done) {
@@ -241,9 +314,9 @@ describe('HostedFields', function () {
       document.body.appendChild(expirationDateNode);
 
       configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
+        number: {container: '#number'},
+        cvv: {container: '#cvv'},
+        expirationDate: {container: '#expirationDate'}
       };
 
       instance = new HostedFields(configuration);
@@ -278,9 +351,9 @@ describe('HostedFields', function () {
       this.sandbox.stub(HostedFields.prototype, '_setupLabelFocus');
 
       configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
+        number: {container: '#number'},
+        cvv: {container: '#cvv'},
+        expirationDate: {container: '#expirationDate'}
       };
 
       instance = new HostedFields(configuration);
@@ -303,9 +376,9 @@ describe('HostedFields', function () {
       document.body.appendChild(expirationDateNode);
 
       configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
+        number: {container: '#number'},
+        cvv: {container: '#cvv'},
+        expirationDate: {container: '#expirationDate'}
       };
 
       instance = new HostedFields(configuration);
@@ -346,9 +419,9 @@ describe('HostedFields', function () {
       document.body.appendChild(expirationDateNode);
 
       configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
+        number: {container: '#number'},
+        cvv: {container: '#cvv'},
+        expirationDate: {container: '#expirationDate'}
       };
 
       delete configuration.client;
@@ -392,9 +465,9 @@ describe('HostedFields', function () {
       document.body.appendChild(expirationDateNode);
 
       configuration.fields = {
-        number: {selector: '#number'},
-        cvv: {selector: '#cvv'},
-        expirationDate: {selector: '#expirationDate'}
+        number: {container: '#number'},
+        cvv: {container: '#cvv'},
+        expirationDate: {container: '#expirationDate'}
       };
 
       delete configuration.client;
@@ -427,7 +500,7 @@ describe('HostedFields', function () {
       this.fakeContainer.id = 'fakenumbercontainer';
       document.body.appendChild(this.fakeContainer);
       configuration.fields.number = {
-        selector: '#' + this.fakeContainer.id
+        container: '#' + this.fakeContainer.id
       };
 
       this.instance = new HostedFields(configuration);
@@ -886,6 +959,84 @@ describe('HostedFields', function () {
         );
         done();
       }.bind(this));
+    });
+  });
+
+  describe('setMonthOptions', function () {
+    beforeEach(function () {
+      this.defaultConfiguration.fields = {
+        number: {
+          selector: '#number'
+        },
+        expirationMonth: {
+          selector: '#month',
+          select: true
+        }
+      };
+
+      this.monthDiv = document.createElement('div');
+      this.monthDiv.id = 'month';
+      document.body.appendChild(this.monthDiv);
+    });
+
+    it('emits SET_MONTH_OPTIONS event', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance.setMonthOptions(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']);
+
+      expect(instance._bus.emit).to.be.calledWith(events.SET_MONTH_OPTIONS, ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']);
+    });
+
+    it('errors if expirationMonth does not exist', function () {
+      var instance;
+
+      delete this.defaultConfiguration.fields.expirationMonth;
+
+      instance = new HostedFields(this.defaultConfiguration);
+
+      return instance.setMonthOptions(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_PROPERTY_INVALID');
+        expect(err.message).to.equal('Expiration month field must exist to use setMonthOptions.');
+      });
+    });
+
+    it('errors if expirationMonth does not have a select property', function () {
+      var instance;
+
+      delete this.defaultConfiguration.fields.expirationMonth.select;
+
+      instance = new HostedFields(this.defaultConfiguration);
+
+      return instance.setMonthOptions(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_PROPERTY_INVALID');
+        expect(err.message).to.equal('Expiration month field must be a select element.');
+      });
+    });
+
+    it('errors if expirationMonth\'s select property is false', function () {
+      var instance;
+
+      this.defaultConfiguration.fields.expirationMonth.select = false;
+
+      instance = new HostedFields(this.defaultConfiguration);
+
+      return instance.setMonthOptions(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('HOSTED_FIELDS_FIELD_PROPERTY_INVALID');
+        expect(err.message).to.equal('Expiration month field must be a select element.');
+      });
+    });
+
+    it('resolves when bus yields a response', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      instance._bus.emit.yieldsAsync();
+
+      return instance.setMonthOptions(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']).then(function (response) {
+        expect(response).to.not.exist;
+      });
     });
   });
 

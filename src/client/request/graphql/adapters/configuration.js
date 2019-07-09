@@ -112,6 +112,7 @@ function adaptConfigurationResponseBody(body, ctx) {
       supportedCardTypes: mapCardTypes(configuration.creditCard.supportedCardBrands, cardTypeTransforms.creditCard)
     };
     response.threeDSecureEnabled = configuration.creditCard.threeDSecureEnabled;
+    response.threeDSecure = configuration.creditCard.threeDSecure;
   } else {
     response.challenges = [];
     response.creditCards = {

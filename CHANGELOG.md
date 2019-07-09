@@ -1,5 +1,21 @@
 CHANGELOG
 =========
+## 3.47.0
+* Update `asset-loader` to v0.3.1
+* Update `event-emitter` to v0.2.0
+* Data Collector
+  * Pass back invalid options error at beginning of data collector setup
+* Hosted Fields
+  * Add `container` param for field, to pass in CSS selector or a DOM node as field container
+  * Make `selector` param an alias for `container`
+  * Add `off` method for unsubscribing from events without tearing down
+  * Add `setMonthOptions` method to dynamically update options for expiration month's configured as select elements (#393)
+* 3D Secure
+  * Add 3DS version 2 support
+  * Deprecate version 1 flow
+* UnionPay
+  * Fix issue where calling `fetchCapabilities` twice in quick succession causes the subsequent requests to not fire (#441)
+
 ## 3.46.0
 * Update restricted-input to v2.0.1
 * Update inject-stylesheet to v2.0.0

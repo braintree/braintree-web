@@ -132,7 +132,8 @@ constants.events = enumerate([
   'REMOVE_ATTRIBUTE',
   'CLEAR_FIELD',
   'AUTOFILL_EXPIRATION_DATE',
-  'SET_MESSAGE'
+  'SET_MESSAGE',
+  'SET_MONTH_OPTIONS'
 ], 'hosted-fields:');
 
 module.exports = constants;

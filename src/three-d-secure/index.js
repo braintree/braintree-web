@@ -19,6 +19,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
+ * @param {number} [options.version=1] The version of 3DS to use. Pass in 2 to use 3DS 2.0.
  * @param {callback} [callback] The second argument, `data`, is the {@link ThreeDSecure} instance. If no callback is provided, it returns a promise that resolves the {@link ThreeDSecure} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
@@ -38,12 +39,13 @@ function create(options) {
       name: name
     });
   }).then(function (client) {
-    var error, isProduction;
+    var error, isProduction, instance;
     var config = client.getConfiguration();
+    var gwConfig = config.gatewayConfiguration;
 
     options.client = client;
 
-    if (!config.gatewayConfiguration.threeDSecureEnabled) {
+    if (!gwConfig.threeDSecureEnabled) {
       error = errors.THREEDS_NOT_ENABLED;
     }
 
@@ -51,19 +53,29 @@ function create(options) {
       error = errors.THREEDS_CAN_NOT_USE_TOKENIZATION_KEY;
     }
 
-    isProduction = config.gatewayConfiguration.environment === 'production';
+    isProduction = gwConfig.environment === 'production';
 
     if (isProduction && !isHTTPS()) {
       error = errors.THREEDS_HTTPS_REQUIRED;
+    }
+
+    if (options.version === 2 && !gwConfig.threeDSecure.cardinalAuthenticationJWT) {
+      error = errors.THREEDS_NOT_ENABLED_FOR_V2;
     }
 
     if (error) {
       return Promise.reject(new BraintreeError(error));
     }
 
-    analytics.sendEvent(options.client, 'threedsecure.initialized');
+    analytics.sendEvent(options.client, 'three-d-secure.initialized');
 
-    return new ThreeDSecure(options);
+    instance = new ThreeDSecure(options);
+
+    if (options.version === 2) {
+      instance._setupSongbird({isProduction: isProduction, loggingEnabled: options.loggingEnabled});
+    }
+
+    return instance;
   });
 }
 

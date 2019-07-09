@@ -13,7 +13,8 @@ var VERSION = process.env.npm_package_version;
 /**
  * Fields used in {@link module:braintree-web/hosted-fields~fieldOptions fields options}
  * @typedef {object} field
- * @property {string} selector A CSS selector to find the container where the hosted field will be inserted.
+ * @property {string} selector Deprecated: Now an alias for `options.container`.
+ * @property {string|HTMLElement} container A DOM node or CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
  * @property {string} [type] Will be used as the `type` attribute of the input. To mask `cvv` input, for instance, `type: "password"` can be used.
  * @property {boolean} [formatInput=true] Enable or disable automatic formatting on this field.
@@ -126,14 +127,14 @@ var VERSION = process.env.npm_package_version;
  *   },
  *   fields: {
  *     number: {
- *       selector: '#card-number'
+ *       container: '#card-number'
  *     },
  *     cvv: {
- *       selector: '#cvv',
+ *       container: '#cvv',
  *       placeholder: '•••'
  *     },
  *     expirationDate: {
- *       selector: '#expiration-date'
+ *       container: '#expiration-date'
  *     }
  *   }
  * }, callback);
@@ -164,7 +165,7 @@ var VERSION = process.env.npm_package_version;
  *   },
  *   fields: {
  *     number: {
- *       selector: '#card-number'
+ *       container: '#card-number'
  *     },
  *     // etc...
  *   }
@@ -180,17 +181,17 @@ var VERSION = process.env.npm_package_version;
  *   },
  *   fields: {
  *     number: {
- *       selector: '#card-number',
+ *       container: '#card-number',
  *       // Credit card formatting is not currently supported
  *       // with RTL languages, so we need to turn it off for the number input
  *       formatInput: false
  *     },
  *     cvv: {
- *       selector: '#cvv',
+ *       container: '#cvv',
  *       placeholder: '•••'
  *     },
  *     expirationDate: {
- *       selector: '#expiration-date',
+ *       container: '#expiration-date',
  *       type: 'month'
  *     }
  *   }
@@ -201,7 +202,7 @@ var VERSION = process.env.npm_package_version;
  *   fields: {
  *     // Only add the `cvv` option.
  *     cvv: {
- *       selector: '#cvv',
+ *       container: '#cvv',
  *       placeholder: '•••'
  *     }
  *   }
@@ -218,11 +219,11 @@ var VERSION = process.env.npm_package_version;
  *   client: clientInstance,
  *   fields: {
  *     expirationMonth: {
- *       selector: '#expiration-month',
+ *       container: '#expiration-month',
  *       prefill: storedCreditCardInformation.month
  *     },
  *     expirationYear: {
- *       selector: '#expiration-year',
+ *       container: '#expiration-year',
  *       prefill: storedCreditCardInformation.year
  *     }
  *   }
@@ -232,18 +233,18 @@ var VERSION = process.env.npm_package_version;
  *   client: clientInstance,
  *   fields: {
  *     number: {
- *       selector: '#card-number',
+ *       container: '#card-number',
  *       supportedCardBrands: {
  *         visa: false, // prevents Visas from showing up as valid even when the Braintree control panel is configured to allow them
  *         'diners-club': true // allow Diners Club cards to be valid (processed as Discover cards on the Braintree backend)
  *       }
  *     },
  *     cvv: {
- *       selector: '#cvv',
+ *       container: '#cvv',
  *       placeholder: '•••'
  *     },
  *     expirationDate: {
- *       selector: '#expiration-date',
+ *       container: '#expiration-date',
  *       type: 'month'
  *     }
  *   },
@@ -279,10 +280,10 @@ module.exports = {
    * var canFormat = braintree.hostedFields.supportsInputFormatting();
    * var fields = {
    *   number: {
-   *     selector: '#card-number'
+   *     container: '#card-number'
    *   },
    *   cvv: {
-   *     selector: '#cvv'
+   *     container: '#cvv'
    *   }
    * };
    *

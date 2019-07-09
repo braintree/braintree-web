@@ -11,6 +11,9 @@ var CONFIGURATION_QUERY = 'query ClientConfiguration { ' +
 '      supportedCardBrands ' +
 '      challenges ' +
 '      threeDSecureEnabled ' +
+'      threeDSecure { ' +
+'        cardinalAuthenticationJWT ' +
+'      } ' +
 '    } ' +
 '    applePayWeb { ' +
 '      countryCode ' +

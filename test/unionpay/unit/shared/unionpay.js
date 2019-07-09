@@ -1,5 +1,6 @@
 'use strict';
 
+var Bus = require('../../../../src/lib/bus');
 var Promise = require('../../../../src/lib/promise');
 var analytics = require('../../../../src/lib/analytics');
 var UnionPay = require('../../../../src/unionpay/shared/unionpay');
@@ -208,9 +209,7 @@ describe('UnionPay', function () {
               done();
             }
           },
-          _initializeHostedFields: function (callback) {
-            callback();
-          }
+          _initializeHostedFields: this.sandbox.stub().resolves()
         }, options, errback);
       });
 
@@ -226,6 +225,45 @@ describe('UnionPay', function () {
           expect(err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID');
           expect(err.message).to.equal('Found an invalid Hosted Fields instance. Please use a valid Hosted Fields instance.');
           done();
+        });
+      });
+
+      it('can run multiple fetchCapabilities calls at once', function () {
+        var replySpy = this.sandbox.spy();
+        var canEmit = false;
+        var hostedFieldsInstance = {
+          _bus: {}
+        };
+        var options = {hostedFields: hostedFieldsInstance};
+        var up = new UnionPay({
+          client: this.client
+        });
+
+        this.sandbox.stub(document.body, 'appendChild');
+        Bus.prototype.emit.callsFake(function (_, __, cb) {
+          if (canEmit) {
+            cb({
+              payload: {}
+            });
+          }
+        });
+        Bus.prototype.on.callsFake(function (_, cb) {
+          setTimeout(function () {
+            canEmit = true;
+
+            cb(replySpy);
+          }, 100);
+        });
+
+        return Promise.all([
+          up.fetchCapabilities(options),
+          up.fetchCapabilities(options),
+          up.fetchCapabilities(options)
+        ]).then(function (result) {
+          expect(result.length).to.equal(3);
+
+          expect(replySpy).to.be.calledOnce;
+          expect(document.body.appendChild).to.be.calledOnce;
         });
       });
     });
@@ -740,9 +778,7 @@ describe('UnionPay', function () {
               done();
             }
           },
-          _initializeHostedFields: function (callback) {
-            callback();
-          }
+          _initializeHostedFields: this.sandbox.stub().resolves()
         }, options, errback);
       });
 
@@ -1333,9 +1369,7 @@ describe('UnionPay', function () {
               done();
             }
           },
-          _initializeHostedFields: function (callback) {
-            callback();
-          }
+          _initializeHostedFields: this.sandbox.stub().resolves()
         }, options, noop);
       });
 

@@ -1,6 +1,5 @@
 'use strict';
 
-var parallel = require('async/parallel');
 var Destructor = require('../../../src/lib/destructor');
 
 describe('Destructor', function () {
@@ -85,25 +84,28 @@ describe('Destructor', function () {
 
     it('calls supplied callback with an error when calling teardown twice if already in progress', function (done) {
       var destructor = new Destructor();
+      var firstWasCalled = false;
 
       destructor.registerFunctionForTeardown(function (cb) {
         setTimeout(cb, 10);
       });
 
-      parallel([
-        function (next) {
-          destructor.teardown(function (err) {
-            expect(err).to.equal(null);
-            next();
-          });
-        },
-        function (next) {
-          destructor.teardown(function (err) {
-            expect(err).to.be.an.instanceof(Error);
-            next();
-          });
-        }
-      ], done);
+      setTimeout(function () {
+        destructor.teardown(function (err) {
+          expect(err).to.equal(null);
+          firstWasCalled = true;
+        });
+      }, 0);
+      setTimeout(function () {
+        destructor.teardown(function (err) {
+          expect(err).to.be.an.instanceof(Error);
+
+          setTimeout(function () {
+            expect(firstWasCalled).to.equal(true);
+            done();
+          }, 11);
+        });
+      }, 0);
     });
   });
 });

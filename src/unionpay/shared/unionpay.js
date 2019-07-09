@@ -89,8 +89,8 @@ UnionPay.prototype.fetchCapabilities = function (options) {
       return Promise.reject(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
     }
 
-    return new Promise(function (resolve, reject) {
-      self._initializeHostedFields(function () {
+    return self._initializeHostedFields().then(function () {
+      return new Promise(function (resolve, reject) {
         self._bus.emit(events.HOSTED_FIELDS_FETCH_CAPABILITIES, {hostedFields: hostedFields}, function (response) {
           if (response.err) {
             reject(new BraintreeError(response.err));
@@ -151,7 +151,7 @@ UnionPay.prototype.enroll = function (options) {
     }
 
     return new Promise(function (resolve, reject) {
-      self._initializeHostedFields(function () {
+      self._initializeHostedFields().then(function () {
         self._bus.emit(events.HOSTED_FIELDS_ENROLL, {hostedFields: hostedFields, mobile: mobile}, function (response) {
           if (response.err) {
             reject(new BraintreeError(response.err));
@@ -319,7 +319,7 @@ UnionPay.prototype.tokenize = function (options) {
     }
 
     return new Promise(function (resolve, reject) {
-      self._initializeHostedFields(function () {
+      self._initializeHostedFields().then(function () {
         self._bus.emit(events.HOSTED_FIELDS_TOKENIZE, options, function (response) {
           if (response.err) {
             reject(new BraintreeError(response.err));
@@ -355,37 +355,40 @@ UnionPay.prototype.teardown = function () {
   return Promise.resolve();
 };
 
-UnionPay.prototype._initializeHostedFields = function (callback) {
+UnionPay.prototype._initializeHostedFields = function () {
   var assetsUrl, isDebug;
   var componentId = uuid();
+  var self = this;
 
-  if (this._bus) {
-    callback();
-
-    return;
+  if (this._hostedFieldsInitializePromise) {
+    return this._hostedFieldsInitializePromise;
   }
 
-  assetsUrl = this._options.client.getConfiguration().gatewayConfiguration.assetsUrl;
-  isDebug = this._options.client.getConfiguration().isDebug;
+  this._hostedFieldsInitializePromise = new Promise(function (resolve) {
+    assetsUrl = self._options.client.getConfiguration().gatewayConfiguration.assetsUrl;
+    isDebug = self._options.client.getConfiguration().isDebug;
 
-  this._bus = new Bus({
-    channel: componentId,
-    merchantUrl: location.href
+    self._bus = new Bus({
+      channel: componentId,
+      merchantUrl: location.href
+    });
+    self._hostedFieldsFrame = iFramer({
+      name: constants.HOSTED_FIELDS_FRAME_NAME + '_' + componentId,
+      src: assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame' + useMin(isDebug) + '.html',
+      height: 0,
+      width: 0
+    });
+
+    self._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
+      reply(self._options.client);
+
+      resolve();
+    });
+
+    document.body.appendChild(self._hostedFieldsFrame);
   });
-  this._hostedFieldsFrame = iFramer({
-    name: constants.HOSTED_FIELDS_FRAME_NAME + '_' + componentId,
-    src: assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame' + useMin(isDebug) + '.html',
-    height: 0,
-    width: 0
-  });
 
-  this._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
-    reply(this._options.client);
-
-    callback();
-  }.bind(this));
-
-  document.body.appendChild(this._hostedFieldsFrame);
+  return this._hostedFieldsInitializePromise;
 };
 
 module.exports = wrapPromise.wrapPrototype(UnionPay);

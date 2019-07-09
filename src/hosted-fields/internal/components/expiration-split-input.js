@@ -47,6 +47,8 @@ ExpirationSplitInput.prototype.constructElement = function () {
 ExpirationSplitInput.prototype.createPlaceholderOption = function (placeholder) {
   var firstOption = document.createElement('option');
 
+  this._hasPlacecholder = true;
+
   firstOption.value = '';
   firstOption.innerHTML = sanitizeHtml(placeholder);
   firstOption.setAttribute('selected', 'selected');

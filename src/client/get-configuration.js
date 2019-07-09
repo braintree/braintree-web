@@ -85,6 +85,7 @@ function getConfiguration(options) {
       configuration = {
         authorization: options.authorization,
         authorizationType: attrs.tokenizationKey ? 'TOKENIZATION_KEY' : 'CLIENT_TOKEN',
+        authorizationFingerprint: attrs.authorizationFingerprint,
         analyticsMetadata: analyticsMetadata,
         gatewayConfiguration: response
       };

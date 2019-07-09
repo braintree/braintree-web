@@ -7,7 +7,6 @@ var request = require('./request');
 var isVerifiedDomain = require('../lib/is-verified-domain');
 var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
-var createAuthorizationData = require('../lib/create-authorization-data');
 var getGatewayConfiguration = require('./get-configuration').getConfiguration;
 var addMetadata = require('../lib/add-metadata');
 var Promise = require('../lib/promise');
@@ -166,7 +165,7 @@ Client.prototype._findOrCreateFraudnetJSON = function (clientMetadataId) {
     rda_tenant: 'bt_card', // eslint-disable-line camelcase
     mid: config.gatewayConfiguration.merchantId
   };
-  authorizationFingerprint = createAuthorizationData(config.authorization).attrs.authorizationFingerprint;
+  authorizationFingerprint = config.authorizationFingerprint;
 
   if (authorizationFingerprint) {
     authorizationFingerprint.split('&').forEach(function (pieces) {
@@ -341,7 +340,7 @@ Client.prototype.request = function (options, callback) {
         }
       }, options.data);
 
-      requestOptions.headers = getAuthorizationHeadersForGraphQL(self._configuration.authorization);
+      requestOptions.headers = getAuthorizationHeadersForGraphQL(self._configuration);
     } else {
       throw new BraintreeError({
         type: errors.CLIENT_OPTION_INVALID.type,
@@ -477,9 +476,8 @@ Client.prototype.teardown = wrapPromise(function () {
   return Promise.resolve();
 });
 
-function getAuthorizationHeadersForGraphQL(authorization) {
-  var authAttrs = createAuthorizationData(authorization).attrs;
-  var token = authAttrs.authorizationFingerprint || authAttrs.tokenizationKey;
+function getAuthorizationHeadersForGraphQL(configuration) {
+  var token = configuration.authorizationFingerprint || configuration.authorization;
 
   return {
     Authorization: 'Bearer ' + token,

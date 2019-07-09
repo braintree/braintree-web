@@ -90,6 +90,10 @@ function create(options) {
     var kountInstance;
     var config = client.getConfiguration();
 
+    if (!options.kount && !options.paypal) {
+      return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
+    }
+
     if (options.kount === true) {
       if (!config.gatewayConfiguration.kount) {
         return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_KOUNT_NOT_ENABLED));
@@ -128,6 +132,12 @@ function create(options) {
     });
   }).then(function () {
     if (instances.length === 0) {
+      // NEXT_MAJOR_VERSION either this should error with a specific error that
+      // no data collector instances could be set up, or we should just swallow
+      // the error and document that no device data will be returned if
+      // data collector cannot be instantiated. We can't change the error code here
+      // without possibly breaking merchant integrations relying on this inccorrect
+      // behavior.
       return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
     }
 
