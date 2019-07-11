@@ -96,7 +96,7 @@ Modal.prototype._unlockScrolling = function () {
 Modal.prototype._lockScrolling = function () {
   var doc = document.documentElement;
 
-  // From http://stackoverflow.com/questions/9538868/prevent-body-from-scrolling-when-a-modal-is-opened#comment65626743_24727206
+  // From https://stackoverflow.com/questions/9538868/prevent-body-from-scrolling-when-a-modal-is-opened#comment65626743_24727206
   this._savedBodyProperties = {
     left: (global.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0),
     top: (global.pageYOffset || doc.scrollTop) - (doc.clientTop || 0),

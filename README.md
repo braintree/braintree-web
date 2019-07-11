@@ -130,7 +130,7 @@ braintree.client.create({
 });
 ```
 
-For more examples, [see the reference](http://braintree.github.io/braintree-web/current/Client.html#request).
+For more examples, [see the reference](https://braintree.github.io/braintree-web/current/Client.html#request).
 
 #### Promises
 

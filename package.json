@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.47.0",
+  "version": "3.48.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -31,12 +31,12 @@
     "restricted-input": "2.0.1"
   },
   "devDependencies": {
-    "browserify": "^16.2.3",
+    "browserify": "^16.3.0",
     "browserify-derequire": "^1.0.1",
     "chai": "^4.2.0",
     "chalk": "^2.4.2",
     "check-ecmascript-version-compatibility": "0.1.1",
-    "del": "^4.1.1",
+    "del": "^5.0.0",
     "dotenv": "^8.0.0",
     "envify": "4.1.0",
     "eslint": "^5.16.0",

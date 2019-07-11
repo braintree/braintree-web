@@ -19,7 +19,6 @@
  * @name BraintreeError.Shared Errors - Component Instance Error Codes
  * @description Errors that occur when using instances of components.
  * @property {MERCHANT} METHOD_CALLED_AFTER_TEARDOWN Occurs when a method is called on a component instance after it has been torn down.
- * @property {MERCHANT} BRAINTREE_API_ACCESS_RESTRICTED Occurs when the client token or tokenization key does not have the correct permissions.
  */
 
 var BraintreeError = require('./braintree-error');
@@ -45,10 +44,5 @@ module.exports = {
   METHOD_CALLED_AFTER_TEARDOWN: {
     type: BraintreeError.types.MERCHANT,
     code: 'METHOD_CALLED_AFTER_TEARDOWN'
-  },
-  BRAINTREE_API_ACCESS_RESTRICTED: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'BRAINTREE_API_ACCESS_RESTRICTED',
-    message: 'Your access is restricted and cannot use this part of the Braintree API.'
   }
 };

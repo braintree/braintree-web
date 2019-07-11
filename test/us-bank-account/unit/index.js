@@ -71,21 +71,6 @@ describe('usBankAccount component', function () {
       }.bind(this));
     });
 
-    it("throws an error when the client doesn't have braintreeApi gateway configuration", function (done) {
-      delete this.configuration.gatewayConfiguration.braintreeApi;
-
-      create({client: this.fakeClient}, function (err, usb) {
-        expect(usb).not.to.exist;
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('BRAINTREE_API_ACCESS_RESTRICTED');
-        expect(err.message).to.equal('Your access is restricted and cannot use this part of the Braintree API.');
-
-        done();
-      });
-    });
-
     it('calls back with error when client does not have usBankAccount gateway configuration', function (done) {
       delete this.configuration.gatewayConfiguration.usBankAccount;
 

@@ -81,24 +81,6 @@ describe('Client', function () {
         done();
       }
     });
-
-    it('throws an error when instantiated with invalid braintreeApi URL', function (done) {
-      try {
-        new Client({ // eslint-disable-line no-new
-          gatewayConfiguration: {
-            braintreeApi: {
-              url: 'http://example.com'
-            }
-          }
-        });
-      } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
-        expect(err.message).to.equal('braintreeApi URL is on an invalid domain.');
-        done();
-      }
-    });
   });
 
   describe('initialize', function () {
@@ -372,28 +354,6 @@ describe('Client', function () {
       });
     });
 
-    it('calls callback with an error when API is braintreeApi and braintreeApi is not available', function (done) {
-      var client;
-      var configuration = fake.configuration();
-
-      delete configuration.gatewayConfiguration.braintreeApi;
-      client = new Client(configuration);
-
-      client.request({
-        method: 'get',
-        endpoint: 'foo',
-        api: 'braintreeApi'
-      }, function (err, data) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('BRAINTREE_API_ACCESS_RESTRICTED');
-        expect(err.message).to.equal('Your access is restricted and cannot use this part of the Braintree API.');
-        expect(data).not.to.exist;
-
-        done();
-      });
-    });
-
     it('calls driver with client for source in _meta if source is not provided', function () {
       var client = new Client(fake.configuration());
 
@@ -439,23 +399,6 @@ describe('Client', function () {
       expect(client._request).to.be.calledWith(this.sandbox.match({
         method: 'get',
         url: 'https://braintreegateway.com/v1/payment_methods'
-      }));
-    });
-
-    it('calls driver with full URL with GET if specified and API is braintreeApi', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        api: 'braintreeApi',
-        endpoint: 'status',
-        method: 'get'
-      }, function () {});
-
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        method: 'get',
-        url: 'https://example.braintree-api.com/status'
       }));
     });
 
@@ -544,23 +487,6 @@ describe('Client', function () {
       }));
     });
 
-    it('calls driver with full URL with POST if specified and API is unspecified', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        api: 'braintreeApi',
-        endpoint: 'fooboo',
-        method: 'post'
-      }, function () {});
-
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        url: 'https://example.braintree-api.com/fooboo',
-        method: 'post'
-      }));
-    });
-
     it('calls driver with library version when API is unspecified', function () {
       var client = new Client(fake.configuration());
 
@@ -588,22 +514,6 @@ describe('Client', function () {
       }, function () {});
 
       expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
-      }));
-    });
-
-    it('calls driver with no library version when API is braintreeApi', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        api: 'braintreeApi',
-        endpoint: 'payment_methods',
-        method: 'get'
-      }, function () {});
-
-      expect(client._request).not.to.be.calledWith(this.sandbox.match({
         data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
       }));
     });
@@ -720,25 +630,6 @@ describe('Client', function () {
       }));
     });
 
-    it('sets headers when API is braintreeApi', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        api: 'braintreeApi',
-        endpoint: 'cool',
-        method: 'get'
-      }, function () {});
-
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        headers: {
-          'Braintree-Version': '2017-04-03',
-          Authorization: 'Bearer fakeToken'
-        }
-      }));
-    });
-
     it('passes through timeout to driver', function () {
       var client = new Client(fake.configuration());
 
@@ -786,26 +677,6 @@ describe('Client', function () {
       expect(client._request).to.be.calledWith(this.sandbox.match({
         data: {some: 'stuffs'}
       }));
-    });
-
-    it('passes through unmodified data to driver when API is braintreeApi', function () {
-      var actualData;
-      var expectedData = {foo: 'boo'};
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        api: 'braintreeApi',
-        endpoint: 'tokens',
-        data: expectedData,
-        method: 'get'
-      }, function () {});
-
-      actualData = client._request.getCall(0).args[0].data;
-
-      expect(actualData).to.equal(expectedData);
-      expect(expectedData).to.deep.equal({foo: 'boo'});
     });
 
     it('returns BraintreeError for authorization if driver has a 403', function (done) {
@@ -935,7 +806,6 @@ describe('Client', function () {
       this.sandbox.stub(client, '_request').yieldsAsync(null, {creditCards: [{nonce: 'fake-nonce'}]}, 200);
 
       client.request({
-        api: 'braintreeApi',
         endpoint: 'payment_methods/credit_cards',
         data: expectedData,
         method: 'post'
@@ -959,7 +829,6 @@ describe('Client', function () {
       this.sandbox.stub(client, '_request').yieldsAsync(null, {creditCards: [{nonce: 'fake-nonce'}]}, 200);
 
       client.request({
-        api: 'braintreeApi',
         endpoint: 'payment_methods/credit_cards',
         data: expectedData,
         method: 'post'
@@ -983,7 +852,6 @@ describe('Client', function () {
       this.sandbox.stub(client, '_request').yieldsAsync(null, {}, 200);
 
       client.request({
-        api: 'braintreeApi',
         endpoint: 'payment_methods/credit_cards',
         data: expectedData,
         method: 'post'

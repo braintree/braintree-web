@@ -8,9 +8,11 @@ var analytics = require('../lib/analytics');
 var once = require('../lib/once');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var methods = require('../lib/methods');
-var camelCaseToSnakeCase = require('../lib/camel-case-to-snake-case');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
+
+var TOKENIZE_BANK_DETAILS_MUTATION = createGraphQLMutation('UsBankAccount');
+var TOKENIZE_BANK_LOGIN_MUTATION = createGraphQLMutation('UsBankLogin');
 
 /**
  * @typedef {object} USBankAccount~tokenizePayload
@@ -23,8 +25,6 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @class
  * @param {object} options See {@link module:braintree-web/us-bank-account.create|us-bank-account.create}.
  * @classdesc This class represents a US Bank Account component. Instances of this class can tokenize raw bank details or present a bank login. <strong>You cannot use this constructor directly. Use {@link module:braintree-web/us-bank-account.create|braintree.us-bank-account.create} instead.</strong>
- *
- * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  */
 function USBankAccount(options) {
   this._client = options.client;
@@ -197,29 +197,30 @@ USBankAccount.prototype.tokenize = function (options) {
 USBankAccount.prototype._tokenizeBankDetails = function (options) {
   var client = this._client;
   var bankDetails = options.bankDetails;
+  var data = {
+    achMandate: options.mandateText,
+    routingNumber: bankDetails.routingNumber,
+    accountNumber: bankDetails.accountNumber,
+    accountType: bankDetails.accountType.toUpperCase(),
+    billingAddress: formatBillingAddressForGraphQL(bankDetails.billingAddress || {})
+  };
+
+  formatDataForOwnershipType(data, bankDetails);
 
   return client.request({
-    method: 'POST',
-    endpoint: 'tokens',
-    api: 'braintreeApi',
-    data: camelCaseToSnakeCase({
-      type: 'us_bank_account',
-      routingNumber: bankDetails.routingNumber,
-      accountNumber: bankDetails.accountNumber,
-      firstName: bankDetails.firstName,
-      lastName: bankDetails.lastName,
-      businessName: bankDetails.businessName,
-      accountType: bankDetails.accountType,
-      ownershipType: bankDetails.ownershipType,
-      billingAddress: camelCaseToSnakeCase(bankDetails.billingAddress || {}),
-      achMandate: {
-        text: options.mandateText
+    api: 'graphQLApi',
+    data: {
+      query: TOKENIZE_BANK_DETAILS_MUTATION,
+      variables: {
+        input: {
+          usBankAccount: data
+        }
       }
-    })
+    }
   }).then(function (response) {
     analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.succeeded');
 
-    return Promise.resolve(formatTokenizeResponse(response));
+    return Promise.resolve(formatTokenizeResponseFromGraphQL(response, 'tokenizeUsBankAccount'));
   }).catch(function (err) {
     var error = errorFrom(err);
 
@@ -276,29 +277,33 @@ USBankAccount.prototype._tokenizeBankLogin = function (options) {
           reject(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_CLOSED));
         },
         onSuccess: function (publicToken, metadata) {
+          var bankLogin = options.bankLogin;
+          var data = {
+            publicToken: publicToken,
+            accountId: isProduction ? metadata.account_id : 'plaid_account_id',
+            accountType: metadata.account.subtype.toUpperCase(),
+            achMandate: options.mandateText,
+            billingAddress: formatBillingAddressForGraphQL(bankLogin.billingAddress || {})
+          };
+
+          formatDataForOwnershipType(data, bankLogin);
+
           client.request({
-            method: 'POST',
-            endpoint: 'tokens',
-            api: 'braintreeApi',
-            data: camelCaseToSnakeCase({
-              type: 'plaid_public_token',
-              publicToken: publicToken,
-              accountId: isProduction ? metadata.account_id : 'plaid_account_id',
-              achMandate: {
-                text: options.mandateText
-              },
-              ownershipType: options.bankLogin.ownershipType,
-              firstName: options.bankLogin.firstName,
-              lastName: options.bankLogin.lastName,
-              businessName: options.bankLogin.businessName,
-              billingAddress: camelCaseToSnakeCase(options.bankLogin.billingAddress || {})
-            })
+            api: 'graphQLApi',
+            data: {
+              query: TOKENIZE_BANK_LOGIN_MUTATION,
+              variables: {
+                input: {
+                  usBankLogin: data
+                }
+              }
+            }
           }).then(function (response) {
             self._isTokenizingBankLogin = false;
 
             analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.succeeded');
 
-            resolve(formatTokenizeResponse(response));
+            resolve(formatTokenizeResponseFromGraphQL(response, 'tokenizeUsBankLogin'));
           }).catch(function (tokenizeErr) {
             var error;
 
@@ -333,12 +338,16 @@ function errorFrom(err) {
   return error;
 }
 
-function formatTokenizeResponse(response) {
+function formatTokenizeResponseFromGraphQL(response, type) {
+  var data = response.data[type].paymentMethod;
+  var last4 = data.details.last4;
+  var description = 'US bank account ending in - ' + last4;
+
   return {
-    nonce: response.data.id,
+    nonce: data.id,
     details: {},
-    description: response.data.description,
-    type: response.data.type
+    description: description,
+    type: 'us_bank_account'
   };
 }
 
@@ -396,6 +405,45 @@ function addLoadListeners(script, callback) {
   script.addEventListener('error', errorHandler);
   script.addEventListener('load', loadHandler);
   script.addEventListener('readystatechange', loadHandler);
+}
+
+function formatBillingAddressForGraphQL(address) {
+  return {
+    streetAddress: address.streetAddress,
+    extendedAddress: address.extendedAddress,
+    city: address.locality,
+    state: address.region,
+    zipCode: address.postalCode
+  };
+}
+
+function formatDataForOwnershipType(data, details) {
+  if (details.ownershipType === 'personal') {
+    data.individualOwner = {
+      firstName: details.firstName,
+      lastName: details.lastName
+    };
+  } else if (details.ownershipType === 'business') {
+    data.businessOwner = {
+      businessName: details.businessName
+    };
+  }
+}
+
+function createGraphQLMutation(type) {
+  return '' +
+    'mutation Tokenize' + type + '($input: Tokenize' + type + 'Input!) {' +
+    '  tokenize' + type + '(input: $input) {' +
+    '    paymentMethod {' +
+    '      id' +
+    '      details {' +
+    '        ... on UsBankAccountDetails {' +
+    '          last4' +
+    '        }' +
+    '      }' +
+    '    }' +
+    '  }' +
+    '}';
 }
 
 /**

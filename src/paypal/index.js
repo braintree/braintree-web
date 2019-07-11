@@ -25,7 +25,7 @@ var Promise = require('../lib/promise');
  * @param {callback} callback The second argument, `data`, is the {@link PayPal} instance.
  * @example
  * // We recomend creating your PayPal button with button.js
- * // For an example, see http://codepen.io/braintree/pen/LNKJWa
+ * // For an example, see https://codepen.io/braintree/pen/LNKJWa
  * var paypalButton = document.querySelector('.paypal-button');
  *
  * braintree.client.create({
@@ -53,7 +53,7 @@ var Promise = require('../lib/promise');
  *       paypalInstance.tokenize({
  *         flow: 'vault'
  *         // For more tokenization options, see the full PayPal tokenization documentation
- *         // http://braintree.github.io/braintree-web/current/PayPal.html#tokenize
+ *         // https://braintree.github.io/braintree-web/current/PayPal.html#tokenize
  *       }, function (tokenizeErr, payload) {
  *         if (tokenizeErr) {
  *           if (tokenizeErr.type !== 'CUSTOMER') {

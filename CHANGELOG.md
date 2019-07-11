@@ -1,5 +1,9 @@
 CHANGELOG
 =========
+## 3.48.0
+* Us Bank Account
+  * Bring out of Beta into General Availability
+
 ## 3.47.0
 * Update `asset-loader` to v0.3.1
 * Update `event-emitter` to v0.2.0

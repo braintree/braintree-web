@@ -2,8 +2,6 @@
 /**
  * @module braintree-web/us-bank-account
  * @description This module is for accepting payments of US bank accounts.
- *
- * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  */
 
 var basicComponentVerification = require('../lib/basic-component-verification');
@@ -13,7 +11,6 @@ var createAssetsUrl = require('../lib/create-assets-url');
 var errors = require('./errors');
 var USBankAccount = require('./us-bank-account');
 var VERSION = process.env.npm_package_version;
-var sharedErrors = require('../lib/errors');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 
@@ -43,13 +40,8 @@ function create(options) {
     });
   }).then(function (client) {
     var usBankAccount;
-    var braintreeApi = client.getConfiguration().gatewayConfiguration.braintreeApi;
 
     options.client = client;
-
-    if (!braintreeApi) {
-      return Promise.reject(new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED));
-    }
 
     usBankAccount = options.client.getConfiguration().gatewayConfiguration.usBankAccount;
     if (!usBankAccount) {

@@ -130,7 +130,7 @@ If you happen to call this method while the instance's `teardown` is in progress
 <a id="content-security-policy"></a>
 ## Using `braintree-web` with a Content Security Policy
 
-[Content Security Policy](http://www.html5rocks.com/en/tutorials/security/content-security-policy/) is a feature of web browsers that mitigates cross-site scripting and other attacks. By limiting the origins of resources that may be loaded on your page, you can maintain tighter control over any potentially malicious code. We recommend considering the implementation of a CSP when available.
+[Content Security Policy](https://www.html5rocks.com/en/tutorials/security/content-security-policy/) is a feature of web browsers that mitigates cross-site scripting and other attacks. By limiting the origins of resources that may be loaded on your page, you can maintain tighter control over any potentially malicious code. We recommend considering the implementation of a CSP when available.
 
 You will need to add the following directives to your policy:
 

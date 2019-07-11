@@ -729,7 +729,7 @@ HostedFields.prototype.teardown = function () {
  * @param {string} [options.billingAddress.countryCodeAlpha3] When supplied, this alpha 3 representation of a country will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryName] When supplied, this country name will be tokenized along with the contents of the fields.
  *
- * @param {callback} [callback] The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link HostedFields~tokenizePayload|tokenizePayload}.
+ * @param {callback} [callback] May be used as the only parameter of the function if no options are passed in. The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link HostedFields~tokenizePayload|tokenizePayload}.
  * @example <caption>Tokenize a card</caption>
  * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
  *   if (tokenizeErr) {

@@ -15,9 +15,7 @@ var once = require('../lib/once');
 var deferred = require('../lib/deferred');
 var assign = require('../lib/assign').assign;
 var analytics = require('../lib/analytics');
-var constants = require('./constants');
 var errors = require('./errors');
-var sharedErrors = require('../lib/errors');
 var VERSION = require('../lib/constants').VERSION;
 var GRAPHQL_URLS = require('../lib/constants').GRAPHQL_URLS;
 var methods = require('../lib/methods');
@@ -48,7 +46,7 @@ var cachedClients = {};
  * @classdesc This class is required by many other Braintree components. It serves as the base API layer that communicates with our servers. It is also capable of being used to formulate direct calls to our servers, such as direct credit card tokenization. See {@link Client#request}.
  */
 function Client(configuration) {
-  var configurationJSON, gatewayConfiguration, braintreeApiConfiguration;
+  var configurationJSON, gatewayConfiguration;
 
   configuration = configuration || {};
 
@@ -86,22 +84,6 @@ function Client(configuration) {
   this._configuration = this.getConfiguration();
 
   this._clientApiBaseUrl = gatewayConfiguration.clientApiUrl + '/v1/';
-
-  braintreeApiConfiguration = gatewayConfiguration.braintreeApi;
-  if (braintreeApiConfiguration) {
-    this._braintreeApi = {
-      baseUrl: braintreeApiConfiguration.url + '/',
-      accessToken: braintreeApiConfiguration.accessToken
-    };
-
-    if (!isVerifiedDomain(this._braintreeApi.baseUrl)) {
-      throw new BraintreeError({
-        type: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
-        code: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
-        message: 'braintreeApi URL is on an invalid domain.'
-      });
-    }
-  }
 
   if (gatewayConfiguration.graphQL) {
     this._graphQL = new GraphQL({
@@ -315,19 +297,6 @@ Client.prototype.request = function (options, callback) {
       baseUrl = self._clientApiBaseUrl;
 
       requestOptions.data = addMetadata(self._configuration, options.data);
-    } else if (api === 'braintreeApi') {
-      if (!self._braintreeApi) {
-        throw new BraintreeError(sharedErrors.BRAINTREE_API_ACCESS_RESTRICTED);
-      }
-
-      baseUrl = self._braintreeApi.baseUrl;
-
-      requestOptions.data = options.data;
-
-      requestOptions.headers = {
-        'Braintree-Version': constants.BRAINTREE_API_VERSION_HEADER,
-        Authorization: 'Bearer ' + self._braintreeApi.accessToken
-      };
     } else if (api === 'graphQLApi') {
       baseUrl = GRAPHQL_URLS[self._configuration.gatewayConfiguration.environment];
       options.endpoint = '';
