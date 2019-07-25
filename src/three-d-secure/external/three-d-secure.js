@@ -77,8 +77,11 @@ var IFRAME_WIDTH = 400;
  * @property {string} binData.payroll Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.prepaid Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.productId The product id.
- * @property {boolean} liabilityShiftPossible Indicates whether the card was eligible for 3D Secure.
- * @property {boolean} liabilityShifted Indicates whether the liability for fraud has been shifted away from the merchant.
+ * @property {boolean} liabilityShiftPossible *Deprecated:* Use `threeDSecureInfo.liabilityShiftPossible` instead.
+ * @property {boolean} liabilityShifted *Deprecated:* Use `threeDSecureInfo.liabilityShifted` instead.
+ * @property {object} threeDSecureInfo 3DS information about the card.
+ * @property {boolean} threeDSecureInfo.liabilityShiftPossible Indicates whether the card was eligible for 3D Secure.
+ * @property {boolean} threeDSecureInfo.liabilityShifted Indicates whether the liability for fraud has been shifted away from the merchant.
  */
 
 /**
@@ -827,7 +830,8 @@ ThreeDSecure.prototype._formatAuthResponse = function (paymentMethod, threeDSecu
     details: paymentMethod.details,
     description: paymentMethod.description && paymentMethod.description.replace(/\+/g, ' '),
     liabilityShifted: threeDSecureInfo && threeDSecureInfo.liabilityShifted,
-    liabilityShiftPossible: threeDSecureInfo && threeDSecureInfo.liabilityShiftPossible
+    liabilityShiftPossible: threeDSecureInfo && threeDSecureInfo.liabilityShiftPossible,
+    threeDSecureInfo: paymentMethod.threeDSecureInfo
   };
 };
 

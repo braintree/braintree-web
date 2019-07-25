@@ -1,5 +1,11 @@
 CHANGELOG
 =========
+## 3.49.0
+* Hosted Fields
+  * Add `binAvailable` event
+* 3DS
+  * Add `threeDSecureInfo` to the `verifyCard` response
+
 ## 3.48.0
 * Us Bank Account
   * Bring out of Beta into General Availability

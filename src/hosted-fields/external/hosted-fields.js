@@ -76,6 +76,12 @@ var wrapPromise = require('@braintree/wrap-promise');
  */
 
 /**
+ * @typedef {object} HostedFields~binPayload
+ * @description The event payload sent from {@link HostedFields#on|on} when the {@link HostedFields#event:binAvailable|binAvailable} event is emitted.
+ * @property {string} bin The first 6 digits of the card number.
+ */
+
+/**
  * @typedef {object} HostedFields~hostedFieldsFieldData
  * @description Data about Hosted Fields fields, sent in {@link HostedFields~stateObject|stateObjects}.
  * @property {HTMLElement} container Reference to the container DOM element on your page associated with the current event.
@@ -125,7 +131,19 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @function
  * @param {string} event The name of the event to which you are subscribing.
  * @param {function} handler A callback to handle the event.
- * @description Subscribes a handler function to a named event. `event` should be {@link HostedFields#event:blur|blur}, {@link HostedFields#event:focus|focus}, {@link HostedFields#event:empty|empty}, {@link HostedFields#event:notEmpty|notEmpty}, {@link HostedFields#event:cardTypeChange|cardTypeChange}, {@link HostedFields#event:validityChange|validityChange}, or {@link HostedFields#event:inputSubmitRequest|inputSubmitRequest}. Events will emit a {@link HostedFields~stateObject|stateObject}.
+ * @description Subscribes a handler function to a named event.
+ *
+ * **Events that emit a {@link HostedFields~stateObject|stateObject}.**
+ * * {@link HostedFields#event:blur|blur}
+ * * {@link HostedFields#event:focus|focus}
+ * * {@link HostedFields#event:empty|empty}
+ * * {@link HostedFields#event:notEmpty|notEmpty}
+ * * {@link HostedFields#event:cardTypeChange|cardTypeChange}
+ * * {@link HostedFields#event:validityChange|validityChange}
+ * * {@link HostedFields#event:inputSubmitRequest|inputSubmitRequest}
+ *
+ * **Other Events**
+ * * {@link HostedFields#event:binAvailable|binAvailable} - emits a {@link HostedFields~binPayload|bin payload}
  * @example
  * <caption>Listening to a Hosted Field event, in this case 'focus'</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
@@ -259,6 +277,19 @@ var wrapPromise = require('@braintree/wrap-promise');
  *     } else {
  *       console.log(event.emittedBy, 'is not valid');
  *     }
+ *   });
+ * });
+ */
+
+/**
+ * This event is emitted when the first 6 digits of the card number have been entered by the customer.
+ * @event HostedFields#binAvailable
+ * @type {string}
+ * @example
+ * <caption>Listening to a `binAvailable` event</caption>
+ * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('binAvailable', function (event) {
+ *     event.bin // send bin to 3rd party bin service
  *   });
  * });
  */
@@ -577,6 +608,12 @@ function HostedFields(options) {
 
   this._bus.on(events.CARD_FORM_ENTRY_HAS_BEGUN, function () {
     analytics.sendEvent(self._clientPromise, 'hosted-fields.input.started');
+  });
+
+  this._bus.on(events.BIN_AVAILABLE, function (bin) {
+    self._emit('binAvailable', {
+      bin: bin
+    });
   });
 
   failureTimeout = setTimeout(function () {

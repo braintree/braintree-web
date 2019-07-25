@@ -63,10 +63,7 @@ describe('EventedModel', function () {
   });
 
   it('emits a "global" event when a property changes', function (done) {
-    var model = this.model;
-
     this.model.on('change', function () {
-      expect(this).to.equal(model);
       done();
     });
 
@@ -74,10 +71,19 @@ describe('EventedModel', function () {
   });
 
   it('emits a scoped change event when a property changes', function (done) {
-    var model = this.model;
-
     this.model.on('change:foo', function (newValue) {
-      expect(this).to.equal(model);
+      expect(newValue).to.equal(789);
+      done();
+    });
+
+    this.model.set('foo', 789);
+  });
+
+  it('emits metatadata with the old value as second argument for a scoped change event when a property changes', function (done) {
+    this.model.set('foo', 123);
+
+    this.model.on('change:foo', function (newValue, metadata) {
+      expect(metadata.old).to.equal(123);
       expect(newValue).to.equal(789);
       done();
     });
@@ -86,10 +92,19 @@ describe('EventedModel', function () {
   });
 
   it('emits an intermediate-scope change event when a nested property changes', function (done) {
-    var model = this.model;
-
     this.model.on('change:foo', function (newValue) {
-      expect(this).to.equal(model);
+      expect(newValue).to.deep.equal({bar: 'yas'});
+      done();
+    });
+
+    this.model.set('foo.bar', 'yas');
+  });
+
+  it('emits metadata with only the old value that changed, not the whole object when a nested property changes', function (done) {
+    this.model.set('foo.bar', 'foo');
+
+    this.model.on('change:foo', function (newValue, metadata) {
+      expect(metadata.old).to.deep.equal('foo');
       expect(newValue).to.deep.equal({bar: 'yas'});
       done();
     });
@@ -98,10 +113,19 @@ describe('EventedModel', function () {
   });
 
   it('emits a scoped change event when a nested property changes', function (done) {
-    var model = this.model;
-
     this.model.on('change:foo.bar', function (newValue) {
-      expect(this).to.equal(model);
+      expect(newValue).to.equal('yas');
+      done();
+    });
+
+    this.model.set('foo.bar', 'yas');
+  });
+
+  it('emits metadata with the old value as a second argument for a scoped change event when a nested property changes', function (done) {
+    this.model.set('foo.bar', 'foo');
+
+    this.model.on('change:foo.bar', function (newValue, metadata) {
+      expect(metadata.old).to.equal('foo');
       expect(newValue).to.equal('yas');
       done();
     });

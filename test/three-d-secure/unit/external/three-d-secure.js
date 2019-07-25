@@ -634,7 +634,8 @@ describe('ThreeDSecure', function () {
           nonce: 'new-nonce',
           description: 'a card',
           binData: 'bin data',
-          details: 'details'
+          details: 'details',
+          threeDSecureInfo: '3ds info'
         },
         threeDSecureInfo: {
           liabilityShifted: true,
@@ -667,6 +668,7 @@ describe('ThreeDSecure', function () {
         expect(payload.binData).to.equal('bin data');
         expect(payload.liabilityShifted).to.equal(true);
         expect(payload.liabilityShiftPossible).to.equal(true);
+        expect(payload.threeDSecureInfo).to.equal('3ds info');
       });
     });
 
@@ -1755,7 +1757,14 @@ describe('ThreeDSecure', function () {
               description: 'a description',
               threeDSecureInfo: {
                 liabilityShiftPossible: true,
-                liabilityShifted: true
+                liabilityShifted: true,
+                status: 'authenticate_successful',
+                enrolled: 'Y',
+                cavv: 'fake-cavv',
+                xid: 'fake-xid',
+                eciFlag: '05',
+                threeDSecureVersion: '2.0.0',
+                dsTransactionId: 'fake-ds-txn-id'
               }
             },
             threeDSecureInfo: {
@@ -1810,7 +1819,18 @@ describe('ThreeDSecure', function () {
               },
               description: 'a description',
               liabilityShiftPossible: true,
-              liabilityShifted: true
+              liabilityShifted: true,
+              threeDSecureInfo: {
+                liabilityShiftPossible: true,
+                liabilityShifted: true,
+                status: 'authenticate_successful',
+                enrolled: 'Y',
+                cavv: 'fake-cavv',
+                xid: 'fake-xid',
+                eciFlag: '05',
+                threeDSecureVersion: '2.0.0',
+                dsTransactionId: 'fake-ds-txn-id'
+              }
             });
           });
         });

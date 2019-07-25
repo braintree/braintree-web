@@ -36,13 +36,14 @@ function CreditCardForm(configuration) {
     this.on('change:' + field + '.isPotentiallyValid', onFieldChange);
   }.bind(this));
 
-  this.on('change:number.value', this._onNumberChange);
+  this.on('change:number.value', this._onNumberChange.bind(this));
   this.on('change:possibleCardTypes', function () { this.validateField('cvv'); }.bind(this));
   this.on('change:possibleCardTypes', onCardTypeChange(this, 'number'));
 }
 
-CreditCardForm.prototype = Object.create(EventedModel.prototype);
-CreditCardForm.prototype.constructor = CreditCardForm;
+CreditCardForm.prototype = Object.create(EventedModel.prototype, {
+  constructor: CreditCardForm
+});
 
 CreditCardForm.prototype.setSupportedCardTypes = function (supportedCardTypes) {
   if (supportedCardTypes) {
@@ -155,12 +156,17 @@ CreditCardForm.prototype._onSplitDateChange = function () {
   }
 };
 
-CreditCardForm.prototype._onNumberChange = function (number) {
+CreditCardForm.prototype._onNumberChange = function (number, metadata) {
   var newPossibleCardTypes = this.getCardTypes(number);
   var oldPossibleCardTypes = this.get('possibleCardTypes');
+  var oldNumber = metadata.old;
 
   if (!comparePossibleCardTypes(newPossibleCardTypes, oldPossibleCardTypes)) {
     this.set('possibleCardTypes', newPossibleCardTypes);
+  }
+
+  if ((!oldNumber || oldNumber.length < 6) && (number && number.length >= 6)) {
+    global.bus.emit(events.BIN_AVAILABLE, number.substr(0, 6));
   }
 };
 

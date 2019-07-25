@@ -1,11 +1,14 @@
 'use strict';
 
-var slice = Array.prototype.slice;
+var EventEmitter = require('@braintree/event-emitter');
 
 function EventedModel() {
+  EventEmitter.call(this);
+
   this._attributes = this.resetAttributes();
-  this._listeners = {};
 }
+
+EventEmitter.createChild(EventedModel);
 
 EventedModel.prototype.get = function get(compoundKey) {
   var i, key, keys;
@@ -29,7 +32,7 @@ EventedModel.prototype.get = function get(compoundKey) {
 };
 
 EventedModel.prototype.set = function set(compoundKey, value) {
-  var i, key, keys;
+  var i, key, keys, oldValue;
   var traversal = this._attributes;
 
   keys = compoundKey.split('.');
@@ -46,35 +49,15 @@ EventedModel.prototype.set = function set(compoundKey, value) {
   key = keys[i];
 
   if (traversal[key] !== value) {
+    oldValue = traversal[key];
     traversal[key] = value;
-    this.emit('change');
+    this._emit('change');
     for (i = 1; i <= keys.length; i++) {
       key = keys.slice(0, i).join('.');
-      this.emit('change:' + key, this.get(key));
+      this._emit('change:' + key, this.get(key), {
+        old: oldValue
+      });
     }
-  }
-};
-
-EventedModel.prototype.on = function on(event, handler) {
-  var listeners = this._listeners[event];
-
-  if (!listeners) {
-    this._listeners[event] = [handler];
-  } else {
-    listeners.push(handler);
-  }
-};
-
-EventedModel.prototype.emit = function emit(event) {
-  var i;
-  var self = this;
-  var args = arguments;
-  var listeners = this._listeners[event];
-
-  if (!listeners) { return; }
-
-  for (i = 0; i < listeners.length; i++) {
-    listeners[i].apply(self, slice.call(args, 1));
   }
 };
 

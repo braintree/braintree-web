@@ -251,6 +251,25 @@ describe('HostedFields', function () {
       expect(analytics.sendEvent).to.be.calledWith(instance._clientPromise, 'hosted-fields.input.started');
     });
 
+    it('subscribes to BIN_AVAILABLE', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      expect(instance._bus.on).to.be.calledWith(events.BIN_AVAILABLE, this.sandbox.match.func);
+    });
+
+    it('sends analytic event for tokenization starting when BIN_AVAILABLE event fires', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+      var handler = Bus.prototype.on.withArgs(events.BIN_AVAILABLE).args[0][1];
+
+      this.sandbox.stub(instance, '_emit');
+
+      handler('123456');
+
+      expect(instance._emit).to.be.calledWith('binAvailable', {
+        bin: '123456'
+      });
+    });
+
     it('can pass selector instead of container for field', function () {
       var error;
 

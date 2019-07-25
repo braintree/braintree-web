@@ -994,6 +994,48 @@ describe('credit card model', function () {
     });
   });
 
+  describe('bin available', function () {
+    it('emits BIN_AVAILABLE event when number goes from 5 digits to 6', function () {
+      this.card.set('number.value', '41111');
+
+      expect(global.bus.emit).to.not.be.calledWith('hosted-fields:BIN_AVAILABLE');
+
+      this.card.set('number.value', '411111');
+
+      expect(global.bus.emit).to.be.calledWith('hosted-fields:BIN_AVAILABLE', '411111');
+    });
+
+    it('emits BIN_AVAILABLE event when number goes from non-existant to 6 digits', function () {
+      this.card.set('number.value', '411111');
+
+      expect(global.bus.emit).to.be.calledWith('hosted-fields:BIN_AVAILABLE', '411111');
+    });
+
+    it('emits BIN_AVAILABLE event when number goes from non-existant to more than 6 digits', function () {
+      this.card.set('number.value', '4111111111111');
+
+      expect(global.bus.emit).to.be.calledWith('hosted-fields:BIN_AVAILABLE', '411111');
+    });
+
+    it('emits BIN_AVAILABLE event when number starts with more than 6 digits, dips below 6, and then receives 6 again', function () {
+      this.card.set('number.value', '123456789');
+
+      global.bus.emit.resetHistory();
+
+      this.card.set('number.value', '12345');
+      expect(global.bus.emit).to.not.be.calledWith('hosted-fields:BIN_AVAILABLE');
+
+      this.card.set('number.value', '123456');
+      expect(global.bus.emit).to.be.calledWith('hosted-fields:BIN_AVAILABLE', '123456');
+    });
+
+    it('emits only the first 6 digits of the number when emitting even when more than 6 digits are set', function () {
+      this.card.set('number.value', '1234567890');
+
+      expect(global.bus.emit).to.be.calledWith('hosted-fields:BIN_AVAILABLE', '123456');
+    });
+  });
+
   describe('field empty change', function () {
     beforeEach(function () {
       this.sandbox.stub(this.card, 'emitEvent');

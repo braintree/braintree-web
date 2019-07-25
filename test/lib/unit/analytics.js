@@ -22,7 +22,7 @@ describe('analytics.sendEvent', function () {
 
   it('correctly sends an analytics event with a callback', function (done) {
     analytics.sendEvent(this.client, 'test.event.kind', function () {
-      var currentTimestamp = Date.now() / 1000;
+      var currentTimestamp = Date.now();
       var postArgs = this.client._request.firstCall.args;
 
       expect(this.client._request).to.be.called;
@@ -32,7 +32,7 @@ describe('analytics.sendEvent', function () {
       expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
       expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
       expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2);
+      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
       expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
       expect(postArgs[0].timeout).to.equal(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
       expect(postArgs[0].data.analytics[0].isAsync).to.equal(false);
@@ -47,7 +47,7 @@ describe('analytics.sendEvent', function () {
     analytics.sendEvent(this.client, 'test.event.kind');
 
     setTimeout(function () {
-      var currentTimestamp = Date.now() / 1000;
+      var currentTimestamp = Date.now();
       var postArgs = this.client._request.firstCall.args;
 
       expect(this.client._request).to.be.called;
@@ -57,7 +57,7 @@ describe('analytics.sendEvent', function () {
       expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
       expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
       expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2);
+      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
       expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
       expect(postArgs[1]).not.to.exist;
       expect(postArgs[0].timeout).to.equal(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
@@ -71,7 +71,7 @@ describe('analytics.sendEvent', function () {
     var clientPromise = Promise.resolve(this.client);
 
     analytics.sendEvent(clientPromise, 'test.event.kind', function () {
-      var currentTimestamp = Date.now() / 1000;
+      var currentTimestamp = Date.now();
       var postArgs = this.client._request.firstCall.args;
 
       expect(this.client._request).to.be.called;
@@ -81,13 +81,10 @@ describe('analytics.sendEvent', function () {
       expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
       expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
       expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2);
+      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
       expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
       expect(postArgs[0].timeout).to.equal(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-      // will not report as an async event if the original timestamp
-      // and the new timestamp in the promise are sufficiently close
-      // TODO fix this
-      // expect(postArgs[0].data.analytics[0].isAsync).to.equal(false);
+      expect(postArgs[0].data.analytics[0].isAsync).to.equal(false);
 
       done();
     }.bind(this));
@@ -102,11 +99,11 @@ describe('analytics.sendEvent', function () {
     });
 
     analytics.sendEvent(clientPromise, 'test.event.kind', function () {
-      var currentTimestamp = Date.now() / 1000;
+      var currentTimestamp = Date.now();
       var postArgs = client._request.firstCall.args;
 
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2);
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0.9);
+      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
+      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
       expect(postArgs[0].data.analytics[0].isAsync).to.equal(true);
 
       done();
