@@ -9,6 +9,8 @@ var CREDIT_CARD_TOKENIZATION_MUTATION = 'mutation TokenizeCreditCard($input: Tok
 '      bin ' +
 '      brandCode ' +
 '      last4 ' +
+'      expirationMonth' +
+'      expirationYear' +
 '      binData { ' +
 '        prepaid ' +
 '        healthcare ' +

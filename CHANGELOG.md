@@ -1,5 +1,9 @@
 CHANGELOG
 =========
+## 3.50.0
+* Hosted Fields
+  * Add `expirationMonth` and `expirationYear` to tokenization payload
+
 ## 3.49.0
 * Hosted Fields
   * Add `binAvailable` event

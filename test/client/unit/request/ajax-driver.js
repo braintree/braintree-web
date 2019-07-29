@@ -443,6 +443,8 @@ describe('AJAXDriver', function () {
                 description: 'ending in 11',
                 nonce: 'the-token',
                 details: {
+                  expirationMonth: '09',
+                  expirationYear: '2020',
                   bin: '',
                   cardType: 'Visa',
                   lastFour: '1111',
@@ -464,6 +466,8 @@ describe('AJAXDriver', function () {
             tokenizeCreditCard: {
               token: 'the-token',
               creditCard: {
+                expirationMonth: '09',
+                expirationYear: '2020',
                 binData: {
                   commercial: 'UNKNOWN',
                   debit: 'NO',

@@ -1102,6 +1102,8 @@ describe('GraphQL', function () {
           tokenizeCreditCard: {
             token: 'faketoken',
             creditCard: {
+              expirationMonth: '09',
+              expirationYear: '2020',
               brandCode: 'VISA',
               last4: '1234',
               bin: '401111',
@@ -1128,6 +1130,8 @@ describe('GraphQL', function () {
           description: 'ending in 34',
           nonce: 'faketoken',
           details: {
+            expirationMonth: '09',
+            expirationYear: '2020',
             bin: '401111',
             cardType: 'Visa',
             lastFour: '1234',
@@ -1226,7 +1230,9 @@ describe('GraphQL', function () {
               brand: null,
               brandCode: null,
               last4: null,
-              binData: null
+              binData: null,
+              expirationMonth: null,
+              expirationYear: null
             }
           },
           extensions: {
@@ -1242,6 +1248,8 @@ describe('GraphQL', function () {
           description: '',
           nonce: 'faketoken',
           details: {
+            expirationMonth: null,
+            expirationYear: null,
             bin: '',
             cardType: 'Unknown',
             lastFour: '',

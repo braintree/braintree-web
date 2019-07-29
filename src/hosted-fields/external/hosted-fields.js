@@ -35,6 +35,8 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @property {object} details Additional account details.
  * @property {string} details.bin The BIN number of the card.
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
+ * @property {string} details.expirationMonth The expiration month of the card.
+ * @property {string} details.expirationYear The expiration year of the card.
  * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
  * @property {string} description A human-readable description.
