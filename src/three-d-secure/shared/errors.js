@@ -15,7 +15,7 @@
  * @property {MERCHANT} THREEDS_CARDINAL_SDK_BAD_JWT Occus when a malformed config causes a either a missing response JWT or a malformed Cardinal response.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_ERROR Occurs when a "general error" or a Cardinal hosted fields error happens. Description contains more details.
  * @property {CUSTOMER} THREEDS_CARDINAL_SDK_CANCELED Occurs when customer cancels the transaction mid-flow, usually with alt-pays that have their own cancel buttons.
- */
+*/
 
 /**
  * @name BraintreeError.3D Secure - verifyCard Error Codes
@@ -23,6 +23,9 @@
  * @property {MERCHANT} THREEDS_AUTHENTICATION_IN_PROGRESS Occurs when another verification is already in progress.
  * @property {MERCHANT} THREEDS_MISSING_VERIFY_CARD_OPTION Occurs when a required option is missing.
  * @property {UNKNOWN} THREEDS_JWT_AUTHENTICATION_FAILED Occurs when something went wrong authenticating the JWT from the Cardinal SDK.
+ * @property {MERCHANT} THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR Occurs when the supplied payment method nonce does not exist or the payment method nonce has already been consumed.
+ * @property {CUSTOMER} THREEDS_LOOKUP_VALIDATION_ERROR Occurs when a validation error occurs during the 3D Secure lookup.
+ * @property {UNKNOWN} THREEDS_LOOKUP_ERROR An unknown error occurred while attempting the 3D Secure lookup.
  */
 
 /**
@@ -60,7 +63,7 @@ module.exports = {
   THREEDS_NOT_ENABLED_FOR_V2: {
     type: BraintreeError.types.MERCHANT,
     code: 'THREEDS_NOT_ENABLED_FOR_V2',
-    message: '3D Secure version 2 is not enabled for this merchant.'
+    message: '3D Secure version 2 is not enabled for this merchant. Contact Braintree Support for assistance at https://help.braintreepayments.com/'
   },
   THREEDS_CARDINAL_SDK_SETUP_FAILED: {
     type: BraintreeError.types.UNKNOWN,
@@ -115,6 +118,21 @@ module.exports = {
     type: BraintreeError.types.UNKNOWN,
     code: 'THREEDS_JWT_AUTHENTICATION_FAILED',
     message: 'Something went wrong authenticating the JWT from Cardinal'
+  },
+  THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR',
+    message: 'Either the payment method nonce passed to `verifyCard` does not exist, or it was already consumed'
+  },
+  THREEDS_LOOKUP_VALIDATION_ERROR: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'THREEDS_LOOKUP_VALIDATION_ERROR',
+    message: 'The data passed in `verifyCard` did not pass validation checks. See details for more info'
+  },
+  THREEDS_LOOKUP_ERROR: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'THREEDS_LOOKUP_ERROR',
+    message: 'Something went wrong during the 3D Secure lookup'
   },
   THREEDS_NO_VERIFICATION_PAYLOAD: {
     type: BraintreeError.types.MERCHANT,

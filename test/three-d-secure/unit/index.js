@@ -85,6 +85,23 @@ describe('three-d-secure.create', function () {
     });
   });
 
+  it('errors if merchant does not have a 3ds object', function (done) {
+    var client = this.client;
+
+    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
+    delete this.configuration.gatewayConfiguration.threeDSecure;
+
+    threeDSecure.create({
+      client: client,
+      version: 2
+    }, function (err) {
+      expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
+      expect(ThreeDSecure.prototype._setupSongbird).to.not.be.called;
+      expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
+      done();
+    });
+  });
+
   it('errors if merchant does not have a jwt to setup songbird', function (done) {
     var client = this.client;
 
@@ -95,8 +112,9 @@ describe('three-d-secure.create', function () {
       client: client,
       version: 2
     }, function (err) {
-      expect(err.message).to.equal('3D Secure version 2 is not enabled for this merchant.');
+      expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
       expect(ThreeDSecure.prototype._setupSongbird).to.not.be.called;
+      expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
       done();
     });
   });

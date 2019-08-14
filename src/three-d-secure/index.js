@@ -59,7 +59,8 @@ function create(options) {
       error = errors.THREEDS_HTTPS_REQUIRED;
     }
 
-    if (options.version === 2 && !gwConfig.threeDSecure.cardinalAuthenticationJWT) {
+    if (options.version === 2 && !(gwConfig.threeDSecure && gwConfig.threeDSecure.cardinalAuthenticationJWT)) {
+      analytics.sendEvent(options.client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
       error = errors.THREEDS_NOT_ENABLED_FOR_V2;
     }
 

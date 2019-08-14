@@ -350,6 +350,18 @@ describe('ThreeDSecure', function () {
         expect(id).to.equal('id');
       });
     });
+
+    it('returns the new df refrence id if passed multiple times', function () {
+      var resolve = this.sandbox.stub();
+      var setupCallback = this.instance._createPaymentsSetupCompleteCallback(resolve, 100);
+
+      setupCallback({sessionId: 'id'});
+      setupCallback({sessionId: 'some-other-id'});
+
+      return this.instance._getDfReferenceId().then(function (id) {
+        expect(id).to.equal('some-other-id');
+      });
+    });
   });
 
   describe('_createPaymentsValidatedCallback ', function () {
@@ -1474,10 +1486,115 @@ describe('ThreeDSecure', function () {
         addFrame: noop,
         removeFrame: noop
       }, function (err) {
-        expect(err).to.eql(error);
+        expect(err.details.originalError).to.eql(error);
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.code).to.equal('THREEDS_LOOKUP_ERROR');
 
         done();
       });
+    });
+
+    it('sends an analytics event for a generic lookup error', function (done) {
+      var error = new Error('network error');
+
+      this.client.request.rejects(error);
+
+      this.instance.verifyCard({
+        nonce: 'abcdef',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      }, function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.lookup-failed');
+
+        done();
+      }.bind(this));
+    });
+
+    it('rejects with a lookup error when lookup 404s', function (done) {
+      var err = new Error('failure');
+
+      err.details = {
+        httpStatus: 404
+      };
+
+      this.client.request.rejects(err);
+
+      this.instance.verifyCard({
+        nonce: 'fake-nonce',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      }, function (lookupError) {
+        expect(lookupError).to.be.an.instanceof(BraintreeError);
+        expect(lookupError.code).to.equal('THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR');
+
+        done();
+      });
+    });
+
+    it('sends an analytics event for missing nonce', function (done) {
+      var err = new Error('failure');
+
+      err.details = {
+        httpStatus: 404
+      };
+
+      this.client.request.rejects(err);
+
+      this.instance.verifyCard({
+        nonce: 'fake-nonce',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      }, function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.lookup-failed.404');
+
+        done();
+      }.bind(this));
+    });
+
+    it('rejects with a lookup error when lookup 422s', function (done) {
+      var err = new Error('failure');
+
+      err.details = {
+        httpStatus: 422
+      };
+
+      this.client.request.rejects(err);
+
+      this.instance.verifyCard({
+        nonce: 'fake-nonce',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      }, function (lookupError) {
+        expect(lookupError).to.be.an.instanceof(BraintreeError);
+        expect(lookupError.code).to.equal('THREEDS_LOOKUP_VALIDATION_ERROR');
+
+        done();
+      });
+    });
+
+    it('sends an analytics event when lookup 422s', function (done) {
+      var err = new Error('failure');
+
+      err.details = {
+        httpStatus: 422
+      };
+
+      this.client.request.rejects(err);
+
+      this.instance.verifyCard({
+        nonce: 'fake-nonce',
+        amount: 100,
+        addFrame: noop,
+        removeFrame: noop
+      }, function () {
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.lookup-failed.422');
+
+        done();
+      }.bind(this));
     });
 
     context('when no authentication is required', function () {

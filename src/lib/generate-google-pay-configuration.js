@@ -23,7 +23,7 @@ function generateTokenizationParameters(configuration, overrides) {
 }
 
 module.exports = function (configuration, googlePayVersion, googleMerchantId) {
-  var data, allowedPaymentMethod, paypalPaymentMethod;
+  var data, paypalPaymentMethod;
   var androidPayConfiguration = configuration.gatewayConfiguration.androidPay;
   var environment = configuration.gatewayConfiguration.environment === 'production' ? 'PRODUCTION' : 'TEST';
 
@@ -55,14 +55,6 @@ module.exports = function (configuration, googlePayVersion, googleMerchantId) {
       data.merchantInfo = {
         merchantId: googleMerchantId
       };
-    }
-
-    if (configuration.authorizationType === 'TOKENIZATION_KEY') {
-      allowedPaymentMethod = find(data.allowedPaymentMethods, 'type', 'CARD');
-
-      if (allowedPaymentMethod) {
-        allowedPaymentMethod.tokenizationSpecification.parameters['braintree:clientKey'] = configuration.authorization;
-      }
     }
 
     if (androidPayConfiguration.paypalClientId) {

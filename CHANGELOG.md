@@ -1,5 +1,17 @@
 CHANGELOG
 =========
+## 3.50.1
+* Update restricted-input to v2.0.2
+* Update browser-detection to v1.8.0
+* 3D Secure
+  * Fix issue where an error maybe thrown when cancelling the 3D Secure flow
+  * Add better handling for lookup errors
+  * Fix issue where component would throw an error when creating a 3ds component without a Cardinal Authentication JWT
+* Google Pay
+  * Fix issue where Google Pay would error in Edge (#446)
+* Hosted Fields
+  * Fix issue where chrome books could not input correctly with a soft keyboard
+
 ## 3.50.0
 * Hosted Fields
   * Add `expirationMonth` and `expirationYear` to tokenization payload
@@ -7,7 +19,7 @@ CHANGELOG
 ## 3.49.0
 * Hosted Fields
   * Add `binAvailable` event
-* 3DS
+* 3D Secure
   * Add `threeDSecureInfo` to the `verifyCard` response
 
 ## 3.48.0

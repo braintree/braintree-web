@@ -330,6 +330,45 @@ function ThreeDSecure(options) {
  *     // Decide if you want to submit the nonce
  *   }
  * });
+ * <caption>Handling 3DS lookup errors</caption>
+ * var my3DSContainer;
+ *
+ * threeDSecure.verifyCard({
+ *   amount: '123.45',
+ *   nonce: hostedFieldsTokenizationPayload.nonce,
+ *   bin: hostedFieldsTokenizationPayload.details.bin,
+ *   email: 'test@example.com'
+ *   billingAddress: billingAddressFromCustomer,,
+ *   additionalInformation: additionalInfoFromCustomer,,
+ *   onLookupComplete: function (data, next) {
+ *     // use `data` here, then call `next()`
+ *     next();
+ *   }
+ * }, function (err, payload) {
+ *   if (err) {
+ *     if (err.code.indexOf('THREEDS_LOOKUP') === 0) {
+ *       // an error occurred during the initial lookup request
+ *
+ *       if (err.code === 'THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR') {
+ *         // either the passed payment method nonce does not exist
+ *         // or it was already consumed before the lookup call was made
+ *       } else if (err.code.indexOf('THREEDS_LOOKUP_VALIDATION') === 0) {
+ *         // a validation error occurred
+ *         // likely some non-ascii characters were included in the billing
+ *         // address given name or surname fields, or the cardholdername field
+ *
+ *         // Instruct your user to check their data and try again
+ *       } else {
+ *         // an unknown lookup error occurred
+ *       }
+ *     } else {
+ *       // some other kind of error
+ *     }
+ *     return;
+ *   }
+ *
+ *   // handle success
+ * });
  * @example
  * <caption>Deprecated: Verifying an existing nonce with 3DS 1.0</caption>
  * var my3DSContainer;
@@ -436,6 +475,31 @@ ThreeDSecure.prototype.verifyCard = function (options) {
       endpoint: url,
       method: 'post',
       data: data
+    }).catch(function (err) {
+      var status = err && err.details && err.details.httpStatus;
+      var analyticsMessage = 'three-d-secure.verification-flow.lookup-failed';
+      var lookupError;
+
+      if (status === 404) {
+        lookupError = errors.THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR;
+        analyticsMessage += '.404';
+      } else if (status === 422) {
+        lookupError = errors.THREEDS_LOOKUP_VALIDATION_ERROR;
+        analyticsMessage += '.422';
+      } else {
+        lookupError = errors.THREEDS_LOOKUP_ERROR;
+      }
+
+      analytics.sendEvent(self._options.client, analyticsMessage);
+
+      return Promise.reject(new BraintreeError({
+        type: lookupError.type,
+        code: lookupError.code,
+        message: lookupError.message,
+        details: {
+          originalError: err
+        }
+      }));
     });
   }).then(function (response) {
     analytics.sendEvent(self._options.client, 'three-d-secure.verification-flow.3ds-version.' + response.lookup.threeDSecureVersion);
@@ -876,7 +940,7 @@ ThreeDSecure.prototype._createPaymentsSetupCompleteCallback = function (resolve,
   var self = this;
 
   return function (data) {
-    if (self._getDfReferenceIdPromise) {
+    if (self._getDfReferenceIdResolveFunction) {
       self._getDfReferenceIdResolveFunction(data.sessionId);
     } else {
       self._getDfReferenceIdPromise = Promise.resolve(data.sessionId);
