@@ -1,5 +1,4 @@
 'use strict';
-/* eslint-disable no-reserved-keys */
 
 var enumerate = require('../../lib/enumerate');
 var errors = require('./errors');

@@ -102,7 +102,7 @@ var IFRAME_WIDTH = 400;
  * @typedef {object} ThreeDSecure~billingAddress
  * @property {string} [givenName] The first name associated with the billing address.
  * @property {string} [surname] The last name associated with the billing address.
- * @property {number} [phoneNumber] The phone number associated with the billing address. Only numbers; remove dashes, paranthesis and other characters.
+ * @property {string} [phoneNumber] The phone number associated with the billing address. Only numbers; remove dashes, paranthesis and other characters.
  * @property {string} [streetAddress] Line 1 of the billing address (eg. number, street, etc).
  * @property {string} [extendedAddress] Line 2 of the billing address (eg. suite, apt #, etc.).
  * @property {string} [line3] Line 3 of the billing address if needed (eg. suite, apt #, etc).
@@ -114,7 +114,7 @@ var IFRAME_WIDTH = 400;
 
 /**
  * @typedef {object} ThreeDSecure~additionalInformation
- * @property {number} [workPhoneNumber] The work phone number used for verification. Only numbers; remove dashes, parenthesis and other characters.
+ * @property {string} [workPhoneNumber] The work phone number used for verification. Only numbers; remove dashes, parenthesis and other characters.
  * @property {string} [shippingGivenName] The first name associated with the shipping address.
  * @property {string} [shippingSurname] The last name associated with the shipping address.
  * @property {object} [shippingAddress]
@@ -125,7 +125,7 @@ var IFRAME_WIDTH = 400;
  * @property {string} [shippingAddress.region] The 2 letter code for US states, and the equivalent for other countries.
  * @property {string} [shippingAddress.postalCode] The zip code or equivalent for countries that have them.
  * @property {string} [shippingAddress.countryCodeAlpha2] The 2 character country code.
- * @property {number} [shippingPhone] The phone number associated with the shipping address. Only numbers; remove dashes, parenthesis and other characters.
+ * @property {string} [shippingPhone] The phone number associated with the shipping address. Only numbers; remove dashes, parenthesis and other characters.
  * @property {string} [shippingMethod] The 2-digit string indicating the name of the shipping method chosen for the transaction. Possible values:
  * - `01` Same Day
  * - `02` Overnight / Expedited
@@ -133,7 +133,7 @@ var IFRAME_WIDTH = 400;
  * - `04` Ground
  * - `05` Electronic Delivery
  * - `06` Ship to Store
- * @property {number} [shippingMethodIndicator] The 2-digit string indicating the shipping method chosen for the transaction Possible values.
+ * @property {string} [shippingMethodIndicator] The 2-digit string indicating the shipping method chosen for the transaction Possible values.
  * - `01` Ship to cardholder billing address
  * - `02` Ship to another verified address on file with merchant
  * - `03` Ship to address that is different than billing address
@@ -154,85 +154,85 @@ var IFRAME_WIDTH = 400;
  * - `LUX` Luxury Retail
  * - `ACC` Accommodation Retail
  * - `TBD` Other
- * @property {number} [deliveryTimeframe] The 2-digit number indicating the delivery timeframe. Possible values:
+ * @property {string} [deliveryTimeframe] The 2-digit number indicating the delivery timeframe. Possible values:
  * - `01` Electronic delivery
  * - `02` Same day shipping
  * - `03` Overnight shipping
  * - `04` Two or more day shipping
  * @property {string} [deliveryEmail] For electronic delivery, email address to which the merchandise was delivered.
- * @property {number} [reorderindicator] The 2-digit number indicating whether the cardholder is reordering previously purchased merchandise. possible values:
+ * @property {string} [reorderindicator] The 2-digit number indicating whether the cardholder is reordering previously purchased merchandise. possible values:
  * - `01` First time ordered
  * - `02` Reordered
- * @property {number} [preorderIndicator] The 2-digit number indicating whether cardholder is placing an order with a future availability or release date. possible values:
+ * @property {string} [preorderIndicator] The 2-digit number indicating whether cardholder is placing an order with a future availability or release date. possible values:
  * - `01` Merchandise available
  * - `02` Future availability
- * @property {number} [preorderDate] The 8-digit number (format: YYYYMMDD) indicating expected date that a pre-ordered purchase will be available.
- * @property {number} [giftCardAmount] The purchase amount total for prepaid gift cards in major units.
- * @property {number} [giftCardCurrencyCode] ISO 4217 currency code for the gift card purchased.
- * @property {number} [giftCardCount] Total count of individual prepaid gift cards purchased.
- * @property {number} [accountAgeIndicator] The 2-digit value representing the length of time cardholder has had account. Possible values:
+ * @property {string} [preorderDate] The 8-digit number (format: YYYYMMDD) indicating expected date that a pre-ordered purchase will be available.
+ * @property {string} [giftCardAmount] The purchase amount total for prepaid gift cards in major units.
+ * @property {string} [giftCardCurrencyCode] ISO 4217 currency code for the gift card purchased.
+ * @property {string} [giftCardCount] Total count of individual prepaid gift cards purchased.
+ * @property {string} [accountAgeIndicator] The 2-digit value representing the length of time cardholder has had account. Possible values:
  * - `01` No Account
  * - `02` Created during transaction
  * - `03` Less than 30 days
  * - `04` 30-60 days
  * - `05` More than 60 days
- * @property {number} [accountCreateDate] The 8-digit number (format: YYYYMMDD) indicating the date the cardholder opened the account.
- * @property {number} [accountChangeIndicator] The 2-digit value representing the length of time since the last change to the cardholder account. This includes shipping address, new payment account or new user added. Possible values:
+ * @property {string} [accountCreateDate] The 8-digit number (format: YYYYMMDD) indicating the date the cardholder opened the account.
+ * @property {string} [accountChangeIndicator] The 2-digit value representing the length of time since the last change to the cardholder account. This includes shipping address, new payment account or new user added. Possible values:
  * - `01` Changed during transaction
  * - `02` Less than 30 days
  * - `03` 30-60 days
  * - `04` More than 60 days
- * @property {number} [accountChangeDate] The 8-digit number (format: YYYYMMDD) indicating the date the cardholder's account was last changed. This includes changes to the billing or shipping address, new payment accounts or new users added.
- * @property {number} [accountPwdChangeIndicator] The 2-digit value representing the length of time since the cardholder changed or reset the password on the account. Possible values:
+ * @property {string} [accountChangeDate] The 8-digit number (format: YYYYMMDD) indicating the date the cardholder's account was last changed. This includes changes to the billing or shipping address, new payment accounts or new users added.
+ * @property {string} [accountPwdChangeIndicator] The 2-digit value representing the length of time since the cardholder changed or reset the password on the account. Possible values:
  * - `01` No change
  * - `02` Changed during transaction
  * - `03` Less than 30 days
  * - `04` 30-60 days
  * - `05` More than 60 days
- * @property {number} [accountPwdChangeDate] The 8-digit number (format: YYYYMMDD) indicating the date the cardholder last changed or reset password on account.
- * @property {number} [shippingAddressUsageIndicator] The 2-digit value indicating when the shipping address used for transaction was first used. Possible values:
+ * @property {string} [accountPwdChangeDate] The 8-digit number (format: YYYYMMDD) indicating the date the cardholder last changed or reset password on account.
+ * @property {string} [shippingAddressUsageIndicator] The 2-digit value indicating when the shipping address used for transaction was first used. Possible values:
  * - `01` This transaction
  * - `02` Less than 30 days
  * - `03` 30-60 days
  * - `04` More than 60 days
- * @property {number} [shippingAddressUsageDate] The 8-digit number (format: YYYYMMDD) indicating the date when the shipping address used for this transaction was first used.
- * @property {number} [transactionCountDay] Number of transactions (successful or abandoned) for this cardholder account within the last 24 hours.
- * @property {number} [transactionCountYear] Number of transactions (successful or abandoned) for this cardholder account within the last year.
- * @property {number} [addCardAttempts] Number of add card attempts in the last 24 hours.
- * @property {number} [accountPurchases] Number of purchases with this cardholder account during the previous six months.
- * @property {number} [fraudActivity] The 2-digit value indicating whether the merchant experienced suspicious activity (including previous fraud) on the account. Possible values:
+ * @property {string} [shippingAddressUsageDate] The 8-digit number (format: YYYYMMDD) indicating the date when the shipping address used for this transaction was first used.
+ * @property {string} [transactionCountDay] Number of transactions (successful or abandoned) for this cardholder account within the last 24 hours.
+ * @property {string} [transactionCountYear] Number of transactions (successful or abandoned) for this cardholder account within the last year.
+ * @property {string} [addCardAttempts] Number of add card attempts in the last 24 hours.
+ * @property {string} [accountPurchases] Number of purchases with this cardholder account during the previous six months.
+ * @property {string} [fraudActivity] The 2-digit value indicating whether the merchant experienced suspicious activity (including previous fraud) on the account. Possible values:
  * - `01` No suspicious activity
  * - `02` Suspicious activity observed
- * @property {number} [shippingNameIndicator] The 2-digit value indicating if the cardholder name on the account is identical to the shipping name used for the transaction. Possible values:
+ * @property {string} [shippingNameIndicator] The 2-digit value indicating if the cardholder name on the account is identical to the shipping name used for the transaction. Possible values:
  * - `01` Account and shipping name identical
  * - `02` Account and shipping name differ
- * @property {number} [paymentAccountIndicator] The 2-digit value indicating the length of time that the payment account was enrolled in the merchant account. Possible values:
+ * @property {string} [paymentAccountIndicator] The 2-digit value indicating the length of time that the payment account was enrolled in the merchant account. Possible values:
  * - `01` No account (guest checkout)
  * - `02` During the transaction
  * - `03` Less than 30 days
  * - `04` 30-60 days
  * - `05` More than 60 days
- * @property {number} [paymentAccountAge] The 8-digit number (format: YYYYMMDD) indicating the date the payment account was added to the cardholder account.
- * @property {number} [acsWindowSize] The 2-digit number to set the challenge window size to display to the end cardholder.  The ACS will reply with content that is formatted appropriately to this window size to allow for the best user experience.  The sizes are width x height in pixels of the window displayed in the cardholder browser window. Possible values:
+ * @property {string} [paymentAccountAge] The 8-digit number (format: YYYYMMDD) indicating the date the payment account was added to the cardholder account.
+ * @property {string} [acsWindowSize] The 2-digit number to set the challenge window size to display to the end cardholder.  The ACS will reply with content that is formatted appropriately to this window size to allow for the best user experience.  The sizes are width x height in pixels of the window displayed in the cardholder browser window. Possible values:
  * - `01` 250x400
  * - `02` 390x400
  * - `03` 500x600
  * - `04` 600x400
  * - `05` Full page
- * @property {number} [sdkMaxTimeout] The 2-digit number of minutes (minimum 05) to set the maximum amount of time for all 3DS 2.0 messages to be communicated between all components.
- * @property {number} [addressMatch] The 1-character value (Y/N) indicating whether cardholder billing and shipping addresses match.
+ * @property {string} [sdkMaxTimeout] The 2-digit number of minutes (minimum 05) to set the maximum amount of time for all 3DS 2.0 messages to be communicated between all components.
+ * @property {string} [addressMatch] The 1-character value (Y/N) indicating whether cardholder billing and shipping addresses match.
  * @property {string} [accountId] Additional cardholder account information.
  * @property {string} [ipAddress] The IP address of the consumer. IPv4 and IPv6 are supported.
  * @property {string} [orderDescription] Brief description of items purchased.
- * @property {number} [taxAmount] Unformatted tax amount without any decimalization (ie. $123.67 = 12367).
+ * @property {string} [taxAmount] Unformatted tax amount without any decimalization (ie. $123.67 = 12367).
  * @property {string} [userAgent] The exact content of the HTTP user agent header.
- * @property {number} [authenticationIndicator] The 2-digit number indicating the type of authentication request. This field is required if a recurring or installment transaction request. Possible values:
+ * @property {string} [authenticationIndicator] The 2-digit number indicating the type of authentication request. This field is required if a recurring or installment transaction request. Possible values:
  *  - `02` Recurring
  *  - `03` Installment
- * @property {number} [installment] An integer value greater than 1 indicating the maximum number of permitted authorizations for installment payments. Required for recurring and installement transaction requests.
- * @property {number} [purchaseDate] The 14-digit number (format: YYYYMMDDHHMMSS) indicating the date in UTC of original purchase. Required for recurring and installement transaction requests.
- * @property {number} [recurringEnd] The 8-digit number (format: YYYYMMDD) indicating the date after which no further recurring authorizations should be performed. Required for recurring and installement transaction requests.
- * @property {number} [recurringFrequency] Integer value indicating the minimum number of days between recurring authorizations. A frequency of monthly is indicated by the value 28. Multiple of 28 days will be used to indicate months (ex. 6 months = 168). Required for recurring and installement transaction requests.
+ * @property {string} [installment] An integer value greater than 1 indicating the maximum number of permitted authorizations for installment payments. Required for recurring and installement transaction requests.
+ * @property {string} [purchaseDate] The 14-digit number (format: YYYYMMDDHHMMSS) indicating the date in UTC of original purchase. Required for recurring and installement transaction requests.
+ * @property {string} [recurringEnd] The 8-digit number (format: YYYYMMDD) indicating the date after which no further recurring authorizations should be performed. Required for recurring and installement transaction requests.
+ * @property {string} [recurringFrequency] Integer value indicating the minimum number of days between recurring authorizations. A frequency of monthly is indicated by the value 28. Multiple of 28 days will be used to indicate months (ex. 6 months = 168). Required for recurring and installement transaction requests.
  */
 
 /**
@@ -261,7 +261,7 @@ function ThreeDSecure(options) {
  * @param {object} options Options for card verification.
  * @param {string} options.nonce The nonce representing the card from a tokenization payload. For example, this can be a {@link HostedFields~tokenizePayload|tokenizePayload} returned by Hosted Fields under `payload.nonce`.
  * @param {string} options.bin The numeric Bank Identification Number (bin) of the card from a tokenization payload. For example, this can be a {@link HostedFields~tokenizePayload|tokenizePayload} returned by Hosted Fields under `payload.details.bin`.
- * @param {number} options.amount The amount of the transaction in the current merchant account's currency. For example, if you are running a transaction of $123.45 US dollars, `amount` would be 123.45.
+ * @param {string} options.amount The amount of the transaction in the current merchant account's currency. For example, if you are running a transaction of $123.45 US dollars, `amount` would be 123.45.
  * @param {boolean} [options.challengeRequested] If set to true, an authentication challenge will be forced if possible.
  * @param {boolean} [options.exemptionRequested] If set to true, an exemption to the authentication challenge will be requested.
  * @param {function} options.onLookupComplete Function to execute when lookup completes. The first argument, `data`, is a {@link ThreeDSecure~verificationData|verificationData} object, and the second argument, `next`, is a callback. `next` must be called to continue.
@@ -683,11 +683,42 @@ ThreeDSecure.prototype._triggerCardinalBinProcess = function (bin) {
 };
 
 /**
- * Cancel the 3DS flow and return the verification payload if available.
+ * Cancel the 3DS flow and return the verification payload if available. If using 3D Secure version 2, this will not close the UI of the authentication modal. It is recommended that this method only be used in the `onLookupComplete` callback.
  * @public
  * @param {callback} [callback] The second argument is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If there is no verifyPayload (the initial lookup did not complete), an error will be returned. If no callback is passed, `cancelVerifyCard` will return a promise.
  * @returns {Promise|void} Returns a promise if no callback is provided.
- * @example
+ * @example <caption>Cancel the verification in onLookupComplete</caption>
+ * threeDSecure.verifyCard({
+ *   amount: '100.00',
+ *   nonce: nonceFromTokenizationPayload,
+ *   bin: binFromTokenizationPayload,
+ *   // other fields such as billing address
+ *   onLookupComplete: function (data, next) {
+ *     // determine if you want to call next to start the challenge,
+ *     // if not, call cancelVerifyCard
+ *     threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
+ *       if (err) {
+ *         // Handle error
+ *         console.log(err.message); // No verification payload available
+ *         return;
+ *       }
+ *
+ *       verifyPayload.nonce; // The nonce returned from the 3ds lookup call
+ *       verifyPayload.liabilityShifted; // boolean
+ *       verifyPayload.liabilityShiftPossible; // boolean
+ *     });
+ *   }
+ * }, function (verifyError, payload) {
+ *   if (verifyError) {
+ *     if (verifyError.code === 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT ') {
+ *       // flow was cancelled by merchant, 3ds info can be found in the payload
+ *       // for cancelVerifyCard
+ *     }
+ *   }
+ * });
+ * @example <caption>Cancel the verification in 3D Secure version 1</caption>
+ * // unlike with v2, this will not cause `verifyCard` to error, it will simply
+ * // never call the callback
  * threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
  *   if (err) {
  *     // Handle error
@@ -703,13 +734,6 @@ ThreeDSecure.prototype._triggerCardinalBinProcess = function (bin) {
 ThreeDSecure.prototype.cancelVerifyCard = function () {
   var response;
 
-  if (this._usesSongbirdFlow()) {
-    return Promise.reject(new BraintreeError({
-      type: errors.THREEDS_METHOD_DEPRECATED.type,
-      code: errors.THREEDS_METHOD_DEPRECATED.code,
-      message: 'cancelVerifyCard can not be used with 3D Secure v2.'
-    }));
-  }
   this._verifyCardInProgress = false;
 
   if (!this._lookupPaymentMethod) {
@@ -721,6 +745,10 @@ ThreeDSecure.prototype.cancelVerifyCard = function () {
     liabilityShifted: this._lookupPaymentMethod.threeDSecureInfo.liabilityShifted,
     verificationDetails: this._lookupPaymentMethod.threeDSecureInfo.verificationDetails
   });
+
+  if (this._usesSongbirdFlow() && this._verifyCardCallback) {
+    this._verifyCardCallback(new BraintreeError(errors.THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT));
+  }
 
   return Promise.resolve(response);
 };

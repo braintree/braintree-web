@@ -32,6 +32,8 @@ var wrapPromise = require('@braintree/wrap-promise');
 /**
  * @typedef {object} HostedFields~tokenizePayload
  * @property {string} nonce The payment method nonce.
+ * @property {object} authenticationInsight Info about the [regulatory environment](https://developers.braintreepayments.com/guides/3d-secure/advanced-options/javascript/v3#authentication-insight) of the tokenized card. Only available if `authenticationInsight.merchantAccountId` is passed in the `tokenize` method options.
+ * @property {string} authenticationInsight.regulationEnvironment The [regulation environment](https://developers.braintreepayments.com/guides/3d-secure/advanced-options/javascript/v3#authentication-insight) for the tokenized card.
  * @property {object} details Additional account details.
  * @property {string} details.bin The BIN number of the card.
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
@@ -317,7 +319,7 @@ function createInputEventHandler(fields) {
     classList.toggle(container, constants.externalClasses.VALID, field.isValid);
     classList.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
 
-    this._state = { // eslint-disable-line no-invalid-this
+    this._state = {// eslint-disable-line no-invalid-this
       cards: merchantPayload.cards,
       fields: merchantPayload.fields
     };
@@ -753,6 +755,8 @@ HostedFields.prototype.teardown = function () {
  * @public
  * @param {object} [options] All tokenization options for the Hosted Fields component.
  * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID. Note: merchants using Advanced Fraud Tools should not use this option, as device data will not be included.
+ * @param {object} [options.authenticationInsight] Options for checking authentication insight - the [regulatory environment](https://developers.braintreepayments.com/guides/3d-secure/advanced-options/javascript/v3#authentication-insight) of the tokenized card.
+ * @param {string} options.authenticationInsight.merchantAccountId The Braintree merchant account id to use to look up the authentication insight information.
  * @param {array} [options.fieldsToTokenize] By default, all fields will be tokenized. You may specify which fields specifically you wish to tokenize with this property. Valid options are `'number'`, `'cvv'`, `'expirationDate'`, `'expirationMonth'`, `'expirationYear'`, `'postalCode'`.
  * @param {string} [options.cardholderName] When supplied, the cardholder name to be tokenized with the contents of the fields.
  * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.

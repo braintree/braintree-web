@@ -366,7 +366,7 @@ describe('internal', function () {
         }
       });
 
-      expect(analytics.sendEvent).to.be.calledWith(this.sandbox.match.object, 'custom.hosted-fields.load.succeeded');
+      expect(analytics.sendEvent).to.be.calledWith(this.sandbox.match.any, 'custom.hosted-fields.load.succeeded');
     });
 
     it('calls initialize on each frame that has an initalize function', function () {
@@ -591,6 +591,47 @@ describe('internal', function () {
     it('replies with data if Client API tokenization succeeds', function (done) {
       create(this.goodClient, this.validCardForm)(this.fakeOptions, function (arg) {
         expect(arg).to.deep.equal([null, {
+          nonce: this.fakeNonce,
+          details: this.fakeDetails,
+          description: this.fakeDescription,
+          type: this.fakeType,
+          binData: this.binData
+        }]);
+
+        done();
+      }.bind(this));
+    });
+
+    it('replies with auth insight data if merchant account id is passed in request', function (done) {
+      this.fakeOptions.authenticationInsight = {
+        merchantAccountId: 'id'
+      };
+      this.goodClient.request.resolves({
+        creditCards: [{
+          authenticationInsight: {
+            regulationEnvironment: 'psd2'
+          },
+          nonce: this.fakeNonce,
+          details: this.fakeDetails,
+          description: this.fakeDescription,
+          type: this.fakeType,
+          foo: 'bar',
+          binData: this.binData
+        }]
+      });
+
+      create(this.goodClient, this.validCardForm)(this.fakeOptions, function (arg) {
+        expect(this.goodClient.request).to.be.calledWithMatch({
+          data: {
+            authenticationInsight: true,
+            merchantAccountId: 'id'
+          }
+        });
+
+        expect(arg).to.deep.equal([null, {
+          authenticationInsight: {
+            regulationEnvironment: 'psd2'
+          },
           nonce: this.fakeNonce,
           details: this.fakeDetails,
           description: this.fakeDescription,

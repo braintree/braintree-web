@@ -25,6 +25,10 @@ function errorWithClassResponseAdapter(responseBody) {
 function userErrorResponseAdapter(responseBody) {
   var fieldErrors = buildFieldErrors(responseBody.errors);
 
+  if (fieldErrors.length === 0) {
+    return {error: {message: responseBody.errors[0].message}};
+  }
+
   return {error: {message: getLegacyMessage(fieldErrors)}, fieldErrors: fieldErrors};
 }
 
@@ -32,6 +36,9 @@ function buildFieldErrors(errors) {
   var fieldErrors = [];
 
   errors.forEach(function (error) {
+    if (!(error.extensions && error.extensions.inputPath)) {
+      return;
+    }
     addFieldError(error.extensions.inputPath.slice(1), error, fieldErrors);
   });
 

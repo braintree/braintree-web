@@ -103,7 +103,8 @@ describe('ThreeDSecure', function () {
       this.sandbox.stub(assets, 'loadScript').callsFake(function () {
         global.Cardinal = self.fakeCardinal;
 
-        return Promise.resolve();
+        // wait briefly for time elapsed tests
+        return wait(100);
       });
     });
 
@@ -115,7 +116,7 @@ describe('ThreeDSecure', function () {
       return this.tds._setupSongbird({isProduction: true}).then(function () {
         expect(assets.loadScript).to.be.calledOnce;
         expect(assets.loadScript).to.be.calledWith({
-          src: 'https://songbird.cardinalcommerce.com/cardinalcruise/v1/songbird.js'
+          src: 'https://songbird.cardinalcommerce.com/edge/v1/songbird.js'
         });
       });
     });
@@ -124,7 +125,7 @@ describe('ThreeDSecure', function () {
       return this.tds._setupSongbird().then(function () {
         expect(assets.loadScript).to.be.calledOnce;
         expect(assets.loadScript).to.be.calledWith({
-          src: 'https://songbirdstag.cardinalcommerce.com/cardinalcruise/v1/songbird.js'
+          src: 'https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js'
         });
       });
     });
@@ -2312,7 +2313,8 @@ describe('ThreeDSecure', function () {
         nonce: 'fake-nonce',
         threeDSecureInfo: {
           liabilityShiftPossible: true,
-          liabilityShifted: false
+          liabilityShifted: false,
+          verificationDetails: {}
         }
       };
 
@@ -2320,28 +2322,58 @@ describe('ThreeDSecure', function () {
         expect(response.nonce).to.eql('fake-nonce');
         expect(response.liabilityShiftPossible).to.eql(true);
         expect(response.liabilityShifted).to.eql(false);
+        expect(response.verificationDetails).to.deep.equal({});
 
         done();
       });
     });
 
-    it('errors if songbird flow is being used', function (done) {
+    it('calls verifyCardCallback with error when using songbird flow', function (done) {
+      var spy = this.sandbox.stub();
+
       this.threeDS._options.version = 2;
 
       this.threeDS._lookupPaymentMethod = {
         nonce: 'fake-nonce',
         threeDSecureInfo: {
           liabilityShiftPossible: true,
-          liabilityShifted: false
+          liabilityShifted: false,
+          verificationDetails: {}
+        }
+      };
+      this.threeDS._verifyCardCallback = spy;
+
+      this.threeDS.cancelVerifyCard(function (err) {
+        var verifyCardError = spy.args[0][0];
+
+        expect(err).to.not.exist;
+
+        expect(spy).to.be.calledOnce;
+        expect(verifyCardError.code).to.equal('THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT');
+
+        done();
+      });
+    });
+
+    it('does not throw an error when using v2 and there is no verifyCardCallback', function (done) {
+      this.threeDS._options.version = 2;
+
+      this.threeDS._lookupPaymentMethod = {
+        nonce: 'fake-nonce',
+        threeDSecureInfo: {
+          liabilityShiftPossible: true,
+          liabilityShifted: false,
+          verificationDetails: {}
         }
       };
 
       this.threeDS.cancelVerifyCard(function (err, response) {
-        expect(response).to.not.exist;
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.eql('THREEDS_METHOD_DEPRECATED');
-        expect(err.message).to.equal('cancelVerifyCard can not be used with 3D Secure v2.');
+        expect(err).to.not.exist;
+
+        expect(response.nonce).to.eql('fake-nonce');
+        expect(response.liabilityShiftPossible).to.eql(true);
+        expect(response.liabilityShifted).to.eql(false);
+        expect(response.verificationDetails).to.deep.equal({});
 
         done();
       });

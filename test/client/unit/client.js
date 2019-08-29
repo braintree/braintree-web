@@ -15,7 +15,7 @@ describe('Client', function () {
   describe('bad instantiation', function () {
     it('throws an error when instantiated with no arguments', function (done) {
       try {
-        new Client(); // eslint-disable-line no-new
+        new Client();
       } catch (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         done();
@@ -24,7 +24,7 @@ describe('Client', function () {
 
     it('throws an error when instantiated with no gatewayConfiguration', function (done) {
       try {
-        new Client(); // eslint-disable-line no-new
+        new Client();
       } catch (err) {
         expect(err).to.be.an.instanceof(BraintreeError);
         expect(err.type).to.equal(BraintreeError.types.INTERNAL);
@@ -36,7 +36,7 @@ describe('Client', function () {
 
     it('throws an error when instantiated with invalid assetsUrl', function (done) {
       try {
-        new Client({ // eslint-disable-line no-new
+        new Client({
           gatewayConfiguration: {
             assetsUrl: 'http://example.com'
           }
@@ -52,7 +52,7 @@ describe('Client', function () {
 
     it('throws an error when instantiated with invalid clientApiUrl', function (done) {
       try {
-        new Client({ // eslint-disable-line no-new
+        new Client({
           gatewayConfiguration: {
             clientApiUrl: 'http://example.com'
           }
@@ -68,7 +68,7 @@ describe('Client', function () {
 
     it('throws an error when instantiated with invalid configUrl', function (done) {
       try {
-        new Client({ // eslint-disable-line no-new
+        new Client({
           gatewayConfiguration: {
             configUrl: 'http://example.com'
           }
@@ -94,7 +94,7 @@ describe('Client', function () {
       var self = this;
 
       return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.object, 'custom.client.load.initialized');
+        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.any, 'custom.client.load.initialized');
       });
     });
 
@@ -102,7 +102,7 @@ describe('Client', function () {
       var self = this;
 
       return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.object, 'custom.client.load.succeeded');
+        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.any, 'custom.client.load.succeeded');
       });
     });
 
@@ -110,11 +110,11 @@ describe('Client', function () {
       var self = this;
 
       return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
-        expect(analytics.sendEvent).to.not.be.calledWith(self.sandbox.match.object, 'custom.client.load.cached');
+        expect(analytics.sendEvent).to.not.be.calledWith(self.sandbox.match.any, 'custom.client.load.cached');
 
         return Client.initialize({authorization: fake.tokenizationKey});
       }).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.object, 'custom.client.load.cached');
+        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.any, 'custom.client.load.cached');
       });
     });
 

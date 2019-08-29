@@ -380,7 +380,7 @@ describe('Expiration Month Input', function () {
     });
 
     it('calls parent class method', function () {
-      new ExpirationMonthInput({ // eslint-disable-line no-new
+      new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -395,7 +395,7 @@ describe('Expiration Month Input', function () {
     });
 
     it('sets up listener for SET_MONTH_OPTIONS if expiration month is a select', function () {
-      new ExpirationMonthInput({ // eslint-disable-line no-new
+      new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -411,7 +411,7 @@ describe('Expiration Month Input', function () {
     });
 
     it('does not set up listener for SET_MONTH_OPTIONS if expiration month is not a select', function () {
-      new ExpirationMonthInput({ // eslint-disable-line no-new
+      new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -427,7 +427,7 @@ describe('Expiration Month Input', function () {
 
     it('renames the options when SET_MONTH_OPTIONS is emitted', function (done) {
       var callback;
-      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+      var input = new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -482,7 +482,7 @@ describe('Expiration Month Input', function () {
 
     it('defaults to existing value if passed options are less than the options', function (done) {
       var callback;
-      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+      var input = new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -524,7 +524,7 @@ describe('Expiration Month Input', function () {
 
     it('ignores options beyond the 12th', function (done) {
       var callback;
-      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+      var input = new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -583,7 +583,7 @@ describe('Expiration Month Input', function () {
 
     it('does not override the placeholder if set', function (done) {
       var callback;
-      var input = new ExpirationMonthInput({ // eslint-disable-line no-new
+      var input = new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {

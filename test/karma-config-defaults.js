@@ -24,6 +24,7 @@ module.exports = {
     noParse: []
   },
   files: [
+    '../../node_modules/es6-shim/es6-shim.js',
     '../global.js',
     '**/*.js'
   ],

@@ -34,7 +34,7 @@ describe('GraphQL', function () {
 
     this.options.sendAnalyticsEvent = function (event) { analyticsEvents.push(event); };
 
-    new GraphQLRequest(this.options); // eslint-disable-line no-new
+    new GraphQLRequest(this.options);
 
     expect(analyticsEvents).to.deep.equal(['graphql.init']);
   });
@@ -183,6 +183,147 @@ describe('GraphQL', function () {
         },
         options: {}
       });
+    });
+
+    it('creates a GraphQL mutation for credit card tokenization with authentication insight in the query when an authentication insight param is passed in the body', function () {
+      var graphQLRequest, body, parsedBody;
+
+      this.options.data = {
+        creditCard: {
+          number: '4111111111111111',
+          expirationYear: '12',
+          expirationMonth: '2020',
+          cvv: '123',
+          cardholderName: 'Brian Treep',
+          billingAddress: {
+            company: 'Braintree',
+            streetAddress: '123 Townsend St.',
+            extendedAddress: '8th Floor',
+            firstName: 'Dale',
+            lastName: 'Cooper',
+            locality: 'San Francisco',
+            region: 'CA',
+            postalCode: '94107',
+            countryCodeAlpha3: 'USA'
+          }
+        },
+        authenticationInsight: true,
+        merchantAccountId: 'the_merchant_account_id'
+      };
+
+      graphQLRequest = new GraphQLRequest(this.options);
+      body = graphQLRequest.getBody();
+      parsedBody = JSON.parse(body);
+
+      expect(parsedBody.query).to.contain('mutation');
+      expect(parsedBody.query).to.contain('tokenizeCreditCard');
+      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.operationName).to.equal('TokenizeCreditCard');
+      expect(parsedBody.query).to.contain('authenticationInsight');
+      expect(parsedBody.query).to.contain('customerAuthenticationRegulationEnvironment');
+      expect(parsedBody.variables).to.exist;
+
+      expect(parsedBody.variables.input).to.deep.equal({
+        creditCard: {
+          number: '4111111111111111',
+          expirationYear: '12',
+          expirationMonth: '2020',
+          cvv: '123',
+          cardholderName: 'Brian Treep',
+          billingAddress: {
+            company: 'Braintree',
+            streetAddress: '123 Townsend St.',
+            extendedAddress: '8th Floor',
+            firstName: 'Dale',
+            lastName: 'Cooper',
+            locality: 'San Francisco',
+            region: 'CA',
+            postalCode: '94107',
+            countryCodeAlpha3: 'USA'
+          }
+        },
+        options: {}
+      });
+
+      expect(parsedBody.variables.authenticationInsightInput).to.deep.equal({
+        merchantAccountId: 'the_merchant_account_id'
+      });
+    });
+
+    it('creates a GraphQL mutation for credit card tokenization without authentication insight in the query when no authentication insight param is passed in the body', function () {
+      var graphQLRequest, body, parsedBody;
+
+      this.options.data = {
+        creditCard: {
+          number: '4111111111111111',
+          expirationYear: '12',
+          expirationMonth: '2020',
+          cvv: '123',
+          cardholderName: 'Brian Treep',
+          billingAddress: {
+            company: 'Braintree',
+            streetAddress: '123 Townsend St.',
+            extendedAddress: '8th Floor',
+            firstName: 'Dale',
+            lastName: 'Cooper',
+            locality: 'San Francisco',
+            region: 'CA',
+            postalCode: '94107',
+            countryCodeAlpha3: 'USA'
+          }
+        },
+        merchantAccountId: 'the_merchant_account_id'
+      };
+
+      graphQLRequest = new GraphQLRequest(this.options);
+      body = graphQLRequest.getBody();
+      parsedBody = JSON.parse(body);
+
+      expect(parsedBody.query).to.contain('tokenizeCreditCard');
+      expect(parsedBody.query).to.not.contain('authenticationInsight');
+      expect(parsedBody.query).to.not.contain('merchantAccountId');
+      expect(parsedBody.query).to.not.contain('customerAuthenticationRegulationEnvironment');
+      expect(parsedBody.variables).to.exist;
+
+      expect(parsedBody.variables.authenticationInsightInput).to.not.exist;
+    });
+
+    it('creates a GraphQL mutation for credit card tokenization without authentication insight when no merchant account id is passed', function () {
+      var graphQLRequest, body, parsedBody;
+
+      this.options.data = {
+        creditCard: {
+          number: '4111111111111111',
+          expirationYear: '12',
+          expirationMonth: '2020',
+          cvv: '123',
+          cardholderName: 'Brian Treep',
+          billingAddress: {
+            company: 'Braintree',
+            streetAddress: '123 Townsend St.',
+            extendedAddress: '8th Floor',
+            firstName: 'Dale',
+            lastName: 'Cooper',
+            locality: 'San Francisco',
+            region: 'CA',
+            postalCode: '94107',
+            countryCodeAlpha3: 'USA'
+          }
+        },
+        authenticationInsight: true
+      };
+
+      graphQLRequest = new GraphQLRequest(this.options);
+      body = graphQLRequest.getBody();
+      parsedBody = JSON.parse(body);
+
+      expect(parsedBody.query).to.contain('tokenizeCreditCard');
+      expect(parsedBody.query).to.not.contain('authenticationInsight');
+      expect(parsedBody.query).to.not.contain('merchantAccountId');
+      expect(parsedBody.query).to.not.contain('customerAuthenticationRegulationEnvironment');
+      expect(parsedBody.variables).to.exist;
+
+      expect(parsedBody.variables.authenticationInsightInput).to.not.exist;
     });
 
     it('includes client sdk metadata', function () {
@@ -1143,6 +1284,71 @@ describe('GraphQL', function () {
       });
     });
 
+    it('normalizes a GraphQL credit card tokenization response with authentication insight', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var binData = {
+        prepaid: 'Yes',
+        healthcare: 'Unknown',
+        debit: 'No',
+        durbinRegulated: 'Yes',
+        commercial: 'No',
+        payroll: 'Unknown',
+        issuingBank: 'Fake Bank',
+        countryOfIssuance: 'USA',
+        productId: '123'
+      };
+      var fakeGraphQLResponse = {
+        data: {
+          tokenizeCreditCard: {
+            authenticationInsight: {
+              customerAuthenticationRegulationEnvironment: 'psd2'
+            },
+            token: 'faketoken',
+            creditCard: {
+              expirationMonth: '09',
+              expirationYear: '2020',
+              brandCode: 'VISA',
+              last4: '1234',
+              bin: '401111',
+              binData: {
+                prepaid: 'YES',
+                healthcare: null,
+                debit: 'NO',
+                durbinRegulated: 'YES',
+                commercial: 'NO',
+                payroll: 'UNKNOWN',
+                issuingBank: 'Fake Bank',
+                countryOfIssuance: 'USA',
+                productId: '123'
+              }
+            }
+          }
+        }
+      };
+
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+        creditCards: [{
+          authenticationInsight: {
+            regulationEnvironment: 'psd2'
+          },
+          binData: binData,
+          consumed: false,
+          description: 'ending in 34',
+          nonce: 'faketoken',
+          details: {
+            expirationMonth: '09',
+            expirationYear: '2020',
+            bin: '401111',
+            cardType: 'Visa',
+            lastFour: '1234',
+            lastTwo: '34'
+          },
+          type: 'CreditCard',
+          threeDSecureInfo: null
+        }]
+      });
+    });
+
     it('remaps card brand codes', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
       var binData = {
@@ -1330,6 +1536,33 @@ describe('GraphQL', function () {
             ]
           }
         ]
+      });
+    });
+
+    it('normalizes a GraphQL validation error response without field errors', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var fakeGraphQLResponse = {
+        data: {tokenizeCreditCard: null},
+        errors: [
+          {
+            message: 'Valid merchant account must be provided',
+            locations: [{
+              line: 1,
+              column: 473
+            }],
+            path: ['tokenizeCreditCard', 'authenticationInsight'],
+            extensions: {
+              errorType: 'developer_error',
+              errorClass: 'VALIDATION'
+            }
+          }
+        ]
+      };
+
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+        error: {
+          message: 'Valid merchant account must be provided'
+        }
       });
     });
 

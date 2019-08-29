@@ -26,13 +26,13 @@
  * @property {MERCHANT} THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR Occurs when the supplied payment method nonce does not exist or the payment method nonce has already been consumed.
  * @property {CUSTOMER} THREEDS_LOOKUP_VALIDATION_ERROR Occurs when a validation error occurs during the 3D Secure lookup.
  * @property {UNKNOWN} THREEDS_LOOKUP_ERROR An unknown error occurred while attempting the 3D Secure lookup.
+ * @property {MERCHANT} THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT Occurs when the 3D Secure flow is canceled by the merchant using `cancelVerifyCard` (3D Secure v2 flows only).
  */
 
 /**
  * @name BraintreeError.3D Secure - cancelVerifyCard Error Codes
  * @description Errors that occur when using the [`cancelVerifyCard` method](/current/ThreeDSecure.html#cancelVerifyCard).
  * @property {MERCHANT} THREEDS_NO_VERIFICATION_PAYLOAD Occurs when the 3D Secure flow is canceled, but there is no 3D Secure information available.
- * @property {MERCHANT} THREEDS_NO_METHOD_DEPRECATED Occurs when `cancelVerifyCard` is called when using 3D Secure version 2.
  */
 
 /**
@@ -105,6 +105,11 @@ module.exports = {
     code: 'THREEDS_CARDINAL_SDK_CANCELED',
     message: 'Canceled by user.'
   },
+  THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT',
+    message: '3D Secure verfication canceled by merchant.'
+  },
   THREEDS_AUTHENTICATION_IN_PROGRESS: {
     type: BraintreeError.types.MERCHANT,
     code: 'THREEDS_AUTHENTICATION_IN_PROGRESS',
@@ -138,10 +143,6 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'THREEDS_NO_VERIFICATION_PAYLOAD',
     message: 'No verification payload available.'
-  },
-  THREEDS_METHOD_DEPRECATED: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_METHOD_DEPRECATED'
   },
   THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN: {
     type: BraintreeError.types.INTERNAL,

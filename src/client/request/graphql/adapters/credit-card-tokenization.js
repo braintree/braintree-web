@@ -76,6 +76,12 @@ function adaptTokenizeCreditCardResponseBody(body) {
     ]
   };
 
+  if (data.authenticationInsight) {
+    response.creditCards[0].authenticationInsight = {
+      regulationEnvironment: data.authenticationInsight.customerAuthenticationRegulationEnvironment
+    };
+  }
+
   return response;
 }
 

@@ -66,7 +66,7 @@ describe('HostedFields', function () {
     });
 
     it('sends an analytics event', function () {
-      var hf = new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+      var hf = new HostedFields(this.defaultConfiguration);
 
       expect(analytics.sendEvent).to.be.calledWith(hf._clientPromise, 'custom.hosted-fields.initialized');
     });
@@ -88,7 +88,7 @@ describe('HostedFields', function () {
       delete this.defaultConfiguration.fields;
 
       try {
-        new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+        new HostedFields(this.defaultConfiguration);
       } catch (e) {
         error = e;
       }
@@ -103,7 +103,7 @@ describe('HostedFields', function () {
       this.defaultConfiguration.fields = {};
 
       try {
-        new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+        new HostedFields(this.defaultConfiguration);
       } catch (e) {
         error = e;
       }
@@ -114,7 +114,7 @@ describe('HostedFields', function () {
 
     it('sends a timeout event if the fields take too long to set up', function () {
       var clock = this.sandbox.useFakeTimers();
-      var hf = new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+      var hf = new HostedFields(this.defaultConfiguration);
 
       clock.tick(59999);
       expect(analytics.sendEvent).not.to.be.calledWith(hf._clientPromise, 'custom.hosted-fields.load.timed-out');
@@ -125,7 +125,7 @@ describe('HostedFields', function () {
 
     it('emits a timeout event if the fields take too long to set up', function () {
       var clock = this.sandbox.useFakeTimers();
-      var instance = new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+      var instance = new HostedFields(this.defaultConfiguration);
 
       this.sandbox.stub(instance, '_emit');
 
@@ -277,7 +277,7 @@ describe('HostedFields', function () {
       delete this.defaultConfiguration.fields.number.container;
 
       try {
-        new HostedFields(this.defaultConfiguration);  // eslint-disable-line no-new
+        new HostedFields(this.defaultConfiguration);
       } catch (e) {
         error = e;
       }

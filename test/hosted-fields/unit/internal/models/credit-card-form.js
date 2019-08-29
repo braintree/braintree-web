@@ -61,7 +61,7 @@ describe('credit card model', function () {
 
       this.sandbox.spy(CreditCardForm.prototype, 'setSupportedCardTypes');
 
-      new CreditCardForm(configuration); // eslint-disable-line no-new
+      new CreditCardForm(configuration);
 
       expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledOnce;
       expect(CreditCardForm.prototype.setSupportedCardTypes).to.be.calledWith(['VISA']);

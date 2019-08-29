@@ -256,12 +256,16 @@ function create() {
 
 function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
   return function (options, reply) {
+    var data;
+
     Promise.resolve(clientInstanceOrPromise).then(function (client) {
       var mergedCardData, creditCardDetails;
       var fieldsToTokenize = options.fieldsToTokenize;
       var isEmpty = cardForm.isEmpty(fieldsToTokenize);
       var invalidFieldKeys = cardForm.invalidFieldKeys(fieldsToTokenize);
       var isValid = invalidFieldKeys.length === 0;
+      var authInsight = options.authenticationInsight;
+      var merchantAccountIdForAuthInsight = authInsight && authInsight.merchantAccountId;
 
       if (isEmpty) {
         reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
@@ -288,16 +292,23 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
         validate: options.vault === true
       };
 
+      data = {
+        _meta: {
+          source: 'hosted-fields'
+        },
+        creditCard: creditCardDetails
+      };
+
+      if (merchantAccountIdForAuthInsight) {
+        data.authenticationInsight = true;
+        data.merchantAccountId = merchantAccountIdForAuthInsight;
+      }
+
       return client.request({
         api: 'clientApi',
         method: 'post',
         endpoint: 'payment_methods/credit_cards',
-        data: {
-          _meta: {
-            source: 'hosted-fields'
-          },
-          creditCard: creditCardDetails
-        }
+        data: data
       }).then(function (clientApiResult) {
         var clientApiCreditCard = clientApiResult.creditCards[0];
         var result = {
@@ -307,6 +318,10 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
           type: clientApiCreditCard.type,
           binData: clientApiCreditCard.binData
         };
+
+        if (clientApiCreditCard.authenticationInsight) {
+          result.authenticationInsight = clientApiCreditCard.authenticationInsight;
+        }
 
         analytics.sendEvent(clientInstanceOrPromise, 'custom.hosted-fields.tokenization.succeeded');
 

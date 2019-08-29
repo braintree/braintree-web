@@ -22,7 +22,7 @@ describe('BraintreeError', function () {
     var err;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
         code: 'YOU_GOOFED'
       });
@@ -35,7 +35,7 @@ describe('BraintreeError', function () {
     err = null;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
         code: 'YOU_GOOFED',
         message: ''
@@ -52,7 +52,7 @@ describe('BraintreeError', function () {
     var err;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
         message: 'You goofed'
       });
@@ -65,7 +65,7 @@ describe('BraintreeError', function () {
     err = null;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
         code: '',
         message: 'You goofed'
@@ -82,7 +82,7 @@ describe('BraintreeError', function () {
     var err;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         message: 'you goofed',
         code: 'YOU_GOOFED'
       });
@@ -95,7 +95,7 @@ describe('BraintreeError', function () {
     err = null;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         type: '',
         code: 'YOU_GOOFED',
         message: 'you goofed'
@@ -109,7 +109,7 @@ describe('BraintreeError', function () {
     err = null;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         type: 'NOPE',
         code: 'YOU_GOOFED',
         message: 'I should fail'
@@ -123,7 +123,7 @@ describe('BraintreeError', function () {
     err = null;
 
     try {
-      new BraintreeError({ // eslint-disable-line no-new
+      new BraintreeError({
         type: 'hasOwnProperty',
         code: 'YOU_GOOFED',
         message: 'I should fail'

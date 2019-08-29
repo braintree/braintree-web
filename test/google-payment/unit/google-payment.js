@@ -367,7 +367,7 @@ describe('GooglePayment', function () {
         expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(2);
         expect(paypalPaymentMethod.type).to.equal('PAYPAL');
         expect(paypalPaymentMethod.parameters.purchase_context).to.deep.equal({
-          purchase_units: [{ // eslint-disable-line camelcase
+          purchase_units: [{// eslint-disable-line camelcase
             payee: {
               client_id: 'paypal_client_id' // eslint-disable-line camelcase
             },

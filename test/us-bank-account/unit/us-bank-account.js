@@ -37,7 +37,7 @@ describe('USBankAccount', function () {
 
   describe('Constructor', function () {
     it('sends an analytics event', function () {
-      new USBankAccount({client: this.fakeClient}); // eslint-disable-line no-new
+      new USBankAccount({client: this.fakeClient});
 
       expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'usbankaccount.initialized');
       expect(analytics.sendEvent).to.be.calledOnce;

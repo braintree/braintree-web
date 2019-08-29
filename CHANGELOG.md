@@ -1,10 +1,19 @@
 CHANGELOG
 =========
+
+## 3.51.0
+* Hosted Fields
+  * Add `authorizationInsight` option to tokenization
+  * Fix issue where validation errors without field errors could cause a syntax error
+* 3D Secure
+  * Enable `cancelVerifyCard` method for 3D Secure version 2 integrations
+  * Update songbird.js script urls
+
 ## 3.50.1
 * Update restricted-input to v2.0.2
 * Update browser-detection to v1.8.0
 * 3D Secure
-  * Fix issue where an error maybe thrown when cancelling the 3D Secure flow
+  * Fix issue where an error may be thrown when cancelling the 3D Secure flow
   * Add better handling for lookup errors
   * Fix issue where component would throw an error when creating a 3ds component without a Cardinal Authentication JWT
 * Google Pay

@@ -24,7 +24,6 @@ describe('braintree bus', function () {
   });
 
   it('throws an error when instantiated without a channel', function () {
-    /* eslint-disable no-new */
     var err;
 
     try {
@@ -61,7 +60,6 @@ describe('braintree bus', function () {
     expect(err.type).to.equal('INTERNAL');
     expect(err.code).to.equal('MISSING_CHANNEL_ID');
     expect(err.message).to.equal('Channel ID must be specified.');
-    /* eslint-enable no-new */
   });
 
   describe('on', function () {

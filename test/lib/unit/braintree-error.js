@@ -1,5 +1,4 @@
 'use strict';
-/* eslint-disable no-new */
 
 var BraintreeError = require('../../../src/lib/braintree-error');
 
