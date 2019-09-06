@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.52.0
+* Update event-emitter to v0.3.0
+* Hosted Fields
+  * Add `margin` to allowed CSS rules (closes #449)
+* 3D Secure
+  * Fix issue where `bin` was not being passed along to Cardinal SDK
+
 ## 3.51.0
 * Hosted Fields
   * Add `authorizationInsight` option to tokenization

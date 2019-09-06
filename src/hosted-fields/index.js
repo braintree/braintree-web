@@ -86,6 +86,7 @@ var VERSION = process.env.npm_package_version;
  * `line-height`
  * `opacity`
  * `outline`
+ * `margin`
  * `padding`
  * `text-shadow`
  * `transition`

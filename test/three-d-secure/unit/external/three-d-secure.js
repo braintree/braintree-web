@@ -1387,7 +1387,8 @@ describe('ThreeDSecure', function () {
         }, function () {
           expect(this.instance._prepareRawLookup).to.be.calledOnce;
           expect(this.instance._prepareRawLookup).to.be.calledWithMatch({
-            amount: 100
+            amount: 100,
+            bin: this.tokenizedCard.details.bin
           });
           done();
         }.bind(this));

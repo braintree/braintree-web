@@ -144,4 +144,5 @@ You will need to add the following directives to your policy:
 | connect-src | api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>*.braintree-api.com                               | api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>*.braintree-api.com                                           |
 
 Including `*.paypalobjects.com` and `*.paypal.com` domains and `'unsafe-inline'` in `style-src` are only required if you are using [PayPal](module-braintree-web_paypal-checkout.html).
+
 Including `*.cardinalcommerce.com` in `frame-src`and `script-src` is only required if you are using [3D Secure](module-braintree-web_three-d-secure.html).

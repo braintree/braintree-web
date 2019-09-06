@@ -454,6 +454,10 @@ ThreeDSecure.prototype.verifyCard = function (options) {
       data.exemptionRequested = options.exemptionRequested;
     }
 
+    if (options.bin) {
+      data.bin = options.bin;
+    }
+
     promise = this._prepareRawLookup(data).then(function (transformedData) {
       data = transformedData;
     });
