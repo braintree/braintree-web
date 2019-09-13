@@ -11,6 +11,7 @@ var analytics = require('../../../../src/lib/analytics');
 var fake = require('../../../helpers/fake');
 var assembleIFrames = require('../../../../src/hosted-fields/internal/assemble-iframes');
 var BraintreeError = require('../../../../src/lib/braintree-error');
+var focusIntercept = require('../../../../src/hosted-fields/shared/focus-intercept');
 
 describe('internal', function () {
   beforeEach(function () {
@@ -20,8 +21,7 @@ describe('internal', function () {
       fields: {
         number: {},
         cvv: {}
-      },
-      orderedFields: ['number', 'cvv']
+      }
     };
     this.cardForm = new CreditCardForm(this.fakeConfig);
     this.sandbox.stub(getFrameName, 'getFrameName');
@@ -89,51 +89,9 @@ describe('internal', function () {
         expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'click');
         expect(CreditCardForm.prototype.emitEvent).not.to.be.calledWith('cvv', 'keyup');
       });
-    });
 
-    context('mobile tab targets', function () {
-      beforeEach(function () {
-        getFrameName.getFrameName.returns('number');
-        internal.initialize(this.cardForm);
-        getFrameName.getFrameName.returns('cvv');
-        internal.initialize(this.cardForm);
-      });
-
-      it('does not create a "prev" tab target in the first field\'s form', function () {
-        var inputs = document.forms[0].getElementsByTagName('input');
-        var length = inputs.length;
-
-        while (length--) {
-          expect(inputs.item(length).id).not.to.contain('prev');
-        }
-      });
-
-      it('creates a next input at the end of the first field\'s form', function () {
-        var inputs = document.forms[0].getElementsByTagName('input');
-        var lastInput = inputs[inputs.length - 1];
-
-        expect(lastInput.id).to.contain('next');
-      });
-
-      it('creates a previous input at the beginning of the last field\'s form', function () {
-        var forms = document.forms;
-        var firstInput = forms[forms.length - 1].getElementsByTagName('input')[0];
-
-        expect(firstInput.id).to.contain('prev');
-      });
-
-      it('creates a submit instead of text input at the end of the last field\'s form', function () {
-        var forms = document.forms;
-        var inputs = forms[forms.length - 1].getElementsByTagName('input');
-        var lastInput = inputs[inputs.length - 1];
-
-        expect(lastInput.getAttribute('type')).to.be.string('submit');
-      });
-
-      it('fires the correct focus event when tabbing between fields', function () {
-        document.querySelector('input[id*="target"]').focus();
-
-        expect(global.bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, this.sandbox.match.string);
+      it('is ready to destroy focusIntercept inputs if `REMOVE_FOCUS_INTERCEPTS` fires', function () {
+        expect(global.bus.on).to.be.calledWith(events.REMOVE_FOCUS_INTERCEPTS, focusIntercept.destroy);
       });
     });
   });
@@ -185,7 +143,7 @@ describe('internal', function () {
         expect(global.cardForm.setSupportedCardTypes).to.be.calledOnce;
       });
 
-      it('sets supported card types asyncronously when rejectUnsupportedCards is set', function () {
+      it('sets supported card types asynchronously when rejectUnsupportedCards is set', function () {
         var config = {
           fields: {
             number: {selector: '#foo', rejectUnsupportedCards: true},
@@ -213,7 +171,7 @@ describe('internal', function () {
         }.bind(this));
       });
 
-      it('sets supported card types asyncronously when supportedCardBrands is set', function () {
+      it('sets supported card types asynchronously when supportedCardBrands is set', function () {
         var config = {
           fields: {
             number: {
@@ -369,7 +327,7 @@ describe('internal', function () {
       expect(analytics.sendEvent).to.be.calledWith(this.sandbox.match.any, 'custom.hosted-fields.load.succeeded');
     });
 
-    it('calls initialize on each frame that has an initalize function', function () {
+    it('calls initialize on each frame that has an initialize function', function () {
       var frame1 = {
         braintree: {
           hostedFields: {

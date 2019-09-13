@@ -28,6 +28,10 @@ var constants = {
     INVALID: 'braintree-hosted-fields-invalid',
     VALID: 'braintree-hosted-fields-valid'
   },
+  navigationDirections: {
+    BACK: 'before',
+    FORWARD: 'after'
+  },
   defaultIFrameStyle: {
     border: 'none',
     width: '100%',
@@ -129,10 +133,12 @@ constants.events = enumerate([
   'READY_FOR_CLIENT',
   'REMOVE_ATTRIBUTE',
   'REMOVE_CLASS',
+  'REMOVE_FOCUS_INTERCEPTS',
   'SET_ATTRIBUTE',
   'SET_MESSAGE',
   'SET_MONTH_OPTIONS',
   'TOKENIZATION_REQUEST',
+  'TRIGGER_FOCUS_CHANGE',
   'TRIGGER_INPUT_FOCUS',
   'VALIDATE_STRICT'
 ], 'hosted-fields:');

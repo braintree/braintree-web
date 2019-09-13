@@ -9,6 +9,7 @@ var constants = require('../lib/constants');
 var createAuthorizationData = require('../lib/create-authorization-data');
 var errors = require('./errors');
 var GraphQL = require('./request/graphql');
+var GRAPHQL_URLS = require('../lib/constants').GRAPHQL_URLS;
 var isDateStringBeforeOrOn = require('../lib/is-date-string-before-or-on');
 
 var BRAINTREE_VERSION = require('./constants').BRAINTREE_VERSION;
@@ -56,6 +57,15 @@ function getConfiguration(options) {
           }
         });
       }
+
+      reqOptions.metadata = analyticsMetadata;
+    } else if (attrs.tokenizationKey) {
+      reqOptions.graphQL = new GraphQL({
+        graphQL: {
+          url: GRAPHQL_URLS[authData.environment],
+          features: ['configuration']
+        }
+      });
 
       reqOptions.metadata = analyticsMetadata;
     }

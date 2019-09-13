@@ -1,12 +1,20 @@
 'use strict';
 
-module.exports = function injectFrame(frame, container) {
+var focusIntercept = require('../shared/focus-intercept');
+var directions = require('../shared/constants').navigationDirections;
+
+module.exports = function injectFrame(frame, container, focusHandler) {
+  var frameType = frame.getAttribute('type');
   var clearboth = document.createElement('div');
   var fragment = document.createDocumentFragment();
+  var focusInterceptBefore = focusIntercept.generate(frameType, directions.BACK, focusHandler);
+  var focusInterceptAfter = focusIntercept.generate(frameType, directions.FORWARD, focusHandler);
 
   clearboth.style.clear = 'both';
 
+  fragment.appendChild(focusInterceptBefore);
   fragment.appendChild(frame);
+  fragment.appendChild(focusInterceptAfter);
   fragment.appendChild(clearboth);
 
   container.appendChild(fragment);

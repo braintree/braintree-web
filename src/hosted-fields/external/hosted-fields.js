@@ -28,6 +28,10 @@ var getCardTypes = require('../shared/get-card-types');
 var attributeValidationError = require('./attribute-validation-error');
 var Promise = require('../../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
+var focusChange = require('./focus-change');
+var destroyFocusIntercept = require('../shared/focus-intercept').destroy;
+
+var SAFARI_FOCUS_TIMEOUT = 5;
 
 /**
  * @typedef {object} HostedFields~tokenizePayload
@@ -376,41 +380,6 @@ function isVisibleEnough(node) {
   );
 }
 
-function fieldsDOMOrder(configFields) {
-  var fieldPosition = [];
-  var fields = configFields;
-  var sortedFieldNames = [];
-  var validFieldsInUse = Object.keys(fields).filter(function (key) {
-    return allowedFields.hasOwnProperty(key);
-  });
-
-  validFieldsInUse.forEach(function (key) {
-    fieldPosition.push([key, fields[key].container]);
-  });
-
-  fieldPosition.sort(function (a, b) {
-    var element1 = a[1];
-    var element2 = b[1];
-    var position = element1.compareDocumentPosition(element2);
-
-    if (element1 === element2) { return 0; }
-
-    if (position & Node.DOCUMENT_POSITION_FOLLOWING || position & Node.DOCUMENT_POSITION_CONTAINED_BY) {
-      return -1;
-    } else if (position & Node.DOCUMENT_POSITION_PRECEDING || position & Node.DOCUMENT_POSITION_CONTAINS) {
-      return 1;
-    }
-
-    return 0;
-  });
-
-  fieldPosition.forEach(function (value) {
-    sortedFieldNames.push(value[0]);
-  });
-
-  return sortedFieldNames;
-}
-
 /**
  * @class HostedFields
  * @param {object} options The Hosted Fields {@link module:braintree-web/hosted-fields.create create} options.
@@ -553,7 +522,10 @@ function HostedFields(options) {
       title: 'Secure Credit Card Frame - ' + constants.allowedFields[key].label
     });
 
-    this._injectedNodes.push.apply(this._injectedNodes, injectFrame(frame, container));
+    this._injectedNodes.push.apply(this._injectedNodes, injectFrame(frame, container, function () {
+      self._bus.emit(events.TRIGGER_INPUT_FOCUS, key);
+    }));
+
     this._setupLabelFocus(key, container);
     fields[key] = {
       frameElement: frame,
@@ -592,8 +564,6 @@ function HostedFields(options) {
     }, 0);
   }.bind(this));
 
-  this._merchantConfigurationOptions.orderedFields = fieldsDOMOrder(this._state.fields);
-
   if (this._merchantConfigurationOptions.styles) {
     Object.keys(this._merchantConfigurationOptions.styles).forEach(function (selector) {
       var className = self._merchantConfigurationOptions.styles[selector];
@@ -603,6 +573,17 @@ function HostedFields(options) {
       }
     });
   }
+
+  this._bus.on(events.REMOVE_FOCUS_INTERCEPTS, destroyFocusIntercept);
+
+  this._bus.on(events.TRIGGER_FOCUS_CHANGE, focusChange.createFocusChangeHandler({
+    onRemoveFocusIntercepts: function (element) {
+      self._bus.emit(events.REMOVE_FOCUS_INTERCEPTS, element);
+    },
+    onTriggerInputFocus: function (targetType) {
+      self._bus.emit(events.TRIGGER_INPUT_FOCUS, targetType);
+    }
+  }));
 
   this._bus.on(events.READY_FOR_CLIENT, function (reply) {
     self._clientPromise.then(function (client) {
@@ -630,6 +611,9 @@ function HostedFields(options) {
 
     clearTimeout(failureTimeout);
     reply(self._merchantConfigurationOptions);
+
+    self._cleanUpFocusIntercepts();
+
     self._emit('ready');
   });
 
@@ -642,20 +626,20 @@ function HostedFields(options) {
     createInputEventHandler(fields).bind(this)
   );
 
-  this._bus.on(events.TRIGGER_INPUT_FOCUS, function (fieldName) {
-    var container = fields[fieldName].containerElement;
+  if (browserDetection.isIos()) {
+    this._bus.on(events.TRIGGER_INPUT_FOCUS, function (fieldName) {
+      var container = fields[fieldName].containerElement;
 
-    // Inputs outside of the viewport don't always scroll into view on
-    // focus in iOS Safari. 5ms timeout gives the browser a chance to
-    // do the right thing and prevents stuttering.
-    if (browserDetection.isIos()) {
+      // Inputs outside of the viewport don't always scroll into view on
+      // focus in iOS Safari. 5ms timeout gives the browser a chance to
+      // do the right thing and prevents stuttering.
       setTimeout(function () {
         if (!isVisibleEnough(container)) {
           container.scrollIntoView();
         }
-      }, 5);
-    }
-  });
+      }, SAFARI_FOCUS_TIMEOUT);
+    });
+  }
 
   this._destructor.registerFunctionForTeardown(function () {
     var j, node, parent;
@@ -673,6 +657,10 @@ function HostedFields(options) {
         constants.externalClasses.VALID
       );
     }
+  });
+
+  this._destructor.registerFunctionForTeardown(function () {
+    destroyFocusIntercept();
   });
 
   this._destructor.registerFunctionForTeardown(function () {
@@ -708,6 +696,33 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
       labels[i].removeEventListener('click', triggerFocus, false);
     }
   });
+};
+
+HostedFields.prototype._getAnyFieldContainer = function () {
+  var self = this;
+
+  return Object.keys(this._fields).reduce(function (found, field) {
+    return found || self._fields[field].containerElement;
+  }, null);
+};
+
+HostedFields.prototype._cleanUpFocusIntercepts = function () {
+  var iframeContainer, checkoutForm;
+
+  if (document.forms.length < 1) {
+    this._bus.emit(events.REMOVE_FOCUS_INTERCEPTS);
+  } else {
+    iframeContainer = this._getAnyFieldContainer();
+    checkoutForm = findParentTags(iframeContainer, 'form')[0];
+
+    if (checkoutForm) {
+      focusChange.removeExtraFocusElements(checkoutForm, function (id) {
+        this._bus.emit(events.REMOVE_FOCUS_INTERCEPTS, id);
+      }.bind(this));
+    } else {
+      this._bus.emit(events.REMOVE_FOCUS_INTERCEPTS);
+    }
+  }
 };
 
 HostedFields.prototype._attachInvalidFieldContainersToError = function (err) {

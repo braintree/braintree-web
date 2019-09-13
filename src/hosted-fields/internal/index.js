@@ -19,7 +19,7 @@ var allowedStyles = constants.allowedStyles;
 var tokenizationErrorCodes = constants.tokenizationErrorCodes;
 var formatCardRequestData = require('./format-card-request-data');
 var normalizeCardType = require('./normalize-card-type');
-var classList = require('@braintree/class-list');
+var destroyFocusIntercept = require('../shared/focus-intercept').destroy;
 
 var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
 var ALLOWED_BILLING_ADDRESS_FIELDS = [
@@ -38,10 +38,9 @@ var ALLOWED_BILLING_ADDRESS_FIELDS = [
 ];
 
 function initialize(cardForm) {
-  var fieldComponent, hiddenSubmit;
+  var fieldComponent;
   var name = frameName.getFrameName();
   var form = document.createElement('form');
-  var orderedFields = cardForm.configuration.orderedFields;
 
   form.setAttribute('novalidate', true);
   form.setAttribute('action', '#'); // Forms need an action in order to offer a "go" button on soft keyboard
@@ -59,70 +58,23 @@ function initialize(cardForm) {
     type: name
   });
 
-  if (orderedFields.indexOf(name) > 0) {
-    form.appendChild(makeTabTarget('prev', orderedFields));
-  }
-
   form.appendChild(fieldComponent.element);
 
   if (name === 'number') {
     createInputsForAutofill(form);
   }
 
-  if (orderedFields.indexOf(name) < orderedFields.length - 1) {
-    form.appendChild(makeTabTarget('next', orderedFields));
-  } else if (orderedFields.indexOf(name) === orderedFields.length - 1) {
-    hiddenSubmit = document.createElement('input');
-    hiddenSubmit.setAttribute('aria-hidden', true);
-    hiddenSubmit.setAttribute('name', 'submit-target');
-    hiddenSubmit.setAttribute('type', 'submit');
-    hiddenSubmit.setAttribute('tabindex', -1);
-    classList.add(hiddenSubmit, 'tab-target');
-    form.appendChild(hiddenSubmit);
-  }
-
   global.bus.on(events.AUTOFILL_EXPIRATION_DATE, autofillHandler(fieldComponent));
 
+  global.bus.on(events.REMOVE_FOCUS_INTERCEPTS, destroyFocusIntercept);
+
   document.body.appendChild(form);
+
+  document.body.addEventListener('focus', function () {
+    global.bus.emit(events.TRIGGER_INPUT_FOCUS, name);
+  });
+
   shimPlaceholder();
-}
-
-function makeTabTarget(direction, orderedFields) {
-  var fieldName = frameName.getFrameName();
-  var identifier = fieldName + '-target-' + direction;
-  var position = orderedFields.indexOf(fieldName);
-  var tabTarget = document.createElement('input');
-
-  tabTarget.setAttribute('aria-hidden', 'true');
-  tabTarget.setAttribute('autocomplete', 'off');
-  tabTarget.setAttribute('id', identifier);
-  tabTarget.setAttribute('name', identifier);
-  tabTarget.setAttribute('tabindex', 0);
-  classList.add(tabTarget, 'tab-target');
-
-  tabTarget.addEventListener('focus', direction === 'prev' ? moveBackward : moveForward);
-
-  function moveForward() {
-    var focusTargetIndex = position + 1;
-
-    if (focusTargetIndex >= orderedFields.length) {
-      global.bus.emit(events.TRIGGER_INPUT_FOCUS, fieldName);
-    } else {
-      global.bus.emit(events.TRIGGER_INPUT_FOCUS, orderedFields[focusTargetIndex]);
-    }
-  }
-
-  function moveBackward() {
-    var focusTargetIndex = position - 1;
-
-    if (focusTargetIndex < 0) {
-      global.bus.emit(events.TRIGGER_INPUT_FOCUS, fieldName);
-    } else {
-      global.bus.emit(events.TRIGGER_INPUT_FOCUS, orderedFields[focusTargetIndex]);
-    }
-  }
-
-  return tabTarget;
 }
 
 function makeMockInput(name) {
@@ -237,7 +189,7 @@ function shimPlaceholder() {
 
   if (!global.placeholderShim) { return; }
 
-  input = document.querySelector('input');
+  input = document.querySelector('input[data-braintree-name]');
   if (!input) { return; }
 
   global.placeholderShim(input);

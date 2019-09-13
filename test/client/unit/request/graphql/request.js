@@ -1225,9 +1225,8 @@ describe('GraphQL', function () {
   });
 
   describe('adaptResponseBody', function () {
-    it('normalizes a GraphQL credit card tokenization response', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var binData = {
+    beforeEach(function () {
+      this.binData = {
         prepaid: 'Yes',
         healthcare: 'Unknown',
         debit: 'No',
@@ -1238,6 +1237,10 @@ describe('GraphQL', function () {
         countryOfIssuance: 'USA',
         productId: '123'
       };
+    });
+
+    it('normalizes a GraphQL credit card tokenization response', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
       var fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
@@ -1266,7 +1269,7 @@ describe('GraphQL', function () {
 
       expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
         creditCards: [{
-          binData: binData,
+          binData: this.binData,
           consumed: false,
           description: 'ending in 34',
           nonce: 'faketoken',
@@ -1284,24 +1287,13 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL credit card tokenization response with authentication insight', function () {
+    it('normalizes a GraphQL credit card tokenization response with psd2 authentication insight', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
-      var binData = {
-        prepaid: 'Yes',
-        healthcare: 'Unknown',
-        debit: 'No',
-        durbinRegulated: 'Yes',
-        commercial: 'No',
-        payroll: 'Unknown',
-        issuingBank: 'Fake Bank',
-        countryOfIssuance: 'USA',
-        productId: '123'
-      };
       var fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             authenticationInsight: {
-              customerAuthenticationRegulationEnvironment: 'psd2'
+              customerAuthenticationRegulationEnvironment: 'PSDTWO'
             },
             token: 'faketoken',
             creditCard: {
@@ -1331,7 +1323,169 @@ describe('GraphQL', function () {
           authenticationInsight: {
             regulationEnvironment: 'psd2'
           },
-          binData: binData,
+          binData: this.binData,
+          consumed: false,
+          description: 'ending in 34',
+          nonce: 'faketoken',
+          details: {
+            expirationMonth: '09',
+            expirationYear: '2020',
+            bin: '401111',
+            cardType: 'Visa',
+            lastFour: '1234',
+            lastTwo: '34'
+          },
+          type: 'CreditCard',
+          threeDSecureInfo: null
+        }]
+      });
+    });
+
+    it('normalizes a GraphQL credit card tokenization response with unregulated authentication insight', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var fakeGraphQLResponse = {
+        data: {
+          tokenizeCreditCard: {
+            authenticationInsight: {
+              customerAuthenticationRegulationEnvironment: 'UNREGULATED'
+            },
+            token: 'faketoken',
+            creditCard: {
+              expirationMonth: '09',
+              expirationYear: '2020',
+              brandCode: 'VISA',
+              last4: '1234',
+              bin: '401111',
+              binData: {
+                prepaid: 'YES',
+                healthcare: null,
+                debit: 'NO',
+                durbinRegulated: 'YES',
+                commercial: 'NO',
+                payroll: 'UNKNOWN',
+                issuingBank: 'Fake Bank',
+                countryOfIssuance: 'USA',
+                productId: '123'
+              }
+            }
+          }
+        }
+      };
+
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+        creditCards: [{
+          authenticationInsight: {
+            regulationEnvironment: 'unregulated'
+          },
+          binData: this.binData,
+          consumed: false,
+          description: 'ending in 34',
+          nonce: 'faketoken',
+          details: {
+            expirationMonth: '09',
+            expirationYear: '2020',
+            bin: '401111',
+            cardType: 'Visa',
+            lastFour: '1234',
+            lastTwo: '34'
+          },
+          type: 'CreditCard',
+          threeDSecureInfo: null
+        }]
+      });
+    });
+
+    it('normalizes a GraphQL credit card tokenization response with unavailable authentication insight', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var fakeGraphQLResponse = {
+        data: {
+          tokenizeCreditCard: {
+            authenticationInsight: {
+              customerAuthenticationRegulationEnvironment: 'UNAVAILABLE'
+            },
+            token: 'faketoken',
+            creditCard: {
+              expirationMonth: '09',
+              expirationYear: '2020',
+              brandCode: 'VISA',
+              last4: '1234',
+              bin: '401111',
+              binData: {
+                prepaid: 'YES',
+                healthcare: null,
+                debit: 'NO',
+                durbinRegulated: 'YES',
+                commercial: 'NO',
+                payroll: 'UNKNOWN',
+                issuingBank: 'Fake Bank',
+                countryOfIssuance: 'USA',
+                productId: '123'
+              }
+            }
+          }
+        }
+      };
+
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+        creditCards: [{
+          authenticationInsight: {
+            regulationEnvironment: 'unavailable'
+          },
+          binData: this.binData,
+          consumed: false,
+          description: 'ending in 34',
+          nonce: 'faketoken',
+          details: {
+            expirationMonth: '09',
+            expirationYear: '2020',
+            bin: '401111',
+            cardType: 'Visa',
+            lastFour: '1234',
+            lastTwo: '34'
+          },
+          type: 'CreditCard',
+          threeDSecureInfo: null
+        }]
+      });
+    });
+
+    it('normalizes a GraphQL credit card tokenization response with any new unrecongized authentication insight values', function () {
+      var graphQLRequest = new GraphQLRequest(this.options);
+      var fakeGraphQLResponse = {
+        data: {
+          tokenizeCreditCard: {
+            authenticationInsight: {
+              customerAuthenticationRegulationEnvironment: 'SOME_NEW_VALUE'
+            },
+            token: 'faketoken',
+            creditCard: {
+              expirationMonth: '09',
+              expirationYear: '2020',
+              brandCode: 'VISA',
+              last4: '1234',
+              bin: '401111',
+              binData: {
+                prepaid: 'YES',
+                healthcare: null,
+                debit: 'NO',
+                durbinRegulated: 'YES',
+                commercial: 'NO',
+                payroll: 'UNKNOWN',
+                issuingBank: 'Fake Bank',
+                countryOfIssuance: 'USA',
+                productId: '123'
+              }
+            }
+          }
+        }
+      };
+
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+        creditCards: [{
+          authenticationInsight: {
+            regulationEnvironment: 'unknown'
+          },
+          binData: this.binData,
           consumed: false,
           description: 'ending in 34',
           nonce: 'faketoken',
@@ -1351,17 +1505,7 @@ describe('GraphQL', function () {
 
     it('remaps card brand codes', function () {
       var graphQLRequest = new GraphQLRequest(this.options);
-      var binData = {
-        prepaid: 'YES',
-        healthcare: 'UNKNOWN',
-        debit: 'NO',
-        durbinRegulated: 'YES',
-        commercial: 'NO',
-        payroll: 'UNKNOWN',
-        issuingBank: 'Fake Bank',
-        countryOfIssuance: 'USA',
-        productId: '123'
-      };
+      var self = this;
 
       function makeResponse(brandCode) {
         return {
@@ -1371,7 +1515,7 @@ describe('GraphQL', function () {
               creditCard: {
                 brandCode: brandCode,
                 last4: '1234',
-                binData: binData
+                binData: self.binData
               }
             }
           }

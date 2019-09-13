@@ -1,10 +1,13 @@
 'use strict';
 
 var InputComponents = require('./index');
-var allowedFields = require('../../shared/constants').allowedFields;
+var constants = require('../../shared/constants');
 var LabelComponent = require('./label').LabelComponent;
-var events = require('../../shared/constants').events;
 var classList = require('@braintree/class-list');
+var focusIntercept = require('../../shared/focus-intercept');
+var events = constants.events;
+var allowedFields = constants.allowedFields;
+var directions = constants.navigationDirections;
 
 module.exports = {
   FieldComponent: function FieldComponent(options) {
@@ -12,6 +15,10 @@ module.exports = {
     var attribution = allowedFields[type];
 
     this.element = document.createDocumentFragment();
+
+    this.element.appendChild(focusIntercept.generate(type, directions.BACK, function () {
+      global.bus.emit(events.TRIGGER_FOCUS_CHANGE, type, directions.BACK);
+    }));
 
     this.label = new LabelComponent(attribution);
     this.element.appendChild(this.label.element);
@@ -22,6 +29,9 @@ module.exports = {
     });
     this.input.element.setAttribute('aria-describedby', 'field-description-' + type);
     this.element.appendChild(this.input.element);
+    this.element.appendChild(focusIntercept.generate(type, directions.FORWARD, function () {
+      global.bus.emit(events.TRIGGER_FOCUS_CHANGE, type, directions.FORWARD);
+    }));
 
     this.description = document.createElement('div');
     this.description.id = 'field-description-' + type;

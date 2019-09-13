@@ -16,6 +16,10 @@ var rejectIfResolves = require('../../../helpers/promise-helper').rejectIfResolv
 var analytics = require('../../../../src/lib/analytics');
 var methods = require('../../../../src/lib/methods');
 var getCardTypes = require('../../../../src/hosted-fields/shared/get-card-types');
+var focusIntercept = require('../../../../src/hosted-fields/shared/focus-intercept');
+var browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
+var directions = constants.navigationDirections;
+var focusChange = require('../../../../src/hosted-fields/external/focus-change');
 
 describe('HostedFields', function () {
   beforeEach(function () {
@@ -160,7 +164,6 @@ describe('HostedFields', function () {
         cvv: {container: '#cvv'},
         expirationDate: {container: '#expirationDate'}
       };
-      configuration.orderedFields = ['number', 'cvv', 'expirationDate'];
 
       instance = new HostedFields(configuration);
 
@@ -198,7 +201,6 @@ describe('HostedFields', function () {
         cvv: {container: cvvNode},
         expirationDate: {container: expirationDateNode}
       };
-      configuration.orderedFields = ['number', 'cvv', 'expirationDate'];
 
       instance = new HostedFields(configuration);
 
@@ -355,6 +357,84 @@ describe('HostedFields', function () {
       expect(instance._bus.on).to.be.calledWith(events.INPUT_EVENT, this.sandbox.match.func);
     });
 
+    it('does not subscribe to TRIGGER_INPUT_FOCUS when not iOS', function () {
+      var instance = new HostedFields(this.defaultConfiguration);
+
+      expect(instance._bus.on).to.not.be.calledWith(events.TRIGGER_INPUT_FOCUS, this.sandbox.match.func);
+    });
+
+    it('subscribes to TRIGGER_INPUT_FOCUS when iOS', function () {
+      var instance;
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+
+      instance = new HostedFields(this.defaultConfiguration);
+
+      expect(instance._bus.on).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, this.sandbox.match.func);
+    });
+
+    it('does not scroll into view when focusing on input and input is visible', function () {
+      var instance, handler, clock;
+      var fakeContainer = {
+        getBoundingClientRect: this.sandbox.stub().returns({
+          height: 2,
+          width: 2,
+          top: 10,
+          bottom: 10,
+          right: 10,
+          left: 10
+        }),
+        scrollIntoView: this.sandbox.stub()
+      };
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+
+      instance = new HostedFields(this.defaultConfiguration);
+      instance._fields.number.containerElement = fakeContainer;
+
+      handler = instance._bus.on.withArgs(events.TRIGGER_INPUT_FOCUS).args[0][1];
+      clock = this.sandbox.useFakeTimers();
+
+      handler('number');
+
+      expect(fakeContainer.scrollIntoView).to.not.be.called;
+
+      clock.tick(10);
+
+      expect(fakeContainer.scrollIntoView).to.not.be.called;
+    });
+
+    it('scrolls into view when focusing on input, but input is not visible', function () {
+      var instance, handler, clock;
+      var fakeContainer = {
+        getBoundingClientRect: this.sandbox.stub().returns({
+          height: 500,
+          width: 500,
+          top: 10,
+          bottom: 10,
+          right: 10,
+          left: 10
+        }),
+        scrollIntoView: this.sandbox.stub()
+      };
+
+      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+
+      instance = new HostedFields(this.defaultConfiguration);
+      instance._fields.number.containerElement = fakeContainer;
+
+      handler = instance._bus.on.withArgs(events.TRIGGER_INPUT_FOCUS).args[0][1];
+      clock = this.sandbox.useFakeTimers();
+
+      handler('number');
+
+      expect(fakeContainer.scrollIntoView).to.not.be.called;
+
+      clock.tick(10);
+
+      expect(fakeContainer.scrollIntoView).to.be.calledOnce;
+    });
+
     it('calls _setupLabelFocus', function () {
       var instance;
       var configuration = this.defaultConfiguration;
@@ -508,6 +588,215 @@ describe('HostedFields', function () {
       frameReadyHandler({field: 'number'}, noop);
       frameReadyHandler({field: 'cvv'}, noop);
       frameReadyHandler({field: 'expirationDate'}, noop);
+    });
+
+    context('on devices with software keyboards', function () {
+      it('subscribes to focus-related listeners', function () {
+        var instance = new HostedFields(this.defaultConfiguration);
+
+        expect(instance._bus.on).to.be.calledWith(events.REMOVE_FOCUS_INTERCEPTS, focusIntercept.destroy);
+        expect(instance._bus.on).to.be.calledWith(events.TRIGGER_FOCUS_CHANGE);
+      });
+
+      it('passes the right options to the focusChange handler', function () {
+        var instance;
+
+        this.sandbox.spy(focusChange, 'createFocusChangeHandler');
+        instance = new HostedFields(this.defaultConfiguration);
+
+        instance._bus.on.withArgs(events.TRIGGER_FOCUS_CHANGE).getCall(0).args[1](this.numberDiv.id, directions.BACK);
+
+        focusChange.createFocusChangeHandler.getCall(0).args[0].onTriggerInputFocus('foo');
+        focusChange.createFocusChangeHandler.getCall(0).args[0].onRemoveFocusIntercepts('bar');
+
+        expect(instance._bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, 'foo');
+        expect(instance._bus.emit).to.be.calledWith(events.REMOVE_FOCUS_INTERCEPTS, 'bar');
+      });
+
+      it('passes the right focus handler when injecting frames on devices with software keyboards', function () {
+        var instance;
+
+        this.sandbox.stub(browserDetection, 'isIos').returns(true);
+
+        instance = new HostedFields(this.defaultConfiguration);
+
+        global.triggerEvent('focus', document.getElementById('bt-number-after'));
+
+        expect(instance._bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, 'number');
+      });
+
+      context('after frames are ready', function () {
+        beforeEach(function () {
+          this.sandbox.stub(browserDetection, 'isIos').returns(true);
+
+          this.configuration = this.defaultConfiguration;
+          this.cvvNode = document.createElement('div');
+          this.expirationDateNode = document.createElement('div');
+          this.formNode = document.createElement('form');
+          this.cvvNode.id = 'cvv';
+          this.expirationDateNode.id = 'expirationDate';
+          this.formNode.id = 'merchant-form';
+
+          this.configuration.fields = {
+            number: {container: '#number'},
+            cvv: {container: '#cvv'},
+            expirationDate: {container: '#expirationDate'}
+          };
+          this.formNode.appendChild(this.numberDiv);
+          this.formNode.appendChild(this.cvvNode);
+          this.formNode.appendChild(this.expirationDateNode);
+          document.body.appendChild(this.formNode);
+
+          Bus.prototype.emit.withArgs(events.REMOVE_FOCUS_INTERCEPTS).callsFake(function (event, id) {
+            focusIntercept.destroy(id);
+          });
+        });
+
+        afterEach(function () {
+          browserDetection.isIos.restore();
+          document.body.appendChild(this.numberDiv);
+          if (this.formNode.parentNode) {
+            document.body.removeChild(this.formNode);
+          }
+        });
+
+        it('removes focusIntercept inputs that cannot pass focus along', function (done) {
+          var instance, frameReadyHandler;
+
+          function noop() {}
+          delete this.configuration.fields.cvv;
+
+          instance = new HostedFields(this.configuration);
+          frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+
+          expect(document.getElementById('bt-number-' + directions.BACK)).to.exist;
+          expect(document.getElementById('bt-expirationDate-' + directions.FORWARD)).to.exist;
+
+          instance.on('ready', function () {
+            expect(document.getElementById('bt-number-' + directions.BACK)).not.to.exist;
+            expect(document.getElementById('bt-expirationDate-' + directions.FORWARD)).not.to.exist;
+            done();
+          });
+
+          frameReadyHandler({field: 'number'}, noop);
+          frameReadyHandler({field: 'expirationDate'}, noop);
+        });
+
+        it('does not remove extra reverse focus when there are non-hosted fields there', function (done) {
+          var instance, frameReadyHandler;
+
+          function noop() {}
+          this.formNode.insertBefore(document.createElement('input'), this.numberDiv);
+
+          instance = new HostedFields(this.configuration);
+          frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+
+          instance.on('ready', function () {
+            expect(document.getElementById('bt-number-' + directions.BACK)).to.exist;
+            done();
+          });
+
+          frameReadyHandler({field: 'number'}, noop);
+          frameReadyHandler({field: 'cvv'}, noop);
+          frameReadyHandler({field: 'expirationDate'}, noop);
+        });
+
+        it('does not remove extra forward focus when there are non-hosted fields there', function (done) {
+          var instance, frameReadyHandler;
+
+          function noop() {}
+          this.formNode.appendChild(document.createElement('input'));
+
+          instance = new HostedFields(this.configuration);
+          frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+
+          instance.on('ready', function () {
+            expect(document.getElementById('bt-expirationDate-' + directions.FORWARD)).to.exist;
+
+            done();
+          });
+
+          frameReadyHandler({field: 'number'}, noop);
+          frameReadyHandler({field: 'cvv'}, noop);
+          frameReadyHandler({field: 'expirationDate'}, noop);
+        });
+
+        it('emits appropriate navigation events when focusIntercepts receive focus', function (done) {
+          var instance, frameReadyHandler;
+
+          function noop() {}
+
+          instance = new HostedFields(this.configuration);
+          frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+
+          instance.on('ready', function () {
+            expect(instance._bus.emit.withArgs(events.TRIGGER_INPUT_FOCUS)).not.to.be.called;
+
+            global.triggerEvent('focus', document.getElementById('bt-cvv-' + directions.FORWARD));
+            expect(instance._bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, 'cvv');
+
+            global.triggerEvent('focus', document.getElementById('bt-expirationDate-' + directions.BACK));
+            expect(instance._bus.emit).to.be.calledWith(events.TRIGGER_INPUT_FOCUS, 'expirationDate');
+
+            expect(instance._bus.emit.withArgs(events.TRIGGER_INPUT_FOCUS, 'cvv')).to.be.calledBefore(instance._bus.emit.withArgs(events.TRIGGER_INPUT_FOCUS, 'expirationDate'));
+            done();
+          });
+
+          frameReadyHandler({field: 'number'}, noop);
+          frameReadyHandler({field: 'cvv'}, noop);
+          frameReadyHandler({field: 'expirationDate'}, noop);
+        });
+
+        it('removes all focus listeners when no forms are on the page', function (done) {
+          var instance, frameReadyHandler;
+
+          this.sandbox.stub(focusChange, 'removeExtraFocusElements');
+          this.formNode.parentNode.removeChild(this.formNode);
+          document.body.appendChild(this.numberDiv);
+          document.body.appendChild(this.cvvNode);
+          document.body.appendChild(this.expirationDateNode);
+          function noop() {}
+
+          instance = new HostedFields(this.configuration);
+          frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+
+          instance.on('ready', function () {
+            expect(focusChange.removeExtraFocusElements).to.not.be.called;
+            expect(instance._bus.emit.withArgs(events.REMOVE_FOCUS_INTERCEPTS)).to.be.calledOnce;
+
+            done();
+          });
+
+          frameReadyHandler({field: 'number'}, noop);
+          frameReadyHandler({field: 'cvv'}, noop);
+          frameReadyHandler({field: 'expirationDate'}, noop);
+        });
+
+        it('removes all focus listeners when hosted fields elements do not have a parent form', function (done) {
+          var instance, frameReadyHandler;
+
+          this.sandbox.stub(focusChange, 'removeExtraFocusElements');
+
+          document.body.appendChild(this.numberDiv);
+          document.body.appendChild(this.cvvNode);
+          document.body.appendChild(this.expirationDateNode);
+          function noop() {}
+
+          instance = new HostedFields(this.configuration);
+          frameReadyHandler = instance._bus.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+
+          instance.on('ready', function () {
+            expect(focusChange.removeExtraFocusElements).to.not.be.called;
+            expect(instance._bus.emit.withArgs(events.REMOVE_FOCUS_INTERCEPTS)).to.be.calledOnce;
+
+            done();
+          });
+
+          frameReadyHandler({field: 'number'}, noop);
+          frameReadyHandler({field: 'cvv'}, noop);
+          frameReadyHandler({field: 'expirationDate'}, noop);
+        });
+      });
     });
   });
 

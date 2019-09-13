@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.52.1
+* Update credit-card-type to v8.3.0
+* Hosted Fields
+  * Software keyboards can now navigate hosted fields even when they're interspersed with merchant fields
+  * Fix bug on desktop where fields could not navigate between fields with native inputs between the hosted fields
+  * Fix issue where regulation environment information was not parsed correctly
+
 ## 3.52.0
 * Update event-emitter to v0.3.0
 * Hosted Fields
@@ -10,7 +17,7 @@ CHANGELOG
 
 ## 3.51.0
 * Hosted Fields
-  * Add `authorizationInsight` option to tokenization
+  * Add `authenticationInsight` option to tokenization
   * Fix issue where validation errors without field errors could cause a syntax error
 * 3D Secure
   * Enable `cancelVerifyCard` method for 3D Secure version 2 integrations

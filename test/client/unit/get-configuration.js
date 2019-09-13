@@ -197,9 +197,9 @@ describe('getConfiguration', function () {
     });
 
     describe('tokenization key', function () {
-      it('does not create a GraphQL instance', function (done) {
+      it('creates a GraphQL instance', function (done) {
         this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
-          expect(options.graphQL).not.to.exist;
+          expect(options.graphQL).to.be.instanceof(GraphQL);
           done();
         });
 
