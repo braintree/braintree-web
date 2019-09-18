@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@braintree/asset-loader": "0.3.1",
-    "@braintree/browser-detection": "1.8.0",
+    "@braintree/browser-detection": "1.9.0",
     "@braintree/class-list": "0.1.0",
     "@braintree/event-emitter": "0.3.0",
     "@braintree/iframer": "1.0.3",
