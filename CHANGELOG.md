@@ -1,6 +1,18 @@
 CHANGELOG
 =========
 
+## 3.53.0
+* Update `@braintree/browser-detection` to v1.9.0
+* Hosted Fields
+  * Pass back new regulation environments dynamically as they become available
+  * Fix issue where Firefox would require two shift-tabs to navigate away from a field
+  * Fix issue where IE9-11 could not tab correctly
+* 3D Secure
+  * Allow raw string to be passed into `initializeChallengeWithLookupResponse` method
+  * Deprecate `onLookupComplete` param in `verifyCard` in favor of setting a listener for `lookup-complete`
+  * Add `requiresUserAuthentication` param to lookup data in `onLookupComplete` callback
+  * Fix issue where `initializeChallengeFrameWithLookupResponse` would error if called too quickly after creation
+
 ## 3.52.1
 * Update credit-card-type to v8.3.0
 * Hosted Fields

@@ -13,13 +13,15 @@ var VERSION = process.env.npm_package_version;
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
 
+var KNOWN_FRAMEWORKS = require('./external/frameworks/');
+
 /**
  * @static
  * @function create
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {number} [options.version=1] The version of 3DS to use. Pass in 2 to use 3DS 2.0.
+ * @param {number} [options.version=1] The version of 3D Secure to use. Pass in 2 to use 3D Secure 2.0.
  * @param {callback} [callback] The second argument, `data`, is the {@link ThreeDSecure} instance. If no callback is provided, it returns a promise that resolves the {@link ThreeDSecure} instance.
  * @returns {Promise|void} Returns a promise if no callback is provided.
  */
@@ -42,6 +44,7 @@ function create(options) {
     var error, isProduction, instance;
     var config = client.getConfiguration();
     var gwConfig = config.gatewayConfiguration;
+    var framework = getFramework(options);
 
     options.client = client;
 
@@ -59,7 +62,7 @@ function create(options) {
       error = errors.THREEDS_HTTPS_REQUIRED;
     }
 
-    if (options.version === 2 && !(gwConfig.threeDSecure && gwConfig.threeDSecure.cardinalAuthenticationJWT)) {
+    if (framework !== 'legacy' && !(gwConfig.threeDSecure && gwConfig.threeDSecure.cardinalAuthenticationJWT)) {
       analytics.sendEvent(options.client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
       error = errors.THREEDS_NOT_ENABLED_FOR_V2;
     }
@@ -70,14 +73,33 @@ function create(options) {
 
     analytics.sendEvent(options.client, 'three-d-secure.initialized');
 
-    instance = new ThreeDSecure(options);
-
-    if (options.version === 2) {
-      instance._setupSongbird({isProduction: isProduction, loggingEnabled: options.loggingEnabled});
-    }
+    instance = new ThreeDSecure({
+      client: options.client,
+      framework: framework
+    });
 
     return instance;
   });
+}
+
+function getFramework(options) {
+  if (options.framework) {
+    if (options.framework in KNOWN_FRAMEWORKS) {
+      return options.framework;
+    }
+
+    throw new BraintreeError({
+      code: errors.THREEDS_UNRECOGNIZED_FRAMEWORK.code,
+      type: errors.THREEDS_UNRECOGNIZED_FRAMEWORK.type,
+      message: 'Framework `' + options.framework + '` is not a recognized framework. You may need to update the version of your Braintree SDK to support this framework.'
+    });
+  }
+
+  if (options.version === 2) {
+    return 'cardinal-modal';
+  }
+
+  return 'legacy';
 }
 
 module.exports = {

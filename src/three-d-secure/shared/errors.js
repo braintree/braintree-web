@@ -7,6 +7,7 @@
  * @property {MERCHANT} THREEDS_CAN_NOT_USE_TOKENIZATION_KEY Occurs when 3D Secure component is created without a Client Token.
  * @property {MERCHANT} THREEDS_HTTPS_REQUIRED Occurs when 3D Secure component is created in production over HTTPS.
  * @property {MERCHANT} THREEDS_NOT_ENABLED_FOR_V2 Occurs when 3D Secure component is created with version 2 parameter, but merchant is not enabled to use version 2.
+ * @property {MERCHANT} THREEDS_UNRECOGNIZED_FRAMEWORK Occurs when unrecognized framework is passed into the create call.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_SETUP_FAILED Occurs when Cardinal's Songbird.js library fails to setup for an unknown reason.
  * @property {NETWORK} THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED Occurs when using version 2 and Cardinal's Songbird.js script could not be loaded.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT Occurs when Cardinal's Songbird.js library takes longer than 60 seconds to set up.
@@ -27,6 +28,7 @@
  * @property {CUSTOMER} THREEDS_LOOKUP_VALIDATION_ERROR Occurs when a validation error occurs during the 3D Secure lookup.
  * @property {UNKNOWN} THREEDS_LOOKUP_ERROR An unknown error occurred while attempting the 3D Secure lookup.
  * @property {MERCHANT} THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT Occurs when the 3D Secure flow is canceled by the merchant using `cancelVerifyCard` (3D Secure v2 flows only).
+ * @property {UNKNOWN} THREEDS_INLINE_IFRAME_DETAILS_INCORRECT An unknown error occurred while attempting to use the inline iframe framework.
  */
 
 /**
@@ -40,6 +42,7 @@
  * @ignore
  * @description Errors that occur internally
  * @property {INTERNAL} THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN Occurs when iframe is initialized on a non-verified domain.
+ * @property {INTERNAL} THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED Occurs when a 3D Secure framwork method is not implemented.
  */
 
 var BraintreeError = require('../../lib/braintree-error');
@@ -64,6 +67,10 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'THREEDS_NOT_ENABLED_FOR_V2',
     message: '3D Secure version 2 is not enabled for this merchant. Contact Braintree Support for assistance at https://help.braintreepayments.com/'
+  },
+  THREEDS_UNRECOGNIZED_FRAMEWORK: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'THREEDS_UNRECOGNIZED_FRAMEWORK'
   },
   THREEDS_CARDINAL_SDK_SETUP_FAILED: {
     type: BraintreeError.types.UNKNOWN,
@@ -139,6 +146,11 @@ module.exports = {
     code: 'THREEDS_LOOKUP_ERROR',
     message: 'Something went wrong during the 3D Secure lookup'
   },
+  THREEDS_INLINE_IFRAME_DETAILS_INCORRECT: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'THREEDS_INLINE_IFRAME_DETAILS_INCORRECT',
+    message: 'Something went wrong when attempting to add the authentication iframe to the page.'
+  },
   THREEDS_NO_VERIFICATION_PAYLOAD: {
     type: BraintreeError.types.MERCHANT,
     code: 'THREEDS_NO_VERIFICATION_PAYLOAD',
@@ -148,5 +160,10 @@ module.exports = {
     type: BraintreeError.types.INTERNAL,
     code: 'THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN',
     message: 'Term Url must be on a Braintree domain.'
+  },
+  THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED: {
+    type: BraintreeError.types.INTERNAL,
+    code: 'THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED',
+    message: 'Method not implemented for this framework.'
   }
 };

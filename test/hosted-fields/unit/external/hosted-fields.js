@@ -616,7 +616,7 @@ describe('HostedFields', function () {
       it('passes the right focus handler when injecting frames on devices with software keyboards', function () {
         var instance;
 
-        this.sandbox.stub(browserDetection, 'isIos').returns(true);
+        this.sandbox.stub(browserDetection, 'hasSoftwareKeyboard').returns(true);
 
         instance = new HostedFields(this.defaultConfiguration);
 
@@ -627,7 +627,7 @@ describe('HostedFields', function () {
 
       context('after frames are ready', function () {
         beforeEach(function () {
-          this.sandbox.stub(browserDetection, 'isIos').returns(true);
+          this.sandbox.stub(browserDetection, 'hasSoftwareKeyboard').returns(true);
 
           this.configuration = this.defaultConfiguration;
           this.cvvNode = document.createElement('div');
@@ -653,7 +653,6 @@ describe('HostedFields', function () {
         });
 
         afterEach(function () {
-          browserDetection.isIos.restore();
           document.body.appendChild(this.numberDiv);
           if (this.formNode.parentNode) {
             document.body.removeChild(this.formNode);

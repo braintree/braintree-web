@@ -19,9 +19,8 @@ var focusIntercept = {
       top: '-1px !important',
       width: '1px !important'
     };
-    var shouldCreateFocusIntercept = browserDetection.isChromeOS() ||
-      browserDetection.isAndroid() ||
-      browserDetection.isIos();
+    var shouldCreateFocusIntercept = browserDetection.hasSoftwareKeyboard() ||
+      browserDetection.isFirefox() || browserDetection.isIE();
 
     if (!shouldCreateFocusIntercept) { return document.createDocumentFragment(); }
 
@@ -37,7 +36,22 @@ var focusIntercept = {
 
     classList.add(input, 'focus-intercept');
 
-    input.addEventListener('focus', handler);
+    input.addEventListener('focus', function (event) {
+      handler(event);
+
+      /*
+        Certain browsers without software keyboards (Firefox, Internet
+        Explorer) need the focus intercept inputs that get inserted
+        around the actual input to blur themselves, otherwise the
+        browser gets confused about what should have focus. Can't
+        apply this to browsers with software keyboards however,
+        because it blurs everything, and focus on the actual input is
+        also lost.
+      */
+      if (!browserDetection.hasSoftwareKeyboard()) {
+        input.blur();
+      }
+    });
 
     return input;
   },

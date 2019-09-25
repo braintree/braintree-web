@@ -1,6 +1,7 @@
 'use strict';
 
 var directions = require('../shared/constants').navigationDirections;
+var browserDetection = require('../shared/browser-detection');
 var focusIntercept = require('../shared/focus-intercept');
 var findParentTags = require('../shared/find-parent-tags');
 var userFocusableTagNames = [
@@ -13,6 +14,12 @@ var unfocusedInputTypes = [
 ];
 
 function _isUserFocusableElement(element) {
+  if (!browserDetection.hasSoftwareKeyboard()) {
+    // on desktop browsers, the only input type that isn't focusable
+    // is the hidden input
+    return element.type !== 'hidden';
+  }
+
   return userFocusableTagNames.indexOf(element.tagName) > -1 &&
     unfocusedInputTypes.indexOf(element.type) < 0;
 }

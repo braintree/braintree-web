@@ -1483,7 +1483,7 @@ describe('GraphQL', function () {
       expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
         creditCards: [{
           authenticationInsight: {
-            regulationEnvironment: 'unknown'
+            regulationEnvironment: 'some_new_value'
           },
           binData: this.binData,
           consumed: false,

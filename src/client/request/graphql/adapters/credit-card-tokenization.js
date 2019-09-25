@@ -23,10 +23,7 @@ var BIN_DATA_MAP = {
 };
 
 var AUTHENTICATION_INSIGHT_MAP = {
-  UNKNOWN: 'unknown',
-  PSDTWO: 'psd2',
-  UNREGULATED: 'unregulated',
-  UNAVAILABLE: 'unavailable'
+  PSDTWO: 'psd2'
 };
 
 function creditCardTokenizationResponseAdapter(responseBody) {
@@ -86,7 +83,7 @@ function adaptTokenizeCreditCardResponseBody(body) {
   if (data.authenticationInsight) {
     regulationEnvironment = data.authenticationInsight.customerAuthenticationRegulationEnvironment;
     response.creditCards[0].authenticationInsight = {
-      regulationEnvironment: AUTHENTICATION_INSIGHT_MAP[regulationEnvironment] || AUTHENTICATION_INSIGHT_MAP.UNKNOWN
+      regulationEnvironment: AUTHENTICATION_INSIGHT_MAP[regulationEnvironment] || regulationEnvironment.toLowerCase()
     };
   }
 

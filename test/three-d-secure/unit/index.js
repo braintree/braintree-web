@@ -51,71 +51,73 @@ describe('three-d-secure.create', function () {
     });
   });
 
-  it('sets up songbird when v2 is passed', function (done) {
-    var client = this.client;
-
-    this.configuration.gatewayConfiguration.threeDSecure = {
-      cardinalAuthenticationJWT: 'some-jwt'
-    };
-
-    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
-
+  it('errors if merchant passes in unrecognized framework', function (done) {
     threeDSecure.create({
-      client: client,
-      version: 2
-    }, function () {
-      expect(ThreeDSecure.prototype._setupSongbird).to.be.calledOnce;
-      done();
-    });
-  });
-
-  it('does not set up songbird when v2 is not passed', function (done) {
-    var client = this.client;
-
-    this.configuration.gatewayConfiguration.threeDSecure = {
-      cardinalAuthenticationJWT: 'some-jwt'
-    };
-    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
-
-    threeDSecure.create({
-      client: client
-    }, function () {
-      expect(ThreeDSecure.prototype._setupSongbird).to.not.be.called;
-      done();
-    });
-  });
-
-  it('errors if merchant does not have a 3ds object', function (done) {
-    var client = this.client;
-
-    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
-    delete this.configuration.gatewayConfiguration.threeDSecure;
-
-    threeDSecure.create({
-      client: client,
-      version: 2
+      client: this.client,
+      framework: 'unknown'
     }, function (err) {
-      expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
-      expect(ThreeDSecure.prototype._setupSongbird).to.not.be.called;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
+      expect(err.code).to.equal('THREEDS_UNRECOGNIZED_FRAMEWORK');
+      expect(err.message).to.equal('Framework `unknown` is not a recognized framework. You may need to update the version of your Braintree SDK to support this framework.');
+
       done();
     });
   });
 
-  it('errors if merchant does not have a jwt to setup songbird', function (done) {
-    var client = this.client;
+  [
+    'bootstrap3-modal',
+    'legacy',
+    'cardinal-modal',
+    'inline-iframe'
+  ].forEach(function (frameworkName) {
+    it('does not error if merchant passes in ' + frameworkName + ' framework', function (done) {
+      this.configuration.gatewayConfiguration.threeDSecure = {
+        cardinalAuthenticationJWT: 'jwt'
+      };
 
-    this.sandbox.stub(ThreeDSecure.prototype, '_setupSongbird');
-    this.configuration.gatewayConfiguration.threeDSecure = {};
+      threeDSecure.create({
+        client: this.client,
+        framework: frameworkName
+      }, function (err) {
+        expect(err).to.not.exist;
 
-    threeDSecure.create({
-      client: client,
-      version: 2
-    }, function (err) {
-      expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
-      expect(ThreeDSecure.prototype._setupSongbird).to.not.be.called;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
-      done();
+        done();
+      });
+    });
+  });
+
+  [
+    'bootstrap3-modal',
+    'cardinal-modal',
+    'inline-iframe'
+  ].forEach(function (frameworkName) {
+    it('errors if merchant does not have a 3ds object when ' + frameworkName + ' framework is specified', function (done) {
+      var client = this.client;
+
+      delete this.configuration.gatewayConfiguration.threeDSecure;
+
+      threeDSecure.create({
+        client: client,
+        framework: frameworkName
+      }, function (err) {
+        expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
+        expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
+        done();
+      });
+    });
+
+    it('errors if merchant does not have a jwt to setup songbird when ' + frameworkName + ' framework is specified', function (done) {
+      var client = this.client;
+
+      this.configuration.gatewayConfiguration.threeDSecure = {};
+
+      threeDSecure.create({
+        client: client,
+        framework: frameworkName
+      }, function (err) {
+        expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
+        expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
+        done();
+      });
     });
   });
 

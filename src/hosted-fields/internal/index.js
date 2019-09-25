@@ -70,10 +70,6 @@ function initialize(cardForm) {
 
   document.body.appendChild(form);
 
-  document.body.addEventListener('focus', function () {
-    global.bus.emit(events.TRIGGER_INPUT_FOCUS, name);
-  });
-
   shimPlaceholder();
 }
 

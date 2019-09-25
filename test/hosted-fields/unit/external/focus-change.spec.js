@@ -1,5 +1,6 @@
 'use strict';
 
+var browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
 var directions = require('../../../../src/hosted-fields/shared/constants').navigationDirections;
 var focusChange = require('../../../../src/hosted-fields/external/focus-change');
 var focusIntercept = require('../../../../src/hosted-fields/shared/focus-intercept');
@@ -14,6 +15,10 @@ function createSampleIntercept(type, direction) {
 }
 
 describe('focus-change', function () {
+  beforeEach(function () {
+    this.sandbox.stub(browserDetection, 'hasSoftwareKeyboard').returns(true);
+  });
+
   describe('removeExtraFocusElements', function () {
     beforeEach(function () {
       this.removeStub = this.sandbox.stub();
@@ -151,7 +156,7 @@ describe('focus-change', function () {
       expect(this.triggerStub).to.be.calledWith('cvv');
     });
 
-    it('ignores inputs with type hidden', function () {
+    it('ignores inputs with type hidden on software keyboards', function () {
       var input = document.createElement('input');
 
       input.setAttribute('type', 'hidden');
@@ -163,7 +168,7 @@ describe('focus-change', function () {
       expect(this.triggerStub).to.be.calledWith('cvv');
     });
 
-    it('ignores inputs with type button', function () {
+    it('ignores inputs with type button on software keyboards', function () {
       var input = document.createElement('input');
 
       input.setAttribute('type', 'button');
@@ -175,7 +180,7 @@ describe('focus-change', function () {
       expect(this.triggerStub).to.be.calledWith('cvv');
     });
 
-    it('ignores inputs with type reset', function () {
+    it('ignores inputs with type reset on software keyboards', function () {
       var input = document.createElement('input');
 
       input.setAttribute('type', 'reset');
@@ -187,7 +192,7 @@ describe('focus-change', function () {
       expect(this.triggerStub).to.be.calledWith('cvv');
     });
 
-    it('ignores inputs with type submit', function () {
+    it('ignores inputs with type submit on software keyboards', function () {
       var input = document.createElement('input');
 
       input.setAttribute('type', 'submit');
@@ -199,7 +204,7 @@ describe('focus-change', function () {
       expect(this.triggerStub).to.be.calledWith('cvv');
     });
 
-    it('ignores inputs with type checkbox', function () {
+    it('ignores inputs with type checkbox on software keyboards', function () {
       var input = document.createElement('input');
 
       input.setAttribute('type', 'checkbox');
@@ -211,7 +216,7 @@ describe('focus-change', function () {
       expect(this.triggerStub).to.be.calledWith('cvv');
     });
 
-    it('ignores inputs with type radio', function () {
+    it('ignores inputs with type radio on software keyboards', function () {
       var input = document.createElement('input');
 
       input.setAttribute('type', 'radio');
@@ -223,7 +228,7 @@ describe('focus-change', function () {
       expect(this.triggerStub).to.be.calledWith('cvv');
     });
 
-    it('ignores inputs with type file', function () {
+    it('ignores inputs with type file on software keyboards', function () {
       var input = document.createElement('input');
 
       input.setAttribute('type', 'file');
@@ -233,6 +238,98 @@ describe('focus-change', function () {
       this.handler('number', directions.FORWARD);
 
       expect(this.triggerStub).to.be.calledWith('cvv');
+    });
+
+    it('ignores inputs with type hidden on desktop browsers', function () {
+      var input = document.createElement('input');
+
+      browserDetection.hasSoftwareKeyboard.returns(false);
+
+      input.setAttribute('type', 'hidden');
+
+      this.formNode.insertBefore(input, this.cvvBefore);
+
+      this.handler('number', directions.FORWARD);
+
+      expect(this.triggerStub).to.be.calledWith('cvv');
+    });
+
+    it('does not ignore inputs with type button on desktop browsers', function () {
+      var input = document.createElement('input');
+
+      browserDetection.hasSoftwareKeyboard.returns(false);
+      input.setAttribute('type', 'button');
+
+      this.formNode.insertBefore(input, this.cvvBefore);
+
+      this.handler('number', directions.FORWARD);
+
+      expect(this.triggerStub).to.not.be.called;
+    });
+
+    it('does not ignore inputs with type reset on desktop browsers', function () {
+      var input = document.createElement('input');
+
+      browserDetection.hasSoftwareKeyboard.returns(false);
+      input.setAttribute('type', 'reset');
+
+      this.formNode.insertBefore(input, this.cvvBefore);
+
+      this.handler('number', directions.FORWARD);
+
+      expect(this.triggerStub).to.not.be.called;
+    });
+
+    it('does not ignore inputs with type submit on desktop browsers', function () {
+      var input = document.createElement('input');
+
+      browserDetection.hasSoftwareKeyboard.returns(false);
+      input.setAttribute('type', 'submit');
+
+      this.formNode.insertBefore(input, this.cvvBefore);
+
+      this.handler('number', directions.FORWARD);
+
+      expect(this.triggerStub).to.not.be.called;
+    });
+
+    it('does not ignore inputs with type checkbox on desktop browsers', function () {
+      var input = document.createElement('input');
+
+      browserDetection.hasSoftwareKeyboard.returns(false);
+      input.setAttribute('type', 'checkbox');
+
+      this.formNode.insertBefore(input, this.cvvBefore);
+
+      this.handler('number', directions.FORWARD);
+
+      expect(this.triggerStub).to.not.be.called;
+    });
+
+    it('does not ignore inputs with type radio on desktop browsers', function () {
+      var input = document.createElement('input');
+
+      browserDetection.hasSoftwareKeyboard.returns(false);
+      input.setAttribute('type', 'radio');
+
+      this.formNode.insertBefore(input, this.cvvBefore);
+
+      this.handler('number', directions.FORWARD);
+
+      expect(this.triggerStub).to.not.be.called;
+    });
+
+    it('does not ignore inputs with type file on desktop browsers', function () {
+      var input = document.createElement('input');
+
+      browserDetection.hasSoftwareKeyboard.returns(false);
+      input.setAttribute('type', 'file');
+
+      this.formNode.insertBefore(input, this.cvvBefore);
+
+      this.handler('number', directions.FORWARD);
+
+      expect(this.triggerStub).to.not.be.called;
     });
 
     it('does nothing if there is no user-focusable element in the requested direction', function () {

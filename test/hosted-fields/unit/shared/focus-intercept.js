@@ -8,36 +8,30 @@ var DOCUMENT_FRAGMENT_NODE_TYPE = 11;
 var ELEMENT_NODE_TYPE = 1;
 
 describe('focusIntercept', function () {
+  beforeEach(function () {
+    this.sandbox.stub(browserDetection, 'hasSoftwareKeyboard').returns(true);
+  });
+
   describe('generate', function () {
     context('on targeted devices', function () {
-      beforeEach(function () {
-        this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      });
-
-      it('adds focus intercept input to page for ChromeOS', function () {
+      it('adds focus intercept input to page for Firefox', function () {
         var input;
 
-        browserDetection.isIos.restore();
-        this.sandbox.stub(browserDetection, 'isChromeOS').returns(true);
+        browserDetection.hasSoftwareKeyboard.returns(false);
+        this.sandbox.stub(browserDetection, 'isFirefox').returns(true);
 
         input = focusIntercept.generate('type', 'direction', this.sandbox.stub());
 
         expect(input.nodeType).to.equal(ELEMENT_NODE_TYPE);
       });
 
-      it('adds focus intercept input to page for Android', function () {
+      it('adds focus intercept input to page for IE', function () {
         var input;
 
-        browserDetection.isIos.restore();
-        this.sandbox.stub(browserDetection, 'isAndroid').returns(true);
+        browserDetection.hasSoftwareKeyboard.returns(false);
+        this.sandbox.stub(browserDetection, 'isIE').returns(true);
 
         input = focusIntercept.generate('type', 'direction', this.sandbox.stub());
-
-        expect(input.nodeType).to.equal(ELEMENT_NODE_TYPE);
-      });
-
-      it('adds focus intercept input to page for iOS', function () {
-        var input = focusIntercept.generate('type', 'direction', this.sandbox.stub());
 
         expect(input.nodeType).to.equal(ELEMENT_NODE_TYPE);
       });
@@ -63,9 +57,45 @@ describe('focusIntercept', function () {
 
         global.triggerEvent('focus', input);
       });
+
+      it('does not blur the input when on a browser with a softrware keyboard', function (done) {
+        var input = focusIntercept.generate('cvv', directions.BACK, function () {
+          // would happen after the handler is called
+          setTimeout(function () {
+            expect(input.blur).to.not.be.called;
+            done();
+          }, 1);
+        });
+
+        browserDetection.hasSoftwareKeyboard.returns(true);
+        this.sandbox.stub(input, 'blur');
+
+        global.triggerEvent('focus', input);
+      });
+
+      it('does blur the input when on a browser without a softrware keyboard', function (done) {
+        var input = focusIntercept.generate('cvv', directions.BACK, function () {
+          // happens after the handler is called
+          setTimeout(function () {
+            expect(input.blur).to.be.calledOnce;
+            done();
+          }, 1);
+        });
+
+        browserDetection.hasSoftwareKeyboard.returns(false);
+        this.sandbox.stub(input, 'blur');
+
+        global.triggerEvent('focus', input);
+      });
     });
 
     context('on devices that do not require focus intercepts', function () {
+      beforeEach(function () {
+        browserDetection.hasSoftwareKeyboard.returns(false);
+        this.sandbox.stub(browserDetection, 'isFirefox').returns(false);
+        this.sandbox.stub(browserDetection, 'isIE').returns(false);
+      });
+
       it('returns an empty document fragment', function () {
         expect(focusIntercept.generate().nodeType).to.equal(DOCUMENT_FRAGMENT_NODE_TYPE);
       });
@@ -81,14 +111,6 @@ describe('focusIntercept', function () {
     });
 
     context('on targeted devices', function () {
-      beforeEach(function () {
-        this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      });
-
-      afterEach(function () {
-        browserDetection.isIos.restore();
-      });
-
       it('removes the desired focusInput when called with an ID string', function () {
         document.body.appendChild(focusIntercept.generate('cvv', directions.FORWARD, this.sandbox.stub()));
 
