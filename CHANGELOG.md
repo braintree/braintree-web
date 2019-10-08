@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.54.0
+* 3D Secure
+  * Add `2-bootstrap3-modal` as a `version` option
+  * Add `2-inline-iframe` as a `version` option
+  * Fix issue where billing address information was not being sent to lookup if no additional information was sent
+
 ## 3.53.0
 * Update `@braintree/browser-detection` to v1.9.0
 * Hosted Fields

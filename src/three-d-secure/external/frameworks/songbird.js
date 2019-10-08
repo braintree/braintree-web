@@ -28,6 +28,7 @@ function SongbirdFramework(options) {
   this.setupSongbird({
     loggingEnabled: options.loggingEnabled
   });
+  this._cardinalEvents = [];
 }
 
 SongbirdFramework.prototype = Object.create(BaseFramework.prototype, {
@@ -152,7 +153,7 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
   var setupStartTime = config.setupStartTime;
   var cardinalConfiguration = this._createCardinalConfigurationOptions(setupOptions);
 
-  global.Cardinal.on('payments.setupComplete', this._createPaymentsSetupCompleteCallback(resolveSongbird));
+  this.setCardinalListener('payments.setupComplete', this._createPaymentsSetupCompleteCallback(resolveSongbird));
 
   this._setupFrameworkSpecificListeners();
 
@@ -164,7 +165,12 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
 
   this._clientMetadata.cardinalDeviceDataCollectionTimeElapsed = Date.now() - setupStartTime;
 
-  global.Cardinal.on('payments.validated', this._createPaymentsValidatedCallback());
+  this.setCardinalListener('payments.validated', this._createPaymentsValidatedCallback());
+};
+
+SongbirdFramework.prototype.setCardinalListener = function (eventName, cb) {
+  this._cardinalEvents.push(eventName);
+  global.Cardinal.on(eventName, cb);
 };
 
 SongbirdFramework.prototype._setupFrameworkSpecificListeners = function () {
@@ -368,6 +374,8 @@ SongbirdFramework.prototype._formatVerifyCardOptions = function (options) {
     additionalInformation.mobilePhoneNumber = options.mobilePhoneNumber;
   }
 
+  modifiedOptions.additionalInformation = additionalInformation;
+
   return modifiedOptions;
 };
 
@@ -443,8 +451,9 @@ SongbirdFramework.prototype.cancelVerifyCard = function () {
 
 SongbirdFramework.prototype.teardown = function () {
   if (global.Cardinal) {
-    global.Cardinal.off('payments.setupComplete');
-    global.Cardinal.off('payments.validated');
+    this._cardinalEvents.forEach(function (eventName) {
+      global.Cardinal.off(eventName);
+    });
   }
 
   // we intentionally do not remove the Cardinal SDK

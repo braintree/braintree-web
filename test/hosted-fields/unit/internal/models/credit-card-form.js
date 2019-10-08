@@ -183,7 +183,7 @@ describe('credit card model', function () {
     });
 
     it('sets expiration month to current month if using a <select> and no placeholder', function () {
-      var currentMonth = ((new Date()).getMonth() + 1).toString();
+      var currentMonth = ((new Date()).getMonth() + 1).toString(); // eslint-disable-line no-extra-parens
 
       this.scope.configuration.fields.expirationMonth = {select: true};
 

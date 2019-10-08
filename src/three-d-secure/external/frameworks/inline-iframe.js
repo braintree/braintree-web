@@ -36,7 +36,7 @@ InlineIframeFramework.prototype._createCardinalConfigurationOptions = function (
 };
 
 InlineIframeFramework.prototype._setupFrameworkSpecificListeners = function () {
-  global.Cardinal.on('ui.inline.setup', this._onInlineSetup.bind(this));
+  this.setCardinalListener('ui.inline.setup', this._onInlineSetup.bind(this));
 };
 
 InlineIframeFramework.prototype._onInlineSetup = function (htmlTemplate, details, resolve, reject) {

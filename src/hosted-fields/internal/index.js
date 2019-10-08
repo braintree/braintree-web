@@ -141,7 +141,7 @@ function autofillHandler(fieldComponent) {
     cvv = payload.cvv;
 
     if (year.length === 2) {
-      thisYear = String((new Date()).getFullYear());
+      thisYear = String((new Date()).getFullYear()); // eslint-disable-line no-extra-parens
       year = thisYear.substring(0, 2) + year;
     }
 

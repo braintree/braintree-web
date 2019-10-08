@@ -343,7 +343,7 @@ describe('Expiration Month Input', function () {
 
       it('selects current month value when no placeholder is set', function () {
         var i, el;
-        var currentMonth = parseInt((new Date()).getMonth(), 10);
+        var currentMonth = parseInt((new Date()).getMonth(), 10); // eslint-disable-line no-extra-parens
         var input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({

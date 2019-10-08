@@ -224,6 +224,60 @@ describe('SongbirdFramework', function () {
         });
       });
 
+      it('makes a request to the 3DS lookup endpoint with billing address data', function () {
+        var self = this;
+
+        this.client.request.resolves({
+          paymentMethod: {},
+          threeDSecureInfo: {},
+          lookup: {
+            threeDSecureVersion: '2.1.0'
+          }
+        });
+
+        return this.instance.verifyCard({
+          nonce: this.tokenizedCard.nonce,
+          bin: this.tokenizedCard.details.bin,
+          amount: 100,
+          onLookupComplete: this.sandbox.stub().yieldsAsync(),
+          email: 'test@example.com',
+          mobilePhoneNumber: '8101234567',
+          billingAddress: {
+            phoneNumber: '1234567',
+            givenName: 'Jill',
+            surname: 'Gal',
+            streetAddress: '555 Smith street',
+            extendedAddress: '#5',
+            line3: 'More Address',
+            locality: 'Oakland',
+            region: 'CA',
+            postalCode: '12345',
+            countryCodeAlpha2: 'US'
+          }
+        }).then(function () {
+          expect(self.client.request).to.be.calledOnce;
+          expect(self.client.request).to.be.calledWithMatch({
+            endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
+            method: 'post',
+            data: {
+              amount: 100,
+              additionalInfo: {
+                billingGivenName: 'Jill',
+                billingSurname: 'Gal',
+                billingLine1: '555 Smith street',
+                billingLine2: '#5',
+                billingLine3: 'More Address',
+                billingCity: 'Oakland',
+                billingState: 'CA',
+                billingPostalCode: '12345',
+                billingCountryCode: 'US',
+                billingPhoneNumber: '1234567'
+              }
+            }
+          });
+        });
+      });
+
       it('makes a request to the 3DS lookup endpoint with customer data', function () {
         var self = this;
 
@@ -1443,20 +1497,39 @@ describe('SongbirdFramework', function () {
     });
   });
 
+  describe('setCardinalListener', function () {
+    it('sets up listener for Cardinal', function () {
+      var spy = this.sandbox.stub();
+      var framework = new SongbirdFramework({client: this.client});
+
+      global.Cardinal = {
+        on: this.sandbox.stub()
+      };
+
+      framework.setCardinalListener('foo', spy);
+
+      expect(global.Cardinal.on).to.be.calledOnce;
+      expect(global.Cardinal.on).to.be.calledWith('foo', spy);
+    });
+  });
+
   describe('teardown', function () {
     beforeEach(function () {
       this.framework = new SongbirdFramework({client: this.client});
     });
 
-    it('removes Cardinal listeners', function () {
+    it('removes all configured Cardinal listeners', function () {
       global.Cardinal = {
+        on: this.sandbox.stub(),
         off: this.sandbox.stub()
       };
+      this.framework.setCardinalListener('foo', this.sandbox.stub());
+      this.framework.setCardinalListener('bar', this.sandbox.stub());
 
       return this.framework.teardown().then(function () {
         expect(global.Cardinal.off).to.be.calledTwice;
-        expect(global.Cardinal.off).to.be.calledWith('payments.setupComplete');
-        expect(global.Cardinal.off).to.be.calledWith('payments.validated');
+        expect(global.Cardinal.off).to.be.calledWith('foo');
+        expect(global.Cardinal.off).to.be.calledWith('bar');
       });
     });
   });

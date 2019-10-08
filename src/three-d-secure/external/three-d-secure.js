@@ -257,6 +257,20 @@ var FRAMEWORKS = require('./frameworks');
  */
 
 /**
+ * This event is emitted when the `inline-iframe` framework is specified when creating the 3D Secure instance and the authentication iframe becomes available.
+ * @event ThreeDSecure#authentication-iframe-available
+ * @type {object}
+ * @example
+ * <caption>Listening for the authentication iframe to be available</caption>
+ *   threeDSecureInstance.on('authentication-iframe-available', function (event, next) {
+ *     document.body.appendChild(event.element); // add iframe element to page
+ *
+ *     next(); // let the SDK know the iframe is ready
+ *   });
+ * });
+ */
+
+/**
  * This event is emitted when using the 3D Secure 2.0 flow and the initial lookup request completes. If this is not used, a `onLookupComplete` callback must be passed into the `verifyCard` method.
  * @event ThreeDSecure#lookup-complete
  * @type {object}
