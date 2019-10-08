@@ -7398,7 +7398,7 @@ threeDSecure.verifyCard({
 
 
   <div class="description">
-    <p>This event is emitted when the <code>inline-iframe</code> framework is specified when creating the 3D Secure instance and the authentication iframe becomes available.</p>
+    <p>This event is emitted when the <code>2-inline-iframe</code> version is specified when creating the 3D Secure instance and the authentication iframe becomes available.</p>
   </div>
 
 
@@ -7595,7 +7595,7 @@ threeDSecure.verifyCard({
 
   <pre class="prettyprint"><code>braintree.threeDSecure.create({
   client: clientInstance,
-  framework: 'inline-iframe'
+  version: '2-inline-iframe'
 }, function (createErr, threeDSecureInstance) {
   threeDSecureInstance.on('lookup-complete', function (data, next) {
     // inspect the data

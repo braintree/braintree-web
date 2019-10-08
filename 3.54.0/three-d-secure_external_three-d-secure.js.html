@@ -360,7 +360,7 @@ var FRAMEWORKS = require('./frameworks');
  */
 
 /**
- * This event is emitted when the `inline-iframe` framework is specified when creating the 3D Secure instance and the authentication iframe becomes available.
+ * This event is emitted when the `2-inline-iframe` version is specified when creating the 3D Secure instance and the authentication iframe becomes available.
  * @event ThreeDSecure#authentication-iframe-available
  * @type {object}
  * @example
@@ -381,7 +381,7 @@ var FRAMEWORKS = require('./frameworks');
  * &lt;caption>Listening for when the lookup request is complete&lt;/caption>
  * braintree.threeDSecure.create({
  *   client: clientInstance,
- *   framework: 'inline-iframe'
+ *   version: '2-inline-iframe'
  * }, function (createErr, threeDSecureInstance) {
  *   threeDSecureInstance.on('lookup-complete', function (data, next) {
  *     // inspect the data
