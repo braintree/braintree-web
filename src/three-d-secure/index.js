@@ -19,15 +19,15 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {number|string} [options.version=1] The version of 3D Secure to use. Possible options:
+ * @param {(number|string)} [options.version=1] The version of 3D Secure to use. Possible options:
  * * 1 - The legacy 3D Secure v1.0 integration.
  * * 2 - A 3D Secure v2.0 integration that uses a modal to host the 3D Secure iframe.
  * * 2-bootstrap3-modal - A 3D Secure v2.0 integration that uses a modal styled with Bootstrap 3 styles to host the 3D Secure iframe. Requires having the Bootstrap 3 script files and stylesheets on your page.
  * * 2-inline-iframe - A 3D Secure v2.0 integration that provides the authentication iframe directly to the merchant.
  * @param {callback} [callback] The second argument, `data`, is the {@link ThreeDSecure} instance. If no callback is provided, it returns a promise that resolves the {@link ThreeDSecure} instance.
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
 @example
- * <caption>Creating a v2 3D Secure component using cardinal-modal framework</caption>
+ * <caption>Creating a v2 3D Secure component using 2 version (Cardinal modal)</caption>
  * braintree.threeDSecure.create({
  *   client: clientInstance,
  *   version: '2'
@@ -51,7 +51,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  *   });
  * });
  * @example
- * <caption>Creating a v2 3D Secure component using bootstrap3-modal framework</caption>
+ * <caption>Creating a v2 3D Secure component using 2-bootstrap3-modal version</caption>
  * // must have the boostrap js, css and jquery files on your page
  * braintree.threeDSecure.create({
  *   client: clientInstance,
@@ -77,7 +77,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  *   });
  * });
  * @example
- * <caption>Creating a v2 3D Secure component using inline-iframe framework</caption>
+ * <caption>Creating a v2 3D Secure component using 2-inline-iframe version</caption>
  * braintree.threeDSecure.create({
  *   client: clientInstance,
  *   version: '2-inline-iframe'

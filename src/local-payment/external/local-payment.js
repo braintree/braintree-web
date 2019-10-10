@@ -106,7 +106,7 @@ LocalPayment.prototype._initialize = function () {
  *     console.error('Error!', startPaymentError);
  *   });
  * });
- * @returns {Promise|void}
+ * @returns {(Promise|void)}
  */
 LocalPayment.prototype.startPayment = wrapPromise(function (options) {
   var address, params;
@@ -214,7 +214,7 @@ LocalPayment.prototype.startPayment = wrapPromise(function (options) {
  * }).catch(function (err) {
  *   // handle tokenization error
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 LocalPayment.prototype.tokenize = function (params) {
   var self = this;
@@ -402,7 +402,7 @@ function hasMissingOption(options) {
  * localPaymentInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 LocalPayment.prototype.teardown = wrapPromise(function () {
   var self = this; // eslint-disable-line no-invalid-this

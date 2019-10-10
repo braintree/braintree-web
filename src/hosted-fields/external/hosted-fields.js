@@ -747,7 +747,7 @@ HostedFields.prototype._attachInvalidFieldContainersToError = function (err) {
  *     console.info('Hosted Fields has been torn down!');
  *   }
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.teardown = function () {
   var self = this;
@@ -895,7 +895,7 @@ HostedFields.prototype.teardown = function () {
  *     console.log('Got nonce:', payload.nonce);
  *   }
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.tokenize = function (options) {
   var self = this;
@@ -932,7 +932,7 @@ HostedFields.prototype.tokenize = function (options) {
  *     console.error(addClassErr);
  *   }
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.addClass = function (field, classname) {
   var err;
@@ -977,7 +977,7 @@ HostedFields.prototype.addClass = function (field, classname) {
  *   // some time later...
  *   hostedFieldsInstance.removeClass('number', 'custom-class');
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.removeClass = function (field, classname) {
   var err;
@@ -1038,7 +1038,7 @@ HostedFields.prototype.removeClass = function (field, classname) {
  *   }
  * });
  *
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.setAttribute = function (options) {
   var attributeErr, err;
@@ -1095,7 +1095,7 @@ HostedFields.prototype.setAttribute = function (options) {
  *   '12 - diciembre'
  * ]);
  *
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.setMonthOptions = function (options) {
   var self = this;
@@ -1166,7 +1166,7 @@ HostedFields.prototype.setMessage = function (options) {
  *   }
  * });
  *
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.removeAttribute = function (options) {
   var attributeErr, err;
@@ -1208,7 +1208,7 @@ HostedFields.prototype.removeAttribute = function (options) {
  * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
  *
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 HostedFields.prototype.setPlaceholder = function (field, placeholder) {
   return this.setAttribute({
@@ -1223,7 +1223,7 @@ HostedFields.prototype.setPlaceholder = function (field, placeholder) {
  * @public
  * @param {string} field The field you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
  * hostedFieldsInstance.clear('number', function (clearErr) {
  *   if (clearErr) {

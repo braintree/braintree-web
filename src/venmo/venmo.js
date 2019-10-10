@@ -105,7 +105,7 @@ Venmo.prototype.hasTokenizationResult = function () {
  * Only one Venmo flow can be active at a time. One way to achieve this is to disable your Venmo button while the flow is open.
  * @public
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link Venmo~tokenizePayload|tokenizePayload}. If no callback is provided, the method will return a Promise that resolves with a {@link Venmo~tokenizePayload|tokenizePayload}.
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
  * button.addEventListener('click', function () {
  *   // Disable the button so that we don't attempt to open multiple popups.
@@ -188,7 +188,7 @@ Venmo.prototype.tokenize = function () {
  * venmoInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 Venmo.prototype.teardown = function () {
   this._removeVisibilityEventListener();
@@ -240,7 +240,11 @@ function getFragmentParameters() {
 
   return keyValuesArray.reduce(function (toReturn, keyValue) {
     var parts = keyValue.split('=');
-    var key = decodeURIComponent(parts[0]);
+    // some Single Page Apps may pre-pend a / to the first value
+    // in the hash, assuming it's a route in their app
+    // instead of information from Venmo, this removes all
+    // non-alphanumeric characters from the keys in the params
+    var key = decodeURIComponent(parts[0]).replace(/\W/g, '');
     var value = decodeURIComponent(parts[1]);
 
     toReturn[key] = value;

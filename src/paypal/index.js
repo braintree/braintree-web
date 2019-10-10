@@ -70,7 +70,7 @@ var Promise = require('../lib/promise');
  *     }, false);
  *   });
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
   var name = 'PayPal';

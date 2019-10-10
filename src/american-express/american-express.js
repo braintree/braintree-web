@@ -24,7 +24,7 @@ function AmericanExpress(options) {
  * @param {object} options Request options
  * @param {string} options.nonce An existing Braintree nonce.
  * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data. If no callback is provided, `getRewardsBalance` returns a promise that resolves with the server data.
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
@@ -81,7 +81,7 @@ AmericanExpress.prototype.getRewardsBalance = function (options) {
  * @param {object} options Request options
  * @param {string} options.nonce An existing nonce from American Express (note that this is <em>not</em> a nonce from Braintree).
  * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data. If no callback is provided, `getExpressCheckoutProfile` returns a promise that resolves with the server data.
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
@@ -135,7 +135,7 @@ AmericanExpress.prototype.getExpressCheckoutProfile = function (options) {
  * americanExpressInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 AmericanExpress.prototype.teardown = function () {
   convertMethodsToError(this, methods(AmericanExpress.prototype));

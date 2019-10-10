@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.54.1
+* Venmo
+  * Fix issue where params may be malformed upon tokenization
+
 ## 3.54.0
 * 3D Secure
   * Add `2-bootstrap3-modal` as a `version` option

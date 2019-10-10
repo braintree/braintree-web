@@ -189,7 +189,7 @@ GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
  * }).catch(function (err) {
  *   // handle errors
  * });
- * @returns {Promise|void} Returns a promise that resolves the parsed response if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise that resolves the parsed response if no callback is provided.
  */
 GooglePayment.prototype.parseResponse = function (response) {
   var client = this._client;
@@ -256,7 +256,7 @@ GooglePayment.prototype.parseResponse = function (response) {
  * googlePaymentInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 GooglePayment.prototype.teardown = function () {
   convertMethodsToError(this, methods(GooglePayment.prototype));

@@ -449,7 +449,7 @@ PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration = f
  *   // collect shipping information from payload
  *   console.log(payload.details.rawPaymentResponse.shippingAddress);
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PaymentRequestComponent.prototype.tokenize = function (configuration) {
   var self = this;
@@ -511,7 +511,7 @@ PaymentRequestComponent.prototype.tokenize = function (configuration) {
  *     // set up payment request button
  *   }
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PaymentRequestComponent.prototype.canMakePayment = function (configuration) {
   var self = this;
@@ -574,7 +574,7 @@ PaymentRequestComponent.prototype.canMakePayment = function (configuration) {
  * paymentRequestInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PaymentRequestComponent.prototype.teardown = function () {
   this._bus.teardown();

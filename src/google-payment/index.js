@@ -123,7 +123,7 @@ var VERSION = process.env.npm_package_version;
  *   // handle setup errors
  * });
  *
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
   var name = 'Google Pay';

@@ -51,7 +51,7 @@ var errors = require('./errors');
  * dataCollectorInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 
 /**
@@ -66,7 +66,7 @@ var errors = require('./errors');
  * **Note:** the data sent to Kount is asynchronous and may not have completed by the time the data collector create call is complete. In most cases, this will not matter, but if you create the data collector instance and immediately navigate away from the page, the device information may fail to be sent to Kount.
  * @param {boolean} [options.paypal] If true, PayPal fraud data collection is enabled.
  * @param {callback} [callback] The second argument, `data`, is the {@link DataCollector} instance.
- * @returns {Promise|void} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
  */
 function create(options) {
   var name = 'Data Collector';

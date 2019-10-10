@@ -358,6 +358,19 @@ describe('Venmo', function () {
         return promise;
       });
 
+      it('sanitizes keys pulled off of hash for non-alpha characters', function () {
+        var promise = this.venmo.tokenize().then(function (payload) {
+          expect(payload.nonce).to.equal('abc');
+          expect(payload.type).to.equal('VenmoAccount');
+          expect(payload.details.username).to.equal('keanu');
+        });
+
+        history.replaceState({}, '', window.location.href + '#/venmoSuccess=1&paym!entMethodNonce/=abc&userna@#me=keanu');
+        triggerWindowVisibilityChangeListener();
+
+        return promise;
+      });
+
       it('rejects with error on Venmo app error', function () {
         var promise = this.venmo.tokenize().then(rejectIfResolves).catch(function (err) {
           expect(err).to.be.an.instanceof(BraintreeError);

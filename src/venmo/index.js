@@ -31,7 +31,7 @@ var VERSION = process.env.npm_package_version;
  * }).catch(function (createErr) {
  *   console.error('Error creating Venmo instance', createErr);
  * });
- * @returns {Promise|void} Returns the Venmo instance.
+ * @returns {(Promise|void)} Returns the Venmo instance.
  */
 function create(options) {
   var name = 'Venmo';

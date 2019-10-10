@@ -134,7 +134,7 @@ VisaCheckout.prototype.createInitOptions = function (options) {
  * @param {string} payment.encKey The encrypted key used to decrypt the payment data.
  * @param {string} payment.encPaymentData The encrypted payment data.
  * @param {callback} [callback] The second argument, <code>tokenizePayload</code> is a {@link VisaCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a promise that resolves with the {@link VisaCheckout~tokenizePayload|tokenizePayload}.
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 VisaCheckout.prototype.tokenize = function (payment) {
   var self = this;
@@ -184,7 +184,7 @@ VisaCheckout.prototype.tokenize = function (payment) {
  * visaCheckoutInstance.teardown(function () {
  *   // teardown is complete
  * });
- * @returns {Promise|void} Returns a promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 VisaCheckout.prototype.teardown = function () {
   convertMethodsToError(this, methods(VisaCheckout.prototype));
