@@ -57,6 +57,7 @@
     "karma-mocha": "1.3.0",
     "karma-mocha-reporter": "2.2.5",
     "karma-phantomjs-launcher": "1.0.4",
+    "loose-envify": "^1.0.0",
     "merge-stream": "^2.0.0",
     "mkdirp": "^0.5.1",
     "mocha": "^6.2.0",
