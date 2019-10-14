@@ -207,9 +207,9 @@ function callback(err, clientInstance) { ... }
 </code></pre>
 <p>If you happen to call this method while the instance's <code>teardown</code> is in progress, you'll receive an error. Once completed, calling any methods on the instance will throw an error.</p>
 <p><a id="content-security-policy"></a></p>
-<h2>Using <code>braintree-web</code> with a Content Security Policy</h2>
+<h2>Using <code>braintree-web</code> with a Content Security Policy (CSP)</h2>
 <p><a href="https://www.html5rocks.com/en/tutorials/security/content-security-policy/">Content Security Policy</a> is a feature of web browsers that mitigates cross-site scripting and other attacks. By limiting the origins of resources that may be loaded on your page, you can maintain tighter control over any potentially malicious code. We recommend considering the implementation of a CSP when available.</p>
-<p>You will need to add the following directives to your policy:</p>
+<h3>Basic Directives</h3>
 <table>
 <thead>
 <tr>
@@ -221,8 +221,46 @@ function callback(err, clientInstance) { ... }
 <tbody>
 <tr>
 <td>script-src</td>
-<td>js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com<br/>c.paypal.com<br/>songbirdstag.cardinalcommerce.com</td>
-<td>js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com<br/>c.paypal.com<br/>songbird.cardinalcommerce.com</td>
+<td>js.braintreegateway.com<br/>assets.braintreegateway.com</td>
+<td>js.braintreegateway.com<br/>assets.braintreegateway.com</td>
+</tr>
+<tr>
+<td>img-src</td>
+<td>assets.braintreegateway.com<br/>data:</td>
+<td>assets.braintreegateway.com<br/>data:</td>
+</tr>
+<tr>
+<td>child-src</td>
+<td>assets.braintreegateway.com</td>
+<td>assets.braintreegateway.com</td>
+</tr>
+<tr>
+<td>frame-src</td>
+<td>assets.braintreegateway.com</td>
+<td>assets.braintreegateway.com</td>
+</tr>
+<tr>
+<td>connect-src</td>
+<td>api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>*.braintree-api.com</td>
+<td>api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>*.braintree-api.com</td>
+</tr>
+</tbody>
+</table>
+<h3>PayPal Specific Directives</h3>
+<p>If using the <a href="module-braintree-web_paypal-checkout.html">PayPal Checkout component</a>, include these additional directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>www.paypalobjects.com<br/>*.paypal.com<br/>'unsafe-inline'</td>
+<td>www.paypalobjects.com<br/>*.paypal.com<br/>'unsafe-inline'</td>
 </tr>
 <tr>
 <td>style-src</td>
@@ -231,28 +269,69 @@ function callback(err, clientInstance) { ... }
 </tr>
 <tr>
 <td>img-src</td>
-<td>assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:</td>
-<td>assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:</td>
+<td>checkout.paypal.com</td>
+<td>checkout.paypal.com</td>
 </tr>
 <tr>
 <td>child-src</td>
-<td>assets.braintreegateway.com<br/>c.paypal.com</td>
-<td>assets.braintreegateway.com<br/>c.paypal.com</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
 </tr>
 <tr>
 <td>frame-src</td>
-<td>assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com</td>
-<td>assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com</td>
-</tr>
-<tr>
-<td>connect-src</td>
-<td>api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>*.braintree-api.com<br/>*.cardinalcommerce.com</td>
-<td>api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>*.braintree-api.com<br/>*.cardinalcommerce.com</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
 </tr>
 </tbody>
 </table>
-<p>Including <code>*.paypalobjects.com</code> and <code>*.paypal.com</code> domains and <code>'unsafe-inline'</code> in <code>style-src</code> are only required if you are using <a href="module-braintree-web_paypal-checkout.html">PayPal</a>.</p>
-<p>Including <code>*.cardinalcommerce.com</code> in <code>frame-src</code>, <code>script-src</code>, and <code>connect-src</code> is only required if you are using <a href="module-braintree-web_three-d-secure.html">3D Secure</a>.</p>
+<h3>Google Pay Specific Directives</h3>
+<p>If using the <a href="module-braintree-web_google-payment.html">Google Pay component</a>, include these additional directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>pay.google.com</td>
+<td>pay.google.com</td>
+</tr>
+</tbody>
+</table>
+<h3>3D Secure Specific Directives</h3>
+<p>If using the <a href="module-braintree-web_three-d-secure.html">3D Secure component</a>, include these additional directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>songbirdstag.cardinalcommerce.com</td>
+<td>songbird.cardinalcommerce.com</td>
+</tr>
+<tr>
+<td>frame-src</td>
+<td>*.cardinalcommerce.com</td>
+<td>*.cardinalcommerce.com</td>
+</tr>
+<tr>
+<td>connect-src</td>
+<td>*.cardinalcommerce.com</td>
+<td>*.cardinalcommerce.com</td>
+</tr>
+</tbody>
+</table>
+<h3>Data Collector Specific Directives</h3>
+<p>If using Kount with the <a href="DataCollector.html">Data Collector component</a>, adhere to the <a href="https://support.kount.com/s/article/How-is-Content-Security-Policy-Used">Kount CSP guide</a>.</p>
     </article>
   </section>
 
