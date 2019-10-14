@@ -162,7 +162,7 @@ function callback(err, clientInstance) { ... }
 <li>Chrome latest</li>
 <li>Firefox latest</li>
 <li>Internet Explorer 9+ (see caveats below)</li>
-<li>Microsoft Edge</li>
+<li>Microsoft Edge latest</li>
 <li>Safari 8+</li>
 </ul>
 <h4>Internet Explorer caveats</h4>
@@ -172,6 +172,10 @@ function callback(err, clientInstance) { ... }
 <p>Quirks Mode is not supported for any version of IE. See our <a href="https://developers.braintreepayments.com/reference/general/best-practices#internet-explorer-quirks-mode">general best practices</a> to learn more.</p>
 <h5>Older TLS versions</h5>
 <p>Braintree is <a href="https://www.braintreepayments.com/blog/updating-your-production-environment-to-support-tlsv1-2/">ending support for server-side API requests via TLS 1.0 and 1.1 on June 30, 2017</a>, and plans to do the same for client requests in the future. The sandbox no longer accepts connections using these older TLS versions as of December 13, 2016. Internet Explorer 9 and 10 do not use TLS 1.2 by default; this SDK will only work if customers have explicitly enabled TLS 1.2 in their IE settings.</p>
+<h5>PayPal Support</h5>
+<p>The PayPal SDK supports Internet Explorer 11+.</p>
+<h5>3D Secure Support</h5>
+<p>The SDK from our MPI provider, Cardinal Commerce, supports Internet Explorer 10+.</p>
 <p><a id="browser-support-mobile"></a></p>
 <h3>Mobile</h3>
 <h4>iOS</h4>
@@ -183,9 +187,9 @@ function callback(err, clientInstance) { ... }
 <ul>
 <li>Native browser 4.4+</li>
 <li>Chrome</li>
-<li>Firefox</li>
+<li>Firefox
+<a id="browser-support-webviews"></a></li>
 </ul>
-<p><a id="browser-support-webviews"></a></p>
 <h3>Webviews and hybrid environments</h3>
 <p>If you are using PayPal in a mobile webview, we recommend using PopupBridge for <a href="https://github.com/braintree/popup-bridge-ios">iOS</a> or <a href="https://github.com/braintree/popup-bridge-android">Android</a> to open the PayPal authentication flow in a mobile browser for improved security.</p>
 <p>Additionally, <code>braintree-web</code> is neither tested nor developed for hybrid runtimes such as Cordova, PhoneGap, Ionic, React Native, and Electron. While some success may be had in such environments, our SDK is optimized for the browser and its security policies and may not function correctly outside of them.</p>
@@ -242,13 +246,13 @@ function callback(err, clientInstance) { ... }
 </tr>
 <tr>
 <td>connect-src</td>
-<td>api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>*.braintree-api.com</td>
-<td>api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>*.braintree-api.com</td>
+<td>api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/><em>.braintree-api.com<br/></em>.cardinalcommerce.com</td>
+<td>api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/><em>.braintree-api.com <br/></em>.cardinalcommerce.com</td>
 </tr>
 </tbody>
 </table>
 <p>Including <code>*.paypalobjects.com</code> and <code>*.paypal.com</code> domains and <code>'unsafe-inline'</code> in <code>style-src</code> are only required if you are using <a href="module-braintree-web_paypal-checkout.html">PayPal</a>.</p>
-<p>Including <code>*.cardinalcommerce.com</code> in <code>frame-src</code>and <code>script-src</code> is only required if you are using <a href="module-braintree-web_three-d-secure.html">3D Secure</a>.</p>
+<p>Including <code>*.cardinalcommerce.com</code> in <code>frame-src</code>, <code>script-src</code>, and <code>connect-src</code> is only required if you are using <a href="module-braintree-web_three-d-secure.html">3D Secure</a>.</p>
     </article>
   </section>
 
