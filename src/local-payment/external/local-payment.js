@@ -106,9 +106,9 @@ LocalPayment.prototype._initialize = function () {
  *     console.error('Error!', startPaymentError);
  *   });
  * });
- * @returns {(Promise|void)}
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
-LocalPayment.prototype.startPayment = wrapPromise(function (options) {
+LocalPayment.prototype.startPayment = function (options) {
   var address, params;
   var self = this; // eslint-disable-line no-invalid-this
   var serviceId = this._frameService._serviceId; // eslint-disable-line no-invalid-this
@@ -197,7 +197,7 @@ LocalPayment.prototype.startPayment = wrapPromise(function (options) {
       }));
     });
   });
-});
+};
 
 /**
  * Manually tokenizes params for a local payment received from PayPal.When app switching back from a mobile application (such as a bank application for an iDEAL payment), the window may lose context with the parent page. In that case, a fallback url is used, and this method can be used to finish the flow.
@@ -404,7 +404,7 @@ function hasMissingOption(options) {
  * });
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
-LocalPayment.prototype.teardown = wrapPromise(function () {
+LocalPayment.prototype.teardown = function () {
   var self = this; // eslint-disable-line no-invalid-this
 
   self._frameService.teardown();
@@ -414,6 +414,6 @@ LocalPayment.prototype.teardown = wrapPromise(function () {
   analytics.sendEvent(self._client, 'local-payment.teardown-completed');
 
   return Promise.resolve();
-});
+};
 
-module.exports = LocalPayment;
+module.exports = wrapPromise.wrapPrototype(LocalPayment);

@@ -3,25 +3,26 @@
 var BraintreeError = require('../../../src/lib/braintree-error');
 var Promise = require('../../../src/lib/promise');
 var getConfiguration = require('../../../src/client/get-configuration').getConfiguration;
+var createAuthorizationData = require('../../../src/lib/create-authorization-data');
 var AJAXDriver = require('../../../src/client/request/ajax-driver');
 var fake = require('../../helpers/fake');
 var GraphQL = require('../../../src/client/request/graphql');
 
 describe('getConfiguration', function () {
   it('returns a promise when no callback is passed', function () {
-    var options = {authorization: 'production_abc123_prod_merchant_id'};
+    var authData = createAuthorizationData('production_abc123_prod_merchant_id');
 
     this.sandbox.stub(AJAXDriver, 'request');
 
-    expect(getConfiguration(options)).to.be.an.instanceof(Promise);
+    expect(getConfiguration(authData)).to.be.an.instanceof(Promise);
   });
 
   describe('tokenization key', function () {
     it('uses a production config endpoint with a production tokenization key', function () {
-      var options = {authorization: 'production_abc123_prod_merchant_id'};
+      var authData = createAuthorizationData('production_abc123_prod_merchant_id');
 
       this.sandbox.stub(AJAXDriver, 'request');
-      getConfiguration(options);
+      getConfiguration(authData);
 
       expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
         url: 'https://api.braintreegateway.com:443/merchants/prod_merchant_id/client_api/v1/configuration'
@@ -29,10 +30,10 @@ describe('getConfiguration', function () {
     });
 
     it('uses a sandbox config endpoint with a sandbox tokenization key', function () {
-      var options = {authorization: 'sandbox_abc123_sandbox_merchant_id'};
+      var authData = createAuthorizationData('sandbox_abc123_sandbox_merchant_id');
 
       this.sandbox.stub(AJAXDriver, 'request');
-      getConfiguration(options);
+      getConfiguration(authData);
 
       expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
         url: 'https://api.sandbox.braintreegateway.com:443/merchants/sandbox_merchant_id/client_api/v1/configuration'
@@ -44,9 +45,8 @@ describe('getConfiguration', function () {
 
       this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(null, payload);
 
-      getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
+      getConfiguration(createAuthorizationData(fake.tokenizationKey), function (err, response) {
         expect(err).to.not.exist;
-        expect(response.authorization).to.equal(fake.tokenizationKey);
 
         expect(response.analyticsMetadata).to.have.all.keys('merchantAppId', 'platform', 'sdkVersion', 'source', 'integration', 'integrationType', 'sessionId');
         Object.keys(response.analyticsMetadata).forEach(function (key) {
@@ -65,7 +65,7 @@ describe('getConfiguration', function () {
 
       this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(fakeErr, null, 403);
 
-      getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
+      getConfiguration(createAuthorizationData(fake.tokenizationKey), function (err, response) {
         expect(response).to.not.exist;
 
         expect(err).to.be.an.instanceof(BraintreeError);
@@ -83,7 +83,7 @@ describe('getConfiguration', function () {
 
       this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(fakeErr, null);
 
-      getConfiguration({authorization: fake.tokenizationKey}, function (err, response) {
+      getConfiguration(createAuthorizationData(fake.tokenizationKey), function (err, response) {
         expect(response).to.not.exist;
 
         expect(err).to.be.an.instanceof(BraintreeError);
@@ -99,11 +99,11 @@ describe('getConfiguration', function () {
 
   describe('client token', function () {
     it('uses the config endpoint from the client token', function () {
-      var options = {authorization: fake.clientToken};
-      var configUrl = JSON.parse(atob(options.authorization)).configUrl;
+      var authData = createAuthorizationData(fake.clientToken);
+      var configUrl = JSON.parse(atob(fake.clientToken)).configUrl;
 
       this.sandbox.stub(AJAXDriver, 'request');
-      getConfiguration(options);
+      getConfiguration(authData);
 
       expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
         url: configUrl
@@ -115,9 +115,8 @@ describe('getConfiguration', function () {
 
       this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(null, payload);
 
-      getConfiguration({authorization: fake.clientToken}, function (err, response) {
+      getConfiguration(createAuthorizationData(fake.clientToken), function (err, response) {
         expect(err).to.not.exist;
-        expect(response.authorization).to.equal(fake.clientToken);
 
         expect(response.analyticsMetadata).to.have.all.keys('merchantAppId', 'platform', 'sdkVersion', 'source', 'integration', 'integrationType', 'sessionId');
         Object.keys(response.analyticsMetadata).forEach(function (key) {
@@ -136,7 +135,7 @@ describe('getConfiguration', function () {
 
       this.sandbox.stub(AJAXDriver, 'request').yieldsAsync(fakeErr, null);
 
-      getConfiguration({authorization: fake.clientToken}, function (err, response) {
+      getConfiguration(createAuthorizationData(fake.clientToken), function (err, response) {
         expect(response).to.not.exist;
 
         expect(err).to.be.an.instanceof(BraintreeError);
@@ -150,60 +149,46 @@ describe('getConfiguration', function () {
     });
   });
 
-  describe('error handling', function () {
-    it('returns an error with bad authorization', function (done) {
-      getConfiguration({authorization: 'bogus'}, function (err, result) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_INVALID_AUTHORIZATION');
-        expect(err.message).to.equal('Authorization is invalid. Make sure your client token or tokenization key is valid.');
-        expect(result).not.to.exist;
-
-        done();
-      });
-    });
-  });
-
   describe('configVersion', function () {
     it('is set with expected value when requesting configuration over AJAX', function (done) {
-      this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
-        expect(options.data.configVersion).to.equal('3');
+      this.sandbox.stub(AJAXDriver, 'request').callsFake(function (authorization) {
+        expect(authorization.data.configVersion).to.equal('3');
         done();
       });
 
-      getConfiguration({authorization: fake.clientToken});
+      getConfiguration(createAuthorizationData(fake.clientToken));
     });
   });
 
   describe('GraphQL configuration', function () {
     describe('client token', function () {
       it('creates a GraphQL instance when GraphQLConfiguration is present', function (done) {
-        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
-          expect(options.graphQL).to.be.instanceof(GraphQL);
+        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (authorization) {
+          expect(authorization.graphQL).to.be.instanceof(GraphQL);
           done();
         });
 
-        getConfiguration({authorization: fake.clientTokenWithGraphQL});
+        getConfiguration(createAuthorizationData(fake.clientTokenWithGraphQL));
       });
 
       it('does not create a GraphQL instance when GraphQLConfiguration is not present', function (done) {
-        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
-          expect(options.graphQL).not.to.exist;
+        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (authorization) {
+          expect(authorization.graphQL).not.to.exist;
           done();
         });
 
-        getConfiguration({authorization: fake.clientToken});
+        getConfiguration(createAuthorizationData(fake.clientToken));
       });
     });
 
     describe('tokenization key', function () {
       it('creates a GraphQL instance', function (done) {
-        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (options) {
-          expect(options.graphQL).to.be.instanceof(GraphQL);
+        this.sandbox.stub(AJAXDriver, 'request').callsFake(function (authorization) {
+          expect(authorization.graphQL).to.be.instanceof(GraphQL);
           done();
         });
 
-        getConfiguration({authorization: fake.tokenizationKey});
+        getConfiguration(createAuthorizationData(fake.tokenizationKey));
       });
     });
   });

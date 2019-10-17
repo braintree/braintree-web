@@ -159,6 +159,18 @@ describe('Client', function () {
       });
     });
 
+    it('errors out when malformed authorization is passed', function () {
+      this.getSpy.restore();
+      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, null);
+
+      return Client.initialize({authorization: 'bogus'}).then(rejectIfResolves).catch(function (err) {
+        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err.type).to.equal('MERCHANT');
+        expect(err.code).to.equal('CLIENT_INVALID_AUTHORIZATION');
+        expect(err.message).to.equal('Authorization is invalid. Make sure your client token or tokenization key is valid.');
+      });
+    });
+
     it('errors out when the Client fails to initialize', function () {
       this.getSpy.restore();
       this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, null);
@@ -221,6 +233,14 @@ describe('Client', function () {
       expect(actual.analyticsMetadata.sdkVersion).to.equal(VERSION);
       expect(actual.analyticsMetadata.merchantAppId).to.equal('http://fakeDomain.com');
       expect(actual.analyticsMetadata.sessionId).to.equal('fakeSessionId');
+    });
+
+    it('has authorization', function () {
+      var client = new Client(fake.configuration());
+
+      var actual = client.getConfiguration();
+
+      expect(actual.authorization).to.equal('development_testing_merchant_id');
     });
   });
 

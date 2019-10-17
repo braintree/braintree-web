@@ -73,7 +73,7 @@ While `braintree-web` will work in browsers other than the ones below, these rep
 - Chrome latest
 - Firefox latest
 - Internet Explorer 9+ (see caveats below)
-- Microsoft Edge
+- Microsoft Edge latest
 - Safari 8+
 
 
@@ -91,6 +91,14 @@ Quirks Mode is not supported for any version of IE. See our [general best practi
 
 Braintree is [ending support for server-side API requests via TLS 1.0 and 1.1 on June 30, 2017](https://www.braintreepayments.com/blog/updating-your-production-environment-to-support-tlsv1-2/), and plans to do the same for client requests in the future. The sandbox no longer accepts connections using these older TLS versions as of December 13, 2016. Internet Explorer 9 and 10 do not use TLS 1.2 by default; this SDK will only work if customers have explicitly enabled TLS 1.2 in their IE settings.
 
+##### PayPal Support
+
+The PayPal SDK supports Internet Explorer 11+.
+
+##### 3D Secure Support
+
+The SDK from our MPI provider, Cardinal Commerce, supports Internet Explorer 10+.
+
 <a id="browser-support-mobile"></a>
 ### Mobile
 
@@ -104,7 +112,6 @@ Braintree is [ending support for server-side API requests via TLS 1.0 and 1.1 on
 - Native browser 4.4+
 - Chrome
 - Firefox
-
 <a id="browser-support-webviews"></a>
 ### Webviews and hybrid environments
 
@@ -132,21 +139,50 @@ hostedFieldsInstance.teardown(function (err) {
 If you happen to call this method while the instance's `teardown` is in progress, you'll receive an error. Once completed, calling any methods on the instance will throw an error.
 
 <a id="content-security-policy"></a>
-## Using `braintree-web` with a Content Security Policy
+## Using `braintree-web` with a Content Security Policy (CSP)
 
 [Content Security Policy](https://www.html5rocks.com/en/tutorials/security/content-security-policy/) is a feature of web browsers that mitigates cross-site scripting and other attacks. By limiting the origins of resources that may be loaded on your page, you can maintain tighter control over any potentially malicious code. We recommend considering the implementation of a CSP when available.
 
-You will need to add the following directives to your policy:
+### Basic Directives
 
-|             | Sandbox                                                                                                                                  | Production                                                                                                                           |
-|-------------|------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| script-src  | js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com<br/>c.paypal.com<br/>songbirdstag.cardinalcommerce.com | js.braintreegateway.com<br/>assets.braintreegateway.com<br/>www.paypalobjects.com<br/>c.paypal.com<br/>songbird.cardinalcommerce.com |
-| style-src   | 'unsafe-inline'                                                                                                                          | 'unsafe-inline'                                                                                                                      |
-| img-src     | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                                                            | assets.braintreegateway.com<br/>checkout.paypal.com<br/>data:                                                                        |
-| child-src   | assets.braintreegateway.com<br/>c.paypal.com                                                                                             | assets.braintreegateway.com<br/>c.paypal.com                                                                                         |
-| frame-src   | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                                                                  | assets.braintreegateway.com<br/>c.paypal.com<br/>*.cardinalcommerce.com                                                              |
-| connect-src | api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>*.braintree-api.com                               | api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>*.braintree-api.com                                           |
+|             | Sandbox                                                                                                        | Production                                                                                     |
+|-------------|----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| script-src  | js.braintreegateway.com<br/>assets.braintreegateway.com                                                        | js.braintreegateway.com<br/>assets.braintreegateway.com                                        |
+| img-src     | assets.braintreegateway.com<br/>data:                                                                          | assets.braintreegateway.com<br/>data:                                                          |
+| child-src   | assets.braintreegateway.com                                                                                    | assets.braintreegateway.com                                                                    |
+| frame-src   | assets.braintreegateway.com                                                                                    | assets.braintreegateway.com                                                                    |
+| connect-src | api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>&#42;.braintree-api.com | api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>&#42;.braintree-api.com |
 
-Including `*.paypalobjects.com` and `*.paypal.com` domains and `'unsafe-inline'` in `style-src` are only required if you are using [PayPal](module-braintree-web_paypal-checkout.html).
+### PayPal Specific Directives
 
-Including `*.cardinalcommerce.com` in `frame-src`and `script-src` is only required if you are using [3D Secure](module-braintree-web_three-d-secure.html).
+If using the [PayPal Checkout component](module-braintree-web_paypal-checkout.html), include these additional directives:
+
+|             | Sandbox                                                          | Production                                                       |
+|-------------|------------------------------------------------------------------|------------------------------------------------------------------|
+| script-src  | www.paypalobjects.com<br/>&#42;.paypal.com<br/>'unsafe-inline' | www.paypalobjects.com<br/>&#42;.paypal.com<br/>'unsafe-inline' |
+| style-src   | 'unsafe-inline'                                                  | 'unsafe-inline'                                                  |
+| img-src     | checkout.paypal.com                                              | checkout.paypal.com                                              |
+| child-src   | &#42;.paypal.com                                                 | &#42;.paypal.com                                                 |
+| frame-src   | &#42;.paypal.com                                                 | &#42;.paypal.com                                                 |
+
+### Google Pay Specific Directives
+
+If using the [Google Pay component](module-braintree-web_google-payment.html), include these additional directives:
+
+|             | Sandbox        | Production     |
+|-------------|----------------|----------------|
+| script-src  | pay.google.com | pay.google.com |
+
+### 3D Secure Specific Directives
+
+If using the [3D Secure component](module-braintree-web_three-d-secure.html), include these additional directives:
+
+|             | Sandbox                           | Production                    |
+|-------------|-----------------------------------|-------------------------------|
+| script-src  | songbirdstag.cardinalcommerce.com | songbird.cardinalcommerce.com |
+| frame-src   | &#42;.cardinalcommerce.com        | &#42;.cardinalcommerce.com    |
+| connect-src | &#42;.cardinalcommerce.com        | &#42;.cardinalcommerce.com    |
+
+### Data Collector Specific Directives
+
+If using Kount with the [Data Collector component](DataCollector.html), adhere to the [Kount CSP guide](https://support.kount.com/s/article/How-is-Content-Security-Policy-Used).

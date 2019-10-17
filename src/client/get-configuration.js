@@ -6,7 +6,6 @@ var wrapPromise = require('@braintree/wrap-promise');
 var request = require('./request');
 var uuid = require('../lib/vendor/uuid');
 var constants = require('../lib/constants');
-var createAuthorizationData = require('../lib/create-authorization-data');
 var errors = require('./errors');
 var GraphQL = require('./request/graphql');
 var GRAPHQL_URLS = require('../lib/constants').GRAPHQL_URLS;
@@ -14,9 +13,9 @@ var isDateStringBeforeOrOn = require('../lib/is-date-string-before-or-on');
 
 var BRAINTREE_VERSION = require('./constants').BRAINTREE_VERSION;
 
-function getConfiguration(options) {
+function getConfiguration(authData) {
   return new Promise(function (resolve, reject) {
-    var configuration, authData, attrs, configUrl, reqOptions;
+    var configuration, attrs, configUrl, reqOptions;
     var sessionId = uuid();
     var analyticsMetadata = {
       merchantAppId: global.location.host,
@@ -28,13 +27,6 @@ function getConfiguration(options) {
       sessionId: sessionId
     };
 
-    try {
-      authData = createAuthorizationData(options.authorization);
-    } catch (err) {
-      reject(new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION));
-
-      return;
-    }
     attrs = authData.attrs;
     configUrl = authData.configUrl;
 
@@ -93,7 +85,6 @@ function getConfiguration(options) {
       }
 
       configuration = {
-        authorization: options.authorization,
         authorizationType: attrs.tokenizationKey ? 'TOKENIZATION_KEY' : 'CLIENT_TOKEN',
         authorizationFingerprint: attrs.authorizationFingerprint,
         analyticsMetadata: analyticsMetadata,

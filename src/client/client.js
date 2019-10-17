@@ -8,6 +8,7 @@ var isVerifiedDomain = require('../lib/is-verified-domain');
 var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var getGatewayConfiguration = require('./get-configuration').getConfiguration;
+var createAuthorizationData = require('../lib/create-authorization-data');
 var addMetadata = require('../lib/add-metadata');
 var Promise = require('../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
@@ -93,7 +94,7 @@ function Client(configuration) {
 }
 
 Client.initialize = function (options) {
-  var clientInstance;
+  var clientInstance, authData;
   var promise = cachedClients[options.authorization];
 
   if (promise) {
@@ -102,10 +103,18 @@ Client.initialize = function (options) {
     return promise;
   }
 
-  promise = getGatewayConfiguration(options).then(function (configuration) {
+  try {
+    authData = createAuthorizationData(options.authorization);
+  } catch (err) {
+    return Promise.reject(new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION));
+  }
+
+  promise = getGatewayConfiguration(authData).then(function (configuration) {
     if (options.debug) {
       configuration.isDebug = true;
     }
+
+    configuration.authorization = options.authorization;
 
     clientInstance = new Client(configuration);
 

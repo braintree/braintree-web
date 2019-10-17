@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.54.2
+* Update @braintree/sanitize-url to v4.0.0
+* Client
+  * Fix issue where client may emit an uncaught exception error in the console for an invalid authorization (fixes #465)
+* Local Payments
+  * Fix issue where callback could not be used in Mobile fallback flow
+
 ## 3.54.1
 * Venmo
   * Fix issue where params may be malformed upon tokenization

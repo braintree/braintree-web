@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.54.1",
+  "version": "3.54.2",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -21,7 +21,7 @@
     "@braintree/class-list": "0.1.0",
     "@braintree/event-emitter": "0.3.0",
     "@braintree/iframer": "1.0.3",
-    "@braintree/sanitize-url": "3.1.0",
+    "@braintree/sanitize-url": "4.0.0",
     "@braintree/wrap-promise": "2.0.0",
     "card-validator": "6.2.0",
     "credit-card-type": "8.3.0",
@@ -69,7 +69,7 @@
     "sinon-chai": "^3.3.0",
     "table": "^5.4.6",
     "tmp": "^0.1.0",
-    "uglify-js": "^3.6.0",
+    "uglify-js": "^3.6.1",
     "unreachable-branch-transform": "0.5.1",
     "watchify": "^3.11.1"
   },
