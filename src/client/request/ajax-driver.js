@@ -1,7 +1,6 @@
 'use strict';
 
 var querystring = require('../../lib/querystring');
-var browserDetection = require('../browser-detection');
 var assign = require('../../lib/assign').assign;
 var prepBody = require('./prep-body');
 var parseBody = require('./parse-body');
@@ -14,7 +13,7 @@ var MAX_TCP_RETRYCOUNT = 1;
 var TCP_PRECONNECT_BUG_STATUS_CODE = 408;
 
 function requestShouldRetry(status) {
-  return (!status || status === TCP_PRECONNECT_BUG_STATUS_CODE) && browserDetection.isIe();
+  return !status || status === TCP_PRECONNECT_BUG_STATUS_CODE;
 }
 
 function graphQLRequestShouldRetryWithClientApi(body) {

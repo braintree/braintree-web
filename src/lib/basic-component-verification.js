@@ -20,7 +20,7 @@ function basicComponentVerification(options) {
   client = options.client;
   authorization = options.authorization;
 
-  if (client == null && authorization == null) {
+  if (!client && !authorization) {
     return Promise.reject(new BraintreeError({
       type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
       code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,

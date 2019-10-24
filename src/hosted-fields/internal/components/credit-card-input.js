@@ -1,6 +1,7 @@
 'use strict';
 
 var BaseInput = require('./base-input').BaseInput;
+var getCardTypes = require('../../shared/get-card-types');
 
 var DEFAULT_CARD_LENGTH_FOR_PATTERN = 16;
 var DEFAULT_MAX_LENGTH = 22;
@@ -48,30 +49,18 @@ function CreditCardInput() {
 
   this.maxLength = DEFAULT_MAX_LENGTH;
   BaseInput.apply(this, arguments);
-  this.formatter.setPattern(_generatePattern());
+  this.setPattern();
 
   configuration = this.getConfiguration();
 
   this.unmaskLastFour = Boolean(configuration.maskInput && configuration.maskInput.showLastFour);
 
   this.model.on('change:possibleCardTypes', function (possibleCardTypes) {
-    var card;
-    var maxLength = DEFAULT_MAX_LENGTH;
+    var result = this._parseCardTypes(possibleCardTypes);
 
-    if (possibleCardTypes.length === 1) {
-      card = possibleCardTypes[0];
-      maxLength = Math.max.apply(null, card.lengths);
-      if (configuration.maxCardLength) {
-        maxLength = Math.min(configuration.maxCardLength, maxLength);
-      }
-      maxLength += card.gaps.length;
-    }
-
-    this.formatter.setPattern(_generatePattern(card, {
-      maxCardLength: configuration.maxCardLength
-    }));
+    this.setPattern(result.card);
     this.updateModel('value', this.formatter.getUnformattedValue());
-    this.maxLength = maxLength;
+    this.maxLength = result.maxLength;
 
     this.render();
   }.bind(this));
@@ -79,6 +68,12 @@ function CreditCardInput() {
 
 CreditCardInput.prototype = Object.create(BaseInput.prototype);
 CreditCardInput.prototype.constructor = CreditCardInput;
+
+CreditCardInput.prototype.setPattern = function (card) {
+  this.formatter.setPattern(_generatePattern(card, {
+    maxCardLength: this.getConfiguration().maxCardLength
+  }));
+};
 
 CreditCardInput.prototype.maskValue = function (value) {
   var maskedValue, cardValue;
@@ -91,6 +86,40 @@ CreditCardInput.prototype.maskValue = function (value) {
   if (this.unmaskLastFour && this.model.get(this.type).isValid) {
     this.element.value = maskedValue.substring(0, maskedValue.length - 4) + cardValue.substring(cardValue.length - 4, cardValue.length);
   }
+};
+
+CreditCardInput.prototype._parseCardTypes = function (possibleCardTypes) {
+  var maxLength = DEFAULT_MAX_LENGTH;
+  var configuration = this.getConfiguration();
+  var card;
+
+  if (possibleCardTypes.length === 1) {
+    card = possibleCardTypes[0];
+    maxLength = Math.max.apply(null, card.lengths);
+    if (configuration.maxCardLength) {
+      maxLength = Math.min(configuration.maxCardLength, maxLength);
+    }
+    maxLength += card.gaps.length;
+  }
+
+  return {
+    card: card,
+    maxLength: maxLength
+  };
+};
+
+CreditCardInput.prototype._createRestrictedInputOptions = function (options) {
+  var baseConfig = BaseInput.prototype._createRestrictedInputOptions.call(this, options);
+  var self = this;
+
+  baseConfig.onPasteEvent = function (payload) {
+    var possibleCardTypes = getCardTypes(payload.unformattedInputValue);
+    var result = self._parseCardTypes(possibleCardTypes);
+
+    self.setPattern(result.card);
+  };
+
+  return baseConfig;
 };
 
 module.exports = {

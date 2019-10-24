@@ -23,6 +23,7 @@ var CREATE_PAYMENT_DATA_REQUEST_METHODS = {
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
  * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
+ * @property {boolean} details.isNetworkTokenized True if the card is network tokenized.
  * @property {string} description A human-readable description.
  * @property {string} type The payment method type, `CreditCard` or `AndroidPayCard`.
  * @property {object} binData Information about the card based on the bin.
@@ -228,7 +229,8 @@ GooglePayment.prototype.parseResponse = function (response) {
       details: {
         cardType: payload.details.cardType,
         lastFour: payload.details.lastFour,
-        lastTwo: payload.details.lastTwo
+        lastTwo: payload.details.lastTwo,
+        isNetworkTokenized: payload.details.isNetworkTokenized
       },
       binData: payload.binData
     });

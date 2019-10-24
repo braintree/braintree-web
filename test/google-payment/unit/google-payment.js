@@ -435,7 +435,7 @@ describe('GooglePayment', function () {
       var rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
-          token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224"},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
+          token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224","isNetworkTokenized":false},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
           tokenizationType: 'PAYMENT_GATEWAY'
         }
       };
@@ -448,7 +448,8 @@ describe('GooglePayment', function () {
           details: {
             cardType: 'Visa',
             lastFour: '7224',
-            lastTwo: '24'
+            lastTwo: '24',
+            isNetworkTokenized: false
           },
           binData: {
             prepaid: 'No',
@@ -501,7 +502,7 @@ describe('GooglePayment', function () {
       var rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
-          token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224"},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
+          token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224","isNetworkTokenized":false},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
           tokenizationType: 'PAYMENT_GATEWAY'
         }
       };

@@ -365,6 +365,76 @@ describe('PayPalCheckout', function () {
             }.bind(this));
           });
 
+          it('contains shippingOptions when specified', function () {
+            this.options.shippingOptions = [
+              {
+                id: 'aus-domain',
+                label: 'Austin Domain Store',
+                amount: {
+                  currency: 'USD',
+                  value: '1.00'
+                },
+                type: 'PICKUP',
+                selected: true
+              },
+              {
+                id: 'aus-arboretum',
+                label: 'austin Arboretum Store',
+                amount: {
+                  currency: 'USD',
+                  value: '5.00'
+                },
+                type: 'PICKUP',
+                selected: false
+              }
+            ];
+
+            return this.paypalCheckout.createPayment(this.options).then(function () {
+              expect(this.client.request).to.be.calledWith(this.sandbox.match({
+                data: {
+                  amount: 1,
+                  currencyIsoCode: 'USD',
+                  shippingOptions: [
+                    {
+                      id: 'aus-domain',
+                      label: 'Austin Domain Store',
+                      amount: {
+                        currency: 'USD',
+                        value: '1.00'
+                      },
+                      type: 'PICKUP',
+                      selected: true
+                    },
+                    {
+                      id: 'aus-arboretum',
+                      label: 'austin Arboretum Store',
+                      amount: {
+                        currency: 'USD',
+                        value: '5.00'
+                      },
+                      type: 'PICKUP',
+                      selected: false
+                    }
+                  ]
+                }
+              }));
+            }.bind(this));
+          });
+
+          it('contains vaultInitiatedCheckoutPaymentMethodToken when specified', function () {
+            this.options.vaultInitiatedCheckoutPaymentMethodToken = 'VICPMT-XXXXXXXXXX';
+
+            return this.paypalCheckout.createPayment(this.options).then(function () {
+              expect(this.client.request).to.be.calledWith(this.sandbox.match({
+                data: {
+                  vaultInitiatedCheckoutPaymentMethodToken: 'VICPMT-XXXXXXXXXX',
+                  amount: 1,
+                  currencyIsoCode: 'USD'
+                }
+              }));
+            }.bind(this));
+          });
+
           it('contains other options when specified', function () {
             this.options.intent = 'sale';
             this.options.shippingAddressOverride = {

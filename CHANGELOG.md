@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+## 3.55.0
+* Fix issue where not passing in an `authorization` to components would throw a misleading error
+* Update restricted-input to v2.1.0
+* Client
+  * Retry failed connections to Braintree Gateway due to TCP Preconnect errors in all browsers
+* Google Pay
+  * Add support for `isNetworkTokenized` param in `parseResponse` method
+* Hosted Fields
+  * Fix issue where pasting a card number over an Amex number could cut off the last digit
+* PayPal Checkout
+  * Added support for shipping_options
+  * Add `vaultInitiatedCheckoutPaymentMethodToken` parameter to `createPayment`
+
 ## 3.54.2
 * Update @braintree/sanitize-url to v4.0.0
 * Client

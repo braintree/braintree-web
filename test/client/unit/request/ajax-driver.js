@@ -1,7 +1,6 @@
 'use strict';
 
 var sinon = require('sinon');
-var browserDetection = require('../../../../src/client/browser-detection');
 var AJAXDriver = require('../../../../src/client/request/ajax-driver');
 var xhr = require('../../../../src/client/request/xhr');
 var GraphQL = require('../../../../src/client/request/graphql');
@@ -41,10 +40,8 @@ describe('AJAXDriver', function () {
   });
 
   describe('tcp preconnect bug retry', function () {
-    it('retries if a 408 error and browser is IE', function (done) {
+    it('retries if a 408 error', function (done) {
       var responseCount = 0;
-
-      this.sandbox.stub(browserDetection, 'isIe').returns(true);
 
       this.server.respondWith(function (req) {
         if (responseCount === 0) {
@@ -70,10 +67,8 @@ describe('AJAXDriver', function () {
       });
     });
 
-    it('retries if a status code is 0 and browser is IE', function (done) {
+    it('retries if a status code is 0', function (done) {
       var responseCount = 0;
-
-      this.sandbox.stub(browserDetection, 'isIe').returns(true);
 
       this.server.respondWith(function (req) {
         if (responseCount === 0) {
@@ -99,10 +94,8 @@ describe('AJAXDriver', function () {
       });
     });
 
-    it('only retries once if status is 408 and browser is IE', function (done) {
+    it('only retries once', function (done) {
       var responseCount = 0;
-
-      this.sandbox.stub(browserDetection, 'isIe').returns(true);
 
       this.server.respondWith(function (req) {
         if (responseCount === 0) {
@@ -127,35 +120,6 @@ describe('AJAXDriver', function () {
         metadata: this.fakeMetadata
       }, function callback(err, data, status) {
         expect(err).to.equal('second');
-        expect(status).to.equal(408);
-        expect(data).to.not.exist;
-        done();
-      });
-    });
-
-    it('only retries for 408 if browser is IE', function (done) {
-      var responseCount = 0;
-
-      this.sandbox.stub(browserDetection, 'isIe').returns(false);
-
-      this.server.respondWith(function (req) {
-        if (responseCount === 0) {
-          responseCount++;
-          req.respond(408, {}, 'error');
-
-          return;
-        }
-
-        req.respond(200, {}, '{"result": "yay"}');
-      });
-
-      AJAXDriver.request({
-        url: TEST_SERVER_URL,
-        method: 'GET',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err, data, status) {
-        expect(err).to.equal('error');
         expect(status).to.equal(408);
         expect(data).to.not.exist;
         done();

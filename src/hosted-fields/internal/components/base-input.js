@@ -41,11 +41,9 @@ function BaseInput(options) {
   this.element = this.constructElement();
 
   shouldFormat = configuration.formatInput !== false && this.element instanceof HTMLInputElement;
-  this.formatter = createRestrictedInput({
-    shouldFormat: shouldFormat,
-    element: this.element,
-    pattern: ' '
-  });
+  this.formatter = createRestrictedInput(this._createRestrictedInputOptions({
+    shouldFormat: shouldFormat
+  }));
 
   this.addDOMEventListeners();
   this.addModelEventListeners();
@@ -279,6 +277,14 @@ BaseInput.prototype.render = function () {
   if (this.maxLength) {
     this.element.setAttribute('maxlength', this.maxLength);
   }
+};
+
+BaseInput.prototype._createRestrictedInputOptions = function (options) {
+  return {
+    shouldFormat: options.shouldFormat,
+    element: this.element,
+    pattern: ' '
+  };
 };
 
 module.exports = {
