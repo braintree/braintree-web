@@ -13,9 +13,10 @@ var Promise = require('../../../src/lib/promise');
 var VERSION = require('../../../package.json').version;
 var methods = require('../../../src/lib/methods');
 
-function triggerWindowVisibilityChangeListener() {
+function triggerAppSwitchReturnEvents() {
   setTimeout(function () {
-    document.addEventListener.getCall(0).args[1]();
+    window.addEventListener.getCall(0).args[1](); // The hashchange event listener
+    document.addEventListener.getCall(0).args[1](); // The visibility change event listener
   }, 0);
 }
 
@@ -260,6 +261,8 @@ describe('Venmo', function () {
       this.originalLocation = window.location.href;
       this.sandbox.stub(document, 'addEventListener');
       this.sandbox.stub(document, 'removeEventListener');
+      this.sandbox.stub(window, 'addEventListener');
+      this.sandbox.stub(window, 'removeEventListener');
     });
 
     afterEach(function () {
@@ -353,7 +356,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoSuccess=1&paymentMethodNonce=abc&username=keanu');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -366,7 +369,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#/venmoSuccess=1&paym!entMethodNonce/=abc&userna@#me=keanu');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -382,7 +385,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoError=1&errorMessage=This%20is%20an%20error%20message.&errorCode=42');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -396,7 +399,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -409,7 +412,7 @@ describe('Venmo', function () {
           expect(err.message).to.equal('User canceled Venmo authorization, or Venmo app is not available.');
         });
 
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -420,7 +423,7 @@ describe('Venmo', function () {
           expect(self.venmo._tokenizationInProgress).to.be.false;
         });
 
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -431,7 +434,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoSuccess=1&paymentMethodNonce=abc&username=keanu');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -442,7 +445,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoError=1&errorMessage=This%20is%20an%20error%20message.&errorCode=42');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -453,7 +456,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -468,7 +471,10 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
-        triggerWindowVisibilityChangeListener();
+        // Give hashchange event time to fire
+        setTimeout(function () {
+          triggerAppSwitchReturnEvents();
+        }, 300);
 
         return promise;
       });
@@ -480,7 +486,7 @@ describe('Venmo', function () {
           expect(window.location.href).to.equal(originalURL);
         });
 
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -579,7 +585,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoSuccess=1&paymentMethodNonce=abc&username=keanu');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('returns an error on Venmo app error', function (done) {
@@ -595,7 +601,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoError=1&errorMessage=This%20is%20an%20error%20message.&errorCode=42');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('calls back with cancellation error on Venmo app cancel', function (done) {
@@ -609,7 +615,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('calls back with cancellation error when app switch result not found', function (done) {
@@ -622,7 +628,7 @@ describe('Venmo', function () {
           done();
         });
 
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('sets _tokenizationInProgress to false when app switch result not received', function (done) {
@@ -631,7 +637,7 @@ describe('Venmo', function () {
           done();
         }.bind(this));
 
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('consumes URL fragment parameters on successful result', function (done) {
@@ -641,7 +647,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoSuccess=1&paymentMethodNonce=abc&username=keanu');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('consumes URL fragment parameters on error result', function (done) {
@@ -651,7 +657,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoError=1&errorMessage=This%20is%20an%20error%20message.&errorCode=42');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('consumes URL fragment parameters on Venmo app cancel', function (done) {
@@ -661,7 +667,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('restores the previous URL fragment after consuming Venmo results', function (done) {
@@ -673,7 +679,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
       });
 
       it('preserves URL if fragments are never set', function () {
@@ -693,7 +699,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoSuccess=1&paymentMethodNonce=abc&username=keanu');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -705,7 +711,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoCancel=1');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -717,7 +723,7 @@ describe('Venmo', function () {
         });
 
         history.replaceState({}, '', window.location.href + '#venmoError=1&errorCode=1&errorMessage=error');
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });
@@ -730,7 +736,7 @@ describe('Venmo', function () {
           expect(analytics.sendEvent).to.be.calledWith(client, 'venmo.appswitch.cancel-or-unavailable');
         });
 
-        triggerWindowVisibilityChangeListener();
+        triggerAppSwitchReturnEvents();
 
         return promise;
       });

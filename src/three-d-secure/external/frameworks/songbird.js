@@ -25,9 +25,7 @@ function SongbirdFramework(options) {
     sdkVersion: PLATFORM + '/' + VERSION
   };
   this._getDfReferenceIdPromisePlus = makePromisePlus();
-  this.setupSongbird({
-    loggingEnabled: options.loggingEnabled
-  });
+  this.setupSongbird(options);
   this._cardinalEvents = [];
 }
 
@@ -178,12 +176,22 @@ SongbirdFramework.prototype._setupFrameworkSpecificListeners = function () {
 };
 
 SongbirdFramework.prototype._createCardinalConfigurationOptions = function (setupOptions) {
-  var cardinalConfiguration = {};
+  var cardinalConfiguration = setupOptions.cardinalSDKConfig || {};
+  var paymentSettings = cardinalConfiguration.payment || {};
 
-  if (setupOptions.loggingEnabled) {
+  if (!cardinalConfiguration.logging && setupOptions.loggingEnabled) {
     cardinalConfiguration.logging = {
       level: 'verbose'
     };
+  }
+
+  cardinalConfiguration.payment = {};
+
+  if (paymentSettings.hasOwnProperty('displayLoading')) {
+    cardinalConfiguration.payment.displayLoading = paymentSettings.displayLoading;
+  }
+  if (paymentSettings.hasOwnProperty('displayExitButton')) {
+    cardinalConfiguration.payment.displayExitButton = paymentSettings.displayExitButton;
   }
 
   return cardinalConfiguration;
@@ -291,6 +299,8 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
         break;
 
       case 'ERROR':
+        analytics.sendEvent(self._client, 'three-d-secure.verification-flow.cardinal-sdk-error.' + data.ErrorNumber);
+
         switch (data.ErrorNumber) {
           case 10001: // Cardinal Docs: Timeout when sending an /Init message
           case 10002: // Cardinal Docs: Timeout when sending an /Start message

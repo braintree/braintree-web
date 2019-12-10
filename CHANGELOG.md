@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.56.0
+* 3D Secure
+  * Add `cardinalSDKConfig` option to `create` method. Supported properties:      
+    * `timeout`
+    * `maxRequestRetries`
+    * `logging`
+    * `payment.displayLoading`
+    * `payment.displayExitButton`
+* Venmo
+  * Use `hashchange` event listener to detect when Venmo tokenization has completed
+
 ## 3.55.0
 * Fix issue where not passing in an `authorization` to components would throw a misleading error
 * Update restricted-input to v2.1.0

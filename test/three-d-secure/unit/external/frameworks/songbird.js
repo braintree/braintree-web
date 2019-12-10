@@ -732,34 +732,65 @@ describe('SongbirdFramework', function () {
 
       [{
         songbirdCode: 10001,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10001'
+        ]
       }, {
         songbirdCode: 10002,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10002'
+        ]
       }, {
         songbirdCode: 10003,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10003'
+        ]
       }, {
         songbirdCode: 10007,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10007'
+        ]
       }, {
         songbirdCode: 10009,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10009'
+        ]
       }, {
         songbirdCode: 10005,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_CONFIG'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_CONFIG',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10005'
+        ]
       }, {
         songbirdCode: 10006,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_CONFIG'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_CONFIG',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10006'
+        ]
       }, {
         songbirdCode: 10008,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_JWT'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_JWT',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10008'
+        ]
       }, {
         songbirdCode: 10010,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_JWT'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_JWT',
+        analytics: [
+          'three-d-secure.verification-flow.cardinal-sdk-error.10010'
+        ]
       }, {
         songbirdCode: 10011,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_CANCELED'
+        braintreeCode: 'THREEDS_CARDINAL_SDK_CANCELED',
+        analytics: [
+          'three-d-secure.verification-flow.canceled',
+          'three-d-secure.verification-flow.cardinal-sdk-error.10011'
+        ]
       }, {
         songbirdCode: 'anything-other-code',
         braintreeCode: 'THREEDS_CARDINAL_SDK_ERROR'
@@ -778,6 +809,27 @@ describe('SongbirdFramework', function () {
             expect(err.code).to.equal(test.braintreeCode);
           });
         });
+
+        if (test.analytics) {
+          test.analytics.forEach(function (analyticName) {
+            it('sends the analytic ' + analyticName, function () {
+              var client = this.client;
+
+              this.validationArgs[0] = {
+                ActionCode: 'ERROR',
+                ErrorNumber: test.songbirdCode
+              };
+
+              return this.instance.verifyCard({
+                nonce: 'nonce',
+                amount: 100,
+                onLookupComplete: callsNext
+              }).then(rejectIfResolves).catch(function () {
+                expect(analytics.sendEvent).to.be.calledWith(client, analyticName);
+              });
+            });
+          });
+        }
       });
 
       it('authenticate jwt', function () {
@@ -901,16 +953,108 @@ describe('SongbirdFramework', function () {
       });
     });
 
-    it('configures Cardinal to use verbose logging', function () {
+    it('configures Cardinal to use verbose logging with loggingEnabled', function () {
       var framework = new SongbirdFramework({
         client: this.client,
         loggingEnabled: true
       });
 
       return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWith({
+        expect(global.Cardinal.configure).to.be.calledWithMatch({
           logging: {
             level: 'verbose'
+          }
+        });
+      });
+    });
+
+    it('configures Cardinal to use logging object provided by merchant', function () {
+      var framework = new SongbirdFramework({
+        client: this.client,
+        cardinalSDKConfig: {
+          logging: {
+            level: 'off'
+          }
+        }
+      });
+
+      return framework.setupSongbird().then(function () {
+        expect(global.Cardinal.configure).to.be.calledWithMatch({
+          logging: {
+            level: 'off'
+          }
+        });
+      });
+    });
+
+    it('configures Cardinal to use logging object provided by merchant when loggingEnabled is also used', function () {
+      var framework = new SongbirdFramework({
+        client: this.client,
+        loggingEnabled: true,
+        cardinalSDKConfig: {
+          logging: {
+            level: 'off'
+          }
+        }
+      });
+
+      return framework.setupSongbird().then(function () {
+        expect(global.Cardinal.configure).to.be.calledWithMatch({
+          logging: {
+            level: 'off'
+          }
+        });
+      });
+    });
+
+    it('configures Cardinal to use timeout setting provided by the merchant', function () {
+      var framework = new SongbirdFramework({
+        client: this.client,
+        cardinalSDKConfig: {
+          timeout: 1000
+        }
+      });
+
+      return framework.setupSongbird().then(function () {
+        expect(global.Cardinal.configure).to.be.calledWithMatch({
+          timeout: 1000
+        });
+      });
+    });
+
+    it('configures Cardinal to use maxRequestRetries setting provided by the merchant', function () {
+      var framework = new SongbirdFramework({
+        client: this.client,
+        cardinalSDKConfig: {
+          maxRequestRetries: 3
+        }
+      });
+
+      return framework.setupSongbird().then(function () {
+        expect(global.Cardinal.configure).to.be.calledWithMatch({
+          maxRequestRetries: 3
+        });
+      });
+    });
+
+    it('configures Cardinal to use a subset of payment options provided by the merchant', function () {
+      var framework = new SongbirdFramework({
+        client: this.client,
+        cardinalSDKConfig: {
+          payment: {
+            view: 'modal',
+            framework: 'inline',
+            displayLoading: true,
+            displayExitButton: true
+          }
+        }
+      });
+
+      return framework.setupSongbird().then(function () {
+        expect(global.Cardinal.configure).to.be.calledWithMatch({
+          payment: {
+            displayLoading: true,
+            displayExitButton: true
           }
         });
       });

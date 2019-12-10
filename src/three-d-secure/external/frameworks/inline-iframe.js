@@ -28,9 +28,7 @@ InlineIframeFramework.prototype.setUpEventListeners = function (reply) {
 InlineIframeFramework.prototype._createCardinalConfigurationOptions = function (setupOptions) {
   var options = SongbirdFramework.prototype._createCardinalConfigurationOptions.call(this, setupOptions);
 
-  options.payment = {
-    framework: 'inline'
-  };
+  options.payment.framework = 'inline';
 
   return options;
 };

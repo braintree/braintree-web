@@ -25,7 +25,7 @@ var FRAMEWORKS = require('./frameworks');
 /**
  * @deprecated
  * @typedef {object} ThreeDSecure~verifyCardCustomerObject
- * @property {string} [customer.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, paranthesis and other characters.
+ * @property {string} [customer.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, parenthesis and other characters.
  * @property {string} [customer.email] The email used for verification.
  * @property {string} [customer.shippingMethod] The 2-digit string indicating the shipping method chosen for the transaction.
  * @property {string} [customer.billingAddress.firstName] The first name associated with the address.
@@ -36,7 +36,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} [customer.billingAddress.region] The 2 letter code for US states, and the equivalent for other countries.
  * @property {string} [customer.billingAddress.postalCode] The zip code or equivalent for countries that have them.
  * @property {string} [customer.billingAddress.countryCodeAlpha2] The 2 character country code.
- * @property {string} [customer.billingAddress.phoneNumber] The phone number associated with the address. Only numbers; remove dashes, paranthesis and other characters.
+ * @property {string} [customer.billingAddress.phoneNumber] The phone number associated with the address. Only numbers; remove dashes, parenthesis and other characters.
  * @description **Deprecated** Optional customer information to be passed to 3DS 1.0 for verification.
  */
 
@@ -84,7 +84,7 @@ var FRAMEWORKS = require('./frameworks');
  * @typedef {object} ThreeDSecure~billingAddress
  * @property {string} [givenName] The first name associated with the billing address.
  * @property {string} [surname] The last name associated with the billing address.
- * @property {string} [phoneNumber] The phone number associated with the billing address. Only numbers; remove dashes, paranthesis and other characters.
+ * @property {string} [phoneNumber] The phone number associated with the billing address. Only numbers; remove dashes, parenthesis and other characters.
  * @property {string} [streetAddress] Line 1 of the billing address (eg. number, street, etc).
  * @property {string} [extendedAddress] Line 2 of the billing address (eg. suite, apt #, etc.).
  * @property {string} [line3] Line 3 of the billing address if needed (eg. suite, apt #, etc).
@@ -118,7 +118,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} [shippingMethodIndicator] The 2-digit string indicating the shipping method chosen for the transaction Possible values.
  * - `01` Ship to cardholder billing address
  * - `02` Ship to another verified address on file with merchant
- * - `03` Ship to address that is different than billing address
+ * - `03` Ship to address that is different from billing address
  * - `04` Ship to store (store address should be populated on request)
  * - `05` Digital goods
  * - `06` Travel and event tickets, not shipped
@@ -132,11 +132,11 @@ var FRAMEWORKS = require('./frameworks');
  * - `TRA` Travel
  * - `DSP` Cash Dispensing
  * - `REN` Car Rental
- * - `GAS` Fueld
+ * - `GAS` Fuel
  * - `LUX` Luxury Retail
  * - `ACC` Accommodation Retail
  * - `TBD` Other
- * @property {string} [deliveryTimeframe] The 2-digit number indicating the delivery timeframe. Possible values:
+ * @property {string} [deliveryTimeframe] The 2-digit number indicating the delivery time frame. Possible values:
  * - `01` Electronic delivery
  * - `02` Same day shipping
  * - `03` Overnight shipping
@@ -318,12 +318,12 @@ EventEmitter.createChild(ThreeDSecure);
  * @param {object} options Options for card verification.
  * @param {string} options.nonce The nonce representing the card from a tokenization payload. For example, this can be a {@link HostedFields~tokenizePayload|tokenizePayload} returned by Hosted Fields under `payload.nonce`.
  * @param {string} options.bin The numeric Bank Identification Number (bin) of the card from a tokenization payload. For example, this can be a {@link HostedFields~tokenizePayload|tokenizePayload} returned by Hosted Fields under `payload.details.bin`.
- * @param {string} options.amount The amount of the transaction in the current merchant account's currency. For example, if you are running a transaction of $123.45 US dollars, `amount` would be 123.45.
+ * @param {string} options.amount The amount of the transaction in the current merchant account's currency. This must be expressed in numbers with an optional decimal (using `.`) and precision up to the hundredths place. For example, if you're processing a transaction for 1.234,56 € then `amount` should be `1234.56`.
  * @param {boolean} [options.challengeRequested] If set to true, an authentication challenge will be forced if possible.
  * @param {boolean} [options.exemptionRequested] If set to true, an exemption to the authentication challenge will be requested.
  * @param {function} [options.onLookupComplete] *Deprecated:* Use {@link ThreeDSecure#event:lookup-complete|`threeDSecureInstance.on('lookup-complete')`} instead. Function to execute when lookup completes. The first argument, `data`, is a {@link ThreeDSecure~verificationData|verificationData} object, and the second argument, `next`, is a callback. `next` must be called to continue.
  * @param {string} [options.email] The email used for verification.
- * @param {string} [options.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, paranthesis and other characters.
+ * @param {string} [options.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, parenthesis and other characters.
  * @param {object} [options.billingAddress] An {@link ThreeDSecure~billingAddress|billingAddress} object for verification.
  * @param {object} [options.additionalInformation] An {@link ThreeDSecure~additionalInformation|additionalInformation} object for verification.
  * @param {object} [options.customer] **Deprecated** Customer information for use in 3DS 1.0 verifications. Can contain any subset of a {@link ThreeDSecure~verifyCardCustomerObject|verifyCardCustomerObject}. Only to be used for 3DS 1.0 integrations.
@@ -342,7 +342,7 @@ EventEmitter.createChild(ThreeDSecure);
  *   next();
  * });
  *
- * // call verifyCard after tokenizating a card
+ * // call verifyCard after tokenizing a card
  * threeDSecure.verifyCard({
  *   amount: '123.45',
  *   nonce: hostedFieldsTokenizationPayload.nonce,
@@ -380,13 +380,13 @@ EventEmitter.createChild(ThreeDSecure);
  *   }
  *
  *   if (payload.liabilityShifted) {
- *     // Liablity has shifted
+ *     // Liability has shifted
  *     submitNonceToServer(payload.nonce);
  *   } else if (payload.liabilityShiftPossible) {
- *     // Liablity may still be shifted
+ *     // Liability may still be shifted
  *     // Decide if you want to submit the nonce
  *   } else {
- *     // Liablity has not shifted and will not shift
+ *     // Liability has not shifted and will not shift
  *     // Decide if you want to submit the nonce
  *   }
  * });
@@ -434,13 +434,13 @@ EventEmitter.createChild(ThreeDSecure);
  *   }
  *
  *   if (payload.liabilityShifted) {
- *     // Liablity has shifted
+ *     // Liability has shifted
  *     submitNonceToServer(payload.nonce);
  *   } else if (payload.liabilityShiftPossible) {
- *     // Liablity may still be shifted
+ *     // Liability may still be shifted
  *     // Decide if you want to submit the nonce
  *   } else {
- *     // Liablity has not shifted and will not shift
+ *     // Liability has not shifted and will not shift
  *     // Decide if you want to submit the nonce
  *   }
  * });
@@ -454,7 +454,7 @@ EventEmitter.createChild(ThreeDSecure);
  *   next();
  * });
  *
- * // call verifyCard after tokenizating a card
+ * // call verifyCard after tokenizing a card
  * threeDSecure.verifyCard({
  *   amount: '123.45',
  *   nonce: hostedFieldsTokenizationPayload.nonce,
@@ -511,13 +511,13 @@ EventEmitter.createChild(ThreeDSecure);
  *   }
  *
  *   if (payload.liabilityShifted) {
- *     // Liablity has shifted
+ *     // Liability has shifted
  *     submitNonceToServer(payload.nonce);
  *   } else if (payload.liabilityShiftPossible) {
- *     // Liablity may still be shifted
+ *     // Liability may still be shifted
  *     // Decide if you want to submit the nonce
  *   } else {
- *     // Liablity has not shifted and will not shift
+ *     // Liability has not shifted and will not shift
  *     // Decide if you want to submit the nonce
  *   }
  * });
@@ -546,13 +546,13 @@ ThreeDSecure.prototype.verifyCard = function (options) {
  *
  * threeDSecure.initializeChallengeWithLookupResponse(lookupResponseFromServer).then(function (payload) {
  *   if (payload.liabilityShifted) {
- *     // Liablity has shifted
+ *     // Liability has shifted
  *     submitNonceToServer(payload.nonce);
  *   } else if (payload.liabilityShiftPossible) {
- *     // Liablity may still be shifted
+ *     // Liability may still be shifted
  *     // Decide if you want to submit the nonce
  *   } else {
- *     // Liablity has not shifted and will not shift
+ *     // Liability has not shifted and will not shift
  *     // Decide if you want to submit the nonce
  *   }
  * });

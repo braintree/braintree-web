@@ -13,9 +13,7 @@ Bootstrap3ModalFramework.prototype = Object.create(SongbirdFramework.prototype, 
 Bootstrap3ModalFramework.prototype._createCardinalConfigurationOptions = function (setupOptions) {
   var options = SongbirdFramework.prototype._createCardinalConfigurationOptions.call(this, setupOptions);
 
-  options.payment = {
-    framework: 'bootstrap3'
-  };
+  options.payment.framework = 'bootstrap3';
 
   return options;
 };

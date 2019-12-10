@@ -155,18 +155,32 @@ Venmo.prototype.tokenize = function () {
       global.open(self._url);
     }
 
-    // Subscribe to document visibility change events to detect when app switch
-    // has returned.
+    // Detect when app switch has returned with tokenization results in the
+    // URL hash.
+    self._hashChangeListener = function () {
+      self._processResults().then(resolve).catch(reject).then(function () {
+        self._tokenizationInProgress = false;
+        global.removeEventListener('hashchange', self._hashChangeListener);
+        delete self._hashChangeListener;
+        global.location.hash = self._previousHash;
+      });
+    };
+    global.addEventListener('hashchange', self._hashChangeListener);
+
+    // Check if app switch has returned but no tokenization results were found
+    // in URL hash.
     self._visibilityChangeListener = function () {
       if (!global.document.hidden) {
-        self._tokenizationInProgress = false;
-
         setTimeout(function () {
-          self._processResults().then(resolve).catch(reject).then(function () {
-            global.location.hash = self._previousHash;
-            self._removeVisibilityEventListener();
-            delete self._visibilityChangeListener;
-          });
+          // If tokenization is still in progress when this setTimeout fires,
+          // then we process results to show that the user canceled.
+          if (self._tokenizationInProgress) {
+            self._tokenizationInProgress = false;
+            self._processResults().then(resolve).catch(reject);
+          }
+
+          self._removeVisibilityEventListener();
+          delete self._visibilityChangeListener;
         }, constants.PROCESS_RESULTS_DELAY);
       }
     };
