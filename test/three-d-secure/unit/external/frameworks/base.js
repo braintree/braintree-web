@@ -576,5 +576,42 @@ describe('BaseFramework', function () {
         expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.teardown-completed');
       });
     });
+
+    it('tears down v1Bus if it exists', function () {
+      var bus = {
+        teardown: this.sandbox.stub()
+      };
+
+      this.framework._v1Bus = bus;
+
+      return this.framework.teardown().then(function () {
+        expect(bus.teardown).to.be.calledOnce;
+      });
+    });
+
+    it('does not teardown bankFrame if is has no parent node', function () {
+      var iframe = {
+        parentNode: {
+          removeChild: this.sandbox.stub()
+        }
+      };
+
+      this.framework._v1Iframe = iframe;
+
+      return this.framework.teardown().then(function () {
+        expect(iframe.parentNode.removeChild).to.be.calledOnce;
+        expect(iframe.parentNode.removeChild).to.be.calledWith(iframe);
+      });
+    });
+
+    it('does not teardown bankFrame if is has no parent node', function () {
+      var iframe = {};
+
+      this.framework._v1Iframe = iframe;
+
+      return this.framework.teardown().catch(function () {
+        throw new Error('Did not expect teardown to error');
+      });
+    });
   });
 });

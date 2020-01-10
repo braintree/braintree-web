@@ -96,7 +96,7 @@ describe('InlineIframeFramework', function () {
       delete global.Cardinal;
     });
 
-    it('configures Cardinal to use bootstrap3 framework', function () {
+    it('configures Cardinal to use inline framework', function () {
       var framework = new InlineIframeFramework({
         client: this.client
       });
@@ -110,7 +110,7 @@ describe('InlineIframeFramework', function () {
       });
     });
 
-    it('configures Cardinal to use verbose logging and the bootstrap3 framework', function () {
+    it('configures Cardinal to use verbose logging and the inline framework', function () {
       var framework = new InlineIframeFramework({
         client: this.client,
         loggingEnabled: true
@@ -279,6 +279,30 @@ describe('InlineIframeFramework', function () {
       });
 
       this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
+        onLookupComplete: callsNext
+      });
+    });
+
+    it('passes iframe to merchant for v1 fallback', function (done) {
+      var framework;
+
+      assets.loadScript.rejects(new Error('failed'));
+
+      framework = new InlineIframeFramework({
+        client: this.client
+      });
+
+      framework.setupSongbird();
+
+      framework.on('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE', function (payload, next) {
+        expect(payload.element.querySelector('[data-braintree-v1-fallback-iframe-container="true"] iframe')).to.exist;
+
+        next();
+
+        done();
+      });
+
+      framework.initializeChallengeWithLookupResponse(this.lookupResponse, {
         onLookupComplete: callsNext
       });
     });

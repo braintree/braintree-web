@@ -5,6 +5,7 @@ var SongbirdFramework = require('../../../../../src/three-d-secure/external/fram
 var Promise = require('../../../../../src/lib/promise');
 var rejectIfResolves = require('../../../../helpers/promise-helper').rejectIfResolves;
 var BraintreeError = require('../../../../../src/lib/braintree-error');
+var Bus = require('../../../../../src/lib/bus');
 var VERSION = require('../../../../../package.json').version;
 var analytics = require('../../../../../src/lib/analytics');
 var fake = require('../../../../helpers/fake');
@@ -179,51 +180,6 @@ describe('SongbirdFramework', function () {
     });
 
     context('lookup request', function () {
-      it('cannot be called if a blocking error occurs during cardinal sdk setup', function () {
-        var self = this;
-        var error = new Error('blocking error');
-
-        this.instance._verifyCardBlockingError = error;
-
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
-          amount: 100,
-          onLookupComplete: this.sandbox.stub().yieldsAsync(),
-          email: 'test@example.com',
-          mobilePhoneNumber: '8101234567',
-          billingAddress: {
-            phoneNumber: '1234567',
-            givenName: 'Jill',
-            surname: 'Gal',
-            streetAddress: '555 Smith street',
-            extendedAddress: '#5',
-            line3: 'More Address',
-            locality: 'Oakland',
-            region: 'CA',
-            postalCode: '12345',
-            countryCodeAlpha2: 'US'
-          },
-          additionalInformation: {
-            shippingMethod: '01',
-            shippingGivenName: 'Bob',
-            shippingSurname: 'Guy',
-            shippingAddress: {
-              streetAddress: '123 XYZ Street',
-              extendedAddress: 'Apt 2',
-              line3: 'Even More Address',
-              locality: 'Hagerstown',
-              region: 'MD',
-              postalCode: '21740',
-              countryCodeAlpha2: 'US'
-            }
-          }
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.equal(error);
-          expect(self.client.request).to.not.be.called;
-        });
-      });
-
       it('makes a request to the 3DS lookup endpoint with billing address data', function () {
         var self = this;
 
@@ -1129,13 +1085,31 @@ describe('SongbirdFramework', function () {
       }.bind(this));
     });
 
-    it('rejects if loadScript fails', function () {
+    it('uses v1 fallback if loadScript fails', function () {
       assets.loadScript.rejects(new Error('foo'));
 
-      return this.tds.setupSongbird().then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED');
-        expect(err.message).to.equal('Cardinal\'s Songbird.js library could not be loaded.');
-      });
+      return this.tds.setupSongbird().then(function () {
+        expect(this.tds._useV1Fallback).to.equal(true);
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
+      }.bind(this));
+    });
+
+    it('uses v1 fallback if loadScript resolves but no Cardinal global is available', function () {
+      assets.loadScript.resolves();
+
+      return this.tds.setupSongbird().then(function () {
+        expect(this.tds._useV1Fallback).to.equal(true);
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-global-unavailable');
+      }.bind(this));
+    });
+
+    it('uses v1 fallback if loadScript resolves but Cardinal confiugration throws an error', function () {
+      this.fakeCardinal.configure.throws(new Error('something went wrong'));
+
+      return this.tds.setupSongbird().then(function () {
+        expect(this.tds._useV1Fallback).to.equal(true);
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-configuration-threw-error');
+      }.bind(this));
     });
 
     it('sets getDfReferenceId to reject if Cardinal can not be set up', function () {
@@ -1143,7 +1117,7 @@ describe('SongbirdFramework', function () {
 
       assets.loadScript.rejects(new Error('foo'));
 
-      return tds.setupSongbird().then(rejectIfResolves).catch(function () {
+      return tds.setupSongbird().then(function () {
         return tds.getDfReferenceId();
       }).then(rejectIfResolves).catch(function (err) {
         expect(err.code).to.equal('THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED');
@@ -1151,15 +1125,14 @@ describe('SongbirdFramework', function () {
       });
     });
 
-    it('rejects with a generic error if a specific Braintree error cannot be found', function () {
+    it('uses v1 fallback if Cardinal method throws an error', function () {
       var tds = this.tds;
 
       this.fakeCardinal.on.reset();
       this.fakeCardinal.on.throws(new Error('failure'));
 
-      return tds.setupSongbird().then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_SETUP_FAILED');
-        expect(err.message).to.equal('Something went wrong setting up Cardinal\'s Songbird.js library.');
+      return tds.setupSongbird().then(function () {
+        expect(tds._useV1Fallback).to.equal(true);
       });
     });
 
@@ -1169,7 +1142,7 @@ describe('SongbirdFramework', function () {
       this.fakeCardinal.on.reset();
       this.fakeCardinal.on.throws(new Error('failure'));
 
-      return tds.setupSongbird().then(rejectIfResolves).catch(function () {
+      return tds.setupSongbird().then(function () {
         expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.cardinal-sdk.init.setup-failed');
       }.bind(this));
     });
@@ -1180,7 +1153,7 @@ describe('SongbirdFramework', function () {
       this.fakeCardinal.on.reset();
       this.fakeCardinal.on.throws(new Error('failure'));
 
-      return tds.setupSongbird().then(rejectIfResolves).catch(function () {
+      return tds.setupSongbird().then(function () {
         return tds.getDfReferenceId();
       }).then(rejectIfResolves).catch(function (err) {
         expect(err.code).to.equal('THREEDS_CARDINAL_SDK_SETUP_FAILED');
@@ -1188,15 +1161,15 @@ describe('SongbirdFramework', function () {
       });
     });
 
-    it('rejects with timeout error if cardinal takes longer than 60 seconds to set up', function () {
+    it('uses v1 fallback if cardinal takes longer than 60 seconds to set up', function () {
       this.fakeCardinal.on.reset();
 
       return this.tds.setupSongbird({
         timeout: 3
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT');
-        expect(err.message).to.equal('Cardinal\'s Songbird.js took too long to setup.');
-      });
+      }).then(function () {
+        expect(this.tds._useV1Fallback).to.equal(true);
+        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-timeout');
+      }.bind(this));
     });
 
     it('sends analytics event when Cardinal times out during setup', function () {
@@ -1204,7 +1177,7 @@ describe('SongbirdFramework', function () {
 
       return this.tds.setupSongbird({
         timeout: 3
-      }).then(rejectIfResolves).catch(function () {
+      }).then(function () {
         expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
       }.bind(this));
     });
@@ -1391,6 +1364,60 @@ describe('SongbirdFramework', function () {
 
       return instance.initializeChallengeWithLookupResponse(lookupResponse, {
         onLookupComplete: onLookupComplete
+      });
+    });
+
+    context('v1 fallback', function () {
+      beforeEach(function () {
+        this.lookupResponse = {
+          threeDSecureInfo: {
+            liabilityShiftPossible: true,
+            liabilityShifted: true
+          },
+          paymentMethod: {},
+          lookup: {
+            acsUrl: 'https://example.com/acs',
+            pareq: 'pareq',
+            transactionId: 'transaction-id'
+          }
+        };
+      });
+
+      it('uses v1 fallback flow when cardinal script fails to load', function () {
+        var instance;
+
+        assets.loadScript.rejects(new Error('foo'));
+        instance = new SongbirdFramework({
+          client: this.client
+        });
+        Bus.prototype.on.withArgs('threedsecure:AUTHENTICATION_COMPLETE').yieldsAsync({
+          auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
+        });
+
+        return instance.initializeChallengeWithLookupResponse(this.lookupResponse).then(function (result) {
+          expect(result.nonce).to.equal('nonce-from-v1-fallback-flow');
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
+        }.bind(this));
+      });
+
+      it('uses v1 fallback flow when cardinal.on yields an error on setup', function () {
+        var instance;
+
+        this.fakeCardinal.on.withArgs('payments.validated').yields({
+          ActionCode: 'ERROR',
+          ErrorNumber: 1010
+        });
+        instance = new SongbirdFramework({
+          client: this.client
+        });
+        Bus.prototype.on.withArgs('threedsecure:AUTHENTICATION_COMPLETE').yieldsAsync({
+          auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
+        });
+
+        return instance.initializeChallengeWithLookupResponse(this.lookupResponse).then(function (result) {
+          expect(result.nonce).to.equal('nonce-from-v1-fallback-flow');
+          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-error.number-1010');
+        }.bind(this));
       });
     });
   });
@@ -1619,6 +1646,21 @@ describe('SongbirdFramework', function () {
         }
       }).then(rejectIfResolves).catch(function (verifyCardError) {
         expect(verifyCardError.code).to.equal('THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT');
+      });
+    });
+
+    it('errors verifyCard with specific error if passed in', function () {
+      var framework = this.framework;
+      var err = new Error('custom error');
+
+      return framework.verifyCard({
+        amount: '100.00',
+        nonce: 'a-nonce',
+        onLookupComplete: function () {
+          framework.cancelVerifyCard(err);
+        }
+      }).then(rejectIfResolves).catch(function (verifyCardError) {
+        expect(verifyCardError).to.equal(err);
       });
     });
 

@@ -4,7 +4,6 @@ var BaseFramework = require('../../../../../src/three-d-secure/external/framewor
 var LegacyFramework = require('../../../../../src/three-d-secure/external/frameworks/legacy');
 var Bus = require('../../../../../src/lib/bus');
 var BraintreeError = require('../../../../../src/lib/braintree-error');
-var VERSION = require('../../../../../package.json').version;
 var parseUrl = require('url').parse;
 var analytics = require('../../../../../src/lib/analytics');
 var fake = require('../../../../helpers/fake');
@@ -259,39 +258,6 @@ describe('LegacyFramework', function () {
     beforeEach(function () {
       this.instance = new LegacyFramework({
         client: this.client
-      });
-    });
-
-    it('responds to a CONFIGURATION_REQUEST with the right configuration', function (done) {
-      var instance = this.instance;
-      var lookupResponse = {
-        paymentMethod: {},
-        lookup: {
-          acsUrl: 'http://example.com/acs',
-          pareq: 'pareq',
-          termUrl: 'http://example.com/term?foo=boo',
-          md: 'md'
-        }
-      };
-
-      instance.initializeChallengeWithLookupResponse(lookupResponse, {
-        addFrame: function () {
-          var configurationRequestHandler = getBusHandler(Bus.events.CONFIGURATION_REQUEST);
-
-          configurationRequestHandler(function (data) {
-            var authenticationCompleteBaseUrl = instance._assetsUrl + '/html/three-d-secure-authentication-complete-frame.html?channel=';
-
-            expect(data.acsUrl).to.equal('http://example.com/acs');
-            expect(data.pareq).to.equal('pareq');
-            expect(data.termUrl).to.match(RegExp('^http://example.com/term\\?foo=boo&three_d_secure_version=' + VERSION + '&authentication_complete_base_url=' + encodeURIComponent(authenticationCompleteBaseUrl) + '[a-f0-9-]{36}' + encodeURIComponent('&') + '$'));
-            expect(data.parentUrl).to.equal(location.href);
-
-            done();
-          });
-        },
-        removeFrame: noop
-      }).then(function () {
-        done(new Error('This should never be called'));
       });
     });
 
@@ -604,66 +570,6 @@ describe('LegacyFramework', function () {
   describe('cancelVerifyCard', function () {
     it('is identical to BaseFramework', function () {
       expect(LegacyFramework.prototype.cancelVerifyCard).to.equal(BaseFramework.prototype.cancelVerifyCard);
-    });
-  });
-
-  describe('teardown', function () {
-    beforeEach(function () {
-      this.framework = new LegacyFramework({client: this.client});
-    });
-
-    it('does not attempt to tear down bus if it does not exist', function () {
-      return this.framework.teardown().then(function () {
-        expect(Bus.prototype.teardown).to.not.be.called;
-      });
-    });
-
-    it('tears down bus if it exists', function () {
-      var framework = this.framework;
-
-      framework._bus = new Bus({
-        channel: 'foo',
-        merchantUrl: 'bar'
-      });
-
-      return framework.teardown().then(function () {
-        expect(framework._bus.teardown).to.be.calledOnce;
-      });
-    });
-
-    it('does not attempt to remove iframe from DOM if there is no iframe on instance', function () {
-      this.sandbox.spy(document.body, 'removeChild');
-
-      return this.framework.teardown().then(function () {
-        expect(document.body.removeChild).to.not.be.called;
-      });
-    });
-
-    it('does not remove iframe from DOM if it is not in the DOM', function () {
-      var iframe = document.createElement('iframe');
-
-      this.framework._bankIframe = iframe;
-      this.sandbox.spy(document.body, 'removeChild');
-
-      return this.framework.teardown().then(function () {
-        expect(document.body.removeChild).to.not.be.called;
-      });
-    });
-
-    it('removes bank iframe', function () {
-      var iframe = document.createElement('iframe');
-
-      this.sandbox.spy(document.body, 'removeChild');
-
-      document.body.appendChild(iframe);
-
-      this.framework._bankIframe = iframe;
-
-      return this.framework.teardown().then(function () {
-        expect(document.body.contains(iframe)).to.equal(false);
-        expect(document.body.removeChild).to.be.calledOnce;
-        expect(document.body.removeChild).to.be.calledWith(iframe);
-      });
     });
   });
 });

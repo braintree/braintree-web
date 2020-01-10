@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.56.0",
+  "version": "3.57.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -20,6 +20,7 @@
     "@braintree/browser-detection": "1.9.0",
     "@braintree/class-list": "0.1.0",
     "@braintree/event-emitter": "0.3.0",
+    "@braintree/extended-promise": "0.2.1",
     "@braintree/iframer": "1.0.3",
     "@braintree/sanitize-url": "4.0.0",
     "@braintree/wrap-promise": "2.0.0",

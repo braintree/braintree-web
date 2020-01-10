@@ -4,11 +4,19 @@ var assign = require('../../../lib/assign').assign;
 var analytics = require('../../../lib/analytics');
 var BraintreeError = require('../../../lib/braintree-error');
 var Promise = require('../../../lib/promise');
-var makePromisePlus = require('../../../lib/promise-plus');
+var ExtendedPromise = require('@braintree/extended-promise');
 var EventEmitter = require('@braintree/event-emitter');
 var errors = require('../../shared/errors');
+var iFramer = require('@braintree/iframer');
+var Bus = require('../../../lib/bus');
+var constants = require('../../shared/constants');
+var uuid = require('../../../lib/vendor/uuid');
+var events = require('../../shared/events');
+var useMin = require('../../../lib/use-min');
 
 var VERSION = process.env.npm_package_version;
+var IFRAME_HEIGHT = 400;
+var IFRAME_WIDTH = 400;
 
 function BaseFramework(options) {
   EventEmitter.call(this);
@@ -16,6 +24,7 @@ function BaseFramework(options) {
   this._client = options.client;
   this._isDebug = this._client.getConfiguration().isDebug;
   this._assetsUrl = this._client.getConfiguration().gatewayConfiguration.assetsUrl + '/web/' + VERSION;
+  this._createOptions = options;
 }
 
 EventEmitter.createChild(BaseFramework);
@@ -154,7 +163,7 @@ BaseFramework.prototype.initializeChallengeWithLookupResponse = function (lookup
   // sets this in the case that initializeChallengeWithLookupResponse is
   // called as a standalone method from a server side lookup. In a normal
   // verifyCard flow, this promise will already exist
-  self._verifyCardPromisePlus = self._verifyCardPromisePlus || makePromisePlus();
+  self._verifyCardPromisePlus = self._verifyCardPromisePlus || new ExtendedPromise();
   self._handleLookupResponse(lookupResponse, options);
 
   return self._verifyCardPromisePlus.then(function (payload) {
@@ -183,7 +192,7 @@ BaseFramework.prototype._handleLookupResponse = function (lookupResponse, option
 
 BaseFramework.prototype._onLookupComplete = function (response) {
   this._lookupPaymentMethod = response.paymentMethod;
-  this._verifyCardPromisePlus = makePromisePlus();
+  this._verifyCardPromisePlus = new ExtendedPromise();
 
   return Promise.resolve(response);
 };
@@ -212,6 +221,22 @@ BaseFramework.prototype._formatLookupData = function (options) {
   return Promise.resolve(data);
 };
 
+BaseFramework.prototype._handleV1AuthResponse = function (data) {
+  var authResponse = JSON.parse(data.auth_response);
+
+  if (authResponse.success) {
+    this._verifyCardPromisePlus.resolve(this._formatAuthResponse(authResponse.paymentMethod, authResponse.threeDSecureInfo));
+  } else if (authResponse.threeDSecureInfo && authResponse.threeDSecureInfo.liabilityShiftPossible) {
+    this._verifyCardPromisePlus.resolve(this._formatAuthResponse(this._lookupPaymentMethod, authResponse.threeDSecureInfo));
+  } else {
+    this._verifyCardPromisePlus.reject(new BraintreeError({
+      type: BraintreeError.types.UNKNOWN,
+      code: 'UNKNOWN_AUTH_RESPONSE',
+      message: authResponse.error.message
+    }));
+  }
+};
+
 BaseFramework.prototype.cancelVerifyCard = function () {
   var response, threeDSecureInfo;
 
@@ -232,8 +257,69 @@ BaseFramework.prototype.cancelVerifyCard = function () {
   return Promise.resolve(response);
 };
 
+BaseFramework.prototype._setupV1Bus = function (options) {
+  var parentURL = global.location.href.split('#')[0];
+  var lookupResponse = options.lookupResponse;
+  var bus = new Bus({
+    channel: uuid(),
+    merchantUrl: global.location.href
+  });
+  var authenticationCompleteBaseUrl = this._assetsUrl + '/html/three-d-secure-authentication-complete-frame.html?channel=' + encodeURIComponent(bus.channel) + '&';
+
+  bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
+    reply({
+      acsUrl: lookupResponse.acsUrl,
+      pareq: lookupResponse.pareq,
+      termUrl: lookupResponse.termUrl + '&three_d_secure_version=' + VERSION + '&authentication_complete_base_url=' + encodeURIComponent(authenticationCompleteBaseUrl),
+      md: lookupResponse.md,
+      parentUrl: parentURL
+    });
+  });
+
+  bus.on(events.AUTHENTICATION_COMPLETE, options.handleAuthResponse);
+
+  return bus;
+};
+
+BaseFramework.prototype._setupV1Iframe = function (options) {
+  var url = this._assetsUrl + '/html/three-d-secure-bank-frame' + useMin(this._isDebug) + '.html?showLoader=' + options.showLoader;
+  var bankIframe = iFramer({
+    src: url,
+    height: IFRAME_HEIGHT,
+    width: IFRAME_WIDTH,
+    name: constants.LANDING_FRAME_NAME + '_' + this._v1Bus.channel,
+    title: '3D Secure Authorization Frame'
+  });
+
+  return bankIframe;
+};
+
+BaseFramework.prototype._setupV1Elements = function (options) {
+  this._v1Bus = this._setupV1Bus(options);
+  this._v1Iframe = this._setupV1Iframe(options);
+};
+
+BaseFramework.prototype._teardownV1Elements = function () {
+  if (this._v1Bus) {
+    this._v1Bus.teardown();
+    this._v1Bus = null;
+  }
+
+  if (this._v1Iframe && this._v1Iframe.parentNode) {
+    this._v1Iframe.parentNode.removeChild(this._v1Iframe);
+    this._v1Iframe = null;
+  }
+
+  if (this._onV1Keyup) {
+    document.removeEventListener('keyup', this._onV1Keyup);
+    this._onV1Keyup = null;
+  }
+};
+
 BaseFramework.prototype.teardown = function () {
   analytics.sendEvent(this._client, 'three-d-secure.teardown-completed');
+
+  this._teardownV1Elements();
 
   return Promise.resolve();
 };

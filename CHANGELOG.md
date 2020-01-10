@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.57.0
+* 3D Secure
+  * Fix issue where cardinal sdk options were not being used
+  * Falls back to a v1 flow if v2 SDK setup fails
+
 ## 3.56.0
 * 3D Secure
   * Add `cardinalSDKConfig` option to `create` method. Supported properties:      

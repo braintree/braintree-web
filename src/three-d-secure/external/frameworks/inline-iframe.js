@@ -33,6 +33,14 @@ InlineIframeFramework.prototype._createCardinalConfigurationOptions = function (
   return options;
 };
 
+InlineIframeFramework.prototype._addV1IframeToPage = function () {
+  this._emit(InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE, {
+    element: this._v1Modal
+  }, function () {
+    // NOOP
+  });
+};
+
 InlineIframeFramework.prototype._setupFrameworkSpecificListeners = function () {
   this.setCardinalListener('ui.inline.setup', this._onInlineSetup.bind(this));
 };

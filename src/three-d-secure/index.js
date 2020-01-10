@@ -164,6 +164,8 @@ function create(options) {
 
     instance = new ThreeDSecure({
       client: options.client,
+      loggingEnabled: options.loggingEnabled,
+      cardinalSDKConfig: options.cardinalSDKConfig,
       framework: framework
     });
 
