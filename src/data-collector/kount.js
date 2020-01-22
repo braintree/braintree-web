@@ -92,7 +92,8 @@ Kount.prototype._setupIFrame = function () {
   iframe.style.position = 'fixed';
   iframe.style.left = '-999999px';
   iframe.style.top = '-999999px';
-  iframe.title = IFRAME_ID_PREFIX + this._deviceSessionId;
+  iframe.title = 'Braintree-Kount-iframe';
+  iframe.setAttribute('aria-hidden', 'true');
 
   document.body.appendChild(iframe);
   setTimeout(function () {
