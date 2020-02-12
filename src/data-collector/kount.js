@@ -92,11 +92,13 @@ Kount.prototype._setupIFrame = function () {
   iframe.style.position = 'fixed';
   iframe.style.left = '-999999px';
   iframe.style.top = '-999999px';
+  iframe.title = 'Braintree-Kount-iframe';
+  iframe.setAttribute('aria-hidden', 'true');
 
   document.body.appendChild(iframe);
   setTimeout(function () {
     iframe.src = self._currentEnvironment.url + '/logo.htm' + params;
-    iframe.innerHTML = '<img src="' + self._currentEnvironment.url + '/logo.gif' + params + '" />';
+    iframe.innerHTML = '<img src="' + self._currentEnvironment.url + '/logo.gif' + params + '" alt="" />';
   }, 10);
 
   return iframe;
