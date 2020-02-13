@@ -1,22 +1,23 @@
 'use strict';
 
-var frameService = require('../../../../src/lib/frame-service/external');
-var VERSION = require('../../../../package.json').version;
-var LocalPayment = require('../../../../src/local-payment/external/local-payment');
-var analytics = require('../../../../src/lib/analytics');
-var methods = require('../../../../src/lib/methods');
-var BraintreeError = require('../../../../src/lib/braintree-error');
-var Promise = require('../../../../src/lib/promise');
-var querystring = require('../../../../src/lib/querystring');
-var rejectIfResolves = require('../../../helpers/promise-helper').rejectIfResolves;
+jest.mock('../../../../src/lib/frame-service/external');
 
-describe('LocalPayment', function () {
-  beforeEach(function () {
-    var self = this;
+const { version: VERSION } = require('../../../../package.json');
+const LocalPayment = require('../../../../src/local-payment/external/local-payment');
+const analytics = require('../../../../src/lib/analytics');
+const frameService = require('../../../../src/lib/frame-service/external');
+const methods = require('../../../../src/lib/methods');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const querystring = require('../../../../src/lib/querystring');
+const { yields, yieldsAsync } = require('../../../helpers');
 
-    this.sandbox.stub(analytics, 'sendEvent');
+describe('LocalPayment', () => {
+  let testContext;
 
-    this.configuration = {
+  beforeEach(() => {
+    testContext = {};
+
+    testContext.configuration = {
       gatewayConfiguration: {
         assetsUrl: 'https://example.com:9292',
         paypal: {
@@ -25,135 +26,139 @@ describe('LocalPayment', function () {
       },
       authorizationType: 'CLIENT_TOKEN'
     };
-    this.client = {
-      request: this.sandbox.stub().resolves(),
-      getConfiguration: function () { return self.configuration; }
+    testContext.client = {
+      request: () => Promise.resolve(),
+      getConfiguration: () => testContext.configuration
     };
   });
 
-  afterEach(function () {
+  afterEach(() => {
     delete global.popupBridge;
   });
 
-  describe('Constructor', function () {
-    it('sets a loadingFrameUrl', function () {
-      var localPayment = new LocalPayment({client: this.client});
+  describe('Constructor', () => {
+    it('sets a loadingFrameUrl', () => {
+      const localPayment = new LocalPayment({ client: testContext.client });
 
-      expect(localPayment._loadingFrameUrl).to.equal(localPayment._assetsUrl + '/html/local-payment-landing-frame.min.html');
+      expect(localPayment._loadingFrameUrl).toBe(`${localPayment._assetsUrl}/html/local-payment-landing-frame.min.html`);
     });
 
-    it('sets a loadingFrameUrl in debug mode', function () {
-      var localPayment;
+    it('sets a loadingFrameUrl in debug mode', () => {
+      let localPayment;
 
-      this.configuration.isDebug = true;
-      localPayment = new LocalPayment({client: this.client});
+      testContext.configuration.isDebug = true;
+      localPayment = new LocalPayment({ client: testContext.client });
 
-      expect(localPayment._loadingFrameUrl).to.equal(localPayment._assetsUrl + '/html/local-payment-landing-frame.html');
+      expect(localPayment._loadingFrameUrl).toBe(`${localPayment._assetsUrl}/html/local-payment-landing-frame.html`);
     });
 
-    it('set up authorization state', function () {
-      var localPayment = new LocalPayment({client: this.client});
+    it('set up authorization state', () => {
+      const localPayment = new LocalPayment({ client: testContext.client });
 
-      expect(localPayment._authorizationInProgress).to.equal(false);
+      expect(localPayment._authorizationInProgress).toBe(false);
     });
   });
 
-  describe('_initialize', function () {
-    it('instantiates FrameService', function () {
-      var context = {
+  describe('_initialize', () => {
+    beforeEach(() => {
+      jest.spyOn(frameService, 'create');
+    });
+
+    it('instantiates FrameService', () => {
+      const context = {
         _assetsUrl: 'foo/bar',
         _loadingFrameUrl: 'fake-loading-frame-url'
       };
 
-      this.sandbox.stub(frameService, 'create');
-
       LocalPayment.prototype._initialize.call(context);
 
-      expect(frameService.create).to.be.calledWith({
-        name: this.sandbox.match.string,
-        dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.min.html',
+      expect(frameService.create).toBeCalledWith({
+        name: expect.any(String),
+        dispatchFrameUrl: `${context._assetsUrl}/html/dispatch-frame.min.html`,
         openFrameUrl: context._loadingFrameUrl
-      }, this.sandbox.match.func);
+      }, expect.any(Function));
     });
 
-    it('instantiates FrameService with unminified assets in debug mode', function () {
-      var context = {
+    it('instantiates FrameService with unminified assets in debug mode', () => {
+      const context = {
         _assetsUrl: 'foo/bar',
         _isDebug: true
       };
 
-      this.sandbox.stub(frameService, 'create');
-
       LocalPayment.prototype._initialize.call(context);
 
-      expect(frameService.create).to.be.calledWith({
-        name: this.sandbox.match.string,
-        dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.html',
+      expect(frameService.create).toHaveBeenCalledWith({
+        name: expect.any(String),
+        dispatchFrameUrl: `${context._assetsUrl}/html/dispatch-frame.html`,
         openFrameUrl: context._loadingFrameUrl
-      }, this.sandbox.match.func);
+      }, expect.any(Function));
     });
 
-    it('assigns _frameService property on instance', function () {
-      var localPayment;
-      var options = {client: this.client};
-      var frameServiceInstance = {foo: 'bar'};
+    it('assigns _frameService property on instance', () => {
+      let localPayment;
+      const options = { client: testContext.client };
+      const frameServiceInstance = { foo: 'bar' };
 
-      this.sandbox.stub(frameService, 'create').yields(frameServiceInstance);
+      frameService.create.mockImplementation(yields(frameServiceInstance));
 
       localPayment = new LocalPayment(options);
 
       localPayment._initialize();
 
-      expect(localPayment._frameService).to.equal(frameServiceInstance);
+      expect(localPayment._frameService).toBe(frameServiceInstance);
     });
 
-    it('resolves with local payment instance', function () {
-      var localPayment;
-      var frameServiceInstance = {foo: 'bar'};
+    it('resolves with local payment instance', () => {
+      let localPayment;
+      const frameServiceInstance = { foo: 'bar' };
 
-      this.sandbox.stub(frameService, 'create').yields(frameServiceInstance);
+      frameService.create.mockImplementation(yields(frameServiceInstance));
 
-      localPayment = new LocalPayment({client: this.client});
+      localPayment = new LocalPayment({ client: testContext.client });
 
-      return localPayment._initialize().then(function (res) {
-        expect(res).to.equal(localPayment);
+      return localPayment._initialize().then(res => {
+        expect(res).toBe(localPayment);
       });
     });
 
-    it('calls analytics with timed-out when failing to initialize', function () {
-      var localPayment;
-      var clock = this.sandbox.useFakeTimers();
+    it('calls analytics with timed-out when failing to initialize', () => {
+      jest.useFakeTimers();
+      frameService.create.mockReturnValue(false);
 
-      this.sandbox.stub(frameService, 'create');
+      let localPayment;
 
-      localPayment = new LocalPayment({client: this.client});
+      localPayment = new LocalPayment({ client: testContext.client });
       localPayment._initialize();
-      clock.tick(59999);
-      expect(analytics.sendEvent).not.to.be.calledWith(this.client, 'local-payment.load.timed-out');
-      clock.tick(1);
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'local-payment.load.timed-out');
+
+      jest.advanceTimersByTime(59999);
+      expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'local-payment.load.timed-out');
+
+      jest.advanceTimersByTime(1);
+      expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'local-payment.load.timed-out');
+
+      jest.useRealTimers();
     });
   });
 
-  describe('startPayment', function () {
-    beforeEach(function () {
-      this.localPayment = new LocalPayment({
-        client: this.client,
+  describe('startPayment', () => {
+    beforeEach(() => {
+      testContext.localPayment = new LocalPayment({
+        client: testContext.client,
         merchantAccountId: 'merchant-account-id'
       });
-      this.frameServiceInstance = {
+      testContext.frameServiceInstance = {
         _serviceId: 'service-id',
-        close: this.sandbox.stub(),
-        open: this.sandbox.stub().yieldsAsync(null, {
+        close: jest.fn(),
+        open: jest.fn(yieldsAsync(null, {
           token: 'token',
           paymentId: 'payment-id',
           PayerID: 'PayerId'
-        }),
-        redirect: this.sandbox.stub()
+        })),
+        redirect: jest.fn()
       };
 
-      this.options = {
-        onPaymentStart: function (data, start) {
+      testContext.options = {
+        onPaymentStart: (data, start) => {
           start();
         },
         paymentType: 'ideal',
@@ -178,13 +183,13 @@ describe('LocalPayment', function () {
         }
       };
 
-      this.client.request.resolves({
+      jest.spyOn(testContext.client, 'request').mockResolvedValue({
         paymentResource: {
           redirectUrl: 'https://example.com/redirect-url',
           paymentToken: 'payment-token'
         }
       });
-      this.sandbox.stub(this.localPayment, 'tokenize').resolves({
+      jest.spyOn(testContext.localPayment, 'tokenize').mockResolvedValue({
         nonce: 'a-nonce',
         type: 'PayPalAccount',
         details: {
@@ -193,55 +198,56 @@ describe('LocalPayment', function () {
         }
       });
 
-      this.sandbox.stub(frameService, 'create').yields(this.frameServiceInstance);
+      jest.spyOn(frameService, 'create').mockImplementation(yields(testContext.frameServiceInstance));
 
-      return this.localPayment._initialize();
+      return testContext.localPayment._initialize();
     });
 
-    ['onPaymentStart', 'paymentType', 'amount', 'fallback'].forEach(function (requiredParam) {
-      it('errors when no ' + requiredParam + ' param is provided', function () {
-        delete this.options[requiredParam];
+    it.each([['onPaymentStart'], ['paymentType'], ['amount'], ['fallback']])(
+      'errors when no %s param is provided', (requiredParam) => {
+        delete testContext.options[requiredParam];
 
-        return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION');
+        return testContext.localPayment.startPayment(testContext.options).catch(({ code }) => {
+          expect(code).toBe('LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION');
         });
       });
-    });
 
-    it('errors when no fallback.url param is provided', function () {
-      delete this.options.fallback.url;
+    it('errors when no fallback.url param is provided', () => {
+      delete testContext.options.fallback.url;
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION');
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code }) => {
+        expect(code).toBe('LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION');
       });
     });
 
-    it('errors when no fallback.buttonText param is provided', function () {
-      delete this.options.fallback.buttonText;
+    it('errors when no fallback.buttonText param is provided', () => {
+      delete testContext.options.fallback.buttonText;
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION');
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code }) => {
+        expect(code).toBe('LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION');
       });
     });
 
-    it('errors when authorization is already in progress', function () {
-      this.localPayment._authorizationInProgress = true;
+    it('errors when authorization is already in progress', () => {
+      testContext.localPayment._authorizationInProgress = true;
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('LOCAL_PAYMENT_ALREADY_IN_PROGRESS');
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code }) => {
+        expect(code).toBe('LOCAL_PAYMENT_ALREADY_IN_PROGRESS');
       });
     });
 
-    it('creates a payment resource', function () {
-      var client = this.client;
+    it('creates a payment resource', () => {
+      const client = testContext.client;
 
-      return this.localPayment.startPayment(this.options).then(function () {
-        expect(client.request).to.be.calledWith({
+      testContext.frameServiceInstance.open.mockImplementation(yields(null, { foo: 'bar' }));
+
+      return testContext.localPayment.startPayment(testContext.options).then(() => {
+        expect(client.request).toHaveBeenCalledWith({
           method: 'post',
           endpoint: 'local_payments/create',
           data: {
-            cancelUrl: 'https://example.com:9292/web/' + VERSION + '/html/local-payment-cancel-frame.min.html?channel=service-id',
-            returnUrl: 'https://example.com:9292/web/' + VERSION + '/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text',
+            cancelUrl: `https://example.com:9292/web/${VERSION}/html/cancel-frame.min.html?channel=service-id`,
+            returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text`,
             fundingSource: 'ideal',
             amount: '10.00',
             intent: 'sale',
@@ -265,103 +271,105 @@ describe('LocalPayment', function () {
       });
     });
 
-    it('redirects frame to payment resouce redirect url', function () {
-      var fs = this.frameServiceInstance;
+    it('redirects frame to payment resource redirect url', () => {
+      const frame = testContext.frameServiceInstance;
 
-      return this.localPayment.startPayment(this.options).then(function () {
-        expect(fs.redirect).to.be.calledWith('https://example.com/redirect-url');
+      frame.open.mockImplementation(yields(null, { foo: 'bar' }));
+
+      return testContext.localPayment.startPayment(testContext.options).then(() => {
+        expect(frame.redirect).toHaveBeenCalledWith('https://example.com/redirect-url');
       });
     });
 
-    it('errors when payment resource call fails', function () {
-      var requestError = {
+    it('errors when payment resource call fails', () => {
+      const requestError = {
         message: 'Failed',
         details: {
           httpStatus: 400
         }
       };
 
-      this.frameServiceInstance.open.reset();
-      this.client.request.reset();
-      this.client.request.withArgs(this.sandbox.match({endpoint: 'local_payments/create'})).rejects(requestError);
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockClear();
+      testContext.client.request.mockRejectedValueOnce(requestError);
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('LOCAL_PAYMENT_START_PAYMENT_FAILED');
-        expect(err.details.originalError.message).to.equal('Failed');
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code, details }) => {
+        expect(code).toBe('LOCAL_PAYMENT_START_PAYMENT_FAILED');
+        expect(details.originalError.message).toBe('Failed');
       });
     });
 
-    it('errors with validation error when create payment resource fails with 422', function () {
-      var requestError = {
+    it('errors with validation error when create payment resource fails with 422', () => {
+      const requestError = {
         message: 'Failed',
         details: {
           httpStatus: 422
         }
       };
 
-      this.frameServiceInstance.open.reset();
-      this.client.request.rejects(requestError);
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockRejectedValue(requestError);
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('LOCAL_PAYMENT_INVALID_PAYMENT_OPTION');
-        expect(err.details.originalError.message).to.equal('Failed');
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code, details }) => {
+        expect(code).toBe('LOCAL_PAYMENT_INVALID_PAYMENT_OPTION');
+        expect(details.originalError.message).toBe('Failed');
       });
     });
 
-    it('cleans up state when payment resource request fails', function () {
-      var requestError = {
+    it('cleans up state when payment resource request fails', () => {
+      const requestError = {
         message: 'Failed',
         details: {
           httpStatus: 400
         }
       };
 
-      this.frameServiceInstance.open.reset();
-      this.client.request.rejects(requestError);
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockRejectedValue(requestError);
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function () {
-        expect(this.frameServiceInstance.close).to.be.calledOnce;
-        expect(this.localPayment._authorizationInProgress).to.equal(false);
-      }.bind(this));
+      return testContext.localPayment.startPayment(testContext.options).catch(() => {
+        expect(testContext.frameServiceInstance.close).toHaveBeenCalledTimes(1);
+        expect(testContext.localPayment._authorizationInProgress).toBe(false);
+      });
     });
 
-    it('errors when frame service is closed', function () {
-      var frameError = {
+    it('errors when frame service is closed', () => {
+      const frameError = {
         code: 'FRAME_SERVICE_FRAME_CLOSED'
       };
 
-      this.frameServiceInstance.open.yieldsAsync(frameError);
+      testContext.frameServiceInstance.open.mockImplementation(yieldsAsync(frameError));
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(this.localPayment._authorizationInProgress).to.equal(false);
-        expect(err.code).to.equal('LOCAL_PAYMENT_WINDOW_CLOSED');
-      }.bind(this));
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code }) => {
+        expect(testContext.localPayment._authorizationInProgress).toBe(false);
+        expect(code).toBe('LOCAL_PAYMENT_WINDOW_CLOSED');
+      });
     });
 
-    it('errors when frame service fails to open', function () {
-      var frameError = {
+    it('errors when frame service fails to open', () => {
+      const frameError = {
         code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_ABC'
       };
 
-      this.frameServiceInstance.open.yieldsAsync(frameError);
+      testContext.frameServiceInstance.open.mockImplementation(yieldsAsync(frameError));
 
-      return this.localPayment.startPayment(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(this.localPayment._authorizationInProgress).to.equal(false);
-        expect(err.code).to.equal('LOCAL_PAYMENT_WINDOW_OPEN_FAILED');
-      }.bind(this));
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code }) => {
+        expect(testContext.localPayment._authorizationInProgress).toBe(false);
+        expect(code).toBe('LOCAL_PAYMENT_WINDOW_OPEN_FAILED');
+      });
     });
 
-    it('tokenizes when frame service give params back', function () {
-      this.frameServiceInstance.open.yieldsAsync(null, {
+    it('tokenizes when frame service give params back', () => {
+      testContext.frameServiceInstance.open.mockImplementation(yieldsAsync(null, {
         foo: 'bar'
-      });
+      }));
 
-      return this.localPayment.startPayment(this.options).then(function (result) {
-        expect(this.localPayment._authorizationInProgress).to.equal(false);
-        expect(this.localPayment.tokenize).to.be.calledWith({
+      return testContext.localPayment.startPayment(testContext.options).then(result => {
+        expect(testContext.localPayment._authorizationInProgress).toBe(false);
+        expect(testContext.localPayment.tokenize).toHaveBeenCalledWith({
           foo: 'bar'
         });
-        expect(result).to.deep.equal({
+        expect(result).toEqual({
           nonce: 'a-nonce',
           type: 'PayPalAccount',
           details: {
@@ -369,13 +377,13 @@ describe('LocalPayment', function () {
             correlationId: 'correlation-id'
           }
         });
-      }.bind(this));
+      });
     });
   });
 
-  describe('tokenize', function () {
-    beforeEach(function () {
-      this.client.request.resolves({
+  describe('tokenize', () => {
+    beforeEach(() => {
+      jest.spyOn(testContext.client, 'request').mockResolvedValue({
         paypalAccounts: [{
           nonce: 'a-nonce',
           type: 'PayPalAccount',
@@ -386,251 +394,205 @@ describe('LocalPayment', function () {
         }]
       });
 
-      this.options = {
+      testContext.options = {
         btLpToken: 'token',
         btLpPaymentId: 'payment-token',
         btLpPayerId: 'payer-id'
       };
-      this.localPayment = new LocalPayment({
-        client: this.client,
+      testContext.localPayment = new LocalPayment({
+        client: testContext.client,
         merchantAccountId: 'merchant-account-id'
       });
-      this.localPayment._paymentType = 'ideal';
-    });
-
-    it('tokenizes paypal account', function () {
-      return this.localPayment.tokenize(this.options).then(function (payload) {
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWith({
-          endpoint: 'payment_methods/paypal_accounts',
-          method: 'post',
-          data: {
-            merchantAccountId: 'merchant-account-id',
-            paypalAccount: {
-              correlationId: 'token',
-              paymentToken: 'payment-token',
-              payerId: 'payer-id',
-              unilateral: 'unvetted-merchant',
-              intent: 'sale'
-            }
+      testContext.localPayment._paymentType = 'ideal';
+      testContext.expectedRequest = {
+        endpoint: 'payment_methods/paypal_accounts',
+        method: 'post',
+        data: {
+          merchantAccountId: 'merchant-account-id',
+          paypalAccount: {
+            correlationId: 'token',
+            paymentToken: 'payment-token',
+            payerId: 'payer-id',
+            unilateral: 'unvetted-merchant',
+            intent: 'sale'
           }
-        });
-
-        expect(payload.nonce).to.equal('a-nonce');
-      }.bind(this));
+        }
+      };
     });
 
-    it('can use alternative param names', function () {
-      var options = {
+    it('tokenizes paypal account', () =>
+      testContext.localPayment.tokenize(testContext.options).then(({ nonce }) => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request).toHaveBeenCalledWith(testContext.expectedRequest);
+
+        expect(nonce).toBe('a-nonce');
+      }));
+
+    it('can use alternative param names', () => {
+      const options = {
         token: 'token',
         paymentId: 'payment-token',
         PayerID: 'payer-id'
       };
 
-      return this.localPayment.tokenize(options).then(function (payload) {
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWith({
-          endpoint: 'payment_methods/paypal_accounts',
-          method: 'post',
-          data: {
-            merchantAccountId: 'merchant-account-id',
-            paypalAccount: {
-              correlationId: 'token',
-              paymentToken: 'payment-token',
-              payerId: 'payer-id',
-              unilateral: 'unvetted-merchant',
-              intent: 'sale'
-            }
-          }
-        });
+      return testContext.localPayment.tokenize(options).then(({ nonce }) => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request).toHaveBeenCalledWith(testContext.expectedRequest);
 
-        expect(payload.nonce).to.equal('a-nonce');
-      }.bind(this));
+        expect(nonce).toBe('a-nonce');
+      });
     });
 
-    it('prefers more specific param names', function () {
-      this.options.token = 'other-token';
-      this.options.paymentId = 'other-payment-token';
-      this.options.PayerId = 'other-payer-id';
+    it('prefers more specific param names', () => {
+      testContext.options.token = 'other-token';
+      testContext.options.paymentId = 'other-payment-token';
+      testContext.options.PayerId = 'other-payer-id';
 
-      return this.localPayment.tokenize(this.options).then(function (payload) {
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWith({
-          endpoint: 'payment_methods/paypal_accounts',
-          method: 'post',
-          data: {
-            merchantAccountId: 'merchant-account-id',
-            paypalAccount: {
-              correlationId: 'token',
-              paymentToken: 'payment-token',
-              payerId: 'payer-id',
-              unilateral: 'unvetted-merchant',
-              intent: 'sale'
-            }
-          }
-        });
+      return testContext.localPayment.tokenize(testContext.options).then(({ nonce }) => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request).toHaveBeenCalledWith(testContext.expectedRequest);
 
-        expect(payload.nonce).to.equal('a-nonce');
-      }.bind(this));
+        expect(nonce).toBe('a-nonce');
+      });
     });
 
-    it('uses query params when no params are sent in', function () {
-      this.sandbox.stub(querystring, 'parse').returns({
+    it('uses query params when no params are sent in', () => {
+      jest.spyOn(querystring, 'parse').mockReturnValue({
         btLpToken: 'token',
         btLpPaymentId: 'payment-token',
         btLpPayerId: 'payer-id'
       });
 
-      return this.localPayment.tokenize().then(function (payload) {
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWith({
-          endpoint: 'payment_methods/paypal_accounts',
-          method: 'post',
-          data: {
-            merchantAccountId: 'merchant-account-id',
-            paypalAccount: {
-              correlationId: 'token',
-              paymentToken: 'payment-token',
-              payerId: 'payer-id',
-              unilateral: 'unvetted-merchant',
-              intent: 'sale'
-            }
-          }
-        });
+      return testContext.localPayment.tokenize().then(({ nonce }) => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request).toHaveBeenCalledWith(testContext.expectedRequest);
 
-        expect(payload.nonce).to.equal('a-nonce');
-      }.bind(this));
-    });
-
-    it('rejects when tokenization fails', function () {
-      var error = new Error('failed');
-
-      this.client.request.rejects(error);
-
-      return this.localPayment.tokenize(this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('LOCAL_PAYMENT_TOKENIZATION_FAILED');
-        expect(err.details.originalError.message).to.equal('failed');
+        expect(nonce).toBe('a-nonce');
       });
     });
 
-    it('sends analytics event for successful tokenizations', function () {
-      return this.localPayment.tokenize(this.options).then(function () {
-        expect(analytics.sendEvent).to.be.calledOnce;
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'ideal.local-payment.tokenization.success');
-      }.bind(this));
+    it('rejects when tokenization fails', () => {
+      const error = new Error('failed');
+
+      testContext.client.request.mockRejectedValue(error);
+
+      return testContext.localPayment.tokenize(testContext.options).catch(({ code, details }) => {
+        expect(code).toBe('LOCAL_PAYMENT_TOKENIZATION_FAILED');
+        expect(details.originalError.message).toBe('failed');
+      });
     });
 
-    it('sends analytics event for successful tokenizations with popupbridge', function () {
+    it('sends analytics event for successful tokenizations', () =>
+      testContext.localPayment.tokenize(testContext.options).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'ideal.local-payment.tokenization.success');
+      }));
+
+    it('sends analytics event for successful tokenizations with popupbridge', () => {
       global.popupBridge = {};
 
-      return this.localPayment.tokenize(this.options).then(function () {
-        expect(analytics.sendEvent).to.be.calledOnce;
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'ideal.local-payment.tokenization.success-popupbridge');
+      return testContext.localPayment.tokenize(testContext.options).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'ideal.local-payment.tokenization.success-popupbridge');
 
         delete global.popupBridge;
-      }.bind(this));
+      });
     });
 
-    it('sends analytics event for failed tokenizations', function () {
-      this.client.request.rejects(new Error('failed'));
+    it('sends analytics event for failed tokenizations', () => {
+      testContext.client.request.mockRejectedValue(new Error('failed'));
 
-      return this.localPayment.tokenize(this.options).then(rejectIfResolves).catch(function () {
-        expect(analytics.sendEvent).to.be.calledOnce;
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'ideal.local-payment.tokenization.failed');
-      }.bind(this));
+      return testContext.localPayment.tokenize(testContext.options).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'ideal.local-payment.tokenization.failed');
+      });
     });
   });
 
-  describe('hasTokenizationParams', function () {
-    beforeEach(function () {
-      this.sandbox.stub(querystring, 'parse');
-      this.localPayment = new LocalPayment({client: this.client});
+  describe('hasTokenizationParams', () => {
+    beforeEach(() => {
+      jest.spyOn(querystring, 'parse');
+      testContext.localPayment = new LocalPayment({ client: testContext.client });
     });
 
-    it('returns true if all necessary toeknization params are provided', function () {
-      querystring.parse.returns({
+    it('returns true if all necessary tokenization params are provided', () => {
+      querystring.parse.mockReturnValue({
         btLpToken: 'token',
         btLpPaymentId: 'payment-id',
         btLpPayerId: 'payer-id'
       });
 
-      expect(this.localPayment.hasTokenizationParams()).to.equal(true);
+      expect(testContext.localPayment.hasTokenizationParams()).toBe(true);
     });
 
-    it('returns false if no query params', function () {
-      querystring.parse.returns({});
+    it('returns false if no query params', () => {
+      querystring.parse.mockReturnValue({});
 
-      expect(this.localPayment.hasTokenizationParams()).to.equal(false);
+      expect(testContext.localPayment.hasTokenizationParams()).toBe(false);
     });
 
-    ['Token', 'PaymentId', 'PayerId'].forEach(function (param) {
-      it('returns false if btLp' + param + ' is missing', function () {
-        var params = {
+    it.each([['Token'], ['PaymentId'], ['PayerId']])(
+      'returns false if btLp%s is missing', (param) => {
+        const params = {
           btLpToken: 'token',
           btLpPaymentId: 'payment-id',
           btLpPayerId: 'payer-id'
         };
 
-        delete params['btLp' + param];
+        delete params[`btLp${param}`];
 
-        querystring.parse.returns(params);
+        querystring.parse.mockReturnValue(params);
 
-        expect(this.localPayment.hasTokenizationParams()).to.equal(false);
+        expect(testContext.localPayment.hasTokenizationParams()).toBe(false);
       });
-    });
   });
 
-  describe('teardown', function () {
-    beforeEach(function () {
-      var frameServiceInstance = {teardown: this.sandbox.stub()};
+  describe('teardown', () => {
+    beforeEach(() => {
+      const frameServiceInstance = { teardown: jest.fn() };
 
-      this.localPayment = new LocalPayment({client: this.client});
-      this.frameServiceInstance = frameServiceInstance;
+      testContext.localPayment = new LocalPayment({ client: testContext.client });
+      testContext.frameServiceInstance = frameServiceInstance;
 
-      this.sandbox.stub(frameService, 'create').yields(frameServiceInstance);
+      jest.spyOn(frameService, 'create').mockImplementation(yields(frameServiceInstance));
     });
 
-    it('tearsdown the frame service', function (done) {
-      var localPayment = this.localPayment;
-      var frameServiceInstance = this.frameServiceInstance;
+    it('tears down the frame service', () => {
+      const localPayment = testContext.localPayment;
+      const frameServiceInstance = testContext.frameServiceInstance;
 
-      localPayment._initialize().then(function () {
-        localPayment.teardown(function () {
-          expect(frameServiceInstance.teardown).to.be.called;
-          done();
+      return localPayment._initialize().then(() => {
+        localPayment.teardown().then(() => {
+          expect(frameServiceInstance.teardown).toHaveBeenCalled();
         });
       });
     });
 
-    it('calls teardown analytic', function (done) {
-      var localPayment = this.localPayment;
+    it('calls teardown analytic', () => {
+      const localPayment = testContext.localPayment;
 
-      localPayment._initialize().then(function () {
-        localPayment.teardown(function () {
-          expect(analytics.sendEvent).to.be.calledWith(localPayment._client, 'local-payment.teardown-completed');
-          done();
+      return localPayment._initialize().then(() => {
+        localPayment.teardown().then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(localPayment._client, 'local-payment.teardown-completed');
         });
       });
     });
 
-    it('returns a promise if no callback is provided', function (done) {
-      var localPayment = this.localPayment;
+    it('returns a promise if no callback is provided', () => {
+      const localPayment = testContext.localPayment;
 
-      localPayment._initialize().then(function () {
-        var promise = localPayment.teardown();
-
-        expect(promise).to.be.an.instanceof(Promise);
-        done();
+      return localPayment._initialize().then(() => {
+        expect(localPayment.teardown()).resolves.toBeUndefined();
       });
     });
 
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var localPayment = this.localPayment;
+    it('replaces all methods so error is thrown when methods are invoked', done => {
+      const localPayment = testContext.localPayment;
 
-      localPayment._initialize().then(function () {
-        localPayment.teardown(function () {
-          methods(LocalPayment.prototype).forEach(function (method) {
-            var error;
+      localPayment._initialize().then(() => {
+        localPayment.teardown(() => {
+          methods(LocalPayment.prototype).forEach(method => {
+            let error;
 
             try {
               localPayment[method]();
@@ -638,10 +600,10 @@ describe('LocalPayment', function () {
               error = err;
             }
 
-            expect(error).to.be.an.instanceof(BraintreeError);
-            expect(error.type).to.equal(BraintreeError.types.MERCHANT);
-            expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-            expect(error.message).to.equal(method + ' cannot be called after teardown.');
+            expect(error).toBeInstanceOf(BraintreeError);
+            expect(error.type).toBe(BraintreeError.types.MERCHANT);
+            expect(error.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(error.message).toBe(`${method} cannot be called after teardown.`);
           });
 
           done();

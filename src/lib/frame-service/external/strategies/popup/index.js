@@ -26,6 +26,9 @@ Popup.prototype.focus = function () {
 };
 
 Popup.prototype.close = function () {
+  if (this._frame.closed) {
+    return;
+  }
   this._frame.close();
 };
 

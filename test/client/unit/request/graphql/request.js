@@ -1,12 +1,15 @@
 'use strict';
 
-var GraphQL = require('../../../../../src/client/request/graphql');
-var GraphQLRequest = require('../../../../../src/client/request/graphql/request');
+const GraphQL = require('../../../../../src/client/request/graphql');
+const GraphQLRequest = require('../../../../../src/client/request/graphql/request');
 
-describe('GraphQL', function () {
-  beforeEach(function () {
-    this.tokenizeUrl = 'https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312';
-    this.config = {
+describe('GraphQL', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.tokenizeUrl = 'https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312';
+    testContext.config = {
       graphQL: {
         url: 'http://localhost/graphql',
         features: [
@@ -14,9 +17,9 @@ describe('GraphQL', function () {
         ]
       }
     };
-    this.options = {
-      graphQL: new GraphQL(this.config),
-      url: this.tokenizeUrl,
+    testContext.options = {
+      graphQL: new GraphQL(testContext.config),
+      url: testContext.tokenizeUrl,
       headers: {
         FAKE_HEADER: 'Fake header'
       },
@@ -29,110 +32,116 @@ describe('GraphQL', function () {
     };
   });
 
-  it('sends an analytics event during initialization', function () {
-    var analyticsEvents = [];
+  it('sends an analytics event during initialization', () => {
+    const analyticsEvents = [];
 
-    this.options.sendAnalyticsEvent = function (event) { analyticsEvents.push(event); };
+    testContext.options.sendAnalyticsEvent = event => {
+      analyticsEvents.push(event);
+    };
 
-    new GraphQLRequest(this.options);
+    new GraphQLRequest(testContext.options);
 
-    expect(analyticsEvents).to.deep.equal(['graphql.init']);
+    expect(analyticsEvents).toEqual(['graphql.init']);
   });
 
-  describe('getHeaders', function () {
-    it('provides an authorization header for tokenization keys', function () {
-      var graphQLRequest, headers;
+  describe('getHeaders', () => {
+    it('provides an authorization header for tokenization keys', () => {
+      let graphQLRequest, headers;
 
-      this.options.data = {
+      testContext.options.data = {
         tokenizationKey: 'fakeTokenizationKey'
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       headers = graphQLRequest.getHeaders();
 
-      expect(headers.Authorization).to.equal('Bearer fakeTokenizationKey');
+      expect(headers.Authorization).toBe('Bearer fakeTokenizationKey');
     });
 
-    it('provides an authorization header for authorization fingerprints', function () {
-      var graphQLRequest, headers;
+    it('provides an authorization header for authorization fingerprints', () => {
+      let graphQLRequest, headers;
 
-      this.options.data = {
+      testContext.options.data = {
         authorizationFingerprint: 'fakeAuthorizationFingerprint'
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       headers = graphQLRequest.getHeaders();
 
-      expect(headers.Authorization).to.equal('Bearer fakeAuthorizationFingerprint');
+      expect(headers.Authorization).toBe('Bearer fakeAuthorizationFingerprint');
     });
 
-    it('uses the authorization fingerprint if both are provided', function () {
-      var graphQLRequest, headers;
+    it('uses the authorization fingerprint if both are provided', () => {
+      let graphQLRequest, headers;
 
-      this.options.data = {
+      testContext.options.data = {
         tokenizationKey: 'fakeTokenizationKey',
         authorizationFingerprint: 'fakeAuthorizationFingerprint'
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       headers = graphQLRequest.getHeaders();
 
-      expect(headers.Authorization).to.equal('Bearer fakeAuthorizationFingerprint');
+      expect(headers.Authorization).toBe('Bearer fakeAuthorizationFingerprint');
     });
 
-    it('includes a Braintree-Version', function () {
-      var graphQLRequest, headers;
+    it('includes a Braintree-Version', () => {
+      let graphQLRequest, headers;
 
-      this.options.data = {
+      testContext.options.data = {
         tokenizationKey: 'fakeTokenizationKey'
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       headers = graphQLRequest.getHeaders();
 
-      expect(headers['Braintree-Version']).to.match(/\d\d\d\d\-\d\d\-\d\d/);
+      expect(headers['Braintree-Version']).toMatch(/\d\d\d\d\-\d\d\-\d\d/);
     });
 
-    it('sends an analytics event for tokenization key', function () {
-      var graphQLRequest;
-      var analyticsEvents = [];
+    it('sends an analytics event for tokenization key', () => {
+      let graphQLRequest;
+      const analyticsEvents = [];
 
-      this.options.data = {
+      testContext.options.data = {
         tokenizationKey: 'fakeTokenizationKey'
       };
 
-      this.options.sendAnalyticsEvent = function (event) { analyticsEvents.push(event); };
+      testContext.options.sendAnalyticsEvent = event => {
+        analyticsEvents.push(event);
+      };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       graphQLRequest.getHeaders();
 
-      expect(analyticsEvents).to.include('graphql.tokenization-key');
-      expect(analyticsEvents).to.not.include('graphql.authorization-fingerprint');
+      expect(analyticsEvents).toStrictEqual(expect.arrayContaining(['graphql.tokenization-key']));
+      expect(analyticsEvents).not.toStrictEqual(expect.arrayContaining(['graphql.authorization-fingerprint']));
     });
 
-    it('sends an analytics event for authorization fingerprint', function () {
-      var graphQLRequest;
-      var analyticsEvents = [];
+    it('sends an analytics event for authorization fingerprint', () => {
+      let graphQLRequest;
+      const analyticsEvents = [];
 
-      this.options.data = {
+      testContext.options.data = {
         authorizationFingerprint: 'fakeAuthorizationFingerprint'
       };
 
-      this.options.sendAnalyticsEvent = function (event) { analyticsEvents.push(event); };
+      testContext.options.sendAnalyticsEvent = event => {
+        analyticsEvents.push(event);
+      };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       graphQLRequest.getHeaders();
 
-      expect(analyticsEvents).to.include('graphql.authorization-fingerprint');
-      expect(analyticsEvents).to.not.include('graphql.tokenization-key');
+      expect(analyticsEvents).toStrictEqual(expect.arrayContaining(['graphql.authorization-fingerprint']));
+      expect(analyticsEvents).not.toStrictEqual(expect.arrayContaining(['graphql.tokenization-key']));
     });
   });
 
-  describe('getBody', function () {
-    it('creates a GraphQL mutation for credit card tokenization', function () {
-      var graphQLRequest, body, parsedBody;
+  describe('getBody', () => {
+    it('creates a GraphQL mutation for credit card tokenization', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -153,16 +162,16 @@ describe('GraphQL', function () {
         }
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.contain('mutation');
-      expect(parsedBody.query).to.contain('tokenizeCreditCard');
-      expect(parsedBody.variables).to.exist;
-      expect(parsedBody.operationName).to.equal('TokenizeCreditCard');
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('mutation'));
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+      expect(parsedBody.variables).toBeDefined();
+      expect(parsedBody.operationName).toEqual('TokenizeCreditCard');
 
-      expect(parsedBody.variables.input).to.deep.equal({
+      expect(parsedBody.variables.input).toEqual({
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -185,10 +194,10 @@ describe('GraphQL', function () {
       });
     });
 
-    it('creates a GraphQL mutation for credit card tokenization with authentication insight in the query when an authentication insight param is passed in the body', function () {
-      var graphQLRequest, body, parsedBody;
+    it('creates a GraphQL mutation for credit card tokenization with authentication insight in the query when an authentication insight param is passed in the body', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -211,19 +220,19 @@ describe('GraphQL', function () {
         merchantAccountId: 'the_merchant_account_id'
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.contain('mutation');
-      expect(parsedBody.query).to.contain('tokenizeCreditCard');
-      expect(parsedBody.variables).to.exist;
-      expect(parsedBody.operationName).to.equal('TokenizeCreditCard');
-      expect(parsedBody.query).to.contain('authenticationInsight');
-      expect(parsedBody.query).to.contain('customerAuthenticationRegulationEnvironment');
-      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('mutation'));
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+      expect(parsedBody.variables).toBeDefined();
+      expect(parsedBody.operationName).toStrictEqual('TokenizeCreditCard');
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('authenticationInsight'));
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('customerAuthenticationRegulationEnvironment'));
+      expect(parsedBody.variables).toBeDefined();
 
-      expect(parsedBody.variables.input).to.deep.equal({
+      expect(parsedBody.variables.input).toEqual({
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -245,15 +254,15 @@ describe('GraphQL', function () {
         options: {}
       });
 
-      expect(parsedBody.variables.authenticationInsightInput).to.deep.equal({
+      expect(parsedBody.variables.authenticationInsightInput).toEqual({
         merchantAccountId: 'the_merchant_account_id'
       });
     });
 
-    it('creates a GraphQL mutation for credit card tokenization without authentication insight in the query when no authentication insight param is passed in the body', function () {
-      var graphQLRequest, body, parsedBody;
+    it('creates a GraphQL mutation for credit card tokenization without authentication insight in the query when no authentication insight param is passed in the body', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -275,23 +284,23 @@ describe('GraphQL', function () {
         merchantAccountId: 'the_merchant_account_id'
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.contain('tokenizeCreditCard');
-      expect(parsedBody.query).to.not.contain('authenticationInsight');
-      expect(parsedBody.query).to.not.contain('merchantAccountId');
-      expect(parsedBody.query).to.not.contain('customerAuthenticationRegulationEnvironment');
-      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+      expect(parsedBody.query).not.toStrictEqual(expect.stringContaining('authenticationInsight'));
+      expect(parsedBody.query).not.toStrictEqual(expect.stringContaining('merchantAccountId'));
+      expect(parsedBody.query).not.toStrictEqual(expect.stringContaining('customerAuthenticationRegulationEnvironment'));
+      expect(parsedBody.variables).toBeDefined();
 
-      expect(parsedBody.variables.authenticationInsightInput).to.not.exist;
+      expect(parsedBody.variables.authenticationInsightInput).toBeFalsy();
     });
 
-    it('creates a GraphQL mutation for credit card tokenization without authentication insight when no merchant account id is passed', function () {
-      var graphQLRequest, body, parsedBody;
+    it('creates a GraphQL mutation for credit card tokenization without authentication insight when no merchant account id is passed', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -313,23 +322,23 @@ describe('GraphQL', function () {
         authenticationInsight: true
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.contain('tokenizeCreditCard');
-      expect(parsedBody.query).to.not.contain('authenticationInsight');
-      expect(parsedBody.query).to.not.contain('merchantAccountId');
-      expect(parsedBody.query).to.not.contain('customerAuthenticationRegulationEnvironment');
-      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+      expect(parsedBody.query).not.toStrictEqual(expect.stringContaining('authenticationInsight'));
+      expect(parsedBody.query).not.toStrictEqual(expect.stringContaining('merchantAccountId'));
+      expect(parsedBody.query).not.toStrictEqual(expect.stringContaining('customerAuthenticationRegulationEnvironment'));
+      expect(parsedBody.variables).toBeDefined();
 
-      expect(parsedBody.variables.authenticationInsightInput).to.not.exist;
+      expect(parsedBody.variables.authenticationInsightInput).toBeFalsy();
     });
 
-    it('includes client sdk metadata', function () {
-      var graphQLRequest, body, parsedBody;
+    it('includes client sdk metadata', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -350,20 +359,20 @@ describe('GraphQL', function () {
         }
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.clientSdkMetadata).to.deep.equal({
+      expect(parsedBody.clientSdkMetadata).toEqual({
         source: 'my-source',
         integration: 'my-integration',
         sessionId: 'my-session-id'
       });
     });
 
-    it('creates a GraphQL query for configuration', function () {
-      var graphQLRequest, body, parsedBody;
-      var options = {
+    it('creates a GraphQL query for configuration', () => {
+      let graphQLRequest, body, parsedBody;
+      const options = {
         graphQL: new GraphQL({
           graphQL: {
             url: 'http://localhost/graphql',
@@ -389,16 +398,16 @@ describe('GraphQL', function () {
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.contain('query');
-      expect(parsedBody.query).to.contain('clientConfiguration');
-      expect(parsedBody.operationName).to.equal('ClientConfiguration');
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('query'));
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('clientConfiguration'));
+      expect(parsedBody.operationName).toStrictEqual('ClientConfiguration');
     });
 
-    it('handles snake case keys', function () {
-      var graphQLRequest, body, parsedBody;
+    it('handles snake case keys', () => {
+      let graphQLRequest, body, parsedBody;
 
       /* eslint-disable camelcase */
-      this.options.data = {
+      testContext.options.data = {
         credit_card: {
           number: '4111111111111111',
           expiration_year: '12',
@@ -420,14 +429,14 @@ describe('GraphQL', function () {
       };
       /* eslint-enable camelcase */
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.exist;
-      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.query).toBeDefined();
+      expect(parsedBody.variables).toBeDefined();
 
-      expect(parsedBody.variables.input).to.deep.equal({
+      expect(parsedBody.variables.input).toEqual({
         creditCard: {
           number: '4111111111111111',
           expirationYear: '12',
@@ -450,10 +459,10 @@ describe('GraphQL', function () {
       });
     });
 
-    it('prefers expiration month and year over expiration date', function () {
-      var graphQLRequest, body, parsedBody;
+    it('prefers expiration month and year over expiration date', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationDate: '12 / 2020',
@@ -464,14 +473,14 @@ describe('GraphQL', function () {
         }
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.exist;
-      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.query).toBeDefined();
+      expect(parsedBody.variables).toBeDefined();
 
-      expect(parsedBody.variables.input).to.deep.equal({
+      expect(parsedBody.variables.input).toEqual({
         creditCard: {
           number: '4111111111111111',
           expirationMonth: '03',
@@ -483,10 +492,10 @@ describe('GraphQL', function () {
       });
     });
 
-    it('splits expirationDate into month and year', function () {
-      var graphQLRequest, body, parsedBody;
+    it('splits expirationDate into month and year', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationDate: '12 / 2020',
@@ -495,14 +504,14 @@ describe('GraphQL', function () {
         }
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.exist;
-      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.query).toBeDefined();
+      expect(parsedBody.variables).toBeDefined();
 
-      expect(parsedBody.variables.input).to.deep.equal({
+      expect(parsedBody.variables.input).toEqual({
         creditCard: {
           number: '4111111111111111',
           expirationMonth: '12',
@@ -514,10 +523,10 @@ describe('GraphQL', function () {
       });
     });
 
-    it('does not require billing address', function () {
-      var graphQLRequest, body, parsedBody;
+    it('does not require billing address', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           number: '4111111111111111',
           expirationYear: '2020',
@@ -527,14 +536,14 @@ describe('GraphQL', function () {
         }
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.exist;
-      expect(parsedBody.variables).to.exist;
+      expect(parsedBody.query).toBeDefined();
+      expect(parsedBody.variables).toBeDefined();
 
-      expect(parsedBody.variables.input).to.deep.equal({
+      expect(parsedBody.variables.input).toEqual({
         creditCard: {
           number: '4111111111111111',
           expirationYear: '2020',
@@ -546,25 +555,25 @@ describe('GraphQL', function () {
       });
     });
 
-    it('tokenizes a cvv only input', function () {
-      var graphQLRequest, body, parsedBody;
+    it('tokenizes a cvv only input', () => {
+      let graphQLRequest, body, parsedBody;
 
-      this.options.data = {
+      testContext.options.data = {
         creditCard: {
           cvv: '123'
         }
       };
 
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
       parsedBody = JSON.parse(body);
 
-      expect(parsedBody.query).to.contain('mutation');
-      expect(parsedBody.query).to.contain('tokenizeCreditCard');
-      expect(parsedBody.variables).to.exist;
-      expect(parsedBody.operationName).to.equal('TokenizeCreditCard');
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('mutation'));
+      expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+      expect(parsedBody.variables).toBeDefined();
+      expect(parsedBody.operationName).toStrictEqual('TokenizeCreditCard');
 
-      expect(parsedBody.variables.input).to.deep.equal({
+      expect(parsedBody.variables.input).toEqual({
         creditCard: {
           cvv: '123'
         },
@@ -572,22 +581,22 @@ describe('GraphQL', function () {
       });
     });
 
-    it('will not throw an error if credit card field is missing', function () {
-      var graphQLRequest;
+    it('will not throw an error if credit card field is missing', () => {
+      let graphQLRequest;
 
-      this.options.data = {};
+      testContext.options.data = {};
 
-      graphQLRequest = new GraphQLRequest(this.options);
-      expect(function () {
+      graphQLRequest = new GraphQLRequest(testContext.options);
+      expect(() => {
         graphQLRequest.getBody();
-      }).to.not.throw();
+      }).not.toThrowError();
     });
 
-    describe('country codes', function () {
-      it('supports legacy countryName', function () {
-        var graphQLRequest, body, parsedBody;
+    describe('country codes', () => {
+      it('supports legacy countryName', () => {
+        let graphQLRequest, body, parsedBody;
 
-        this.options.data = {
+        testContext.options.data = {
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -608,15 +617,15 @@ describe('GraphQL', function () {
           }
         };
 
-        graphQLRequest = new GraphQLRequest(this.options);
+        graphQLRequest = new GraphQLRequest(testContext.options);
         body = graphQLRequest.getBody();
         parsedBody = JSON.parse(body);
 
-        expect(parsedBody.query).to.contain('mutation');
-        expect(parsedBody.query).to.contain('tokenizeCreditCard');
-        expect(parsedBody.variables).to.exist;
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('mutation'));
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+        expect(parsedBody.variables).toBeDefined();
 
-        expect(parsedBody.variables.input).to.deep.equal({
+        expect(parsedBody.variables.input).toEqual({
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -639,10 +648,10 @@ describe('GraphQL', function () {
         });
       });
 
-      it('supports legacy countryCodeAlpha2', function () {
-        var graphQLRequest, body, parsedBody;
+      it('supports legacy countryCodeAlpha2', () => {
+        let graphQLRequest, body, parsedBody;
 
-        this.options.data = {
+        testContext.options.data = {
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -663,15 +672,15 @@ describe('GraphQL', function () {
           }
         };
 
-        graphQLRequest = new GraphQLRequest(this.options);
+        graphQLRequest = new GraphQLRequest(testContext.options);
         body = graphQLRequest.getBody();
         parsedBody = JSON.parse(body);
 
-        expect(parsedBody.query).to.contain('mutation');
-        expect(parsedBody.query).to.contain('tokenizeCreditCard');
-        expect(parsedBody.variables).to.exist;
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('mutation'));
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+        expect(parsedBody.variables).toBeDefined();
 
-        expect(parsedBody.variables.input).to.deep.equal({
+        expect(parsedBody.variables.input).toEqual({
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -694,10 +703,10 @@ describe('GraphQL', function () {
         });
       });
 
-      it('supports legacy countryCodeNumeric', function () {
-        var graphQLRequest, body, parsedBody;
+      it('supports legacy countryCodeNumeric', () => {
+        let graphQLRequest, body, parsedBody;
 
-        this.options.data = {
+        testContext.options.data = {
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -718,15 +727,15 @@ describe('GraphQL', function () {
           }
         };
 
-        graphQLRequest = new GraphQLRequest(this.options);
+        graphQLRequest = new GraphQLRequest(testContext.options);
         body = graphQLRequest.getBody();
         parsedBody = JSON.parse(body);
 
-        expect(parsedBody.query).to.contain('mutation');
-        expect(parsedBody.query).to.contain('tokenizeCreditCard');
-        expect(parsedBody.variables).to.exist;
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('mutation'));
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+        expect(parsedBody.variables).toBeDefined();
 
-        expect(parsedBody.variables.input).to.deep.equal({
+        expect(parsedBody.variables.input).toEqual({
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -749,10 +758,10 @@ describe('GraphQL', function () {
         });
       });
 
-      it('supports legacy countryCodeAlpha3', function () {
-        var graphQLRequest, body, parsedBody;
+      it('supports legacy countryCodeAlpha3', () => {
+        let graphQLRequest, body, parsedBody;
 
-        this.options.data = {
+        testContext.options.data = {
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -773,15 +782,15 @@ describe('GraphQL', function () {
           }
         };
 
-        graphQLRequest = new GraphQLRequest(this.options);
+        graphQLRequest = new GraphQLRequest(testContext.options);
         body = graphQLRequest.getBody();
         parsedBody = JSON.parse(body);
 
-        expect(parsedBody.query).to.contain('mutation');
-        expect(parsedBody.query).to.contain('tokenizeCreditCard');
-        expect(parsedBody.variables).to.exist;
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('mutation'));
+        expect(parsedBody.query).toStrictEqual(expect.stringContaining('tokenizeCreditCard'));
+        expect(parsedBody.variables).toBeDefined();
 
-        expect(parsedBody.variables.input).to.deep.equal({
+        expect(parsedBody.variables.input).toEqual({
           creditCard: {
             number: '4111111111111111',
             expirationYear: '12',
@@ -805,12 +814,12 @@ describe('GraphQL', function () {
       });
     });
 
-    describe('validation', function () {
-      describe('with tokenization key', function () {
-        it('sends validate true when client sets validate as true', function () {
-          var graphQLRequest, body, parsedBody;
+    describe('validation', () => {
+      describe('with tokenization key', () => {
+        it('sends validate true when client sets validate as true', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             tokenizationKey: 'fake-tokenization-key',
             creditCard: {
               number: '4111111111111111',
@@ -824,14 +833,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -845,10 +854,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate false when client does not specify validation', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate false when client does not specify validation', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             tokenizationKey: 'fake-tokenization-key',
             creditCard: {
               number: '4111111111111111',
@@ -859,14 +868,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -880,10 +889,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate false when client sets options but not validation', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate false when client sets options but not validation', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             tokenizationKey: 'fake-tokenization-key',
             creditCard: {
               number: '4111111111111111',
@@ -891,19 +900,18 @@ describe('GraphQL', function () {
               expirationMonth: '12',
               cvv: '123',
               cardholderName: 'Brian Treep',
-              options: {
-              }
+              options: {}
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -917,10 +925,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate false when client sets validate as false', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate false when client sets validate as false', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             tokenizationKey: 'fake-tokenization-key',
             creditCard: {
               number: '4111111111111111',
@@ -934,14 +942,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -956,11 +964,11 @@ describe('GraphQL', function () {
         });
       });
 
-      describe('with authorization fingerprint', function () {
-        it('sends validate true when client does not specify validation', function () {
-          var graphQLRequest, body, parsedBody;
+      describe('with authorization fingerprint', () => {
+        it('sends validate true when client does not specify validation', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             authorizationFingerprint: 'fake-authorization-fingerprint',
             creditCard: {
               number: '4111111111111111',
@@ -971,14 +979,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -992,10 +1000,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate true when client sets options but not validation', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate true when client sets options but not validation', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             authorizationFingerprint: 'fake-authorization-fingerprint',
             creditCard: {
               number: '4111111111111111',
@@ -1003,19 +1011,18 @@ describe('GraphQL', function () {
               expirationMonth: '12',
               cvv: '123',
               cardholderName: 'Brian Treep',
-              options: {
-              }
+              options: {}
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -1029,10 +1036,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate true when client sets validate as true', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate true when client sets validate as true', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             authorizationFingerprint: 'fake-authorization-fingerprint',
             creditCard: {
               number: '4111111111111111',
@@ -1046,14 +1053,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -1067,10 +1074,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate false when client sets validate as false', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate false when client sets validate as false', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             authorizationFingerprint: 'fake-authorization-fingerprint',
             creditCard: {
               number: '4111111111111111',
@@ -1084,14 +1091,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -1106,11 +1113,11 @@ describe('GraphQL', function () {
         });
       });
 
-      describe('handle with authorization fingerprint logic when both authorization fingerprint and tokenization key are provided', function () {
-        it('sends validate true when client does not specify validation', function () {
-          var graphQLRequest, body, parsedBody;
+      describe('handle with authorization fingerprint logic when both authorization fingerprint and tokenization key are provided', () => {
+        it('sends validate true when client does not specify validation', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             tokenizationKey: 'fake-tokenization-key',
             authorizationFingerprint: 'fake-authorization-fingerprint',
             creditCard: {
@@ -1122,14 +1129,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -1143,10 +1150,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate true when client sets validate as true', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate true when client sets validate as true', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             tokenizationKey: 'fake-tokenization-key',
             authorizationFingerprint: 'fake-authorization-fingerprint',
             creditCard: {
@@ -1161,14 +1168,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -1182,10 +1189,10 @@ describe('GraphQL', function () {
           });
         });
 
-        it('sends validate false when client sets validate as false', function () {
-          var graphQLRequest, body, parsedBody;
+        it('sends validate false when client sets validate as false', () => {
+          let graphQLRequest, body, parsedBody;
 
-          this.options.data = {
+          testContext.options.data = {
             tokenizationKey: 'fake-tokenization-key',
             authorizationFingerprint: 'fake-authorization-fingerprint',
             creditCard: {
@@ -1200,14 +1207,14 @@ describe('GraphQL', function () {
             }
           };
 
-          graphQLRequest = new GraphQLRequest(this.options);
+          graphQLRequest = new GraphQLRequest(testContext.options);
           body = graphQLRequest.getBody();
           parsedBody = JSON.parse(body);
 
-          expect(parsedBody.query).to.exist;
-          expect(parsedBody.variables).to.exist;
+          expect(parsedBody.query).toBeDefined();
+          expect(parsedBody.variables).toBeDefined();
 
-          expect(parsedBody.variables.input).to.deep.equal({
+          expect(parsedBody.variables.input).toEqual({
             creditCard: {
               number: '4111111111111111',
               expirationYear: '2020',
@@ -1224,9 +1231,9 @@ describe('GraphQL', function () {
     });
   });
 
-  describe('adaptResponseBody', function () {
-    beforeEach(function () {
-      this.binData = {
+  describe('adaptResponseBody', () => {
+    beforeEach(() => {
+      testContext.binData = {
         prepaid: 'Yes',
         healthcare: 'Unknown',
         debit: 'No',
@@ -1239,9 +1246,9 @@ describe('GraphQL', function () {
       };
     });
 
-    it('normalizes a GraphQL credit card tokenization response', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL credit card tokenization response', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             token: 'faketoken',
@@ -1267,9 +1274,9 @@ describe('GraphQL', function () {
         }
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         creditCards: [{
-          binData: this.binData,
+          binData: testContext.binData,
           consumed: false,
           description: 'ending in 34',
           nonce: 'faketoken',
@@ -1287,9 +1294,9 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL credit card tokenization response with psd2 authentication insight', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL credit card tokenization response with psd2 authentication insight', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             authenticationInsight: {
@@ -1318,12 +1325,12 @@ describe('GraphQL', function () {
         }
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         creditCards: [{
           authenticationInsight: {
             regulationEnvironment: 'psd2'
           },
-          binData: this.binData,
+          binData: testContext.binData,
           consumed: false,
           description: 'ending in 34',
           nonce: 'faketoken',
@@ -1341,9 +1348,9 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL credit card tokenization response with unregulated authentication insight', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL credit card tokenization response with unregulated authentication insight', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             authenticationInsight: {
@@ -1372,12 +1379,12 @@ describe('GraphQL', function () {
         }
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         creditCards: [{
           authenticationInsight: {
             regulationEnvironment: 'unregulated'
           },
-          binData: this.binData,
+          binData: testContext.binData,
           consumed: false,
           description: 'ending in 34',
           nonce: 'faketoken',
@@ -1395,9 +1402,9 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL credit card tokenization response with unavailable authentication insight', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL credit card tokenization response with unavailable authentication insight', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             authenticationInsight: {
@@ -1426,12 +1433,12 @@ describe('GraphQL', function () {
         }
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         creditCards: [{
           authenticationInsight: {
             regulationEnvironment: 'unavailable'
           },
-          binData: this.binData,
+          binData: testContext.binData,
           consumed: false,
           description: 'ending in 34',
           nonce: 'faketoken',
@@ -1449,9 +1456,9 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL credit card tokenization response with any new unrecongized authentication insight values', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL credit card tokenization response with any new unrecongized authentication insight values', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             authenticationInsight: {
@@ -1480,12 +1487,12 @@ describe('GraphQL', function () {
         }
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         creditCards: [{
           authenticationInsight: {
             regulationEnvironment: 'some_new_value'
           },
-          binData: this.binData,
+          binData: testContext.binData,
           consumed: false,
           description: 'ending in 34',
           nonce: 'faketoken',
@@ -1503,9 +1510,8 @@ describe('GraphQL', function () {
       });
     });
 
-    it('remaps card brand codes', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var self = this;
+    it('remaps card brand codes', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
 
       function makeResponse(brandCode) {
         return {
@@ -1522,23 +1528,23 @@ describe('GraphQL', function () {
         };
       }
 
-      expect(graphQLRequest.adaptResponseBody(makeResponse('MASTERCARD')).creditCards[0].details.cardType).to.equal('MasterCard');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('DINERS')).creditCards[0].details.cardType).to.equal('Discover');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('DISCOVER')).creditCards[0].details.cardType).to.equal('Discover');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('INTERNATIONAL_MAESTRO')).creditCards[0].details.cardType).to.equal('Maestro');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('UK_MAESTRO')).creditCards[0].details.cardType).to.equal('Maestro');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('JCB')).creditCards[0].details.cardType).to.equal('JCB');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('UNION_PAY')).creditCards[0].details.cardType).to.equal('Union Pay');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('VISA')).creditCards[0].details.cardType).to.equal('Visa');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('SOLO')).creditCards[0].details.cardType).to.equal('Unknown');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('UNKNOWN')).creditCards[0].details.cardType).to.equal('Unknown');
-      expect(graphQLRequest.adaptResponseBody(makeResponse()).creditCards[0].details.cardType).to.equal('Unknown');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('MASTERCARD')).creditCards[0].details.cardType).toBe('MasterCard');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('DINERS')).creditCards[0].details.cardType).toBe('Discover');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('DISCOVER')).creditCards[0].details.cardType).toBe('Discover');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('INTERNATIONAL_MAESTRO')).creditCards[0].details.cardType).toBe('Maestro');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('UK_MAESTRO')).creditCards[0].details.cardType).toBe('Maestro');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('JCB')).creditCards[0].details.cardType).toBe('JCB');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('UNION_PAY')).creditCards[0].details.cardType).toBe('Union Pay');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('VISA')).creditCards[0].details.cardType).toBe('Visa');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('SOLO')).creditCards[0].details.cardType).toBe('Unknown');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('UNKNOWN')).creditCards[0].details.cardType).toBe('Unknown');
+      expect(graphQLRequest.adaptResponseBody(makeResponse()).creditCards[0].details.cardType).toBe('Unknown');
     });
 
-    it('normalizes null bin data fields', function () {
-      var adaptedResponse;
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes null bin data fields', () => {
+      let adaptedResponse;
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             token: 'faketoken',
@@ -1557,7 +1563,7 @@ describe('GraphQL', function () {
 
       adaptedResponse = graphQLRequest.adaptResponseBody(fakeGraphQLResponse);
 
-      expect(adaptedResponse.creditCards[0].binData).to.deep.equal({
+      expect(adaptedResponse.creditCards[0].binData).toEqual({
         prepaid: 'Unknown',
         healthcare: 'Unknown',
         debit: 'Unknown',
@@ -1570,9 +1576,9 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL cvv only tokenization response', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL cvv only tokenization response', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             token: 'faketoken',
@@ -1591,7 +1597,7 @@ describe('GraphQL', function () {
         }
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         creditCards: [{
           binData: null,
           consumed: false,
@@ -1611,14 +1617,14 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL validation error response', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
-        data: {tokenizeCreditCard: null},
+    it('normalizes a GraphQL validation error response', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
+        data: { tokenizeCreditCard: null },
         errors: [
           {
             message: 'Expiration year error 1',
-            locations: [{line: 2, column: 9}],
+            locations: [{ line: 2, column: 9 }],
             path: ['tokenizeCreditCard'],
             extensions: {
               errorClass: 'VALIDATION',
@@ -1628,7 +1634,7 @@ describe('GraphQL', function () {
           },
           {
             message: 'Expiration year error 2',
-            locations: [{line: 2, column: 9}],
+            locations: [{ line: 2, column: 9 }],
             path: ['tokenizeCreditCard'],
             extensions: {
               errorClass: 'VALIDATION',
@@ -1638,7 +1644,7 @@ describe('GraphQL', function () {
           },
           {
             message: 'Street address error',
-            locations: [{line: 2, column: 9}],
+            locations: [{ line: 2, column: 9 }],
             path: ['tokenizeCreditCard'],
             extensions: {
               errorClass: 'VALIDATION',
@@ -1649,7 +1655,7 @@ describe('GraphQL', function () {
         ]
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         error: {
           message: 'Credit card is invalid'
         },
@@ -1683,10 +1689,10 @@ describe('GraphQL', function () {
       });
     });
 
-    it('normalizes a GraphQL validation error response without field errors', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
-        data: {tokenizeCreditCard: null},
+    it('normalizes a GraphQL validation error response without field errors', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
+        data: { tokenizeCreditCard: null },
         errors: [
           {
             message: 'Valid merchant account must be provided',
@@ -1703,16 +1709,16 @@ describe('GraphQL', function () {
         ]
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         error: {
           message: 'Valid merchant account must be provided'
         }
       });
     });
 
-    it('normalizes a GraphQL error response with a non-VALIDATION errorClass', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL error response with a non-VALIDATION errorClass', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: null,
         errors: [
           {
@@ -1724,15 +1730,15 @@ describe('GraphQL', function () {
         ]
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
-        error: {message: 'Some developer error'},
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
+        error: { message: 'Some developer error' },
         fieldErrors: []
       });
     });
 
-    it('normalizes a GraphQL error response without an errorClass', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('normalizes a GraphQL error response without an errorClass', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: null,
         errors: [
           {
@@ -1741,17 +1747,17 @@ describe('GraphQL', function () {
         ]
       };
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
-        error: {message: 'There was a problem serving your request'},
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
+        error: { message: 'There was a problem serving your request' },
         fieldErrors: []
       });
     });
 
-    it('normalizes a garbage error response', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = 'something went wrong';
+    it('normalizes a garbage error response', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = 'something went wrong';
 
-      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).to.deep.equal({
+      expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
         error: {
           message: 'There was a problem serving your request'
         },
@@ -1760,10 +1766,10 @@ describe('GraphQL', function () {
     });
   });
 
-  describe('determineStatus', function () {
-    it('returns 200 for successful responses', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+  describe('determineStatus', () => {
+    it('returns 200 for successful responses', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             token: 'faketoken'
@@ -1774,17 +1780,17 @@ describe('GraphQL', function () {
         }
       };
 
-      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(200);
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).toBe(200);
     });
 
-    it('returns 422 for validation errors', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
-        data: {tokenizeCreditCard: null},
+    it('returns 422 for validation errors', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
+        data: { tokenizeCreditCard: null },
         errors: [
           {
             message: 'Input is invalid.',
-            locations: [{line: 2, column: 9}],
+            locations: [{ line: 2, column: 9 }],
             path: ['tokenizeCreditCard'],
             extensions: {
               legacyMessage: 'Credit card is invalid',
@@ -1795,12 +1801,12 @@ describe('GraphQL', function () {
         ]
       };
 
-      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(422);
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).toBe(422);
     });
 
-    it('returns 403 for AUTHORIZATION errors', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('returns 403 for AUTHORIZATION errors', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: null,
         errors: [
           {
@@ -1812,12 +1818,12 @@ describe('GraphQL', function () {
         ]
       };
 
-      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(403);
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).toBe(403);
     });
 
-    it('returns 500 for unknown errors', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('returns 500 for unknown errors', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: null,
         errors: [
           {
@@ -1829,12 +1835,12 @@ describe('GraphQL', function () {
         ]
       };
 
-      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(500);
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).toBe(500);
     });
 
-    it('returns 500 for unknown errors with a success body', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('returns 500 for unknown errors with a success body', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {
         data: {
           tokenizeCreditCard: {
             token: 'fake_token',
@@ -1854,16 +1860,16 @@ describe('GraphQL', function () {
         }]
       };
 
-      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(500);
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).toBe(500);
     });
 
-    it('returns 403 for field coercion errors', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
+    it('returns 403 for field coercion errors', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
 
-      var fakeGraphQLResponse = {
+      const fakeGraphQLResponse = {
         data: null,
         errors: [{
-          message: "Variable 'billingAddress' has an invalid value. Expected type 'Map' but was 'String'. Variables for input objects must be an instance of type 'Map'.",
+          message: 'Variable \'billingAddress\' has an invalid value. Expected type \'Map\' but was \'String\'. Variables for input objects must be an instance of type \'Map\'.',
           locations: [{
             line: 1,
             column: 29
@@ -1871,16 +1877,16 @@ describe('GraphQL', function () {
         }]
       };
 
-      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(403);
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).toBe(403);
     });
 
-    it('returns 403 for validation errors', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
+    it('returns 403 for validation errors', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
 
-      var fakeGraphQLResponse = {
+      const fakeGraphQLResponse = {
         data: null,
         errors: [{
-          message: "Validation error of type FieldUndefined: Field 'cardType' in type 'TokenizeCreditCard' is undefined",
+          message: 'Validation error of type FieldUndefined: Field \'cardType\' in type \'TokenizeCreditCard\' is undefined',
           locations: [{
             line: 1,
             column: 29
@@ -1888,31 +1894,32 @@ describe('GraphQL', function () {
         }]
       };
 
-      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).to.equal(403);
+      expect(graphQLRequest.determineStatus(200, fakeGraphQLResponse)).toBe(403);
     });
 
-    it('returns 500 when status code is not present', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeGraphQLResponse = {
+    it('returns 500 when status code is not present', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeGraphQLResponse = {};
+
+      expect(graphQLRequest.determineStatus(null, fakeGraphQLResponse)).toBe(500);
+    });
+
+    it('passes through non-200 graphql status codes', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+
+      expect(graphQLRequest.determineStatus(418, {})).toBe(418);
+      expect(graphQLRequest.determineStatus(500, {})).toBe(500);
+    });
+
+    it('sends an analytics event for actual and determined http status', () => {
+      let graphQLRequest, fakeGraphQLResponse;
+      const analyticsEvents = [];
+
+      testContext.options.sendAnalyticsEvent = event => {
+        analyticsEvents.push(event);
       };
 
-      expect(graphQLRequest.determineStatus(null, fakeGraphQLResponse)).to.equal(500);
-    });
-
-    it('passes through non-200 graphql status codes', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-
-      expect(graphQLRequest.determineStatus(418, {})).to.equal(418);
-      expect(graphQLRequest.determineStatus(500, {})).to.equal(500);
-    });
-
-    it('sends an analytics event for actual and determined http status', function () {
-      var graphQLRequest, fakeGraphQLResponse;
-      var analyticsEvents = [];
-
-      this.options.sendAnalyticsEvent = function (event) { analyticsEvents.push(event); };
-
-      graphQLRequest = new GraphQLRequest(this.options);
+      graphQLRequest = new GraphQLRequest(testContext.options);
       fakeGraphQLResponse = {
         data: null,
         errors: [
@@ -1927,8 +1934,8 @@ describe('GraphQL', function () {
 
       graphQLRequest.determineStatus(200, fakeGraphQLResponse);
 
-      expect(analyticsEvents).to.include('graphql.status.200');
-      expect(analyticsEvents).to.include('graphql.determinedStatus.403');
+      expect(analyticsEvents).toStrictEqual(expect.arrayContaining(['graphql.status.200']));
+      expect(analyticsEvents).toStrictEqual(expect.arrayContaining(['graphql.determinedStatus.403']));
     });
   });
 });

@@ -1,99 +1,106 @@
 'use strict';
 
-var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
-var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
-var browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
-var PostalCodeInput = require('../../../../../src/hosted-fields/internal/components/postal-code-input').PostalCodeInput;
-var RestrictedInput = require('restricted-input');
+const RestrictedInput = require('restricted-input');
+const { CreditCardForm } = require('../../../../../src/hosted-fields/internal/models/credit-card-form');
+const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
+const browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
+const { PostalCodeInput } = require('../../../../../src/hosted-fields/internal/components/postal-code-input');
+const { createInput, getModelConfig } = require('../../helpers');
 
-describe('Postal Code Input', function () {
-  beforeEach(function () {
-    this.input = helpers.createInput('postalCode');
+describe('Postal Code Input', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
   });
 
-  describe('inheritance', function () {
-    it('extends BaseInput', function () {
-      expect(this.input).to.be.an.instanceof(BaseInput);
+  beforeEach(() => {
+    testContext.input = createInput('postalCode');
+  });
+
+  describe('inheritance', () => {
+    it('extends BaseInput', () => {
+      expect(testContext.input).toBeInstanceOf(BaseInput);
     });
   });
 
-  describe('element', function () {
-    it('has type="text"', function () {
-      expect(this.input.element.getAttribute('type')).to.equal('text');
+  describe('element', () => {
+    it('has type="text"', () => {
+      expect(testContext.input.element.getAttribute('type')).toBe('text');
     });
 
-    it('has autocomplete postal-code', function () {
-      expect(this.input.element.getAttribute('autocomplete')).to.equal('billing postal-code');
+    it('has autocomplete postal-code', () => {
+      expect(testContext.input.element.getAttribute('autocomplete')).toBe('billing postal-code');
     });
 
-    it('sets the maxLength to 10 when no custom maxlength is provided', function () {
-      expect(this.input.element.getAttribute('maxlength')).to.equal('10');
+    it('sets the maxLength to 10 when no custom maxlength is provided', () => {
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('10');
     });
 
-    it('sets the maxLength to 10 if a custom maxlength is provided but is greater than 10', function () {
-      var input;
+    it('sets the maxLength to 10 if a custom maxlength is provided but is greater than 10', () => {
+      let input;
 
-      this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({maxlength: 11});
+      jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ maxlength: 11 });
 
-      input = helpers.createInput('postalCode');
+      input = createInput('postalCode');
 
-      expect(input.element.getAttribute('maxlength')).to.equal('10');
+      expect(input.element.getAttribute('maxlength')).toBe('10');
     });
 
-    it('sets the maxLength to custom maxlength if one is provided and is less than 10', function () {
-      var input;
+    it('sets the maxLength to custom maxlength if one is provided and is less than 10', () => {
+      let input;
 
-      this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({maxlength: 5});
+      jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ maxlength: 5 });
 
-      input = helpers.createInput('postalCode');
+      input = createInput('postalCode');
 
-      expect(input.element.getAttribute('maxlength')).to.equal('5');
+      expect(input.element.getAttribute('maxlength')).toBe('5');
     });
 
-    it('handles a specific type being set', function () {
-      var config = helpers.getModelConfig('postalCode');
+    it('handles a specific type being set', () => {
+      const config = getModelConfig('postalCode');
 
-      config.fields.postalCode = {type: 'tel'};
+      config.fields.postalCode = { type: 'tel' };
 
-      this.input = new PostalCodeInput({
+      testContext.input = new PostalCodeInput({
         model: new CreditCardForm(config),
         type: 'postalCode'
       });
-      expect(this.input.element.getAttribute('type')).to.equal('tel');
+      expect(testContext.input.element.getAttribute('type')).toBe('tel');
     });
 
-    it('removes pattern attribute', function () {
-      var config, input;
+    it('removes pattern attribute', () => {
+      let config, input;
 
       // causes base input to set the pattern property
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
 
-      config = helpers.getModelConfig('postalCode');
+      config = getModelConfig('postalCode');
       input = new PostalCodeInput({
         model: new CreditCardForm(config),
         type: 'postalCode'
       });
 
-      expect(input.element.getAttribute('pattern')).to.equal(null);
+      expect(input.element.getAttribute('pattern')).toBeNull();
     });
   });
 
-  describe('formatter', function () {
-    it('sets the pattern to a 10-character pattern with default maxLength', function () {
-      this.sandbox.spy(RestrictedInput.prototype, 'setPattern');
+  describe('formatter', () => {
+    it('sets the pattern to a 10-character pattern with default maxLength', () => {
+      jest.spyOn(RestrictedInput.prototype, 'setPattern');
 
-      helpers.createInput('postalCode');
+      createInput('postalCode');
 
-      expect(RestrictedInput.prototype.setPattern).to.be.calledWith('{{**********}}');
+      expect(RestrictedInput.prototype.setPattern).toHaveBeenCalledWith('{{**********}}');
     });
 
-    it('sets the pattern to custom maxLength when provided', function () {
-      this.sandbox.spy(RestrictedInput.prototype, 'setPattern');
-      this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({maxlength: 5});
+    it('sets the pattern to custom maxLength when provided', () => {
+      jest.spyOn(RestrictedInput.prototype, 'setPattern');
+      jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ maxlength: 5 });
 
-      helpers.createInput('postalCode');
+      createInput('postalCode');
 
-      expect(RestrictedInput.prototype.setPattern).to.be.calledWith('{{*****}}');
+      expect(RestrictedInput.prototype.setPattern).toHaveBeenCalledWith('{{*****}}');
     });
   });
 });

@@ -1,0 +1,19 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/three-d-secure/coverage",
+  "displayName": "three-d-secure",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/three-d-secure",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/three-d-secure"
+  ],
+  "setupFilesAfterEnv": [
+    "<rootDir>/../../test/three-d-secure/unit/global.js"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js",
+    "!**/global.js"
+  ]
+}

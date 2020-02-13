@@ -1,122 +1,111 @@
 'use strict';
 
-var BraintreeError = require('../../../src/lib/braintree-error');
+const BraintreeError = require('../../../src/lib/braintree-error');
 
-describe('BraintreeError', function () {
-  it('inherits from Error', function () {
-    var btError = new BraintreeError({
+describe('BraintreeError', () => {
+  it('inherits from Error', () => {
+    expect(new BraintreeError({
       type: 'CUSTOMER',
       code: 'SOME_CODE',
       message: 'Foo'
-    });
-
-    expect(btError).to.be.an.instanceof(Error);
+    })).toBeInstanceOf(Error);
   });
 
-  it('errors if type is invalid', function () {
-    expect(function () {
+  it('errors if type is invalid', () => {
+    expect(() => {
       new BraintreeError({
         type: 'INVALID',
         code: 'SOME_CODE',
         message: 'Foo'
       });
-    }).to.throw('INVALID is not a valid type');
+    }).toThrowError('INVALID is not a valid type');
   });
 
-  it('errors if code is missing', function () {
-    expect(function () {
+  it('errors if code is missing', () => {
+    expect(() => {
       new BraintreeError({
         type: 'CUSTOMER',
         message: 'Foo'
       });
-    }).to.throw('Error code required');
+    }).toThrowError('Error code required');
   });
 
-  it('errors if message is missing', function () {
-    expect(function () {
+  it('errors if message is missing', () => {
+    expect(() => {
       new BraintreeError({
         type: 'CUSTOMER',
         code: 'SOME_CODE'
       });
-    }).to.throw('Error message required');
+    }).toThrowError('Error message required');
   });
 
-  it('creates a Braintree Error', function () {
-    var btError = new BraintreeError({
+  it('creates a Braintree Error', () => {
+    const { code, message, type } = new BraintreeError({
       type: 'CUSTOMER',
       code: 'SOME_CODE',
       message: 'Foo'
     });
 
-    expect(btError.type).to.equal('CUSTOMER');
-    expect(btError.code).to.equal('SOME_CODE');
-    expect(btError.message).to.equal('Foo');
+    expect(type).toBe('CUSTOMER');
+    expect(code).toBe('SOME_CODE');
+    expect(message).toBe('Foo');
   });
 
-  it('can include a details object', function () {
-    var details = {
-      originalError: new Error('foo')
-    };
-    var btError = new BraintreeError({
+  it('can include a details object', () => {
+    const details = { originalError: new Error('foo') };
+    const btError = new BraintreeError({
       type: 'CUSTOMER',
       code: 'SOME_CODE',
       message: 'Foo',
-      details: details
+      details
     });
 
-    expect(btError.details).to.equal(details);
+    expect(btError.details).toBe(details);
   });
 
-  describe('findRootError', function () {
-    it('returns the passed in error if it is not a Braintree Error', function () {
-      var error = new Error('Foo');
-      var rootError = BraintreeError.findRootError(error);
+  describe('findRootError', () => {
+    it('returns the passed in error if it is not a Braintree Error', () => {
+      const error = new Error('Foo');
 
-      expect(rootError).to.equal(error);
+      expect(BraintreeError.findRootError(error)).toBe(error);
     });
 
-    it('returns the passed in error if it does not have details', function () {
-      var error = new BraintreeError({
+    it('returns the passed in error if it does not have details', () => {
+      const error = new BraintreeError({
         type: 'CUSTOMER',
         code: 'CODE',
         message: 'Message'
       });
-      var rootError = BraintreeError.findRootError(error);
 
-      expect(rootError).to.equal(error);
+      expect(BraintreeError.findRootError(error)).toBe(error);
     });
 
-    it('returns the passed in error if it does not have details.originalError', function () {
-      var error = new BraintreeError({
+    it('returns the passed in error if it does not have details.originalError', () => {
+      const error = new BraintreeError({
         type: 'CUSTOMER',
         code: 'CODE',
         message: 'Message',
         details: {}
       });
-      var rootError = BraintreeError.findRootError(error);
 
-      expect(rootError).to.equal(error);
+      expect(BraintreeError.findRootError(error)).toBe(error);
     });
 
-    it('returns the error in details.originalError', function () {
-      var originalError = new Error('Foo');
-      var btError = new BraintreeError({
+    it('returns the error in details.originalError', () => {
+      const originalError = new Error('Foo');
+      const btError = new BraintreeError({
         type: 'CUSTOMER',
         code: 'CODE',
         message: 'Message',
-        details: {
-          originalError: originalError
-        }
+        details: { originalError }
       });
 
-      var rootError = BraintreeError.findRootError(btError);
-
-      expect(rootError).to.equal(originalError);
+      expect(BraintreeError.findRootError(btError)).toBe(originalError);
     });
 
-    it('returns the most deeply nested error', function () {
-      var originalError = new Error('Foo');
-      var btError = new BraintreeError({
+    it('returns the most deeply nested error', () => {
+      const originalError = new Error('Foo');
+      const btError = new BraintreeError({
         type: 'CUSTOMER',
         code: 'FIRST',
         message: 'Message',
@@ -130,27 +119,23 @@ describe('BraintreeError', function () {
                 type: 'CUSTOMER',
                 code: 'THIRD',
                 message: 'Message',
-                details: {
-                  originalError: originalError
-                }
+                details: { originalError }
               })
             }
           })
         }
       });
 
-      var rootError = BraintreeError.findRootError(btError);
-
-      expect(rootError).to.equal(originalError);
+      expect(BraintreeError.findRootError(btError)).toBe(originalError);
     });
 
-    it('returns the most deeply nested Braintree Error', function () {
-      var originalError = new BraintreeError({
+    it('returns the most deeply nested Braintree Error', () => {
+      const originalError = new BraintreeError({
         type: 'CUSTOMER',
         code: 'ORIGINAL',
         message: 'Message'
       });
-      var btError = new BraintreeError({
+      const btError = new BraintreeError({
         type: 'CUSTOMER',
         code: 'FIRST',
         message: 'Message',
@@ -164,18 +149,14 @@ describe('BraintreeError', function () {
                 type: 'CUSTOMER',
                 code: 'THIRD',
                 message: 'Message',
-                details: {
-                  originalError: originalError
-                }
+                details: { originalError }
               })
             }
           })
         }
       });
 
-      var rootError = BraintreeError.findRootError(btError);
-
-      expect(rootError).to.equal(originalError);
+      expect(BraintreeError.findRootError(btError)).toBe(originalError);
     });
   });
 });

@@ -13,7 +13,7 @@ var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
 var JS_TASKS = [];
 var HTML_TASKS = [];
 var DELETE_INTERNAL_JS_TASKS = [];
-var FRAMES = ['redirect', 'loading', 'landing'];
+var FRAMES = ['loading', 'landing'];
 
 FRAMES.forEach(function (frame) {
   var jsTaskName = 'build:masterpass:frame:js:' + frame + '-frame';

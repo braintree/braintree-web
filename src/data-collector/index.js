@@ -57,14 +57,14 @@ var errors = require('./errors');
 /**
  * @static
  * @function create
- * @description Creates a DataCollector instance.
+ * @description Creates a DataCollector instance and collects device data based on your merchant configuration. We recommend that you call this method as early as possible, e.g. as soon as your website loads. If that's too early, call it at the beginning of customer checkout.
+ * **Note:** To use your own Kount ID, contact our support team ([support@braintreepayments.com](mailto:support@braintreepayments.com) or [877.434.2894](tel:877.434.2894)).
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {boolean} [options.kount] If true, Kount fraud data collection is enabled. Before using the `kount` option, make sure you have enabled advanced fraud protection in the Braintree gateway. To use your own Kount ID, contact our support team ([support@braintreepayments.com](mailto:support@braintreepayments.com) or [877.434.2894](tel:877.434.2894)).
- *
+ * @param {boolean} [options.kount] Kount fraud data collection will occur if the merchant configuration has it enabled.
  * **Note:** the data sent to Kount is asynchronous and may not have completed by the time the data collector create call is complete. In most cases, this will not matter, but if you create the data collector instance and immediately navigate away from the page, the device information may fail to be sent to Kount.
- * @param {boolean} [options.paypal] If true, PayPal fraud data collection is enabled.
+ * @param {boolean} [options.paypal] *Deprecated:* PayPal fraud data collection will occur when the DataCollector instance is created.
  * @param {callback} [callback] The second argument, `data`, is the {@link DataCollector} instance.
  * @returns {(Promise|void)} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
  */
@@ -90,15 +90,7 @@ function create(options) {
     var kountInstance;
     var config = client.getConfiguration();
 
-    if (!options.kount && !options.paypal) {
-      return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
-    }
-
-    if (options.kount === true) {
-      if (!config.gatewayConfiguration.kount) {
-        return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_KOUNT_NOT_ENABLED));
-      }
-
+    if (options.kount === true && config.gatewayConfiguration.kount) {
       try {
         kountInstance = kount.setup({
           environment: config.gatewayConfiguration.environment,
@@ -120,10 +112,6 @@ function create(options) {
 
     return Promise.resolve();
   }).then(function () {
-    if (options.paypal !== true) {
-      return Promise.resolve();
-    }
-
     return fraudnet.setup().then(function (fraudnetInstance) {
       if (fraudnetInstance) {
         data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase

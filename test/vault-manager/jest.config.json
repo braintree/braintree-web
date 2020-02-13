@@ -1,0 +1,15 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/vault-manager/coverage",
+  "displayName": "vault-manager",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/vault-manager",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/vault-manager"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js"
+  ]
+}

@@ -1,21 +1,25 @@
 'use strict';
 
-var FakeRestrictedInput = require('../../../src/lib/fake-restricted-input');
+const FakeRestrictedInput = require('../../../src/lib/fake-restricted-input');
 
-describe('FakeRestrictedInput', function () {
-  beforeEach(function () {
-    this.element = {value: ''};
-    this.formatter = new FakeRestrictedInput({element: this.element});
+describe('FakeRestrictedInput', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+
+    testContext.element = { value: '' };
+    testContext.formatter = new FakeRestrictedInput({ element: testContext.element });
   });
 
-  it('has a method called "setPattern"', function () {
-    expect(this.formatter.setPattern).to.be.a('function');
+  it('has a method called "setPattern"', () => {
+    expect(testContext.formatter.setPattern).toBeInstanceOf(Function);
   });
 
-  it('returns the element value when calling getUnformattedValue', function () {
-    expect(this.formatter.getUnformattedValue()).to.equal('');
+  it('returns the element value when calling getUnformattedValue', () => {
+    expect(testContext.formatter.getUnformattedValue()).toBe('');
 
-    this.element.value = 'memes';
-    expect(this.formatter.getUnformattedValue()).to.equal('memes');
+    testContext.element.value = 'memes';
+    expect(testContext.formatter.getUnformattedValue()).toBe('memes');
   });
 });

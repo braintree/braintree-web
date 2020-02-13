@@ -1,14 +1,14 @@
 'use strict';
 
-var visaCheckout = require('../../../src/visa-checkout');
-var packageVersion = require('../../../package.json').version;
+const visaCheckout = require('../../../src/visa-checkout');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(visaCheckout.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(visaCheckout.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(visaCheckout.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(visaCheckout.VERSION).toBe(packageVersion);
   });
 });

@@ -2,23 +2,23 @@
 
 require('../../../../src/hosted-fields/internal/polyfills/ie9');
 
-describe('placeholder shim', function () {
-  it('calls inputEl.parentNode.appendChild', function (done) {
-    var inputEl = {
+describe('placeholder shim', () => {
+  it('calls inputEl.parentNode.appendChild', done => {
+    const inputEl = {
       style: [],
-      getAttribute: function () { return null; },
-      attributes: {}
-    };
-    var parentNode = {appendChild: function () { done(); }};
-    var originalCreateElement = document.createElement;
-
-    inputEl.parentNode = parentNode;
-    this.sandbox.stub(document, 'createElement').callsFake(function (string) {
-      if (string === 'input') {
-        return {};
+      getAttribute: () => null,
+      attributes: {},
+      parentNode: {
+        appendChild: () => {
+          done();
+        }
       }
+    };
 
-      return originalCreateElement.apply(document, arguments);
+    jest.spyOn(document, 'createElement').mockImplementation(() => {
+      document.createElement.mockRestore();
+
+      return {};
     });
 
     global.placeholderShim(inputEl);

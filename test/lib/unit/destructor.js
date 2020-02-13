@@ -1,107 +1,103 @@
 'use strict';
 
-var Destructor = require('../../../src/lib/destructor');
+const Destructor = require('../../../src/lib/destructor');
+const { noop } = require('../../helpers');
 
-describe('Destructor', function () {
-  describe('constructor', function () {
-    it('creates an empty collection', function () {
-      expect(new Destructor()._teardownRegistry).to.deep.equal([]);
+describe('Destructor', () => {
+  describe('constructor', () => {
+    it('creates an empty collection', () => {
+      expect(new Destructor()._teardownRegistry).toEqual([]);
     });
   });
 
-  describe('registerFunctionForTeardown', function () {
-    it('adds passed in function to instance collection', function () {
-      var destructor = new Destructor();
-
-      function fn() {}
+  describe('registerFunctionForTeardown', () => {
+    it('adds passed in function to instance collection', () => {
+      const destructor = new Destructor();
+      const fn = noop;
 
       destructor.registerFunctionForTeardown(fn);
 
-      expect(destructor._teardownRegistry).to.deep.equal([fn]);
+      expect(destructor._teardownRegistry).toEqual([fn]);
     });
 
-    it('does not add non-functions to collection', function () {
-      var destructor = new Destructor();
+    it('does not add non-functions to collection', () => {
+      const destructor = new Destructor();
 
       destructor.registerFunctionForTeardown('str');
       destructor.registerFunctionForTeardown(true);
       destructor.registerFunctionForTeardown(1);
       destructor.registerFunctionForTeardown(null);
       destructor.registerFunctionForTeardown();
-      destructor.registerFunctionForTeardown({foo: 'bar'});
+      destructor.registerFunctionForTeardown({ foo: 'bar' });
 
-      expect(destructor._teardownRegistry).to.deep.equal([]);
+      expect(destructor._teardownRegistry).toEqual([]);
     });
   });
 
-  describe('teardown', function () {
-    it('empties collection of teardown functions', function (done) {
-      var destructor = new Destructor();
+  describe('teardown', () => {
+    it('empties collection of teardown functions', done => {
+      const destructor = new Destructor();
 
-      destructor.registerFunctionForTeardown(this.sandbox.spy());
-      destructor.registerFunctionForTeardown(this.sandbox.spy());
+      destructor.registerFunctionForTeardown(noop);
+      destructor.registerFunctionForTeardown(noop);
 
-      destructor.teardown(function () {
-        expect(destructor._teardownRegistry).to.deep.equal([]);
+      destructor.teardown(() => {
+        expect(destructor._teardownRegistry).toEqual([]);
+
         done();
       });
     });
 
-    it('calls supplied callback', function (done) {
-      var destructor = new Destructor();
+    it('calls supplied callback', done => {
+      const destructor = new Destructor();
 
-      destructor.teardown(function (err) {
-        expect(err).not.to.be.defined;
+      destructor.teardown(err => {
+        expect(err).toBeFalsy();
+
         done();
       });
     });
 
-    it('calls supplied callback with an error if given a synchronous function', function () {
-      var destructor = new Destructor();
+    it('calls supplied callback with an error if given a synchronous function', () => {
+      const destructor = new Destructor();
 
-      destructor._teardownRegistry = [
-        function () { throw new Error(); }
-      ];
+      destructor._teardownRegistry = [() => { throw new Error(); }];
 
-      expect(function () {
+      expect(() => {
         destructor.teardown();
-      }).to.throw(Error);
+      }).toThrowError(Error);
     });
 
-    it('calls supplied callback with an error if given an asynchronous function', function () {
-      var destructor = new Destructor();
+    it('calls supplied callback with an error if given an asynchronous function', () => {
+      const destructor = new Destructor();
 
-      destructor._teardownRegistry = [
-        function (next) {
-          next(new Error());
-        }
-      ];
+      destructor._teardownRegistry = [(next) => { next(new Error()); }];
 
-      destructor.teardown(function (err) {
-        expect(err).to.be.an.instanceof(Error);
+      destructor.teardown(err => {
+        expect(err).toBeInstanceOf(Error);
       });
     });
 
-    it('calls supplied callback with an error when calling teardown twice if already in progress', function (done) {
-      var destructor = new Destructor();
-      var firstWasCalled = false;
+    it('calls supplied callback with an error when calling teardown twice if already in progress', done => {
+      const destructor = new Destructor();
+      let firstWasCalled = false;
 
-      destructor.registerFunctionForTeardown(function (cb) {
+      destructor.registerFunctionForTeardown(cb => {
         setTimeout(cb, 10);
       });
 
-      setTimeout(function () {
-        destructor.teardown(function (err) {
-          expect(err).to.equal(null);
+      setTimeout(() => {
+        destructor.teardown(err => {
+          expect(err).toBeNull();
           firstWasCalled = true;
         });
       }, 0);
-      setTimeout(function () {
-        destructor.teardown(function (err) {
-          expect(err).to.be.an.instanceof(Error);
+      setTimeout(() => {
+        destructor.teardown(err => {
+          expect(err).toBeInstanceOf(Error);
 
-          setTimeout(function () {
-            expect(firstWasCalled).to.equal(true);
+          setTimeout(() => {
+            expect(firstWasCalled).toBe(true);
             done();
           }, 11);
         });

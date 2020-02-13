@@ -53,6 +53,7 @@ var usBankAccount = require('./us-bank-account');
 var vaultManager = require('./vault-manager');
 var venmo = require('./venmo');
 var visaCheckout = require('./visa-checkout');
+var preferredPaymentMethods = require('./preferred-payment-methods');
 var VERSION = process.env.npm_package_version;
 
 module.exports = {
@@ -90,6 +91,8 @@ module.exports = {
   venmo: venmo,
   /** @type {module:braintree-web/visa-checkout} */
   visaCheckout: visaCheckout,
+  /** @type {module:braintree-web/preferred-payment-methods} */
+  preferredPaymentMethods: preferredPaymentMethods,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}

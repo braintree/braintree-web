@@ -125,7 +125,7 @@ LocalPayment.prototype.startPayment = function (options) {
       r: options.fallback.url,
       t: options.fallback.buttonText
     }),
-    cancelUrl: querystring.queryify(self._assetsUrl + '/html/local-payment-cancel-frame' + useMin(self._isDebug) + '.html', {
+    cancelUrl: querystring.queryify(self._assetsUrl + '/html/cancel-frame' + useMin(self._isDebug) + '.html', {
       channel: serviceId
     }),
     experienceProfile: {

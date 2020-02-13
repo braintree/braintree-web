@@ -1,18 +1,18 @@
 'use strict';
 /* eslint-disable camelcase */
 
-var camelCaseToSnakeCase = require('../../../src/lib/camel-case-to-snake-case');
+const camelCaseToSnakeCase = require('../../../src/lib/camel-case-to-snake-case');
 
-describe('camelCaseToSnakeCase', function () {
-  it('returns a new empty object', function () {
-    var obj = {};
+describe('camelCaseToSnakeCase', () => {
+  it('returns a new empty object', () => {
+    const obj = {};
 
-    expect(camelCaseToSnakeCase(obj)).not.to.equal(obj);
-    expect(camelCaseToSnakeCase(obj)).to.deep.equal({});
+    expect(camelCaseToSnakeCase(obj)).not.toBe(obj);
+    expect(camelCaseToSnakeCase(obj)).toEqual({});
   });
 
-  it('returns a new object with keys snakeified', function () {
-    var obj = {
+  it('returns a new object with keys snakeified', () => {
+    const obj = {
       foo: 'boo',
       barBaz: 'wow',
       soMuchWow: 'yes',
@@ -21,7 +21,7 @@ describe('camelCaseToSnakeCase', function () {
       AuthorizationThing: 'password123'
     };
 
-    expect(camelCaseToSnakeCase(obj)).to.deep.equal({
+    expect(camelCaseToSnakeCase(obj)).toEqual({
       foo: 'boo',
       bar_baz: 'wow',
       so_much_wow: 'yes',

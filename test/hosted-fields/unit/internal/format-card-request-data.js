@@ -2,77 +2,77 @@
 
 'use strict';
 
-var formatCardRequestData = require('../../../../src/hosted-fields/internal/format-card-request-data');
+const formatCardRequestData = require('../../../../src/hosted-fields/internal/format-card-request-data');
 
-describe('formatCardRequestData', function () {
-  it('does not include absent values', function () {
-    var result = formatCardRequestData({});
+describe('formatCardRequestData', () => {
+  it('does not include absent values', () => {
+    const result = formatCardRequestData({});
 
-    expect(result).to.deep.equal({});
+    expect(result).toEqual({});
   });
 
-  it('does not include non-allowed data', function () {
-    var result = formatCardRequestData({foo: 'bar'});
+  it('does not include non-allowed data', () => {
+    const result = formatCardRequestData({ foo: 'bar' });
 
-    expect(result).to.deep.equal({});
+    expect(result).toEqual({});
   });
 
-  it('includes card number', function () {
-    var result = formatCardRequestData({number: '4111111111111111'});
+  it('includes card number', () => {
+    const result = formatCardRequestData({ number: '4111111111111111' });
 
-    expect(result).to.deep.equal({number: '4111111111111111'});
+    expect(result).toEqual({ number: '4111111111111111' });
   });
 
-  it('ignores spaces and dashes in card number', function () {
-    var result = formatCardRequestData({number: '411-111 111---111    1111-'});
+  it('ignores spaces and dashes in card number', () => {
+    const result = formatCardRequestData({ number: '411-111 111---111    1111-' });
 
-    expect(result).to.deep.equal({number: '4111111111111111'});
+    expect(result).toEqual({ number: '4111111111111111' });
   });
 
-  it('includes expiration month', function () {
-    var result = formatCardRequestData({expirationMonth: '04'});
+  it('includes expiration month', () => {
+    const result = formatCardRequestData({ expirationMonth: '04' });
 
-    expect(result).to.deep.equal({expiration_month: '04'});
+    expect(result).toEqual({ expiration_month: '04' });
   });
 
-  it('formats 2-digit expiration years as 4-digit', function () {
-    var result = formatCardRequestData({expirationYear: '21'});
+  it('formats 2-digit expiration years as 4-digit', () => {
+    const result = formatCardRequestData({ expirationYear: '21' });
 
-    expect(result).to.deep.equal({expiration_year: '2021'});
+    expect(result).toEqual({ expiration_year: '2021' });
   });
 
-  it('includes 4-digit expiration years', function () {
-    var result = formatCardRequestData({expirationYear: '2019'});
+  it('includes 4-digit expiration years', () => {
+    const result = formatCardRequestData({ expirationYear: '2019' });
 
-    expect(result).to.deep.equal({expiration_year: '2019'});
+    expect(result).toEqual({ expiration_year: '2019' });
   });
 
-  it('includes cvv', function () {
-    var result = formatCardRequestData({cvv: '123'});
+  it('includes cvv', () => {
+    const result = formatCardRequestData({ cvv: '123' });
 
-    expect(result).to.deep.equal({cvv: '123'});
+    expect(result).toEqual({ cvv: '123' });
   });
 
-  it('includes postal code', function () {
-    var result = formatCardRequestData({postalCode: '12345'});
+  it('includes postal code', () => {
+    const result = formatCardRequestData({ postalCode: '12345' });
 
-    expect(result).to.deep.equal({
+    expect(result).toEqual({
       billing_address: {
         postal_code: '12345'
       }
     });
   });
 
-  it('includes cardholder name', function () {
-    var result = formatCardRequestData({cardholderName: 'First Last'});
+  it('includes cardholder name', () => {
+    const result = formatCardRequestData({ cardholderName: 'First Last' });
 
-    expect(result).to.deep.equal({
+    expect(result).toEqual({
       cardholderName: 'First Last'
     });
   });
 
-  it('includes all data', function () {
-    var result = formatCardRequestData({
+  it('includes all data', () => {
+    const result = formatCardRequestData({
       cardholderName: 'First Last',
       number: '4111111111111111',
       expirationMonth: '04',
@@ -81,7 +81,7 @@ describe('formatCardRequestData', function () {
       postalCode: '12345'
     });
 
-    expect(result).to.deep.equal({
+    expect(result).toEqual({
       cardholderName: 'First Last',
       number: '4111111111111111',
       expiration_month: '04',

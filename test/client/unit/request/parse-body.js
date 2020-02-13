@@ -1,17 +1,17 @@
 'use strict';
 
-var parseBody = require('../../../../src/client/request/parse-body');
+const parseBody = require('../../../../src/client/request/parse-body');
 
-describe('parseBody', function () {
-  it('parses body as JSON', function () {
-    var body = parseBody('{"foo":"bar"}');
+describe('parseBody', () => {
+  it('parses body as JSON', () => {
+    const body = parseBody('{"foo":"bar"}');
 
-    expect(body).to.eql({foo: 'bar'});
+    expect(body).toEqual({ foo: 'bar' });
   });
 
-  it('returns body if it is invalid JSON ', function () {
-    var body = parseBody('{"invalid"}');
+  it('returns body if it is invalid JSON ', () => {
+    const body = parseBody('{"invalid"}');
 
-    expect(body).to.eql('{"invalid"}');
+    expect(body).toBe('{"invalid"}');
   });
 });

@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+## 3.58.0
+* Update `@braintree/extended-promise` to v0.3.0
+* Data Collector
+  * Hide Kount iframe from screen readers (#484 thanks @iamstratos)
+* Hosted Fields
+  * Fixes issue where React frameworks could not pass DOM nodes in as `container` in `fields` (#487)
+* Venmo
+  * Fix issue where webview integrations could not tokenize
+  * Add `processResultsDelay` configuration to `tokenize`
+
 ## 3.57.0
 * 3D Secure
   * Fix issue where cardinal sdk options were not being used

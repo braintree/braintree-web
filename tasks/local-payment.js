@@ -13,7 +13,7 @@ var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
 var JS_TASKS = [];
 var JS_DELETE_TASKS = [];
 var HTML_TASKS = [];
-var FRAMES = ['redirect', 'cancel'];
+var FRAMES = ['redirect'];
 
 FRAMES.forEach(function (frame) {
   var jsTaskName = 'build:local-payment:frame:js:' + frame + '-frame';

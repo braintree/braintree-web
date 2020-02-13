@@ -1,25 +1,19 @@
 'use strict';
 
-var popupPosition = require('../../../../../../../src/lib/frame-service/external/strategies/popup/position');
+const popupPosition = require('../../../../../../../src/lib/frame-service/external/strategies/popup/position');
 
-describe('popup position', function () {
-  describe('center', function () {
-    it('centers over a smaller window size', function () {
-      var wHeight = 300;
-      var pHeight = 470;
-      var wTop = 0;
-      var actual = popupPosition.center(wHeight, pHeight, wTop);
+describe('popup position', () => {
+  describe('center', () => {
+    it('centers over a smaller window size', () => {
+      const actual = popupPosition.center(300, 470, 0);
 
-      expect(actual).to.equal(-85);
+      expect(actual).toBe(-85);
     });
 
-    it('centers over a larger window size', function () {
-      var wHeight = 940;
-      var pHeight = 470;
-      var wTop = 0;
-      var actual = popupPosition.center(wHeight, pHeight, wTop);
+    it('centers over a larger window size', () => {
+      const actual = popupPosition.center(940, 470, 0);
 
-      expect(actual).to.equal(235);
+      expect(actual).toBe(235);
     });
   });
 });

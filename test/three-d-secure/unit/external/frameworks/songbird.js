@@ -1,31 +1,37 @@
 'use strict';
 
-var BaseFramework = require('../../../../../src/three-d-secure/external/frameworks/base');
-var SongbirdFramework = require('../../../../../src/three-d-secure/external/frameworks/songbird');
-var Promise = require('../../../../../src/lib/promise');
-var rejectIfResolves = require('../../../../helpers/promise-helper').rejectIfResolves;
-var BraintreeError = require('../../../../../src/lib/braintree-error');
-var Bus = require('../../../../../src/lib/bus');
-var VERSION = require('../../../../../package.json').version;
-var analytics = require('../../../../../src/lib/analytics');
-var fake = require('../../../../helpers/fake');
-var wait = require('../../../../helpers/promise-helper').wait;
-var constants = require('../../../../../src/lib/constants');
-var assets = require('../../../../../src/lib/assets');
+jest.mock('../../../../../src/lib/assets');
+jest.mock('@braintree/asset-loader/load-script');
 
-function callsNext(data, next) {
-  next();
-}
+const Bus = require('../../../../../src/lib/bus');
+const BaseFramework = require('../../../../../src/three-d-secure/external/frameworks/base');
+const SongbirdFramework = require('../../../../../src/three-d-secure/external/frameworks/songbird');
+const { wait, fake: { clientToken }, yieldsAsync, yieldsByEventAsync, yieldsByEvents, findFirstEventCallback } = require('../../../../helpers');
+const BraintreeError = require('../../../../../src/lib/braintree-error');
+const { version: VERSION } = require('../../../../../package.json');
+const analytics = require('../../../../../src/lib/analytics');
+const { BRAINTREE_LIBRARY_VERSION, PLATFORM } = require('../../../../../src/lib/constants');
+const assets = require('../../../../../src/lib/assets');
 
-describe('SongbirdFramework', function () {
-  beforeEach(function () {
-    var self = this;
+describe('SongbirdFramework', () => {
+  let testContext;
 
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.sandbox.stub(SongbirdFramework.prototype, 'setupSongbird');
+  beforeEach(() => {
+    testContext = {};
 
-    this.configuration = {
-      authorization: fake.clientToken,
+    jest.spyOn(SongbirdFramework.prototype, 'setupSongbird');
+    jest.spyOn(assets, 'loadScript').mockImplementation(() => {
+      window.Cardinal = testContext.fakeCardinal;
+
+      return Promise.resolve();
+    });
+
+    testContext.onEventBehavior = [
+      { event: 'payments.setupComplete', args: [{}]},
+      { event: 'payments.validated', args: [{ ActionCode: 'SUCCESS' }, 'validated-jwt']}
+    ];
+    testContext.configuration = {
+      authorization: clientToken,
       authorizationFingerprint: 'encoded_auth_fingerprint',
       gatewayConfiguration: {
         environment: 'sandbox',
@@ -35,74 +41,76 @@ describe('SongbirdFramework', function () {
         }
       }
     };
-    this.client = {
-      request: this.sandbox.stub().resolves(),
-      getConfiguration: function () { return self.configuration; }
+    testContext.client = {
+      request: jest.fn().mockResolvedValue(null),
+      getConfiguration: () => testContext.configuration
     };
-    this.fakeCardinal = {
-      configure: this.sandbox.stub(),
-      setup: this.sandbox.stub(),
-      on: this.sandbox.stub(),
-      trigger: this.sandbox.stub().resolves({Status: false}),
-      'continue': this.sandbox.stub()
+    testContext.fakeCardinal = {
+      configure: jest.fn(),
+      setup: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn(),
+      trigger: jest.fn().mockResolvedValue({ Status: false }),
+      'continue': jest.fn()
+    };
+
+    testContext.applyActionCode = (actionCode = 'SUCCESS', errorNumber) => {
+      testContext.fakeCardinal.continue.mockImplementation(() => {
+        const handler = findFirstEventCallback('payments.validated', testContext.fakeCardinal.on.mock.calls);
+        const handlerOptions = { ActionCode: actionCode };
+
+        if (errorNumber) {
+          handlerOptions.ErrorNumber = errorNumber;
+        }
+
+        handler(handlerOptions, 'jwt');
+      });
     };
   });
 
-  describe('Constructor', function () {
-    it('adds sdkVersion to clientMetadata', function () {
-      var options = {
-        client: this.client
-      };
-      var framework = new SongbirdFramework(options);
+  describe('Constructor', () => {
+    it('adds sdkVersion to clientMetadata', () => {
+      const framework = new SongbirdFramework({ client: testContext.client });
 
-      expect(framework._clientMetadata.sdkVersion).to.equal(constants.PLATFORM + '/' + VERSION);
+      expect(framework._clientMetadata.sdkVersion).toBe(`${PLATFORM}/${VERSION}`);
     });
 
-    it('adds requestedThreeDSVersion to clientMetadata as "2"', function () {
-      var options = {
-        client: this.client
-      };
-      var framework = new SongbirdFramework(options);
+    it('adds requestedThreeDSVersion to clientMetadata as "2"', () => {
+      const framework = new SongbirdFramework({ client: testContext.client });
 
-      expect(framework._clientMetadata.requestedThreeDSecureVersion).to.equal('2');
+      expect(framework._clientMetadata.requestedThreeDSecureVersion).toBe('2');
     });
 
-    it('sets up songbird when instance is created', function () {
-      var options = {
-        client: this.client
-      };
-      var framework = new SongbirdFramework(options);
+    it('sets up songbird when instance is created', () => {
+      const framework = new SongbirdFramework({ client: testContext.client });
 
-      expect(framework.setupSongbird).to.be.calledOnce;
+      expect(framework.setupSongbird).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('setUpEventListeners', function () {
-    it('sets up listener for on lookup complete event', function (done) {
-      var options = {
-        client: this.client
-      };
-      var framework = new SongbirdFramework(options);
+  describe('setUpEventListeners', () => {
+    it('sets up listener for on lookup complete event', done => {
+      const framework = new SongbirdFramework({ client: testContext.client });
 
-      this.sandbox.stub(framework, 'on').yieldsAsync('some data', 'a fake function');
+      jest.spyOn(framework, 'on').mockImplementation(yieldsAsync('some data', 'a fake function'));
 
-      framework.setUpEventListeners(function (eventName, data, fakeFunction) {
-        expect(eventName).to.equal('lookup-complete');
-        expect(data).to.equal('some data');
-        expect(fakeFunction).to.equal('a fake function');
+      framework.setUpEventListeners((eventName, data, fakeFunction) => {
+        expect(eventName).toBe('lookup-complete');
+        expect(data).toBe('some data');
+        expect(fakeFunction).toBe('a fake function');
 
         done();
       });
     });
   });
 
-  describe('verifyCard', function () {
-    beforeEach(function () {
-      this.instance = new SongbirdFramework({
-        client: this.client
+  describe('verifyCard', () => {
+    beforeEach(() => {
+      testContext.instance = new SongbirdFramework({
+        client: testContext.client
       });
 
-      this.lookupResponse = {
+      testContext.lookupResponse = {
         paymentMethod: {
           nonce: 'upgraded-nonce',
           details: {
@@ -118,72 +126,62 @@ describe('SongbirdFramework', function () {
           liabilityShifted: true
         }
       };
-      this.client.request.resolves(this.lookupResponse);
-      this.tokenizedCard = {
+      testContext.client.request.mockResolvedValue(testContext.lookupResponse);
+      testContext.tokenizedCard = {
         nonce: 'abcdef',
         details: {
           bin: '123456',
           cardType: 'Visa'
         }
       };
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({
+      jest.spyOn(testContext.fakeCardinal, 'on').mockImplementation(yieldsByEventAsync('payments.setupComplete', {
         sessionId: 'df'
-      });
-      SongbirdFramework.prototype.setupSongbird.restore();
-
-      this.sandbox.stub(assets, 'loadScript').callsFake(function () {
-        global.Cardinal = this.fakeCardinal;
-
-        return Promise.resolve();
-      }.bind(this));
-
-      return this.instance.setupSongbird();
+      }));
+      SongbirdFramework.prototype.setupSongbird.mockRestore();
     });
 
-    afterEach(function () {
-      delete global.Cardinal;
+    afterEach(() => {
+      delete window.Cardinal;
     });
 
-    context('required params', function () {
-      it('requires an onLookupComplete function', function () {
-        this.sandbox.stub(this.instance, 'getDfReferenceId').resolves('df-id');
+    describe('required params', () => {
+      it('requires an onLookupComplete function', () => {
+        jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
           amount: 100
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.eql('MERCHANT');
-          expect(err.code).to.eql('THREEDS_MISSING_VERIFY_CARD_OPTION');
-          expect(err.message).to.eql('verifyCard options must include an onLookupComplete function.');
+        }).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('THREEDS_MISSING_VERIFY_CARD_OPTION');
+          expect(err.message).toBe('verifyCard options must include an onLookupComplete function.');
         });
       });
 
-      it('it does not require an onLookupComplete function if override is passed into additional options', function () {
-        this.sandbox.stub(this.instance, 'getDfReferenceId').resolves('df-id');
+      it('it does not require an onLookupComplete function if override is passed into additional options', () => {
+        jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
 
-        this.instance.on(SongbirdFramework.events.ON_LOOKUP_COMPLETE, function (data, next) {
+        testContext.instance.on(SongbirdFramework.events.ON_LOOKUP_COMPLETE, (data, next) => {
           next();
         });
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
           amount: 100
         }, {
           ignoreOnLookupCompleteRequirement: true
-        }).then(function (payload) {
-          expect(payload.nonce).to.exist;
+        }).then(payload => {
+          expect(payload.nonce).toBeDefined();
         });
       });
     });
 
-    context('lookup request', function () {
-      it('makes a request to the 3DS lookup endpoint with billing address data', function () {
-        var self = this;
-
-        this.client.request.resolves({
+    describe('lookup request', () => {
+      it('makes a request to the 3DS lookup endpoint with billing address data', () => {
+        testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
@@ -191,11 +189,11 @@ describe('SongbirdFramework', function () {
           }
         });
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
           amount: 100,
-          onLookupComplete: this.sandbox.stub().yieldsAsync(),
+          onLookupComplete: yieldsAsync(),
           email: 'test@example.com',
           mobilePhoneNumber: '8101234567',
           billingAddress: {
@@ -210,9 +208,9 @@ describe('SongbirdFramework', function () {
             postalCode: '12345',
             countryCodeAlpha2: 'US'
           }
-        }).then(function () {
-          expect(self.client.request).to.be.calledOnce;
-          expect(self.client.request).to.be.calledWithMatch({
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
             endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
             method: 'post',
             data: {
@@ -234,10 +232,8 @@ describe('SongbirdFramework', function () {
         });
       });
 
-      it('makes a request to the 3DS lookup endpoint with customer data', function () {
-        var self = this;
-
-        this.client.request.resolves({
+      it('makes a request to the 3DS lookup endpoint with customer data', () => {
+        testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
@@ -245,11 +241,11 @@ describe('SongbirdFramework', function () {
           }
         });
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
           amount: 100,
-          onLookupComplete: this.sandbox.stub().yieldsAsync(),
+          onLookupComplete: yieldsAsync(),
           email: 'test@example.com',
           mobilePhoneNumber: '8101234567',
           billingAddress: {
@@ -278,9 +274,9 @@ describe('SongbirdFramework', function () {
               countryCodeAlpha2: 'US'
             }
           }
-        }).then(function () {
-          expect(self.client.request).to.be.calledOnce;
-          expect(self.client.request).to.be.calledWithMatch({
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
             endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
             method: 'post',
             data: {
@@ -314,28 +310,26 @@ describe('SongbirdFramework', function () {
         });
       });
 
-      it('prepares the lookup', function () {
-        this.sandbox.spy(this.instance, 'prepareLookup');
+      it('prepares the lookup', () => {
+        jest.spyOn(testContext.instance, 'prepareLookup');
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
-          onLookupComplete: this.sandbox.stub().yieldsAsync(),
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
+          onLookupComplete: yieldsAsync(),
           amount: 100
-        }).then(function () {
-          expect(this.instance.prepareLookup).to.be.calledOnce;
-          expect(this.instance.prepareLookup).to.be.calledWithMatch({
+        }).then(() => {
+          expect(testContext.instance.prepareLookup).toHaveBeenCalledTimes(1);
+          expect(testContext.instance.prepareLookup.mock.calls[0][0]).toMatchObject({
             amount: 100,
-            bin: this.tokenizedCard.details.bin
+            bin: testContext.tokenizedCard.details.bin
           });
-        }.bind(this));
+        });
       });
 
-      it('makes a request to the 3DS lookup endpoint df reference id', function () {
-        var self = this;
-
-        this.sandbox.stub(this.instance, 'getDfReferenceId').resolves('df-id');
-        this.client.request.resolves({
+      it('makes a request to the 3DS lookup endpoint df reference id', () => {
+        jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
+        testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
@@ -343,14 +337,14 @@ describe('SongbirdFramework', function () {
           }
         });
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
           amount: 100,
-          onLookupComplete: this.sandbox.stub().yieldsAsync()
-        }).then(function () {
-          expect(self.client.request).to.be.calledOnce;
-          expect(self.client.request).to.be.calledWithMatch({
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
             endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
             method: 'post',
             data: {
@@ -361,11 +355,9 @@ describe('SongbirdFramework', function () {
         });
       });
 
-      it('makes a request to the 3DS lookup endpoint with challengeRequested', function () {
-        var self = this;
-
-        this.sandbox.stub(this.instance, 'getDfReferenceId').resolves('df-id');
-        this.client.request.resolves({
+      it('makes a request to the 3DS lookup endpoint with challengeRequested', () => {
+        jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
+        testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
@@ -373,15 +365,15 @@ describe('SongbirdFramework', function () {
           }
         });
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
           challengeRequested: true,
           amount: 100,
-          onLookupComplete: this.sandbox.stub().yieldsAsync()
-        }).then(function () {
-          expect(self.client.request).to.be.calledOnce;
-          expect(self.client.request).to.be.calledWithMatch({
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
             endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
             method: 'post',
             data: {
@@ -393,11 +385,9 @@ describe('SongbirdFramework', function () {
         });
       });
 
-      it('makes a request to the 3DS lookup endpoint with exemptionRequested', function () {
-        var self = this;
-
-        this.sandbox.stub(this.instance, 'getDfReferenceId').resolves('df-id');
-        this.client.request.resolves({
+      it('makes a request to the 3DS lookup endpoint with exemptionRequested', () => {
+        jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
+        testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
@@ -405,15 +395,15 @@ describe('SongbirdFramework', function () {
           }
         });
 
-        return this.instance.verifyCard({
-          nonce: this.tokenizedCard.nonce,
-          bin: this.tokenizedCard.details.bin,
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
           exemptionRequested: true,
           amount: 100,
-          onLookupComplete: callsNext
-        }).then(function () {
-          expect(self.client.request).to.be.calledOnce;
-          expect(self.client.request).to.be.calledWithMatch({
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
             endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
             method: 'post',
             data: {
@@ -425,36 +415,34 @@ describe('SongbirdFramework', function () {
         });
       });
 
-      it('calls initializeChallengeWithLookupResponse with lookup response and options', function () {
-        var self = this;
-        var lookupResponse = this.lookupResponse;
+      it('calls initializeChallengeWithLookupResponse with lookup response and options', () => {
+        const lookupResponse = testContext.lookupResponse;
 
-        this.sandbox.spy(this.instance, 'initializeChallengeWithLookupResponse');
+        jest.spyOn(testContext.instance, 'initializeChallengeWithLookupResponse');
 
-        return this.instance.verifyCard({
+        return testContext.instance.verifyCard({
           nonce: 'abcdef',
           amount: 100,
-          onLookupComplete: callsNext
-        }).then(function () {
-          expect(self.instance.initializeChallengeWithLookupResponse).to.be.calledOnce;
-          expect(self.instance.initializeChallengeWithLookupResponse).to.be.calledWithMatch(lookupResponse, {
-            onLookupComplete: self.sandbox.match.func
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(testContext.instance.initializeChallengeWithLookupResponse).toHaveBeenCalledTimes(1);
+          expect(testContext.instance.initializeChallengeWithLookupResponse).toHaveBeenCalledWith(lookupResponse, expect.any(Object));
+          expect(testContext.instance.initializeChallengeWithLookupResponse.mock.calls[0][1]).toMatchObject({
+            onLookupComplete: expect.any(Function)
           });
         });
       });
     });
 
-    context('multiple calls', function () {
-      it('can be called multiple times if authentication completes in between', function () {
-        var self = this;
-
-        var options = {
+    describe('multiple calls', () => {
+      it('can be called multiple times if authentication completes in between', () => {
+        const options = {
           nonce: 'abc123',
           amount: 100,
-          onLookupComplete: callsNext
+          onLookupComplete: yieldsAsync()
         };
 
-        this.lookupResponse.lookup = {
+        testContext.lookupResponse.lookup = {
           acsUrl: 'http://example.com/acs',
           pareq: 'pareq',
           termUrl: 'http://example.com/term',
@@ -462,37 +450,25 @@ describe('SongbirdFramework', function () {
           threeDSecureVersion: '2.1.0'
         };
 
-        this.client.request.onCall(1).resolves({
-          paymentMethod: {
-            nonce: 'new-nonce',
-            description: 'a card',
-            binData: 'bin data',
-            details: {
-              cardType: 'Visa',
-              bin: '123456'
+        testContext.client.request.mockResolvedValueOnce(testContext.lookupResponse)
+          .mockResolvedValueOnce({
+            paymentMethod: {
+              nonce: 'new-nonce',
+              description: 'a card',
+              binData: 'bin data',
+              details: {
+                cardType: 'Visa',
+                bin: '123456'
+              },
+              threeDSecureInfo: {}
             },
-            threeDSecureInfo: {}
-          },
-          threeDSecureInfo: {
-            liabilityShifted: true,
-            liabilityShiftPossible: true
-          }
-        });
-
-        this.fakeCardinal.continue.callsFake(function () {
-          var cbFromPaymentsValidated = self.fakeCardinal.on.withArgs('payments.validated').args[0][1];
-
-          cbFromPaymentsValidated({
-            ActionCode: 'SUCCESS'
-          }, 'validated-jwt');
-        });
-
-        return this.instance.verifyCard(options).then(function (data) {
-          expect(data.nonce).to.equal('new-nonce');
-          expect(data.liabilityShifted).to.equal(true);
-          expect(data.liabilityShiftPossible).to.equal(true);
-
-          self.client.request.onCall(3).resolves({
+            threeDSecureInfo: {
+              liabilityShifted: true,
+              liabilityShiftPossible: true
+            }
+          })
+          .mockResolvedValueOnce(testContext.lookupResponse)
+          .mockResolvedValueOnce({
             paymentMethod: {
               nonce: 'upgraded-nonce',
               description: 'a card',
@@ -509,21 +485,32 @@ describe('SongbirdFramework', function () {
             }
           });
 
-          return self.instance.verifyCard(options);
-        }).then(function (data2) {
-          expect(data2.nonce).to.equal('upgraded-nonce');
-          expect(data2.liabilityShifted).to.equal(false);
-          expect(data2.liabilityShiftPossible).to.equal(true);
+        testContext.fakeCardinal.continue.mockImplementation(() => {
+          const cbFromPaymentsValidated = findFirstEventCallback('payments.validated', testContext.fakeCardinal.on.mock.calls);
+
+          cbFromPaymentsValidated({
+            ActionCode: 'SUCCESS'
+          }, 'validated-jwt');
+        });
+
+        return testContext.instance.verifyCard(options).then(data => {
+          expect(data.nonce).toBe('new-nonce');
+          expect(data.liabilityShifted).toBe(true);
+          expect(data.liabilityShiftPossible).toBe(true);
+
+          return testContext.instance.verifyCard(options);
+        }).then(data2 => {
+          expect(data2.nonce).toBe('upgraded-nonce');
+          expect(data2.liabilityShifted).toBe(false);
+          expect(data2.liabilityShiftPossible).toBe(true);
         });
       });
     });
 
-    context('payload results', function () {
-      beforeEach(function () {
-        var self = this;
-
-        this.lookupResponse.lookup.acsUrl = 'https://example.com/acs';
-        this.client.request.onCall(1).resolves({
+    describe('payload results', () => {
+      beforeEach(() => {
+        testContext.lookupResponse.lookup.acsUrl = 'https://example.com/acs';
+        testContext.payloadTestsResponse = {
           paymentMethod: {
             nonce: 'new-nonce',
             description: 'a card',
@@ -537,267 +524,144 @@ describe('SongbirdFramework', function () {
           threeDSecureInfo: {
             liabilityShifted: true,
             liabilityShiftPossible: true
-          }
-        });
-
-        this.validationArgs = [{
-          ActionCode: 'SUCCESS'
-        }, 'jwt'];
-
-        this.fakeCardinal.continue.callsFake(function () {
-          wait(5).then(function () {
-            var handler = self.fakeCardinal.on.withArgs('payments.validated').args[0][1];
-
-            handler.apply(null, self.validationArgs);
-          });
-        });
-      });
-
-      it('resolves with the result from performJWTValidation on SUCCESS', function () {
-        this.validationArgs[0] = {
-          ActionCode: 'SUCCESS'
+          },
+          lookup: testContext.lookupResponse.lookup
         };
-
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: callsNext
-        }).then(function (data) {
-          expect(data.nonce).to.equal('new-nonce');
-          expect(data.details).to.deep.equal({cardType: 'Visa', bin: '123456'});
-          expect(data.liabilityShiftPossible).to.equal(true);
-          expect(data.liabilityShifted).to.equal(true);
-        });
+        testContext.lookupResponse.lookup.acsUrl = 'https://example.com/acs';
+        testContext.client.request.mockResolvedValue(testContext.lookupResponse);
       });
 
-      it('passes back a `requiresUserAuthentication=true` when an acs url is present', function () {
-        this.validationArgs[0] = {
-          ActionCode: 'SUCCESS'
-        };
+      describe.each([
+        'SUCCESS',
+        'NOACTION',
+        'FAILURE'
+      ])('ActionCode cases: %s', (actionCode) => {
+        it(`resolves with result from performJWTValidation on ${actionCode}`, () => {
+          testContext.client.request
+            .mockResolvedValueOnce(testContext.lookupResponse)
+            .mockResolvedValueOnce(testContext.payloadTestsResponse);
 
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: function (data, next) {
-            expect(data.requiresUserAuthentication).to.equal(true);
-            next();
-          }
-        });
-      });
+          testContext.instance.setupSongbird();
 
-      it('passes back a `requiresUserAuthentication=false` when an acs url is not present', function () {
-        delete this.lookupResponse.lookup.acsUrl;
+          testContext.applyActionCode(actionCode);
 
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: function (data, next) {
-            expect(data.requiresUserAuthentication).to.equal(false);
-            next();
-          }
-        });
-      });
-
-      it('rejects with error from performJWTValidation even when Cardinal reports SUCCESS', function () {
-        var error = new Error('some error');
-
-        this.client.request.onCall(1).rejects(error);
-        this.validationArgs[0] = {
-          ActionCode: 'SUCCESS'
-        };
-
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: callsNext
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('THREEDS_JWT_AUTHENTICATION_FAILED');
-          expect(err.details.originalError).to.equal(error);
-        });
-      });
-
-      it('resolves with result from performJWTValidation on NOACTION', function () {
-        this.validationArgs[0] = {
-          ActionCode: 'NOACTION'
-        };
-
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: callsNext
-        }).then(function (data) {
-          expect(data.nonce).to.equal('new-nonce');
-          expect(data.details).to.deep.equal({cardType: 'Visa', bin: '123456'});
-          expect(data.liabilityShiftPossible).to.equal(true);
-          expect(data.liabilityShifted).to.equal(true);
-        });
-      });
-
-      it('rejects with error from performJWTValidation even when Cardinal reports NOACTION', function () {
-        var error = new Error('some error');
-
-        this.client.request.onCall(1).rejects(error);
-        this.validationArgs[0] = {
-          ActionCode: 'NOACTION'
-        };
-
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: callsNext
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('THREEDS_JWT_AUTHENTICATION_FAILED');
-          expect(err.details.originalError).to.equal(error);
-        });
-      });
-
-      it('resolves with result from performJWTValidation on FAILURE', function () {
-        this.validationArgs[0] = {
-          ActionCode: 'FAILURE'
-        };
-
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: callsNext
-        }).then(function (data) {
-          expect(data.nonce).to.equal('new-nonce');
-          expect(data.details).to.deep.equal({cardType: 'Visa', bin: '123456'});
-          expect(data.liabilityShiftPossible).to.equal(true);
-          expect(data.liabilityShifted).to.equal(true);
-        });
-      });
-
-      it('rejects with error from performJWTValidation even when Cardinal reports FAILURE', function () {
-        var error = new Error('some error');
-
-        this.client.request.onCall(1).rejects(error);
-        this.validationArgs[0] = {
-          ActionCode: 'FAILURE'
-        };
-
-        return this.instance.verifyCard({
-          nonce: 'nonce',
-          amount: 100,
-          onLookupComplete: callsNext
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('THREEDS_JWT_AUTHENTICATION_FAILED');
-          expect(err.details.originalError).to.equal(error);
-        });
-      });
-
-      [{
-        songbirdCode: 10001,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10001'
-        ]
-      }, {
-        songbirdCode: 10002,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10002'
-        ]
-      }, {
-        songbirdCode: 10003,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10003'
-        ]
-      }, {
-        songbirdCode: 10007,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10007'
-        ]
-      }, {
-        songbirdCode: 10009,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10009'
-        ]
-      }, {
-        songbirdCode: 10005,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_CONFIG',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10005'
-        ]
-      }, {
-        songbirdCode: 10006,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_CONFIG',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10006'
-        ]
-      }, {
-        songbirdCode: 10008,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_JWT',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10008'
-        ]
-      }, {
-        songbirdCode: 10010,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_BAD_JWT',
-        analytics: [
-          'three-d-secure.verification-flow.cardinal-sdk-error.10010'
-        ]
-      }, {
-        songbirdCode: 10011,
-        braintreeCode: 'THREEDS_CARDINAL_SDK_CANCELED',
-        analytics: [
-          'three-d-secure.verification-flow.canceled',
-          'three-d-secure.verification-flow.cardinal-sdk-error.10011'
-        ]
-      }, {
-        songbirdCode: 'anything-other-code',
-        braintreeCode: 'THREEDS_CARDINAL_SDK_ERROR'
-      }].forEach(function (test) {
-        it('rejects with error with code ' + test.braintreeCode + ' when Songbird returns an error with code ' + test.songbirdCode, function () {
-          this.validationArgs[0] = {
-            ActionCode: 'ERROR',
-            ErrorNumber: test.songbirdCode
-          };
-
-          return this.instance.verifyCard({
+          return testContext.instance.verifyCard({
             nonce: 'nonce',
             amount: 100,
-            onLookupComplete: callsNext
-          }).then(rejectIfResolves).catch(function (err) {
-            expect(err.code).to.equal(test.braintreeCode);
+            onLookupComplete: yieldsAsync()
+          }).then(data => {
+            expect(data.nonce).toBe('new-nonce');
+            expect(data.details).toEqual({ cardType: 'Visa', bin: '123456' });
+            expect(data.liabilityShiftPossible).toBe(true);
+            expect(data.liabilityShifted).toBe(true);
           });
         });
 
-        if (test.analytics) {
-          test.analytics.forEach(function (analyticName) {
-            it('sends the analytic ' + analyticName, function () {
-              var client = this.client;
+        it(`rejects with error from performJWTValidation even when Cardinal reports ${actionCode}`, async () => {
+          const error = new Error(`Error performing validation with ${actionCode}`);
 
-              this.validationArgs[0] = {
-                ActionCode: 'ERROR',
-                ErrorNumber: test.songbirdCode
-              };
+          testContext.client.request
+            .mockResolvedValueOnce(testContext.payloadTestsResponse)
+            .mockRejectedValueOnce(error);
 
-              return this.instance.verifyCard({
-                nonce: 'nonce',
-                amount: 100,
-                onLookupComplete: callsNext
-              }).then(rejectIfResolves).catch(function () {
-                expect(analytics.sendEvent).to.be.calledWith(client, analyticName);
-              });
-            });
+          testContext.applyActionCode(actionCode);
+
+          await expect(testContext.instance.verifyCard({
+            nonce: 'nonce',
+            amount: 100,
+            onLookupComplete: yieldsAsync()
+          })).rejects.toMatchObject({
+            code: 'THREEDS_JWT_AUTHENTICATION_FAILED',
+            details: {
+              originalError: error
+            }
           });
-        }
+        });
       });
 
-      it('authenticate jwt', function () {
-        var client = this.client;
+      it('passes back a `requiresUserAuthentication=true` when an acs url is present', () => {
+        testContext.applyActionCode();
 
-        return this.instance.verifyCard({
+        return testContext.instance.verifyCard({
           nonce: 'nonce',
           amount: 100,
-          onLookupComplete: callsNext
-        }).then(function () {
-          expect(client.request).to.be.calledTwice;
-          expect(client.request).to.be.calledWith({
+          onLookupComplete(data, next) {
+            expect(data.requiresUserAuthentication).toBe(true);
+            next();
+          }
+        });
+      });
+
+      it('passes back a `requiresUserAuthentication=false` when an acs url is nots present', () => {
+        delete testContext.lookupResponse.lookup.acsUrl;
+
+        return testContext.instance.verifyCard({
+          nonce: 'nonce',
+          amount: 100,
+          onLookupComplete(data, next) {
+            expect(data.requiresUserAuthentication).toBe(false);
+            next();
+          }
+        });
+      });
+
+      describe.each`
+songbirdCode | braintreeCode | analytic
+${10001} | ${'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT'}    | ${['three-d-secure.verification-flow.cardinal-sdk-error.10001']}
+${10002} | ${'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT'}    | ${['three-d-secure.verification-flow.cardinal-sdk-error.10002']}
+${10003} | ${'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'} | ${['three-d-secure.verification-flow.cardinal-sdk-error.10003']}
+${10007} | ${'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'} | ${['three-d-secure.verification-flow.cardinal-sdk-error.10007']}
+${10009} | ${'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'} | ${['three-d-secure.verification-flow.cardinal-sdk-error.10009']}
+${10005} | ${'THREEDS_CARDINAL_SDK_BAD_CONFIG'}        | ${['three-d-secure.verification-flow.cardinal-sdk-error.10005']}
+${10006} | ${'THREEDS_CARDINAL_SDK_BAD_CONFIG'}        | ${['three-d-secure.verification-flow.cardinal-sdk-error.10006']}
+${10008} | ${'THREEDS_CARDINAL_SDK_BAD_JWT'}           | ${['three-d-secure.verification-flow.cardinal-sdk-error.10008']}
+${10010} | ${'THREEDS_CARDINAL_SDK_BAD_JWT'}           | ${['three-d-secure.verification-flow.cardinal-sdk-error.10010']}
+${10011} | ${'THREEDS_CARDINAL_SDK_CANCELED'}          | ${['three-d-secure.verification-flow.canceled', 'three-d-secure.verification-flow.cardinal-sdk-error.10011']}
+${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
+      `('$songbirdCode error codes', ({ songbirdCode, braintreeCode, analytic }) => {
+  it(`rejects with error with code ${braintreeCode} when Songbird returns an error with code ${songbirdCode}`, () => {
+    testContext.applyActionCode('ERROR', songbirdCode);
+
+    expect.assertions(1);
+
+    return testContext.instance.verifyCard({
+      nonce: 'nonce',
+      amount: 100,
+      onLookupComplete: yieldsAsync()
+    }).catch(err => {
+      expect(err.code).toBe(braintreeCode);
+    });
+  });
+
+  it.each([analytic])('sends the analytic %p', (currentAnalytic) => {
+    if (currentAnalytic) {
+      testContext.applyActionCode('ERROR', songbirdCode);
+
+      expect.assertions(1);
+
+      return testContext.instance.verifyCard({
+        nonce: 'nonce',
+        amount: 100,
+        onLookupComplete: yieldsAsync()
+      }).catch(() => {
+        expect(analytics.sendEvent.mock.calls).toEqual(expect.arrayContaining([[testContext.client, currentAnalytic]]));
+      });
+    }
+
+    return Promise.resolve();
+  });
+});
+
+      it('authenticate jwt', () => {
+        testContext.applyActionCode();
+
+        return testContext.instance.verifyCard({
+          nonce: 'nonce',
+          amount: 100,
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(2);
+          expect(testContext.client.request.mock.calls[1][0]).toMatchObject({
             method: 'post',
             endpoint: 'payment_methods/upgraded-nonce/three_d_secure/authenticate_from_jwt',
             data: {
@@ -808,144 +672,131 @@ describe('SongbirdFramework', function () {
         });
       });
 
-      it('sends analytics events for successful jwt validation', function () {
-        var client = this.client;
+      it('sends analytics events for successful jwt validation', () => {
+        testContext.applyActionCode();
 
-        return this.instance.verifyCard({
+        expect.assertions(2);
+
+        return testContext.instance.verifyCard({
           nonce: 'nonce',
           amount: 100,
-          onLookupComplete: callsNext
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.verification-flow.upgrade-payment-method.started');
-          expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.verification-flow.upgrade-payment-method.succeeded');
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.succeeded');
         });
       });
 
-      it('sends analytics events for error in jwt validation request', function () {
-        var self = this;
-        var error = new Error('some error');
+      it('sends analytics events for error in jwt validation request', () => {
+        const error = new Error('sends analytics events for error in jwt validation request');
 
-        this.client.request.onCall(1).rejects(error);
+        expect.assertions(2);
+        testContext.applyActionCode();
 
-        return this.instance.verifyCard({
+        testContext.client.request
+          .mockResolvedValueOnce(testContext.lookupResponse)
+          .mockRejectedValueOnce(error);
+
+        return testContext.instance.verifyCard({
           nonce: 'nonce',
           amount: 100,
-          onLookupComplete: callsNext
-        }).then(rejectIfResolves).catch(function () {
-          expect(analytics.sendEvent).to.be.calledWith(self.client, 'three-d-secure.verification-flow.upgrade-payment-method.started');
-          expect(analytics.sendEvent).to.be.calledWith(self.client, 'three-d-secure.verification-flow.upgrade-payment-method.errored');
+          onLookupComplete: yieldsAsync()
+        }).catch(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.errored');
         });
       });
 
-      it('rejects with the client request error when jwt validation fails', function () {
-        var error = new Error('some error');
+      it('rejects with the client request error when jwt validation fails', () => {
+        const error = new Error('rejects with the client request error when jwt validation fails');
 
-        this.client.request.onCall(1).rejects(error);
+        testContext.applyActionCode();
+        testContext.client.request
+          .mockResolvedValueOnce(testContext.lookupResponse)
+          .mockRejectedValueOnce(error);
 
-        return this.instance.verifyCard({
+        expect.assertions(4);
+
+        return testContext.instance.verifyCard({
           nonce: 'nonce',
           amount: 100,
-          onLookupComplete: callsNext
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('THREEDS_JWT_AUTHENTICATION_FAILED');
-          expect(err.type).to.equal('UNKNOWN');
-          expect(err.message).to.equal('Something went wrong authenticating the JWT from Cardinal');
-          expect(err.details.originalError).to.equal(error);
+          onLookupComplete: yieldsAsync()
+        }).catch(err => {
+          expect(err.code).toBe('THREEDS_JWT_AUTHENTICATION_FAILED');
+          expect(err.type).toBe('UNKNOWN');
+          expect(err.message).toBe('Something went wrong authenticating the JWT from Cardinal');
+          expect(err.details.originalError).toBe(error);
         });
       });
     });
   });
 
-  describe('setupSongbird', function () {
-    beforeEach(function () {
-      var fakeCardinal = this.fakeCardinal;
+  describe('setupSongbird', () => {
+    beforeEach(() => {
+      jest.spyOn(testContext.fakeCardinal, 'on').mockImplementation(yieldsByEvents(testContext.onEventBehavior));
 
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({});
-
-      this.tds = new SongbirdFramework({
-        client: this.client
+      testContext.tds = new SongbirdFramework({
+        client: testContext.client
       });
-      SongbirdFramework.prototype.setupSongbird.restore();
-
-      this.sandbox.stub(assets, 'loadScript').callsFake(function () {
-        global.Cardinal = fakeCardinal;
-
-        // allow a slight delay so timing tests can run
-        return wait(5);
-      });
+      window.Cardinal.setup.mockClear();
+      assets.loadScript.mockClear();
+      analytics.sendEvent.mockClear();
     });
 
-    afterEach(function () {
-      delete global.Cardinal;
-    });
+    it('only lets songbird be setup once', () =>
+      Promise.all([
+        testContext.tds.setupSongbird(),
+        testContext.tds.setupSongbird(),
+        testContext.tds.setupSongbird()
+      ]).then(() => {
+        expect(assets.loadScript).not.toHaveBeenCalled();
+      }));
 
-    it('only lets songbird be setup once', function () {
-      return Promise.all([
-        this.tds.setupSongbird(),
-        this.tds.setupSongbird(),
-        this.tds.setupSongbird()
-      ]).then(function () {
-        expect(assets.loadScript).to.be.calledOnce;
-      });
-    });
+    it('loads cardinal production script onto page', () => {
+      testContext.configuration.gatewayConfiguration.environment = 'production';
 
-    it('loads cardinal production script onto page', function () {
-      this.configuration.gatewayConfiguration.environment = 'production';
-
-      return this.tds.setupSongbird().then(function () {
-        expect(assets.loadScript).to.be.calledOnce;
-        expect(assets.loadScript).to.be.calledWith({
-          src: 'https://songbird.cardinalcommerce.com/edge/v1/songbird.js'
+      return new SongbirdFramework({ client: testContext.client }).setupSongbird()
+        .then(() => {
+          expect(assets.loadScript).toHaveBeenCalledTimes(1);
+          expect(assets.loadScript).toHaveBeenCalledWith({
+            src: 'https://songbird.cardinalcommerce.com/edge/v1/songbird.js'
+          });
         });
-      });
     });
 
-    it('loads cardinal sandbox script onto page', function () {
-      return this.tds.setupSongbird().then(function () {
-        expect(assets.loadScript).to.be.calledOnce;
-        expect(assets.loadScript).to.be.calledWith({
+    it('loads cardinal sandbox script onto page', () =>
+      new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
+        expect(assets.loadScript).toHaveBeenCalledTimes(1);
+        expect(assets.loadScript).toHaveBeenCalledWith({
           src: 'https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js'
         });
-      });
-    });
+      }));
 
-    it('configures Cardinal to use verbose logging with loggingEnabled', function () {
-      var framework = new SongbirdFramework({
-        client: this.client,
-        loggingEnabled: true
-      });
+    it('configures Cardinal to use verbose logging with loggingEnabled', () =>
+      new SongbirdFramework({ client: testContext.client, loggingEnabled: true })
+        .setupSongbird().then(() => {
+          expect(window.Cardinal.configure).toHaveBeenCalledWith({
+            logging: {
+              level: 'verbose'
+            },
+            payment: expect.any(Object)
+          });
+        }));
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWithMatch({
-          logging: {
-            level: 'verbose'
-          }
-        });
-      });
-    });
+    it('configures Cardinal to use logging object provided by merchant', () =>
+      new SongbirdFramework({ client: testContext.client, cardinalSDKConfig: { logging: { level: 'off' }}})
+        .setupSongbird().then(() => {
+          expect(window.Cardinal.configure).toHaveBeenCalledWith({
+            logging: {
+              level: 'off'
+            },
+            payment: expect.any(Object)
+          });
+        }));
 
-    it('configures Cardinal to use logging object provided by merchant', function () {
-      var framework = new SongbirdFramework({
-        client: this.client,
-        cardinalSDKConfig: {
-          logging: {
-            level: 'off'
-          }
-        }
-      });
-
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWithMatch({
-          logging: {
-            level: 'off'
-          }
-        });
-      });
-    });
-
-    it('configures Cardinal to use logging object provided by merchant when loggingEnabled is also used', function () {
-      var framework = new SongbirdFramework({
-        client: this.client,
+    it('configures Cardinal to use logging object provided by merchant when loggingEnabled is also used', () => {
+      const framework = new SongbirdFramework({
+        client: testContext.client,
         loggingEnabled: true,
         cardinalSDKConfig: {
           logging: {
@@ -954,48 +805,51 @@ describe('SongbirdFramework', function () {
         }
       });
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWithMatch({
+      return framework.setupSongbird().then(() => {
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
           logging: {
             level: 'off'
-          }
+          },
+          payment: expect.any(Object)
         });
       });
     });
 
-    it('configures Cardinal to use timeout setting provided by the merchant', function () {
-      var framework = new SongbirdFramework({
-        client: this.client,
+    it('configures Cardinal to use timeout setting provided by the merchant', () => {
+      const framework = new SongbirdFramework({
+        client: testContext.client,
         cardinalSDKConfig: {
           timeout: 1000
         }
       });
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWithMatch({
-          timeout: 1000
+      return framework.setupSongbird().then(() => {
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
+          timeout: 1000,
+          payment: expect.any(Object)
         });
       });
     });
 
-    it('configures Cardinal to use maxRequestRetries setting provided by the merchant', function () {
-      var framework = new SongbirdFramework({
-        client: this.client,
+    it('configures Cardinal to use maxRequestRetries setting provided by the merchant', () => {
+      const framework = new SongbirdFramework({
+        client: testContext.client,
         cardinalSDKConfig: {
           maxRequestRetries: 3
         }
       });
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWithMatch({
-          maxRequestRetries: 3
+      return framework.setupSongbird().then(() => {
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
+          maxRequestRetries: 3,
+          payment: expect.any(Object)
         });
       });
     });
 
-    it('configures Cardinal to use a subset of payment options provided by the merchant', function () {
-      var framework = new SongbirdFramework({
-        client: this.client,
+    it('configures Cardinal to use a subset of payment options provided by the merchant', () => {
+      const framework = new SongbirdFramework({
+        client: testContext.client,
         cardinalSDKConfig: {
           payment: {
             view: 'modal',
@@ -1006,8 +860,8 @@ describe('SongbirdFramework', function () {
         }
       });
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWithMatch({
+      return framework.setupSongbird().then(() => {
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
           payment: {
             displayLoading: true,
             displayExitButton: true
@@ -1016,242 +870,213 @@ describe('SongbirdFramework', function () {
       });
     });
 
-    it('sets up payments.setupComplete listener', function () {
-      return this.tds.setupSongbird().then(function () {
-        expect(global.Cardinal.on).to.be.calledWith('payments.setupComplete', this.sandbox.match.func);
-      }.bind(this));
-    });
-
-    it('sets dfReferenceId when setupComplete event fires', function () {
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yields({
-        sessionId: 'df-reference'
-      });
-
-      return this.tds.setupSongbird().then(function () {
-        return this.tds.getDfReferenceId();
-      }.bind(this)).then(function (id) {
-        expect(id).to.equal('df-reference');
+    it('sets up payments.setupComplete listener', () => {
+      return new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
+        expect(window.Cardinal.on).toHaveBeenCalledWith('payments.setupComplete', expect.any(Function));
       });
     });
 
-    it('resolves any previous getDfReferenceId calls', function (done) {
-      var setupSongbirdHasResolved = false;
-      var promises;
-
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({
+    it('sets dfReferenceId when setupComplete event fires', () => {
+      jest.spyOn(testContext.fakeCardinal, 'on').mockImplementation(yieldsByEventAsync('payments.setupComplete', {
         sessionId: 'df-reference'
-      });
+      }));
+
+      const framework = new SongbirdFramework({ client: testContext.client });
+
+      return framework.setupSongbird().then(() =>
+        framework.getDfReferenceId())
+        .then(id => {
+          expect(id).toBe('df-reference');
+        });
+    });
+
+    it('resolves any previous getDfReferenceId calls', done => {
+      let setupSongbirdHasResolved = false;
+      let promises;
+
+      jest.spyOn(testContext.fakeCardinal, 'on')
+        .mockImplementation(yieldsByEventAsync('payments.setupComplete', { sessionId: 'df-reference' }));
+
+      const framework = new SongbirdFramework({ client: testContext.client });
 
       promises = [
-        this.tds.getDfReferenceId(),
-        this.tds.getDfReferenceId(),
-        this.tds.getDfReferenceId(),
-        this.tds.getDfReferenceId()
+        framework.getDfReferenceId(),
+        framework.getDfReferenceId(),
+        framework.getDfReferenceId(),
+        framework.getDfReferenceId()
       ];
 
-      Promise.all(promises).then(function (results) {
-        expect(setupSongbirdHasResolved).to.equal(true);
-        results.forEach(function (res) {
-          expect(res).to.equal('df-reference');
+      Promise.all(promises).then(results => {
+        expect(setupSongbirdHasResolved).toBe(true);
+        results.forEach(res => {
+          expect(res).toBe('df-reference');
         });
 
         done();
       }).catch(done);
 
-      this.tds.setupSongbird().then(function () {
+      testContext.tds.setupSongbird().then(() => {
         setupSongbirdHasResolved = true;
       });
     });
 
-    it('sets up Cardinal', function () {
-      return this.tds.setupSongbird().then(function () {
-        expect(global.Cardinal.setup).to.be.calledOnce;
-        expect(global.Cardinal.setup).to.be.calledWith('init', {
+    it('sets up Cardinal', () =>
+      testContext.tds.setupSongbird().then(() => {
+        expect(window.Cardinal.setup).toHaveBeenCalledTimes(1);
+        expect(window.Cardinal.setup).toHaveBeenCalledWith('init', {
           jwt: 'jwt'
         });
+      }));
+
+    it('adds cardinalDeviceDataCollectionTimeElapsed to clientMetadata', () => {
+      let currentTime = 0;
+      let instance;
+
+      testContext.date = global.Date;
+      global.Date.now = () => {
+        currentTime += 10;
+
+        return currentTime;
+      };
+
+      instance = new SongbirdFramework({ client: testContext.client });
+
+      return instance.setupSongbird().then(() => {
+        expect(instance._clientMetadata.cardinalDeviceDataCollectionTimeElapsed).toBeDefined();
+        expect(instance._clientMetadata.cardinalDeviceDataCollectionTimeElapsed).toBeGreaterThan(0);
+        global.Date = testContext.date;
       });
     });
 
-    it('adds cardinalDeviceDataCollectionTimeElapsed to clientMetadata', function () {
-      return this.tds.setupSongbird().then(function () {
-        expect(this.tds._clientMetadata.cardinalDeviceDataCollectionTimeElapsed).to.exist;
-        expect(this.tds._clientMetadata.cardinalDeviceDataCollectionTimeElapsed).to.be.greaterThan(0);
-      }.bind(this));
-    });
+    it('sends analytics event when setup is complete', () =>
+      new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.cardinal-sdk.init.setup-completed');
+      }));
 
-    it('sends analytics event when setup is complete', function () {
-      return this.tds.setupSongbird().then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.cardinal-sdk.init.setup-completed');
-      }.bind(this));
-    });
+    it('uses v1 fallback if loadScript fails', () => {
+      assets.loadScript.mockRejectedValue(new Error('uses v1 fallback if loadScript fails'));
 
-    it('uses v1 fallback if loadScript fails', function () {
-      assets.loadScript.rejects(new Error('foo'));
+      const framework = new SongbirdFramework({ client: testContext.client });
 
-      return this.tds.setupSongbird().then(function () {
-        expect(this.tds._useV1Fallback).to.equal(true);
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
-      }.bind(this));
-    });
-
-    it('uses v1 fallback if loadScript resolves but no Cardinal global is available', function () {
-      assets.loadScript.resolves();
-
-      return this.tds.setupSongbird().then(function () {
-        expect(this.tds._useV1Fallback).to.equal(true);
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-global-unavailable');
-      }.bind(this));
-    });
-
-    it('uses v1 fallback if loadScript resolves but Cardinal confiugration throws an error', function () {
-      this.fakeCardinal.configure.throws(new Error('something went wrong'));
-
-      return this.tds.setupSongbird().then(function () {
-        expect(this.tds._useV1Fallback).to.equal(true);
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-configuration-threw-error');
-      }.bind(this));
-    });
-
-    it('sets getDfReferenceId to reject if Cardinal can not be set up', function () {
-      var tds = this.tds;
-
-      assets.loadScript.rejects(new Error('foo'));
-
-      return tds.setupSongbird().then(function () {
-        return tds.getDfReferenceId();
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED');
-        expect(err.message).to.equal('Cardinal\'s Songbird.js library could not be loaded.');
+      return framework.setupSongbird().then(() => {
+        expect(framework._useV1Fallback).toBe(true);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
       });
     });
 
-    it('uses v1 fallback if Cardinal method throws an error', function () {
-      var tds = this.tds;
+    it('uses v1 fallback if loadScript resolves but no Cardinal global is available', () => {
+      delete window.Cardinal;
+      jest.spyOn(assets, 'loadScript').mockResolvedValue(document.createElement('script'));
 
-      this.fakeCardinal.on.reset();
-      this.fakeCardinal.on.throws(new Error('failure'));
+      const framework = new SongbirdFramework({ client: testContext.client });
 
-      return tds.setupSongbird().then(function () {
-        expect(tds._useV1Fallback).to.equal(true);
+      return framework.setupSongbird().then(() => {
+        expect(framework._useV1Fallback).toBe(true);
+        expect(analytics.sendEvent).toHaveBeenNthCalledWith(5, testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-global-unavailable');
       });
     });
 
-    it('sends analytics event when Cardinal fails to set up', function () {
-      var tds = this.tds;
+    it('uses v1 fallback if loadScript resolves but Cardinal configuration throws an error', () => {
+      testContext.fakeCardinal.configure
+        .mockImplementation(() => {
+          throw new Error('uses v1 fallback if loadScript resolves but Cardinal configuration throws an error');
+        });
 
-      this.fakeCardinal.on.reset();
-      this.fakeCardinal.on.throws(new Error('failure'));
-
-      return tds.setupSongbird().then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.cardinal-sdk.init.setup-failed');
-      }.bind(this));
-    });
-
-    it('sets getDfReferenceId to reject with a generic error if a specific Braintree error cannot be found', function () {
-      var tds = this.tds;
-
-      this.fakeCardinal.on.reset();
-      this.fakeCardinal.on.throws(new Error('failure'));
-
-      return tds.setupSongbird().then(function () {
-        return tds.getDfReferenceId();
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_SETUP_FAILED');
-        expect(err.message).to.equal('Something went wrong setting up Cardinal\'s Songbird.js library.');
+      return new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
+        return wait();
+      }).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-configuration-threw-error');
+        expect(testContext.tds._useV1Fallback).toBe(true);
       });
     });
 
-    it('uses v1 fallback if cardinal takes longer than 60 seconds to set up', function () {
-      this.fakeCardinal.on.reset();
+    it('sets getDfReferenceId to reject if Cardinal cannot be set up', () => {
+      jest.spyOn(assets, 'loadScript').mockRejectedValue(new Error('sets getDfReferenceId to reject if Cardinal cannot be set up'));
 
-      return this.tds.setupSongbird({
-        timeout: 3
-      }).then(function () {
-        expect(this.tds._useV1Fallback).to.equal(true);
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-timeout');
-      }.bind(this));
-    });
-
-    it('sends analytics event when Cardinal times out during setup', function () {
-      this.fakeCardinal.on.reset();
-
-      return this.tds.setupSongbird({
-        timeout: 3
-      }).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
-      }.bind(this));
-    });
-
-    it('does not send timeout event when `payments.setupComplete` callback is called', function () {
-      var self = this;
-
-      return this.tds.setupSongbird({
-        timeout: 10
-      }).then(function () {
-        expect(analytics.sendEvent).to.not.be.calledWith(self.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
-
-        return wait(100);
-      }).then(function () {
-        expect(analytics.sendEvent).to.not.be.calledWith(self.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
+      return testContext.tds.setupSongbird().then(() =>
+        testContext.tds.getDfReferenceId()
+      ).catch(err => {
+        expect(err.code).toBe('THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED');
+        expect(err.message).toBe('Cardinal\'s Songbird.js library could not be loaded.');
       });
+    });
+
+    it('uses v1 fallback if Cardinal method throws an error', () => {
+      testContext.fakeCardinal.on.mockImplementation(() => {
+        throw new Error('uses v1 fallback if Cardinal method throws an error');
+      });
+      const framework = new SongbirdFramework({ client: testContext.client });
+
+      return framework.setupSongbird().then(() => {
+        expect(framework._useV1Fallback).toBe(true);
+      });
+    });
+
+    it('sends analytics event when Cardinal fails to set up', () => {
+      testContext.fakeCardinal.on.mockImplementation(() => {
+        throw new Error('sends analytics event when Cardinal fails to set up');
+      });
+      const framework = new SongbirdFramework({ client: testContext.client });
+
+      return framework.setupSongbird().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledTimes(5);
+        expect(analytics.sendEvent).toHaveBeenNthCalledWith(4, testContext.client, 'three-d-secure.cardinal-sdk.init.setup-failed');
+      });
+    });
+
+    it('sets getDfReferenceId to reject with a generic error if a specific Braintree error cannot be found', () => {
+      expect.assertions(2);
+
+      testContext.fakeCardinal.on.mockImplementation(() => {
+        throw new Error('failure');
+      });
+      const framework = new SongbirdFramework({ client: testContext.client });
+
+      return framework.setupSongbird().then(() =>
+        framework.getDfReferenceId()
+      ).catch(err => {
+        expect(err.code).toBe('THREEDS_CARDINAL_SDK_SETUP_FAILED');
+        expect(err.message).toBe('Something went wrong setting up Cardinal\'s Songbird.js library.');
+      });
+    });
+
+    it('does not send timeout event when `payments.setupComplete` callback is called', () =>
+      testContext.tds.setupSongbird().then(() => {
+        expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
+      }));
+
+    describe('when timing out', () => {
+      beforeEach(() => {
+        jest.useFakeTimers();
+        analytics.sendEvent.mockClear();
+        assets.loadScript.mockImplementation(() => {
+          jest.runAllTimers();
+
+          return Promise.resolve();
+        });
+        testContext.tds = new SongbirdFramework({ client: testContext.client });
+      });
+
+      afterEach(() => { jest.useRealTimers(); });
+
+      it('uses v1 fallback if cardinal takes longer than 60 seconds to set up', () =>
+        testContext.tds.setupSongbird({ timeout: 60 })
+          .then(() => {
+            expect(testContext.tds._useV1Fallback).toBe(true);
+            expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-timeout');
+          }));
+
+      it('sends analytics event when Cardinal times out during setup', () =>
+        testContext.tds.setupSongbird({ timeout: 60 })
+          .then(() => {
+            expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
+          }));
     });
   });
 
-  describe('initializeChallengeWithLookupResponse', function () {
-    beforeEach(function () {
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({
-        ActionCode: 'SUCCESS'
-      });
-      this.client.request.resolves({
-        paymentMethod: {},
-        threeDSecureInfo: {}
-      });
-
-      SongbirdFramework.prototype.setupSongbird.restore();
-
-      this.sandbox.stub(assets, 'loadScript').callsFake(function () {
-        global.Cardinal = this.fakeCardinal;
-
-        return Promise.resolve();
-      }.bind(this));
-    });
-
-    afterEach(function () {
-      delete global.Cardinal;
-    });
-
-    it('calls setupSongibrd before continuing with the call', function () {
-      var lookupResponse = {
-        threeDSecureInfo: {
-          liabilityShiftPossible: true,
-          liabilityShifted: true
-        },
-        paymentMethod: {},
-        lookup: {
-          pareq: 'pareq',
-          transactionId: 'transaction-id'
-        }
-      };
-      var instance = new SongbirdFramework({
-        client: this.client
-      });
-
-      this.sandbox.spy(instance, 'setupSongbird');
-      this.sandbox.stub(BaseFramework.prototype, 'initializeChallengeWithLookupResponse').resolves();
-
-      return instance.initializeChallengeWithLookupResponse(lookupResponse, {
-        onLookupComplete: callsNext
-      }).then(function () {
-        expect(instance.setupSongbird).to.be.calledOnce;
-        expect(BaseFramework.prototype.initializeChallengeWithLookupResponse).to.be.calledOnce;
-        expect(BaseFramework.prototype.initializeChallengeWithLookupResponse).to.be.calledWith(lookupResponse, {
-          onLookupComplete: callsNext
-        });
-      });
-    });
-
-    it('calls Cardinal.continue when onLookupComplete callback is called', function () {
-      var lookupResponse = {
+  describe('initializeChallengeWithLookupResponse', () => {
+    beforeEach(() => {
+      testContext.lookupResponse = {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
           liabilityShifted: true
@@ -1263,175 +1088,107 @@ describe('SongbirdFramework', function () {
           transactionId: 'transaction-id'
         }
       };
-      var fakeCardinal = this.fakeCardinal;
-      var instance = new SongbirdFramework({
-        client: this.client
-      });
-
-      this.fakeCardinal.on.withArgs('payments.validated').callsFake(function (event, cb) {
-        setTimeout(function () {
-          cb({
-            ActionCode: 'SUCCESS'
-          }, 'validated-jwt');
-        }, 100);
-      });
-
-      function onLookupComplete(data, start) {
-        expect(fakeCardinal.continue).to.not.be.called;
-
-        start();
-
-        expect(fakeCardinal.continue).to.be.calledOnce;
-        expect(fakeCardinal.continue).to.be.calledWith('cca', {
-          AcsUrl: lookupResponse.lookup.acsUrl,
-          Payload: lookupResponse.lookup.pareq
-        }, {
-          OrderDetails: {
-            TransactionId: lookupResponse.lookup.transactionId
-          }
-        });
-      }
-
-      return instance.initializeChallengeWithLookupResponse(lookupResponse, {
-        onLookupComplete: onLookupComplete
-      });
-    });
-
-    it('reports action code in analytics event', function () {
-      var lookupResponse = {
-        threeDSecureInfo: {
-          liabilityShiftPossible: true,
-          liabilityShifted: true
-        },
+      testContext.fakeCardinal.on.mockImplementation(yieldsByEvents(testContext.onEventBehavior, true));
+      testContext.client.request.mockResolvedValue({
         paymentMethod: {},
-        lookup: {
-          acsUrl: 'https://exmaple.com/acs',
-          pareq: 'pareq',
-          transactionId: 'transaction-id'
-        }
-      };
-      var instance = new SongbirdFramework({
-        client: this.client
+        threeDSecureInfo: {}
       });
 
-      this.fakeCardinal.on.withArgs('payments.validated').callsFake(function (event, cb) {
-        setTimeout(function () {
-          cb({
-            ActionCode: 'SUCCESS'
-          }, 'validated-jwt');
-        }, 100);
-      });
+      jest.spyOn(assets, 'loadScript').mockImplementation(() => {
+        window.Cardinal = testContext.fakeCardinal;
 
-      return instance.initializeChallengeWithLookupResponse(lookupResponse, {
-        onLookupComplete: callsNext
-      }).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.cardinal-sdk.action-code.success');
-      }.bind(this));
-    });
-
-    it('does not call Cardinal.continue when no acsUrl is present', function () {
-      var lookupResponse = {
-        threeDSecureInfo: {
-          liabilityShiftPossible: true,
-          liabilityShifted: true
-        },
-        paymentMethod: {},
-        lookup: {
-          pareq: 'pareq',
-          transactionId: 'transaction-id'
-        }
-      };
-      var fakeCardinal = this.fakeCardinal;
-      var instance = new SongbirdFramework({
-        client: this.client
-      });
-
-      this.fakeCardinal.on.withArgs('payments.validated').callsFake(function (event, cb) {
-        setTimeout(function () {
-          cb({
-            ActionCode: 'SUCCESS'
-          }, 'validated-jwt');
-        }, 100);
-      });
-
-      function onLookupComplete(data, start) {
-        expect(fakeCardinal.continue).to.not.be.called;
-
-        start();
-
-        expect(fakeCardinal.continue).to.not.be.called;
-      }
-
-      return instance.initializeChallengeWithLookupResponse(lookupResponse, {
-        onLookupComplete: onLookupComplete
+        return Promise.resolve();
       });
     });
 
-    context('v1 fallback', function () {
-      beforeEach(function () {
-        this.lookupResponse = {
-          threeDSecureInfo: {
-            liabilityShiftPossible: true,
-            liabilityShifted: true
-          },
-          paymentMethod: {},
-          lookup: {
-            acsUrl: 'https://example.com/acs',
-            pareq: 'pareq',
-            transactionId: 'transaction-id'
-          }
-        };
+    afterEach(() => {
+      delete window.Cardinal;
+    });
+
+    it('calls setupSongbird before continuing with the call', () => {
+      const instance = new SongbirdFramework({
+        client: testContext.client
       });
 
-      it('uses v1 fallback flow when cardinal script fails to load', function () {
-        var instance;
+      jest.spyOn(instance, 'setupSongbird');
+      jest.spyOn(BaseFramework.prototype, 'initializeChallengeWithLookupResponse').mockResolvedValue(null);
 
-        assets.loadScript.rejects(new Error('foo'));
+      instance.setupSongbird.mockClear();
+
+      return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
+        expect(instance.setupSongbird).toHaveBeenCalledTimes(1);
+        expect(BaseFramework.prototype.initializeChallengeWithLookupResponse).toHaveBeenCalledTimes(1);
+        expect(BaseFramework.prototype.initializeChallengeWithLookupResponse).toHaveBeenCalledWith(testContext.lookupResponse, {});
+      });
+    });
+
+    it('reports action code in analytics event', () => {
+      const instance = new SongbirdFramework({ client: testContext.client });
+
+      jest.spyOn(testContext.fakeCardinal, 'on').mockImplementation(yieldsByEventAsync('payments.setupComplete', {
+        sessionId: 'df'
+      }));
+
+      testContext.applyActionCode();
+
+      return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.cardinal-sdk.action-code.success');
+      });
+    });
+
+    describe('v1 fallback', () => {
+      it('uses v1 fallback flow when cardinal script fails to load', () => {
+        let instance;
+
+        jest.spyOn(assets, 'loadScript').mockRejectedValue(null);
         instance = new SongbirdFramework({
-          client: this.client
+          client: testContext.client
         });
-        Bus.prototype.on.withArgs('threedsecure:AUTHENTICATION_COMPLETE').yieldsAsync({
-          auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
-        });
+        jest.spyOn(Bus.prototype, 'on')
+          .mockImplementation(yieldsByEventAsync(
+            'threedsecure:AUTHENTICATION_COMPLETE',
+            { auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' } // eslint-disable-line camelcase
+          ));
 
-        return instance.initializeChallengeWithLookupResponse(this.lookupResponse).then(function (result) {
-          expect(result.nonce).to.equal('nonce-from-v1-fallback-flow');
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
-        }.bind(this));
+        return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse).then(result => {
+          expect(result.nonce).toBe('nonce-from-v1-fallback-flow');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
+        });
       });
 
-      it('uses v1 fallback flow when cardinal.on yields an error on setup', function () {
-        var instance;
+      it('uses v1 fallback flow when cardinal.on yields an error on setup', () => {
+        let instance;
 
-        this.fakeCardinal.on.withArgs('payments.validated').yields({
+        testContext.onEventBehavior[1].args = [{
           ActionCode: 'ERROR',
           ErrorNumber: 1010
-        });
-        instance = new SongbirdFramework({
-          client: this.client
-        });
-        Bus.prototype.on.withArgs('threedsecure:AUTHENTICATION_COMPLETE').yieldsAsync({
-          auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
-        });
+        }];
 
-        return instance.initializeChallengeWithLookupResponse(this.lookupResponse).then(function (result) {
-          expect(result.nonce).to.equal('nonce-from-v1-fallback-flow');
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-error.number-1010');
-        }.bind(this));
+        instance = new SongbirdFramework({
+          client: testContext.client
+        });
+        Bus.prototype.on.mockImplementation(yieldsByEventAsync('threedsecure:AUTHENTICATION_COMPLETE', {
+          auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
+        }));
+
+        return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse).then(result => {
+          expect(result.nonce).toBe('nonce-from-v1-fallback-flow');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-error.number-1010');
+        });
       });
     });
   });
 
-  describe('transformBillingAddress', function () {
-    beforeEach(function () {
-      this.instance = new SongbirdFramework({
-        client: this.client
+  describe('transformBillingAddress', () => {
+    beforeEach(() => {
+      testContext.instance = new SongbirdFramework({
+        client: testContext.client
       });
     });
 
-    it('transforms billing address', function () {
-      var additionalInformation = {};
-      var billingAddress = {
+    it('transforms billing address', () => {
+      let additionalInformation = {};
+      const billingAddress = {
         phoneNumber: '5555555555',
         givenName: 'First',
         surname: 'Last',
@@ -1444,36 +1201,36 @@ describe('SongbirdFramework', function () {
         countryCodeAlpha2: 'US'
       };
 
-      additionalInformation = this.instance.transformBillingAddress(additionalInformation, billingAddress);
+      additionalInformation = testContext.instance.transformBillingAddress(additionalInformation, billingAddress);
 
-      expect(additionalInformation.billingPhoneNumber).to.equal('5555555555');
-      expect(additionalInformation.billingGivenName).to.equal('First');
-      expect(additionalInformation.billingSurname).to.equal('Last');
-      expect(additionalInformation.billingLine1).to.equal('555 Smith street');
-      expect(additionalInformation.billingLine2).to.equal('#5');
-      expect(additionalInformation.billingLine3).to.equal('More Address');
-      expect(additionalInformation.billingCity).to.equal('Oakland');
-      expect(additionalInformation.billingState).to.equal('CA');
-      expect(additionalInformation.billingPostalCode).to.equal('12345');
-      expect(additionalInformation.billingCountryCode).to.equal('US');
+      expect(additionalInformation.billingPhoneNumber).toBe('5555555555');
+      expect(additionalInformation.billingGivenName).toBe('First');
+      expect(additionalInformation.billingSurname).toBe('Last');
+      expect(additionalInformation.billingLine1).toBe('555 Smith street');
+      expect(additionalInformation.billingLine2).toBe('#5');
+      expect(additionalInformation.billingLine3).toBe('More Address');
+      expect(additionalInformation.billingCity).toBe('Oakland');
+      expect(additionalInformation.billingState).toBe('CA');
+      expect(additionalInformation.billingPostalCode).toBe('12345');
+      expect(additionalInformation.billingCountryCode).toBe('US');
     });
 
-    it('ignores additionalInformation if no billingAddress param is provided', function () {
-      var info = {foo: 'bar'};
+    it('ignores additionalInformation if no billingAddress param is provided', () => {
+      const info = { foo: 'bar' };
 
-      expect(this.instance.transformBillingAddress(info)).to.equal(info);
+      expect(testContext.instance.transformBillingAddress(info)).toBe(info);
     });
   });
 
-  describe('transformShippingAddress', function () {
-    beforeEach(function () {
-      this.instance = new SongbirdFramework({
-        client: this.client
+  describe('transformShippingAddress', () => {
+    beforeEach(() => {
+      testContext.instance = new SongbirdFramework({
+        client: testContext.client
       });
     });
 
-    it('transforms shipping address', function () {
-      var additionalInformation = {
+    it('transforms shipping address', () => {
+      let additionalInformation = {
         shippingAddress: {
           streetAddress: '555 Smith street',
           extendedAddress: '#5',
@@ -1485,122 +1242,126 @@ describe('SongbirdFramework', function () {
         }
       };
 
-      additionalInformation = this.instance.transformShippingAddress(additionalInformation);
-      expect(additionalInformation.shippingAddress).not.to.exist;
-      expect(additionalInformation.shippingLine1).to.equal('555 Smith street');
-      expect(additionalInformation.shippingLine2).to.equal('#5');
-      expect(additionalInformation.shippingLine3).to.equal('More Address');
-      expect(additionalInformation.shippingCity).to.equal('Oakland');
-      expect(additionalInformation.shippingState).to.equal('CA');
-      expect(additionalInformation.shippingPostalCode).to.equal('12345');
-      expect(additionalInformation.shippingCountryCode).to.equal('US');
+      additionalInformation = testContext.instance.transformShippingAddress(additionalInformation);
+      expect(additionalInformation.shippingAddress).not.toBeDefined();
+      expect(additionalInformation.shippingLine1).toBe('555 Smith street');
+      expect(additionalInformation.shippingLine2).toBe('#5');
+      expect(additionalInformation.shippingLine3).toBe('More Address');
+      expect(additionalInformation.shippingCity).toBe('Oakland');
+      expect(additionalInformation.shippingState).toBe('CA');
+      expect(additionalInformation.shippingPostalCode).toBe('12345');
+      expect(additionalInformation.shippingCountryCode).toBe('US');
     });
 
-    it('ignores additionalInformation if no shippingAddress param is provided', function () {
-      var info = {foo: 'bar'};
+    it('ignores additionalInformation if no shippingAddress param is provided', () => {
+      const info = { foo: 'bar' };
 
-      expect(this.instance.transformShippingAddress(info)).to.equal(info);
+      expect(testContext.instance.transformShippingAddress(info)).toBe(info);
     });
   });
 
-  describe('prepareLookup', function () {
-    beforeEach(function () {
-      global.Cardinal = this.fakeCardinal;
-      this.instance = new SongbirdFramework({
-        client: this.client
+  describe('prepareLookup', () => {
+    beforeEach(() => {
+      window.Cardinal = testContext.fakeCardinal;
+      testContext.instance = new SongbirdFramework({
+        client: testContext.client
       });
 
-      this.sandbox.stub(this.instance, 'getDfReferenceId').resolves('df-id');
-      this.fakeCardinal.trigger.resolves({
+      jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
+      testContext.fakeCardinal.trigger.mockResolvedValue({
         Status: 'status'
       });
 
-      this.options = {
+      testContext.options = {
         nonce: 'a-nonce',
         bin: '411111'
       };
     });
 
-    afterEach(function () {
-      delete global.Cardinal;
-    });
+    it('maintains data passed in options', () => {
+      const options = testContext.options;
 
-    it('maintains data passed in options', function () {
-      var options = this.options;
-
-      return this.instance.prepareLookup(options).then(function (data) {
-        expect(data).to.not.equal(options);
-        expect(data.nonce).to.equal(options.nonce);
-        expect(data.bin).to.equal(options.bin);
+      return testContext.instance.prepareLookup(options).then(data => {
+        expect(data).not.toBe(options);
+        expect(data.nonce).toBe(options.nonce);
+        expect(data.bin).toBe(options.bin);
       });
     });
 
-    it('retrieves authorizationFingerprint', function () {
-      return this.instance.prepareLookup(this.options).then(function (data) {
-        expect(data.authorizationFingerprint).to.equal('encoded_auth_fingerprint');
+    it('retrieves authorizationFingerprint', () => {
+      expect.assertions(1);
+
+      return testContext.instance.prepareLookup(testContext.options).then(data => {
+        expect(data.authorizationFingerprint).toBe('encoded_auth_fingerprint');
       });
     });
 
-    it('can pass arbitrary data into options', function () {
-      this.options.foo = 'bar';
+    it('can pass arbitrary data into options', () => {
+      testContext.options.foo = 'bar';
 
-      return this.instance.prepareLookup(this.options).then(function (data) {
-        expect(data.foo).to.equal('bar');
+      return testContext.instance.prepareLookup(testContext.options).then(data => {
+        expect(data.foo).toBe('bar');
       });
     });
 
-    it('retrieves dfReferenceId', function () {
-      return this.instance.prepareLookup(this.options).then(function (data) {
-        expect(data.dfReferenceId).to.equal('df-id');
+    it('retrieves dfReferenceId', () => {
+      expect.assertions(1);
+
+      return testContext.instance.prepareLookup(testContext.options).then(data => {
+        expect(data.dfReferenceId).toBe('df-id');
       });
     });
 
-    it('retrieves braintreeLibraryVersion', function () {
-      return this.instance.prepareLookup(this.options).then(function (data) {
-        expect(data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
+    it('retrieves braintreeLibraryVersion', () => {
+      expect.assertions(1);
+
+      return testContext.instance.prepareLookup(testContext.options).then(data => {
+        expect(data.braintreeLibraryVersion).toBe(BRAINTREE_LIBRARY_VERSION);
       });
     });
 
-    it('retrieves bin metadata', function () {
-      return this.instance.prepareLookup(this.options).then(function (data) {
-        expect(this.fakeCardinal.trigger).to.be.calledOnce;
-        expect(this.fakeCardinal.trigger).to.be.calledWith('bin.process', '411111');
-        expect(data.clientMetadata.issuerDeviceDataCollectionTimeElapsed).to.exist;
-        expect(data.clientMetadata.issuerDeviceDataCollectionResult).to.equal('status');
-      }.bind(this));
+    it('retrieves bin metadata', () => {
+      expect.assertions(4);
+
+      return testContext.instance.prepareLookup(testContext.options).then(data => {
+        expect(testContext.fakeCardinal.trigger).toHaveBeenCalledTimes(1);
+        expect(testContext.fakeCardinal.trigger).toHaveBeenCalledWith('bin.process', '411111');
+        expect(data.clientMetadata.issuerDeviceDataCollectionTimeElapsed).toBeDefined();
+        expect(data.clientMetadata.issuerDeviceDataCollectionResult).toBe('status');
+      });
     });
 
-    it('ignores errors df reference id lookup fails', function () {
-      var error = new Error('df reference id lookup fails');
+    it('ignores errors df reference id lookup fails', () => {
+      const error = new Error('df reference id lookup fails');
 
-      this.instance.getDfReferenceId.rejects(error);
+      testContext.instance.getDfReferenceId.mockRejectedValue(error);
 
-      return this.instance.prepareLookup(this.options).then(function (data) {
-        expect(data.dfReferenceId).to.not.exist;
-        expect(data.clientMetadata).to.deep.equal({
-          sdkVersion: 'web/' + VERSION,
+      return testContext.instance.prepareLookup(testContext.options).then(data => {
+        expect(data.dfReferenceId).toBeFalsy();
+        expect(data.clientMetadata).toMatchObject({
+          sdkVersion: `web/${VERSION}`,
           requestedThreeDSecureVersion: '2'
         });
       });
     });
 
-    it('ignores errors from Cardinal bin lookup', function () {
-      this.fakeCardinal.trigger.rejects(new Error('bin process failed'));
+    it('ignores errors from Cardinal bin lookup', () => {
+      testContext.fakeCardinal.trigger.mockRejectedValue(new Error('bin process failed'));
 
-      return this.instance.prepareLookup(this.options).then(function (data) {
-        expect(data.dfReferenceId).to.equal('df-id');
-        expect(data.clientMetadata).to.deep.equal({
-          sdkVersion: 'web/' + VERSION,
+      return testContext.instance.prepareLookup(testContext.options).then(data => {
+        expect(data.dfReferenceId).toBe('df-id');
+        expect(data.clientMetadata).toMatchObject({
+          sdkVersion: `web/${VERSION}`,
           requestedThreeDSecureVersion: '2'
         });
       });
     });
   });
 
-  describe('cancelVerifyCard', function () {
-    beforeEach(function () {
-      this.framework = new SongbirdFramework({client: this.client});
-      this.lookupResponse = {
+  describe('cancelVerifyCard', () => {
+    beforeEach(() => {
+      testContext.framework = new SongbirdFramework({ client: testContext.client });
+      testContext.lookupResponse = {
         paymentMethod: {
           nonce: 'upgraded-nonce',
           details: {
@@ -1620,52 +1381,41 @@ describe('SongbirdFramework', function () {
           liabilityShifted: true
         }
       };
-      this.client.request.resolves(this.lookupResponse);
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({
+      testContext.client.request.mockResolvedValue(testContext.lookupResponse);
+      testContext.fakeCardinal.on.mockImplementation(yieldsByEventAsync('payments.setupComplete', {
         sessionId: 'df'
-      });
-      SongbirdFramework.prototype.setupSongbird.restore();
+      }));
 
-      this.sandbox.stub(assets, 'loadScript').callsFake(function () {
-        global.Cardinal = this.fakeCardinal;
-
-        return Promise.resolve();
-      }.bind(this));
-
-      return this.framework.setupSongbird();
+      return testContext.framework.setupSongbird();
     });
 
-    it('errors verifyCard with cancel error', function () {
-      var framework = this.framework;
-
-      return framework.verifyCard({
+    it('errors verifyCard with cancel error', () =>
+      testContext.framework.verifyCard({
         amount: '100.00',
         nonce: 'a-nonce',
-        onLookupComplete: function () {
-          framework.cancelVerifyCard();
+        onLookupComplete() {
+          testContext.framework.cancelVerifyCard();
         }
-      }).then(rejectIfResolves).catch(function (verifyCardError) {
-        expect(verifyCardError.code).to.equal('THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT');
-      });
-    });
+      }).catch(verifyCardError => {
+        expect(verifyCardError.code).toBe('THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT');
+      }));
 
-    it('errors verifyCard with specific error if passed in', function () {
-      var framework = this.framework;
-      var err = new Error('custom error');
+    it('errors verifyCard with specific error if passed in', () => {
+      const err = new Error('custom error');
 
-      return framework.verifyCard({
+      return testContext.framework.verifyCard({
         amount: '100.00',
         nonce: 'a-nonce',
-        onLookupComplete: function () {
-          framework.cancelVerifyCard(err);
+        onLookupComplete() {
+          testContext.framework.cancelVerifyCard(err);
         }
-      }).then(rejectIfResolves).catch(function (verifyCardError) {
-        expect(verifyCardError).to.equal(err);
+      }).catch(verifyCardError => {
+        expect(verifyCardError).toBe(err);
       });
     });
 
-    it('does not throw an error when there is no verifyCardPromisePlus', function () {
-      this.framework._lookupPaymentMethod = {
+    it('does not throw an error when there is no verifyCardPromisePlus', () => {
+      testContext.framework._lookupPaymentMethod = {
         nonce: 'fake-nonce',
         threeDSecureInfo: {
           liabilityShiftPossible: true,
@@ -1674,48 +1424,40 @@ describe('SongbirdFramework', function () {
         }
       };
 
-      return this.framework.cancelVerifyCard().then(function (response) {
-        expect(response.nonce).to.eql('fake-nonce');
-        expect(response.liabilityShiftPossible).to.eql(true);
-        expect(response.liabilityShifted).to.eql(false);
-        expect(response.verificationDetails).to.deep.equal({});
+      return testContext.framework.cancelVerifyCard().then(response => {
+        expect(response.nonce).toBe('fake-nonce');
+        expect(response.liabilityShiftPossible).toBe(true);
+        expect(response.liabilityShifted).toBe(false);
+        expect(response.verificationDetails).toEqual({});
       });
     });
   });
 
-  describe('setCardinalListener', function () {
-    it('sets up listener for Cardinal', function () {
-      var spy = this.sandbox.stub();
-      var framework = new SongbirdFramework({client: this.client});
-
-      global.Cardinal = {
-        on: this.sandbox.stub()
-      };
+  describe('setCardinalListener', () => {
+    it('sets up listener for Cardinal', () => {
+      const spy = jest.fn();
+      const framework = new SongbirdFramework({ client: testContext.client });
 
       framework.setCardinalListener('foo', spy);
 
-      expect(global.Cardinal.on).to.be.calledOnce;
-      expect(global.Cardinal.on).to.be.calledWith('foo', spy);
+      expect(window.Cardinal.on).toHaveBeenCalledTimes(1);
+      expect(window.Cardinal.on).toHaveBeenCalledWith('foo', spy);
     });
   });
 
-  describe('teardown', function () {
-    beforeEach(function () {
-      this.framework = new SongbirdFramework({client: this.client});
+  describe('teardown', () => {
+    beforeEach(() => {
+      testContext.framework = new SongbirdFramework({ client: testContext.client });
     });
 
-    it('removes all configured Cardinal listeners', function () {
-      global.Cardinal = {
-        on: this.sandbox.stub(),
-        off: this.sandbox.stub()
-      };
-      this.framework.setCardinalListener('foo', this.sandbox.stub());
-      this.framework.setCardinalListener('bar', this.sandbox.stub());
+    it('removes all configured Cardinal listeners', () => {
+      testContext.framework.setCardinalListener('foo', jest.fn());
+      testContext.framework.setCardinalListener('bar', jest.fn());
 
-      return this.framework.teardown().then(function () {
-        expect(global.Cardinal.off).to.be.calledTwice;
-        expect(global.Cardinal.off).to.be.calledWith('foo');
-        expect(global.Cardinal.off).to.be.calledWith('bar');
+      return testContext.framework.teardown().then(() => {
+        expect(window.Cardinal.off).toHaveBeenCalledTimes(4);
+        expect(window.Cardinal.off).toHaveBeenNthCalledWith(3, 'foo');
+        expect(window.Cardinal.off).toHaveBeenNthCalledWith(4, 'bar');
       });
     });
   });

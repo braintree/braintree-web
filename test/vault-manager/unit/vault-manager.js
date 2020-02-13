@@ -1,22 +1,24 @@
 'use strict';
 
-var analytics = require('../../../src/lib/analytics');
-var VaultManager = require('../../../src/vault-manager/vault-manager');
-var Promise = require('../../../src/lib/promise');
-var fake = require('../../helpers/fake');
-var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var BraintreeError = require('../../../src/lib/braintree-error');
-var methods = require('../../../src/lib/methods');
+jest.mock('../../../src/lib/analytics');
 
-describe('VaultManager', function () {
+const analytics = require('../../../src/lib/analytics');
+const VaultManager = require('../../../src/vault-manager/vault-manager');
+const { fake, rejectIfResolves } = require('../../helpers');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const methods = require('../../../src/lib/methods');
+
+describe('VaultManager', () => {
+  let client, fakePaymentMethod, vaultManager;
+
   beforeEach(function () {
-    this.client = fake.client({
+    client = fake.client({
       configuration: {
         authorizationType: 'CLIENT_TOKEN'
       }
     });
-    this.sandbox.stub(this.client, 'request').resolves();
-    this.fakePaymentMethod = {
+    jest.spyOn(client, 'request').mockResolvedValue(null);
+    fakePaymentMethod = {
       nonce: 'nonce',
       'default': false,
       hasSubscription: false,
@@ -24,19 +26,18 @@ describe('VaultManager', function () {
       type: 'type',
       garbage: 'garbage'
     };
-    this.vaultManager = new VaultManager({client: this.client});
-    this.sandbox.stub(analytics, 'sendEvent');
+    vaultManager = new VaultManager({ client });
   });
 
-  describe('fetchPaymentMethods', function () {
+  describe('fetchPaymentMethods', () => {
     it('supports a callback', function (done) {
-      this.client.request.resolves({
-        paymentMethods: [this.fakePaymentMethod]
+      client.request.mockResolvedValue({
+        paymentMethods: [fakePaymentMethod]
       });
 
-      return this.vaultManager.fetchPaymentMethods(function (err, paymentMethods) {
-        expect(err).to.not.exist;
-        expect(paymentMethods).to.deep.equal([{
+      return vaultManager.fetchPaymentMethods((err, paymentMethods) => {
+        expect(err).toBeFalsy();
+        expect(paymentMethods).toEqual([{
           nonce: 'nonce',
           'default': false,
           details: {},
@@ -49,58 +50,58 @@ describe('VaultManager', function () {
     });
 
     it('requests payment methods', function () {
-      this.client.request.resolves({
-        paymentMethods: [this.fakePaymentMethod]
+      client.request.mockResolvedValue({
+        paymentMethods: [fakePaymentMethod]
       });
 
-      return this.vaultManager.fetchPaymentMethods().then(function () {
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWith({
+      return vaultManager.fetchPaymentMethods().then(() => {
+        expect(client.request).toBeCalledTimes(1);
+        expect(client.request).toBeCalledWith({
           endpoint: 'payment_methods',
           method: 'get',
           data: {
             defaultFirst: 0
           }
         });
-      }.bind(this));
+      });
     });
 
     it('allows passing in a defaultFirst param', function () {
-      this.client.request.resolves({
-        paymentMethods: [this.fakePaymentMethod]
+      client.request.mockResolvedValue({
+        paymentMethods: [fakePaymentMethod]
       });
 
-      return this.vaultManager.fetchPaymentMethods({
+      return vaultManager.fetchPaymentMethods({
         defaultFirst: true
-      }).then(function () {
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWith({
+      }).then(() => {
+        expect(client.request).toBeCalledTimes(1);
+        expect(client.request).toBeCalledWith({
           endpoint: 'payment_methods',
           method: 'get',
           data: {
             defaultFirst: 1
           }
         });
-      }.bind(this));
+      });
     });
 
     it('sends analytics event', function () {
-      this.client.request.resolves({
-        paymentMethods: [this.fakePaymentMethod]
+      client.request.mockResolvedValue({
+        paymentMethods: [fakePaymentMethod]
       });
 
-      return this.vaultManager.fetchPaymentMethods().then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'vault-manager.fetch-payment-methods.succeeded');
-      }.bind(this));
+      return vaultManager.fetchPaymentMethods().then(() => {
+        expect(analytics.sendEvent).toBeCalledWith(client, 'vault-manager.fetch-payment-methods.succeeded');
+      });
     });
 
     it('formats response from server', function () {
-      this.client.request.resolves({
-        paymentMethods: [this.fakePaymentMethod]
+      client.request.mockResolvedValue({
+        paymentMethods: [fakePaymentMethod]
       });
 
-      return this.vaultManager.fetchPaymentMethods().then(function (paymentMethods) {
-        expect(paymentMethods).to.deep.equal([{
+      return vaultManager.fetchPaymentMethods().then(paymentMethods => {
+        expect(paymentMethods).toEqual([{
           nonce: 'nonce',
           'default': false,
           details: {},
@@ -111,11 +112,11 @@ describe('VaultManager', function () {
     });
 
     it('includes description if payload includes a description', function () {
-      this.fakePaymentMethod.type = 'CreditCard';
-      this.fakePaymentMethod.description = 'A card ending in 11';
-      this.client.request.resolves({
+      fakePaymentMethod.type = 'CreditCard';
+      fakePaymentMethod.description = 'A card ending in 11';
+      client.request.mockResolvedValue({
         paymentMethods: [
-          this.fakePaymentMethod, {
+          fakePaymentMethod, {
             nonce: 'payment-method-without-a-description',
             'default': true,
             details: {},
@@ -132,8 +133,8 @@ describe('VaultManager', function () {
         ]
       });
 
-      return this.vaultManager.fetchPaymentMethods().then(function (paymentMethods) {
-        expect(paymentMethods).to.deep.equal([{
+      return vaultManager.fetchPaymentMethods().then(paymentMethods => {
+        expect(paymentMethods).toEqual([{
           nonce: 'nonce',
           'default': false,
           details: {},
@@ -158,13 +159,13 @@ describe('VaultManager', function () {
     });
 
     it('includes binData if payload includes a binData', function () {
-      this.fakePaymentMethod.type = 'CreditCard';
-      this.fakePaymentMethod.binData = {
+      fakePaymentMethod.type = 'CreditCard';
+      fakePaymentMethod.binData = {
         some: 'data'
       };
-      this.client.request.resolves({
+      client.request.mockResolvedValue({
         paymentMethods: [
-          this.fakePaymentMethod, {
+          fakePaymentMethod, {
             nonce: 'payment-method-without-bin-data',
             'default': true,
             details: {},
@@ -174,38 +175,38 @@ describe('VaultManager', function () {
             'default': false,
             details: {},
             type: 'BinData',
-            binData: {more: 'data'}
+            binData: { more: 'data' }
           }
         ]
       });
 
-      return this.vaultManager.fetchPaymentMethods().then(function (paymentMethods) {
-        expect(paymentMethods[0].binData).to.deep.equal({some: 'data'});
-        expect(paymentMethods[1].binData).to.not.exist;
-        expect(paymentMethods[2].binData).to.deep.equal({more: 'data'});
+      return vaultManager.fetchPaymentMethods().then(paymentMethods => {
+        expect(paymentMethods[0].binData).toEqual({ some: 'data' });
+        expect(paymentMethods[1].binData).toBeFalsy();
+        expect(paymentMethods[2].binData).toEqual({ more: 'data' });
       });
     });
 
     it('sends back error if request fails', function () {
-      var fakeError = new Error('error');
+      const fakeError = new Error('error');
 
-      this.client.request.rejects(fakeError);
+      client.request.mockRejectedValue(fakeError);
 
-      return this.vaultManager.fetchPaymentMethods().then(rejectIfResolves).catch(function (err) {
-        expect(err).to.equal(fakeError);
+      return vaultManager.fetchPaymentMethods().then(rejectIfResolves).catch(err => {
+        expect(err).toBe(fakeError);
       });
     });
   });
 
-  describe('deletePaymentMethod', function () {
+  describe('deletePaymentMethod', () => {
     it('calls graphql to delete payment method', function () {
-      this.client.request.resolves();
+      client.request.mockResolvedValue();
 
-      return this.vaultManager.deletePaymentMethod('nonce-to-delete').then(function () {
-        expect(this.client.request).to.be.calledOnce;
-        expect(this.client.request).to.be.calledWith({
+      return vaultManager.deletePaymentMethod('nonce-to-delete').then(() => {
+        expect(client.request).toBeCalledTimes(1);
+        expect(client.request).toBeCalledWith({
           api: 'graphQLApi',
-          data: this.sandbox.match({
+          data: expect.objectContaining({
             variables: {
               input: {
                 singleUseTokenId: 'nonce-to-delete'
@@ -213,43 +214,43 @@ describe('VaultManager', function () {
             }
           })
         });
-      }.bind(this));
+      });
     });
 
     it('sends analytics event on success', function () {
-      this.client.request.resolves();
+      client.request.mockResolvedValue();
 
-      return this.vaultManager.deletePaymentMethod('nonce-to-delete').then(function () {
-        expect(analytics.sendEvent).to.be.calledOnce;
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'vault-manager.delete-payment-method.succeeded');
-      }.bind(this));
+      return vaultManager.deletePaymentMethod('nonce-to-delete').then(() => {
+        expect(analytics.sendEvent).toBeCalledTimes(1);
+        expect(analytics.sendEvent).toBeCalledWith(client, 'vault-manager.delete-payment-method.succeeded');
+      });
     });
 
     it('errors if a client token is not used', function () {
-      this.sandbox.stub(this.client, 'getConfiguration').returns({
+      jest.spyOn(client, 'getConfiguration').mockReturnValue({
         authorizationType: 'TOKENIZATION_KEY'
       });
 
-      return this.vaultManager.deletePaymentMethod('nonce-to-delete').then(rejectIfResolves).catch(function (err) {
-        expect(this.client.request).to.not.be.called;
+      return vaultManager.deletePaymentMethod('nonce-to-delete').then(rejectIfResolves).catch(err => {
+        expect(client.request).toBeCalledTimes(0);
 
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN');
-        expect(err.message).to.equal('A client token with a customer id must be used to delete a payment method nonce.');
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN');
+        expect(err.message).toBe('A client token with a customer id must be used to delete a payment method nonce.');
 
-        this.client.getConfiguration.returns({
+        client.getConfiguration.mockReturnValue({
           authorizationType: 'CLIENT_TOKEN'
         });
 
-        return this.vaultManager.deletePaymentMethod('nonce-to-delete');
-      }.bind(this)).then(function () {
-        expect(this.client.request).to.be.calledOnce;
-      }.bind(this));
+        return vaultManager.deletePaymentMethod('nonce-to-delete');
+      }).then(() => {
+        expect(client.request).toBeCalledTimes(1);
+      });
     });
 
     it('provides a not found error when nonce does not exist', function () {
-      var graphQLErrors = [
+      const graphQLErrors = [
         {
           message: 'Record not found',
           locations: [
@@ -271,7 +272,7 @@ describe('VaultManager', function () {
           }
         }
       ];
-      var requestError = new BraintreeError({
+      const requestError = new BraintreeError({
         code: 'CLIENT_GRAPHQL_REQUEST_ERROR',
         message: 'There was a problem with your request.',
         name: 'BraintreeError',
@@ -281,19 +282,19 @@ describe('VaultManager', function () {
         }
       });
 
-      this.client.request.rejects(requestError);
+      client.request.mockRejectedValue(requestError);
 
-      return this.vaultManager.deletePaymentMethod('fake-nonce').then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND');
-        expect(err.message).to.equal('A payment method for payment method nonce `fake-nonce` could not be found.');
-        expect(err.details.originalError).to.equal(graphQLErrors);
+      return vaultManager.deletePaymentMethod('fake-nonce').then(rejectIfResolves).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND');
+        expect(err.message).toBe('A payment method for payment method nonce `fake-nonce` could not be found.');
+        expect(err.details.originalError).toBe(graphQLErrors);
       });
     });
 
     it('provides a generic error for all other errors', function () {
-      var graphQLErrors = [
+      const graphQLErrors = [
         {
           message: 'Record not found',
           locations: [
@@ -315,7 +316,7 @@ describe('VaultManager', function () {
           }
         }
       ];
-      var requestError = new BraintreeError({
+      const requestError = new BraintreeError({
         code: 'CLIENT_GRAPHQL_REQUEST_ERROR',
         message: 'There was a problem with your request.',
         name: 'BraintreeError',
@@ -325,19 +326,19 @@ describe('VaultManager', function () {
         }
       });
 
-      this.client.request.rejects(requestError);
+      client.request.mockRejectedValue(requestError);
 
-      return this.vaultManager.deletePaymentMethod('fake-nonce').then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('UNKNOWN');
-        expect(err.code).to.equal('VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR');
-        expect(err.message).to.equal('An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `fake-nonce`.');
-        expect(err.details.originalError).to.equal(graphQLErrors);
+      return vaultManager.deletePaymentMethod('fake-nonce').then(rejectIfResolves).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('UNKNOWN');
+        expect(err.code).toBe('VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR');
+        expect(err.message).toBe('An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `fake-nonce`.');
+        expect(err.details.originalError).toBe(graphQLErrors);
       });
     });
 
     it('sends an analytics event when error occurs', function () {
-      var graphQLErrors = [
+      const graphQLErrors = [
         {
           message: 'Record not found',
           locations: [
@@ -359,7 +360,7 @@ describe('VaultManager', function () {
           }
         }
       ];
-      var requestError = new BraintreeError({
+      const requestError = new BraintreeError({
         code: 'CLIENT_GRAPHQL_REQUEST_ERROR',
         message: 'There was a problem with your request.',
         name: 'BraintreeError',
@@ -369,28 +370,22 @@ describe('VaultManager', function () {
         }
       });
 
-      this.client.request.rejects(requestError);
+      client.request.mockRejectedValue(requestError);
 
-      return this.vaultManager.deletePaymentMethod('fake-nonce').then(rejectIfResolves).catch(function () {
-        expect(analytics.sendEvent).to.be.calledOnce;
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'vault-manager.delete-payment-method.failed');
-      }.bind(this));
+      return vaultManager.deletePaymentMethod('fake-nonce').then(rejectIfResolves).catch(() => {
+        expect(analytics.sendEvent).toBeCalledTimes(1);
+        expect(analytics.sendEvent).toBeCalledWith(client, 'vault-manager.delete-payment-method.failed');
+      });
     });
   });
 
-  describe('teardown', function () {
-    it('returns a promise', function () {
-      var promise = this.vaultManager.teardown();
-
-      expect(promise).to.be.an.instanceof(Promise);
-    });
-
+  describe('teardown', () => {
     it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var instance = this.vaultManager;
+      const instance = vaultManager;
 
-      instance.teardown(function () {
-        methods(VaultManager.prototype).forEach(function (method) {
-          var err;
+      instance.teardown(() => {
+        methods(VaultManager.prototype).forEach(method => {
+          let err;
 
           try {
             instance[method]();
@@ -398,10 +393,10 @@ describe('VaultManager', function () {
             err = e;
           }
 
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).toBe(method + ' cannot be called after teardown.');
         });
 
         done();

@@ -2,302 +2,141 @@
 
 'use strict';
 
-var Masterpass = require('../../../../src/masterpass/external/masterpass');
-var VERSION = require('../../../../package.json').version;
-var Promise = require('../../../../src/lib/promise');
-var BraintreeError = require('../../../../src/lib/braintree-error');
-var analytics = require('../../../../src/lib/analytics');
-var frameService = require('../../../../src/lib/frame-service/external');
-var methods = require('../../../../src/lib/methods');
-var fake = require('../../../helpers/fake');
-var rejectIfResolves = require('../../../helpers/promise-helper').rejectIfResolves;
+jest.mock('../../../../src/lib/analytics');
+jest.mock('../../../../src/lib/frame-service/external');
 
-function noop() {}
+const Masterpass = require('../../../../src/masterpass/external/masterpass');
+const { version: VERSION } = require('../../../../package.json');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const analytics = require('../../../../src/lib/analytics');
+const frameService = require('../../../../src/lib/frame-service/external');
+const methods = require('../../../../src/lib/methods');
+const { fake, noop, yields, yieldsAsync } = require('../../../helpers');
 
-describe('Masterpass', function () {
-  beforeEach(function () {
-    this.configuration = fake.configuration();
-    this.configuration.isDebug = true;
-    this.configuration.gatewayConfiguration.masterpass = {
+describe('Masterpass', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.configuration = fake.configuration();
+    testContext.configuration.isDebug = true;
+    testContext.configuration.gatewayConfiguration.masterpass = {
       merchantCheckoutId: 'MERCHANT_ID',
       supportedNetworks: ['visa', 'master']
     };
-    this.fakeClient = {
-      getConfiguration: function () {
-        return this.configuration;
-      }.bind(this),
-      request: this.sandbox.stub().resolves({})
+    testContext.fakeClient = {
+      getConfiguration: () => testContext.configuration,
+      request: jest.fn().mockResolvedValue({})
     };
-    this.fakeFrameService = {
-      close: this.sandbox.stub(),
-      open: this.sandbox.stub(),
-      focus: this.sandbox.stub(),
-      redirect: this.sandbox.stub(),
+    testContext.fakeFrameService = {
+      close: jest.fn(),
+      open: jest.fn(),
+      focus: jest.fn(),
+      redirect: jest.fn(),
       state: {},
       _bus: {
-        on: this.sandbox.stub()
+        on: jest.fn()
       }
     };
-    this.sandbox.stub(analytics, 'sendEvent');
-
-    this.masterpass = new Masterpass({
-      client: this.fakeClient
+    testContext.masterpass = new Masterpass({
+      client: testContext.fakeClient
     });
-    this.masterpass._frameService = this.fakeFrameService;
+    testContext.masterpass._frameService = testContext.fakeFrameService;
   });
 
-  describe('_initialize', function () {
-    it('uses unminified assets in debug mode', function () {
-      var masterpass;
+  describe('_initialize', () => {
+    it('uses unminified assets in debug mode', () => {
+      let masterpass;
 
-      this.configuration.isDebug = true;
-
+      testContext.configuration.isDebug = true;
       masterpass = new Masterpass({
-        client: this.fakeClient
+        client: testContext.fakeClient
       });
-      masterpass._frameService = this.fakeFrameService;
+      masterpass._frameService = testContext.fakeFrameService;
 
-      this.sandbox.stub(frameService, 'create').yields();
-      this.fakeClient.request.resolves({
-        data: {}
-      });
+      jest.spyOn(frameService, 'create').mockImplementation(yields());
+      testContext.fakeClient.request.mockResolvedValue({ data: {}});
 
-      return masterpass._initialize().then(function () {
-        expect(frameService.create).to.be.calledOnce;
-        expect(frameService.create).to.be.calledWithMatch({
-          dispatchFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/dispatch-frame.html',
+      return masterpass._initialize().then(() => {
+        expect(frameService.create).toHaveBeenCalledTimes(1);
+        expect(frameService.create.mock.calls[0][0]).toMatchObject({
+          dispatchFrameUrl: `https://assets.braintreegateway.com/web/${VERSION}/html/dispatch-frame.html`,
           name: 'braintreemasterpasslanding',
-          openFrameUrl: 'https://assets.braintreegateway.com/web/' + VERSION + '/html/masterpass-landing-frame.html'
+          openFrameUrl: `https://assets.braintreegateway.com/web/${VERSION}/html/masterpass-landing-frame.html`
         });
       });
     });
 
-    it('attaches a frame service to the instance', function () {
-      var fakeService = {fakeService: true};
+    it('attaches a frame service to the instance', () => {
+      const fakeService = { fakeService: true };
 
-      delete this.masterpass._frameService;
+      delete testContext.masterpass._frameService;
 
-      this.sandbox.stub(frameService, 'create').yields(fakeService);
-      this.fakeClient.request.resolves({
-        data: {bankData: 'data'}
+      jest.spyOn(frameService, 'create').mockImplementation(yields(fakeService));
+      testContext.fakeClient.request.mockResolvedValue({
+        data: { bankData: 'data' }
       });
 
-      return this.masterpass._initialize().then(function () {
-        expect(this.masterpass._frameService).to.equal(fakeService);
-      }.bind(this));
+      return testContext.masterpass._initialize().then(() => {
+        expect(testContext.masterpass._frameService).toBe(fakeService);
+      });
     });
 
-    it('resolves the Masterpass instance', function () {
-      var fakeService = {fakeService: true};
+    it('resolves the Masterpass instance', () => {
+      const fakeService = { fakeService: true };
 
-      this.sandbox.stub(frameService, 'create').yields(fakeService);
-      this.fakeClient.request.resolves({
-        data: {bankData: 'data'}
+      jest.spyOn(frameService, 'create').mockImplementation(yields(fakeService));
+      testContext.fakeClient.request.mockResolvedValue({
+        data: { bankData: 'data' }
       });
 
-      return this.masterpass._initialize().then(function (instance) {
-        expect(instance).to.be.an.instanceof(Masterpass);
+      return testContext.masterpass._initialize().then(instance => {
+        expect(instance).toBeInstanceOf(Masterpass);
       });
     });
   });
 
-  describe('PopupBridge exists', function () {
-    beforeEach(function () {
+  describe('PopupBridge exists', () => {
+    beforeEach(() => {
       global.popupBridge = {
-        getReturnUrlPrefix: function () {
-          return 'testscheme://';
-        }
+        getReturnUrlPrefix: () => 'testscheme://'
       };
     });
 
-    afterEach(function () {
+    afterEach(() => {
       delete global.popupBridge;
     });
 
-    it('returns popupbridge callbackUrl', function () {
-      var masterpass = new Masterpass({
-        client: this.fakeClient
+    it('returns popupbridge callbackUrl', () => {
+      const masterpass = new Masterpass({
+        client: testContext.fakeClient
       });
 
-      expect(masterpass._callbackUrl).to.equal('testscheme://return');
+      expect(masterpass._callbackUrl).toBe('testscheme://return');
     });
   });
 
-  describe('tokenize', function () {
-    it('errors without any arguments', function () {
-      return this.masterpass.tokenize().then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION');
-        expect(err.message).to.equal('Missing required option for tokenize.');
-
-        expect(this.fakeClient.request).not.to.have.beenCalled;
-      }.bind(this));
-    });
-
-    it('sets auth in progress to true', function () {
-      this.masterpass.tokenize({
+  describe('tokenize', () => {
+    it('sets auth in progress to true', () => {
+      testContext.masterpass.tokenize({
         subtotal: '10.00',
         currencyCode: 'USD'
       }, noop);
 
-      expect(this.masterpass._authInProgress).to.equal(true);
+      expect(testContext.masterpass._authInProgress).toBe(true);
     });
 
-    context('with promise', function () {
-      context('with popupbridge', function () {
-        beforeEach(function () {
-          global.popupBridge = {};
-        });
-
-        afterEach(function () {
-          delete global.popupBridge;
-        });
-
-        it('resolves with nonce when tokenize is called', function () {
-          var expectedPayload = {
-            masterpassCards: [{
-              nonce: 'a-nonce',
-              type: 'MasterpassCard',
-              description: 'Ending in 22',
-              details: {
-                cardType: 'MasterCard',
-                lastTwo: '22'
-              },
-              billingAddress: {
-                countryCodeAlpha2: 'US',
-                extendedAddress: ' ',
-                locality: 'San Francisco',
-                postalCode: '94107',
-                region: 'US-SF',
-                streetAddress: '123 Townsend St'
-              },
-              consumed: false,
-              threeDSecureInfo: null,
-              shippingAddress: {
-                countryCodeAlpha2: 'US',
-                extendedAddress: ' ',
-                locality: 'San Francisco',
-                postalCode: '94107',
-                region: 'US-SF',
-                streetAddress: '123 Townsend St'
-              }
-            }]
-          };
-
-          this.fakeFrameService.open.yieldsAsync(null, {
-            queryItems: {
-              mpstatus: 'success',
-              oauth_token: 'token', // eslint-disable-line camelcase
-              oauth_verifier: 'verifier', // eslint-disable-line camelcase
-              checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-            }
-          });
-
-          this.fakeClient.request.resolves(expectedPayload);
-
-          return this.masterpass.tokenize({
-            subtotal: '10.00',
-            currencyCode: 'USD'
-          }).then(function (payload) {
-            expect(payload).to.deep.equal(expectedPayload.masterpassCards[0]);
-          });
-        });
-
-        it('closes the popup after tokenization', function () {
-          this.fakeFrameService.open.yieldsAsync(null, {
-            queryItems: {
-              mpstatus: 'success',
-              oauth_token: 'token', // eslint-disable-line camelcase
-              oauth_verifier: 'verifier', // eslint-disable-line camelcase
-              checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-            }
-          });
-          this.fakeClient.request.resolves({
-            masterpassCards: [{
-              nonce: 'a-nonce',
-              type: 'MasterpassCard',
-              description: 'Ending in 22'
-            }]
-          });
-
-          return this.masterpass.tokenize({
-            subtotal: '10.00',
-            currencyCode: 'USD'
-          }).then(function () {
-            expect(this.fakeFrameService.close).to.be.calledOnce;
-          }.bind(this));
-        });
-
-        it('sends an analytics event when tokenize call resolves with nonce', function () {
-          var expectedPayload = {
-            masterpassCards: []
-          };
-
-          this.fakeFrameService.open.yieldsAsync(null, {
-            queryItems: {
-              mpstatus: 'success',
-              oauth_token: 'token', // eslint-disable-line camelcase
-              oauth_verifier: 'verifier', // eslint-disable-line camelcase
-              checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-            }
-          });
-
-          this.fakeClient.request.resolves(expectedPayload);
-
-          return this.masterpass.tokenize({
-            subtotal: '10.00',
-            currencyCode: 'USD'
-          }).then(function () {
-            expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.success-popupbridge');
-          }.bind(this));
-        });
-
-        it('sends an analytics event when popup returns without required query parameters', function () {
-          this.fakeFrameService.open.yieldsAsync(null, {});
-
-          return this.masterpass.tokenize({
-            subtotal: '10.00',
-            currencyCode: 'USD'
-          }).then(rejectIfResolves).catch(function () {
-            expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.failed-popupbridge');
-          }.bind(this));
-        });
-
-        it('returns a BraintreeError when popupBridge returns a generic error', function () {
-          var originalErr = new Error('foo');
-
-          this.fakeFrameService.open.yieldsAsync(originalErr);
-
-          return this.masterpass.tokenize({
-            subtotal: '10.00',
-            currencyCode: 'USD'
-          }).then(rejectIfResolves).catch(function (err) {
-            expect(err).to.be.instanceof(BraintreeError);
-            expect(err.details.originalError).to.equal(originalErr);
-          });
-        });
-
-        it('sends an analytics event when popup is closed by user', function () {
-          var expectedError = new BraintreeError({
-            type: 'INTERNAL',
-            code: 'FRAME_SERVICE_FRAME_CLOSED',
-            message: 'Frame closed'
-          });
-
-          this.fakeFrameService.open.yieldsAsync(expectedError);
-
-          return this.masterpass.tokenize({
-            subtotal: '10.00',
-            currencyCode: 'USD'
-          }).then(rejectIfResolves).catch(function () {
-            expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.closed-popupbridge.by-user');
-          }.bind(this));
-        });
+    describe('with popupbridge', () => {
+      beforeEach(() => {
+        global.popupBridge = {};
       });
 
-      it('resolves with nonce when tokenize is called', function () {
-        var expectedPayload = {
+      afterEach(() => {
+        delete global.popupBridge;
+      });
+
+      it('resolves with nonce when tokenize is called', () => {
+        const expectedPayload = {
           masterpassCards: [{
             nonce: 'a-nonce',
             type: 'MasterpassCard',
@@ -327,31 +166,35 @@ describe('Masterpass', function () {
           }]
         };
 
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+        testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+          queryItems: {
+            mpstatus: 'success',
+            oauth_token: 'token', // eslint-disable-line camelcase
+            oauth_verifier: 'verifier', // eslint-disable-line camelcase
+            checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+          }
+        }));
 
-        this.fakeClient.request.resolves(expectedPayload);
+        testContext.fakeClient.request.mockResolvedValue(expectedPayload);
 
-        return this.masterpass.tokenize({
+        return testContext.masterpass.tokenize({
           subtotal: '10.00',
           currencyCode: 'USD'
-        }).then(function (payload) {
-          expect(payload).to.deep.equal(expectedPayload.masterpassCards[0]);
+        }).then(payload => {
+          expect(payload).toEqual(expectedPayload.masterpassCards[0]);
         });
       });
 
-      it('closes the popup after tokenization', function () {
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
-        this.fakeClient.request.resolves({
+      it('closes the popup after tokenization', () => {
+        testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+          queryItems: {
+            mpstatus: 'success',
+            oauth_token: 'token', // eslint-disable-line camelcase
+            oauth_verifier: 'verifier', // eslint-disable-line camelcase
+            checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+          }
+        }));
+        testContext.fakeClient.request.mockResolvedValue({
           masterpassCards: [{
             nonce: 'a-nonce',
             type: 'MasterpassCard',
@@ -359,640 +202,698 @@ describe('Masterpass', function () {
           }]
         });
 
-        return this.masterpass.tokenize({
+        return testContext.masterpass.tokenize({
           subtotal: '10.00',
           currencyCode: 'USD'
-        }).then(function () {
-          expect(this.fakeFrameService.close).to.be.calledOnce;
-        }.bind(this));
+        }).then(() => {
+          expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+        });
       });
 
-      ['subtotal', 'currencyCode'].forEach(function (option) {
-        var options = {
-          subtotal: '10.00',
-          currencyCode: 'USD'
+      it('sends an analytics event when tokenize call resolves with nonce', () => {
+        const expectedPayload = {
+          masterpassCards: []
         };
 
-        it('requires ' + option + ' option when calling tokenize', function () {
-          delete options[option];
+        testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+          queryItems: {
+            mpstatus: 'success',
+            oauth_token: 'token', // eslint-disable-line camelcase
+            oauth_verifier: 'verifier', // eslint-disable-line camelcase
+            checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+          }
+        }));
 
-          return this.masterpass.tokenize(options).then(rejectIfResolves).catch(function (err) {
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal('MERCHANT');
-            expect(err.code).to.equal('MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION');
-            expect(err.message).to.equal('Missing required option for tokenize.');
+        testContext.fakeClient.request.mockResolvedValue(expectedPayload);
 
-            expect(this.fakeClient.request).not.to.have.beenCalled;
-          }.bind(this));
-        });
-      });
-
-      it('rejects with error when options are not provided', function () {
-        return this.masterpass.tokenize(null).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION');
-          expect(err.message).to.equal('Missing required option for tokenize.');
-
-          expect(this.fakeClient.request).not.to.have.beenCalled;
-        }.bind(this));
-      });
-
-      it('rejects with error if masterpass payment is already in progress', function () {
-        this.masterpass._authInProgress = true;
-
-        return this.masterpass.tokenize({
+        return testContext.masterpass.tokenize({
           subtotal: '10.00',
           currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.exist;
-          expect(err.message).to.equal('Masterpass tokenization is already in progress.');
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.success-popupbridge');
         });
       });
 
-      it('rejects with error if tokenize call fails with generic error', function () {
-        var expectedError = new Error('foo');
+      it('sends an analytics event when popup returns without required query parameters', () => {
+        testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {}));
 
-        this.fakeFrameService.open.yieldsAsync(null, {
+        return testContext.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).catch(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.failed-popupbridge');
+        });
+      });
+
+      it('returns a BraintreeError when popupBridge returns a generic error', () => {
+        const originalErr = new Error('foo');
+
+        testContext.fakeFrameService.open.mockImplementation(yieldsAsync(originalErr));
+
+        return testContext.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.details.originalError).toBe(originalErr);
+        });
+      });
+
+      it('sends an analytics event when popup is closed by user', () => {
+        const expectedError = new BraintreeError({
+          type: 'INTERNAL',
+          code: 'FRAME_SERVICE_FRAME_CLOSED',
+          message: 'Frame closed'
+        });
+
+        testContext.fakeFrameService.open.mockImplementation(yieldsAsync(expectedError));
+
+        return testContext.masterpass.tokenize({
+          subtotal: '10.00',
+          currencyCode: 'USD'
+        }).catch(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.closed-popupbridge.by-user');
+        });
+      });
+    });
+
+    it('resolves with nonce when tokenize is called', () => {
+      const expectedPayload = {
+        masterpassCards: [{
+          nonce: 'a-nonce',
+          type: 'MasterpassCard',
+          description: 'Ending in 22',
+          details: {
+            cardType: 'MasterCard',
+            lastTwo: '22'
+          },
+          billingAddress: {
+            countryCodeAlpha2: 'US',
+            extendedAddress: ' ',
+            locality: 'San Francisco',
+            postalCode: '94107',
+            region: 'US-SF',
+            streetAddress: '123 Townsend St'
+          },
+          consumed: false,
+          threeDSecureInfo: null,
+          shippingAddress: {
+            countryCodeAlpha2: 'US',
+            extendedAddress: ' ',
+            locality: 'San Francisco',
+            postalCode: '94107',
+            region: 'US-SF',
+            streetAddress: '123 Townsend St'
+          }
+        }]
+      };
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'success',
+        oauth_token: 'token', // eslint-disable-line camelcase
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      testContext.fakeClient.request.mockResolvedValue(expectedPayload);
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).then(payload => {
+        expect(payload).toEqual(expectedPayload.masterpassCards[0]);
+      });
+    });
+
+    it('closes the popup after tokenization', () => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'success',
+        oauth_token: 'token', // eslint-disable-line camelcase
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+      testContext.fakeClient.request.mockResolvedValue({
+        masterpassCards: [{
+          nonce: 'a-nonce',
+          type: 'MasterpassCard',
+          description: 'Ending in 22'
+        }]
+      });
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).then(() => {
+        expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it.each([
+      ['requires "subtotal"', 'subtotal'],
+      ['requires "currencyCode"', 'currencyCode'],
+      ['rejects if missing required options', false]
+    ])('%s when calling tokenize', (s, option) => {
+      let options = {
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      };
+
+      if (option) {
+        delete options[option];
+      } else {
+        options = undefined; // eslint-disable-line no-undefined
+      }
+
+      return testContext.masterpass.tokenize(options).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION');
+        expect(err.message).toBe('Missing required option for tokenize.');
+
+        expect(testContext.fakeClient.request).not.toHaveBeenCalled();
+      });
+    });
+
+    it('rejects with error if masterpass payment is already in progress', () => {
+      testContext.masterpass._authInProgress = true;
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(err => {
+        expect(err).toBeDefined();
+        expect(err.message).toBe('Masterpass tokenization is already in progress.');
+      });
+    });
+
+    it('rejects with error if tokenize call fails with generic error', () => {
+      const expectedError = new Error('foo');
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'success',
+        oauth_token: 'token', // eslint-disable-line camelcase
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      testContext.fakeClient.request.mockRejectedValue(expectedError);
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(err => {
+        expect(err).toBeDefined();
+        expect(err.details.originalError).toBe(expectedError);
+      });
+    });
+
+    it('rejects with error if tokenize call fails with BraintreeError', () => {
+      const expectedError = new BraintreeError({
+        type: 'INTERNAL',
+        code: 'FOO',
+        message: 'foo'
+      });
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'success',
+        oauth_token: 'token', // eslint-disable-line camelcase
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      testContext.fakeClient.request.mockRejectedValue(expectedError);
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(err => {
+        expect(err).toBe(expectedError);
+      });
+    });
+
+    it('rejects with error if masterpass payment `mpstatus` is not `success`', () => {
+      testContext.fakeClient.request.mockResolvedValue({});
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'failed',
+        oauth_token: 'token', // eslint-disable-line camelcase
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(({ code }) => {
+        expect(code).toBe('MASTERPASS_POPUP_CLOSED');
+      });
+    });
+
+    /* eslint-disable camelcase */
+    it.each([
+      ['oauth_verifier is missing', { oauth_token: 'token', checkout_resource_url: 'checkout-resource-url' }],
+      ['oauth_verifier is "null"', { oauth_token: 'token', oauth_verifier: null, checkout_resource_url: 'checkout-resource-url' }],
+      ['oauth_verifier is the string "null"', {
+        oauth_token: 'token',
+        oauth_verifier: 'null',
+        checkout_resource_url: 'checkout-resource-url'
+      }],
+      ['oauth_token is "null"', { oauth_token: null, oauth_verifier: 'oauth-verifier', checkout_resource_url: 'checkout-resource-url' }],
+      ['checkout_resource is "null"', { oauth_token: 'token', oauth_verifier: 'oauth-verifier', checkout_resource_url: null }]
+    ])('rejects with error if %s irrespective of mpstatus', (s, qualifier) => {
+      testContext.fakeClient.request.mockResolvedValue({});
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'success',
+        ...qualifier
+      }));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(({ code }) => {
+        expect(code).toBe('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+      });
+    });
+    /* eslint-enable camelcase */
+
+    it('closes the popup when masterpass payment `mpstatus` is not `success`', () => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'failed',
+        oauth_token: 'token', // eslint-disable-line camelcase
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(() => {
+        expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('closes the popup when masterpass payment `mpstatus` is `success` but some params are missing', () => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'success',
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(() => {
+        expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('rejects with error if popup is closed before completion', () => {
+      const expectedError = new BraintreeError({
+        type: 'INTERNAL',
+        code: 'FRAME_SERVICE_FRAME_CLOSED',
+        message: 'Frame closed'
+      });
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(expectedError));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('MASTERPASS_POPUP_CLOSED');
+        expect(err.type).toBe('CUSTOMER');
+        expect(err.message).toBe('Customer closed Masterpass popup before authorizing.');
+      });
+    });
+
+    it.each([
+      ['', new BraintreeError({
+        type: 'INTERNAL',
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
+        message: 'Frame closed'
+      })],
+      ['because of IE bug', new BraintreeError({
+        type: 'INTERNAL',
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG',
+        message: 'Frame closed'
+      })]
+    ])('rejects with error if popup fails to open %s', (s, expectedError) => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(expectedError));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('MASTERPASS_POPUP_OPEN_FAILED');
+        expect(err.type).toBe('MERCHANT');
+        expect(err.message).toBe(
+          'Masterpass popup failed to open. Make sure to tokenize in response to a user action, such as a click.'
+        );
+        expect(err.details.originalError).toBe(expectedError);
+      });
+    });
+
+    it('rejects with Braintree error if popup fails with generic error', () => {
+      const genericError = new Error('Foo');
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(genericError));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('MASTERPASS_FLOW_FAILED');
+        expect(err.type).toBe('NETWORK');
+        expect(err.message).toBe('Could not initialize Masterpass flow.');
+        expect(err.details.originalError).toBe(genericError);
+      });
+    });
+
+    it('rejects with wrapped BraintreeError when thrown generic errors', () => {
+      const requestError = new Error('Foo');
+
+      testContext.fakeClient.request.mockRejectedValue(requestError);
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.details.originalError).toBe(requestError);
+      });
+    });
+
+    it('sends an analytics event if any masterpass payment params are missing', () => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'success',
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.closed.missing-payload');
+      });
+    });
+
+    it('sends an analytics event if masterpass payment `mpstatus` is not `success`', () => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
+        mpstatus: 'failed',
+        oauth_token: 'token', // eslint-disable-line camelcase
+        oauth_verifier: 'verifier', // eslint-disable-line camelcase
+        checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
+      }));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.closed.by-user');
+      });
+    });
+
+    it('sends an analytics event if customer closes window before completion', () => {
+      const expectedError = new BraintreeError({
+        type: 'INTERNAL',
+        code: 'FRAME_SERVICE_FRAME_CLOSED',
+        message: 'Frame closed'
+      });
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(expectedError));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.closed.by-user');
+      });
+    });
+
+    it('sends an analytics event if popup fails to open', () => {
+      const expectedError = new BraintreeError({
+        type: 'INTERNAL',
+        code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
+        message: 'Frame closed'
+      });
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(expectedError));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.failed.to-open');
+      });
+    });
+
+    it('sends an analytics event if popup fails with generic error', () => {
+      const genericError = new Error('Foo');
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(genericError));
+
+      return testContext.masterpass.tokenize({
+        subtotal: '10.00',
+        currencyCode: 'USD'
+      }).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'masterpass.tokenization.failed');
+      });
+    });
+
+    describe('when loading page in popup', () => {
+      beforeEach(() => {
+        testContext.fakeClient.request.mockResolvedValue({
+          masterpassCards: [{}]
+        });
+        testContext.fakeFrameService.open.mockImplementation(yieldsAsync(null, {
           mpstatus: 'success',
           oauth_token: 'token', // eslint-disable-line camelcase
           oauth_verifier: 'verifier', // eslint-disable-line camelcase
           checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
-
-        this.fakeClient.request.rejects(expectedError);
-
-        return this.masterpass.tokenize({
+        }));
+        testContext.options = {
           subtotal: '10.00',
           currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.exist;
-          expect(err.details.originalError).to.equal(expectedError);
+        };
+      });
+
+      it('makes an api request for masterpass request token', () =>
+        testContext.masterpass.tokenize(testContext.options).then(() => {
+          expect(testContext.fakeClient.request).toHaveBeenCalledWith(expect.objectContaining({
+            endpoint: 'masterpass/request_token',
+            method: 'post',
+            data: {
+              requestToken: {
+                originUrl: `${global.location.protocol}//${global.location.hostname}`,
+                subtotal: testContext.options.subtotal,
+                currencyCode: testContext.options.currencyCode,
+                callbackUrl: expect.stringMatching(/^https:\/\/assets.braintreegateway.com\/web\/.*redirect-frame.html$/)
+              }
+            }
+          }));
+        }));
+
+      it('reports expected error when network request for Masterpass request token fails with a generic error', () => {
+        const expectedError = new Error('foo');
+
+        testContext.fakeClient.request.mockRejectedValue(expectedError);
+
+        return testContext.masterpass.tokenize(testContext.options).catch(({ code, details }) => {
+          expect(code).toBe('MASTERPASS_FLOW_FAILED');
+          expect(details.originalError).toBe(expectedError);
         });
       });
 
-      it('rejects with error if tokenize call fails with BraintreeError', function () {
-        var expectedError = new BraintreeError({
+      it('reports expected error when network request for Masterpass token fails with BraintreeError', () => {
+        const expectedError = new BraintreeError({
           type: 'INTERNAL',
           code: 'FOO',
           message: 'foo'
         });
 
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+        testContext.fakeClient.request.mockRejectedValue(expectedError);
 
-        this.fakeClient.request.rejects(expectedError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.equal(expectedError);
+        return testContext.masterpass.tokenize(testContext.options).catch(err => {
+          expect(err).toBe(expectedError);
         });
       });
 
-      it('rejects with error if masterpass payment `mpstatus` is not `success`', function () {
-        this.fakeClient.request.resolves({});
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'failed',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+      it('reports expected error when network request for Masterpass request token fails with 422 status', () => {
+        const expectedError = new Error('foo');
 
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('MASTERPASS_POPUP_CLOSED');
-        });
-      });
+        expectedError.details = {
+          httpStatus: 422
+        };
 
-      it('rejects with error if masterpass payment oauth_verifier is missing in payload', function () {
-        this.fakeClient.request.resolves({});
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+        testContext.fakeClient.request.mockRejectedValue(expectedError);
 
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        return testContext.masterpass.tokenize(testContext.options).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.details.originalError).toBe(expectedError);
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('MASTERPASS_INVALID_PAYMENT_OPTION');
+          expect(err.message).toBe('Masterpass payment options are invalid.');
         });
       });
 
-      it('rejects with error if masterpass payment oauth_verifier is null irrespective of mpstatus', function () {
-        this.fakeClient.request.resolves({});
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: null, // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+      it('closes frame when network request for Masterpass request token fails', () => {
+        testContext.fakeClient.request.mockRejectedValue(new Error('foo'));
+        testContext.masterpass._createFrameOpenHandler = resolve => {
+          resolve({});
+        };
 
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        return testContext.masterpass.tokenize(testContext.options).catch(() => {
+          expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
         });
       });
 
-      it('rejects with error if masterpass payment oauth_verifier is a string "null" irrespective of mpstatus', function () {
-        this.fakeClient.request.resolves({});
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'null', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+      it('redirects frameService', () => {
+        testContext.fakeClient.request.mockResolvedValue({ requestToken: 'token' });
+        testContext.masterpass._createFrameOpenHandler = resolve => {
+          resolve({});
+        };
 
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        return testContext.masterpass.tokenize(testContext.options).then(() => {
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledTimes(1);
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6$/));
         });
       });
 
-      it('rejects with error if masterpass payment oauth_token is null irrespective of mpstatus', function () {
-        this.fakeClient.request.resolves({});
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: null, // eslint-disable-line camelcase
-          oauth_verifier: 'oauth-verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+      it('redirects frameService with config', () => {
+        const options = {
+          currencyCode: 'USD',
+          subtotal: '1.00',
+          config: {
+            paramKey: 'paramValue',
+            allowedCardTypes: 'visa',
+            merchantCheckoutId: 'OTHER_MERCHANT_ID'
+          }
+        };
 
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
-        });
-      });
+        testContext.fakeClient.request.mockResolvedValue({ requestToken: 'token' });
+        testContext.masterpass._createFrameOpenHandler = resolve => {
+          resolve({});
+        };
 
-      it('rejects with error if masterpass payment checkout resource url is null irrespective of mpstatus', function () {
-        this.fakeClient.request.resolves({});
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'oauth-verifier', // eslint-disable-line camelcase
-          checkout_resource_url: null // eslint-disable-line camelcase
-        });
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.code).to.equal('MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS');
+        return testContext.masterpass.tokenize(options).then(() => {
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledTimes(1);
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/redirect-frame.html&merchantCheckoutId=OTHER_MERCHANT_ID&allowedCardTypes=visa&version=v6&paramKey=paramValue$/));
         });
       });
 
-      it('closes the popup when masterpass payment `mpstatus` is not `success`', function () {
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'failed',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
+      it('redirectUrl replaces default value with config', () => {
+        const options = {
+          currencyCode: 'USD',
+          subtotal: '1.00',
+          config: {
+            paramKey: 'paramValue',
+            version: 'v7'
+          }
+        };
 
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function () {
-          expect(this.fakeFrameService.close).to.be.calledOnce;
-        }.bind(this));
-      });
+        testContext.fakeClient.request.mockResolvedValue({ requestToken: 'token' });
+        testContext.masterpass._createFrameOpenHandler = resolve => {
+          resolve({});
+        };
 
-      it('closes the popup when masterpass payment `mpstatus` is `success` but some params are missing', function () {
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function () {
-          expect(this.fakeFrameService.close).to.be.calledOnce;
-        }.bind(this));
-      });
-
-      it('rejects with error if popup is closed before completion', function () {
-        var expectedError = new BraintreeError({
-          type: 'INTERNAL',
-          code: 'FRAME_SERVICE_FRAME_CLOSED',
-          message: 'Frame closed'
-        });
-
-        this.fakeFrameService.open.yieldsAsync(expectedError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.instanceof(BraintreeError);
-          expect(err.code).to.equal('MASTERPASS_POPUP_CLOSED');
-          expect(err.type).to.equal('CUSTOMER');
-          expect(err.message).to.equal('Customer closed Masterpass popup before authorizing.');
+        return testContext.masterpass.tokenize(options).then(() => {
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledTimes(1);
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v7&paramKey=paramValue$/));
         });
       });
 
-      it('rejects with error if popup fails to open', function () {
-        var expectedError = new BraintreeError({
-          type: 'INTERNAL',
-          code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
-          message: 'Frame closed'
-        });
-
-        this.fakeFrameService.open.yieldsAsync(expectedError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.instanceof(BraintreeError);
-          expect(err.code).to.equal('MASTERPASS_POPUP_OPEN_FAILED');
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.message).to.equal('Masterpass popup failed to open. Make sure to tokenize in response to a user action, such as a click.');
-          expect(err.details.originalError).to.equal(expectedError);
-        });
-      });
-
-      it('rejects with error if popup fails to open because of IE bug', function () {
-        var expectedError = new BraintreeError({
-          type: 'INTERNAL',
-          code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG',
-          message: 'Frame closed'
-        });
-
-        this.fakeFrameService.open.yieldsAsync(expectedError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.instanceof(BraintreeError);
-          expect(err.code).to.equal('MASTERPASS_POPUP_OPEN_FAILED');
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.message).to.equal('Masterpass popup failed to open. Make sure to tokenize in response to a user action, such as a click.');
-          expect(err.details.originalError).to.equal(expectedError);
-        });
-      });
-
-      it('rejects with Braintree error if popup fails with generic error', function () {
-        var genericError = new Error('Foo');
-
-        this.fakeFrameService.open.yieldsAsync(genericError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.code).to.equal('MASTERPASS_FLOW_FAILED');
-          expect(err.type).to.equal('NETWORK');
-          expect(err.message).to.equal('Could not initialize Masterpass flow.');
-          expect(err.details.originalError).to.equal(genericError);
-        });
-      });
-
-      it('rejects with wrapped BraintreeError when thrown generic errors', function () {
-        var requestError = new Error('Foo');
-
-        this.fakeClient.request.rejects(requestError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.instanceof(BraintreeError);
-          expect(err.details.originalError).to.equal(requestError);
-        });
-      });
-
-      it('sends an analytics event if any masterpass payment params are missing', function () {
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'success',
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.closed.missing-payload');
-        }.bind(this));
-      });
-
-      it('sends an analytics event if masterpass payment `mpstatus` is not `success`', function () {
-        this.fakeFrameService.open.yieldsAsync(null, {
-          mpstatus: 'failed',
-          oauth_token: 'token', // eslint-disable-line camelcase
-          oauth_verifier: 'verifier', // eslint-disable-line camelcase
-          checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-        });
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.closed.by-user');
-        }.bind(this));
-      });
-
-      it('sends an analytics event if customer closes window before completion', function () {
-        var expectedError = new BraintreeError({
-          type: 'INTERNAL',
-          code: 'FRAME_SERVICE_FRAME_CLOSED',
-          message: 'Frame closed'
-        });
-
-        this.fakeFrameService.open.yieldsAsync(expectedError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.closed.by-user');
-        }.bind(this));
-      });
-
-      it('sends an analytics event if popup fails to open', function () {
-        var expectedError = new BraintreeError({
-          type: 'INTERNAL',
-          code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
-          message: 'Frame closed'
-        });
-
-        this.fakeFrameService.open.yieldsAsync(expectedError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.failed.to-open');
-        }.bind(this));
-      });
-
-      it('sends an analytics event if popup fails with generic error', function () {
-        var genericError = new Error('Foo');
-
-        this.fakeFrameService.open.yieldsAsync(genericError);
-
-        return this.masterpass.tokenize({
-          subtotal: '10.00',
-          currencyCode: 'USD'
-        }).then(rejectIfResolves).catch(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'masterpass.tokenization.failed');
-        }.bind(this));
-      });
-
-      context('when loading page in popup', function () {
-        beforeEach(function () {
-          this.fakeClient.request.resolves({
-            masterpassCards: [{}]
-          });
-          this.fakeFrameService.open.yieldsAsync(null, {
-            mpstatus: 'success',
-            oauth_token: 'token', // eslint-disable-line camelcase
-            oauth_verifier: 'verifier', // eslint-disable-line camelcase
-            checkout_resource_url: 'checkout-resource-url' // eslint-disable-line camelcase
-          });
-          this.options = {
-            subtotal: '10.00',
-            currencyCode: 'USD'
-          };
-        });
-
-        it('makes an api request for masterpass request token', function () {
-          return this.masterpass.tokenize(this.options).then(function () {
-            expect(this.fakeClient.request).to.have.been.calledWithMatch({
-              endpoint: 'masterpass/request_token',
-              method: 'post',
-              data: {
-                requestToken: {
-                  originUrl: global.location.protocol + '//' + global.location.hostname,
-                  subtotal: this.options.subtotal,
-                  currencyCode: this.options.currencyCode,
-                  callbackUrl: this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*masterpass-redirect-frame.html$/)
-                }
-              }
-            });
-          }.bind(this));
-        });
-
-        it('reports expected error when network request for Masterpass request token fails with a generic error', function () {
-          var expectedError = new Error('foo');
-
-          this.fakeClient.request.rejects(expectedError);
-
-          return this.masterpass.tokenize(this.options).then(rejectIfResolves).catch(function (err) {
-            expect(err.code).to.equal('MASTERPASS_FLOW_FAILED');
-            expect(err.details.originalError).to.equal(expectedError);
-          });
-        });
-
-        it('reports expected error when network request for Masterpass token fails with BraintreeError', function () {
-          var expectedError = new BraintreeError({
-            type: 'INTERNAL',
-            code: 'FOO',
-            message: 'foo'
-          });
-
-          this.fakeClient.request.rejects(expectedError);
-
-          return this.masterpass.tokenize(this.options).then(rejectIfResolves).catch(function (err) {
-            expect(err).to.equal(expectedError);
-          });
-        });
-
-        it('reports expected error when network request for Masterpass request token fails with 422 status', function () {
-          var expectedError = new Error('foo');
-
-          expectedError.details = {
-            httpStatus: 422
-          };
-
-          this.fakeClient.request.rejects(expectedError);
-
-          return this.masterpass.tokenize(this.options).then(rejectIfResolves).catch(function (err) {
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.details.originalError).to.equal(expectedError);
-            expect(err.type).to.equal('MERCHANT');
-            expect(err.code).to.equal('MASTERPASS_INVALID_PAYMENT_OPTION');
-            expect(err.message).to.equal('Masterpass payment options are invalid.');
-          });
-        });
-
-        it('closes frame when network request for Masterpass request token fails', function () {
-          this.fakeClient.request.rejects(new Error('foo'));
-          this.masterpass._createFrameOpenHandler = function (resolve) {
-            resolve({});
-          };
-
-          return this.masterpass.tokenize(this.options).then(rejectIfResolves).catch(function () {
-            expect(this.fakeFrameService.close).to.be.calledOnce;
-          }.bind(this));
-        });
-
-        it('redirects frameService', function () {
-          this.fakeClient.request.resolves({requestToken: 'token'});
-          this.masterpass._createFrameOpenHandler = function (resolve) {
-            resolve({});
-          };
-
-          return this.masterpass.tokenize(this.options).then(function () {
-            expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6$/));
-          }.bind(this));
-        });
-
-        it('redirects frameService with config', function () {
-          var options = {
-            currencyCode: 'USD',
-            subtotal: '1.00',
-            config: {
-              paramKey: 'paramValue',
-              allowedCardTypes: 'visa',
-              merchantCheckoutId: 'OTHER_MERCHANT_ID'
+      it('redirectUrl ignores config with function values', () => {
+        const options = {
+          currencyCode: 'USD',
+          subtotal: '1.00',
+          config: {
+            paramKey: 'paramValue',
+            badFunction: () => {
             }
-          };
+          }
+        };
 
-          this.fakeClient.request.resolves({requestToken: 'token'});
-          this.masterpass._createFrameOpenHandler = function (resolve) {
-            resolve({});
-          };
+        testContext.fakeClient.request.mockResolvedValue({ requestToken: 'token' });
+        testContext.masterpass._createFrameOpenHandler = resolve => {
+          resolve({});
+        };
 
-          return this.masterpass.tokenize(options).then(function () {
-            expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=OTHER_MERCHANT_ID&allowedCardTypes=visa&version=v6&paramKey=paramValue$/));
-          }.bind(this));
-        });
-
-        it('redirectUrl replaces default value with config', function () {
-          var options = {
-            currencyCode: 'USD',
-            subtotal: '1.00',
-            config: {
-              paramKey: 'paramValue',
-              version: 'v7'
-            }
-          };
-
-          this.fakeClient.request.resolves({requestToken: 'token'});
-          this.masterpass._createFrameOpenHandler = function (resolve) {
-            resolve({});
-          };
-
-          return this.masterpass.tokenize(options).then(function () {
-            expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v7&paramKey=paramValue$/));
-          }.bind(this));
-        });
-
-        it('redirectUrl ignores config with function values', function () {
-          var options = {
-            currencyCode: 'USD',
-            subtotal: '1.00',
-            config: {
-              paramKey: 'paramValue',
-              badFunction: function () {}
-            }
-          };
-
-          this.fakeClient.request.resolves({requestToken: 'token'});
-          this.masterpass._createFrameOpenHandler = function (resolve) {
-            resolve({});
-          };
-
-          return this.masterpass.tokenize(options).then(function () {
-            expect(this.fakeFrameService.redirect).to.be.calledOnce;
-            expect(this.fakeFrameService.redirect).to.be.calledWith(this.sandbox.match(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6&paramKey=paramValue$/));
-          }.bind(this));
+        return testContext.masterpass.tokenize(options).then(() => {
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledTimes(1);
+          expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/assets.braintreegateway.com\/web\/.*\/masterpass-loading-frame.html\?environment=sandbox&requestToken=token&callbackUrl=https:\/\/assets.braintreegateway.com\/web\/.*\/redirect-frame.html&merchantCheckoutId=MERCHANT_ID&allowedCardTypes=visa,master&version=v6&paramKey=paramValue$/));
         });
       });
     });
   });
 
-  describe('closeWindow', function () {
-    it('calls the frame service close function', function () {
-      this.masterpass._closeWindow();
+  describe('closeWindow', () => {
+    it('calls the frame service close function', () => {
+      testContext.masterpass._closeWindow();
 
-      expect(this.masterpass._frameService.close).to.be.calledOnce;
+      expect(testContext.masterpass._frameService.close).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('teardown', function () {
-    beforeEach(function () {
-      this.frameServiceInstance = {teardown: this.sandbox.stub()};
-      this.fakeClient.request.resolves({});
+  describe('teardown', () => {
+    beforeEach(() => {
+      testContext.frameServiceInstance = { teardown: jest.fn() };
+      testContext.fakeClient.request.mockResolvedValue({});
 
-      this.sandbox.stub(frameService, 'create').yields(this.frameServiceInstance);
+      jest.spyOn(frameService, 'create').mockImplementation(yields(testContext.frameServiceInstance));
     });
 
-    it('tears down the frame service', function (done) {
-      var frameServiceInstance = this.frameServiceInstance;
-      var masterpass = this.masterpass;
+    it('tears down the frame service', () => {
+      const frameServiceInstance = testContext.frameServiceInstance;
+      const masterpass = testContext.masterpass;
 
-      masterpass._initialize().then(function () {
-        masterpass.teardown(function () {
-          expect(frameServiceInstance.teardown).to.have.been.called;
-          done();
+      return masterpass._initialize().then(() => {
+        masterpass.teardown().then(() => {
+          expect(frameServiceInstance.teardown).toHaveBeenCalled();
         });
       });
     });
 
-    it('calls teardown analytic', function (done) {
-      var masterpass = this.masterpass;
+    it('calls teardown analytic', () => {
+      const masterpass = testContext.masterpass;
 
-      masterpass._initialize().then(function () {
-        masterpass.teardown(function () {
-          expect(analytics.sendEvent).to.have.been.calledWith(masterpass._client, 'masterpass.teardown-completed');
-          done();
+      return masterpass._initialize().then(() => {
+        masterpass.teardown().then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(masterpass._client, 'masterpass.teardown-completed');
         });
       });
     });
 
-    it('returns a promise', function (done) {
-      var masterpass = this.masterpass;
+    it('returns a promise', () => {
+      const masterpass = testContext.masterpass;
 
-      masterpass._initialize().then(function () {
-        var teardown = masterpass.teardown();
+      return masterpass._initialize().then().then(() => {
+        const teardown = masterpass.teardown();
 
-        expect(teardown).to.be.an.instanceof(Promise);
-        done();
+        expect(teardown).resolves.toBeUndefined();
       });
     });
 
-    it('does not require a callback', function (done) {
-      var masterpass = this.masterpass;
+    it('does not require a callback', done => {
+      const masterpass = testContext.masterpass;
 
-      masterpass._initialize().then(function () {
-        expect(function () {
+      masterpass._initialize().then(() => {
+        expect(() => {
           masterpass.teardown();
-        }).to.not.throw();
+        }).not.toThrowError();
         done();
       });
     });
 
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var masterpass = this.masterpass;
+    it('replaces all methods so error is thrown when methods are invoked', done => {
+      const masterpass = testContext.masterpass;
 
-      masterpass._initialize().then(function () {
-        masterpass.teardown(function () {
-          methods(Masterpass.prototype).forEach(function (method) {
-            var error;
+      masterpass._initialize().then(() => {
+        masterpass.teardown(() => {
+          methods(Masterpass.prototype).forEach(method => {
+            let error;
 
             try {
               masterpass[method]();
@@ -1000,10 +901,10 @@ describe('Masterpass', function () {
               error = err;
             }
 
-            expect(error).to.be.an.instanceof(BraintreeError);
-            expect(error.type).to.equal(BraintreeError.types.MERCHANT);
-            expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-            expect(error.message).to.equal(method + ' cannot be called after teardown.');
+            expect(error).toBeInstanceOf(BraintreeError);
+            expect(error.type).toBe(BraintreeError.types.MERCHANT);
+            expect(error.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(error.message).toBe(`${method} cannot be called after teardown.`);
           });
 
           done();

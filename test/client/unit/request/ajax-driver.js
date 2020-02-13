@@ -1,483 +1,457 @@
 'use strict';
 
-var sinon = require('sinon');
-var AJAXDriver = require('../../../../src/client/request/ajax-driver');
-var xhr = require('../../../../src/client/request/xhr');
-var GraphQL = require('../../../../src/client/request/graphql');
-var TEST_SERVER_URL = 'http://localhost/ajax';
+const server = require('mock-xmlhttprequest').newServer();
+const AJAXDriver = require('../../../../src/client/request/ajax-driver');
+const xhr = require('../../../../src/client/request/xhr');
+const GraphQL = require('../../../../src/client/request/graphql');
+const { noop } = require('../../../helpers');
+const TEST_SERVER_URL = '/testUrl/';
 
-describe('AJAXDriver', function () {
-  beforeEach(function () {
-    this.server = sinon.fakeServer.create({respondImmediately: true});
-    this.fakeGraphQL = {
-      isGraphQLRequest: this.sandbox.stub().returns(false)
-    };
+describe('AJAXDriver', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.fakeGraphQL = { isGraphQLRequest: jest.fn().mockReturnValue(false) };
+    server.install();
   });
 
-  afterEach(function () {
-    this.server.restore();
+  afterEach(() => {
+    server.remove();
   });
 
-  // TODO: figure out a way to reliably test this (peridically fails as-is)
-  it.skip('accepts an ajax timeout value which will terminate the request if it is not completed', function (done) {
-    this.server.restore();
-    this.server = sinon.fakeServer.create();
-    this.server.respondWith([200, {}, '']);
-
-    AJAXDriver.request({
-      url: TEST_SERVER_URL,
-      timeout: 50,
-      graphQL: this.fakeGraphQL,
-      metadata: this.fakeMetadata
-    }, function callback(err) {
-      expect(err).to.not.eql(null);
-      done();
+  describe('tcp preconnect bug retry', () => {
+    afterEach(() => {
+      server._routes = {};
     });
 
-    setTimeout(function () {
-      this.server.respond();
-    }.bind(this), 1000);
-  });
-
-  describe('tcp preconnect bug retry', function () {
-    it('retries if a 408 error', function (done) {
-      var responseCount = 0;
-
-      this.server.respondWith(function (req) {
-        if (responseCount === 0) {
-          responseCount++;
-          req.respond(408, {}, '');
-
-          return;
-        }
-
-        req.respond(200, {}, '{"result": "yay"}');
-      });
+    it('retries if a 408 error', done => {
+      server.get(TEST_SERVER_URL, [{ status: 408 }, { status: 200, body: '{ "result": "yay" }' }]);
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err, data, status) {
-        expect(err).to.not.exist;
-        expect(status).to.equal(200);
-        expect(data).to.deep.equal({result: 'yay'});
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, (err, data, status) => {
+        expect(err).toBeFalsy();
+        expect(status).toBe(200);
+        expect(data).toEqual({ result: 'yay' });
         done();
       });
     });
 
-    it('retries if a status code is 0', function (done) {
-      var responseCount = 0;
-
-      this.server.respondWith(function (req) {
-        if (responseCount === 0) {
-          responseCount++;
-          req.respond(0, {}, '');
-
-          return;
-        }
-
-        req.respond(200, {}, '{"result": "yay"}');
-      });
+    it('retries if a status code is 0', done => {
+      server.get(TEST_SERVER_URL, [{ status: 0 }, { status: 200, body: '{ "result": "yay" }' }]);
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err, data, status) {
-        expect(err).to.not.exist;
-        expect(status).to.equal(200);
-        expect(data).to.deep.equal({result: 'yay'});
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, (err, data, status) => {
+        expect(err).toBeFalsy();
+        expect(status).toBe(200);
+        expect(data).toEqual({ result: 'yay' });
         done();
       });
     });
 
-    it('only retries once', function (done) {
-      var responseCount = 0;
-
-      this.server.respondWith(function (req) {
-        if (responseCount === 0) {
-          responseCount++;
-          req.respond(408, {}, 'first');
-
-          return;
-        } else if (responseCount === 1) {
-          responseCount++;
-          req.respond(408, {}, 'second');
-
-          return;
-        }
-
-        req.respond(200, {}, '{"never": "gets here"}');
-      });
+    it('only retries once', done => {
+      server.get(TEST_SERVER_URL, [{ status: 408, body: '{ "attempt": 1 }' }, { status: 408, body: '{ "attempt": 2 }' }]);
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err, data, status) {
-        expect(err).to.equal('second');
-        expect(status).to.equal(408);
-        expect(data).to.not.exist;
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, (err, data, status) => {
+        expect(err.attempt).toBe(2);
+        expect(status).toBe(408);
+        expect(data).toBeFalsy();
         done();
       });
     });
   });
 
-  describe('#request with get', function () {
-    it('makes an serialized ajax request', function (done) {
-      this.server.respondWith([200, {}, JSON.stringify({marco: 'polo'})]);
+  describe('#request with get', () => {
+    afterEach(() => {
+      server._routes = {};
+    });
+
+    it('accepts an ajax timeout value which will terminate the request if it is not completed', done => {
+      // once in the callback, twice in the server timeout assertion to account for the tcp preconnect retry
+      expect.assertions(3);
+      server.get(TEST_SERVER_URL, ({ _timeout }) => {
+        expect(_timeout).toBe(50);
+      });
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err, resp) {
+        timeout: 50,
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, err => {
+        expect(err).not.toBe(null);
+        done();
+      });
+    });
+
+    it('makes a serialized ajax request', done => {
+      server.get(TEST_SERVER_URL, { status: 200, body: JSON.stringify({ marco: 'polo' }) });
+
+      AJAXDriver.request({
+        url: TEST_SERVER_URL,
+        method: 'GET',
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, (err, resp) => {
         if (err) {
           done(err);
 
           return;
         }
 
-        expect(resp.marco).to.eql('polo');
+        expect(resp.marco).toBe('polo');
         done();
       });
     });
 
-    it('calls callback with error if request is unsuccessful', function (done) {
-      this.server.respondWith([500, {}, '']);
+    it('calls callback with error if request is unsuccessful', done => {
+      server.get(TEST_SERVER_URL, { status: 500 });
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err) {
-        expect(err).to.not.eql(null);
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, err => {
+        expect(err).not.toBe(null);
         done();
       });
     });
 
-    it('calls callback with error if request is rate limited', function (done) {
-      var body = '<!doctype html><html></html>';
+    it('calls callback with error if request is rate limited', done => {
+      const body = '<!doctype html><html></html>';
 
-      this.server.respondWith([429, {'Content-Type': 'text/html'}, body]);
+      server.get(TEST_SERVER_URL, { status: 429, body, headers: { 'Content-Type': 'text/html' }});
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'GET',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err, res, status) {
-        expect(status).to.equal(429);
-        expect(res).to.be.null;
-        expect(err).to.eql(body);
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, (err, res, status) => {
+        expect(status).toBe(429);
+        expect(res).toBeNull();
+        expect(err).toEqual(body);
         done();
       });
     });
   });
 
-  describe('#request with post', function () {
-    it('makes a serialized ajax request', function (done) {
-      this.server.respondWith([200, {}, JSON.stringify({marco: 'polo'})]);
+  describe('#request with post', () => {
+    afterEach(() => {
+      server._routes = {};
+    });
+
+    it('makes a serialized ajax request', done => {
+      server.post(`${TEST_SERVER_URL}/marco`, { status: 200, body: JSON.stringify({ marco: 'polo' }) });
 
       AJAXDriver.request({
-        url: TEST_SERVER_URL + 'marco',
-        data: {marco: 'polo'},
+        url: `${TEST_SERVER_URL}/marco`,
+        data: { marco: 'polo' },
         method: 'POST',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err, resp) {
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, (err, resp) => {
         if (err) {
           done(err);
 
           return;
         }
 
-        expect(resp.marco).to.eql('polo');
+        expect(resp.marco).toBe('polo');
         done();
       });
     });
 
-    it('sets the Content-Type header to application/json', function () {
-      this.sandbox.stub(XMLHttpRequest.prototype, 'setRequestHeader');
+    it('sets the Content-Type header to application/json', () => {
+      jest.spyOn(XMLHttpRequest.prototype, 'setRequestHeader').mockReturnValue(null);
 
       AJAXDriver.request({
-        url: TEST_SERVER_URL + 'marco',
-        data: {marco: 'polo'},
+        url: `${TEST_SERVER_URL}/marco`,
+        data: { marco: 'polo' },
         method: 'POST',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function () {});
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, noop);
 
-      expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Content-Type', 'application/json');
+      expect(XMLHttpRequest.prototype.setRequestHeader).toBeCalledWith('Content-Type', 'application/json');
     });
 
-    it('sets the headers if provided and XHR is available', function () {
-      this.sandbox.stub(XMLHttpRequest.prototype, 'setRequestHeader');
+    it('sets the headers if provided and XHR is available', () => {
+      jest.spyOn(XMLHttpRequest.prototype, 'setRequestHeader').mockReturnValue(null);
 
       AJAXDriver.request({
-        url: TEST_SERVER_URL + 'marco',
-        data: {marco: 'polo'},
+        url: `${TEST_SERVER_URL}/marco`,
+        data: { marco: 'polo' },
         headers: {
           Foo: 'foo',
           Bar: 'bar'
         },
         method: 'POST',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function () {});
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, noop);
 
-      expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Foo', 'foo');
-      expect(XMLHttpRequest.prototype.setRequestHeader).to.be.calledWith('Bar', 'bar');
+      expect(XMLHttpRequest.prototype.setRequestHeader).toBeCalledWith('Foo', 'foo');
+      expect(XMLHttpRequest.prototype.setRequestHeader).toBeCalledWith('Bar', 'bar');
     });
 
-    it('calls callback with error if request is unsuccessful', function (done) {
-      this.server.respondWith([500, {}, '']);
+    it('calls callback with error if request is unsuccessful', done => {
+      server.post(TEST_SERVER_URL, { status: 500 });
 
       AJAXDriver.request({
         url: TEST_SERVER_URL,
         method: 'POST',
-        graphQL: this.fakeGraphQL,
-        metadata: this.fakeMetadata
-      }, function callback(err) {
-        expect(err).to.not.eql(null);
+        graphQL: testContext.fakeGraphQL,
+        metadata: testContext.fakeMetadata
+      }, err => {
+        expect(err).not.toBe(null);
         done();
       });
     });
+  });
 
-    describe('graphql', function () {
-      beforeEach(function () {
-        this.fakeMetadata = {
-          source: 'my-source',
-          integration: 'my-integration',
-          sessionId: 'my-session-id'
-        };
-        this.gql = new GraphQL({
-          graphQL: {
-            url: 'http://localhost/graphql',
-            features: ['tokenize_credit_cards']
-          }
-        });
-
-        this.server.restore();
-
-        this.fakeXHR = {
-          open: this.sandbox.stub(),
-          send: this.sandbox.stub(),
-          setRequestHeader: this.sandbox.stub()
-        };
-        this.sandbox.stub(xhr, 'getRequestObject').returns(this.fakeXHR);
+  describe('graphql', () => {
+    beforeEach(() => {
+      testContext.fakeMetadata = {
+        source: 'my-source',
+        integration: 'my-integration',
+        sessionId: 'my-session-id'
+      };
+      testContext.gql = new GraphQL({
+        graphQL: {
+          url: 'http://localhost/graphql',
+          features: ['tokenize_credit_cards']
+        }
       });
 
-      it('sets GraphQL required headers for GraphQL URLs', function () {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
-          data: {
-            tokenizationKey: 'fake_tokenization_key',
-            creditCard: {},
-            headers: {}
+      testContext.fakeXHR = {
+        open: jest.fn(),
+        send: jest.fn(),
+        setRequestHeader: jest.fn()
+      };
+      jest.spyOn(xhr, 'getRequestObject').mockReturnValue(testContext.fakeXHR);
+
+      server.post(/client_api\//, {});
+    });
+
+    it('sets GraphQL required headers for GraphQL URLs', () => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}/client_api/v1/payment_methods/credit_cards`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key',
+          creditCard: {},
+          headers: {}
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, noop);
+
+      expect(testContext.fakeXHR.setRequestHeader).toBeCalledWith('Authorization', 'Bearer fake_tokenization_key');
+      expect(testContext.fakeXHR.setRequestHeader).toBeCalledWith('Braintree-Version', expect.any(String));
+    });
+
+    it('does not set GraphQL required headers for non GraphQL URLs', () => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}/client_api/non-graph-ql-endpoint`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key',
+          creditCard: {},
+          headers: {}
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, noop);
+
+      expect(testContext.fakeXHR.setRequestHeader).not.toBeCalledWith('Authorization', 'Bearer fake_tokenization_key');
+      expect(testContext.fakeXHR.setRequestHeader).not.toBeCalledWith('Braintree-Version', expect.any(String));
+    });
+
+    it('formats body for GraphQL URLs', () => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}/client_api/v1/payment_methods/credit_cards`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key',
+          creditCard: {},
+          headers: {}
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, noop);
+
+      expect(testContext.fakeXHR.send).toHaveBeenCalledWith(expect.stringContaining('mutation TokenizeCreditCard'));
+    });
+
+    it('does not format body for non GraphQL URLs', () => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}foo`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key',
+          creditCard: {},
+          headers: {}
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, noop);
+
+      expect(testContext.fakeXHR.send).not.toHaveBeenCalledWith(expect.stringContaining('mutation TokenizeCreditCard'));
+    });
+
+    it('rewrites url for GraphQL URLs', () => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}/client_api/v1/payment_methods/credit_cards`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key',
+          creditCard: {},
+          headers: {}
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, noop);
+
+      expect(testContext.fakeXHR.open).toBeCalledWith('POST', 'http://localhost/graphql', true);
+    });
+
+    it('does not rewrite url for non GraphQL URLs', () => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}foo`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key',
+          creditCard: {},
+          headers: {}
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, noop);
+
+      expect(testContext.fakeXHR.open).not.toBeCalledWith('POST', 'http://localhost/graphql', true);
+    });
+
+    it('provides formatted response from GraphQL', done => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}/client_api/v1/payment_methods/credit_cards`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key',
+          creditCard: {
+            number: '4111111111111111'
           },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function () {});
+          headers: {}
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, (err, body, status) => {
+        expect(err).toBeFalsy();
+        expect(status).toBe(200);
 
-        expect(this.fakeXHR.setRequestHeader).to.be.calledWith('Authorization', 'Bearer fake_tokenization_key');
-        expect(this.fakeXHR.setRequestHeader).to.be.calledWith('Braintree-Version', this.sandbox.match.string);
-      });
-
-      it('does not set GraphQL required headers for non GraphQL URLs', function () {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + 'non-graph-ql-endpoint',
-          data: {
-            tokenizationKey: 'fake_tokenization_key',
-            creditCard: {},
-            headers: {}
-          },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function () {});
-
-        expect(this.fakeXHR.setRequestHeader).to.not.be.calledWith('Authorization', 'Bearer fake_tokenization_key');
-        expect(this.fakeXHR.setRequestHeader).to.not.be.calledWith('Braintree-Version', this.sandbox.match.string);
-      });
-
-      it('formats body for GraphQL URLs', function () {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
-          data: {
-            tokenizationKey: 'fake_tokenization_key',
-            creditCard: {},
-            headers: {}
-          },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function () {});
-
-        expect(this.fakeXHR.send).to.be.calledWithMatch('mutation TokenizeCreditCard');
-      });
-
-      it('does not format body for non GraphQL URLs', function () {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + 'foo',
-          data: {
-            tokenizationKey: 'fake_tokenization_key',
-            creditCard: {},
-            headers: {}
-          },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function () {});
-
-        expect(this.fakeXHR.send).to.not.be.calledWithMatch('mutation TokenizeCreditCard');
-      });
-
-      it('rewrites url for GraphQL URLs', function () {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
-          data: {
-            tokenizationKey: 'fake_tokenization_key',
-            creditCard: {},
-            headers: {}
-          },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function () {});
-
-        expect(this.fakeXHR.open).to.be.calledWith('POST', 'http://localhost/graphql', true);
-      });
-
-      it('does not rewrite url for non GraphQL URLs', function () {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + 'foo',
-          data: {
-            tokenizationKey: 'fake_tokenization_key',
-            creditCard: {},
-            headers: {}
-          },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function () {});
-
-        expect(this.fakeXHR.open).to.not.be.calledWith('POST', 'http://localhost/graphql', true);
-      });
-
-      it('provides formatted response from GraphQL', function (done) {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + '/client_api/v1/payment_methods/credit_cards',
-          data: {
-            tokenizationKey: 'fake_tokenization_key',
-            creditCard: {
-              number: '4111111111111111'
-            },
-            headers: {}
-          },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function (err, body, status) {
-          expect(err).to.not.exist;
-          expect(status).to.equal(200);
-
-          expect(body).to.deep.equal({
-            creditCards: [
-              {
-                binData: {
-                  commercial: 'Unknown',
-                  debit: 'No',
-                  durbinRegulated: 'Yes',
-                  healthcare: 'Unknown',
-                  payroll: 'No',
-                  prepaid: 'Yes',
-                  issuingBank: 'issuing-bank',
-                  countryOfIssuance: 'USA',
-                  productId: 'product-id'
-                },
-                consumed: false,
-                description: 'ending in 11',
-                nonce: 'the-token',
-                details: {
-                  expirationMonth: '09',
-                  expirationYear: '2020',
-                  bin: '',
-                  cardType: 'Visa',
-                  lastFour: '1111',
-                  lastTwo: '11'
-                },
-                type: 'CreditCard',
-                threeDSecureInfo: null
-              }
-            ]
-          });
-
-          done();
-        });
-
-        this.fakeXHR.readyState = 4;
-        this.fakeXHR.status = 200;
-        this.fakeXHR.responseText = JSON.stringify({
-          data: {
-            tokenizeCreditCard: {
-              token: 'the-token',
-              creditCard: {
+        expect(body).toEqual({
+          creditCards: [
+            {
+              binData: {
+                commercial: 'Unknown',
+                debit: 'No',
+                durbinRegulated: 'Yes',
+                healthcare: 'Unknown',
+                payroll: 'No',
+                prepaid: 'Yes',
+                issuingBank: 'issuing-bank',
+                countryOfIssuance: 'USA',
+                productId: 'product-id'
+              },
+              consumed: false,
+              description: 'ending in 11',
+              nonce: 'the-token',
+              details: {
                 expirationMonth: '09',
                 expirationYear: '2020',
-                binData: {
-                  commercial: 'UNKNOWN',
-                  debit: 'NO',
-                  durbinRegulated: 'YES',
-                  healthcare: null,
-                  payroll: 'NO',
-                  prepaid: 'YES',
-                  issuingBank: 'issuing-bank',
-                  countryOfIssuance: 'USA',
-                  productId: 'product-id'
-                },
-                brandCode: 'VISA',
-                last4: '1111'
-              }
+                bin: '',
+                cardType: 'Visa',
+                lastFour: '1111',
+                lastTwo: '11'
+              },
+              type: 'CreditCard',
+              threeDSecureInfo: null
+            }
+          ]
+        });
+
+        done();
+      });
+
+      testContext.fakeXHR.readyState = 4;
+      testContext.fakeXHR.status = 200;
+      testContext.fakeXHR.responseText = JSON.stringify({
+        data: {
+          tokenizeCreditCard: {
+            token: 'the-token',
+            creditCard: {
+              expirationMonth: '09',
+              expirationYear: '2020',
+              binData: {
+                commercial: 'UNKNOWN',
+                debit: 'NO',
+                durbinRegulated: 'YES',
+                healthcare: null,
+                payroll: 'NO',
+                prepaid: 'YES',
+                issuingBank: 'issuing-bank',
+                countryOfIssuance: 'USA',
+                productId: 'product-id'
+              },
+              brandCode: 'VISA',
+              last4: '1111'
             }
           }
-        });
-
-        this.fakeXHR.onreadystatechange();
+        }
       });
 
-      it('does not provide formatted response from non GraphQL endpoints', function (done) {
-        AJAXDriver.request({
-          url: TEST_SERVER_URL + 'foo',
-          data: {
-            tokenizationKey: 'fake_tokenization_key'
-          },
-          method: 'POST',
-          graphQL: this.gql,
-          metadata: this.fakeMetadata
-        }, function (err, body, status) {
-          expect(err).to.not.exist;
-          expect(status).to.equal(200);
+      testContext.fakeXHR.onreadystatechange();
+    });
 
-          expect(body).to.deep.equal({
-            foo: 'bar'
-          });
-          done();
+    it('does not provide formatted response from non GraphQL endpoints', done => {
+      AJAXDriver.request({
+        url: `${TEST_SERVER_URL}foo`,
+        data: {
+          tokenizationKey: 'fake_tokenization_key'
+        },
+        method: 'POST',
+        graphQL: testContext.gql,
+        metadata: testContext.fakeMetadata
+      }, (err, body, status) => {
+        expect(err).toBeFalsy();
+        expect(status).toBe(200);
+
+        expect(body).toEqual({
+          foo: 'bar'
         });
-
-        this.fakeXHR.readyState = 4;
-        this.fakeXHR.status = 200;
-        this.fakeXHR.responseText = '{"foo":"bar"}';
-
-        this.fakeXHR.onreadystatechange();
+        done();
       });
+
+      testContext.fakeXHR.readyState = 4;
+      testContext.fakeXHR.status = 200;
+      testContext.fakeXHR.responseText = '{"foo":"bar"}';
+
+      testContext.fakeXHR.onreadystatechange();
     });
   });
 });

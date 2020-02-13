@@ -1,0 +1,13 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/test/environment/coverage",
+  "displayName": "environment",
+  "restoreMocks": true,
+  "rootDir": "../../",
+  "roots": [
+    "<rootDir>/test/environment"
+  ],
+  "testMatch": [
+    "**/*.js"
+  ]
+}

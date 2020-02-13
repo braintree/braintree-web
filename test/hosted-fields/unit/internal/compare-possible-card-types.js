@@ -1,45 +1,45 @@
 'use strict';
 
-var comparePossibleCardTypes = require('../../../../src/hosted-fields/internal/compare-possible-card-types');
+const comparePossibleCardTypes = require('../../../../src/hosted-fields/internal/compare-possible-card-types');
 
-describe('comparePossibleCardTypes', function () {
-  it('returns true for 2 equal lists', function () {
-    var a = [{type: 'a'}];
-    var b = [{type: 'a'}];
+describe('comparePossibleCardTypes', () => {
+  it('returns true for 2 equal lists', () => {
+    const a = [{ type: 'a' }];
+    const b = [{ type: 'a' }];
 
-    expect(comparePossibleCardTypes(a, b)).to.equal(true);
-    expect(comparePossibleCardTypes(b, a)).to.equal(true);
+    expect(comparePossibleCardTypes(a, b)).toBe(true);
+    expect(comparePossibleCardTypes(b, a)).toBe(true);
   });
 
-  it('returns false for 2 unequal lists', function () {
-    var a = [{type: 'a'}];
-    var b = [{type: 'b'}];
+  it('returns false for 2 unequal lists', () => {
+    const a = [{ type: 'a' }];
+    const b = [{ type: 'b' }];
 
-    expect(comparePossibleCardTypes(a, b)).to.equal(false);
-    expect(comparePossibleCardTypes(b, a)).to.equal(false);
+    expect(comparePossibleCardTypes(a, b)).toBe(false);
+    expect(comparePossibleCardTypes(b, a)).toBe(false);
   });
 
-  it('returns true for 2 empty lists', function () {
-    var a = [];
-    var b = [];
+  it('returns true for 2 empty lists', () => {
+    const a = [];
+    const b = [];
 
-    expect(comparePossibleCardTypes(a, b)).to.equal(true);
-    expect(comparePossibleCardTypes(b, a)).to.equal(true);
+    expect(comparePossibleCardTypes(a, b)).toBe(true);
+    expect(comparePossibleCardTypes(b, a)).toBe(true);
   });
 
-  it('returns false for 1 empty list and 1 non-empty list', function () {
-    var a = [];
-    var b = [{type: 'a'}];
+  it('returns false for 1 empty list and 1 non-empty list', () => {
+    const a = [];
+    const b = [{ type: 'a' }];
 
-    expect(comparePossibleCardTypes(a, b)).to.equal(false);
-    expect(comparePossibleCardTypes(b, a)).to.equal(false);
+    expect(comparePossibleCardTypes(a, b)).toBe(false);
+    expect(comparePossibleCardTypes(b, a)).toBe(false);
   });
 
-  it('returns false if one list is a subset of another', function () {
-    var a = [{type: 'a'}, {type: 'b'}];
-    var b = [{type: 'a'}];
+  it('returns false if one list is a subset of another', () => {
+    const a = [{ type: 'a' }, { type: 'b' }];
+    const b = [{ type: 'a' }];
 
-    expect(comparePossibleCardTypes(a, b)).to.equal(false);
-    expect(comparePossibleCardTypes(b, a)).to.equal(false);
+    expect(comparePossibleCardTypes(a, b)).toBe(false);
+    expect(comparePossibleCardTypes(b, a)).toBe(false);
   });
 });

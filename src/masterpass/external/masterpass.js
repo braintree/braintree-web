@@ -69,7 +69,7 @@ function Masterpass(options) {
   if (global.popupBridge && typeof global.popupBridge.getReturnUrlPrefix === 'function') {
     this._callbackUrl = global.popupBridge.getReturnUrlPrefix() + 'return';
   } else {
-    this._callbackUrl = this._assetsUrl + '/html/masterpass-redirect-frame' + (this._isDebug ? '' : '.min') + '.html';
+    this._callbackUrl = this._assetsUrl + '/html/redirect-frame' + (this._isDebug ? '' : '.min') + '.html';
   }
 }
 

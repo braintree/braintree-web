@@ -1,122 +1,125 @@
 'use strict';
 
-var Popup = require('../../../../../../../src/lib/frame-service/external/strategies/popup');
+const Popup = require('../../../../../../../src/lib/frame-service/external/strategies/popup');
+const { mockWindowOpen } = require('../../../../../../helpers');
 
-describe('Popup', function () {
-  describe('Constructor', function () {
-    it('defaults isClosed to false', function () {
-      var popup = new Popup();
+describe('Popup', () => {
+  beforeEach(() => {
+    jest.spyOn(window, 'open')
+      .mockImplementation(mockWindowOpen);
+  });
 
-      expect(popup.isClosed()).to.equal(false);
+  describe('Constructor', () => {
+    it('defaults isClosed to false', () => {
+      const popup = new Popup();
+
+      expect(popup.isClosed()).toBe(false);
     });
   });
 
-  describe('open', function () {
-    it('opens a window', function () {
-      var popup = new Popup({
+  describe('open', () => {
+    it('opens a window', () => {
+      const popup = new Popup({
         openFrameUrl: 'https://example.com',
         name: 'myFrame'
       });
 
-      this.sandbox.stub(global, 'open');
+      window.open.mockClear();
 
       popup.open();
 
-      expect(global.open).to.be.calledOnce;
-      expect(global.open).to.be.calledWith('https://example.com', 'myFrame', this.sandbox.match.string);
+      expect(window.open).toHaveBeenCalledTimes(1);
+      expect(window.open).toHaveBeenCalledWith('https://example.com', 'myFrame', expect.any(String));
     });
   });
 
-  describe('focus', function () {
-    it('calls the frame focus', function () {
-      var popup = new Popup();
+  describe('focus', () => {
+    it('calls the frame focus', () => {
+      const popup = new Popup();
 
       popup._frame = {
-        focus: this.sandbox.spy()
+        focus: jest.fn()
       };
 
       popup.focus();
 
-      expect(popup._frame.focus).to.be.calledOnce;
+      expect(popup._frame.focus).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('close', function () {
-    it('calls the frame close', function () {
-      var popup = new Popup();
-      var frame = {
-        close: this.sandbox.spy()
+  describe('close', () => {
+    it('calls the frame close', () => {
+      const popup = new Popup();
+      const frame = {
+        close: jest.fn()
       };
 
       popup._frame = frame;
 
       popup.close();
 
-      expect(frame.close).to.be.calledOnce;
+      expect(frame.close).toHaveBeenCalledTimes(1);
     });
 
-    it('noop when popup is already closed', function () {
-      var popup = new Popup();
+    it('noop when popup is already closed', () => {
+      const popup = new Popup();
 
-      popup._frame = {
-        close: this.sandbox.spy()
-      };
-
+      popup.open();
       popup.close();
       popup.close();
 
-      expect(popup._frame.close).to.not.be.calledOnce;
+      expect(popup._frame.close).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('closed', function () {
-    it('returns false when popup is open', function () {
-      var popup = new Popup();
+  describe('closed', () => {
+    it('returns false when popup is open', () => {
+      const popup = new Popup();
 
       popup.open();
 
-      expect(popup.isClosed()).to.equal(false);
+      expect(popup.isClosed()).toBe(false);
     });
 
-    it('returns true after popup is closed', function () {
-      var popup = new Popup();
+    it('returns true after popup is closed', () => {
+      const popup = new Popup();
 
       popup.open();
       popup.close();
 
-      expect(popup.isClosed()).to.equal(false);
+      expect(popup.isClosed()).toBe(true);
     });
 
-    it('returns true if there is no handle for the popup (such as from a popup blocker)', function () {
-      var popup = new Popup();
+    it('returns true if there is no handle for the popup (such as from a popup blocker)', () => {
+      const popup = new Popup();
 
       delete popup._frame;
 
-      expect(popup.isClosed()).to.equal(true);
+      expect(popup.isClosed()).toBe(true);
     });
 
-    it('returns true when Window is closed', function () {
-      var popup;
-      var fakeWindow = {
+    it('returns true when Window is closed', () => {
+      let popup;
+      const fakeWindow = {
         closed: false
       };
 
-      this.sandbox.stub(global, 'open').returns(fakeWindow);
+      jest.spyOn(window, 'open').mockReturnValue(fakeWindow);
 
       popup = new Popup();
       popup.open();
 
-      expect(popup.isClosed()).to.equal(false);
+      expect(popup.isClosed()).toBe(false);
 
       fakeWindow.closed = true;
 
-      expect(popup.isClosed()).to.equal(true);
+      expect(popup.isClosed()).toBe(true);
     });
   });
 
-  describe('redirect', function () {
-    it('sets frame location href to url', function () {
-      var popup = new Popup();
+  describe('redirect', () => {
+    it('sets frame location href to url', () => {
+      const popup = new Popup();
 
       popup._frame = {
         location: {
@@ -126,7 +129,7 @@ describe('Popup', function () {
 
       popup.redirect('http://example.com');
 
-      expect(popup._frame.location.href).to.equal('http://example.com');
+      expect(popup._frame.location.href).toBe('http://example.com');
     });
   });
 });

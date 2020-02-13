@@ -1,157 +1,140 @@
 'use strict';
 
-var internal = require('../../../../src/unionpay/internal/index');
-var Bus = require('../../../../src/lib/bus');
-var BraintreeError = require('../../../../src/lib/braintree-error');
-var fake = require('../../../helpers/fake');
-var getHostedFieldsCardForm = require('../../../../src/unionpay/internal/get-hosted-fields-cardform');
-var UnionPay = require('../../../../src/unionpay/shared/unionpay');
-var events = require('../../../../src/unionpay/shared/constants').events;
+const internal = require('../../../../src/unionpay/internal');
+const Bus = require('../../../../src/lib/bus');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const { fake: { configuration }} = require('../../../helpers');
+const getHostedFieldsCardForm = require('../../../../src/unionpay/internal/get-hosted-fields-cardform');
+const UnionPay = require('../../../../src/unionpay/shared/unionpay');
+const { events } = require('../../../../src/unionpay/shared/constants');
 
-describe('internal', function () {
-  beforeEach(function () {
-    this._oldGlobalName = global.name;
+describe('internal', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext._oldGlobalName = global.name;
     global.name = 'frame-name_123';
   });
 
-  afterEach(function () {
-    global.name = this._oldGlobalName;
+  afterEach(() => {
+    global.name = testContext._oldGlobalName;
   });
 
-  describe('create', function () {
-    it('creates a global bus', function () {
+  describe('create', () => {
+    it('creates a global bus', () => {
       internal.create();
 
-      expect(global.bus.channel).to.equal('123');
+      expect(global.bus.channel).toBe('123');
     });
 
-    it('emits a CONFIGURATION_REQUEST event', function () {
+    it('emits a CONFIGURATION_REQUEST event', () => {
       internal.create();
 
-      expect(Bus.prototype.emit).to.be.calledWith(Bus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
+      expect(Bus.prototype.emit).toBeCalledWith(Bus.events.CONFIGURATION_REQUEST, expect.any(Function));
     });
   });
 
-  describe('initialize', function () {
-    beforeEach(function () {
+  describe('initialize', () => {
+    beforeEach(() => {
       internal.create();
 
-      this.initialize = Bus.prototype.emit.lastCall.args[1];
-      this.configuration = fake.configuration();
-      this.configuration.gatewayConfiguration.unionPay = {
+      testContext.initialize = Bus.prototype.emit.mock.calls[Bus.prototype.emit.mock.calls.length - 1][1];
+      testContext.configuration = configuration();
+      testContext.configuration.gatewayConfiguration.unionPay = {
         enabled: true
       };
     });
 
-    describe('fetchCapabilities', function () {
-      it('sets up bus for HOSTED_FIELDS_FETCH_CAPABILITIES', function () {
-        this.initialize(this.configuration);
+    describe('fetchCapabilities', () => {
+      it('sets up bus for HOSTED_FIELDS_FETCH_CAPABILITIES', () => {
+        testContext.initialize(testContext.configuration);
 
-        expect(Bus.prototype.on).to.be.calledWith(events.HOSTED_FIELDS_FETCH_CAPABILITIES, this.sandbox.match.func);
+        expect(Bus.prototype.on).toBeCalledWith(events.HOSTED_FIELDS_FETCH_CAPABILITIES, expect.any(Function));
       });
 
-      it('fetches capabilities when a card form exists', function (done) {
-        var fetchHandler, i;
-        var fakeError = new Error('you goofed!');
-        var fakePayload = {isUnionPay: false};
+      it('fetches capabilities when a card form exists', done => {
+        let fetchHandler;
+        const fakeError = new Error('you goofed!');
+        const fakePayload = { isUnionPay: false };
 
-        this.initialize(this.configuration);
+        testContext.initialize(testContext.configuration);
 
-        for (i = 0; i < Bus.prototype.on.callCount; i++) {
-          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_FETCH_CAPABILITIES) {
-            fetchHandler = Bus.prototype.on.getCall(i).args[1];
-            break;
-          }
-        }
-
-        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns({
-          get: function (property) {
-            expect(property).to.equal('number.value');
+        fetchHandler = Bus.prototype.on.mock.calls.find(call => call[0] === events.HOSTED_FIELDS_FETCH_CAPABILITIES)[1];
+        jest.spyOn(getHostedFieldsCardForm, 'get').mockReturnValue({
+          get: property => {
+            expect(property).toBe('number.value');
 
             return '4111111111111111';
           }
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'fetchCapabilities').callsFake(function (options, callback) {
-          expect(options.card.number).to.equal('4111111111111111');
+        jest.spyOn(UnionPay.prototype, 'fetchCapabilities').mockImplementation((options, callback) => {
+          expect(options.card.number).toBe('4111111111111111');
           callback(fakeError, fakePayload);
         });
 
-        fetchHandler({hostedFields: {}}, function (options) {
-          expect(options.err).to.equal(fakeError);
-          expect(options.payload).to.equal(fakePayload);
+        fetchHandler({ hostedFields: {}}, ({ err, payload }) => {
+          expect(err).toBe(fakeError);
+          expect(payload).toBe(fakePayload);
 
           done();
         });
       });
 
-      it('calls the callback with an error if the card form does not exist', function (done) {
-        var fetchHandler, i;
-        var fakeHostedFields = {
-          _bus: {channel: '12345'}
+      it('calls the callback with an error if the card form does not exist', done => {
+        let fetchHandler;
+        const fakeHostedFields = {
+          _bus: { channel: '12345' }
         };
 
-        this.initialize(this.configuration);
+        testContext.initialize(testContext.configuration);
 
-        for (i = 0; i < Bus.prototype.on.callCount; i++) {
-          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_FETCH_CAPABILITIES) {
-            fetchHandler = Bus.prototype.on.getCall(i).args[1];
-            break;
-          }
-        }
+        fetchHandler = Bus.prototype.on.mock.calls.find(call => call[0] === events.HOSTED_FIELDS_FETCH_CAPABILITIES)[1];
+        jest.spyOn(getHostedFieldsCardForm, 'get').mockReturnValue(null);
 
-        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns(null);
+        jest.spyOn(UnionPay.prototype, 'fetchCapabilities').mockReturnValue(null);
 
-        this.sandbox.stub(UnionPay.prototype, 'fetchCapabilities');
+        fetchHandler({ hostedFields: fakeHostedFields }, ({ err, payload }) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
+          expect(err.message).toBe('Could not find the Hosted Fields instance.');
 
-        fetchHandler({hostedFields: fakeHostedFields}, function (options) {
-          expect(options.err).to.be.an.instanceof(BraintreeError);
-          expect(options.err.type).to.equal('MERCHANT');
-          expect(options.err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
-          expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
+          expect(payload).toBeFalsy();
 
-          expect(options.payload).not.to.exist;
-
-          expect(UnionPay.prototype.fetchCapabilities).not.to.have.beenCalled;
+          expect(UnionPay.prototype.fetchCapabilities).not.toHaveBeenCalled();
 
           done();
         });
       });
     });
 
-    describe('enroll', function () {
-      it('sets up bus for HOSTED_FIELDS_ENROLL', function () {
-        this.initialize(this.configuration);
+    describe('enroll', () => {
+      it('sets up bus for HOSTED_FIELDS_ENROLL', () => {
+        testContext.initialize(testContext.configuration);
 
-        expect(Bus.prototype.on).to.be.calledWith(events.HOSTED_FIELDS_ENROLL, this.sandbox.match.func);
+        expect(Bus.prototype.on).toBeCalledWith(events.HOSTED_FIELDS_ENROLL, expect.any(Function));
       });
 
-      it('enrolls when a card form exists', function (done) {
-        var enrollHandler, i;
-        var fakeError = new Error('you goofed!');
-        var fakePayload = {unionPayEnrollmentId: '123abc'};
+      it('enrolls when a card form exists', done => {
+        let enrollHandler;
+        const fakeError = new Error('you goofed!');
+        const fakePayload = { unionPayEnrollmentId: '123abc' };
 
-        this.initialize(this.configuration);
+        testContext.initialize(testContext.configuration);
 
-        for (i = 0; i < Bus.prototype.on.callCount; i++) {
-          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_ENROLL) {
-            enrollHandler = Bus.prototype.on.getCall(i).args[1];
-            break;
-          }
-        }
-
-        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns({
-          getCardData: function () {
-            return {
-              number: '4111111111111111',
-              expirationMonth: '10',
-              expirationYear: '2020'
-            };
-          }
+        enrollHandler = Bus.prototype.on.mock.calls.find(call => call[0] === events.HOSTED_FIELDS_ENROLL)[1];
+        jest.spyOn(getHostedFieldsCardForm, 'get').mockReturnValue({
+          getCardData: () => ({
+            number: '4111111111111111',
+            expirationMonth: '10',
+            expirationYear: '2020'
+          })
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'enroll').callsFake(function (options, callback) {
-          expect(options).to.deep.equal({
+        jest.spyOn(UnionPay.prototype, 'enroll').mockImplementation((options, callback) => {
+          expect(options).toEqual({
             card: {
               number: '4111111111111111',
               expirationMonth: '10',
@@ -171,32 +154,26 @@ describe('internal', function () {
             countryCode: '62',
             number: '11111111'
           }
-        }, function (options) {
-          expect(options.err).to.equal(fakeError);
-          expect(options.payload).to.equal(fakePayload);
+        }, ({ err, payload }) => {
+          expect(err).toBe(fakeError);
+          expect(payload).toBe(fakePayload);
 
           done();
         });
       });
 
-      it('calls the callback with an error if the card form does not exist', function (done) {
-        var enrollHandler, i;
-        var fakeHostedFields = {
-          _bus: {channel: '12345'}
+      it('calls the callback with an error if the card form does not exist', done => {
+        let enrollHandler;
+        const fakeHostedFields = {
+          _bus: { channel: '12345' }
         };
 
-        this.initialize(this.configuration);
+        testContext.initialize(testContext.configuration);
 
-        for (i = 0; i < Bus.prototype.on.callCount; i++) {
-          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_ENROLL) {
-            enrollHandler = Bus.prototype.on.getCall(i).args[1];
-            break;
-          }
-        }
+        enrollHandler = Bus.prototype.on.mock.calls.find(call => call[0] === events.HOSTED_FIELDS_ENROLL)[1];
+        jest.spyOn(getHostedFieldsCardForm, 'get').mockReturnValue(null);
 
-        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns(null);
-
-        this.sandbox.stub(UnionPay.prototype, 'enroll');
+        jest.spyOn(UnionPay.prototype, 'enroll').mockReturnValue(null);
 
         enrollHandler({
           hostedFields: fakeHostedFields,
@@ -204,55 +181,47 @@ describe('internal', function () {
             countryCode: '62',
             number: '11111111111'
           }
-        }, function (options) {
-          expect(options.err).to.be.an.instanceof(BraintreeError);
-          expect(options.err.type).to.equal('MERCHANT');
-          expect(options.err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
-          expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
+        }, ({ err, payload }) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
+          expect(err.message).toBe('Could not find the Hosted Fields instance.');
 
-          expect(options.payload).not.to.exist;
+          expect(payload).toBeFalsy();
 
-          expect(UnionPay.prototype.enroll).not.to.have.beenCalled;
+          expect(UnionPay.prototype.enroll).not.toHaveBeenCalled();
 
           done();
         });
       });
     });
 
-    describe('tokenize', function () {
-      it('sets up bus for HOSTED_FIELDS_TOKENIZE', function () {
-        this.initialize(this.configuration);
+    describe('tokenize', () => {
+      it('sets up bus for HOSTED_FIELDS_TOKENIZE', () => {
+        testContext.initialize(testContext.configuration);
 
-        expect(Bus.prototype.on).to.be.calledWith(events.HOSTED_FIELDS_TOKENIZE, this.sandbox.match.func);
+        expect(Bus.prototype.on).toBeCalledWith(events.HOSTED_FIELDS_TOKENIZE, expect.any(Function));
       });
 
-      it('tokenizes when a card form exists', function (done) {
-        var tokenizeHandler, i;
-        var fakeError = new Error('you goofed!');
-        var fakePayload = {nonce: 'abc123'};
+      it('tokenizes when a card form exists', done => {
+        let tokenizeHandler;
+        const fakeError = new Error('you goofed!');
+        const fakePayload = { nonce: 'abc123' };
 
-        this.initialize(this.configuration);
+        testContext.initialize(testContext.configuration);
 
-        for (i = 0; i < Bus.prototype.on.callCount; i++) {
-          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_TOKENIZE) {
-            tokenizeHandler = Bus.prototype.on.getCall(i).args[1];
-            break;
-          }
-        }
-
-        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns({
-          getCardData: function () {
-            return {
-              number: '4111111111111111',
-              expirationMonth: '10',
-              expirationYear: '2020',
-              cvv: '123'
-            };
-          }
+        tokenizeHandler = Bus.prototype.on.mock.calls.find(call => call[0] === events.HOSTED_FIELDS_TOKENIZE)[1];
+        jest.spyOn(getHostedFieldsCardForm, 'get').mockReturnValue({
+          getCardData: () => ({
+            number: '4111111111111111',
+            expirationMonth: '10',
+            expirationYear: '2020',
+            cvv: '123'
+          })
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'tokenize').callsFake(function (options, callback) {
-          expect(options).to.deep.equal({
+        jest.spyOn(UnionPay.prototype, 'tokenize').mockImplementation((options, callback) => {
+          expect(options).toEqual({
             enrollmentId: 'enrollmentId62',
             smsCode: '1234',
             card: {
@@ -271,41 +240,33 @@ describe('internal', function () {
           hostedFields: {},
           enrollmentId: 'enrollmentId62',
           smsCode: '1234'
-        }, function (options) {
-          expect(options.err).to.equal(fakeError);
-          expect(options.payload).to.equal(fakePayload);
+        }, ({ err, payload }) => {
+          expect(err).toBe(fakeError);
+          expect(payload).toBe(fakePayload);
 
           done();
         });
       });
 
-      it('can vault tokenized unionpay card', function (done) {
-        var tokenizeHandler, i;
-        var fakeError = new Error('you goofed!');
-        var fakePayload = {nonce: 'abc123'};
+      it('can vault tokenized unionpay card', done => {
+        let tokenizeHandler;
+        const fakeError = new Error('you goofed!');
+        const fakePayload = { nonce: 'abc123' };
 
-        this.initialize(this.configuration);
+        testContext.initialize(testContext.configuration);
 
-        for (i = 0; i < Bus.prototype.on.callCount; i++) {
-          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_TOKENIZE) {
-            tokenizeHandler = Bus.prototype.on.getCall(i).args[1];
-            break;
-          }
-        }
-
-        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns({
-          getCardData: function () {
-            return {
-              number: '4111111111111111',
-              expirationMonth: '10',
-              expirationYear: '2020',
-              cvv: '123'
-            };
-          }
+        tokenizeHandler = Bus.prototype.on.mock.calls.find(call => call[0] === events.HOSTED_FIELDS_TOKENIZE)[1];
+        jest.spyOn(getHostedFieldsCardForm, 'get').mockReturnValue({
+          getCardData: () => ({
+            number: '4111111111111111',
+            expirationMonth: '10',
+            expirationYear: '2020',
+            cvv: '123'
+          })
         });
 
-        this.sandbox.stub(UnionPay.prototype, 'tokenize').callsFake(function (options, callback) {
-          expect(options).to.deep.equal({
+        jest.spyOn(UnionPay.prototype, 'tokenize').mockImplementation((options, callback) => {
+          expect(options).toEqual({
             enrollmentId: 'enrollmentId62',
             smsCode: '1234',
             card: {
@@ -325,32 +286,26 @@ describe('internal', function () {
           enrollmentId: 'enrollmentId62',
           smsCode: '1234',
           vault: true
-        }, function (options) {
-          expect(options.err).to.equal(fakeError);
-          expect(options.payload).to.equal(fakePayload);
+        }, ({ err, payload }) => {
+          expect(err).toBe(fakeError);
+          expect(payload).toBe(fakePayload);
 
           done();
         });
       });
 
-      it('calls the callback with an error if the card form does not exist', function (done) {
-        var tokenizeHandler, i;
-        var fakeHostedFields = {
-          _bus: {channel: '12345'}
+      it('calls the callback with an error if the card form does not exist', done => {
+        let tokenizeHandler;
+        const fakeHostedFields = {
+          _bus: { channel: '12345' }
         };
 
-        this.initialize(this.configuration);
+        testContext.initialize(testContext.configuration);
 
-        for (i = 0; i < Bus.prototype.on.callCount; i++) {
-          if (Bus.prototype.on.getCall(i).args[0] === events.HOSTED_FIELDS_TOKENIZE) {
-            tokenizeHandler = Bus.prototype.on.getCall(i).args[1];
-            break;
-          }
-        }
+        tokenizeHandler = Bus.prototype.on.mock.calls.find(call => call[0] === events.HOSTED_FIELDS_TOKENIZE)[1];
+        jest.spyOn(getHostedFieldsCardForm, 'get').mockReturnValue(null);
 
-        this.sandbox.stub(getHostedFieldsCardForm, 'get').returns(null);
-
-        this.sandbox.stub(UnionPay.prototype, 'tokenize');
+        jest.spyOn(UnionPay.prototype, 'tokenize').mockReturnValue(null);
 
         tokenizeHandler({
           hostedFields: fakeHostedFields,
@@ -358,15 +313,15 @@ describe('internal', function () {
             id: 'enrollmentId62',
             smsCode: '1234'
           }
-        }, function (options) {
-          expect(options.err).to.be.an.instanceof(BraintreeError);
-          expect(options.err.type).to.equal('MERCHANT');
-          expect(options.err.code).to.equal('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
-          expect(options.err.message).to.equal('Could not find the Hosted Fields instance.');
+        }, ({ err, payload }) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED');
+          expect(err.message).toBe('Could not find the Hosted Fields instance.');
 
-          expect(options.payload).not.to.exist;
+          expect(payload).toBeFalsy();
 
-          expect(UnionPay.prototype.tokenize).not.to.have.beenCalled;
+          expect(UnionPay.prototype.tokenize).not.toHaveBeenCalled();
 
           done();
         });

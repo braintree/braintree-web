@@ -1,222 +1,126 @@
 'use strict';
 
-var analytics = require('../../../src/lib/analytics');
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var create = require('../../../src/venmo').create;
-var isBrowserSupported = require('../../../src/venmo').isBrowserSupported;
-var fake = require('../../helpers/fake');
-var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var BraintreeError = require('../../../src/lib/braintree-error');
-var supportsVenmo = require('../../../src/venmo/shared/supports-venmo');
-var Venmo = require('../../../src/venmo/venmo');
-var Promise = require('../../../src/lib/promise');
+jest.mock('../../../src/lib/analytics');
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/create-deferred-client');
+jest.mock('../../../src/venmo/shared/supports-venmo');
+jest.mock('../../../src/lib/create-assets-url');
 
-describe('venmo.create', function () {
-  beforeEach(function () {
-    this.configuration = fake.configuration();
-    this.client = fake.client({
-      configuration: this.configuration
-    });
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
-    this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
-    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
-  });
+const analytics = require('../../../src/lib/analytics');
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const { create, isBrowserSupported } = require('../../../src/venmo');
+const { fake } = require('../../helpers');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const supportsVenmo = require('../../../src/venmo/shared/supports-venmo');
+const Venmo = require('../../../src/venmo/venmo');
 
-  it('verifies with basicComponentVerification', function (done) {
-    var client = this.client;
+describe('venmo static methods', () => {
+  describe('venmo.create', () => {
+    let testContext;
 
-    create({
-      client: client
-    }, function () {
-      expect(basicComponentVerification.verify).to.be.calledOnce;
-      expect(basicComponentVerification.verify).to.be.calledWithMatch({
-        name: 'Venmo',
-        client: client
+    beforeEach(() => {
+      testContext = {};
+      testContext.configuration = fake.configuration();
+      testContext.client = fake.client({
+        configuration: testContext.configuration
       });
-      done();
+      jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.client);
     });
-  });
 
-  it('can create with an authorization instead of a client', function (done) {
-    create({
+    it('verifies with basicComponentVerification', () => create({
+      client: testContext.client
+    }).then(() => {
+      expect(basicComponentVerification.verify).toBeCalledTimes(1);
+      expect(basicComponentVerification.verify.mock.calls[0][0]).toMatchObject({
+        name: 'Venmo',
+        client: testContext.client
+      });
+    }));
+
+    it('can create with an authorization instead of a client', () => create({
       authorization: fake.clientToken,
       debug: true
-    }, function (err, instance) {
-      expect(err).not.to.exist;
-
-      expect(createDeferredClient.create).to.be.calledOnce;
-      expect(createDeferredClient.create).to.be.calledWith({
+    }).then((instance) => {
+      expect(createDeferredClient.create).toBeCalledTimes(1);
+      expect(createDeferredClient.create.mock.calls[0][0].client).toBeUndefined();
+      expect(createDeferredClient.create.mock.calls[0][0]).toMatchObject({
         authorization: fake.clientToken,
-        client: this.sandbox.match.typeOf('undefined'),
         debug: true,
         assetsUrl: 'https://example.com/assets',
         name: 'Venmo'
       });
 
-      expect(instance).to.be.an.instanceof(Venmo);
+      expect(instance).toBeInstanceOf(Venmo);
+    }));
 
-      done();
-    }.bind(this));
+    it('resolves with a Venmo instance', () => {
+      expect(create({ client: testContext.client })).resolves.toBeInstanceOf(Venmo);
+    });
+
+    it('calls _initialize on the Venmo instance', () => {
+      jest.spyOn(Venmo.prototype, '_initialize').mockResolvedValue({});
+
+      return create({ client: testContext.client }).then(() => {
+        expect(Venmo.prototype._initialize).toBeCalledTimes(1);
+      });
+    });
+
+    it('errors out if Venmo is not enabled for the merchant', () => {
+      delete testContext.configuration.gatewayConfiguration.payWithVenmo;
+
+      return create({ client: testContext.client }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('VENMO_NOT_ENABLED');
+        expect(err.message).toBe('Venmo is not enabled for this merchant.');
+      });
+    });
+
+    it('errors out if options.profileId is present but not a string', () => create({
+      client: testContext.client,
+      profileId: 1234
+    }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('MERCHANT');
+      expect(err.code).toBe('VENMO_INVALID_PROFILE_ID');
+      expect(err.message).toBe('Venmo profile ID is invalid.');
+    }));
+
+    it('errors out if options.deepLinkReturnUrl is present but not a string', () => create({
+      client: testContext.client,
+      deepLinkReturnUrl: 1234
+    }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('MERCHANT');
+      expect(err.code).toBe('VENMO_INVALID_DEEP_LINK_RETURN_URL');
+      expect(err.message).toBe('Venmo deep link return URL is invalid.');
+    }));
+
+    it('sends an analytics event when successful', () => create({ client: testContext.client })
+      .then(() => {
+        expect(analytics.sendEvent).toBeCalledTimes(1);
+        expect(analytics.sendEvent).toBeCalledWith(testContext.client, 'venmo.initialized');
+      }));
   });
 
-  context('with promises', function () {
-    it('returns a promise', function () {
-      var promise = create({client: this.client});
-
-      expect(promise).to.be.an.instanceof(Promise);
+  describe('venmo.isBrowserSupported', () => {
+    beforeEach(() => {
+      jest.spyOn(supportsVenmo, 'isBrowserSupported');
     });
 
-    it('resolves with a Venmo instance', function () {
-      return create({client: this.client}).then(function (instance) {
-        expect(instance).to.be.an.instanceof(Venmo);
+    it('calls isBrowserSupported library', () => {
+      isBrowserSupported();
+
+      expect(supportsVenmo.isBrowserSupported).toBeCalledTimes(1);
+    });
+
+    it('can call isBrowserSupported with allowNewTab', () => {
+      isBrowserSupported({ allowNewBrowserTab: true });
+
+      expect(supportsVenmo.isBrowserSupported).toBeCalledWith({
+        allowNewBrowserTab: true
       });
-    });
-
-    it('calls _initialize on the Venmo instance', function () {
-      this.sandbox.stub(Venmo.prototype, '_initialize').returns(Promise.resolve({}));
-
-      return create({client: this.client}).then(function () {
-        expect(Venmo.prototype._initialize).to.be.calledOnce;
-      });
-    });
-
-    it('errors out if Venmo is not enabled for the merchant', function () {
-      delete this.configuration.gatewayConfiguration.payWithVenmo;
-
-      return create({client: this.client}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VENMO_NOT_ENABLED');
-        expect(err.message).to.equal('Venmo is not enabled for this merchant.');
-      });
-    });
-
-    it('errors out if options.profileId is present but not a string', function () {
-      return create({
-        client: this.client,
-        profileId: 1234
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VENMO_INVALID_PROFILE_ID');
-        expect(err.message).to.equal('Venmo profile ID is invalid.');
-      });
-    });
-
-    it('errors out if options.deepLinkReturnUrl is present but not a string', function () {
-      return create({
-        client: this.client,
-        deepLinkReturnUrl: 1234
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VENMO_INVALID_DEEP_LINK_RETURN_URL');
-        expect(err.message).to.equal('Venmo deep link return URL is invalid.');
-      });
-    });
-
-    it('sends an analytics event when successful', function () {
-      return create({client: this.client}).then(function () {
-        expect(analytics.sendEvent).to.be.calledOnce;
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'venmo.initialized');
-      }.bind(this));
-    });
-  });
-
-  context('with callbacks', function () {
-    it('does not return a promise', function () {
-      var result = create({client: this.client}, function () {});
-
-      expect(result).to.not.be.an.instanceof(Promise);
-    });
-
-    it('calls callback with Venmo instance', function (done) {
-      create({client: this.client}, function (err, instance) {
-        expect(err).not.to.exist;
-        expect(instance).to.be.an.instanceof(Venmo);
-        done();
-      });
-    });
-
-    it('calls _initialize on the Venmo instance', function (done) {
-      this.sandbox.stub(Venmo.prototype, '_initialize').returns(Promise.resolve({}));
-
-      create({client: this.client}, function () {
-        expect(Venmo.prototype._initialize).to.be.calledOnce;
-        done();
-      });
-    });
-
-    it('errors out if Venmo is not enabled for the merchant', function (done) {
-      delete this.configuration.gatewayConfiguration.payWithVenmo;
-
-      create({client: this.client}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VENMO_NOT_ENABLED');
-        expect(err.message).to.equal('Venmo is not enabled for this merchant.');
-        expect(thingy).not.to.exist;
-        done();
-      });
-    });
-
-    it('errors out if options.profileId is present but not a string', function (done) {
-      create({
-        client: this.client,
-        profileId: 1234
-      }, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VENMO_INVALID_PROFILE_ID');
-        expect(err.message).to.equal('Venmo profile ID is invalid.');
-        expect(thingy).not.to.exist;
-        done();
-      });
-    });
-
-    it('errors out if options.deepLinkReturnUrl is present but not a string', function (done) {
-      create({
-        client: this.client,
-        deepLinkReturnUrl: 1234
-      }, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('VENMO_INVALID_DEEP_LINK_RETURN_URL');
-        expect(err.message).to.equal('Venmo deep link return URL is invalid.');
-        expect(thingy).not.to.exist;
-        done();
-      });
-    });
-
-    it('sends an analytics event when successful', function (done) {
-      create({client: this.client}, function () {
-        expect(analytics.sendEvent).to.be.calledOnce;
-        expect(analytics.sendEvent).to.be.calledWith(this.client, 'venmo.initialized');
-        done();
-      }.bind(this));
-    });
-  });
-});
-
-describe('venmo.isBrowserSupported', function () {
-  it('calls isBrowserSupported library', function () {
-    this.sandbox.stub(supportsVenmo, 'isBrowserSupported');
-
-    isBrowserSupported();
-
-    expect(supportsVenmo.isBrowserSupported).to.be.calledOnce;
-  });
-
-  it('can call isBrowserSupported with allowNewTab', function () {
-    this.sandbox.stub(supportsVenmo, 'isBrowserSupported');
-
-    isBrowserSupported({allowNewBrowserTab: true});
-
-    expect(supportsVenmo.isBrowserSupported).to.be.calledWith({
-      allowNewBrowserTab: true
     });
   });
 });

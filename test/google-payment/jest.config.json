@@ -1,0 +1,15 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/google-payment/coverage",
+  "displayName": "google-payment",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/google-payment",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/google-payment"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js"
+  ]
+}

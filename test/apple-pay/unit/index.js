@@ -1,99 +1,88 @@
 'use strict';
 
-var Promise = require('../../../src/lib/promise');
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var create = require('../../../src/apple-pay').create;
-var ApplePay = require('../../../src/apple-pay/apple-pay');
-var analytics = require('../../../src/lib/analytics');
-var fake = require('../../helpers/fake');
+jest.mock('../../../src/lib/analytics');
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/create-assets-url');
+jest.mock('../../../src/lib/create-deferred-client');
 
-describe('applePay.create', function () {
-  beforeEach(function () {
-    this.configuration = fake.configuration();
-    this.configuration.gatewayConfiguration.applePayWeb = {};
+const analytics = require('../../../src/lib/analytics');
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const { create } = require('../../../src/apple-pay');
+const ApplePay = require('../../../src/apple-pay/apple-pay');
+const { fake: { client: fakeClient, clientToken, configuration }} = require('../../helpers');
 
-    this.client = fake.client({
-      configuration: this.configuration
+describe('applePay.create', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.configuration = configuration();
+    testContext.configuration.gatewayConfiguration.applePayWeb = {};
+
+    testContext.client = fakeClient({
+      configuration: testContext.configuration
     });
 
-    this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
-    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+    jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.client);
+    jest.spyOn(analytics, 'sendEvent').mockReturnValue(null);
+    jest.spyOn(basicComponentVerification, 'verify').mockResolvedValue(null);
   });
 
-  it('returns a promise', function () {
-    var promise = create({client: this.client});
-
-    expect(promise).to.be.an.instanceof(Promise);
+  it('returns a promise', async () => {
+    await expect(create({ client: testContext.client })).resolves.toBeDefined();
   });
 
-  it('verifies with basicComponentVerification', function (done) {
-    var client = this.client;
+  it('verifies with basicComponentVerification', () => {
+    const client = testContext.client;
 
-    create({
-      client: client
-    }, function () {
-      expect(basicComponentVerification.verify).to.be.calledOnce;
-      expect(basicComponentVerification.verify).to.be.calledWithMatch({
+    return create({
+      client
+    }).then(() => {
+      expect(basicComponentVerification.verify).toBeCalledTimes(1);
+      expect(basicComponentVerification.verify).toHaveBeenCalledWith(expect.objectContaining({
         name: 'Apple Pay',
-        client: client
-      });
-      done();
+        client
+      }));
     });
   });
 
-  it('can create with an authorization instead of a client', function (done) {
+  it('can create with an authorization instead of a client', () =>
     create({
-      authorization: fake.clientToken,
+      authorization: clientToken,
       debug: true
-    }, function (err, applePayInstance) {
-      expect(err).not.to.exist;
-
-      expect(createDeferredClient.create).to.be.calledOnce;
-      expect(createDeferredClient.create).to.be.calledWith({
-        authorization: fake.clientToken,
-        client: this.sandbox.match.typeOf('undefined'),
+    }).then(applePayInstance => {
+      expect(createDeferredClient.create).toBeCalledTimes(1);
+      expect(createDeferredClient.create).toHaveBeenCalledWith(expect.objectContaining({
+        authorization: clientToken,
         debug: true,
         assetsUrl: 'https://example.com/assets',
         name: 'Apple Pay'
-      });
+      }));
 
-      expect(applePayInstance).to.be.an.instanceof(ApplePay);
+      expect(applePayInstance).toBeInstanceOf(ApplePay);
+    }));
 
-      done();
-    }.bind(this));
-  });
+  it('rejects with an error when apple pay is not enabled in configuration', () => {
+    delete testContext.configuration.gatewayConfiguration.applePayWeb;
 
-  it('calls callback with an error when apple pay is not enabled in configuration', function (done) {
-    delete this.configuration.gatewayConfiguration.applePayWeb;
-
-    create({client: this.client}, function (err, applePayInstance) {
-      expect(applePayInstance).not.to.exist;
-
-      expect(err).to.be.an.instanceOf(BraintreeError);
-      expect(err.code).to.equal('APPLE_PAY_NOT_ENABLED');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('Apple Pay is not enabled for this merchant.');
-
-      done();
+    return create({ client: testContext.client }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.code).toBe('APPLE_PAY_NOT_ENABLED');
+      expect(err.type).toBe('MERCHANT');
+      expect(err.message).toBe('Apple Pay is not enabled for this merchant.');
     });
   });
 
-  it('sends an analytics event', function (done) {
-    var client = this.client;
+  it('sends an analytics event', () => {
+    const client = testContext.client;
 
-    create({
-      client: client,
+    return create({
+      client,
       displayName: 'Awesome Merchant'
-    }, function (err) {
-      expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'applepay.initialized');
-
-      done();
+    }).then(() => {
+      expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'applepay.initialized');
     });
   });
 });

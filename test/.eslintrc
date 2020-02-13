@@ -1,10 +1,10 @@
 ---
   env:
     mocha: true
+    jest: true
 
   globals:
     expect: false
-    sinon: true
     fake: false
 
   rules:

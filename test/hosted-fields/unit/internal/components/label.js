@@ -1,24 +1,24 @@
 'use strict';
 
-var LabelComponent = require('../../../../../src/hosted-fields/internal/components/label').LabelComponent;
+const { LabelComponent } = require('../../../../../src/hosted-fields/internal/components/label');
 
-describe('LabelComponent', function () {
-  it('creates a label element', function () {
-    var label = new LabelComponent({
+describe('LabelComponent', () => {
+  it('creates a label element', () => {
+    const { element } = new LabelComponent({
       name: 'foo',
       label: 'Foo'
     });
 
-    expect(label.element).to.be.an.instanceof(HTMLLabelElement);
+    expect(element).toBeInstanceOf(HTMLLabelElement);
   });
 
-  it('populates `for` and innerHTML from arguments', function () {
-    var label = new LabelComponent({
+  it('populates `for` and innerHTML from arguments', () => {
+    const { element } = new LabelComponent({
       name: 'foo',
       label: 'Foo'
     });
 
-    expect(label.element.getAttribute('for')).to.equal('foo');
-    expect(label.element.innerHTML).to.equal('Foo');
+    expect(element.getAttribute('for')).toBe('foo');
+    expect(element.innerHTML).toBe('Foo');
   });
 });

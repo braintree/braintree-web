@@ -1,89 +1,67 @@
 'use strict';
 
-var fake = require('../../../helpers/fake');
-var composeHostedFieldsUrl = require('../../../../src/hosted-fields/external/compose-url');
-var getCardForm = require('../../../../src/unionpay/internal/get-hosted-fields-cardform').get;
+const { fake: { configuration }} = require('../../../helpers');
+const composeHostedFieldsUrl = require('../../../../src/hosted-fields/external/compose-url');
+const { get: getCardForm } = require('../../../../src/unionpay/internal/get-hosted-fields-cardform');
 
-describe('getHostedFieldsCardForm', function () {
-  beforeEach(function () {
-    var assetsUrl;
+describe('getHostedFieldsCardForm', () => {
+  let testContext;
 
-    this.fakeClient = {getConfiguration: fake.configuration};
-    this.fakeHostedFields = {
-      _bus: {channel: 'abc123'}
+  beforeEach(() => {
+    let assetsUrl, noData, boringFrame, evilFrame, wrongUrl;
+
+    testContext = {};
+    testContext._oldGlobalName = window.name;
+    testContext.fakeClient = { getConfiguration: configuration };
+    testContext.fakeHostedFields = {
+      _bus: { channel: 'abc123' }
     };
+    assetsUrl = testContext.fakeClient.getConfiguration().gatewayConfiguration.assetsUrl;
+    testContext.frameUrl = composeHostedFieldsUrl(assetsUrl, 'abc123');
 
-    this.evilFrame = {};
-    Object.defineProperty(this.evilFrame, 'location', {
-      get: function () {
+    boringFrame = document.createElement('iframe');
+    boringFrame.setAttribute('src', 'http://example.com');
+
+    wrongUrl = document.createElement('iframe');
+    wrongUrl.setAttribute('src', 'http://example.com');
+
+    evilFrame = document.createElement('iframe');
+    Object.defineProperty(evilFrame, 'location', {
+      get: () => {
         throw new Error('cant touch this');
       }
     });
 
-    assetsUrl = this.fakeClient.getConfiguration().gatewayConfiguration.assetsUrl;
-    this.frameUrl = composeHostedFieldsUrl(assetsUrl, 'abc123');
+    noData = document.createElement('iframe');
+    noData.setAttribute('src', testContext.frameUrl);
 
-    this.oldParent = global.parent;
+    document.documentElement.appendChild(noData);
+    document.documentElement.appendChild(evilFrame);
+    document.documentElement.appendChild(boringFrame);
+    document.documentElement.appendChild(wrongUrl);
+
+    window.frames[0].cardForm = null;
+    window.frames[3].cardForm = { wrong: 'Url' };
+    window.name = 'frame-name_123';
   });
 
-  afterEach(function () {
-    global.parent = this.oldParent;
+  afterEach(() => {
+    window.name = testContext._oldGlobalName;
   });
 
-  it('can find the card form', function () {
-    var fakeCardForm = {};
-    var goodFrame = {
-      location: {href: this.frameUrl},
-      cardForm: fakeCardForm
-    };
-
-    global.parent = {
-      frames: [
-        {
-          location: {href: this.frameUrl},
-          cardForm: null
-        },
-        this.evilFrame,
-        {
-          location: {href: 'http://example.com'}
-        },
-        {
-          location: {href: 'http://example.com'},
-          cardForm: fakeCardForm
-        },
-        goodFrame,
-        {
-          location: {href: this.frameUrl},
-          cardForm: null
-        }
-      ]
-    };
-
-    expect(getCardForm(this.fakeClient, this.fakeHostedFields)).to.equal(fakeCardForm);
+  it('returns null when it cannot find the card form', () => {
+    expect(getCardForm(testContext.fakeClient, testContext.fakeHostedFields)).toBeNull();
   });
 
-  it('returns null when it cannot find the card form', function () {
-    global.parent = {
-      frames: [
-        {
-          location: {href: this.frameUrl},
-          cardForm: null
-        },
-        this.evilFrame,
-        {
-          location: {href: 'http://example.com'}
-        },
-        {
-          location: {href: 'http://example.com'},
-          cardForm: {}
-        },
-        {
-          location: {href: this.frameUrl},
-          cardForm: null
-        }
-      ]
-    };
+  it('can find the card form', () => {
+    const fakeCardForm = { good: 'form' };
+    const goodFrame = document.createElement('iframe');
 
-    expect(getCardForm(this.fakeClient, this.fakeHostedFields)).to.equal(null);
+    goodFrame.setAttribute('src', testContext.frameUrl);
+
+    document.documentElement.appendChild(goodFrame);
+    window.frames[4].cardForm = fakeCardForm;
+
+    expect(getCardForm(testContext.fakeClient, testContext.fakeHostedFields)).toBe(fakeCardForm);
   });
 });

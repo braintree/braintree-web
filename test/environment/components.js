@@ -1,39 +1,24 @@
-/* globals __dirname */
-
 'use strict';
 
-var fs = require('fs');
-var path = require('path');
-var componentsJson = require('../../components.json');
-var expect = require('chai').expect;
+const { promises: fs } = require('fs');
+const { extname, resolve } = require('path');
+const componentsJson = require('../../components.json');
 
-describe('components', function () {
-  it('includes all of the folders in src/ (except lib/)', function (done) {
-    var srcPath = path.resolve(__dirname, '..', '..', 'src');
-    var components = componentsJson.concat().sort();
+describe('components', () => {
+  it('includes all the folders in src/ (except lib/ & coverage/)', () => {
+    const srcPath = resolve(__dirname, '..', '..', 'src');
+    const components = componentsJson.concat().sort();
 
-    fs.readdir(srcPath, function (err, files) {
-      var folders;
+    return fs.readdir(srcPath).then(files => {
+      const folders = files.filter(file => !extname(file) && file !== 'lib' && file !== 'coverage').sort();
 
-      if (err) {
-        done(err);
-
-        return;
-      }
-
-      folders = files.filter(function (file) {
-        return !path.extname(file) && file !== 'lib';
-      }).sort();
-
-      expect(folders).to.deep.equal(components);
-
-      done();
+      expect(folders).toEqual(components);
     });
   });
 
-  it('is alphabetized', function () {
-    var sorted = componentsJson.concat().sort();
+  it('is alphabetized', () => {
+    const sorted = componentsJson.concat().sort();
 
-    expect(componentsJson).to.deep.equal(sorted);
+    expect(componentsJson).toEqual(sorted);
   });
 });

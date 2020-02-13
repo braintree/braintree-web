@@ -1,35 +1,33 @@
 'use strict';
 
-var assembleIFrames = require('../../../../src/hosted-fields/internal/assemble-iframes').assembleIFrames;
+const { assembleIFrames } = require('../../../../src/hosted-fields/internal/assemble-iframes');
 
-describe('assembleIFrames', function () {
-  it('iterates through window.frames to find frames on the same origin', function () {
-    var myHref = location.href;
-
-    var frameA = {
-      location: {href: myHref},
+describe('assembleIFrames', () => {
+  it('iterates through window.frames to find frames on the same origin', () => {
+    const myHref = location.href;
+    const frameA = {
+      location: { href: myHref },
       frames: []
     };
-    var frameB = {
-      location: {href: myHref},
+    const frameB = {
+      location: { href: myHref },
       frames: []
     };
-    var frameC = {
-      location: {href: myHref},
+    const frameC = {
+      location: { href: myHref },
       frames: [
         {
-          location: {href: 'http://example.com'},
+          location: { href: 'http://example.com' },
           frames: []
         },
         frameB
       ]
     };
-
-    var fakeWindow = {
+    const fakeWindow = {
       frames: [
         frameA,
         {
-          location: {href: 'http://bing.com'},
+          location: { href: 'http://bing.com' },
           frames: []
         },
         {
@@ -39,11 +37,10 @@ describe('assembleIFrames', function () {
         frameC
       ]
     };
+    const result = assembleIFrames(fakeWindow);
 
-    var result = assembleIFrames(fakeWindow);
-
-    expect(result).to.have.lengthOf(2);
-    expect(result[0]).to.equal(frameA);
-    expect(result[1]).to.equal(frameC);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(frameA);
+    expect(result[1]).toBe(frameC);
   });
 });

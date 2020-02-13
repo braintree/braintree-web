@@ -1,40 +1,46 @@
 'use strict';
 
-var AJAXDriver = require('../../../src/client/request/ajax-driver');
-var Client = require('../../../src/client/client');
-var BRAINTREE_VERSION = require('../../../src/client/constants').BRAINTREE_VERSION;
-var VERSION = process.env.npm_package_version;
-var Promise = require('../../../src/lib/promise');
-var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var fake = require('../../helpers/fake');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var analytics = require('../../../src/lib/analytics');
-var methods = require('../../../src/lib/methods');
+jest.mock('../../../src/lib/analytics');
 
-describe('Client', function () {
-  describe('bad instantiation', function () {
-    it('throws an error when instantiated with no arguments', function (done) {
+const analytics = require('../../../src/lib/analytics');
+const AJAXDriver = require('../../../src/client/request/ajax-driver');
+const Client = require('../../../src/client/client');
+const { BRAINTREE_VERSION } = require('../../../src/client/constants');
+const VERSION = process.env.npm_package_version;
+const { fake: { clientToken, configuration: fakeConfiguration, tokenizationKey }, rejectIfResolves, noop, yields, yieldsAsync } = require('../../helpers');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const methods = require('../../../src/lib/methods');
+
+describe('Client', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+  });
+
+  describe('bad instantiation', () => {
+    it('throws an error when instantiated with no arguments', done => {
       try {
         new Client();
       } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
+        expect(err).toBeInstanceOf(BraintreeError);
         done();
       }
     });
 
-    it('throws an error when instantiated with no gatewayConfiguration', function (done) {
+    it('throws an error when instantiated with no gatewayConfiguration', done => {
       try {
         new Client();
       } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.INTERNAL);
-        expect(err.code).to.equal('CLIENT_MISSING_GATEWAY_CONFIGURATION');
-        expect(err.message).to.equal('Missing gatewayConfiguration.');
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.INTERNAL);
+        expect(err.code).toBe('CLIENT_MISSING_GATEWAY_CONFIGURATION');
+        expect(err.message).toBe('Missing gatewayConfiguration.');
         done();
       }
     });
 
-    it('throws an error when instantiated with invalid assetsUrl', function (done) {
+    it('throws an error when instantiated with invalid assetsUrl', done => {
       try {
         new Client({
           gatewayConfiguration: {
@@ -42,15 +48,15 @@ describe('Client', function () {
           }
         });
       } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
-        expect(err.message).to.equal('assetsUrl property is on an invalid domain.');
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.message).toBe('assetsUrl property is on an invalid domain.');
         done();
       }
     });
 
-    it('throws an error when instantiated with invalid clientApiUrl', function (done) {
+    it('throws an error when instantiated with invalid clientApiUrl', done => {
       try {
         new Client({
           gatewayConfiguration: {
@@ -58,15 +64,15 @@ describe('Client', function () {
           }
         });
       } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
-        expect(err.message).to.equal('clientApiUrl property is on an invalid domain.');
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.message).toBe('clientApiUrl property is on an invalid domain.');
         done();
       }
     });
 
-    it('throws an error when instantiated with invalid configUrl', function (done) {
+    it('throws an error when instantiated with invalid configUrl', done => {
       try {
         new Client({
           gatewayConfiguration: {
@@ -74,365 +80,361 @@ describe('Client', function () {
           }
         });
       } catch (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
-        expect(err.message).to.equal('configUrl property is on an invalid domain.');
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe('CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN');
+        expect(err.message).toBe('configUrl property is on an invalid domain.');
         done();
       }
     });
   });
 
-  describe('initialize', function () {
-    beforeEach(function () {
-      this.sandbox.stub(analytics, 'sendEvent');
-      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, fake.configuration().gatewayConfiguration);
+  describe('initialize', () => {
+    beforeEach(() => {
+      jest.spyOn(AJAXDriver, 'request').mockImplementation(yields(null, fakeConfiguration().gatewayConfiguration));
       Client.clearCache();
     });
 
-    it('sends an analytics event on initalization', function () {
-      var self = this;
+    it('sends an analytics event on initialization', () => Client
+      .initialize({ authorization: tokenizationKey }).then(() => {
+        expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'custom.client.load.initialized');
+      })
+    );
 
-      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.any, 'custom.client.load.initialized');
+    it('sends an analytics event on success', () => Client
+      .initialize({ authorization: tokenizationKey })
+      .then(() => {
+        expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'custom.client.load.succeeded');
+      })
+    );
+
+    it('sends an analytics event when client is cached', () => Client
+      .initialize({ authorization: tokenizationKey })
+      .then(() => {
+        expect(analytics.sendEvent).not.toBeCalledWith(expect.anything(), 'custom.client.load.cached');
+
+        return Client.initialize({ authorization: tokenizationKey });
+      })
+      .then(() => {
+        expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'custom.client.load.cached');
+      })
+    );
+
+    it('gets the configuration from the gateway', () => Client
+      .initialize({ authorization: tokenizationKey })
+      .then(() => {
+        expect(AJAXDriver.request.mock.calls[0][0]).toMatchObject({
+          url: expect.stringMatching(/client_api\/v1\/configuration$/)
+        });
+      })
+    );
+
+    describe('when the request fails', () => {
+      beforeEach(() => {
+        AJAXDriver.request.mockRestore();
       });
-    });
 
-    it('sends an analytics event on success', function () {
-      var self = this;
+      it('errors out when configuration endpoint is not reachable', () => {
+        jest.spyOn(AJAXDriver, 'request').mockImplementation(yields({ errors: 'Unknown error' }));
 
-      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.any, 'custom.client.load.succeeded');
+        return Client.initialize({ authorization: tokenizationKey }).then(rejectIfResolves).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('NETWORK');
+          expect(err.code).toBe('CLIENT_GATEWAY_NETWORK');
+          expect(err.message).toBe('Cannot contact the gateway at this time.');
+        });
       });
-    });
 
-    it('sends an analytics event when client is cached', function () {
-      var self = this;
+      it('deletes client from cache when configuration request errors', () => {
+        jest.spyOn(AJAXDriver, 'request')
+          .mockImplementationOnce(yieldsAsync({ errors: 'Unknown error' }))
+          .mockImplementationOnce(yieldsAsync(null, fakeConfiguration().gatewayConfiguration));
 
-      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
-        expect(analytics.sendEvent).to.not.be.calledWith(self.sandbox.match.any, 'custom.client.load.cached');
+        return Client.initialize({ authorization: tokenizationKey }).then(rejectIfResolves).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('NETWORK');
+          expect(err.code).toBe('CLIENT_GATEWAY_NETWORK');
+          expect(err.message).toBe('Cannot contact the gateway at this time.');
 
-        return Client.initialize({authorization: fake.tokenizationKey});
-      }).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(self.sandbox.match.any, 'custom.client.load.cached');
+          return Client.initialize({ authorization: tokenizationKey });
+        }).then(() => {
+          expect(AJAXDriver.request).toBeCalledTimes(2);
+        });
       });
-    });
 
-    it('gets the configuration from the gateway', function () {
-      var self = this;
+      it('errors out when malformed authorization is passed', () => {
+        jest.spyOn(AJAXDriver, 'request').mockImplementation(yields(null, null));
 
-      return Client.initialize({authorization: fake.tokenizationKey}).then(function () {
-        expect(self.getSpy).to.be.calledWith(self.sandbox.match({
-          url: self.sandbox.match(/client_api\/v1\/configuration$/)
-        }));
+        return Client.initialize({ authorization: 'bogus' }).then(rejectIfResolves).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('CLIENT_INVALID_AUTHORIZATION');
+          expect(err.message).toBe('Authorization is invalid. Make sure your client token or tokenization key is valid.');
+        });
       });
-    });
 
-    it('errors out when configuration endpoint is not reachable', function () {
-      this.getSpy.restore();
-      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields({errors: 'Unknown error'});
+      it('errors out when the Client fails to initialize', () => {
+        jest.spyOn(AJAXDriver, 'request').mockImplementation(yields(null, null));
 
-      return Client.initialize({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
-        expect(err.message).to.equal('Cannot contact the gateway at this time.');
-      });
-    });
-
-    it('deletes client from cache when configuration request errors', function () {
-      var self = this;
-
-      this.getSpy.yieldsAsync({errors: 'Unknown error'});
-
-      return Client.initialize({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
-        expect(err.message).to.equal('Cannot contact the gateway at this time.');
-
-        self.getSpy.yieldsAsync(null, fake.configuration().gatewayConfiguration);
-
-        return Client.initialize({authorization: fake.tokenizationKey});
-      }).then(function () {
-        expect(self.getSpy).to.be.calledTwice;
-      });
-    });
-
-    it('errors out when malformed authorization is passed', function () {
-      this.getSpy.restore();
-      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, null);
-
-      return Client.initialize({authorization: 'bogus'}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_INVALID_AUTHORIZATION');
-        expect(err.message).to.equal('Authorization is invalid. Make sure your client token or tokenization key is valid.');
-      });
-    });
-
-    it('errors out when the Client fails to initialize', function () {
-      this.getSpy.restore();
-      this.getSpy = this.sandbox.stub(AJAXDriver, 'request').yields(null, null);
-
-      return Client.initialize({authorization: fake.tokenizationKey}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('INTERNAL');
-        expect(err.code).to.equal('CLIENT_MISSING_GATEWAY_CONFIGURATION');
-        expect(err.message).to.equal('Missing gatewayConfiguration.');
-      });
-    });
-
-    it('can pass debug: true onto configuration', function () {
-      return Client.initialize({authorization: fake.clientToken, debug: true}).then(function (thingy) {
-        expect(thingy).to.be.an.instanceof(Client);
-        expect(thingy.getConfiguration().isDebug).to.be.true;
-      });
-    });
-
-    it('caches client when created with the same authorization', function () {
-      return Client.initialize({authorization: fake.tokenizationKey}).then(function (firstFakeClient) {
-        return Client.initialize({authorization: fake.clientToken}).then(function (secondFakeClient) {
-          expect(firstFakeClient).to.not.equal(secondFakeClient);
-
-          return Client.initialize({authorization: fake.tokenizationKey});
-        }).then(function (thirdFakeClient) {
-          expect(firstFakeClient).to.equal(thirdFakeClient);
+        return Client.initialize({ authorization: tokenizationKey }).then(rejectIfResolves).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('INTERNAL');
+          expect(err.code).toBe('CLIENT_MISSING_GATEWAY_CONFIGURATION');
+          expect(err.message).toBe('Missing gatewayConfiguration.');
         });
       });
     });
 
-    it('invalidates cached client on teardown', function () {
-      return Client.initialize({authorization: fake.tokenizationKey}).then(function (firstFakeClient) {
+    it('can pass debug: true onto configuration', () => Client
+      .initialize({ authorization: clientToken, debug: true })
+      .then(thingy => {
+        expect(thingy).toBeInstanceOf(Client);
+        expect(thingy.getConfiguration().isDebug).toBe(true);
+      })
+    );
+
+    it('caches client when created with the same authorization', () => Client
+      .initialize({ authorization: tokenizationKey })
+      .then(firstFakeClient => Client.initialize({ authorization: clientToken })
+        .then(secondFakeClient => {
+          expect(firstFakeClient).not.toBe(secondFakeClient);
+
+          return Client.initialize({ authorization: tokenizationKey });
+        }).then(thirdFakeClient => {
+          expect(firstFakeClient).toBe(thirdFakeClient);
+        }))
+    );
+
+    it('invalidates cached client on teardown', () => Client
+      .initialize({ authorization: tokenizationKey })
+      .then(firstFakeClient => {
         firstFakeClient.teardown();
 
-        return Client.initialize({authorization: fake.tokenizationKey}).then(function (secondFakeClient) {
-          expect(firstFakeClient).to.not.equal(secondFakeClient);
-        });
-      });
-    });
+        return Client.initialize({ authorization: tokenizationKey })
+          .then(secondFakeClient => {
+            expect(firstFakeClient).not.toBe(secondFakeClient);
+          });
+      })
+    );
   });
 
-  describe('getConfiguration', function () {
-    it('has an immutable configuration', function () {
-      var first, second;
-      var client = new Client(fake.configuration());
+  describe('getConfiguration', () => {
+    it('has an immutable configuration', () => {
+      let first, second;
+      const client = new Client(fakeConfiguration());
 
       first = client.getConfiguration();
       first.gatewayConfiguration.yes = 'yes';
 
       second = client.getConfiguration();
-      expect(second.gatewayConfiguration.yes).not.to.exist;
+      expect(second.gatewayConfiguration.yes).toBeFalsy();
     });
 
-    it('has analytics metadata', function () {
-      var client = new Client(fake.configuration());
+    it('has analytics metadata', () => {
+      const client = new Client(fakeConfiguration());
 
-      var actual = client.getConfiguration();
+      const actual = client.getConfiguration();
 
-      expect(actual.analyticsMetadata.sdkVersion).to.equal(VERSION);
-      expect(actual.analyticsMetadata.merchantAppId).to.equal('http://fakeDomain.com');
-      expect(actual.analyticsMetadata.sessionId).to.equal('fakeSessionId');
+      expect(actual.analyticsMetadata.sdkVersion).toBe(VERSION);
+      expect(actual.analyticsMetadata.merchantAppId).toBe('http://fakeDomain.com');
+      expect(actual.analyticsMetadata.sessionId).toBe('fakeSessionId');
     });
 
-    it('has authorization', function () {
-      var client = new Client(fake.configuration());
+    it('has authorization', () => {
+      const client = new Client(fakeConfiguration());
+      const actual = client.getConfiguration();
 
-      var actual = client.getConfiguration();
-
-      expect(actual.authorization).to.equal('development_testing_merchant_id');
-    });
-  });
-
-  describe('toJSON', function () {
-    it('returns the same object as getConfiguration', function () {
-      var client = new Client(fake.configuration());
-
-      expect(client.toJSON()).to.deep.equal(client.getConfiguration());
-    });
-
-    it('returns the value of getConfiguration when getConfiguration is overwritten', function () {
-      var client = new Client(fake.configuration());
-      var newConfiguration = {foo: 'bar'};
-
-      expect(client.toJSON()).to.deep.equal(client.getConfiguration());
-
-      client.getConfiguration = function () {
-        return newConfiguration;
-      };
-
-      expect(client.toJSON()).to.equal(newConfiguration);
-      expect(client.toJSON()).to.equal(client.getConfiguration());
+      expect(actual.authorization).toBe('development_testing_merchant_id');
     });
   });
 
-  describe('request', function () {
-    beforeEach(function () {
-      this.originalBody = document.body.innerHTML;
+  describe('toJSON', () => {
+    it('returns the same object as getConfiguration', () => {
+      const client = new Client(fakeConfiguration());
+
+      expect(client.toJSON()).toEqual(client.getConfiguration());
     });
 
-    afterEach(function () {
-      document.body.innerHTML = this.originalBody;
+    it('returns the value of getConfiguration when getConfiguration is overwritten', () => {
+      const client = new Client(fakeConfiguration());
+      const newConfiguration = { foo: 'bar' };
+
+      expect(client.toJSON()).toEqual(client.getConfiguration());
+
+      client.getConfiguration = () => newConfiguration;
+
+      expect(client.toJSON()).toBe(newConfiguration);
+      expect(client.toJSON()).toBe(client.getConfiguration());
+    });
+  });
+
+  describe('request', () => {
+    beforeEach(() => {
+      testContext.originalBody = document.body.innerHTML;
+      jest.spyOn(Client.prototype, 'request');
     });
 
-    it('calls callback with an error when passed no HTTP method', function (done) {
-      var client = new Client(fake.configuration());
+    afterEach(() => {
+      document.body.innerHTML = testContext.originalBody;
+    });
+
+    it('calls callback with an error when passed no HTTP method', done => {
+      const client = new Client(fakeConfiguration());
 
       client.request({
         endpoint: 'payment_methods'
-      }, function (err, data) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_OPTION_REQUIRED');
-        expect(err.message).to.equal('options.method is required when making a request.');
-        expect(data).not.to.exist;
+      }, (err, data) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('CLIENT_OPTION_REQUIRED');
+        expect(err.message).toBe('options.method is required when making a request.');
+        expect(data).toBeFalsy();
 
         done();
       });
     });
 
-    it('calls callback with an error when passed no endpoint', function (done) {
-      var client = new Client(fake.configuration());
+    it('calls callback with an error when passed no endpoint', done => {
+      const client = new Client(fakeConfiguration());
 
       client.request({
         method: 'get'
-      }, function (err, data) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_OPTION_REQUIRED');
-        expect(err.message).to.equal('options.endpoint is required when making a request.');
-        expect(data).not.to.exist;
+      }, (err, data) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('CLIENT_OPTION_REQUIRED');
+        expect(err.message).toBe('options.endpoint is required when making a request.');
+        expect(data).toBeFalsy();
 
         done();
       });
     });
 
-    it('does not require a method and endpoint when using graphQLApi', function (done) {
-      var client = new Client(fake.configuration());
+    it('does not require a method and endpoint when using graphQLApi', done => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request').yields(null, {}, 200);
+      jest.spyOn(client, '_request').mockImplementation(yields(null, {}, 200));
 
       client.request({
         api: 'graphQLApi'
-      }, function (err) {
-        expect(err).to.not.exist;
-        expect(client._request).to.be.calledOnce;
+      }, err => {
+        expect(err).toBeFalsy();
+        expect(client._request).toBeCalledTimes(1);
         done();
       });
     });
 
-    it('rejects with error when graphQLApi request comes back with a 200 and an errors object', function (done) {
-      var client = new Client(fake.configuration());
-      var errors = [{}];
+    it('rejects with error when graphQLApi request comes back with a 200 and an errors object', done => {
+      const client = new Client(fakeConfiguration());
+      const errors = [{}];
 
-      this.sandbox.stub(client, '_request').yields(null, {errors: errors}, 200);
+      jest.spyOn(client, '_request').mockImplementation(yields(null, { errors: errors }, 200));
 
       client.request({
         api: 'graphQLApi'
-      }, function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('CLIENT_GRAPHQL_REQUEST_ERROR');
-        expect(err.details.originalError).to.equal(errors);
+      }, err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('NETWORK');
+        expect(err.code).toBe('CLIENT_GRAPHQL_REQUEST_ERROR');
+        expect(err.details.originalError).toBe(errors);
         done();
       });
     });
 
-    it('calls callback with an error when passed a bogus API', function (done) {
-      var client = new Client(fake.configuration());
+    it('calls callback with an error when passed a bogus API', done => {
+      const client = new Client(fakeConfiguration());
 
       client.request({
         method: 'get',
         endpoint: 'foo',
         api: 'garbage'
-      }, function (err, data) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_OPTION_INVALID');
-        expect(err.message).to.equal('options.api is invalid.');
-        expect(data).not.to.exist;
+      }, (err, data) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('CLIENT_OPTION_INVALID');
+        expect(err.message).toBe('options.api is invalid.');
+        expect(data).toBeFalsy();
 
         done();
       });
     });
 
-    it('calls callback with an error when passed an empty string as an API', function (done) {
-      var client = new Client(fake.configuration());
+    it('calls callback with an error when passed an empty string as an API', done => {
+      const client = new Client(fakeConfiguration());
 
       client.request({
         method: 'get',
         endpoint: 'foo',
         api: ''
-      }, function (err, data) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_OPTION_INVALID');
-        expect(err.message).to.equal('options.api is invalid.');
-        expect(data).not.to.exist;
+      }, (err, data) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('CLIENT_OPTION_INVALID');
+        expect(err.message).toBe('options.api is invalid.');
+        expect(data).toBeFalsy();
 
         done();
       });
     });
 
-    it('calls driver with client for source in _meta if source is not provided', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with client for source in _meta if source is not provided', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {_meta: {source: 'client'}}
-      }));
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { _meta: { source: 'client' }}
+      });
     });
 
-    it('calls driver with full URL with GET if specified and no API is specified', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with full URL with GET if specified and no API is specified', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
+      expect(client._request.mock.calls[0][0]).toMatchObject({
         method: 'get',
         url: 'https://braintreegateway.com/v1/payment_methods'
-      }));
+      });
     });
 
-    it('calls driver with full URL with GET if specified and API is clientApi', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with full URL with GET if specified and API is clientApi', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         api: 'clientApi',
         endpoint: 'payment_methods',
         method: 'get'
-      }, function () {});
+      }, noop);
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
+      expect(client._request.mock.calls[0][0]).toMatchObject({
         method: 'get',
         url: 'https://braintreegateway.com/v1/payment_methods'
-      }));
+      });
     });
 
-    it('calls driver with GraphQL formatted request when using graphQLApi', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with GraphQL formatted request when using graphQLApi', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         api: 'graphQLApi',
-        data: {foo: 'bar'}
-      }, function () {});
+        data: { foo: 'bar' }
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
+      expect(client._request.mock.calls[0][0]).toMatchObject({
         data: {
           clientSdkMetadata: {
             source: 'client',
@@ -447,367 +449,368 @@ describe('Client', function () {
           Authorization: 'Bearer development_testing_merchant_id',
           'Braintree-Version': BRAINTREE_VERSION
         }
-      }));
+      });
     });
 
-    it('uses authorization fingerprint for auth header if available in graphQLApi', function () {
-      var conf = fake.configuration();
-      var client;
+    it('uses authorization fingerprint for auth header if available in graphQLApi', () => {
+      const conf = fakeConfiguration();
+      let client;
 
-      conf.authorization = fake.clientToken;
+      conf.authorization = clientToken;
       conf.authorizationFingerprint = 'encoded_auth_fingerprint';
 
       client = new Client(conf);
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         api: 'graphQLApi',
-        data: {foo: 'bar'}
-      }, function () {});
+        data: { foo: 'bar' }
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
+      expect(client._request.mock.calls[0][0]).toMatchObject({
         headers: {
           Authorization: 'Bearer encoded_auth_fingerprint',
           'Braintree-Version': BRAINTREE_VERSION
         }
-      }));
+      });
     });
 
-    it('calls driver with full URL with POST if specified and API is unspecified', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with full URL with POST if specified and API is unspecified', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         endpoint: 'payment_methods',
         method: 'post'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
+      expect(client._request.mock.calls[0][0]).toMatchObject({
         url: 'https://braintreegateway.com/v1/payment_methods',
         method: 'post'
-      }));
+      });
     });
 
-    it('calls driver with full URL with POST if specified and API is clientApi', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with full URL with POST if specified and API is clientApi', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         api: 'clientApi',
         endpoint: 'payment_methods',
         method: 'post'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
+      expect(client._request.mock.calls[0][0]).toMatchObject({
         url: 'https://braintreegateway.com/v1/payment_methods',
         method: 'post'
-      }));
+      });
     });
 
-    it('calls driver with library version when API is unspecified', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with library version when API is unspecified', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
-      }));
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { braintreeLibraryVersion: `braintree/web/${VERSION}` }
+      });
     });
 
-    it('calls driver with library version when API is clientApi', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with library version when API is clientApi', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        api: 'clientApi',
-        endpoint: 'payment_methods',
-        method: 'get'
-      }, function () {});
-
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {braintreeLibraryVersion: 'braintree/web/' + VERSION}
-      }));
-    });
-
-    it('calls driver with sessionId in _meta when API is unspecified', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
-      client.request({
-        endpoint: 'payment_methods',
-        method: 'get'
-      }, function () {});
-
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {_meta: {sessionId: client.getConfiguration().analyticsMetadata.sessionId}}
-      }));
-    });
-
-    it('calls driver with sessionId in _meta when API is clientApi', function () {
-      var client = new Client(fake.configuration());
-
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         api: 'clientApi',
         endpoint: 'payment_methods',
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {_meta: {sessionId: client.getConfiguration().analyticsMetadata.sessionId}}
-      }));
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { braintreeLibraryVersion: `braintree/web/${VERSION}` }
+      });
     });
 
-    it('calls driver with client for source in _meta if source is not provided', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with sessionId in _meta when API is unspecified', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
+      jest.spyOn(client, '_request').mockReturnValue(null);
+      client.request({
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, () => {
+      });
 
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { _meta: { sessionId: client.getConfiguration().analyticsMetadata.sessionId }}
+      });
+    });
+
+    it('calls driver with sessionId in _meta when API is clientApi', () => {
+      const client = new Client(fakeConfiguration());
+
+      jest.spyOn(client, '_request').mockReturnValue(null);
+      client.request({
+        api: 'clientApi',
+        endpoint: 'payment_methods',
+        method: 'get'
+      }, () => {
+      });
+
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { _meta: { sessionId: client.getConfiguration().analyticsMetadata.sessionId }}
+      });
+    });
+
+    it('calls driver with client for source in _meta if source is not provided', () => {
+      const client = new Client(fakeConfiguration());
+
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         method: 'post',
         endpoint: 'payment_methods'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {_meta: {source: 'client'}}
-      }));
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { _meta: { source: 'client' }}
+      });
     });
 
-    it('calls driver with specified source in _meta', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with specified source in _meta', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         method: 'post',
         endpoint: 'payment_methods',
         data: {
-          _meta: {source: 'custom source'}
+          _meta: { source: 'custom source' }
         }
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {_meta: {source: 'custom source'}}
-      }));
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { _meta: { source: 'custom source' }}
+      });
     });
 
-    it('calls driver with a callable sendAnalyticsEvent function', function () {
-      var client = new Client(fake.configuration());
+    it('calls driver with a callable sendAnalyticsEvent function', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(analytics, 'sendEvent');
+      jest.spyOn(analytics, 'sendEvent').mockReturnValue(null);
 
-      this.sandbox.stub(client, '_request').callsFake(function (options) {
+      jest.spyOn(client, '_request').mockImplementation(options => {
         options.sendAnalyticsEvent('my.event');
       });
 
       client.request({
         method: 'post',
         endpoint: 'payment_methods'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(analytics.sendEvent).to.be.calledWith(client, 'my.event');
+      expect(analytics.sendEvent).toBeCalledWith(client, 'my.event');
     });
 
-    it("doesn't set headers when API is unspecified", function () {
-      var client = new Client(fake.configuration());
+    it('does not set headers when API is unspecified', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         endpoint: 'cool',
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).not.to.be.calledWith(this.sandbox.match({
-        headers: this.sandbox.match.defined
-      }));
+      expect(client._request.mock.calls[0][0]).not.toMatchObject({
+        headers: expect.anything()
+      });
     });
 
-    it("doesn't set headers when API is clientApi", function () {
-      var client = new Client(fake.configuration());
+    it('does not set headers when API is clientApi', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         api: 'clientApi',
         endpoint: 'cool',
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).not.to.be.calledWith(this.sandbox.match({
-        headers: this.sandbox.match.defined
-      }));
+      expect(client._request.mock.calls[0][0]).not.toMatchObject({
+        headers: expect.anything()
+      });
     });
 
-    it('passes through timeout to driver', function () {
-      var client = new Client(fake.configuration());
+    it('passes through timeout to driver', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         endpoint: 'payment_methods',
         timeout: 4000,
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
+      expect(client._request.mock.calls[0][0]).toMatchObject({
         timeout: 4000
-      }));
+      });
     });
 
-    it('passes through data to driver when API is unspecified', function () {
-      var client = new Client(fake.configuration());
+    it('passes through data to driver when API is unspecified', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         endpoint: 'payment_methods',
-        data: {some: 'stuffs'},
+        data: { some: 'stuffs' },
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {some: 'stuffs'}
-      }));
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { some: 'stuffs' }
+      });
     });
 
-    it('passes through data to driver when API is clientApi', function () {
-      var client = new Client(fake.configuration());
+    it('passes through data to driver when API is clientApi', () => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request');
-
+      jest.spyOn(client, '_request').mockReturnValue(null);
       client.request({
         api: 'clientApi',
         endpoint: 'payment_methods',
-        data: {some: 'stuffs'},
+        data: { some: 'stuffs' },
         method: 'get'
-      }, function () {});
+      }, () => {
+      });
 
-      expect(client._request).to.be.calledWith(this.sandbox.match({
-        data: {some: 'stuffs'}
-      }));
+      expect(client._request.mock.calls[0][0]).toMatchObject({
+        data: { some: 'stuffs' }
+      });
     });
 
-    it('returns BraintreeError for authorization if driver has a 403', function (done) {
-      var client = new Client(fake.configuration());
+    it('returns BraintreeError for authorization if driver has a 403', done => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request').yieldsAsync('error', null, 403);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync('error', null, 403));
 
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function (err, data, status) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_AUTHORIZATION_INSUFFICIENT');
-        expect(err.message).to.equal('The authorization used has insufficient privileges.');
-        expect(data).to.be.null;
-        expect(status).to.equal(403);
+      }, (err, data, status) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('CLIENT_AUTHORIZATION_INSUFFICIENT');
+        expect(err.message).toBe('The authorization used has insufficient privileges.');
+        expect(data).toBeNull();
+        expect(status).toBe(403);
         done();
       });
     });
 
-    it('returns BraintreeError for rate limiting if driver has a 429', function (done) {
-      var client = new Client(fake.configuration());
+    it('returns BraintreeError for rate limiting if driver has a 429', done => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request').yieldsAsync('error', null, 429);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync('error', null, 429));
 
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function (err, data, status) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('CLIENT_RATE_LIMITED');
-        expect(err.message).to.equal('You are being rate-limited; please try again in a few minutes.');
-        expect(data).to.be.null;
-        expect(status).to.equal(429);
+      }, (err, data, status) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('CLIENT_RATE_LIMITED');
+        expect(err.message).toBe('You are being rate-limited; please try again in a few minutes.');
+        expect(data).toBeNull();
+        expect(status).toBe(429);
         done();
       });
     });
 
-    it('returns BraintreeError if driver times out', function (done) {
-      var client = new Client(fake.configuration());
+    it('returns BraintreeError if driver times out', done => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request').yieldsAsync('timeout', null, -1);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync('timeout', null, -1));
 
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function (err, data, status) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('CLIENT_REQUEST_TIMEOUT');
-        expect(err.message).to.equal('Request timed out waiting for a reply.');
-        expect(data).to.be.null;
-        expect(status).to.equal(-1);
+      }, (err, data, status) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('NETWORK');
+        expect(err.code).toBe('CLIENT_REQUEST_TIMEOUT');
+        expect(err.message).toBe('Request timed out waiting for a reply.');
+        expect(data).toBeNull();
+        expect(status).toBe(-1);
         done();
       });
     });
 
-    it('returns BraintreeError if driver has a 4xx', function (done) {
-      var errorDetails = {error: 'message'};
-      var client = new Client(fake.configuration());
+    it('returns BraintreeError if driver has a 4xx', done => {
+      const errorDetails = { error: 'message' };
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request').yieldsAsync(errorDetails, null, 422);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync(errorDetails, null, 422));
 
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function (err, data, status) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('CLIENT_REQUEST_ERROR');
-        expect(err.message).to.equal('There was a problem with your request.');
-        expect(err.details.originalError).to.equal(errorDetails);
-        expect(data).to.be.null;
-        expect(status).to.equal(422);
+      }, (err, data, status) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('NETWORK');
+        expect(err.code).toBe('CLIENT_REQUEST_ERROR');
+        expect(err.message).toBe('There was a problem with your request.');
+        expect(err.details.originalError).toBe(errorDetails);
+        expect(data).toBeNull();
+        expect(status).toBe(422);
         done();
       });
     });
 
-    it('returns BraintreeError if driver has a 5xx', function (done) {
-      var client = new Client(fake.configuration());
+    it('returns BraintreeError if driver has a 5xx', done => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request').yieldsAsync('This is a network error message', null, 500);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync('This is a network error message', null, 500));
 
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function (err, data, status) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('CLIENT_GATEWAY_NETWORK');
-        expect(err.message).to.equal('Cannot contact the gateway at this time.');
-        expect(data).to.be.null;
-        expect(status).to.equal(500);
+      }, (err, data, status) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('NETWORK');
+        expect(err.code).toBe('CLIENT_GATEWAY_NETWORK');
+        expect(err.message).toBe('Cannot contact the gateway at this time.');
+        expect(data).toBeNull();
+        expect(status).toBe(500);
         done();
       });
     });
 
-    it('copies data object and adds _httpStatus when request resolves', function (done) {
-      var client = new Client(fake.configuration());
+    it('copies data object and adds _httpStatus when request resolves', done => {
+      const client = new Client(fakeConfiguration());
 
-      this.sandbox.stub(client, '_request').yieldsAsync(null, {foo: 'bar'}, 200);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync(null, { foo: 'bar' }, 200));
 
       client.request({
         endpoint: 'payment_methods',
         method: 'get'
-      }, function (err, data, status) {
-        expect(err).to.not.exist;
-        expect(status).to.equal(200);
-        expect(data).to.deep.equal({
+      }, (err, data, status) => {
+        expect(err).toBeFalsy();
+        expect(status).toBe(200);
+        expect(data).toEqual({
           foo: 'bar',
           _httpStatus: 200
         });
@@ -815,98 +818,100 @@ describe('Client', function () {
       });
     });
 
-    it('fraudnet json is added to dom when collect device data is enabled for card transactions', function (done) {
-      var expectedData = {foo: 'boo'};
-      var configuration = fake.configuration();
-      var client;
+    it('fraudnet json is added to dom when collect device data is enabled for card transactions', done => {
+      const expectedData = { foo: 'boo' };
+      const configuration = fakeConfiguration();
+      let client;
 
       configuration.gatewayConfiguration.creditCards.collectDeviceData = true;
       client = new Client(configuration);
 
-      this.sandbox.stub(client, '_request').yieldsAsync(null, {creditCards: [{nonce: 'fake-nonce'}]}, 200);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync(null, { creditCards: [{ nonce: 'fake-nonce' }]}, 200));
 
       client.request({
         endpoint: 'payment_methods/credit_cards',
         data: expectedData,
         method: 'post'
-      }, function () {
-        var script = document.querySelector('script[type="application/json"]');
+      }, () => {
+        const script = document.querySelector('script[type="application/json"]');
 
-        expect(script.getAttribute('fncls')).to.equal('fnparams-dede7cc5-15fd-4c75-a9f4-36c430ee3a99');
-        expect(script.innerHTML).to.equal('{"f":"fake-nonce","fp":{"rda_tenant":"bt_card","mid":"merchant-id"},"bu":false,"s":"BRAINTREE_SIGNIN"}');
+        expect(script.getAttribute('fncls')).toBe('fnparams-dede7cc5-15fd-4c75-a9f4-36c430ee3a99');
+        expect(script.innerHTML).toBe(
+          '{"f":"fake-nonce","fp":{"rda_tenant":"bt_card","mid":"merchant-id"},"bu":false,"s":"BRAINTREE_SIGNIN"}'
+        );
         done();
       });
     });
 
-    it('fraudnet json is NOT added to dom when collect device data is disabled for card transactions', function (done) {
-      var expectedData = {foo: 'boo'};
-      var configuration = fake.configuration();
-      var client;
+    it('fraudnet json is NOT added to dom when collect device data is disabled for card transactions', done => {
+      const expectedData = { foo: 'boo' };
+      const configuration = fakeConfiguration();
+      let client;
 
       configuration.gatewayConfiguration.creditCards.collectDeviceData = false;
       client = new Client(configuration);
 
-      this.sandbox.stub(client, '_request').yieldsAsync(null, {creditCards: [{nonce: 'fake-nonce'}]}, 200);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync(null, { creditCards: [{ nonce: 'fake-nonce' }]}, 200));
 
       client.request({
         endpoint: 'payment_methods/credit_cards',
         data: expectedData,
         method: 'post'
-      }, function () {
-        var script = document.querySelector('script[type="application/json"]');
+      }, () => {
+        const script = document.querySelector('script[type="application/json"]');
 
-        expect(script).to.equal(null);
+        expect(script).toBeNull();
 
         done();
       });
     });
 
-    it('fraudnet json is NOT added to dom when collect device data is enabled but gateway response does not contain creditCards array', function (done) {
-      var expectedData = {foo: 'boo'};
-      var configuration = fake.configuration();
-      var client;
+    it('fraudnet json is NOT added to dom when collect device data is enabled but gateway response does not contain creditCards array', done => {
+      const expectedData = { foo: 'boo' };
+      const configuration = fakeConfiguration();
+      let client;
 
       configuration.gatewayConfiguration.creditCards.collectDeviceData = true;
       client = new Client(configuration);
 
-      this.sandbox.stub(client, '_request').yieldsAsync(null, {}, 200);
+      jest.spyOn(client, '_request').mockImplementation(yieldsAsync(null, {}, 200));
 
       client.request({
         endpoint: 'payment_methods/credit_cards',
         data: expectedData,
         method: 'post'
-      }, function () {
-        var script = document.querySelector('script[type="application/json"]');
+      }, () => {
+        const script = document.querySelector('script[type="application/json"]');
 
-        expect(script).to.equal(null);
+        expect(script).toBeNull();
 
         done();
       });
     });
   });
 
-  describe('getVersion', function () {
-    it('returns the package.json version', function () {
-      var client = new Client(fake.configuration());
+  describe('getVersion', () => {
+    it('returns the package.json version', () => {
+      const client = new Client(fakeConfiguration());
 
-      expect(client.getVersion()).to.equal(VERSION);
+      expect(client.getVersion()).toBe(VERSION);
     });
   });
 
-  describe('teardown', function () {
-    it('returns a promise', function () {
-      var client = new Client(fake.configuration());
-      var promise = client.teardown();
+  describe('teardown', () => {
+    it('returns a promise', () => {
+      const client = new Client(fakeConfiguration());
+      const promise = client.teardown();
 
-      expect(promise).to.be.an.instanceof(Promise);
+      expect(promise).toBeInstanceOf(Promise);
     });
 
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var instance = new Client(fake.configuration());
+    it('replaces all methods so error is thrown when methods are invoked', done => {
+      const instance = new Client(fakeConfiguration());
 
-      instance.teardown(function () {
-        methods(Client.prototype).forEach(function (method) {
-          var err;
+      instance.teardown(() => {
+        methods(Client.prototype).forEach(method => {
+          let err;
 
           try {
             instance[method]();
@@ -914,10 +919,10 @@ describe('Client', function () {
             err = e;
           }
 
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).toBe(`${method} cannot be called after teardown.`);
         });
 
         done();

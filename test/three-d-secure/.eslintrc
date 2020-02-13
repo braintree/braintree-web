@@ -1,0 +1,24 @@
+{
+  "extends": "braintree",
+  "env": {
+    "es6": true,
+    "jest": true,
+    "node": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2018
+  },
+  "globals":{
+    "jest": true
+  },
+  "rules": {
+    "object-curly-spacing": [
+      "error",
+      "always",
+      {
+        "arraysInObjects": false,
+        "objectsInObjects": false
+      }
+    ]
+  }
+}

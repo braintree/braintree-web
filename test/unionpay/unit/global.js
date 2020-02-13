@@ -1,14 +1,5 @@
 'use strict';
 
-var Bus = require('../../../src/lib/bus');
-
-beforeEach(function () {
-  this.sandbox.stub(Bus.prototype, 'on');
-  this.sandbox.stub(Bus.prototype, 'off');
-  this.sandbox.stub(Bus.prototype, 'emit');
-
-  global.bus = {
-    on: this.sandbox.stub(),
-    emit: this.sandbox.stub()
-  };
-});
+jest.mock('../../../src/lib/bus');
+jest.mock('../../../src/lib/analytics');
+jest.mock('../../../src/lib/create-assets-url');

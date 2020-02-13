@@ -1,12 +1,15 @@
 'use strict';
 
-var GraphQL = require('../../../../../../src/client/request/graphql');
-var GraphQLRequest = require('../../../../../../src/client/request/graphql/request');
+const GraphQL = require('../../../../../../src/client/request/graphql');
+const GraphQLRequest = require('../../../../../../src/client/request/graphql/request');
 
-describe('GraphQL Configuration', function () {
-  beforeEach(function () {
-    this.configurationUrl = 'https://localhost/merchant_id/client_api/v1/configuration';
-    this.config = {
+describe('GraphQL Configuration', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.configurationUrl = 'https://localhost/merchant_id/client_api/v1/configuration';
+    testContext.config = {
       graphQL: {
         url: 'https://localhost/graphql',
         features: [
@@ -14,25 +17,25 @@ describe('GraphQL Configuration', function () {
         ]
       }
     };
-    this.fakeMetadata = {
+    testContext.fakeMetadata = {
       source: 'my-source',
       integration: 'my-integration',
       sessionId: 'my-session-id'
     };
-    this.options = {
-      graphQL: new GraphQL(this.config),
-      url: this.configurationUrl,
+    testContext.options = {
+      graphQL: new GraphQL(testContext.config),
+      url: testContext.configurationUrl,
       headers: {
         FAKE_HEADER: 'Fake header'
       },
-      metadata: this.fakeMetadata
+      metadata: testContext.fakeMetadata
     };
   });
 
-  describe('adaptResponseBody', function () {
-    it('normalizes a GraphQL configuration response', function () {
-      var graphQLRequest = new GraphQLRequest(this.options);
-      var fakeConfigurationResponse = {
+  describe('adaptResponseBody', () => {
+    it('normalizes a GraphQL configuration response', () => {
+      const graphQLRequest = new GraphQLRequest(testContext.options);
+      const fakeConfigurationResponse = {
         data: {
           clientConfiguration: {
             analyticsUrl: 'https://localhost/analytics',
@@ -126,7 +129,7 @@ describe('GraphQL Configuration', function () {
           requestId: 'fake-request-id'
         }
       };
-      var configurationResponse = {
+      const configurationResponse = {
         challenges: ['cvv'],
         threeDSecureEnabled: false,
         threeDSecure: {
@@ -240,40 +243,40 @@ describe('GraphQL Configuration', function () {
           }
         }
       };
-      var adaptedResponse = graphQLRequest.adaptResponseBody(fakeConfigurationResponse);
+      const adaptedResponse = graphQLRequest.adaptResponseBody(fakeConfigurationResponse);
 
-      expect(adaptedResponse.challenges).to.deep.equal(configurationResponse.challenges);
-      expect(adaptedResponse.threeDSecureEnabled).to.deep.equal(configurationResponse.threeDSecureEnabled);
-      expect(adaptedResponse.analytics).to.deep.equal(configurationResponse.analytics);
-      expect(adaptedResponse.environment).to.deep.equal(configurationResponse.environment);
-      expect(adaptedResponse.merchantId).to.deep.equal(configurationResponse.merchantId);
-      expect(adaptedResponse.assetsUrl).to.deep.equal(configurationResponse.assetsUrl);
-      expect(adaptedResponse.clientApiUrl).to.deep.equal(configurationResponse.clientApiUrl);
+      expect(adaptedResponse.challenges).toEqual(configurationResponse.challenges);
+      expect(adaptedResponse.threeDSecureEnabled).toEqual(configurationResponse.threeDSecureEnabled);
+      expect(adaptedResponse.analytics).toEqual(configurationResponse.analytics);
+      expect(adaptedResponse.environment).toEqual(configurationResponse.environment);
+      expect(adaptedResponse.merchantId).toEqual(configurationResponse.merchantId);
+      expect(adaptedResponse.assetsUrl).toEqual(configurationResponse.assetsUrl);
+      expect(adaptedResponse.clientApiUrl).toEqual(configurationResponse.clientApiUrl);
 
-      expect(adaptedResponse.applePayWeb).to.deep.equal(configurationResponse.applePayWeb);
-      expect(adaptedResponse.kount).to.deep.equal(configurationResponse.kount);
-      expect(adaptedResponse.masterpass).to.deep.equal(configurationResponse.masterpass);
-      expect(adaptedResponse.paypalEnabled).to.deep.equal(configurationResponse.paypalEnabled);
-      expect(adaptedResponse.paypal).to.deep.equal(configurationResponse.paypal);
-      expect(adaptedResponse.unionPay).to.deep.equal(configurationResponse.unionPay);
-      expect(adaptedResponse.visaCheckout).to.deep.equal(configurationResponse.visaCheckout);
+      expect(adaptedResponse.applePayWeb).toEqual(configurationResponse.applePayWeb);
+      expect(adaptedResponse.kount).toEqual(configurationResponse.kount);
+      expect(adaptedResponse.masterpass).toEqual(configurationResponse.masterpass);
+      expect(adaptedResponse.paypalEnabled).toEqual(configurationResponse.paypalEnabled);
+      expect(adaptedResponse.paypal).toEqual(configurationResponse.paypal);
+      expect(adaptedResponse.unionPay).toEqual(configurationResponse.unionPay);
+      expect(adaptedResponse.visaCheckout).toEqual(configurationResponse.visaCheckout);
 
-      expect(adaptedResponse.graphQL).to.deep.equal(configurationResponse.graphQL);
-      expect(adaptedResponse.venmo).to.deep.equal(configurationResponse.venmo);
-      expect(adaptedResponse.payWithVenmo).to.deep.equal(configurationResponse.payWithVenmo);
-      expect(adaptedResponse.androidPay).to.deep.equal(configurationResponse.androidPay);
-      expect(adaptedResponse.creditCards).to.deep.equal(configurationResponse.creditCards);
-      expect(adaptedResponse.ideal).to.deep.equal(configurationResponse.ideal);
-      expect(adaptedResponse.usBankAccount).to.deep.equal(configurationResponse.usBankAccount);
-      expect(adaptedResponse.braintreeApi).to.deep.equal(configurationResponse.braintreeApi);
+      expect(adaptedResponse.graphQL).toEqual(configurationResponse.graphQL);
+      expect(adaptedResponse.venmo).toEqual(configurationResponse.venmo);
+      expect(adaptedResponse.payWithVenmo).toEqual(configurationResponse.payWithVenmo);
+      expect(adaptedResponse.androidPay).toEqual(configurationResponse.androidPay);
+      expect(adaptedResponse.creditCards).toEqual(configurationResponse.creditCards);
+      expect(adaptedResponse.ideal).toEqual(configurationResponse.ideal);
+      expect(adaptedResponse.usBankAccount).toEqual(configurationResponse.usBankAccount);
+      expect(adaptedResponse.braintreeApi).toEqual(configurationResponse.braintreeApi);
 
-      expect(adaptedResponse).to.deep.equal(configurationResponse);
+      expect(adaptedResponse).toEqual(configurationResponse);
     });
 
-    describe('field adapters', function () {
-      beforeEach(function () {
-        this.graphQLRequest = new GraphQLRequest(this.options);
-        this.fakeEmptyConfigurationResponse = {
+    describe('field adapters', () => {
+      beforeEach(() => {
+        testContext.graphQLRequest = new GraphQLRequest(testContext.options);
+        testContext.fakeEmptyConfigurationResponse = {
           data: {
             clientConfiguration: {
               analyticsUrl: 'https://localhost/analytics',
@@ -299,28 +302,28 @@ describe('GraphQL Configuration', function () {
           }
         };
       });
-      it('correctly handles null fields', function () {
-        var adaptedResponse = this.graphQLRequest.adaptResponseBody(this.fakeEmptyConfigurationResponse);
+      it('correctly handles null fields', () => {
+        const adaptedResponse = testContext.graphQLRequest.adaptResponseBody(testContext.fakeEmptyConfigurationResponse);
 
-        expect(adaptedResponse.creditCards).to.deep.equal({
+        expect(adaptedResponse.creditCards).toEqual({
           supportedCardTypes: []
         });
-        expect(adaptedResponse.challenges).to.deep.equal([]);
-        expect(adaptedResponse.threeDSecureEnabled).to.equal(false);
+        expect(adaptedResponse.challenges).toEqual([]);
+        expect(adaptedResponse.threeDSecureEnabled).toBe(false);
 
-        expect(adaptedResponse.paypal).to.be.undefined;
-        expect(adaptedResponse.paypalEnabled).to.equal(false);
+        expect(adaptedResponse.paypal).toBeUndefined();
+        expect(adaptedResponse.paypalEnabled).toBe(false);
 
-        expect(adaptedResponse.payWithVenmo).to.be.undefined;
-        expect(adaptedResponse.androidPay).to.be.undefined;
-        expect(adaptedResponse.braintreeApi).to.be.undefined;
-        expect(adaptedResponse.kount).to.be.undefined;
-        expect(adaptedResponse.unionPay).to.be.undefined;
-        expect(adaptedResponse.visaCheckout).to.be.undefined;
-        expect(adaptedResponse.masterpass).to.be.undefined;
-        expect(adaptedResponse.usBankAccount).to.be.undefined;
-        expect(adaptedResponse.ideal).to.be.undefined;
-        expect(adaptedResponse.graphQL).to.be.undefined;
+        expect(adaptedResponse.payWithVenmo).toBeUndefined();
+        expect(adaptedResponse.androidPay).toBeUndefined();
+        expect(adaptedResponse.braintreeApi).toBeUndefined();
+        expect(adaptedResponse.kount).toBeUndefined();
+        expect(adaptedResponse.unionPay).toBeUndefined();
+        expect(adaptedResponse.visaCheckout).toBeUndefined();
+        expect(adaptedResponse.masterpass).toBeUndefined();
+        expect(adaptedResponse.usBankAccount).toBeUndefined();
+        expect(adaptedResponse.ideal).toBeUndefined();
+        expect(adaptedResponse.graphQL).toBeUndefined();
       });
     });
   });

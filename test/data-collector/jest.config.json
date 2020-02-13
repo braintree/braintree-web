@@ -1,0 +1,15 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/data-collector/coverage",
+  "displayName": "data-collector",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/data-collector",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/data-collector"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js"
+  ]
+}

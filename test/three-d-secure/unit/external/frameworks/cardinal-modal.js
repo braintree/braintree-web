@@ -1,17 +1,18 @@
 'use strict';
 
-var CardinalModalFramework = require('../../../../../src/three-d-secure/external/frameworks/cardinal-modal');
-var analytics = require('../../../../../src/lib/analytics');
-var fake = require('../../../../helpers/fake');
-var assets = require('../../../../../src/lib/assets');
+jest.mock('../../../../../src/lib/assets');
 
-describe('CardinalModalFramework', function () {
-  beforeEach(function () {
-    var self = this;
+const CardinalModalFramework = require('../../../../../src/three-d-secure/external/frameworks/cardinal-modal');
+const { fake, yieldsAsync } = require('../../../../helpers');
+const assets = require('../../../../../src/lib/assets');
 
-    this.sandbox.stub(analytics, 'sendEvent');
+describe('CardinalModalFramework', () => {
+  let testContext;
 
-    this.configuration = {
+  beforeEach(() => {
+    testContext = {};
+
+    testContext.configuration = {
       authorization: fake.clientToken,
       authorizationFingerprint: 'encoded_auth_fingerprint',
       gatewayConfiguration: {
@@ -21,130 +22,128 @@ describe('CardinalModalFramework', function () {
         }
       }
     };
-    this.client = {
-      request: this.sandbox.stub().resolves(),
-      getConfiguration: function () { return self.configuration; }
+    testContext.client = {
+      request: jest.fn().mockResolvedValue({}),
+      getConfiguration: () => testContext.configuration
     };
-    this.fakeCardinal = {
-      configure: this.sandbox.stub(),
-      setup: this.sandbox.stub(),
-      on: this.sandbox.stub(),
-      trigger: this.sandbox.stub().resolves({Status: false}),
-      'continue': this.sandbox.stub()
+    testContext.fakeCardinal = {
+      configure: jest.fn(),
+      setup: jest.fn(),
+      on: jest.fn(),
+      trigger: jest.fn().mockResolvedValue({ Status: false }),
+      'continue': jest.fn()
     };
   });
 
-  describe('setupSongbird', function () {
-    beforeEach(function () {
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({});
+  describe('setupSongbird', () => {
+    beforeEach(() => {
+      testContext.fakeCardinal.on.mockImplementation(yieldsAsync('payments.setupComplete', {}));
+      jest.spyOn(assets, 'loadScript').mockRejectedValue(new Error('failed'));
     });
 
-    afterEach(function () {
+    afterEach(() => {
       delete global.Cardinal;
     });
 
-    it('creates a cardinal style modal for v1 fallback', function () {
-      var framework;
-
-      this.sandbox.stub(assets, 'loadScript').rejects(new Error('failed'));
+    it('creates a cardinal style modal for v1 fallback', () => {
+      let framework;
 
       framework = new CardinalModalFramework({
-        client: this.client
+        client: testContext.client
       });
 
-      return framework.setupSongbird().then(function () {
-        var iframe = document.createElement('iframe');
-        var modal = framework._createV1IframeModal(iframe);
+      return framework.setupSongbird().then(() => {
+        const iframe = document.createElement('iframe');
+        const modal = framework._createV1IframeModal(iframe);
 
-        expect(modal.querySelector('[data-braintree-v1-fallback-iframe-container]')).to.exist;
-        expect(modal.querySelector('[data-braintree-v1-fallback-iframe-container] iframe')).to.equal(iframe);
+        expect(modal.querySelector('[data-braintree-v1-fallback-iframe-container]')).toBeDefined();
+        expect(modal.querySelector('[data-braintree-v1-fallback-iframe-container] iframe')).toBe(iframe);
       });
     });
 
-    it('closes the modal when close button is clicked', function () {
-      var framework;
-
-      this.sandbox.stub(assets, 'loadScript').rejects(new Error('failed'));
+    it('closes the modal when close button is clicked', () => {
+      let framework;
 
       framework = new CardinalModalFramework({
-        client: this.client
+        client: testContext.client
       });
 
-      this.sandbox.stub(framework, 'cancelVerifyCard');
+      jest.spyOn(framework, 'cancelVerifyCard').mockImplementation();
 
-      return framework.setupSongbird().then(function () {
-        var iframe = document.createElement('iframe');
-        var modal = framework._createV1IframeModal(iframe);
-        var btn = modal.querySelector('[data-braintree-v1-fallback-close-button]');
+      return framework.setupSongbird().then(() => {
+        const iframe = document.createElement('iframe');
+        const modal = framework._createV1IframeModal(iframe);
+        const btn = modal.querySelector('[data-braintree-v1-fallback-close-button]');
 
         document.body.appendChild(modal);
 
         btn.click();
 
-        expect(framework.cancelVerifyCard).to.be.calledOnce;
-        expect(framework.cancelVerifyCard).to.be.calledWithMatch({
-          code: 'THREEDS_CARDINAL_SDK_CANCELED'
+        expect(framework.cancelVerifyCard).toHaveBeenCalledTimes(1);
+        expect(framework.cancelVerifyCard).toHaveBeenCalledWith({
+          code: 'THREEDS_CARDINAL_SDK_CANCELED',
+          message: expect.any(String),
+          type: expect.any(String)
         });
-        expect(document.body.querySelector('[data-braintree-v1-fallback-iframe-container]')).to.not.exist;
+        expect(document.body.querySelector('[data-braintree-v1-fallback-iframe-container]')).toBeFalsy();
       });
     });
 
-    it('closes the modal when backdrop is clicked', function () {
-      var framework;
-
-      this.sandbox.stub(assets, 'loadScript').rejects(new Error('failed'));
+    it('closes the modal when backdrop is clicked', () => {
+      let framework;
 
       framework = new CardinalModalFramework({
-        client: this.client
+        client: testContext.client
       });
 
-      this.sandbox.stub(framework, 'cancelVerifyCard');
+      jest.spyOn(framework, 'cancelVerifyCard').mockImplementation();
 
-      return framework.setupSongbird().then(function () {
-        var iframe = document.createElement('iframe');
-        var modal = framework._createV1IframeModal(iframe);
-        var backdrop = modal.querySelector('[data-braintree-v1-fallback-backdrop]');
+      return framework.setupSongbird().then(() => {
+        const iframe = document.createElement('iframe');
+        const modal = framework._createV1IframeModal(iframe);
+        const backdrop = modal.querySelector('[data-braintree-v1-fallback-backdrop]');
 
         document.body.appendChild(modal);
 
         backdrop.click();
 
-        expect(framework.cancelVerifyCard).to.be.calledOnce;
-        expect(framework.cancelVerifyCard).to.be.calledWithMatch({
-          code: 'THREEDS_CARDINAL_SDK_CANCELED'
+        expect(framework.cancelVerifyCard).toHaveBeenCalledTimes(1);
+        expect(framework.cancelVerifyCard).toHaveBeenCalledWith({
+          code: 'THREEDS_CARDINAL_SDK_CANCELED',
+          message: expect.any(String),
+          type: expect.any(String)
         });
-        expect(document.body.querySelector('[data-braintree-v1-fallback-iframe-container]')).to.not.exist;
+        expect(document.body.querySelector('[data-braintree-v1-fallback-iframe-container]')).toBeFalsy();
       });
     });
 
-    // TODO doesn't work in Karma, enable this when using Jest instead
-    // it('pressing escape key closes the modal', function () {
-    //   var framework;
-    //
-    //   this.sandbox.stub(assets, 'loadScript').rejects(new Error('failed'));
-    //
-    //   framework = new CardinalModalFramework({
-    //     client: this.client
-    //   });
-    //
-    //   this.sandbox.stub(framework, 'cancelVerifyCard');
-    //
-    //   return framework.setupSongbird().then(function () {
-    //     var iframe = document.createElement('iframe');
-    //     var modal = framework._createV1IframeModal(iframe);
-    //
-    //     document.body.appendChild(modal);
-    //
-    //     document.dispatchEvent(new KeyboardEvent('keyup', {
-    //       key: 'Escape'
-    //     }));
-    //
-    //     expect(framework.cancelVerifyCard).to.be.calledOnce;
-    //     expect(framework.cancelVerifyCard).to.be.calledWithMatch({
-    //       code: 'THREEDS_CARDINAL_SDK_CANCELED'
-    //     });
-    //     expect(document.body.querySelector('[data-braintree-v1-fallback-iframe-container]')).to.not.exist;
-    //   });
-    // });
+    it('pressing escape key closes the modal', () => {
+      let framework;
+
+      framework = new CardinalModalFramework({
+        client: testContext.client
+      });
+
+      jest.spyOn(framework, 'cancelVerifyCard').mockImplementation();
+
+      return framework.setupSongbird().then(() => {
+        const iframe = document.createElement('iframe');
+        const modal = framework._createV1IframeModal(iframe);
+
+        document.body.appendChild(modal);
+
+        document.dispatchEvent(new KeyboardEvent('keyup', {
+          key: 'Escape'
+        }));
+
+        expect(framework.cancelVerifyCard).toHaveBeenCalledTimes(1);
+        expect(framework.cancelVerifyCard).toHaveBeenCalledWith({
+          code: 'THREEDS_CARDINAL_SDK_CANCELED',
+          message: expect.any(String),
+          type: expect.any(String)
+        });
+        expect(document.body.querySelector('[data-braintree-v1-fallback-iframe-container]')).toBeFalsy();
+      });
+    });
   });
 });

@@ -1,158 +1,112 @@
 'use strict';
 
-var framebus = require('framebus');
-var Bus = require('../../../../src/lib/bus');
-var BraintreeError = require('../../../../src/lib/braintree-error');
+jest.unmock('../../../../src/lib/bus');
+jest.mock('framebus');
 
-describe('braintree bus', function () {
-  beforeEach(function () {
-    var firstEvent = Object.keys(Bus.events)[0];
+const framebus = require('framebus');
+const Bus = require('../../../../src/lib/bus');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const { noop } = require('../../../helpers');
 
-    this.bus = new Bus({channel: 'foo'});
+describe('braintree bus', () => {
+  let testContext;
 
-    Bus.prototype.on.restore();
-    Bus.prototype.off.restore();
-    Bus.prototype.emit.restore();
-    this.sandbox.stub(framebus, 'on');
-    this.sandbox.stub(framebus, 'off');
-    this.sandbox.stub(framebus, 'emit');
+  beforeEach(() => {
+    testContext = {};
 
-    this.event = Bus.events[firstEvent];
+    const firstEvent = Object.keys(Bus.events)[0];
 
-    this.handler = function () {};
-    this.payload = {};
+    testContext.bus = new Bus({ channel: 'foo' });
+
+    jest.spyOn(framebus, 'on');
+    jest.spyOn(framebus, 'off');
+    jest.spyOn(framebus, 'emit');
+
+    testContext.event = Bus.events[firstEvent];
+
+    testContext.handler = noop;
+    testContext.payload = {};
   });
 
-  it('throws an error when instantiated without a channel', function () {
-    var err;
+  it.each([
+    undefined, {}, { channel: null }  // eslint-disable-line no-undefined
+  ])('throws an error when instantiated without a channel', badChannel => {
+    expect.assertions(4);
 
     try {
-      new Bus();
-    } catch (e) {
-      err = e;
+      new Bus(badChannel);
+    } catch (err) {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('INTERNAL');
+      expect(err.code).toBe('MISSING_CHANNEL_ID');
+      expect(err.message).toBe('Channel ID must be specified.');
     }
-
-    expect(err).to.be.an.instanceof(BraintreeError);
-    expect(err.type).to.equal('INTERNAL');
-    expect(err.code).to.equal('MISSING_CHANNEL_ID');
-    expect(err.message).to.equal('Channel ID must be specified.');
-
-    err = null;
-
-    try {
-      new Bus({});
-    } catch (e) {
-      err = e;
-    }
-
-    expect(err).to.be.an.instanceof(BraintreeError);
-    expect(err.type).to.equal('INTERNAL');
-    expect(err.code).to.equal('MISSING_CHANNEL_ID');
-    expect(err.message).to.equal('Channel ID must be specified.');
-
-    try {
-      new Bus({channel: null});
-    } catch (e) {
-      err = e;
-    }
-
-    expect(err).to.be.an.instanceof(BraintreeError);
-    expect(err.type).to.equal('INTERNAL');
-    expect(err.code).to.equal('MISSING_CHANNEL_ID');
-    expect(err.message).to.equal('Channel ID must be specified.');
   });
 
-  describe('on', function () {
-    it('proxies to Framebus\'s on', function () {
-      this.bus.on(this.event, this.handler);
-      expect(framebus.on).to.be.calledWith('braintree:foo:' + this.event, this.handler);
+  describe.each(['on', 'off', 'emit'])('base method %s', method => {
+    it(`proxies to Framebus's ${method}`, () => {
+      testContext.bus[method](testContext.event, testContext.handler);
+      expect(framebus[method]).toHaveBeenCalledWith(`braintree:foo:${testContext.event}`, testContext.handler);
     });
 
-    it.skip('throws an error if called with an invalid event name', function () {
-      var bus = this.bus;
+    /*
+    * This functionality is not implemented
+    * */
+    it.skip('throws an error if called with an invalid event name', () => {
+      const bus = testContext.bus;
 
-      expect(function () {
-        bus.on('bar', function () {});
-      }).to.throw('bar is an invalid Braintree event');
+      expect(() => {
+        bus[method]('bar', noop);
+      }).toThrowError('bar is an invalid Braintree event');
     });
   });
 
-  describe('off', function () {
-    it('proxies to Framebus\'s off', function () {
-      this.bus.off(this.event, this.handler);
-      expect(framebus.off).to.be.calledWith('braintree:foo:' + this.event, this.handler);
+  describe('teardown', () => {
+    it('calls off for every added listener, even ones already removed', () => {
+      const event1 = Bus.events[Object.keys(Bus.events)[0]];
+      const event2 = Bus.events[Object.keys(Bus.events)[1]];
+      const event3 = Bus.events[Object.keys(Bus.events)[2]];
+
+      const handler1 = noop;
+      const handler2 = noop;
+      const handler3 = noop;
+
+      testContext.bus.on(event1, handler1);
+      testContext.bus.on(event2, handler2);
+      testContext.bus.on(event3, handler3);
+
+      testContext.bus.off(event2, handler2);
+
+      jest.spyOn(testContext.bus, '_offDirect');
+
+      testContext.bus.teardown();
+
+      expect(testContext.bus._offDirect).toHaveBeenCalledWith(event1, handler1);
+      expect(testContext.bus._offDirect).toHaveBeenCalledWith(event2, handler2);
+      expect(testContext.bus._offDirect).toHaveBeenCalledWith(event3, handler3);
     });
 
-    it.skip('throws an error if called with an invalid event name', function () {
-      var bus = this.bus;
+    it('only unsubscribes from events once', () => {
+      jest.spyOn(testContext.bus, '_offDirect');
 
-      expect(function () {
-        bus.off('bar', function () {});
-      }).to.throw('bar is an invalid Braintree event');
-    });
-  });
+      testContext.bus.on(testContext.event, testContext.handler);
+      testContext.bus.teardown();
+      testContext.bus.teardown();
 
-  describe('emit', function () {
-    it('proxies to Framebus\'s emit', function () {
-      this.bus.emit(this.event, this.payload, this.handler);
-      expect(framebus.emit).to.be.calledWith('braintree:foo:' + this.event, this.payload, this.handler);
+      expect(testContext.bus._offDirect).toHaveBeenCalledTimes(1);
     });
 
-    it.skip('throws an error if called with an invalid event name', function () {
-      var bus = this.bus;
+    it('doesn\'t proxy to framebus after calling', () => {
+      testContext.bus.teardown();
 
-      expect(function () {
-        bus.emit('bar', {}, function () {});
-      }).to.throw('bar is an invalid Braintree event');
-    });
-  });
+      testContext.bus.on(testContext.event, testContext.handler);
+      expect(framebus.on).not.toHaveBeenCalled();
 
-  describe('teardown', function () {
-    it('calls off for every added listener, even ones already removed', function () {
-      var event1 = Bus.events[Object.keys(Bus.events)[0]];
-      var event2 = Bus.events[Object.keys(Bus.events)[1]];
-      var event3 = Bus.events[Object.keys(Bus.events)[2]];
+      testContext.bus.off(testContext.event, testContext.handler);
+      expect(framebus.off).not.toHaveBeenCalled();
 
-      function handler1() {}
-      function handler2() {}
-      function handler3() {}
-
-      this.bus.on(event1, handler1);
-      this.bus.on(event2, handler2);
-      this.bus.on(event3, handler3);
-
-      this.bus.off(event2, handler2);
-
-      this.sandbox.spy(this.bus, '_offDirect');
-
-      this.bus.teardown();
-
-      expect(this.bus._offDirect).to.be.calledWith(event1, handler1);
-      expect(this.bus._offDirect).to.be.calledWith(event2, handler2);
-      expect(this.bus._offDirect).to.be.calledWith(event3, handler3);
-    });
-
-    it('only unsubscribes from events once', function () {
-      this.sandbox.spy(this.bus, '_offDirect');
-
-      this.bus.on(this.event, this.handler);
-      this.bus.teardown();
-      this.bus.teardown();
-
-      expect(this.bus._offDirect).to.be.calledOnce;
-    });
-
-    it('doesn\'t proxy to framebus after calling', function () {
-      this.bus.teardown();
-
-      this.bus.on(this.event, this.handler);
-      expect(framebus.on).not.to.be.called;
-
-      this.bus.off(this.event, this.handler);
-      expect(framebus.off).not.to.be.called;
-
-      this.bus.emit(this.event);
-      expect(framebus.emit).not.to.be.called;
+      testContext.bus.emit(testContext.event);
+      expect(framebus.emit).not.toHaveBeenCalled();
     });
   });
 });

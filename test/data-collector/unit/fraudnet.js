@@ -1,49 +1,37 @@
 'use strict';
 
-var fraudNet = require('../../../src/data-collector/fraudnet');
+jest.mock('../../../src/lib/assets', () => ({ loadScript: () => Promise.resolve() }));
 
-describe('FraudNet', function () {
-  var instance, el, script;
-  var parsedData = {};
+const fraudNet = require('../../../src/data-collector/fraudnet');
 
-  before(function () {
-    this.originalBody = document.body.innerHTML;
+describe('FraudNet', () => {
+  let instance, el;
+  let parsedData = {};
 
-    return fraudNet.setup().then(function (result) {
-      instance = result;
-      el = document.querySelector('[fncls][type="application/json"]');
-      script = document.querySelector('script[src="https://c.paypal.com/da/r/fb.js"]');
-      parsedData = JSON.parse(el.text);
-    });
+  beforeAll(() => fraudNet.setup().then(result => {
+    instance = result;
+    el = document.querySelector('[fncls][type="application/json"]');
+    parsedData = JSON.parse(el.text);
+  }));
+
+  it('appends a script type of "application/json" to the document', () => {
+    expect(el).not.toBeNull();
   });
 
-  after(function () {
-    document.body.innerHTML = this.originalBody;
-    fraudNet.clearSessionIdCache();
+  it('contains expected values in parsed data', () => {
+    const sessionId = instance.sessionId;
+
+    expect(parsedData.b).toContain(sessionId);
+    expect(parsedData.f).toBe(sessionId);
+    expect(parsedData.s).toBe('BRAINTREE_SIGNIN');
   });
 
-  it('appends a script type of "application/json" to the document', function () {
-    expect(el).not.to.be.null;
-  });
+  it('re-uses session id when initialized more than once', () => {
+    const originalSessionId = instance.sessionId;
 
-  it('appends the FraudNet library to the document', function () {
-    expect(script).not.to.be.null;
-  });
-
-  it('contains expected values in parsed data', function () {
-    var sessionId = instance.sessionId;
-
-    expect(parsedData.b).to.contain(sessionId);
-    expect(parsedData.f).to.equal(sessionId);
-    expect(parsedData.s).to.equal('BRAINTREE_SIGNIN');
-  });
-
-  it('re-uses session id when initialized more than once', function () {
-    var originalSessionId = instance.sessionId;
-
-    return fraudNet.setup().then(function (result) {
-      expect(result.sessionId).to.exist;
-      expect(result.sessionId).to.equal(originalSessionId);
+    return fraudNet.setup().then(result => {
+      expect(result.sessionId).toBeDefined();
+      expect(result.sessionId).toBe(originalSessionId);
     });
   });
 });

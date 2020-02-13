@@ -1,43 +1,48 @@
 'use strict';
 
-var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
-var ExpirationYearInput = require('../../../../../src/hosted-fields/internal/components/expiration-year-input').ExpirationYearInput;
-var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
-var constants = require('../../../../../src/hosted-fields/shared/constants');
+const Bus = require('../../../../../src/lib/bus/index.js');
+const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
+const { ExpirationYearInput } = require('../../../../../src/hosted-fields/internal/components/expiration-year-input');
+const { CreditCardForm } = require('../../../../../src/hosted-fields/internal/models/credit-card-form');
+const constants = require('../../../../../src/hosted-fields/shared/constants');
+const { createInput } = require('../../helpers');
 
-describe('Expiration Year Input', function () {
-  beforeEach(function () {
-    this.input = helpers.createInput('expirationYear');
+global.bus = new Bus({ channel: 'foo' });
+
+describe('Expiration Year Input', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.input = createInput('expirationYear');
   });
 
-  describe('inheritance', function () {
-    it('extends BaseInput', function () {
-      expect(this.input).to.be.an.instanceof(BaseInput);
+  describe('inheritance', () => {
+    it('extends BaseInput', () => {
+      expect(testContext.input).toBeInstanceOf(BaseInput);
     });
   });
 
-  describe('element creation', function () {
-    describe('without a `select` option', function () {
-      it('is an <input> element', function () {
-        expect(this.input.element).to.be.an.instanceOf(HTMLInputElement);
+  describe('element creation', () => {
+    describe('without a `select` option', () => {
+      it('is an <input> element', () => {
+        expect(testContext.input.element).toBeInstanceOf(HTMLInputElement);
       });
 
-      it('has type="tel"', function () {
-        expect(this.input.element.getAttribute('type')).to.equal('tel');
+      it('has type="tel"', () => {
+        expect(testContext.input.element.getAttribute('type')).toBe('tel');
       });
 
-      it('sets the maxLength to 4', function () {
-        expect(this.input.element.getAttribute('maxlength')).to.equal('4');
+      it('sets the maxLength to 4', () => {
+        expect(testContext.input.element.getAttribute('maxlength')).toBe('4');
       });
     });
 
-    describe('with a `select` option', function () {
-      it("select: false calls BaseInput's constructElement", function () {
-        var input;
+    describe('with a `select` option', () => {
+      it('select: false calls BaseInput\'s constructElement', () => {
+        jest.spyOn(BaseInput.prototype, 'constructElement');
 
-        this.sandbox.spy(BaseInput.prototype, 'constructElement');
-
-        input = new ExpirationYearInput({
+        new ExpirationYearInput({
           type: 'expirationYear',
           model: new CreditCardForm({
             fields: {
@@ -49,13 +54,13 @@ describe('Expiration Year Input', function () {
           })
         });
 
-        expect(BaseInput.prototype.constructElement).to.be.calledOnce;
-        expect(BaseInput.prototype.constructElement).to.be.calledOn(input);
+        expect(BaseInput.prototype.constructElement).toHaveBeenCalledTimes(1);
+        // expect(BaseInput.prototype.constructElement).calledOn(input);
       });
 
-      it('select: true creates a <select> with year-related <option>s inside', function () {
-        var i, year, thisYear, optionEl;
-        var input = new ExpirationYearInput({
+      it('select: true creates a <select> with year-related <option>s inside', () => {
+        let i, year, thisYear, optionEl;
+        const input = new ExpirationYearInput({
           type: 'expirationYear',
           model: new CreditCardForm({
             fields: {
@@ -67,11 +72,11 @@ describe('Expiration Year Input', function () {
           })
         });
 
-        expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationYear valid');
-        expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationYear');
-        expect(input.element.name).to.equal('expiration-year');
-        expect(input.element.id).to.equal('expiration-year');
+        expect(input.element).toBeInstanceOf(HTMLSelectElement);
+        expect(input.element.className).toBe('expirationYear valid');
+        expect(input.element.getAttribute('data-braintree-name')).toBe('expirationYear');
+        expect(input.element.name).toBe('expiration-year');
+        expect(input.element.id).toBe('expiration-year');
 
         thisYear = new Date().getFullYear();
 
@@ -80,17 +85,17 @@ describe('Expiration Year Input', function () {
 
           year = thisYear + i;
 
-          expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.equal(year.toString());
-          expect(optionEl.innerHTML).to.equal(year.toString());
+          expect(optionEl).toBeInstanceOf(HTMLOptionElement);
+          expect(optionEl.value).toBe(year.toString());
+          expect(optionEl.innerHTML).toBe(year.toString());
         }
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(constants.maxExpirationYearAge + 1);
+        expect(input.element.querySelectorAll('option')).toHaveLength(constants.maxExpirationYearAge + 1);
       });
 
-      it('select: {} creates a <select> with year-related <option>s inside', function () {
-        var i, year, thisYear, optionEl;
-        var input = new ExpirationYearInput({
+      it('select: {} creates a <select> with year-related <option>s inside', () => {
+        let i, year, thisYear, optionEl;
+        const input = new ExpirationYearInput({
           type: 'expirationYear',
           model: new CreditCardForm({
             fields: {
@@ -102,11 +107,11 @@ describe('Expiration Year Input', function () {
           })
         });
 
-        expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationYear valid');
-        expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationYear');
-        expect(input.element.name).to.equal('expiration-year');
-        expect(input.element.id).to.equal('expiration-year');
+        expect(input.element).toBeInstanceOf(HTMLSelectElement);
+        expect(input.element.className).toBe('expirationYear valid');
+        expect(input.element.getAttribute('data-braintree-name')).toBe('expirationYear');
+        expect(input.element.name).toBe('expiration-year');
+        expect(input.element.id).toBe('expiration-year');
 
         thisYear = new Date().getFullYear();
 
@@ -115,17 +120,17 @@ describe('Expiration Year Input', function () {
 
           year = thisYear + i;
 
-          expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.equal(year.toString());
-          expect(optionEl.innerHTML).to.equal(year.toString());
+          expect(optionEl).toBeInstanceOf(HTMLOptionElement);
+          expect(optionEl.value).toBe(year.toString());
+          expect(optionEl.innerHTML).toBe(year.toString());
         }
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(constants.maxExpirationYearAge + 1);
+        expect(input.element.querySelectorAll('option')).toHaveLength(constants.maxExpirationYearAge + 1);
       });
 
-      it('allows a placeholder in the select', function () {
-        var placeholderEl;
-        var input = new ExpirationYearInput({
+      it('allows a placeholder in the select', () => {
+        let placeholderEl;
+        const input = new ExpirationYearInput({
           type: 'expirationYear',
           model: new CreditCardForm({
             fields: {
@@ -139,17 +144,17 @@ describe('Expiration Year Input', function () {
         });
 
         placeholderEl = input.element.childNodes[0];
-        expect(placeholderEl.value).to.equal('');
-        expect(placeholderEl.getAttribute('selected')).to.equal('selected');
-        expect(placeholderEl.getAttribute('disabled')).to.equal('disabled');
-        expect(placeholderEl.innerHTML).to.equal('foo &amp; &lt;boo&gt;');
+        expect(placeholderEl.value).toBe('');
+        expect(placeholderEl.getAttribute('selected')).toBe('selected');
+        expect(placeholderEl.getAttribute('disabled')).toBe('disabled');
+        expect(placeholderEl.innerHTML).toBe('foo &amp; &lt;boo&gt;');
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(constants.maxExpirationYearAge + 2);
+        expect(input.element.querySelectorAll('option')).toHaveLength(constants.maxExpirationYearAge + 2);
       });
 
-      it('selects current year when no placeholder is set', function () {
-        var i, el;
-        var input = new ExpirationYearInput({
+      it('selects current year when no placeholder is set', () => {
+        let i, el;
+        const input = new ExpirationYearInput({
           type: 'expirationYear',
           model: new CreditCardForm({
             fields: {
@@ -161,17 +166,17 @@ describe('Expiration Year Input', function () {
           })
         });
 
-        expect(input.element.childNodes[0].getAttribute('selected')).to.equal('selected');
+        expect(input.element.childNodes[0].getAttribute('selected')).toBe('selected');
         for (i = 1; i < input.element.childNodes.length; i++) {
           el = input.element.childNodes[i];
-          expect(el.getAttribute('selected')).to.equal(null);
+          expect(el.getAttribute('selected')).toBeNull();
         }
-        expect(input.element.selectedIndex).to.equal(0);
+        expect(input.element.selectedIndex).toBe(0);
       });
     });
 
-    it('has autocomplete cc-exp-year', function () {
-      expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-exp-year');
+    it('has autocomplete cc-exp-year', () => {
+      expect(testContext.input.element.getAttribute('autocomplete')).toBe('cc-exp-year');
     });
   });
 });

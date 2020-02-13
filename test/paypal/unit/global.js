@@ -1,11 +1,10 @@
 'use strict';
 
-var Bus = require('../../../src/lib/bus');
-var redirect = require('../../../src/lib/redirect');
+jest.mock('../../../src/lib/analytics');
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/bus');
+jest.mock('../../../src/lib/create-deferred-client');
+jest.mock('../../../src/lib/create-assets-url');
+jest.mock('../../../src/lib/frame-service/external');
+jest.mock('../../../src/lib/frame-service/internal');
 
-beforeEach(function () {
-  this.sandbox.stub(Bus.prototype, 'on');
-  this.sandbox.stub(Bus.prototype, 'off');
-  this.sandbox.stub(Bus.prototype, 'emit');
-  this.sandbox.stub(redirect, 'sync');
-});

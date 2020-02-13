@@ -1,166 +1,171 @@
 'use strict';
 
-var EventedModel = require('../../../../../src/hosted-fields/internal/models/evented-model');
-var util = require('util');
+const util = require('util');
+const EventedModel = require('../../../../../src/hosted-fields/internal/models/evented-model');
 
-describe('EventedModel', function () {
-  beforeEach(function () {
-    this.model = new EventedModel();
+describe('EventedModel', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
   });
 
-  it('returns undefined when getting an empty property', function () {
-    expect(this.model.get('foo')).not.to.exist;
+  beforeEach(() => {
+    testContext.model = new EventedModel();
   });
 
-  it('can set a single property and retrieve it', function () {
-    this.model.set('foo', 123);
-    expect(this.model.get('foo')).to.equal(123);
-
-    this.model.set('foo', 456);
-    expect(this.model.get('foo')).to.equal(456);
+  it('returns undefined when getting an empty property', () => {
+    expect(testContext.model.get('foo')).not.toBeDefined();
   });
 
-  it('can get the whole object', function () {
-    this.model.set('foo', 123);
-    this.model.set('bar', 456);
+  it('can set a single property and retrieve it', () => {
+    testContext.model.set('foo', 123);
+    expect(testContext.model.get('foo')).toBe(123);
 
-    expect(this.model.get()).to.deep.equal({
+    testContext.model.set('foo', 456);
+    expect(testContext.model.get('foo')).toBe(456);
+  });
+
+  it('can get the whole object', () => {
+    testContext.model.set('foo', 123);
+    testContext.model.set('bar', 456);
+
+    expect(testContext.model.get()).toEqual({
       foo: 123,
       bar: 456
     });
   });
 
-  it('can get and set nested objects with string keys', function () {
-    this.model.set('foo.bar', 456);
-    this.model.set('foo.yas', 789);
-    this.model.set('foo.baz.woah', 'what');
-    this.model.set('foo.baz.hecka', 'cool');
+  it('can get and set nested objects with string keys', () => {
+    testContext.model.set('foo.bar', 456);
+    testContext.model.set('foo.yas', 789);
+    testContext.model.set('foo.baz.whoa', 'what');
+    testContext.model.set('foo.baz.hecka', 'cool');
 
-    expect(this.model.get('foo')).to.deep.equal({
+    expect(testContext.model.get('foo')).toEqual({
       bar: 456,
       yas: 789,
       baz: {
-        woah: 'what',
+        whoa: 'what',
         hecka: 'cool'
       }
     });
   });
 
-  it('returns undefined if you go too "deep"', function () {
-    var model = this.model;
+  it('returns undefined if you go too "deep"', () => {
+    const model = testContext.model;
 
     model.set('foo.bar', 456);
 
-    expect(model.get('foo.baz.tooDeep')).not.to.exist;
+    expect(model.get('foo.baz.tooDeep')).not.toBeDefined();
   });
 
-  it('can overwrite an object with a non-object', function () {
-    this.model.set('foo.bar', 'YASS');
-    this.model.set('foo', 123);
+  it('can overwrite an object with a non-object', () => {
+    testContext.model.set('foo.bar', 'YASS');
+    testContext.model.set('foo', 123);
 
-    expect(this.model.get('foo')).to.equal(123);
-    expect(this.model.get('foo.bar')).not.to.exist;
+    expect(testContext.model.get('foo')).toBe(123);
+    expect(testContext.model.get('foo.bar')).not.toBeDefined();
   });
 
-  it('emits a "global" event when a property changes', function (done) {
-    this.model.on('change', function () {
+  it('emits a "global" event when a property changes', done => {
+    testContext.model.on('change', () => {
       done();
     });
 
-    this.model.set('foo', 789);
+    testContext.model.set('foo', 789);
   });
 
-  it('emits a scoped change event when a property changes', function (done) {
-    this.model.on('change:foo', function (newValue) {
-      expect(newValue).to.equal(789);
+  it('emits a scoped change event when a property changes', done => {
+    testContext.model.on('change:foo', newValue => {
+      expect(newValue).toBe(789);
       done();
     });
 
-    this.model.set('foo', 789);
+    testContext.model.set('foo', 789);
   });
 
-  it('emits metatadata with the old value as second argument for a scoped change event when a property changes', function (done) {
-    this.model.set('foo', 123);
+  it('emits metadata with the old value as second argument for a scoped change event when a property changes', done => {
+    testContext.model.set('foo', 123);
 
-    this.model.on('change:foo', function (newValue, metadata) {
-      expect(metadata.old).to.equal(123);
-      expect(newValue).to.equal(789);
+    testContext.model.on('change:foo', (newValue, metadata) => {
+      expect(metadata.old).toBe(123);
+      expect(newValue).toBe(789);
       done();
     });
 
-    this.model.set('foo', 789);
+    testContext.model.set('foo', 789);
   });
 
-  it('emits an intermediate-scope change event when a nested property changes', function (done) {
-    this.model.on('change:foo', function (newValue) {
-      expect(newValue).to.deep.equal({bar: 'yas'});
+  it('emits an intermediate-scope change event when a nested property changes', done => {
+    testContext.model.on('change:foo', newValue => {
+      expect(newValue).toEqual({ bar: 'yas' });
       done();
     });
 
-    this.model.set('foo.bar', 'yas');
+    testContext.model.set('foo.bar', 'yas');
   });
 
-  it('emits metadata with only the old value that changed, not the whole object when a nested property changes', function (done) {
-    this.model.set('foo.bar', 'foo');
+  it('emits metadata with only the old value that changed, not the whole object when a nested property changes', done => {
+    testContext.model.set('foo.bar', 'foo');
 
-    this.model.on('change:foo', function (newValue, metadata) {
-      expect(metadata.old).to.deep.equal('foo');
-      expect(newValue).to.deep.equal({bar: 'yas'});
+    testContext.model.on('change:foo', (newValue, metadata) => {
+      expect(metadata.old).toEqual('foo');
+      expect(newValue).toEqual({ bar: 'yas' });
       done();
     });
 
-    this.model.set('foo.bar', 'yas');
+    testContext.model.set('foo.bar', 'yas');
   });
 
-  it('emits a scoped change event when a nested property changes', function (done) {
-    this.model.on('change:foo.bar', function (newValue) {
-      expect(newValue).to.equal('yas');
+  it('emits a scoped change event when a nested property changes', done => {
+    testContext.model.on('change:foo.bar', newValue => {
+      expect(newValue).toBe('yas');
       done();
     });
 
-    this.model.set('foo.bar', 'yas');
+    testContext.model.set('foo.bar', 'yas');
   });
 
-  it('emits metadata with the old value as a second argument for a scoped change event when a nested property changes', function (done) {
-    this.model.set('foo.bar', 'foo');
+  it('emits metadata with the old value as a second argument for a scoped change event when a nested property changes', done => {
+    testContext.model.set('foo.bar', 'foo');
 
-    this.model.on('change:foo.bar', function (newValue, metadata) {
-      expect(metadata.old).to.equal('foo');
-      expect(newValue).to.equal('yas');
+    testContext.model.on('change:foo.bar', (newValue, metadata) => {
+      expect(metadata.old).toBe('foo');
+      expect(newValue).toBe('yas');
       done();
     });
 
-    this.model.set('foo.bar', 'yas');
+    testContext.model.set('foo.bar', 'yas');
   });
 
-  it('is reset initially', function () {
-    var model;
+  it('is reset initially', () => {
+    let model;
 
     function Child() {
       EventedModel.apply(this, arguments);
     }
+
     util.inherits(Child, EventedModel);
 
-    Child.prototype.resetAttributes = function () {
-      return {
-        foo: {
-          bar: 456,
-          yas: 789,
-          baz: {
-            woah: 'what',
-            hecka: 'cool'
-          }
+    Child.prototype.resetAttributes = () => ({
+      foo: {
+        bar: 456,
+        yas: 789,
+        baz: {
+          whoa: 'what',
+          hecka: 'cool'
         }
-      };
-    };
+      }
+    });
 
     model = new Child();
 
-    expect(model.get('foo')).to.deep.equal({
+    expect(model.get('foo')).toEqual({
       bar: 456,
       yas: 789,
       baz: {
-        woah: 'what',
+        whoa: 'what',
         hecka: 'cool'
       }
     });

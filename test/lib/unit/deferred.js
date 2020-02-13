@@ -1,33 +1,43 @@
 'use strict';
 
-var deferred = require('../../../src/lib/deferred');
+const deferred = require('../../../src/lib/deferred');
 
-describe('deferred', function () {
-  it('delays the call to the function', function (done) {
-    var fn = this.sandbox.spy(function () {
-      expect(arguments.length).to.equal(0);
+describe('deferred', () => {
+  it('delays the call to the function', done => {
+    expect.assertions(2);
 
-      done();
-    });
-    var def = deferred(fn);
+    const demo = {
+      fn: jest.fn((...rest) => {
+        expect(rest.length).toBe(0);
+
+        done();
+      })
+    };
+
+    const def = deferred(demo.fn);
 
     def();
 
-    expect(fn).not.to.have.beenCalled;
+    expect(demo.fn).not.toHaveBeenCalled();
   });
 
-  it('can pass arguments to the delayed function', function (done) {
-    var fn = this.sandbox.spy(function (a, b) {
-      expect(arguments.length).to.equal(2);
-      expect(a).to.equal(1);
-      expect(b).to.equal(2);
+  it('can pass arguments to the delayed function', done => {
+    expect.assertions(4);
 
-      done();
-    });
-    var def = deferred(fn);
+    const demo = {
+      fn: jest.fn((...rest) => {
+        expect(rest.length).toBe(2);
+        expect(rest[0]).toBe(1);
+        expect(rest[1]).toBe(2);
+
+        done();
+      })
+    };
+
+    const def = deferred(demo.fn);
 
     def(1, 2);
 
-    expect(fn).not.to.have.beenCalled;
+    expect(demo.fn).not.toHaveBeenCalled();
   });
 });

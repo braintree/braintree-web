@@ -1,188 +1,136 @@
 'use strict';
 
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var create = require('../../../src/masterpass').create;
-var isSupported = require('../../../src/masterpass').isSupported;
-var browserDetection = require('../../../src/masterpass/shared/browser-detection');
-var Masterpass = require('../../../src/masterpass/external/masterpass');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var fake = require('../../helpers/fake');
-var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/create-deferred-client');
+jest.mock('../../../src/lib/create-assets-url');
 
-describe('masterpass', function () {
-  beforeEach(function () {
-    this.configuration = fake.configuration();
-    this.configuration.gatewayConfiguration.masterpass = {};
-    this.fakeClient = fake.client({
-      configuration: this.configuration
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const { create, isSupported } = require('../../../src/masterpass');
+const browserDetection = require('../../../src/masterpass/shared/browser-detection');
+const Masterpass = require('../../../src/masterpass/external/masterpass');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const { fake } = require('../../helpers');
+
+describe('masterpass', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.configuration = fake.configuration();
+    testContext.configuration.gatewayConfiguration.masterpass = {};
+    testContext.fakeClient = fake.client({
+      configuration: testContext.configuration
     });
-    this.masterpassInstance = new Masterpass({
-      client: this.fakeClient
+    testContext.masterpassInstance = new Masterpass({
+      client: testContext.fakeClient
     });
-    this.sandbox.stub(Masterpass.prototype, '_initialize').resolves(this.masterpassInstance);
-    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
-    this.sandbox.stub(createDeferredClient, 'create').resolves(this.fakeClient);
-    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
+    jest.spyOn(Masterpass.prototype, '_initialize').mockResolvedValue(testContext.masterpassInstance);
+    jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.fakeClient);
   });
 
-  describe('create', function () {
-    it('verifies with basicComponentVerification', function (done) {
-      var client = this.fakeClient;
-
-      create({
-        client: client
-      }, function () {
-        expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWithMatch({
-          name: 'Masterpass',
-          client: client
-        });
-        done();
+  describe('create', () => {
+    it('verifies with basicComponentVerification', () => create({
+      client: testContext.fakeClient
+    }).then(() => {
+      expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+      expect(basicComponentVerification.verify.mock.calls[0][0]).toMatchObject({
+        name: 'Masterpass',
+        client: testContext.fakeClient
       });
-    });
+    }));
 
-    it('can create with an authorization instead of a client', function (done) {
-      create({
+    it('can create with an authorization instead of a client', () => create({
+      authorization: fake.clientToken,
+      debug: true
+    }).then(instance => {
+      expect(createDeferredClient.create).toHaveBeenCalledTimes(1);
+      expect(createDeferredClient.create.mock.calls[0][0].client).toBeUndefined();
+      expect(createDeferredClient.create).toHaveBeenCalledWith({
         authorization: fake.clientToken,
-        debug: true
-      }, function (err, instance) {
-        expect(err).not.to.exist;
-
-        expect(createDeferredClient.create).to.be.calledOnce;
-        expect(createDeferredClient.create).to.be.calledWith({
-          authorization: fake.clientToken,
-          client: this.sandbox.match.typeOf('undefined'),
-          debug: true,
-          assetsUrl: 'https://example.com/assets',
-          name: 'Masterpass'
-        });
-
-        expect(instance).to.be.an.instanceof(Masterpass);
-
-        done();
-      }.bind(this));
-    });
-
-    context('with promises', function () {
-      it('rejects with an error when merchant is not enabled for masterpass', function () {
-        delete this.configuration.gatewayConfiguration.masterpass;
-
-        return create({client: this.fakeClient}).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('MASTERPASS_NOT_ENABLED');
-          expect(err.message).to.equal('Masterpass is not enabled for this merchant.');
-        });
+        debug: true,
+        assetsUrl: 'https://example.com/assets',
+        name: 'Masterpass'
       });
 
-      it('rejects with an error if browser does not support popups', function () {
-        this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+      expect(instance).toBeInstanceOf(Masterpass);
+    }));
 
-        return create({client: this.fakeClient}).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceOf(BraintreeError);
-          expect(err.type).to.equal('CUSTOMER');
-          expect(err.code).to.equal('MASTERPASS_BROWSER_NOT_SUPPORTED');
-          expect(err.message).to.equal('Browser is not supported.');
-        });
-      });
+    it('rejects with an error when merchant is not enabled for masterpass', () => {
+      delete testContext.configuration.gatewayConfiguration.masterpass;
 
-      it('resolves with an Masterpass instance when called with a client', function () {
-        return create({client: this.fakeClient}).then(function (masterpass) {
-          expect(masterpass).to.be.an.instanceof(Masterpass);
-        });
-      });
-
-      context('with popupbridge', function () {
-        beforeEach(function () {
-          global.popupBridge = {};
-        });
-
-        afterEach(function () {
-          delete global.popupBridge;
-        });
-
-        it('allows unuspported browser when PopupBridge is defined', function () {
-          this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
-          return create({client: this.fakeClient}).then(function (data) {
-            expect(data).to.be.an.instanceof(Masterpass);
-          });
-        });
+      return create({ client: testContext.fakeClient }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('MASTERPASS_NOT_ENABLED');
+        expect(err.message).toBe('Masterpass is not enabled for this merchant.');
       });
     });
 
-    context('with callbacks', function () {
-      it('passes back an error when merchant is not enabled for masterpass', function (done) {
-        delete this.configuration.gatewayConfiguration.masterpass;
+    it('rejects with an error if browser does not support popups', () => {
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
 
-        create({client: this.fakeClient}, function (err, masterpass) {
-          expect(masterpass).not.to.exist;
+      return create({ client: testContext.fakeClient }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('CUSTOMER');
+        expect(err.code).toBe('MASTERPASS_BROWSER_NOT_SUPPORTED');
+        expect(err.message).toBe('Browser is not supported.');
+      });
+    });
 
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal('MERCHANT');
-          expect(err.code).to.equal('MASTERPASS_NOT_ENABLED');
-          expect(err.message).to.equal('Masterpass is not enabled for this merchant.');
+    it('resolves with a Masterpass instance when called with a client', () => {
+      return create({ client: testContext.fakeClient }).then(masterpass => {
+        expect(masterpass).toBeInstanceOf(Masterpass);
+      });
+    });
 
-          done();
-        });
+    describe('with popupbridge', () => {
+      beforeEach(() => {
+        global.popupBridge = {};
       });
 
-      it('errors out if browser does not support popups', function (done) {
-        this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
-        create({client: this.fakeClient}, function (err, masterpass) {
-          expect(err).to.be.an.instanceOf(BraintreeError);
-          expect(err.type).to.equal('CUSTOMER');
-          expect(err.code).to.equal('MASTERPASS_BROWSER_NOT_SUPPORTED');
-          expect(err.message).to.equal('Browser is not supported.');
-          expect(masterpass).not.to.exist;
-
-          done();
-        });
+      afterEach(() => {
+        delete global.popupBridge;
       });
 
-      it('creates an Masterpass instance when called with a client', function (done) {
-        create({client: this.fakeClient}, function (err, masterpass) {
-          expect(err).not.to.exist;
+      it('allows unsupported browser when PopupBridge is defined', () => {
+        jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
 
-          expect(masterpass).to.be.an.instanceof(Masterpass);
-
-          done();
+        return create({ client: testContext.fakeClient }).then(data => {
+          expect(data).toBeInstanceOf(Masterpass);
         });
       });
     });
   });
 
-  describe('isSupported', function () {
-    afterEach(function () {
+  describe('isSupported', () => {
+    afterEach(() => {
       delete global.popupBridge;
     });
 
-    it('returns true if popupBridge exists', function () {
+    it('returns true if popupBridge exists', () => {
       global.popupBridge = {};
 
-      expect(isSupported()).to.be.true;
+      expect(isSupported()).toBe(true);
     });
 
-    it('returns true if browser supports popups', function () {
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
+    it('returns true if browser supports popups', () => {
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(true);
 
-      expect(isSupported()).to.be.true;
+      expect(isSupported()).toBe(true);
     });
 
-    it('returns false if popupBridge is not defined and browser does not support popups', function () {
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+    it('returns false if popupBridge is not defined and browser does not support popups', () => {
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
 
-      expect(isSupported()).to.be.false;
+      expect(isSupported()).toBe(false);
     });
 
-    it('returns true if popupBridge exists and browser does not support popups', function () {
+    it('returns true if popupBridge exists and browser does not support popups', () => {
       global.popupBridge = {};
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
 
-      expect(isSupported()).to.be.true;
+      expect(isSupported()).toBe(true);
     });
   });
 });

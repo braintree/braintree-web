@@ -1,24 +1,24 @@
 'use strict';
 
-var find = require('../../../src/lib/find');
+const find = require('../../../src/lib/find');
 
-describe('find', function () {
-  it('returns null for empty array inputs', function () {
-    expect(find([], 'type', 'foo')).to.be.null;
+describe('find', () => {
+  it('returns null for empty array inputs', () => {
+    expect(find([], 'type', 'foo')).toBeNull();
   });
 
-  it('returns null when unable to find key value pair', function () {
-    var arr = [{
+  it('returns null when unable to find key value pair', () => {
+    const arr = [{
       key: 'value 1'
     }, {
       key: 'value 2'
     }];
 
-    expect(find(arr, 'type', 'foo')).to.be.null;
+    expect(find(arr, 'type', 'foo')).toBeNull();
   });
 
-  it('returns the only matching element from the provided array', function () {
-    var arr = [{
+  it('returns the only matching element from the provided array', () => {
+    const arr = [{
       type: 'bar',
       key2: 'bar 2'
     }, {
@@ -29,14 +29,14 @@ describe('find', function () {
       key2: 'baz 2'
     }];
 
-    expect(find(arr, 'type', 'foo')).to.deep.equal({
+    expect(find(arr, 'type', 'foo')).toEqual({
       type: 'foo',
       key2: 'foo 2'
     });
   });
 
-  it('returns the first matching element from the provided array if multiple matches exist', function () {
-    var arr = [{
+  it('returns the first matching element from the provided array if multiple matches exist', () => {
+    const arr = [{
       type: 'foo',
       key2: 'foo 2',
       index: 0
@@ -50,7 +50,7 @@ describe('find', function () {
       index: 2
     }];
 
-    expect(find(arr, 'type', 'foo')).to.deep.equal({
+    expect(find(arr, 'type', 'foo')).toEqual({
       type: 'foo',
       key2: 'foo 2',
       index: 0

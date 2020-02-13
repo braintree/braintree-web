@@ -1,14 +1,14 @@
 'use strict';
 
-var localPayment = require('../../../src/local-payment');
-var packageVersion = require('../../../package.json').version;
+const { VERSION, create } = require('../../../src/local-payment');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(localPayment.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(localPayment.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(VERSION).toBe(packageVersion);
   });
 });

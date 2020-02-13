@@ -1,50 +1,51 @@
 'use strict';
 
-var analytics = require('../../../src/lib/analytics');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var GooglePayment = require('../../../src/google-payment/google-payment');
-var fake = require('../../helpers/fake');
-var find = require('../../../src/lib/find');
-var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
-var Promise = require('../../../src/lib/promise');
-var methods = require('../../../src/lib/methods');
-var VERSION = process.env.npm_package_version;
+jest.mock('../../../src/lib/analytics');
 
-describe('GooglePayment', function () {
-  beforeEach(function () {
-    var configuration = fake.configuration();
+const analytics = require('../../../src/lib/analytics');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const GooglePayment = require('../../../src/google-payment/google-payment');
+const { fake } = require('../../helpers');
+const methods = require('../../../src/lib/methods');
+const { version: VERSION } = require('../../../package.json');
 
+describe('GooglePayment', () => {
+  let testContext;
+
+  beforeEach(() => {
+    const configuration = fake.configuration();
+
+    testContext = {};
     configuration.gatewayConfiguration.androidPay = {
       enabled: true,
       googleAuthorizationFingerprint: 'fingerprint',
       supportedNetworks: ['visa', 'amex']
     };
 
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.fakeClient = fake.client({
+    testContext.fakeClient = fake.client({
       configuration: configuration
     });
-    this.googlePayment = new GooglePayment({
-      client: this.fakeClient
+    testContext.googlePayment = new GooglePayment({
+      client: testContext.fakeClient
     });
   });
 
-  describe('createPaymentDataRequest', function () {
-    context('GooglePay v1 schema', function () {
-      it('returns a payment data request object', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest();
+  describe('createPaymentDataRequest', () => {
+    describe('GooglePay v1 schema', () => {
+      it('returns a payment data request object', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest();
 
-        expect(paymentDataRequest.environment).to.equal('TEST');
-        expect(paymentDataRequest.allowedPaymentMethods).to.deep.equal([
+        expect(paymentDataRequest.environment).toBe('TEST');
+        expect(paymentDataRequest.allowedPaymentMethods).toEqual([
           'CARD',
           'TOKENIZED_CARD'
         ]);
-        expect(paymentDataRequest.paymentMethodTokenizationParameters.tokenizationType).to.equal('PAYMENT_GATEWAY');
-        expect(paymentDataRequest.paymentMethodTokenizationParameters.parameters.gateway).to.equal('braintree');
+        expect(paymentDataRequest.paymentMethodTokenizationParameters.tokenizationType).toBe('PAYMENT_GATEWAY');
+        expect(paymentDataRequest.paymentMethodTokenizationParameters.parameters.gateway).toBe('braintree');
       });
 
-      it('can override parameters with v1 schema overrides and return a v1 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('can override parameters with v1 schema overrides and return a v1 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           merchantId: 'my-id',
           environment: 'PRODUCTION',
           allowedPaymentMethods: ['FOO'],
@@ -54,20 +55,20 @@ describe('GooglePayment', function () {
           }
         });
 
-        expect(paymentDataRequest.merchantId).to.equal('my-id');
-        expect(paymentDataRequest.environment).to.equal('PRODUCTION');
-        expect(paymentDataRequest.allowedPaymentMethods).to.deep.equal([
+        expect(paymentDataRequest.merchantId).toBe('my-id');
+        expect(paymentDataRequest.environment).toBe('PRODUCTION');
+        expect(paymentDataRequest.allowedPaymentMethods).toEqual([
           'FOO'
         ]);
-        expect(paymentDataRequest.cardRequirements.allowedCardNetworks).to.deep.equal([
+        expect(paymentDataRequest.cardRequirements.allowedCardNetworks).toEqual([
           'foo',
           'bar'
         ]);
-        expect(paymentDataRequest.cardRequirements.prop).to.equal('value');
+        expect(paymentDataRequest.cardRequirements.prop).toBe('value');
       });
 
-      it('can override existing parameters with v1 schema overrides and return a v1 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('can override existing parameters with v1 schema overrides and return a v1 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           merchantId: 'my-id',
           environment: 'PRODUCTION',
           allowedPaymentMethods: ['CARD'],
@@ -76,17 +77,17 @@ describe('GooglePayment', function () {
           }
         });
 
-        expect(paymentDataRequest.merchantId).to.equal('my-id');
-        expect(paymentDataRequest.environment).to.equal('PRODUCTION');
-        expect(paymentDataRequest.allowedPaymentMethods).to.deep.equal(['CARD']);
-        expect(paymentDataRequest.cardRequirements.allowedCardNetworks).to.deep.equal([
+        expect(paymentDataRequest.merchantId).toBe('my-id');
+        expect(paymentDataRequest.environment).toBe('PRODUCTION');
+        expect(paymentDataRequest.allowedPaymentMethods).toEqual(['CARD']);
+        expect(paymentDataRequest.cardRequirements.allowedCardNetworks).toEqual([
           'foo',
           'bar'
         ]);
       });
 
-      it('retains allowed card networks from default if not passed in with v1 schema', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('retains allowed card networks from default if not passed in with v1 schema', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           merchantId: 'my-id',
           environment: 'PRODUCTION',
           allowedPaymentMethods: ['FOO'],
@@ -95,15 +96,15 @@ describe('GooglePayment', function () {
           }
         });
 
-        expect(paymentDataRequest.cardRequirements.prop).to.equal('value');
-        expect(paymentDataRequest.cardRequirements.allowedCardNetworks).to.deep.equal([
+        expect(paymentDataRequest.cardRequirements.prop).toBe('value');
+        expect(paymentDataRequest.cardRequirements.allowedCardNetworks).toEqual([
           'VISA',
           'AMEX'
         ]);
       });
 
-      it('overrides shipping address info with v1 params and returns a v1 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('overrides shipping address info with v1 params and returns a v1 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           shippingAddressRequired: false,
           shippingAddressRequirements: {
             allowedCountryCodes: [
@@ -113,9 +114,9 @@ describe('GooglePayment', function () {
           }
         });
 
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(2);
-        expect(paymentDataRequest.shippingAddressRequired).to.be.false;
-        expect(paymentDataRequest.shippingAddressRequirements).to.deep.equal({
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
+        expect(paymentDataRequest.shippingAddressRequired).toBe(false);
+        expect(paymentDataRequest.shippingAddressRequirements).toEqual({
           allowedCountryCodes: [
             'US',
             'CA'
@@ -123,8 +124,8 @@ describe('GooglePayment', function () {
         });
       });
 
-      it('overrides paymentMethodTokenizationParameters info with v1 params and returns a v1 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('overrides paymentMethodTokenizationParameters info with v1 params and returns a v1 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           paymentMethodTokenizationParameters: {
             tokenizationType: 'TEST_GATEWAY',
             parameters: {
@@ -134,14 +135,14 @@ describe('GooglePayment', function () {
           }
         });
 
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(2);
-        expect(paymentDataRequest.paymentMethodTokenizationParameters.tokenizationType).to.equal('TEST_GATEWAY');
-        expect(paymentDataRequest.paymentMethodTokenizationParameters.parameters.gateway).to.equal('test-gateway');
-        expect(paymentDataRequest.paymentMethodTokenizationParameters.parameters.gatewayMerchantId).to.equal('test-merchant-id');
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
+        expect(paymentDataRequest.paymentMethodTokenizationParameters.tokenizationType).toBe('TEST_GATEWAY');
+        expect(paymentDataRequest.paymentMethodTokenizationParameters.parameters.gateway).toBe('test-gateway');
+        expect(paymentDataRequest.paymentMethodTokenizationParameters.parameters.gatewayMerchantId).toBe('test-merchant-id');
       });
 
-      it('overrides billing address info with v1 params and returns a v1 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('overrides billing address info with v1 params and returns a v1 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           cardRequirements: {
             billingAddressRequired: true,
             billingAddressFormat: 'FULL'
@@ -149,45 +150,45 @@ describe('GooglePayment', function () {
           phoneNumberRequired: true
         });
 
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(2);
-        expect(paymentDataRequest.cardRequirements.billingAddressRequired).to.be.true;
-        expect(paymentDataRequest.cardRequirements.billingAddressFormat).to.equal('FULL');
-        expect(paymentDataRequest.phoneNumberRequired).to.be.true;
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
+        expect(paymentDataRequest.cardRequirements.billingAddressRequired).toBe(true);
+        expect(paymentDataRequest.cardRequirements.billingAddressFormat).toBe('FULL');
+        expect(paymentDataRequest.phoneNumberRequired).toBe(true);
       });
 
-      it('does not include a merchant id by default', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest();
+      it('does not include a merchant id by default', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest();
 
-        expect(paymentDataRequest.merchantId).to.not.exist;
+        expect(paymentDataRequest.merchantId).toBeFalsy();
       });
 
-      it('sends an analytics event', function () {
-        this.googlePayment.createPaymentDataRequest();
+      it('sends an analytics event', () => {
+        testContext.googlePayment.createPaymentDataRequest();
 
-        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.v1.createPaymentDataRequest');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'google-payment.v1.createPaymentDataRequest');
       });
     });
 
-    context('GooglePay v2 schema', function () {
-      beforeEach(function () {
-        this.googlePayment = new GooglePayment({
-          client: this.fakeClient,
+    describe('GooglePay v2 schema', () => {
+      beforeEach(() => {
+        testContext.googlePayment = new GooglePayment({
+          client: testContext.fakeClient,
           googlePayVersion: 2
         });
       });
 
-      it('returns a v2 payment data request object when v2 is specified', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest();
-        var cardPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'CARD');
+      it('returns a v2 payment data request object when v2 is specified', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest();
+        const cardPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'CARD');
 
-        expect(paymentDataRequest.environment).to.equal('TEST');
-        expect(cardPaymentMethod.type).to.equal('CARD');
-        expect(cardPaymentMethod.tokenizationSpecification.type).to.equal('PAYMENT_GATEWAY');
-        expect(cardPaymentMethod.tokenizationSpecification.parameters.gateway).to.equal('braintree');
+        expect(paymentDataRequest.environment).toBe('TEST');
+        expect(cardPaymentMethod.type).toBe('CARD');
+        expect(cardPaymentMethod.tokenizationSpecification.type).toBe('PAYMENT_GATEWAY');
+        expect(cardPaymentMethod.tokenizationSpecification.parameters.gateway).toBe('braintree');
       });
 
-      it('can override existing parameters with v2 schema overrides and return a v2 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('can override existing parameters with v2 schema overrides and return a v2 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           apiVersion: 2,
           merchantInfo: {
             merchantId: 'my-id'
@@ -201,26 +202,26 @@ describe('GooglePayment', function () {
             }
           }]
         });
-        var cardPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'CARD');
+        const cardPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'CARD');
 
-        expect(paymentDataRequest.merchantInfo.merchantId).to.equal('my-id');
-        expect(paymentDataRequest.environment).to.equal('PRODUCTION');
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(1);
-        expect(cardPaymentMethod.type).to.equal('CARD');
-        expect(cardPaymentMethod.parameters.allowedAuthMethods).to.deep.equal([
+        expect(paymentDataRequest.merchantInfo.merchantId).toBe('my-id');
+        expect(paymentDataRequest.environment).toBe('PRODUCTION');
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(1);
+        expect(cardPaymentMethod.type).toBe('CARD');
+        expect(cardPaymentMethod.parameters.allowedAuthMethods).toEqual([
           'foo',
           'bar'
         ]);
-        expect(cardPaymentMethod.parameters.billingAddressRequired).to.equal(true);
-        expect(cardPaymentMethod.parameters.allowedCardNetworks).to.deep.equal([
+        expect(cardPaymentMethod.parameters.billingAddressRequired).toBe(true);
+        expect(cardPaymentMethod.parameters.allowedCardNetworks).toEqual([
           'VISA',
           'AMEX'
         ]);
-        expect(cardPaymentMethod.tokenizationSpecification).to.exist;
+        expect(cardPaymentMethod.tokenizationSpecification).toBeDefined();
       });
 
-      it('can add new parameters with v2 schema overrides and return a v2 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('can add new parameters with v2 schema overrides and return a v2 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           apiVersion: 2,
           merchantInfo: {
             merchantId: 'my-id'
@@ -233,20 +234,20 @@ describe('GooglePayment', function () {
             }
           }]
         });
-        var fooPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'FOO');
+        const fooPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'FOO');
 
-        expect(paymentDataRequest.merchantInfo.merchantId).to.equal('my-id');
-        expect(paymentDataRequest.environment).to.equal('PRODUCTION');
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(1);
-        expect(fooPaymentMethod.type).to.equal('FOO');
-        expect(fooPaymentMethod.parameters.allowedCardNetworks).to.deep.equal([
+        expect(paymentDataRequest.merchantInfo.merchantId).toBe('my-id');
+        expect(paymentDataRequest.environment).toBe('PRODUCTION');
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(1);
+        expect(fooPaymentMethod.type).toBe('FOO');
+        expect(fooPaymentMethod.parameters.allowedCardNetworks).toEqual([
           'foo',
           'bar'
         ]);
       });
 
-      it('transfers allowed card networks from default to new CARD but not others if not passed in with v2 schema', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('transfers allowed card networks from default to new CARD but not others if not passed in with v2 schema', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           apiVersion: 2,
           merchantInfo: {
             merchantId: 'my-id'
@@ -258,20 +259,20 @@ describe('GooglePayment', function () {
             type: 'FOO'
           }]
         });
-        var fooPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'FOO');
-        var cardPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'CARD');
+        const fooPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'FOO');
+        const cardPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'CARD');
 
-        expect(fooPaymentMethod.type).to.equal('FOO');
-        expect(fooPaymentMethod.parameters).to.be.undefined;
-        expect(cardPaymentMethod.type).to.equal('CARD');
-        expect(cardPaymentMethod.parameters.allowedCardNetworks).to.deep.equal([
+        expect(fooPaymentMethod.type).toBe('FOO');
+        expect(fooPaymentMethod.parameters).toBeUndefined();
+        expect(cardPaymentMethod.type).toBe('CARD');
+        expect(cardPaymentMethod.parameters.allowedCardNetworks).toEqual([
           'VISA',
           'AMEX'
         ]);
       });
 
-      it('overrides shipping address info with v2 params and returns a v2 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('overrides shipping address info with v2 params and returns a v2 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           apiVersion: 2,
           shippingAddressRequired: false,
           shippingAddressParameters: {
@@ -282,9 +283,9 @@ describe('GooglePayment', function () {
           }
         });
 
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(1);
-        expect(paymentDataRequest.shippingAddressRequired).to.be.false;
-        expect(paymentDataRequest.shippingAddressParameters).to.deep.equal({
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(1);
+        expect(paymentDataRequest.shippingAddressRequired).toBe(false);
+        expect(paymentDataRequest.shippingAddressParameters).toEqual({
           allowedCountryCodes: [
             'US',
             'CA'
@@ -292,8 +293,8 @@ describe('GooglePayment', function () {
         });
       });
 
-      it('overrides tokenizationSpecification info with v2 params and returns a v2 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('overrides tokenizationSpecification info with v2 params and returns a v2 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           apiVersion: 2,
           allowedPaymentMethods: [{
             type: 'CARD',
@@ -306,16 +307,16 @@ describe('GooglePayment', function () {
             }
           }]
         });
-        var cardPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'CARD');
+        const cardPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'CARD');
 
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(1);
-        expect(cardPaymentMethod.tokenizationSpecification.type).to.equal('TEST_GATEWAY');
-        expect(cardPaymentMethod.tokenizationSpecification.parameters.gateway).to.equal('test-gateway');
-        expect(cardPaymentMethod.tokenizationSpecification.parameters.gatewayMerchantId).to.equal('test-merchant-id');
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(1);
+        expect(cardPaymentMethod.tokenizationSpecification.type).toBe('TEST_GATEWAY');
+        expect(cardPaymentMethod.tokenizationSpecification.parameters.gateway).toBe('test-gateway');
+        expect(cardPaymentMethod.tokenizationSpecification.parameters.gatewayMerchantId).toBe('test-merchant-id');
       });
 
-      it('overrides billing address info with v2 params and returns a v2 schema config', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({
+      it('overrides billing address info with v2 params and returns a v2 schema config', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({
           apiVersion: 2,
           allowedPaymentMethods: [{
             type: 'CARD',
@@ -328,20 +329,20 @@ describe('GooglePayment', function () {
             }
           }]
         });
-        var cardPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'CARD');
+        const cardPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'CARD');
 
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(1);
-        expect(cardPaymentMethod.parameters.billingAddressRequired).to.be.true;
-        expect(cardPaymentMethod.parameters.billingAddressParameters).to.deep.equal({
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(1);
+        expect(cardPaymentMethod.parameters.billingAddressRequired).toBe(true);
+        expect(cardPaymentMethod.parameters.billingAddressParameters).toEqual({
           format: 'FULL',
           phoneNumberRequired: true
         });
       });
 
-      it('includes a PAYPAL allowedPaymentMethod in v2 if paypal is enabled', function () {
-        var paymentDataRequest, paypalPaymentMethod, client, googlePayment;
+      it('includes a PAYPAL allowedPaymentMethod in v2 if paypal is enabled', () => {
+        let paymentDataRequest, paypalPaymentMethod, client, googlePayment;
 
-        var configuration = fake.configuration();
+        const configuration = fake.configuration();
 
         configuration.gatewayConfiguration.androidPay = {
           enabled: true,
@@ -362,67 +363,69 @@ describe('GooglePayment', function () {
         });
 
         paymentDataRequest = googlePayment.createPaymentDataRequest();
-        paypalPaymentMethod = find(paymentDataRequest.allowedPaymentMethods, 'type', 'PAYPAL');
+        paypalPaymentMethod = paymentDataRequest.allowedPaymentMethods.find((el) => el.type === 'PAYPAL');
 
-        expect(paymentDataRequest.allowedPaymentMethods.length).to.equal(2);
-        expect(paypalPaymentMethod.type).to.equal('PAYPAL');
-        expect(paypalPaymentMethod.parameters.purchase_context).to.deep.equal({
-          purchase_units: [{// eslint-disable-line camelcase
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
+        expect(paypalPaymentMethod.type).toBe('PAYPAL');
+        expect(paypalPaymentMethod.parameters.purchase_context).toEqual({
+          purchase_units: [{ // eslint-disable-line camelcase
             payee: {
               client_id: 'paypal_client_id' // eslint-disable-line camelcase
             },
             recurring_payment: true // eslint-disable-line camelcase
           }]
         });
-        expect(paypalPaymentMethod.tokenizationSpecification.type).to.equal('PAYMENT_GATEWAY');
-        expect(paypalPaymentMethod.tokenizationSpecification.parameters).to.contain({
+        expect(paypalPaymentMethod.tokenizationSpecification.type).toBe('PAYMENT_GATEWAY');
+        expect(paypalPaymentMethod.tokenizationSpecification.parameters).toMatchObject({
           gateway: 'braintree',
           'braintree:merchantId': 'merchant-id',
           'braintree:apiVersion': 'v1',
           'braintree:sdkVersion': VERSION,
           'braintree:paypalClientId': 'paypal_client_id'
         });
-        expect(paypalPaymentMethod.tokenizationSpecification.parameters['braintree:metadata']).to.be.a('string');
+        expect(
+          typeof paypalPaymentMethod.tokenizationSpecification.parameters['braintree:metadata']
+        ).toBe('string');
       });
 
-      it('does not include a merchant id by default', function () {
-        var paymentDataRequest = this.googlePayment.createPaymentDataRequest({apiVersion: 2});
+      it('does not include a merchant id by default', () => {
+        const paymentDataRequest = testContext.googlePayment.createPaymentDataRequest({ apiVersion: 2 });
 
-        expect(paymentDataRequest.merchantInfo).to.not.exist;
+        expect(paymentDataRequest.merchantInfo).toBeFalsy();
       });
 
-      it('sends an analytics event', function () {
-        this.googlePayment.createPaymentDataRequest({apiVersion: 2});
+      it('sends an analytics event', () => {
+        testContext.googlePayment.createPaymentDataRequest({ apiVersion: 2 });
 
-        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.v2.createPaymentDataRequest');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'google-payment.v2.createPaymentDataRequest');
       });
     });
 
-    context('when using options during instance construction', function () {
-      it('preserves options in a GooglePayment instance', function () {
-        var googlePayment = new GooglePayment({
-          client: this.fakeClient,
+    describe('when using options during instance construction', () => {
+      it('preserves options in a GooglePayment instance', () => {
+        const googlePayment = new GooglePayment({
+          client: testContext.fakeClient,
           googlePayVersion: 2
         });
-        var paymentDataRequest = googlePayment.createPaymentDataRequest();
+        const paymentDataRequest = googlePayment.createPaymentDataRequest();
 
-        expect(paymentDataRequest.apiVersion).to.equal(2);
+        expect(paymentDataRequest.apiVersion).toBe(2);
       });
 
-      it('overrides instantiation options if both are specified', function () {
-        var googlePayment = new GooglePayment({
-          client: this.fakeClient,
+      it('overrides instantiation options if both are specified', () => {
+        const googlePayment = new GooglePayment({
+          client: testContext.fakeClient,
           googlePayVersion: 2,
-          googleNerchantId: 'some-merchant-id'
+          googleMerchantId: 'some-merchant-id'
         });
-        var paymentDataRequest = googlePayment.createPaymentDataRequest({
+        const paymentDataRequest = googlePayment.createPaymentDataRequest({
           merchantInfo: {
             merchantName: 'merchantName',
             merchantId: 'some-other-merchant-id'
           }
         });
 
-        expect(paymentDataRequest.merchantInfo).to.deep.equal({
+        expect(paymentDataRequest.merchantInfo).toEqual({
           merchantName: 'merchantName',
           merchantId: 'some-other-merchant-id'
         });
@@ -430,9 +433,9 @@ describe('GooglePayment', function () {
     });
   });
 
-  describe('parseResponse', function () {
-    it('resolves with parsed response from Google Pay tokenization', function () {
-      var rawResponse = {
+  describe('parseResponse', () => {
+    it('resolves with parsed response from Google Pay tokenization', () => {
+      const rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
           token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224","isNetworkTokenized":false},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
@@ -440,8 +443,8 @@ describe('GooglePayment', function () {
         }
       };
 
-      return this.googlePayment.parseResponse(rawResponse).then(function (parsedResponse) {
-        expect(parsedResponse).to.deep.equal({
+      return testContext.googlePayment.parseResponse(rawResponse).then(parsedResponse => {
+        expect(parsedResponse).toEqual({
           nonce: 'nonce-1234',
           type: 'AndroidPayCard',
           description: 'Android Pay',
@@ -466,8 +469,8 @@ describe('GooglePayment', function () {
       });
     });
 
-    it('passes back Braintree error when tokenization fails', function () {
-      var rawResponse = {
+    it('passes back Braintree error when tokenization fails', () => {
+      const rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
           token: '{"error":{"message":"Record not found"},"fieldErrors":[]}',
@@ -475,15 +478,15 @@ describe('GooglePayment', function () {
         }
       };
 
-      return this.googlePayment.parseResponse(rawResponse).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.code).to.equal('GOOGLE_PAYMENT_GATEWAY_ERROR');
-        expect(err.message).to.equal('There was an error when tokenizing the Google Pay payment method.');
+      return testContext.googlePayment.parseResponse(rawResponse).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('GOOGLE_PAYMENT_GATEWAY_ERROR');
+        expect(err.message).toBe('There was an error when tokenizing the Google Pay payment method.');
       });
     });
 
-    it('passes back Braintree error when JSON parsing fails', function () {
-      var rawResponse = {
+    it('passes back Braintree error when JSON parsing fails', () => {
+      const rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
           token: '{"foo:{}}',
@@ -491,15 +494,15 @@ describe('GooglePayment', function () {
         }
       };
 
-      return this.googlePayment.parseResponse(rawResponse).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.code).to.equal('GOOGLE_PAYMENT_GATEWAY_ERROR');
-        expect(err.message).to.equal('There was an error when tokenizing the Google Pay payment method.');
+      return testContext.googlePayment.parseResponse(rawResponse).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('GOOGLE_PAYMENT_GATEWAY_ERROR');
+        expect(err.message).toBe('There was an error when tokenizing the Google Pay payment method.');
       });
     });
 
-    it('sends analytics events when google-payment payment method nonce payload is parsed', function () {
-      var rawResponse = {
+    it('sends analytics events when google-payment payment method nonce payload is parsed', () => {
+      const rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
           token: '{"androidPayCards":[{"type":"AndroidPayCard","nonce":"nonce-1234","description":"Android Pay","consumed":false,"details":{"cardType":"Visa","lastTwo":"24","lastFour":"7224","isNetworkTokenized":false},"binData":{"prepaid":"No","healthcare":"Unknown","debit":"Unknown","durbinRegulated":"Unknown","commercial":"Unknown","payroll":"Unknown","issuingBank":"Unknown","countryOfIssuance":"","productId":"Unknown"}}]}',
@@ -507,14 +510,14 @@ describe('GooglePayment', function () {
         }
       };
 
-      return this.googlePayment.parseResponse(rawResponse).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.parseResponse.succeeded');
-        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.parseResponse.succeeded.google-payment');
-      }.bind(this));
+      return testContext.googlePayment.parseResponse(rawResponse).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'google-payment.parseResponse.succeeded');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'google-payment.parseResponse.succeeded.google-payment');
+      });
     });
 
-    it('sends analytics events when paypal payment method nonce payload is parsed', function () {
-      var rawResponse = {
+    it('sends analytics events when paypal payment method nonce payload is parsed', () => {
+      const rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
           token: '{"paypalAccounts":[{"type":"PayPalAccount","nonce":"nonce-1234","description":"PayPal","consumed":false,"details":{"correlationId":null}}]}',
@@ -522,14 +525,14 @@ describe('GooglePayment', function () {
         }
       };
 
-      return this.googlePayment.parseResponse(rawResponse).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.parseResponse.succeeded');
-        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.parseResponse.succeeded.paypal');
-      }.bind(this));
+      return testContext.googlePayment.parseResponse(rawResponse).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'google-payment.parseResponse.succeeded');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'google-payment.parseResponse.succeeded.paypal');
+      });
     });
 
-    it('sends an analytics event when tokenization results in an error', function () {
-      var rawResponse = {
+    it('sends an analytics event when tokenization results in an error', () => {
+      const rawResponse = {
         cardInfo: {},
         paymentMethodToken: {
           token: '{"foo:{}}',
@@ -537,25 +540,25 @@ describe('GooglePayment', function () {
         }
       };
 
-      return this.googlePayment.parseResponse(rawResponse).catch(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.fakeClient, 'google-payment.parseResponse.failed');
-      }.bind(this));
+      return testContext.googlePayment.parseResponse(rawResponse).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'google-payment.parseResponse.failed');
+      });
     });
   });
 
-  describe('teardown', function () {
-    it('returns a promise', function () {
-      var promise = this.googlePayment.teardown();
+  describe('teardown', () => {
+    it('returns a promise', () => {
+      const promise = testContext.googlePayment.teardown();
 
-      expect(promise).to.be.an.instanceof(Promise);
+      expect(promise).toBeInstanceOf(Promise);
     });
 
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var instance = this.googlePayment;
+    it('replaces all methods so error is thrown when methods are invoked', done => {
+      const instance = testContext.googlePayment;
 
-      instance.teardown(function () {
-        methods(GooglePayment.prototype).forEach(function (method) {
-          var err;
+      instance.teardown(() => {
+        methods(GooglePayment.prototype).forEach(method => {
+          let err;
 
           try {
             instance[method]();
@@ -563,10 +566,10 @@ describe('GooglePayment', function () {
             err = e;
           }
 
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).toBe(`${method} cannot be called after teardown.`);
         });
 
         done();

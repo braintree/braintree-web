@@ -1,0 +1,27 @@
+{
+  "collectCoverage": true,
+  "rootDir": "src",
+  "projects": [
+    "<rootDir>/../test/american-express/jest.config.json",
+    "<rootDir>/../test/apple-pay/jest.config.json",
+    "<rootDir>/../test/client/jest.config.json",
+    "<rootDir>/../test/data-collector/jest.config.json",
+    "<rootDir>/../test/environment/jest.config.json",
+    "<rootDir>/../test/google-payment/jest.config.json",
+    "<rootDir>/../test/hosted-fields/jest.config.json",
+    "<rootDir>/../test/lib/jest.config.json",
+    "<rootDir>/../test/local-payment/jest.config.json",
+    "<rootDir>/../test/masterpass/jest.config.json",
+    "<rootDir>/../test/payment-request/jest.config.json",
+    "<rootDir>/../test/paypal/jest.config.json",
+    "<rootDir>/../test/paypal-checkout/jest.config.json",
+    "<rootDir>/../test/preferred-payment-methods/jest.config.json",
+    "<rootDir>/../test/three-d-secure/jest.config.json",
+    "<rootDir>/../test/unionpay/jest.config.json",
+    "<rootDir>/../test/us-bank-account/jest.config.json",
+    "<rootDir>/../test/vault-manager/jest.config.json",
+    "<rootDir>/../test/venmo/jest.config.json",
+    "<rootDir>/../test/visa-checkout/jest.config.json"
+  ],
+  "setupFilesAfterEnv": ["<rootDir>/../test/global.js"]
+}

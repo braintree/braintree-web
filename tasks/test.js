@@ -1,17 +1,13 @@
 'use strict';
 
 var gulp = require('gulp');
-var Karma = require('karma').Server;
 var path = require('path');
-var fs = require('fs');
 var spawn = require('child_process').spawn;
 
 var TEST_DIR = path.resolve(__dirname, '..', 'test') + '/';
-var COMPONENTS = require('../components.json')
-var KARMA_SUITES = COMPONENTS.concat('lib');
+
 var TEST_TASKS = [
   'lint',
-  'test:environment',
   'mocha:publishing',
   'test:node-parsing'
 ];
@@ -31,13 +27,6 @@ function _lint(src, test, done) {
   });
 }
 
-function _karma(suite, done) {
-  new Karma({
-    configFile: TEST_DIR + suite + '/config/karma.js',
-    singleRun: true
-  }, done).start();
-}
-
 function _mocha(suite, done) {
   var projectRoot = path.resolve(__dirname, '..');
   var mochaPath = path.resolve(projectRoot, 'node_modules', '.bin', 'mocha');
@@ -53,22 +42,6 @@ function _mocha(suite, done) {
     }
   });
 }
-
-KARMA_SUITES.forEach(function (suite) {
-  var karmaTask = 'karma:' + suite;
-  var lintTask = 'lint:' + suite;
-  var standaloneTestTask = 'test:' + suite;
-
-  TEST_TASKS.push(karmaTask);
-
-  gulp.task(karmaTask, function (done) {
-    _karma(suite, done);
-  });
-  gulp.task(lintTask, function (done) {
-    _lint(suite, suite, done);
-  });
-  gulp.task(standaloneTestTask, gulp.series(lintTask, karmaTask));
-});
 
 gulp.task('mocha:publishing', function (done) {
   _mocha('publishing', done);
@@ -94,8 +67,8 @@ gulp.task('test:node-parsing', function (done) {
   done(error);
 });
 
-gulp.task('test:environment', function (done) {
-  _mocha('environment', done);
+gulp.task('test:environment', done => {
+  spawn('jest', ['--config', 'test/environment/jest.config.json']).on('exit', done)
 });
 
 gulp.task('lint', function(done) {

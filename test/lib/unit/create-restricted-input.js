@@ -1,71 +1,49 @@
 'use strict';
 
-var createRestrictedInput = require('../../../src/lib/create-restricted-input');
-var RestrictedInput = require('restricted-input');
-var FakeRestrictedInput = require('../../../src/lib/fake-restricted-input');
+const createRestrictedInput = require('../../../src/lib/create-restricted-input');
+const RestrictedInput = require('restricted-input');
+const FakeRestrictedInput = require('../../../src/lib/fake-restricted-input');
 
-describe('createRestrictedInput', function () {
-  beforeEach(function () {
-    this.element = document.createElement('input');
+describe('createRestrictedInput', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+
+    testContext.element = document.createElement('input');
   });
 
-  describe('with formatting', function () {
-    it('returns a RestrictedInput', function () {
+  describe('with formatting', () => {
+    it.each([
+      '', 'tel', 'url', 'password'
+    ])('returns a RestrictedInput for input type %p', type => {
+      testContext.element.type = type;
+
       expect(createRestrictedInput({
         shouldFormat: true,
-        element: this.element,
+        element: testContext.element,
         pattern: ' '
-      })).to.be.an.instanceof(RestrictedInput);
+      })).toBeInstanceOf(RestrictedInput);
     });
 
-    it('returns a RestrictedInput for type that supports selections', function () {
-      this.element.type = 'tel';
-
+    it.each([
+      'date', 'month'
+    ])('returns a FakeRestrictedInput for input type %p', type => {
       expect(createRestrictedInput({
         shouldFormat: true,
-        element: this.element,
+        element: { type },
         pattern: ' '
-      })).to.be.an.instanceof(RestrictedInput);
-
-      this.element.type = 'url';
-
-      expect(createRestrictedInput({
-        shouldFormat: true,
-        element: this.element,
-        pattern: ' '
-      })).to.be.an.instanceof(RestrictedInput);
-
-      this.element.type = 'password';
-
-      expect(createRestrictedInput({
-        shouldFormat: true,
-        element: this.element,
-        pattern: ' '
-      })).to.be.an.instanceof(RestrictedInput);
-    });
-
-    it('returns a FakeRestrictedInput for type that does not support selections', function () {
-      expect(createRestrictedInput({
-        shouldFormat: true,
-        element: {type: 'date'},
-        pattern: ' '
-      })).to.be.an.instanceof(FakeRestrictedInput);
-
-      expect(createRestrictedInput({
-        shouldFormat: true,
-        element: {type: 'month'},
-        pattern: ' '
-      })).to.be.an.instanceof(FakeRestrictedInput);
+      })).toBeInstanceOf(FakeRestrictedInput);
     });
   });
 
-  describe('without formatting', function () {
-    it('returns a FakeRestrictedInput', function () {
+  describe('without formatting', () => {
+    it('returns a FakeRestrictedInput', () => {
       expect(createRestrictedInput({
         shouldFormat: false,
-        element: this.element,
+        element: testContext.element,
         pattern: ' '
-      })).to.be.an.instanceof(FakeRestrictedInput);
+      })).toBeInstanceOf(FakeRestrictedInput);
     });
   });
 });

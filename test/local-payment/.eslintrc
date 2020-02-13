@@ -1,0 +1,16 @@
+---
+env:
+  jest: true
+  es6: true
+  node: true
+parserOptions:
+  ecmaVersion: 2018
+globals:
+  global: true
+  jest: true
+rules:
+  object-curly-spacing:
+    - error
+    - always
+    - arraysInObjects: false
+      objectsInObjects: false

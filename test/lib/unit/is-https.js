@@ -1,14 +1,14 @@
 'use strict';
 
-var isHTTPS = require('../../../src/lib/is-https').isHTTPS;
+const { isHTTPS } = require('../../../src/lib/is-https');
 
-describe('isHTTPS', function () {
-  it('returns true for HTTPS', function () {
-    expect(isHTTPS('https:')).to.equal(true);
+describe('isHTTPS', () => {
+  it('returns true for HTTPS', () => {
+    expect(isHTTPS('https:')).toBe(true);
   });
 
-  it('returns false for non-HTTP', function () {
-    expect(isHTTPS('http:')).to.equal(false);
-    expect(isHTTPS('ftp:')).to.equal(false);
+  it('returns false for non-HTTPS', () => {
+    expect(isHTTPS('http:')).toBe(false);
+    expect(isHTTPS('ftp:')).toBe(false);
   });
 });

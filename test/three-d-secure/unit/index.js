@@ -1,221 +1,200 @@
 'use strict';
 
-var Promise = require('../../../src/lib/promise');
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var isHTTPS = require('../../../src/lib/is-https');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var analytics = require('../../../src/lib/analytics');
-var fake = require('../../helpers/fake');
-var threeDSecure = require('../../../src/three-d-secure');
-var ThreeDSecure = require('../../../src/three-d-secure/external/three-d-secure');
-var BraintreeError = require('../../../src/lib/braintree-error');
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/create-deferred-client');
+jest.mock('../../../src/lib/create-assets-url');
 
-describe('three-d-secure.create', function () {
-  beforeEach(function () {
-    var configuration = fake.configuration();
+const analytics = require('../../../src/lib/analytics');
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const isHTTPS = require('../../../src/lib/is-https');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const threeDSecure = require('../../../src/three-d-secure');
+const ThreeDSecure = require('../../../src/three-d-secure/external/three-d-secure');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const { fake } = require('../../helpers');
+
+describe('three-d-secure.create', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+
+    const configuration = fake.configuration();
 
     configuration.gatewayConfiguration.threeDSecureEnabled = true;
-
-    this.configuration = configuration;
-
-    this.client = fake.client({
-      configuration: this.configuration
+    testContext.configuration = configuration;
+    testContext.client = fake.client({
+      configuration: testContext.configuration
     });
 
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(true);
-    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
-    this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
-    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
+    jest.spyOn(isHTTPS, 'isHTTPS').mockReturnValue(true);
+    jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.client);
   });
 
-  it('returns a promise', function () {
-    var promise = threeDSecure.create({client: this.client});
+  it('verifies with basicComponentVerification', () => {
+    const client = testContext.client;
 
-    expect(promise).to.be.an.instanceof(Promise);
-  });
+    expect.assertions(2);
 
-  it('verifies with basicComponentVerification', function (done) {
-    var client = this.client;
-
-    threeDSecure.create({
+    return threeDSecure.create({
       client: client
-    }, function () {
-      expect(basicComponentVerification.verify).to.be.calledOnce;
-      expect(basicComponentVerification.verify).to.be.calledWithMatch({
+    }).then(() => {
+      expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+      expect(basicComponentVerification.verify.mock.calls[0][0]).toMatchObject({
         name: '3D Secure',
         client: client
       });
-      done();
     });
   });
 
-  it('errors if merchant passes in unrecognized version', function (done) {
+  it('errors if merchant passes in unrecognized version', () =>
     threeDSecure.create({
-      client: this.client,
+      client: testContext.client,
       version: 'unknown'
-    }, function (err) {
-      expect(err.code).to.equal('THREEDS_UNRECOGNIZED_VERSION');
-      expect(err.message).to.equal('Version `unknown` is not a recognized version. You may need to update the version of your Braintree SDK to support this version.');
+    }).catch(err => {
+      expect(err.code).toBe('THREEDS_UNRECOGNIZED_VERSION');
+      expect(err.message).toBe(
+        'Version `unknown` is not a recognized version. You may need to update the version of your Braintree SDK to support this version.'
+      );
+    }));
 
-      done();
-    });
-  });
-
-  [
+  it.each([
     '1',
     '2',
     '2-cardinal-modal',
     '2-bootstrap3-modal',
     '2-inline-iframe'
-  ].forEach(function (versionEnum) {
-    it('does not error if merchant passes in ' + versionEnum + ' versionEnum', function (done) {
-      this.configuration.gatewayConfiguration.threeDSecure = {
-        cardinalAuthenticationJWT: 'jwt'
-      };
+  ])('does not error if merchant passes in %s versionEnum', versionEnum => {
+    testContext.configuration.gatewayConfiguration.threeDSecure = {
+      cardinalAuthenticationJWT: 'jwt'
+    };
 
-      threeDSecure.create({
-        client: this.client,
-        version: versionEnum
-      }, function (err) {
-        expect(err).to.not.exist;
-
-        done();
-      });
+    return threeDSecure.create({
+      client: testContext.client,
+      version: versionEnum
     });
   });
 
-  [
+  describe.each([
     '2',
     '2-cardinal-modal',
     '2-bootstrap3-modal',
     '2-inline-iframe'
-  ].forEach(function (versionEnum) {
-    it('errors if merchant does not have a 3ds object when ' + versionEnum + ' version is specified', function (done) {
-      var client = this.client;
+  ])('version-related errors', versionEnum => {
+    it(`errors if merchant does not have a 3ds object when ${versionEnum} version is specified`, () => {
+      const client = testContext.client;
 
-      delete this.configuration.gatewayConfiguration.threeDSecure;
+      expect.assertions(2);
+      delete testContext.configuration.gatewayConfiguration.threeDSecure;
 
-      threeDSecure.create({
+      return threeDSecure.create({
         client: client,
         version: versionEnum
-      }, function (err) {
-        expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
-        expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
-        done();
+      }).catch(({ code }) => {
+        expect(code).toBe('THREEDS_NOT_ENABLED_FOR_V2');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
       });
     });
 
-    it('errors if merchant does not have a jwt to setup songbird when ' + versionEnum + ' version is specified', function (done) {
-      var client = this.client;
+    it(`errors if merchant does not have a jwt to setup songbird when ${versionEnum} version is specified`, () => {
+      const client = testContext.client;
 
-      this.configuration.gatewayConfiguration.threeDSecure = {};
+      expect.assertions(2);
+      testContext.configuration.gatewayConfiguration.threeDSecure = {};
 
-      threeDSecure.create({
+      return threeDSecure.create({
         client: client,
         version: versionEnum
-      }, function (err) {
-        expect(err.code).to.equal('THREEDS_NOT_ENABLED_FOR_V2');
-        expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
-        done();
+      }).catch(({ code }) => {
+        expect(code).toBe('THREEDS_NOT_ENABLED_FOR_V2');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
       });
     });
   });
 
-  it('can create with an authorization instead of a client', function (done) {
+  it('can create with an authorization instead of a client', () =>
     threeDSecure.create({
       authorization: fake.clientToken,
       debug: true
-    }, function (err, instance) {
-      expect(err).not.to.exist;
-
-      expect(createDeferredClient.create).to.be.calledOnce;
-      expect(createDeferredClient.create).to.be.calledWith({
+    }).then((instance) => {
+      expect(createDeferredClient.create).toHaveBeenCalledTimes(1);
+      expect(createDeferredClient.create.client).toBeUndefined();
+      expect(createDeferredClient.create).toHaveBeenCalledWith({
         authorization: fake.clientToken,
-        client: this.sandbox.match.typeOf('undefined'),
         debug: true,
         assetsUrl: 'https://example.com/assets',
         name: '3D Secure'
       });
 
-      expect(instance).to.be.an.instanceof(ThreeDSecure);
+      expect(instance).toBeInstanceOf(ThreeDSecure);
+    }));
 
-      done();
-    }.bind(this));
-  });
+  it('errors out if three-d-secure is not enabled', () => {
+    testContext.configuration.gatewayConfiguration.threeDSecureEnabled = false;
 
-  it('errors out if three-d-secure is not enabled', function (done) {
-    this.configuration.gatewayConfiguration.threeDSecureEnabled = false;
+    expect.assertions(4);
 
-    threeDSecure.create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.eql('THREEDS_NOT_ENABLED');
-      expect(err.message).to.equal('3D Secure is not enabled for this merchant.');
-      expect(thingy).not.to.exist;
-      done();
+    return threeDSecure.create({ client: testContext.client }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('MERCHANT');
+      expect(err.code).toBe('THREEDS_NOT_ENABLED');
+      expect(err.message).toBe('3D Secure is not enabled for this merchant.');
     });
   });
 
-  it('errors out if tokenization key is used', function (done) {
-    this.configuration.authorizationType = 'TOKENIZATION_KEY';
+  it('errors out if tokenization key is used', () => {
+    testContext.configuration.authorizationType = 'TOKENIZATION_KEY';
 
-    threeDSecure.create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.eql('THREEDS_CAN_NOT_USE_TOKENIZATION_KEY');
-      expect(err.message).to.equal('3D Secure can not use a tokenization key for authorization.');
-      expect(thingy).not.to.exist;
-      done();
+    expect.assertions(4);
+
+    return threeDSecure.create({ client: testContext.client }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('MERCHANT');
+      expect(err.code).toBe('THREEDS_CAN_NOT_USE_TOKENIZATION_KEY');
+      expect(err.message).toBe('3D Secure can not use a tokenization key for authorization.');
     });
   });
 
-  it('errors out if browser is not https and environment is production', function (done) {
-    isHTTPS.isHTTPS.restore();
-    this.configuration.gatewayConfiguration.environment = 'production';
-    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(false);
+  it('errors out if browser is not https and environment is production', () => {
+    isHTTPS.isHTTPS.mockClear();
 
-    threeDSecure.create({client: this.client}, function (err, thingy) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.eql('THREEDS_HTTPS_REQUIRED');
-      expect(err.message).to.equal('3D Secure requires HTTPS.');
-      expect(thingy).not.to.exist;
-      done();
+    testContext.configuration.gatewayConfiguration.environment = 'production';
+    jest.spyOn(isHTTPS, 'isHTTPS').mockReturnValue(false);
+
+    expect.assertions(4);
+
+    return threeDSecure.create({ client: testContext.client }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('MERCHANT');
+      expect(err.code).toBe('THREEDS_HTTPS_REQUIRED');
+      expect(err.message).toBe('3D Secure requires HTTPS.');
     });
   });
 
-  it('allows http connections when not in production', function (done) {
-    isHTTPS.isHTTPS.restore();
-    this.configuration.gatewayConfiguration.environment = 'sandbox';
-    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(false);
+  it('allows http connections when not in production', () => {
+    isHTTPS.isHTTPS.mockClear();
+    testContext.configuration.gatewayConfiguration.environment = 'sandbox';
+    jest.spyOn(isHTTPS, 'isHTTPS').mockReturnValue(false);
 
-    threeDSecure.create({client: this.client}, function (err, foo) {
-      expect(err).not.to.exist;
-      expect(foo).to.be.an.instanceof(ThreeDSecure);
+    expect.assertions(1);
 
-      done();
+    return threeDSecure.create({ client: testContext.client }).then(foo => {
+      expect(foo).toBeInstanceOf(ThreeDSecure);
     });
   });
 
-  it('sends an analytics event', function (done) {
-    var client = this.client;
+  it('sends an analytics event', () => {
+    const client = testContext.client;
 
-    threeDSecure.create({client: client}, function (err) {
-      expect(err).not.to.exist;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.initialized');
+    expect.assertions(1);
 
-      done();
+    return threeDSecure.create({ client: client }).then(() => {
+      expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'three-d-secure.initialized');
     });
   });
 
-  it('resolves with a three-d-secure instance', function (done) {
-    threeDSecure.create({client: this.client}, function (err, foo) {
-      expect(err).not.to.exist;
-      expect(foo).to.be.an.instanceof(ThreeDSecure);
-
-      done();
-    });
-  });
+  it('resolves with a three-d-secure instance', () =>
+    threeDSecure.create({ client: testContext.client }).then(foo => {
+      expect(foo).toBeInstanceOf(ThreeDSecure);
+    }));
 });

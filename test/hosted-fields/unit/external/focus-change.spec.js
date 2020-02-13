@@ -1,362 +1,371 @@
 'use strict';
 
-var browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
-var directions = require('../../../../src/hosted-fields/shared/constants').navigationDirections;
-var focusChange = require('../../../../src/hosted-fields/external/focus-change');
-var focusIntercept = require('../../../../src/hosted-fields/shared/focus-intercept');
+const browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
+const { navigationDirections: directions } = require('../../../../src/hosted-fields/shared/constants');
+const focusChange = require('../../../../src/hosted-fields/external/focus-change');
+const focusIntercept = require('../../../../src/hosted-fields/shared/focus-intercept');
+
+jest.mock('../../../../src/hosted-fields/shared/browser-detection');
 
 function createSampleIntercept(type, direction) {
-  var sampleIntercept = document.createElement('input');
+  const sampleIntercept = document.createElement('input');
 
-  sampleIntercept.id = 'bt-' + type + '-' + direction;
+  sampleIntercept.id = `bt-${type}-${direction}`;
   sampleIntercept.setAttribute('data-braintree-type', type);
 
   return sampleIntercept;
 }
 
-describe('focus-change', function () {
-  beforeEach(function () {
-    this.sandbox.stub(browserDetection, 'hasSoftwareKeyboard').returns(true);
+describe('focus-change', () => {
+  let testContext;
+
+  browserDetection.hasSoftwareKeyboard.mockReturnValue(true);
+
+  describe('removeExtraFocusElements', () => {
+    beforeEach(() => {
+      testContext = {};
+
+      testContext.removeStub = jest.fn();
+      testContext.form = document.createElement('form');
+      testContext.firstInput = document.createElement('input');
+      testContext.firstInput.id = 'first';
+      testContext.middleInput = document.createElement('input');
+      testContext.middleInput.id = 'middle';
+      testContext.lastInput = document.createElement('input');
+      testContext.lastInput.id = 'last';
+
+      testContext.form.appendChild(document.createElement('div'));
+      testContext.form.appendChild(document.createElement('div'));
+      testContext.form.appendChild(testContext.firstInput);
+      testContext.form.appendChild(document.createElement('div'));
+      testContext.form.appendChild(document.createElement('input'));
+      testContext.form.appendChild(document.createElement('div'));
+      testContext.form.appendChild(testContext.lastInput);
+      testContext.form.appendChild(document.createElement('div'));
+      testContext.form.appendChild(document.createElement('div'));
+
+      document.body.appendChild(testContext.form);
+
+      jest.spyOn(focusIntercept, 'matchFocusElement');
+    });
+
+    afterEach(() => {
+      testContext.form.parentNode.removeChild(testContext.form);
+      focusIntercept.matchFocusElement.mockReset();
+    });
+
+    it('does not call callback at all if none match the Braintree focus element', () => {
+      focusChange.removeExtraFocusElements(testContext.form, testContext.removeStub);
+
+      expect(testContext.removeStub).not.toBeCalled();
+    });
+
+    it('does not call callback at all if only a middle input matches the Braintree focus element', () => {
+      focusIntercept.matchFocusElement.mockImplementation(args => args === 'middle');
+
+      focusChange.removeExtraFocusElements(testContext.form, testContext.removeStub);
+
+      expect(testContext.removeStub).not.toBeCalled();
+    });
+
+    it('finds the first and last user focusable element and calls provided callback on the id of the element if it is a braintree focus element', () => {
+      focusIntercept.matchFocusElement.mockImplementation(args => args === 'first' || args === 'middle' || args === 'last');
+
+      focusChange.removeExtraFocusElements(testContext.form, testContext.removeStub);
+
+      expect(testContext.removeStub).toHaveBeenCalledTimes(2);
+      expect(testContext.removeStub).toHaveBeenCalledWith('first');
+      expect(testContext.removeStub).toHaveBeenCalledWith('last');
+    });
+
+    it('only calls the callback for the first focusable element if the last element does not match a braintree focus element', () => {
+      focusIntercept.matchFocusElement.mockImplementation(args => args === 'first' || args === 'middle');
+
+      focusChange.removeExtraFocusElements(testContext.form, testContext.removeStub);
+
+      expect(testContext.removeStub).toHaveBeenCalledTimes(1);
+      expect(testContext.removeStub).toHaveBeenCalledWith('first');
+    });
+
+    it('only calls the callback for the last focusable element if the first element does not match a braintree focus element', () => {
+      focusIntercept.matchFocusElement.mockImplementation(args => args === 'middle' || args === 'last');
+
+      focusChange.removeExtraFocusElements(testContext.form, testContext.removeStub);
+
+      expect(testContext.removeStub).toHaveBeenCalledTimes(1);
+      expect(testContext.removeStub).toHaveBeenCalledWith('last');
+    });
   });
 
-  describe('removeExtraFocusElements', function () {
-    beforeEach(function () {
-      this.removeStub = this.sandbox.stub();
-      this.form = document.createElement('form');
-      this.firstInput = document.createElement('input');
-      this.firstInput.id = 'first';
-      this.middleInput = document.createElement('input');
-      this.middleInput.id = 'middle';
-      this.lastInput = document.createElement('input');
-      this.lastInput.id = 'last';
-      this.sandbox.stub(focusIntercept, 'matchFocusElement');
+  describe('createFocusChangeHandler', () => {
+    beforeEach(() => {
+      testContext.numberNode = document.createElement('iframe');
+      testContext.cvvNode = document.createElement('iframe');
+      testContext.formNode = document.createElement('form');
+      testContext.numberNode.id = 'number';
+      testContext.cvvNode.id = 'cvv';
+      testContext.formNode.id = 'merchant-form';
+      testContext.numberAfter = createSampleIntercept('number', directions.FORWARD);
+      testContext.cvvBefore = createSampleIntercept('cvv', directions.BACK);
 
-      this.form.appendChild(document.createElement('div'));
-      this.form.appendChild(document.createElement('div'));
-      this.form.appendChild(this.firstInput);
-      this.form.appendChild(document.createElement('div'));
-      this.form.appendChild(document.createElement('input'));
-      this.form.appendChild(document.createElement('div'));
-      this.form.appendChild(this.lastInput);
-      this.form.appendChild(document.createElement('div'));
-      this.form.appendChild(document.createElement('div'));
+      testContext.formNode.appendChild(testContext.numberNode);
+      testContext.formNode.appendChild(testContext.numberAfter);
+      testContext.formNode.appendChild(testContext.cvvBefore);
+      testContext.formNode.appendChild(testContext.cvvNode);
+      document.body.appendChild(testContext.formNode);
 
-      document.body.appendChild(this.form);
-    });
-
-    afterEach(function () {
-      this.form.parentNode.removeChild(this.form);
-    });
-
-    it('does not call callback at all if none match the Braintree focus element', function () {
-      focusChange.removeExtraFocusElements(this.form, this.removeStub);
-
-      expect(this.removeStub).to.not.be.called;
-    });
-
-    it('does not call callback at all if only a middle input matches the Braintree focus element', function () {
-      focusIntercept.matchFocusElement.withArgs('middle').returns(true);
-
-      focusChange.removeExtraFocusElements(this.form, this.removeStub);
-
-      expect(this.removeStub).to.not.be.called;
-    });
-
-    it('finds the first and last user focusable element and calls provided callback on the id of the element if it is a braintree focus element', function () {
-      focusIntercept.matchFocusElement.withArgs('first').returns(true);
-      focusIntercept.matchFocusElement.withArgs('middle').returns(true);
-      focusIntercept.matchFocusElement.withArgs('last').returns(true);
-
-      focusChange.removeExtraFocusElements(this.form, this.removeStub);
-
-      expect(this.removeStub).to.be.calledTwice;
-      expect(this.removeStub).to.be.calledWith('first');
-      expect(this.removeStub).to.be.calledWith('last');
-    });
-
-    it('only calls the callback for the first focusable element if the last element does not match a braintree focus element', function () {
-      focusIntercept.matchFocusElement.withArgs('first').returns(true);
-      focusIntercept.matchFocusElement.withArgs('middle').returns(true);
-
-      focusChange.removeExtraFocusElements(this.form, this.removeStub);
-
-      expect(this.removeStub).to.be.calledOnce;
-      expect(this.removeStub).to.be.calledWith('first');
-    });
-
-    it('only calls the callback for the last focusable element if the first element does not match a braintree focus element', function () {
-      focusIntercept.matchFocusElement.withArgs('last').returns(true);
-      focusIntercept.matchFocusElement.withArgs('middle').returns(true);
-
-      focusChange.removeExtraFocusElements(this.form, this.removeStub);
-
-      expect(this.removeStub).to.be.calledOnce;
-      expect(this.removeStub).to.be.calledWith('last');
-    });
-  });
-
-  describe('createFocusChangeHandler', function () {
-    beforeEach(function () {
-      this.numberNode = document.createElement('iframe');
-      this.cvvNode = document.createElement('iframe');
-      this.formNode = document.createElement('form');
-      this.numberNode.id = 'number';
-      this.cvvNode.id = 'cvv';
-      this.formNode.id = 'merchant-form';
-      this.numberAfter = createSampleIntercept('number', directions.FORWARD);
-      this.cvvBefore = createSampleIntercept('cvv', directions.BACK);
-
-      this.formNode.appendChild(this.numberNode);
-      this.formNode.appendChild(this.numberAfter);
-      this.formNode.appendChild(this.cvvBefore);
-      this.formNode.appendChild(this.cvvNode);
-      document.body.appendChild(this.formNode);
-
-      this.removeStub = this.sandbox.stub();
-      this.triggerStub = this.sandbox.stub();
-      this.handler = focusChange.createFocusChangeHandler({
-        onRemoveFocusIntercepts: this.removeStub,
-        onTriggerInputFocus: this.triggerStub
+      testContext.removeStub = jest.fn();
+      testContext.triggerStub = jest.fn();
+      testContext.handler = focusChange.createFocusChangeHandler({
+        onRemoveFocusIntercepts: testContext.removeStub,
+        onTriggerInputFocus: testContext.triggerStub
       });
     });
 
-    it('fires the `onRemoveFocusIntercepts` callback if there is no form', function () {
-      document.body.appendChild(this.numberNode);
-      document.body.appendChild(this.numberAfter);
-      document.body.appendChild(this.cvvBefore);
-      document.body.appendChild(this.cvvNode);
-
-      document.body.removeChild(this.formNode);
-
-      this.handler('number', directions.FORWARD);
-
-      expect(this.triggerStub).not.to.be.called;
-      expect(this.removeStub).to.be.calledOnceWithExactly();
+    afterEach(() => {
+      document.body.removeChild(testContext.formNode);
+      testContext = {};
     });
 
-    it('moves focus forward when direction is forward', function () {
-      this.handler('number', directions.FORWARD);
+    it('fires the `onRemoveFocusIntercepts` callback if there is no form', () => {
+      document.body.appendChild(testContext.numberNode);
+      document.body.appendChild(testContext.numberAfter);
+      document.body.appendChild(testContext.cvvBefore);
+      document.body.appendChild(testContext.cvvNode);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      document.body.removeChild(testContext.formNode);
+
+      testContext.handler('number', directions.FORWARD);
+
+      expect(testContext.triggerStub).not.toBeCalled();
+      expect(testContext.removeStub).toHaveBeenCalledTimes(1);
+      expect(testContext.removeStub).toHaveBeenCalledWith();
+      document.body.appendChild(testContext.formNode);
     });
 
-    it('moves focus backward when direction is backward', function () {
-      this.handler('cvv', directions.BACK);
+    it('moves focus forward when direction is forward', () => {
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('number');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('only focuses elements that are user-interactive on software keyboards', function () {
-      var button = document.createElement('button');
+    it('moves focus backward when direction is backward', () => {
+      testContext.handler('cvv', directions.BACK);
 
-      this.formNode.insertBefore(button, this.cvvBefore);
-
-      this.handler('number', directions.FORWARD);
-
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('number');
     });
 
-    it('ignores inputs with type hidden on software keyboards', function () {
-      var input = document.createElement('input');
+    it('only focuses elements that are user-interactive on software keyboards', () => {
+      const button = document.createElement('button');
+
+      testContext.formNode.insertBefore(button, testContext.cvvBefore);
+
+      testContext.handler('number', directions.FORWARD);
+
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
+    });
+
+    it('ignores inputs with type hidden on software keyboards', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('type', 'hidden');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('ignores inputs with type button on software keyboards', function () {
-      var input = document.createElement('input');
+    it('ignores inputs with type button on software keyboards', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('type', 'button');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('ignores inputs with type reset on software keyboards', function () {
-      var input = document.createElement('input');
+    it('ignores inputs with type reset on software keyboards', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('type', 'reset');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('ignores inputs with type submit on software keyboards', function () {
-      var input = document.createElement('input');
+    it('ignores inputs with type submit on software keyboards', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('type', 'submit');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('ignores inputs with type checkbox on software keyboards', function () {
-      var input = document.createElement('input');
+    it('ignores inputs with type checkbox on software keyboards', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('type', 'checkbox');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('ignores inputs with type radio on software keyboards', function () {
-      var input = document.createElement('input');
+    it('ignores inputs with type radio on software keyboards', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('type', 'radio');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('ignores inputs with type file on software keyboards', function () {
-      var input = document.createElement('input');
+    it('ignores inputs with type file on software keyboards', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('type', 'file');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('ignores inputs with type hidden on desktop browsers', function () {
-      var input = document.createElement('input');
+    it('ignores inputs with type hidden on desktop browsers', () => {
+      const input = document.createElement('input');
 
-      browserDetection.hasSoftwareKeyboard.returns(false);
+      browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
 
       input.setAttribute('type', 'hidden');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
-    it('does not ignore inputs with type button on desktop browsers', function () {
-      var input = document.createElement('input');
+    it('does not ignore inputs with type button on desktop browsers', () => {
+      const input = document.createElement('input');
 
-      browserDetection.hasSoftwareKeyboard.returns(false);
+      browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
       input.setAttribute('type', 'button');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.not.be.called;
+      expect(testContext.triggerStub).not.toBeCalled();
     });
 
-    it('does not ignore inputs with type reset on desktop browsers', function () {
-      var input = document.createElement('input');
+    it('does not ignore inputs with type reset on desktop browsers', () => {
+      const input = document.createElement('input');
 
-      browserDetection.hasSoftwareKeyboard.returns(false);
+      browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
       input.setAttribute('type', 'reset');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.not.be.called;
+      expect(testContext.triggerStub).not.toBeCalled();
     });
 
-    it('does not ignore inputs with type submit on desktop browsers', function () {
-      var input = document.createElement('input');
+    it('does not ignore inputs with type submit on desktop browsers', () => {
+      const input = document.createElement('input');
 
-      browserDetection.hasSoftwareKeyboard.returns(false);
+      browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
       input.setAttribute('type', 'submit');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.not.be.called;
+      expect(testContext.triggerStub).not.toBeCalled();
     });
 
-    it('does not ignore inputs with type checkbox on desktop browsers', function () {
-      var input = document.createElement('input');
+    it('does not ignore inputs with type checkbox on desktop browsers', () => {
+      const input = document.createElement('input');
 
-      browserDetection.hasSoftwareKeyboard.returns(false);
+      browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
       input.setAttribute('type', 'checkbox');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.not.be.called;
+      expect(testContext.triggerStub).not.toBeCalled();
     });
 
-    it('does not ignore inputs with type radio on desktop browsers', function () {
-      var input = document.createElement('input');
+    it('does not ignore inputs with type radio on desktop browsers', () => {
+      const input = document.createElement('input');
 
-      browserDetection.hasSoftwareKeyboard.returns(false);
+      browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
       input.setAttribute('type', 'radio');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.not.be.called;
+      expect(testContext.triggerStub).not.toBeCalled();
     });
 
-    it('does not ignore inputs with type file on desktop browsers', function () {
-      var input = document.createElement('input');
+    it('does not ignore inputs with type file on desktop browsers', () => {
+      const input = document.createElement('input');
 
-      browserDetection.hasSoftwareKeyboard.returns(false);
+      browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
       input.setAttribute('type', 'file');
 
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.not.be.called;
+      expect(testContext.triggerStub).not.toBeCalled();
     });
 
-    it('does nothing if there is no user-focusable element in the requested direction', function () {
-      this.formNode.appendChild(createSampleIntercept('cvv', directions.FORWARD));
+    it('does nothing if there is no user-focusable element in the requested direction', () => {
+      testContext.formNode.appendChild(createSampleIntercept('cvv', directions.FORWARD));
 
-      this.handler('cvv', directions.FORWARD);
+      testContext.handler('cvv', directions.FORWARD);
 
-      expect(this.triggerStub).not.to.be.called;
-      expect(this.removeStub).not.to.be.called;
+      expect(testContext.triggerStub).not.toBeCalled();
+      expect(testContext.removeStub).not.toBeCalled();
     });
 
-    it('focuses merchant field when merchant field is next user-focusable', function () {
-      var input = document.createElement('input');
+    it('focuses merchant field when merchant field is next user-focusable', () => {
+      const input = document.createElement('input');
 
       input.setAttribute('name', 'cardholder-name');
-      this.formNode.insertBefore(input, this.cvvBefore);
+      testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      this.handler('number', directions.FORWARD);
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).not.to.be.called;
-      expect(document.activeElement.getAttribute('name')).to.be.string('cardholder-name');
+      expect(testContext.triggerStub).not.toBeCalled();
+      expect(document.activeElement.getAttribute('name')).toContain('cardholder-name');
     });
 
-    it('fires `onTriggerInputFocus` with correct type when hosted field is next user-focusable', function () {
-      this.handler('number', directions.FORWARD);
+    it('fires `onTriggerInputFocus` with correct type when hosted field is next user-focusable', () => {
+      testContext.handler('number', directions.FORWARD);
 
-      expect(this.triggerStub).to.be.calledWith('cvv');
+      expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
   });
 });

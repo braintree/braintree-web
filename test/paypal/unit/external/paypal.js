@@ -1,149 +1,146 @@
 'use strict';
 
-var frameService = require('../../../../src/lib/frame-service/external');
-var frameServiceErrors = require('../../../../src/lib/frame-service/shared/errors');
-var VERSION = require('../../../../package.json').version;
-var PayPal = require('../../../../src/paypal/external/paypal');
-var analytics = require('../../../../src/lib/analytics');
-var methods = require('../../../../src/lib/methods');
-var BraintreeError = require('../../../../src/lib/braintree-error');
-var rejectIfResolves = require('../../../helpers/promise-helper').rejectIfResolves;
-var Promise = require('../../../../src/lib/promise');
+jest.mock('../../../../src/lib/frame-service/shared/errors');
 
-function noop() {}
+const analytics = require('../../../../src/lib/analytics');
+const frameService = require('../../../../src/lib/frame-service/external');
+const frameServiceErrors = require('../../../../src/lib/frame-service/shared/errors');
+const { version: VERSION } = require('../../../../package.json');
+const PayPal = require('../../../../src/paypal/external/paypal');
+const methods = require('../../../../src/lib/methods');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const { noop, yields } = require('../../../helpers');
 
-describe('PayPal', function () {
-  beforeEach(function () {
-    var self = this;
+describe('PayPal', () => {
+  let testContext;
 
-    this.sandbox.stub(analytics, 'sendEvent');
-
-    this.configuration = {
+  beforeEach(() => {
+    testContext = {};
+    testContext.configuration = {
       gatewayConfiguration: {
-        paypal: {assetsUrl: 'https://example.com:9292'}
+        paypal: { assetsUrl: 'https://example.com:9292' }
       },
       authorizationType: 'CLIENT_TOKEN'
     };
-    this.client = {
-      request: this.sandbox.stub().resolves(),
-      getConfiguration: function () { return self.configuration; }
+    testContext.client = {
+      request: jest.fn().mockResolvedValue(null),
+      getConfiguration: () => testContext.configuration
     };
   });
 
-  afterEach(function () {
+  afterEach(() => {
     delete global.popupBridge;
   });
 
-  describe('Constructor', function () {
-    it('has an assetsUrl', function () {
-      var pp = new PayPal({client: this.client});
+  describe('Constructor', () => {
+    it('has an assetsUrl', () => {
+      const pp = new PayPal({ client: testContext.client });
 
-      expect(pp._assetsUrl).to.equal(this.configuration.gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION);
+      expect(pp._assetsUrl).toBe(
+        `${testContext.configuration.gatewayConfiguration.paypal.assetsUrl}/web/${VERSION}`
+      );
     });
 
-    it('sets a loadingFrameUrl', function () {
-      var pp = new PayPal({client: this.client});
+    it('sets a loadingFrameUrl', () => {
+      const pp = new PayPal({ client: testContext.client });
 
-      expect(pp._loadingFrameUrl).to.equal(pp._assetsUrl + '/html/paypal-landing-frame.min.html');
+      expect(pp._loadingFrameUrl).toBe(`${pp._assetsUrl}/html/paypal-landing-frame.min.html`);
     });
 
-    it('sets a loadingFrameUrl in debug mode', function () {
-      var pp;
+    it('sets a loadingFrameUrl in debug mode', () => {
+      let pp;
 
-      this.configuration.isDebug = true;
-      pp = new PayPal({client: this.client});
+      testContext.configuration.isDebug = true;
+      pp = new PayPal({ client: testContext.client });
 
-      expect(pp._loadingFrameUrl).to.equal(pp._assetsUrl + '/html/paypal-landing-frame.html');
+      expect(pp._loadingFrameUrl).toBe(`${pp._assetsUrl}/html/paypal-landing-frame.html`);
     });
 
-    it('set up authorization state', function () {
-      var pp = new PayPal({client: this.client});
+    it('set up authorization state', () => {
+      const pp = new PayPal({ client: testContext.client });
 
-      expect(pp._authorizationInProgress).to.equal(false);
+      expect(pp._authorizationInProgress).toBe(false);
     });
   });
 
-  describe('_initialize', function () {
-    it('instantiates FrameService', function () {
-      var context = {
+  describe('_initialize', () => {
+    it('instantiates FrameService', () => {
+      const context = {
         _assetsUrl: 'foo/bar',
         _loadingFrameUrl: 'fake-loading-frame-url'
       };
 
-      this.sandbox.stub(frameService, 'create');
-
       PayPal.prototype._initialize.call(context);
 
-      expect(frameService.create).to.be.calledWith({
-        name: this.sandbox.match.string,
-        dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.min.html',
+      expect(frameService.create).toHaveBeenCalledWith({
+        name: expect.any(String),
+        dispatchFrameUrl: `${context._assetsUrl}/html/dispatch-frame.min.html`,
         openFrameUrl: context._loadingFrameUrl
-      }, this.sandbox.match.func);
+      }, expect.any(Function));
     });
 
-    it('instantiates FrameService with unminified assets in debug mode', function () {
-      var context = {
+    it('instantiates FrameService with unminified assets in debug mode', () => {
+      const context = {
         _assetsUrl: 'foo/bar',
         _isDebug: true
       };
 
-      this.sandbox.stub(frameService, 'create');
-
       PayPal.prototype._initialize.call(context);
 
-      expect(frameService.create).to.be.calledWith({
-        name: this.sandbox.match.string,
-        dispatchFrameUrl: context._assetsUrl + '/html/dispatch-frame.html',
+      expect(frameService.create).toHaveBeenCalledWith({
+        name: expect.any(String),
+        dispatchFrameUrl: `${context._assetsUrl}/html/dispatch-frame.html`,
         openFrameUrl: context._loadingFrameUrl
-      }, this.sandbox.match.func);
+      }, expect.any(Function));
     });
 
-    it('assigns _frameService property on instance', function () {
-      var pp;
-      var options = {client: this.client};
-      var frameServiceInstance = {foo: 'bar'};
+    it('assigns _frameService property on instance', () => {
+      let pp;
+      const options = { client: testContext.client };
+      const frameServiceInstance = { foo: 'bar' };
 
-      this.sandbox.stub(frameService, 'create').yields(frameServiceInstance);
+      jest.spyOn(frameService, 'create').mockImplementation(yields(frameServiceInstance));
 
       pp = new PayPal(options);
 
       pp._initialize();
 
-      expect(pp._frameService).to.equal(frameServiceInstance);
+      expect(pp._frameService).toBe(frameServiceInstance);
     });
 
-    it('resolves with paypal instance', function () {
-      var pp;
-      var frameServiceInstance = {foo: 'bar'};
+    it('resolves with paypal instance', () => {
+      let pp;
+      const frameServiceInstance = { foo: 'bar' };
 
-      this.sandbox.stub(frameService, 'create').yields(frameServiceInstance);
+      jest.spyOn(frameService, 'create').mockImplementation(yields(frameServiceInstance));
 
-      pp = new PayPal({client: this.client});
+      pp = new PayPal({ client: testContext.client });
 
-      return pp._initialize().then(function (res) {
-        expect(res).to.equal(pp);
+      return pp._initialize().then(res => {
+        expect(res).toBe(pp);
       });
     });
 
-    it('calls analytics with timed-out when failing to initialize', function () {
-      var pp;
-      var clock = this.sandbox.useFakeTimers();
+    it('calls analytics with timed-out when failing to initialize', () => {
+      let pp;
 
-      this.sandbox.stub(frameService, 'create');
+      frameService.create.mockReturnValue(false);
 
-      pp = new PayPal({client: this.client});
+      jest.useFakeTimers();
+
+      pp = new PayPal({ client: testContext.client });
       pp._initialize();
-      clock.tick(59999);
-      expect(analytics.sendEvent).not.to.be.calledWith(this.client, 'paypal.load.timed-out');
-      clock.tick(1);
-      expect(analytics.sendEvent).to.be.calledWith(this.client, 'paypal.load.timed-out');
+      jest.advanceTimersByTime(59999);
+      expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'paypal.load.timed-out');
+      jest.advanceTimersByTime(1);
+      expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'paypal.load.timed-out');
     });
   });
 
-  describe('_formatPaymentResourceData', function () {
-    beforeEach(function () {
-      this.frameService = {_serviceId: 'serviceId'};
-      this.options = {
+  describe('_formatPaymentResourceData', () => {
+    beforeEach(() => {
+      testContext.frameService = { _serviceId: 'serviceId' };
+      testContext.options = {
         enableShippingAddress: true,
         amount: 10.00,
         currency: 'USD',
@@ -153,502 +150,407 @@ describe('PayPal', function () {
           street: '123 Townsend St'
         }
       };
-      this.client = {
-        getConfiguration: function () {
-          return {
-            authorization: 'development_testing_altpay_merchant',
-            gatewayConfiguration: {
-              paypal: {
-                assetsUrl: 'https://paypal.assets.url',
-                displayName: 'my brand'
-              }
+      testContext.client = {
+        getConfiguration: () => ({
+          authorization: 'development_testing_altpay_merchant',
+          gatewayConfiguration: {
+            paypal: {
+              assetsUrl: 'https://paypal.assets.url',
+              displayName: 'my brand'
             }
-          };
-        }
-      };
-    });
-
-    it('allows override of displayName', function () {
-      var actual;
-
-      this.options.displayName = 'Bob\'s Burgers';
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.experienceProfile.brandName).to.equal("Bob's Burgers");
-    });
-
-    ['authorize', 'order', 'sale'].forEach(function (intent) {
-      it('assigns provided intent "' + intent + '" for one-time checkout', function () {
-        var actual;
-
-        this.options.intent = intent;
-
-        actual = PayPal.prototype._formatPaymentResourceData.call({
-          _client: this.client,
-          _frameService: this.frameService
-        }, this.options);
-
-        expect(actual.intent).to.equal(intent);
-      });
-    });
-
-    it('does not assign intent for one-time checkout if not provided', function () {
-      var actual;
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual).not.to.have.property('sale');
-    });
-
-    it('assigns shipping address for one-time checkout', function () {
-      var actual;
-
-      this.options.shippingAddressOverride = {
-        line1: 'line1',
-        line2: 'line2',
-        city: 'city',
-        state: 'state',
-        countryCode: 'countryCode',
-        postalCode: 'postal'
-      };
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.line1).to.exist;
-      expect(actual.line2).to.exist;
-      expect(actual.city).to.exist;
-      expect(actual.state).to.exist;
-      expect(actual.countryCode).to.exist;
-      expect(actual.postalCode).to.exist;
-    });
-
-    it('assigns shipping address for billing agreements', function () {
-      var actual;
-
-      this.options.flow = 'vault';
-      this.options.shippingAddressOverride = {
-        line1: 'line1',
-        line2: 'line2',
-        city: 'city',
-        state: 'state',
-        countryCode: 'countryCode',
-        postalCode: 'postal'
-      };
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.shippingAddress.line1).to.exist;
-      expect(actual.shippingAddress.line2).to.exist;
-      expect(actual.shippingAddress.city).to.exist;
-      expect(actual.shippingAddress.state).to.exist;
-      expect(actual.shippingAddress.countryCode).to.exist;
-      expect(actual.shippingAddress.postalCode).to.exist;
-    });
-
-    it('sets offerPaypalCredit to false if offerCredit is unspecified with checkout flow', function () {
-      var actual;
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.offerPaypalCredit).to.equal(false);
-    });
-
-    it('sets offerPaypalCredit to false if offerCredit is unspecified with vault flow', function () {
-      var actual;
-
-      this.options.flow = 'vault';
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.offerPaypalCredit).to.equal(false);
-    });
-
-    it('sets offerPaypalCredit to false if offerCredit is not a boolean true', function () {
-      var actual;
-
-      this.options.offerCredit = 'true';
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.offerPaypalCredit).to.equal(false);
-    });
-
-    it('sets offerPaypalCredit to true if offerCredit is true with checkout flow', function () {
-      var actual;
-
-      this.options.offerCredit = true;
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.offerPaypalCredit).to.equal(true);
-    });
-
-    it('sets offerPaypalCredit to true if offerCredit is true with vault flow', function () {
-      var actual;
-
-      this.options.flow = 'vault';
-      this.options.offerCredit = true;
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.offerPaypalCredit).to.equal(true);
-    });
-
-    it('sets addressOverride to true if shippingAddressEditable is false', function () {
-      var actual;
-
-      this.options.shippingAddressOverride = {
-        line1: 'line1',
-        line2: 'line2',
-        city: 'city',
-        state: 'state',
-        countryCode: 'countryCode',
-        postalCode: 'postal'
-      };
-      this.options.shippingAddressEditable = false;
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.experienceProfile.addressOverride).to.equal(true);
-    });
-
-    it('sets addressOverride to false if shippingAddressEditable is true', function () {
-      var actual;
-
-      this.options.shippingAddressOverride = {
-        line1: 'line1',
-        line2: 'line2',
-        city: 'city',
-        state: 'state',
-        countryCode: 'countryCode',
-        postalCode: 'postal'
-      };
-      this.options.shippingAddressEditable = true;
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.experienceProfile.addressOverride).to.equal(false);
-    });
-
-    it('adds landing page type to the experience profile when it is present in options', function () {
-      var actual;
-
-      this.options.landingPageType = 'foobar';
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.experienceProfile.landingPageType).to.equal('foobar');
-    });
-
-    it('does not add landing page type to the experience profile when it is not present in options', function () {
-      var actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.experienceProfile.landingPageType).to.not.exist;
-    });
-
-    it('assigns billing agreement description for billing agreements', function () {
-      var actual;
-
-      this.options.flow = 'vault';
-      this.options.billingAgreementDescription = 'Fancy Schmancy Description';
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.description).to.equal('Fancy Schmancy Description');
-    });
-
-    it('does not assign billing agreement description for one-time checkout', function () {
-      var actual;
-
-      this.options.flow = 'checkout';
-      this.options.billingAgreementDescription = 'Fancy Schmancy Description';
-
-      actual = PayPal.prototype._formatPaymentResourceData.call({
-        _client: this.client,
-        _frameService: this.frameService
-      }, this.options);
-
-      expect(actual.description).to.not.exist;
-    });
-
-    describe('PopupBridge exists', function () {
-      beforeEach(function () {
-        global.popupBridge = {
-          getReturnUrlPrefix: function () {
-            return 'testscheme://';
           }
-        };
-      });
+        })
+      };
+      testContext.sampleShippingAddress = {
+        line1: 'line1',
+        line2: 'line2',
+        city: 'city',
+        state: 'state',
+        countryCode: 'countryCode',
+        postalCode: 'postal'
+      };
+    });
 
-      it('returns PopupBridge return and cancel urls', function () {
-        var actual = PayPal.prototype._formatPaymentResourceData.call({
-          _client: this.client,
-          _frameService: this.frameService
-        }, this.options);
+    it('allows override of displayName', () => {
+      let actual;
 
-        expect(actual.returnUrl).to.equal('testscheme://return');
-        expect(actual.cancelUrl).to.equal('testscheme://cancel');
+      testContext.options.displayName = 'Bob\'s Burgers';
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.experienceProfile.brandName).toBe('Bob\'s Burgers');
+    });
+
+    it.each(['authorize', 'order', 'sale'])('assigns provided intent %p for one-time checkout', (intent) => {
+      let actual;
+
+      testContext.options.intent = intent;
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.intent).toBe(intent);
+    });
+
+    it('does not assign intent for one-time checkout if not provided', () => {
+      let actual;
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual).not.toHaveProperty('sale');
+    });
+
+    it('assigns shipping address for one-time checkout', () => {
+      let actual;
+
+      testContext.options.shippingAddressOverride = testContext.sampleShippingAddress;
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.line1).toBeDefined();
+      expect(actual.line2).toBeDefined();
+      expect(actual.city).toBeDefined();
+      expect(actual.state).toBeDefined();
+      expect(actual.countryCode).toBeDefined();
+      expect(actual.postalCode).toBeDefined();
+    });
+
+    it('assigns shipping address for billing agreements', () => {
+      let actual;
+
+      testContext.options.flow = 'vault';
+      testContext.options.shippingAddressOverride = testContext.sampleShippingAddress;
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.shippingAddress.line1).toBeDefined();
+      expect(actual.shippingAddress.line2).toBeDefined();
+      expect(actual.shippingAddress.city).toBeDefined();
+      expect(actual.shippingAddress.state).toBeDefined();
+      expect(actual.shippingAddress.countryCode).toBeDefined();
+      expect(actual.shippingAddress.postalCode).toBeDefined();
+    });
+
+    describe.each(['vault', 'checkout'])('%s flow', (flow) => {
+      it.each([
+        [false, undefined], // eslint-disable-line no-undefined
+        [false, undefined], // eslint-disable-line no-undefined
+        [false, 'true'],
+        [true, true],
+        [true, true]
+      ])('sets offerPaypalCredit to %p if offerCredit is %p', (bool, credit) => {
+        let actual;
+
+        testContext.options.flow = flow;
+        testContext.options.offerCredit = credit;
+        actual = PayPal.prototype._formatPaymentResourceData.call({
+          _client: testContext.client,
+          _frameService: testContext.frameService
+        }, testContext.options);
+
+        expect(actual.offerPaypalCredit).toBe(bool);
       });
+    });
+
+    it.each([true, false])('sets addressOverride to %s if shippingAddressEditable is the opposite of %s', (override) => {
+      let actual;
+
+      testContext.options.shippingAddressOverride = testContext.sampleShippingAddress;
+      testContext.options.shippingAddressEditable = override;
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.experienceProfile.addressOverride).toBe(!override);
+    });
+
+    it('adds landing page type to the experience profile when it is present in options', () => {
+      let actual;
+
+      testContext.options.landingPageType = 'foobar';
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.experienceProfile.landingPageType).toBe('foobar');
+    });
+
+    it('does not add landing page type to the experience profile when it is not present in options', () => {
+      const actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.experienceProfile.landingPageType).toBeFalsy();
+    });
+
+    it('assigns billing agreement description for billing agreements', () => {
+      let actual;
+
+      testContext.options.flow = 'vault';
+      testContext.options.billingAgreementDescription = 'Fancy Schmancy Description';
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.description).toBe('Fancy Schmancy Description');
+    });
+
+    it('does not assign billing agreement description for one-time checkout', () => {
+      let actual;
+
+      testContext.options.flow = 'checkout';
+      testContext.options.billingAgreementDescription = 'Fancy Schmancy Description';
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.description).toBeFalsy();
+    });
+
+    it('returns PopupBridge return and cancel urls', () => {
+      global.popupBridge = {
+        getReturnUrlPrefix: () => 'testscheme://'
+      };
+      const actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.returnUrl).toBe('testscheme://return');
+      expect(actual.cancelUrl).toBe('testscheme://cancel');
     });
   });
 
-  describe('_navigateFrameToAuth', function () {
-    beforeEach(function () {
-      this.options = {
+  describe('_navigateFrameToAuth', () => {
+    beforeEach(() => {
+      testContext.options = {
         flow: 'checkout'
       };
-      this.context = {
-        _client: {request: this.sandbox.stub().resolves({
-          paymentResource: {redirectUrl: 'url'},
-          agreementSetup: {approvalUrl: 'url'}
-        })},
-        _formatPaymentResourceData: function () {
-          return {};
+      testContext.context = {
+        _client: {
+          request: jest.fn().mockResolvedValue({
+            paymentResource: { redirectUrl: 'url' },
+            agreementSetup: { approvalUrl: 'url' }
+          })
         },
+        _formatPaymentResourceData: () => ({}),
         _frameService: {
-          redirect: this.sandbox.stub(),
-          close: this.sandbox.stub()
+          redirect: jest.fn(),
+          close: jest.fn()
         }
       };
     });
 
-    it('makes an api request for a paypal payment resource', function () {
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
-        expect(this.context._client.request).to.be.calledWith({
+    it('makes an api request for a paypal payment resource', () =>
+      PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
+        expect(testContext.context._client.request).toHaveBeenCalledWith({
           endpoint: 'paypal_hermes/create_payment_resource',
           method: 'post',
-          data: this.sandbox.match.object
+          data: expect.any(Object)
         });
-      }.bind(this));
-    });
+      }));
 
-    it('makes an api request for a billing agreement', function () {
-      this.options.flow = 'vault';
+    it('makes an api request for a billing agreement', () => {
+      testContext.options.flow = 'vault';
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
-        expect(this.context._client.request).to.be.calledWith({
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
+        expect(testContext.context._client.request).toHaveBeenCalledWith({
           endpoint: 'paypal_hermes/setup_billing_agreement',
           method: 'post',
-          data: this.sandbox.match.object
+          data: expect.any(Object)
         });
-      }.bind(this));
+      });
     });
 
-    it('reports a provided request error', function () {
-      var fakeError = new BraintreeError({
+    it('reports a provided request error', () => {
+      const fakeError = new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
         code: 'YOU_DONE_GOOFED',
         message: 'you done goofed'
       });
 
-      this.context._client.request.rejects(fakeError);
+      testContext.context._client.request.mockRejectedValue(fakeError);
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.equal(fakeError);
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).catch(err => {
+        expect(err).toBe(fakeError);
       });
     });
 
-    it('closes frame if there was an error', function () {
-      var fakeError = new BraintreeError({
+    it('closes frame if there was an error', () => {
+      const fakeError = new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
         code: 'YOU_DONE_GOOFED',
         message: 'you done goofed'
       });
 
-      this.context._client.request.rejects(fakeError);
+      testContext.context._client.request.mockRejectedValue(fakeError);
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(rejectIfResolves).catch(function () {
-        expect(this.context._frameService.close).to.be.called;
-      }.bind(this));
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).catch(() => {
+        expect(testContext.context._frameService.close).toHaveBeenCalled();
+      });
     });
 
-    it('reports a merchant BraintreeError on gateway 422 errors', function () {
-      var gateway422Error = new BraintreeError({
+    it('reports a merchant BraintreeError on gateway 422 errors', () => {
+      const gateway422Error = new BraintreeError({
         type: BraintreeError.types.NETWORK,
         code: 'CLIENT_REQUEST_ERROR',
         message: 'There was a problem with your request.',
-        details: {httpStatus: 422}
+        details: { httpStatus: 422 }
       });
 
-      this.context._client.request.rejects(gateway422Error);
+      testContext.context._client.request.mockRejectedValue(gateway422Error);
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.equal('PAYPAL_INVALID_PAYMENT_OPTION');
-        expect(err.message).to.equal('PayPal payment options are invalid.');
-        expect(err.details.originalError).to.equal(gateway422Error);
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options)
+        .catch(({ code, details, message, type }) => {
+          expect(type).toBe(BraintreeError.types.MERCHANT);
+          expect(code).toBe('PAYPAL_INVALID_PAYMENT_OPTION');
+          expect(message).toBe('PayPal payment options are invalid.');
+          expect(details.originalError).toBe(gateway422Error);
+        });
+    });
+
+    it('reports an internally constructed BraintreeError', () => {
+      const fakeError = { foo: 'bar' };
+
+      testContext.context._client.request.mockRejectedValue(fakeError);
+
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options)
+        .catch(({ code, details, message, type }) => {
+          expect(type).toBe(BraintreeError.types.NETWORK);
+          expect(code).toBe('PAYPAL_FLOW_FAILED');
+          expect(message).toBe('Could not initialize PayPal flow.');
+          expect(details.originalError).toBe(fakeError);
+        });
+    });
+
+    it('redirects to a redirectUrl', () => {
+      testContext.context._client.request.mockResolvedValue({
+        paymentResource: { redirectUrl: 'redirect-url' }
+      });
+
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
+        expect(testContext.context._frameService.redirect).toHaveBeenCalledWith('redirect-url');
       });
     });
 
-    it('reports an internally constructed BraintreeError', function () {
-      var fakeError = {foo: 'bar'};
-
-      this.context._client.request.rejects(fakeError);
-
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(rejectIfResolves).catch(function (err) {
-        expect(err.type).to.equal(BraintreeError.types.NETWORK);
-        expect(err.code).to.equal('PAYPAL_FLOW_FAILED');
-        expect(err.message).to.equal('Could not initialize PayPal flow.');
-        expect(err.details.originalError).to.equal(fakeError);
-      });
-    });
-
-    it('redirects to a redirectUrl', function () {
-      this.context._client.request.resolves({
-        paymentResource: {redirectUrl: 'redirect-url'}
-      });
-
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
-        expect(this.context._frameService.redirect).to.be.calledWith('redirect-url');
-      }.bind(this));
-    });
-
-    it('calls analytics with opened popupBridge event', function () {
-      this.context._client.request.resolves({
+    it('calls analytics with opened popupBridge event', () => {
+      testContext.context._client.request.mockResolvedValue({
         paymentResource: {}
       });
       global.popupBridge = {};
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.opened-popupbridge');
-      }.bind(this));
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, 'paypal.tokenization.opened-popupbridge');
+      });
     });
 
-    it('resets authorizationInProgress when an error occurs', function () {
-      this.context._client.request.rejects({fakeError: 'foo'});
+    it('resets authorizationInProgress when an error occurs', () => {
+      testContext.context._client.request.mockRejectedValue({ fakeError: 'foo' });
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(rejectIfResolves).catch(function () {
-        expect(this.context._authorizationInProgress).to.be.false;
-      }.bind(this));
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).catch(() => {
+        expect(testContext.context._authorizationInProgress).toBe(false);
+      });
     });
 
-    it('redirects to an approvalUrl', function () {
-      this.context._client.request.resolves({
-        agreementSetup: {approvalUrl: 'approval-url'}
+    it('redirects to an approvalUrl', () => {
+      testContext.context._client.request.mockResolvedValue({
+        agreementSetup: { approvalUrl: 'approval-url' }
       });
 
-      this.options.flow = 'vault';
+      testContext.options.flow = 'vault';
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
-        expect(this.context._frameService.redirect).to.be.calledWith('approval-url');
-      }.bind(this));
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
+        expect(testContext.context._frameService.redirect).toHaveBeenCalledWith('approval-url');
+      });
     });
 
-    it('appends useraction to an approvalUrl', function () {
-      this.context._client.request.resolves({
-        agreementSetup: {approvalUrl: 'approval-url'}
+    it('appends useraction to an approvalUrl', () => {
+      testContext.context._client.request.mockResolvedValue({
+        agreementSetup: { approvalUrl: 'approval-url' }
       });
 
-      this.options.flow = 'vault';
-      this.options.useraction = 'commit';
+      testContext.options.flow = 'vault';
+      testContext.options.useraction = 'commit';
 
-      return PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
-        expect(this.context._frameService.redirect).to.be.calledWith('approval-url?useraction=commit');
-      }.bind(this));
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
+        expect(testContext.context._frameService.redirect).toHaveBeenCalledWith('approval-url?useraction=commit');
+      });
     });
 
-    it('appends useraction to a redirectUrl', function () {
-      this.context._client.request.resolves({
-        paymentResource: {redirectUrl: 'redirect-url'}
+    it('appends useraction to a redirectUrl', () => {
+      testContext.context._client.request.mockResolvedValue({
+        paymentResource: { redirectUrl: 'redirect-url' }
       });
 
-      this.options.useraction = 'commit';
-      PayPal.prototype._navigateFrameToAuth.call(this.context, this.options).then(function () {
-        expect(this.context._frameService.redirect).to.be.calledWith('redirect-url?useraction=commit');
-      }.bind(this));
+      testContext.options.useraction = 'commit';
+
+      return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
+        expect(testContext.context._frameService.redirect).toHaveBeenCalledWith('redirect-url?useraction=commit');
+      });
     });
   });
 
-  describe('teardown', function () {
-    beforeEach(function () {
-      var frameServiceInstance = {teardown: this.sandbox.stub()};
+  describe('teardown', () => {
+    beforeEach(() => {
+      const frameServiceInstance = { teardown: jest.fn() };
 
-      this.pp = new PayPal({client: this.client});
-      this.frameServiceInstance = frameServiceInstance;
+      testContext.pp = new PayPal({ client: testContext.client });
+      testContext.frameServiceInstance = frameServiceInstance;
 
-      this.sandbox.stub(frameService, 'create').yields(frameServiceInstance);
+      jest.spyOn(frameService, 'create').mockImplementation(yields(frameServiceInstance));
     });
 
-    it('tearsdown the frame service', function (done) {
-      var pp = this.pp;
-      var frameServiceInstance = this.frameServiceInstance;
+    it('tears down the frame service', () => {
+      const pp = testContext.pp;
+      const frameServiceInstance = testContext.frameServiceInstance;
 
-      pp._initialize().then(function () {
-        pp.teardown(function () {
-          expect(frameServiceInstance.teardown).to.be.called;
-          done();
+      return pp._initialize().then(() => {
+        pp.teardown().then(() => {
+          expect(frameServiceInstance.teardown).toHaveBeenCalled();
         });
       });
     });
 
-    it('calls teardown analytic', function (done) {
-      var pp = this.pp;
+    it('calls teardown analytic', () => {
+      const pp = testContext.pp;
 
-      pp._initialize().then(function () {
-        pp.teardown(function () {
-          expect(analytics.sendEvent).to.be.calledWith(pp._client, 'paypal.teardown-completed');
-          done();
+      return pp._initialize().then(() => {
+        pp.teardown().then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(pp._client, 'paypal.teardown-completed');
         });
       });
     });
 
-    it('returns a promise if no callback is provided', function (done) {
-      var pp = this.pp;
+    it('replaces all methods so error is thrown when methods are invoked', () => {
+      const pp = testContext.pp;
 
-      pp._initialize().then(function () {
-        var promise = pp.teardown();
-
-        expect(promise).to.be.an.instanceof(Promise);
-        done();
-      });
-    });
-
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var pp = this.pp;
-
-      pp._initialize().then(function () {
-        pp.teardown(function () {
-          methods(PayPal.prototype).forEach(function (method) {
-            var error;
+      return pp._initialize().then(() => {
+        pp.teardown().then(() => {
+          methods(PayPal.prototype).forEach(method => {
+            let error;
 
             try {
               pp[method]();
@@ -656,21 +558,19 @@ describe('PayPal', function () {
               error = err;
             }
 
-            expect(error).to.be.an.instanceof(BraintreeError);
-            expect(error.type).to.equal(BraintreeError.types.MERCHANT);
-            expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-            expect(error.message).to.equal(method + ' cannot be called after teardown.');
+            expect(error).toBeInstanceOf(BraintreeError);
+            expect(error.type).toBe(BraintreeError.types.MERCHANT);
+            expect(error.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(error.message).toBe(`${method} cannot be called after teardown.`);
           });
-
-          done();
         });
       });
     });
   });
 
-  describe('closeWindow', function () {
-    it('calls frameService close', function () {
-      var closeStub = this.sandbox.stub();
+  describe('closeWindow', () => {
+    it('calls frameService close', () => {
+      const closeStub = jest.fn();
 
       PayPal.prototype.closeWindow.call({
         _client: {},
@@ -679,11 +579,11 @@ describe('PayPal', function () {
         }
       });
 
-      expect(closeStub).to.be.calledOnce;
+      expect(closeStub).toHaveBeenCalledTimes(1);
     });
 
-    it('calls analytic if auth is in progress', function () {
-      var client = {};
+    it('calls analytic if auth is in progress', () => {
+      const client = {};
 
       PayPal.prototype.closeWindow.call({
         _authorizationInProgress: true,
@@ -693,12 +593,12 @@ describe('PayPal', function () {
         }
       });
 
-      expect(analytics.sendEvent).to.be.calledOnce;
-      expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenize.closed.by-merchant');
+      expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+      expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.tokenize.closed.by-merchant');
     });
 
-    it('does not call analytic if auth is in progress', function () {
-      var client = {};
+    it('does not call analytic if auth is in progress', () => {
+      const client = {};
 
       PayPal.prototype.closeWindow.call({
         _authorizationInProgress: false,
@@ -708,13 +608,13 @@ describe('PayPal', function () {
         }
       });
 
-      expect(analytics.sendEvent).to.not.be.called;
+      expect(analytics.sendEvent).not.toHaveBeenCalled();
     });
   });
 
-  describe('focusWindow', function () {
-    it('calls frameService focus', function () {
-      var focusStub = this.sandbox.stub();
+  describe('focusWindow', () => {
+    it('calls frameService focus', () => {
+      const focusStub = jest.fn();
 
       PayPal.prototype.focusWindow.call({
         _client: {},
@@ -723,554 +623,462 @@ describe('PayPal', function () {
         }
       });
 
-      expect(focusStub).to.be.calledOnce;
+      expect(focusStub).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('tokenize', function () {
-    beforeEach(function () {
-      this.context = {
-        _client: this.client,
+  describe('tokenize', () => {
+    beforeEach(() => {
+      testContext.context = {
+        _client: testContext.client,
         _authorizationInProgress: false,
-        _navigateFrameToAuth: this.sandbox.stub().resolves(),
-        _createFrameServiceCallback: function (options, callback) {
-          return function () { callback(); };
+        _navigateFrameToAuth: jest.fn().mockResolvedValue(null),
+        _createFrameServiceCallback: (options, callback) => () => {
+          callback();
         },
         _frameService: {
-          open: this.sandbox.stub(),
-          createHandler: this.sandbox.stub(),
-          createNoopHandler: this.sandbox.stub()
+          open: jest.fn(),
+          createHandler: jest.fn(),
+          createNoopHandler: jest.fn()
         }
       };
-      this.tokenizeOptions = {flow: 'vault'};
+      testContext.tokenizeOptions = { flow: 'vault' };
     });
 
-    it('calls the errback with an err if authorization is in progress', function (done) {
-      this.context._authorizationInProgress = true;
+    it('calls the errback with an err if authorization is in progress', () => {
+      testContext.context._authorizationInProgress = true;
 
-      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, function (err, data) {
-        expect(data).not.to.exist;
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('PAYPAL_TOKENIZATION_REQUEST_ACTIVE');
-        expect(err.message).to.equal('Another tokenization request is active.');
-
-        done();
+      return PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('PAYPAL_TOKENIZATION_REQUEST_ACTIVE');
+        expect(err.message).toBe('Another tokenization request is active.');
       });
     });
 
-    it('calls errback with error if no options are provided', function (done) {
-      PayPal.prototype.tokenize.call(this.context, {}, function (err, payload) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
-        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
-        expect(payload).to.not.exist;
-        done();
+    it.each([
+      ['no', {}],
+      ['invalid', { flow: 'garbage' }]
+    ])('calls errback with error if %s options are provided', (testCase, options) => {
+      PayPal.prototype.tokenize.call(testContext.context, options).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('PAYPAL_FLOW_OPTION_REQUIRED');
+        expect(err.message).toBe('PayPal flow property is invalid or missing.');
       });
     });
 
-    it('returns a frame service noop handler no options are provided', function () {
-      var fakehandler = {close: 'foo', focus: 'bar'};
-      var handler;
+    it.each([
+      ['no', {}],
+      ['invalid', { flow: 'nonsense' }]
+    ])('returns a frame service noop handler if %s options are provided', (s, options) => {
+      const fakehandler = { close: 'foo', focus: 'bar' };
+      let handler;
 
-      this.context._frameService.createNoopHandler.returns(fakehandler);
+      testContext.context._frameService.createNoopHandler.mockReturnValue(fakehandler);
 
-      handler = PayPal.prototype.tokenize.call(this.context, {}, noop);
+      handler = PayPal.prototype.tokenize.call(testContext.context, options, noop);
 
-      expect(handler).to.equal(fakehandler);
+      expect(handler).toBe(fakehandler);
     });
 
-    it('calls errback with error if an invalid flow option is provided', function (done) {
-      PayPal.prototype.tokenize.call(this.context, {flow: 'garbage'}, function (err, payload) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('PAYPAL_FLOW_OPTION_REQUIRED');
-        expect(err.message).to.equal('PayPal flow property is invalid or missing.');
-        expect(payload).to.not.exist;
-        done();
+    it('flips authorization progress state', () => {
+      PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
+
+      expect(testContext.context._authorizationInProgress).toBe(true);
+    });
+
+    it('instructs frame service to open', () => {
+      PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions);
+
+      expect(testContext.context._frameService.open).toHaveBeenCalledTimes(1);
+      expect(testContext.context._frameService.open).toHaveBeenCalledWith({}, expect.any(Function));
+    });
+
+    it('returns a frame service handler', () => {
+      PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
+
+      expect(testContext.context._frameService.createHandler).toHaveBeenCalledTimes(1);
+      expect(testContext.context._frameService.createHandler).toHaveBeenCalledWith({
+        beforeClose: expect.any(Function)
       });
     });
 
-    it('returns a frame service noop handler if an invalid flow option is provided', function () {
-      var fakehandler = {close: 'foo', focus: 'bar'};
-      var handler;
+    it('calls _navigateFrameToAuth', () => {
+      PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
-      this.context._frameService.createNoopHandler.returns(fakehandler);
-
-      handler = PayPal.prototype.tokenize.call(this.context, {flow: 'garbage'}, noop);
-
-      expect(handler).to.equal(fakehandler);
+      expect(testContext.context._navigateFrameToAuth).toHaveBeenCalledWith(testContext.tokenizeOptions);
     });
 
-    it('flips authorization progress state', function () {
-      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
-
-      expect(this.context._authorizationInProgress).to.equal(true);
-    });
-
-    it('instructs frame service to open', function () {
-      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions);
-
-      expect(this.context._frameService.open).to.be.calledOnce;
-      expect(this.context._frameService.open).to.be.calledWith({}, this.sandbox.match.func);
-    });
-
-    it('returns a frame service handler', function () {
-      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
-
-      expect(this.context._frameService.createHandler).to.be.calledOnce;
-      expect(this.context._frameService.createHandler).to.be.calledWith({
-        beforeClose: this.sandbox.match.func
-      });
-    });
-
-    it('calls _navigateFrameToAuth', function () {
-      PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
-
-      expect(this.context._navigateFrameToAuth).to.be.calledWith(this.tokenizeOptions);
-    });
-
-    describe('analytics', function () {
-      beforeEach(function () {
-        this.context = {
-          _client: this.client,
-          _navigateFrameToAuth: this.sandbox.stub(),
-          _createFrameServiceCallback: function (options, callback) {
-            return function () { callback(); };
+    describe('analytics', () => {
+      beforeEach(() => {
+        testContext.context = {
+          _client: testContext.client,
+          _navigateFrameToAuth: jest.fn(),
+          _createFrameServiceCallback: (options, callback) => () => {
+            callback();
           },
           _authorizationInProgress: false,
           _frameService: {
             open: noop,
             close: noop,
-            createHandler: this.sandbox.stub()
+            createHandler: jest.fn()
           }
         };
       });
 
-      it('calls analytics when the frame is already opened', function () {
-        var client = this.client;
+      it('calls analytics when the frame is already opened', () => {
+        const client = testContext.client;
 
-        this.context._authorizationInProgress = true;
-        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+        testContext.context._authorizationInProgress = true;
+        PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.error.already-opened');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.tokenization.error.already-opened');
       });
 
-      it('calls analytics when the frame is opened', function () {
-        var client = this.client;
+      it('calls analytics when the frame is opened', () => {
+        const client = testContext.client;
 
-        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+        PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.opened');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.tokenization.opened');
       });
 
-      it('calls analytics when credit is offered and using checkout flow', function () {
-        var client = this.client;
+      it('calls analytics when credit is offered and using checkout flow', () => {
+        const client = testContext.client;
 
-        this.tokenizeOptions.flow = 'checkout';
-        this.tokenizeOptions.offerCredit = true;
-        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+        testContext.tokenizeOptions.flow = 'checkout';
+        testContext.tokenizeOptions.offerCredit = true;
+        PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.credit.offered');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.credit.offered');
       });
 
-      it('calls analytics when credit is offered and using vault flow', function () {
-        var client = this.client;
+      it('calls analytics when credit is offered and using vault flow', () => {
+        const client = testContext.client;
 
-        this.tokenizeOptions.flow = 'vault';
-        this.tokenizeOptions.offerCredit = true;
-        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+        testContext.tokenizeOptions.flow = 'vault';
+        testContext.tokenizeOptions.offerCredit = true;
+        PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.credit.offered');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.credit.offered');
       });
 
-      it('does not send credit.offered event when credit is not offered', function () {
-        var client = this.client;
+      it('does not send credit.offered event when credit is not offered', () => {
+        const client = testContext.client;
 
-        this.tokenizeOptions.flow = 'checkout';
-        PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+        testContext.tokenizeOptions.flow = 'checkout';
+        PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
-        expect(analytics.sendEvent).to.not.be.calledWith(client, 'paypal.credit.offered');
+        expect(analytics.sendEvent).not.toHaveBeenCalledWith(client, 'paypal.credit.offered');
       });
 
-      it('calls analytics when the frame is closed by merchant', function () {
-        var client = this.client;
-        var result;
+      it('calls analytics when the frame is closed by merchant', () => {
+        const client = testContext.client;
+        let result;
 
-        this.context._frameService.createHandler.returns({
-          close: function () {
-            this.context._frameService.createHandler
-              .getCall(0)
-              .args[0]
+        testContext.context._frameService.createHandler.mockReturnValue({
+          close: () => {
+            testContext.context._frameService.createHandler
+              .mock.calls[0][0]
               .beforeClose();
-          }.bind(this)
+          }
         });
 
-        result = PayPal.prototype.tokenize.call(this.context, this.tokenizeOptions, noop);
+        result = PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
         result.close();
 
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.tokenization.closed.by-merchant');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.tokenization.closed.by-merchant');
       });
 
-      it('calls analytics when tokenization result has creditFinancingOffered', function () {
-        var fakeResponse = {
+      it('calls analytics when tokenization result has creditFinancingOffered', () => {
+        const fakeResponse = {
           creditFinancingOffered: {}
         };
 
-        this.context._formatTokenizeData = noop;
-        this.context._formatTokenizePayload = function () {
-          return fakeResponse;
-        };
-        this.context._client.request.resolves();
-        this.context._frameService.redirect = noop;
+        testContext.context._formatTokenizeData = noop;
+        testContext.context._formatTokenizePayload = () => fakeResponse;
+        testContext.context._client.request.mockResolvedValue();
+        testContext.context._frameService.redirect = noop;
 
-        return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.credit.accepted');
-        }.bind(this));
+        return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, 'paypal.credit.accepted');
+        });
       });
 
-      it('does not send analytics when tokenization result does not have creditFinancingOffered', function () {
-        var fakeResponse = {};
+      it('does not send analytics when tokenization result does not have creditFinancingOffered', () => {
+        const fakeResponse = {};
 
-        this.context._formatTokenizeData = noop;
-        this.context._formatTokenizePayload = function () {
-          return fakeResponse;
-        };
-        this.context._client.request.resolves();
-        this.context._frameService.redirect = noop;
+        testContext.context._formatTokenizeData = noop;
+        testContext.context._formatTokenizePayload = () => fakeResponse;
+        testContext.context._client.request.mockResolvedValue();
+        testContext.context._frameService.redirect = noop;
 
-        return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(function () {
-          expect(analytics.sendEvent).not.to.be.calledWith(this.context._client, 'paypal.credit.accepted');
-        }.bind(this));
+        return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).then(() => {
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.context._client, 'paypal.credit.accepted');
+        });
       });
     });
   });
 
-  describe('_createFrameServiceCallback', function () {
-    beforeEach(function () {
-      this.resolve = this.sandbox.stub();
-      this.reject = this.sandbox.stub();
-      this.context = {
-        _client: {request: this.sandbox.stub().resolves()},
+  describe('_createFrameServiceCallback', () => {
+    beforeEach(() => {
+      testContext.resolve = jest.fn();
+      testContext.reject = jest.fn();
+      testContext.context = {
+        _client: { request: jest.fn().mockResolvedValue() },
         _authorizationInProgress: true,
-        _tokenizePayPal: this.sandbox.stub().resolves()
+        _tokenizePayPal: jest.fn().mockResolvedValue()
       };
     });
 
-    it('resets authorization progress state in open callback', function () {
-      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
+    it('resets authorization progress state in open callback', () => {
+      const wrapped = PayPal.prototype._createFrameServiceCallback.call(testContext.context, {}, testContext.resolve, testContext.reject);
 
       wrapped(null, {});
 
-      expect(this.context._authorizationInProgress).to.equal(false);
+      expect(testContext.context._authorizationInProgress).toBe(false);
     });
 
-    it('calls analytics when the frame is closed by user', function () {
-      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
+    it.each([
+      ['', frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED],
+      ['due to ie bug', frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG]
+    ])('calls the callback with error when frame fails to open %s', (s, error) => {
+      let err;
+      const wrapped = PayPal.prototype._createFrameServiceCallback.call(testContext.context, {}, testContext.resolve, testContext.reject);
 
-      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED);
+      wrapped(error);
 
-      expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.closed.by-user');
+      err = testContext.reject.mock.calls[0][0];
+
+      expect(testContext.resolve).not.toHaveBeenCalled();
+      expect(testContext.reject).toHaveBeenCalledTimes(1);
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('MERCHANT');
+      expect(err.code).toBe('PAYPAL_POPUP_OPEN_FAILED');
+      expect(err.message).toBe(
+        'PayPal popup failed to open, make sure to tokenize in response to a user action.'
+      );
+      expect(err.details.originalError.code).toBe(error.code);
     });
 
-    it('calls the callback with error when frame is closed', function () {
-      var err;
-      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED);
-
-      err = this.reject.getCall(0).args[0];
-
-      expect(this.resolve).to.not.be.called;
-      expect(this.reject).to.be.calledOnce;
-      expect(err).to.be.an.instanceOf(BraintreeError);
-      expect(err.type).to.equal('CUSTOMER');
-      expect(err.code).to.equal('PAYPAL_POPUP_CLOSED');
-      expect(err.message).to.equal('Customer closed PayPal popup before authorizing.');
-      expect(err.details).not.to.exist;
-    });
-
-    it('calls the callback with error when frame fails to open', function () {
-      var err;
-      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED);
-
-      err = this.reject.getCall(0).args[0];
-
-      expect(this.resolve).to.not.be.called;
-      expect(this.reject).to.be.calledOnce;
-      expect(err).to.be.an.instanceOf(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('PAYPAL_POPUP_OPEN_FAILED');
-      expect(err.message).to.equal('PayPal popup failed to open, make sure to tokenize in response to a user action.');
-      expect(err.details.originalError.code).to.equal('FRAME_SERVICE_FRAME_OPEN_FAILED');
-    });
-
-    it('calls the callback with error when frame fails to open because of IE bug', function () {
-      var err;
-      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-      wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG);
-
-      err = this.reject.getCall(0).args[0];
-
-      expect(this.resolve).to.not.be.called;
-      expect(this.reject).to.be.calledOnce;
-      expect(err).to.be.an.instanceOf(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('PAYPAL_POPUP_OPEN_FAILED');
-      expect(err.message).to.equal('PayPal popup failed to open, make sure to tokenize in response to a user action.');
-      expect(err.details.originalError.code).to.equal('FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG');
-    });
-
-    it('calls _tokenizePayPal when successful', function () {
-      var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-      wrapped(null, {
-        foo: 'bar'
+    describe.each([
+      ['', {}, '-popupbridge'],
+      ['not', undefined, ''] // eslint-disable-line no-undefined
+    ])('%s using popupBridge', (s, popupBridgeValue, analytic) => {
+      beforeEach(() => {
+        global.popupBridge = popupBridgeValue;
       });
 
-      expect(this.context._tokenizePayPal).to.be.calledWith({}, {
-        foo: 'bar'
-      });
-    });
+      it('calls _tokenizePayPal with appropriate options when successful', () => {
+        const wrapped = PayPal.prototype._createFrameServiceCallback.call(testContext.context, {}, testContext.resolve, testContext.reject);
+        let options = {};
 
-    describe('using popupBridge', function () {
-      beforeEach(function () {
-        global.popupBridge = {};
+        if (popupBridgeValue) {
+          options = {
+            path: '/success/foo',
+            queryItems: {
+              foo: 'bar'
+            }
+          };
+        } else {
+          options = {
+            foo: 'bar'
+          };
+        }
+        wrapped(null, options);
+
+        expect(testContext.context._tokenizePayPal).toHaveBeenCalledWith({}, { foo: 'bar' });
       });
 
-      it('calls analytics when the popupBridge is closed by user', function () {
-        var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
+      it(`calls the callback with error when ${popupBridgeValue ? 'canceled' : 'closed'}`, () => {
+        let err, options;
+        const wrapped = PayPal.prototype._createFrameServiceCallback.call(testContext.context, {}, testContext.resolve, testContext.reject);
+
+        if (popupBridgeValue) {
+          options = [null, {
+            path: '/cancel/foo',
+            queryItems: {
+              foo: 'bar'
+            }
+          }];
+        } else {
+          options = [frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED];
+        }
+
+        wrapped.apply(null, options);
+
+        err = testContext.reject.mock.calls[0][0];
+
+        expect(testContext.resolve).not.toHaveBeenCalled();
+        expect(testContext.reject).toHaveBeenCalledTimes(1);
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('CUSTOMER');
+        expect(err.code).toBe('PAYPAL_POPUP_CLOSED');
+        expect(err.message).toBe('Customer closed PayPal popup before authorizing.');
+        expect(err.details).not.toBeDefined();
+      });
+
+      it(`calls analytics when ${popupBridgeValue ? 'canceled' : 'closed'} by user`, () => {
+        const wrapped = PayPal.prototype._createFrameServiceCallback.call(testContext.context, {}, testContext.resolve, testContext.reject);
 
         wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED);
 
-        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.closed-popupbridge.by-user');
-      });
-
-      it('calls analytics when popupBridge payload.path starts with /cancel', function () {
-        var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-        wrapped(null, {path: '/cancel/foo'});
-
-        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.closed-popupbridge.by-user');
-      });
-
-      it('calls _tokenizePayPal with payload.queryItems', function () {
-        var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-        wrapped(null, {
-          path: '/success/foo',
-          queryItems: {
-            foo: 'bar'
-          }
-        });
-
-        expect(this.context._tokenizePayPal).to.be.calledWith({}, {
-          foo: 'bar'
-        });
-      });
-
-      it('calls the callback with error when the user clicks Done', function () {
-        var err;
-        var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-        wrapped(frameServiceErrors.FRAME_SERVICE_FRAME_CLOSED);
-
-        err = this.reject.getCall(0).args[0];
-
-        expect(this.resolve).to.not.be.called;
-        expect(this.reject).to.be.calledOnce;
-        expect(err).to.be.an.instanceOf(BraintreeError);
-        expect(err.type).to.equal('CUSTOMER');
-        expect(err.code).to.equal('PAYPAL_POPUP_CLOSED');
-        expect(err.message).to.equal('Customer closed PayPal popup before authorizing.');
-        expect(err.details).not.to.exist;
-      });
-
-      it('calls the callback with error when the redirect url has a path starting with /cancel', function () {
-        var err;
-        var wrapped = PayPal.prototype._createFrameServiceCallback.call(this.context, {}, this.resolve, this.reject);
-
-        wrapped(null, {
-          path: '/cancel/foo',
-          queryItems: {
-            foo: 'bar'
-          }
-        });
-
-        err = this.reject.getCall(0).args[0];
-
-        expect(this.resolve).to.not.be.called;
-        expect(this.reject).to.be.calledOnce;
-        expect(err).to.be.an.instanceOf(BraintreeError);
-        expect(err.type).to.equal('CUSTOMER');
-        expect(err.code).to.equal('PAYPAL_POPUP_CLOSED');
-        expect(err.message).to.equal('Customer closed PayPal popup before authorizing.');
-        expect(err.details).not.to.exist;
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, `paypal.tokenization.closed${analytic}.by-user`);
       });
     });
   });
 
-  describe('_tokenizePayPal', function () {
-    beforeEach(function () {
-      this.client = {request: this.sandbox.stub().resolves()};
-      this.requestPayload = {};
-      this.responsePayload = {};
-      this.context = {
-        _client: this.client,
-        _formatTokenizeData: function () { return this.requestPayload; }.bind(this),
-        _formatTokenizePayload: function () { return this.responsePayload; }.bind(this),
+  describe('_tokenizePayPal', () => {
+    beforeEach(() => {
+      testContext.client = { request: jest.fn().mockResolvedValue() };
+      testContext.requestPayload = {};
+      testContext.responsePayload = {};
+      testContext.context = {
+        _client: testContext.client,
+        _formatTokenizeData: () => testContext.requestPayload,
+        _formatTokenizePayload: () => testContext.responsePayload,
         _frameService: {
-          close: this.sandbox.stub(),
-          redirect: this.sandbox.stub()
+          close: jest.fn(),
+          redirect: jest.fn()
         },
         _loadingFrameUrl: 'fake-loading-frame-url'
       };
     });
 
-    it('redirects the frame service to the loading frame URL', function () {
-      PayPal.prototype._tokenizePayPal.call(this.context, {}, {});
+    it('redirects the frame service to the loading frame URL', () => {
+      PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {});
 
-      expect(this.context._frameService.redirect).to.be.calledWith('fake-loading-frame-url');
+      expect(testContext.context._frameService.redirect).toHaveBeenCalledWith('fake-loading-frame-url');
     });
 
-    it('closes the popup after tokenization success', function () {
-      this.context._client.request({});
+    it('closes the popup after tokenization success', () => {
+      testContext.context._client.request({});
 
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(function () {
-        expect(this.context._frameService.close).to.be.called;
-      }.bind(this));
-    });
-
-    it('closes the popup after tokenization failure', function () {
-      var fakeError = {};
-
-      this.context._client.request.rejects(fakeError);
-
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(rejectIfResolves).catch(function () {
-        expect(this.context._frameService.close).to.be.called;
-      }.bind(this));
-    });
-
-    it('calls request with the proper data', function () {
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(function () {
-        expect(this.context._client.request).to.be.calledWith({
-          endpoint: 'payment_methods/paypal_accounts',
-          method: 'post',
-          data: this.responsePayload
-        });
-      }.bind(this));
-    });
-
-    it('calls analytics with failure if there was a problem', function () {
-      var fakeError = {};
-
-      this.context._client.request.rejects(fakeError);
-
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(rejectIfResolves).catch(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.failed');
-      }.bind(this));
-    });
-
-    it('calls analytics with popupBridge failure if there was a problem', function () {
-      var fakeError = {};
-
-      global.popupBridge = {};
-
-      this.context._client.request.rejects(fakeError);
-
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(rejectIfResolves).catch(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.failed-popupbridge');
-      }.bind(this));
-    });
-
-    it('rejects with Braintree error if there was a problem', function () {
-      var fakeError = {};
-
-      this.context._client.request.rejects(fakeError);
-
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.NETWORK);
-        expect(err.code).to.equal('PAYPAL_ACCOUNT_TOKENIZATION_FAILED');
-        expect(err.message).to.equal('Could not tokenize user\'s PayPal account.');
-        expect(err.details.originalError).to.equal(fakeError);
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).then(() => {
+        expect(testContext.context._frameService.close).toHaveBeenCalled();
       });
     });
 
-    it('calls analytics with success if no error', function () {
-      var fakeResponse = {};
+    it('closes the popup after tokenization failure', () => {
+      const fakeError = {};
 
-      this.context._formatTokenizePayload = function () {
-        return fakeResponse;
-      };
-      this.context._client.request.resolves();
+      testContext.context._client.request.mockRejectedValue(fakeError);
 
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.success');
-      }.bind(this));
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).catch(() => {
+        expect(testContext.context._frameService.close).toHaveBeenCalled();
+      });
     });
 
-    it('calls popupBridge analytics with success if no error', function () {
-      var fakeResponse = {};
+    it('calls request with the proper data', () =>
+      PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).then(() => {
+        expect(testContext.context._client.request).toHaveBeenCalledWith({
+          endpoint: 'payment_methods/paypal_accounts',
+          method: 'post',
+          data: testContext.responsePayload
+        });
+      }));
+
+    it('calls analytics with failure if there was a problem', () => {
+      const fakeError = {};
+
+      testContext.context._client.request.mockRejectedValue(fakeError);
+
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, 'paypal.tokenization.failed');
+      });
+    });
+
+    it('calls analytics with popupBridge failure if there was a problem', () => {
+      const fakeError = {};
 
       global.popupBridge = {};
-      this.context._formatTokenizePayload = function () {
-        return fakeResponse;
-      };
-      this.context._client.request.resolves();
 
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(this.context._client, 'paypal.tokenization.success-popupbridge');
-      }.bind(this));
+      testContext.context._client.request.mockRejectedValue(fakeError);
+
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, 'paypal.tokenization.failed-popupbridge');
+      });
     });
 
-    it('calls callback with payload if no error', function () {
-      var fakeResponse = {};
+    it('rejects with Braintree error if there was a problem', () => {
+      const fakeError = {};
 
-      this.context._formatTokenizePayload = function () {
-        return fakeResponse;
-      };
-      this.context._client.request.resolves();
+      testContext.context._client.request.mockRejectedValue(fakeError);
 
-      return PayPal.prototype._tokenizePayPal.call(this.context, {}, {}).then(function (res) {
-        expect(res).to.equal(fakeResponse);
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.NETWORK);
+        expect(err.code).toBe('PAYPAL_ACCOUNT_TOKENIZATION_FAILED');
+        expect(err.message).toBe('Could not tokenize user\'s PayPal account.');
+        expect(err.details.originalError).toBe(fakeError);
+      });
+    });
+
+    it('calls analytics with success if no error', () => {
+      const fakeResponse = {};
+
+      testContext.context._formatTokenizePayload = () => fakeResponse;
+      testContext.context._client.request.mockResolvedValue();
+
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, 'paypal.tokenization.success');
+      });
+    });
+
+    it('calls popupBridge analytics with success if no error', () => {
+      const fakeResponse = {};
+
+      global.popupBridge = {};
+      testContext.context._formatTokenizePayload = () => fakeResponse;
+      testContext.context._client.request.mockResolvedValue();
+
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, 'paypal.tokenization.success-popupbridge');
+      });
+    });
+
+    it('calls callback with payload if no error', () => {
+      const fakeResponse = {};
+
+      testContext.context._formatTokenizePayload = () => fakeResponse;
+      testContext.context._client.request.mockResolvedValue();
+
+      return PayPal.prototype._tokenizePayPal.call(testContext.context, {}, {}).then(res => {
+        expect(res).toBe(fakeResponse);
       });
     });
   });
 
-  describe('_formatTokenizePayload', function () {
-    it('returns nonce and type', function () {
-      var actual = PayPal.prototype._formatTokenizePayload({
+  describe('_formatTokenizePayload', () => {
+    it('returns nonce and type', () => {
+      const { nonce, type } = PayPal.prototype._formatTokenizePayload({
         paypalAccounts: [{
           nonce: 'nonce',
           type: 'PayPalAccount'
         }]
       });
 
-      expect(actual.nonce).to.equal('nonce');
-      expect(actual.type).to.equal('PayPalAccount');
+      expect(nonce).toBe('nonce');
+      expect(type).toBe('PayPalAccount');
     });
 
-    it('returns payerInfo as details', function () {
-      var payerInfo = {
+    it('returns payerInfo as details', () => {
+      const payerInfo = {
         some: 'info'
       };
-      var actual = PayPal.prototype._formatTokenizePayload({
+      const { details } = PayPal.prototype._formatTokenizePayload({
         paypalAccounts: [{
-          details: {payerInfo: payerInfo}
+          details: { payerInfo: payerInfo }
         }]
       });
 
-      expect(actual.details).to.equal(payerInfo);
+      expect(details).toBe(payerInfo);
     });
 
-    it('attaches creditFinancingOffered', function () {
-      var stubCreditFinancingOffered = {
+    it('attaches creditFinancingOffered', () => {
+      const stubCreditFinancingOffered = {
         totalCost: {
           value: '250.0',
           currency: 'USD'
@@ -1278,7 +1086,7 @@ describe('PayPal', function () {
         other: 'terms'
       };
 
-      var actual = PayPal.prototype._formatTokenizePayload({
+      const { creditFinancingOffered } = PayPal.prototype._formatTokenizePayload({
         paypalAccounts: [{
           details: {
             creditFinancingOffered: stubCreditFinancingOffered
@@ -1286,133 +1094,121 @@ describe('PayPal', function () {
         }]
       });
 
-      expect(actual.creditFinancingOffered).to.equal(stubCreditFinancingOffered);
+      expect(creditFinancingOffered).toBe(stubCreditFinancingOffered);
     });
 
-    it("doesn't attach creditFinancingOffered if not present", function () {
-      var actual = PayPal.prototype._formatTokenizePayload({
+    it('doesn\'t attach creditFinancingOffered if not present', () => {
+      const actual = PayPal.prototype._formatTokenizePayload({
         paypalAccounts: [{
           details: {}
         }]
       });
 
-      expect(actual).not.to.have.property('creditFinancingOffered');
+      expect(actual).not.toHaveProperty('creditFinancingOffered');
     });
 
-    it('returns {} if no payerInfo', function () {
-      var actual = PayPal.prototype._formatTokenizePayload({
+    it('returns {} if no payerInfo', () => {
+      let instanceOne = PayPal.prototype._formatTokenizePayload({
         paypalAccounts: [{
           details: {}
         }]
       });
+      let instanceTwo;
 
-      expect(actual.details).to.be.empty;
+      expect(instanceOne.details).toMatchObject({});
 
-      actual = PayPal.prototype._formatTokenizePayload({});
+      instanceTwo = PayPal.prototype._formatTokenizePayload({});
 
-      expect(actual.details).to.be.empty;
+      expect(instanceTwo.details).toMatchObject({});
     });
   });
 
-  describe('_formatTokenizeData', function () {
-    beforeEach(function () {
-      this.config = {gatewayConfiguration: {paypal: {}}};
-      this.context = {
-        _frameService: {_serviceId: 'serviceId'},
+  describe('_formatTokenizeData', () => {
+    beforeEach(() => {
+      testContext.config = { gatewayConfiguration: { paypal: {}}};
+      testContext.context = {
+        _frameService: { _serviceId: 'serviceId' },
         _client: {
-          getConfiguration: function () {
-            return this.config;
-          }.bind(this)
+          getConfiguration: () => testContext.config
         }
       };
     });
 
-    it('if checkout flow, passes intent for tokenization', function () {
-      var actual;
+    it('if checkout flow, passes intent for tokenization', () => {
+      let actual;
 
-      this.config.gatewayConfiguration.paypal.unvettedMerchant = 'unilateral';
-      actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+      testContext.config.gatewayConfiguration.paypal.unvettedMerchant = 'unilateral';
+      actual = PayPal.prototype._formatTokenizeData.call(testContext.context, {
         intent: 'sale'
       }, {
         PayerID: 'PayerID',
         paymentId: 'paymentId'
       });
 
-      expect(actual.paypalAccount.intent).to.equal('sale');
+      expect(actual.paypalAccount.intent).toBe('sale');
     });
 
-    it('if ba_token not present, passes proper data for tokenization', function () {
-      var actual;
+    it('if ba_token not present, passes proper data for tokenization', () => {
+      let actual;
 
-      this.config.gatewayConfiguration.paypal.unvettedMerchant = 'unilateral';
-      actual = PayPal.prototype._formatTokenizeData.call(this.context, {}, {
+      testContext.config.gatewayConfiguration.paypal.unvettedMerchant = 'unilateral';
+      actual = PayPal.prototype._formatTokenizeData.call(testContext.context, {}, {
         PayerID: 'PayerID',
         paymentId: 'paymentId',
         token: 'EC-83T8551496489354'
       });
 
-      expect(actual.paypalAccount.correlationId).to.equal('EC-83T8551496489354');
-      expect(actual.paypalAccount.paymentToken).to.equal('paymentId');
-      expect(actual.paypalAccount.payerId).to.equal('PayerID');
-      expect(actual.paypalAccount.unilateral).to.equal('unilateral');
+      expect(actual.paypalAccount.correlationId).toBe('EC-83T8551496489354');
+      expect(actual.paypalAccount.paymentToken).toBe('paymentId');
+      expect(actual.paypalAccount.payerId).toBe('PayerID');
+      expect(actual.paypalAccount.unilateral).toBe('unilateral');
     });
 
-    it('if vault flow, ignores intent', function () {
-      var actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+    it('if vault flow, ignores intent', () => {
+      const actual = PayPal.prototype._formatTokenizeData.call(testContext.context, {
         intent: 'sale'
       }, {
         ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
-      expect(actual.paypalAccount).to.not.have.property('intent');
+      expect(actual.paypalAccount).not.toHaveProperty('intent');
     });
 
-    it('defaults validate option to false', function () {
-      var actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+    it('defaults validate option to false', () => {
+      const actual = PayPal.prototype._formatTokenizeData.call(testContext.context, {
         intent: 'sale'
       }, {
         ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
-      expect(actual.paypalAccount.options.validate).to.be.false;
+      expect(actual.paypalAccount.options.validate).toBe(false);
     });
 
-    it('sets validate to true when using the vault flow and a client token', function () {
-      var actual;
+    it.each([
+      [true, 'CLIENT_TOKEN'],
+      [false, 'TOKENIZATION_KEY']
+    ])('sets validate to %s when using the vault flow and %s', (validate, authType) => {
+      let actual;
 
-      this.config.authorizationType = 'CLIENT_TOKEN';
+      testContext.config.authorizationType = authType;
 
-      actual = PayPal.prototype._formatTokenizeData.call(this.context, {
+      actual = PayPal.prototype._formatTokenizeData.call(testContext.context, {
         flow: 'vault'
       }, {
         ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
-      expect(actual.paypalAccount.options.validate).to.be.true;
+      expect(actual.paypalAccount.options.validate).toBe(validate);
     });
 
-    it('sets validate to false when using the vault flow and a tokenization key', function () {
-      var actual;
-
-      this.config.authorizationType = 'TOKENIZATION_KEY';
-
-      actual = PayPal.prototype._formatTokenizeData.call(this.context, {
-        flow: 'vault'
-      }, {
-        ba_token: 'ba_token' // eslint-disable-line camelcase
-      });
-
-      expect(actual.paypalAccount.options.validate).to.be.false;
-    });
-
-    it('if ba_token present, passes proper data for tokenization', function () {
-      var actual = PayPal.prototype._formatTokenizeData.call(this.context, {}, {
+    it('if ba_token present, passes proper data for tokenization', () => {
+      const actual = PayPal.prototype._formatTokenizeData.call(testContext.context, {}, {
         token: 'EC-83T8551496489354',
         ba_token: 'ba_token' // eslint-disable-line camelcase
       });
 
-      expect(actual.paypalAccount.correlationId).to.equal('ba_token');
-      expect(actual.paypalAccount.billingAgreementToken).to.equal('ba_token');
+      expect(actual.paypalAccount.correlationId).toBe('ba_token');
+      expect(actual.paypalAccount.billingAgreementToken).toBe('ba_token');
     });
   });
 });

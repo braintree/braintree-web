@@ -1,49 +1,49 @@
 'use strict';
 
-var create = require('../../../src/vault-manager').create;
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var VaultManager = require('../../../src/vault-manager/vault-manager');
-var fake = require('../../helpers/fake');
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/create-deferred-client');
+jest.mock('../../../src/lib/create-assets-url');
 
-describe('vaultManager', function () {
-  beforeEach(function () {
-    this.fakeClient = fake.client();
-    this.sandbox.stub(basicComponentVerification, 'verify').resolves();
-    this.sandbox.stub(createDeferredClient, 'create').resolves(this.fakeClient);
-    this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
+const create = require('../../../src/vault-manager').create;
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const VaultManager = require('../../../src/vault-manager/vault-manager');
+const { fake } = require('../../helpers');
+
+describe('vaultManager', () => {
+  let fakeClient;
+
+  beforeEach(() => {
+    fakeClient = fake.client();
   });
 
-  describe('create', function () {
-    it('supports callbacks', function (done) {
-      create({client: this.fakeClient}, function (err, vaultManager) {
-        expect(err).not.to.exist;
+  describe('create', () => {
+    it('supports callbacks', done => {
+      create({ client: fakeClient }, (err, vaultManager) => {
+        expect(err).toBeFalsy();
 
-        expect(vaultManager).to.be.an.instanceof(VaultManager);
+        expect(vaultManager).toBeInstanceOf(VaultManager);
 
         done();
       });
     });
 
-    it('verifies with basicComponentVerification', function (done) {
-      var client = this.fakeClient;
-
+    it('verifies with basicComponentVerification', done => {
       create({
-        client: client
-      }, function () {
-        expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWithMatch({
+        client: fakeClient
+      }, () => {
+        expect(basicComponentVerification.verify).toBeCalledTimes(1);
+        expect(basicComponentVerification.verify).toBeCalledWith({
           name: 'Vault Manager',
-          client: client
+          client: fakeClient
         });
         done();
       });
     });
 
-    it('creates a VaultManager instance', function () {
-      return create({client: this.fakeClient}).then(function (vaultManager) {
-        expect(vaultManager).to.be.an.instanceof(VaultManager);
+    it('creates a VaultManager instance', () => {
+      return create({ client: fakeClient }).then(vaultManager => {
+        expect(vaultManager).toBeInstanceOf(VaultManager);
       });
     });
 
@@ -51,18 +51,17 @@ describe('vaultManager', function () {
       return create({
         authorization: fake.clientToken,
         debug: true
-      }).then(function (instance) {
-        expect(createDeferredClient.create).to.be.calledOnce;
-        expect(createDeferredClient.create).to.be.calledWith({
+      }).then(instance => {
+        expect(createDeferredClient.create).toBeCalledTimes(1);
+        expect(createDeferredClient.create).toBeCalledWith({
           authorization: fake.clientToken,
-          client: this.sandbox.match.typeOf('undefined'),
           debug: true,
           assetsUrl: 'https://example.com/assets',
           name: 'Vault Manager'
         });
 
-        expect(instance).to.be.an.instanceof(VaultManager);
-      }.bind(this));
+        expect(instance).toBeInstanceOf(VaultManager);
+      });
     });
   });
 });

@@ -1,64 +1,56 @@
 'use strict';
 
-var verify = require('../../../src/lib/basic-component-verification').verify;
-var BraintreeError = require('../../../src/lib/braintree-error');
-var sharedErrors = require('../../../src/lib/errors');
-var rejectIfResolves = require('../../helpers/promise-helper').rejectIfResolves;
+const { verify } = require('../../../src/lib/basic-component-verification');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const sharedErrors = require('../../../src/lib/errors');
 
-describe('basicComponentVerification', function () {
-  it('resolves when client checks pass', function () {
-    return verify({
+describe('basicComponentVerification', () => {
+  it('resolves when client checks pass', () =>
+    verify({
       name: 'Component',
       client: {
-        getVersion: this.sandbox.stub().returns(process.env.npm_package_version)
+        getVersion: jest.fn().mockReturnValue(process.env.npm_package_version)
       }
-    }).catch(function (err) {
-      expect(err.message).to.not.exist;
-    });
-  });
+    }).catch(({ message }) => {
+      expect(message).toBeFalsy();
+    }));
 
-  it('resolves when authorization checks pass', function () {
-    return verify({
+  it('resolves when authorization checks pass', () =>
+    verify({
       name: 'Component',
       authorization: 'auth'
-    }).catch(function (err) {
-      expect(err.message).to.not.exist;
-    });
-  });
+    }).catch(({ message }) => {
+      expect(message).toBeFalsy();
+    }));
 
-  it('rejects with an internal error if options are not provided', function () {
-    return verify().then(rejectIfResolves).catch(function (err) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('INTERNAL');
-      expect(err.code).to.equal('INVALID_USE_OF_INTERNAL_FUNCTION');
-      expect(err.message).to.equal('Options must be passed to basicComponentVerification function.');
-    });
-  });
+  it('rejects with an internal error if options are not provided', () =>
+    verify().catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('INTERNAL');
+      expect(err.code).toBe('INVALID_USE_OF_INTERNAL_FUNCTION');
+      expect(err.message).toBe('Options must be passed to basicComponentVerification function.');
+    }));
 
-  it('rejects with a braintree error if client or authorization are not provided', function () {
-    return verify({
+  it('rejects with a braintree error if client or authorization are not provided', () =>
+    verify({
       name: 'Component'
-    }).then(rejectIfResolves).catch(function (err) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal(sharedErrors.INSTANTIATION_OPTION_REQUIRED.type);
-      expect(err.code).to.equal(sharedErrors.INSTANTIATION_OPTION_REQUIRED.code);
-      expect(err.message).to.equal('options.client is required when instantiating Component.');
-    });
-  });
+    }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe(sharedErrors.INSTANTIATION_OPTION_REQUIRED.type);
+      expect(err.code).toBe(sharedErrors.INSTANTIATION_OPTION_REQUIRED.code);
+      expect(err.message).toBe('options.client is required when instantiating Component.');
+    }));
 
-  it('rejects with a braintree error if no authorization is provided and clientversion does not match provided version', function () {
-    var client = {
-      getVersion: this.sandbox.stub().returns('3.1.0')
-    };
-
-    return verify({
+  it('rejects with a braintree error if no authorization is provided and client version does not match provided version', () =>
+    verify({
       name: 'Component',
-      client: client
-    }).then(rejectIfResolves).catch(function (err) {
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.code).to.equal('INCOMPATIBLE_VERSIONS');
-      expect(err.message).to.equal('Client (version 3.1.0) and Component (version ' + process.env.npm_package_version + ') components must be from the same SDK version.');
-    });
-  });
+      client: { getVersion: jest.fn().mockReturnValue('3.1.0') }
+    }).catch(err => {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe('MERCHANT');
+      expect(err.code).toBe('INCOMPATIBLE_VERSIONS');
+      expect(err.message).toBe(
+        `Client (version 3.1.0) and Component (version ${process.env.npm_package_version}) components must be from the same SDK version.`
+      );
+    }));
 });

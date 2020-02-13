@@ -1,14 +1,14 @@
 'use strict';
 
-var americanExpress = require('../../../src/american-express');
-var packageVersion = require('../../../package.json').version;
+const americanExpress = require('../../../src/american-express');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(americanExpress.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(americanExpress.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(americanExpress.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(americanExpress.VERSION).toBe(packageVersion);
   });
 });

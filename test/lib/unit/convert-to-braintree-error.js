@@ -1,11 +1,11 @@
 'use strict';
 
-var BraintreeError = require('../../../src/lib/braintree-error');
-var convertToBraintreeError = require('../../../src/lib/convert-to-braintree-error');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const convertToBraintreeError = require('../../../src/lib/convert-to-braintree-error');
 
-describe('convertToBraintreeError', function () {
-  it('returns original error if it is a Braintree Error', function () {
-    var originalError = new BraintreeError({
+describe('convertToBraintreeError', () => {
+  it('returns original error if it is a Braintree Error', () => {
+    const originalError = new BraintreeError({
       type: 'MERCHANT',
       code: 'A_CODE',
       message: 'My Message'
@@ -15,21 +15,21 @@ describe('convertToBraintreeError', function () {
       type: 'NETWORK',
       code: 'ANOTHER_CODE',
       message: 'Another message'
-    })).to.equal(originalError);
+    })).toBe(originalError);
   });
 
-  it('wraps error when it is not a Braintree Error', function () {
-    var originalError = new Error('An Error');
-    var btError = convertToBraintreeError(originalError, {
+  it('wraps error when it is not a Braintree Error', () => {
+    const originalError = new Error('An Error');
+    const btError = convertToBraintreeError(originalError, {
       type: 'NETWORK',
       code: 'A_CODE',
       message: 'message'
     });
 
-    expect(btError).to.be.an.instanceof(BraintreeError);
-    expect(btError.type).to.equal('NETWORK');
-    expect(btError.code).to.equal('A_CODE');
-    expect(btError.message).to.equal('message');
-    expect(btError.details.originalError).to.equal(originalError);
+    expect(btError).toBeInstanceOf(BraintreeError);
+    expect(btError.type).toBe('NETWORK');
+    expect(btError.code).toBe('A_CODE');
+    expect(btError.message).toBe('message');
+    expect(btError.details.originalError).toBe(originalError);
   });
 });

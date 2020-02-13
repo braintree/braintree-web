@@ -1,218 +1,195 @@
 'use strict';
 
-var Modal = require('../../../../../../src/lib/frame-service/external/strategies/modal');
-var browserDetection = require('../../../../../../src/lib/frame-service/shared/browser-detection');
+jest.mock('../../../../../../src/lib/frame-service/shared/browser-detection');
 
-describe('Modal', function () {
-  it('has a focus function', function () {
-    var modal = new Modal();
+const Modal = require('../../../../../../src/lib/frame-service/external/strategies/modal');
+const browserDetection = require('../../../../../../src/lib/frame-service/shared/browser-detection');
+const { noop } = require('../../../../../helpers');
 
-    expect(modal.focus).to.be.a('function');
+describe('Modal', () => {
+  beforeEach(() => {
+    jest.spyOn(window, 'scrollTo').mockImplementation();
   });
 
-  it('has a isClosed function', function () {
-    var modal = new Modal();
+  it('has a focus function', () => {
+    const modal = new Modal();
 
-    expect(modal.isClosed).to.be.a('function');
+    expect(modal.focus).toBeInstanceOf(Function);
   });
 
-  describe('Constructor', function () {
-    it('defaults closed to false', function () {
-      var modal = new Modal();
+  it('has a isClosed function', () => {
+    const modal = new Modal();
 
-      expect(modal.isClosed()).to.equal(false);
+    expect(modal.isClosed).toBeInstanceOf(Function);
+  });
+
+  describe('Constructor', () => {
+    it('defaults closed to false', () => {
+      const modal = new Modal();
+
+      expect(modal.isClosed()).toBe(false);
     });
   });
 
-  describe('open', function () {
-    beforeEach(function () {
-      this.containerStub = {
-        appendChild: this.sandbox.stub(),
-        createElement: this.sandbox.stub()
-      };
-    });
-
-    afterEach(function () {
+  describe('open', () => {
+    afterEach(() => {
       document.body.removeAttribute('style');
     });
 
-    it('adds an iframe to a container', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({container: container});
+    it('adds an iframe to a container', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container: container });
 
       modal.open();
 
-      expect(container.children).to.have.lengthOf(1);
-      expect(container.children[0]).to.be.an.instanceOf(HTMLIFrameElement);
+      expect(container.children).toHaveLength(1);
+      expect(container.children[0]).toBeInstanceOf(HTMLIFrameElement);
     });
 
-    it('sets closed to false', function () {
-      var modal = new Modal();
+    it('sets closed to false', () => {
+      const modal = new Modal();
 
       modal.open();
 
-      expect(modal.isClosed()).to.equal(false);
+      expect(modal.isClosed()).toBe(false);
     });
 
-    it('inserts iframe into a div if platform is iOS', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('inserts iframe into a div if platform is iOS', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
 
       modal.open();
 
-      expect(container.children).to.have.lengthOf(1);
-      expect(container.children[0]).to.be.an.instanceOf(HTMLDivElement);
-      expect(container.children[0].children).to.have.lengthOf(1);
-      expect(container.children[0].children[0]).to.be.an.instanceOf(HTMLIFrameElement);
+      expect(container.children).toHaveLength(1);
+      expect(container.children[0]).toBeInstanceOf(HTMLDivElement);
+      expect(container.children[0].children).toHaveLength(1);
+      expect(container.children[0].children[0]).toBeInstanceOf(HTMLIFrameElement);
     });
 
-    it('adds styling to iframe div wrapper if platform is iOS', function () {
-      var div;
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('adds styling to iframe div wrapper if platform is iOS', () => {
+      let div;
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
 
       modal.open();
 
       div = container.children[0];
-      expect(div.style.height).to.equal('100%');
-      expect(div.style.width).to.equal('100%');
-      expect(div.style.overflow).to.equal('auto');
-      expect(div.style['-webkit-overflow-scrolling']).to.equal('touch');
+      expect(div.style.height).toBe('100%');
+      expect(div.style.width).toBe('100%');
+      expect(div.style.overflow).toBe('auto');
+      expect(div.style['-webkit-overflow-scrolling']).toBe('touch');
     });
 
-    it('sets no styles to iframe if platform is iOS and using WKWebView', function () {
-      var iframe;
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('sets no styles to iframe if platform is iOS and using WKWebView', () => {
+      let iframe;
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+      jest.spyOn(browserDetection, 'isIosWKWebview').mockReturnValue(true);
 
       modal.open();
 
       iframe = container.children[0].children[0];
-      ['position', 'top', 'left', 'bottom', 'padding', 'margin', 'border', 'outline', 'zIndex', 'background'].forEach(function (s) {
-        expect(iframe.style[s]).to.be.empty;
+
+      expect.assertions(10);
+      ['position', 'top', 'left', 'bottom', 'padding', 'margin', 'border', 'outline', 'zIndex', 'background'].forEach(s => {
+        expect(iframe.style[s]).toHaveLength(0);
       });
     });
 
-    it('locks scrolling on body if platform is iOS and using WKWebView', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('locks scrolling on body if platform is iOS and using WKWebView', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+      jest.spyOn(browserDetection, 'isIosWKWebview').mockReturnValue(true);
 
       modal.open();
 
-      expect(document.body.style.overflow).to.equal('hidden');
-      expect(document.body.style.position).to.equal('fixed');
+      expect(document.body.style.overflow).toBe('hidden');
+      expect(document.body.style.position).toBe('fixed');
     });
 
-    it('does not lock scrolling on body by default', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('does not lock scrolling on body by default', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(false);
-      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(false);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(false);
+      jest.spyOn(browserDetection, 'isIosWKWebview').mockReturnValue(false);
 
       modal.open();
 
-      expect(document.body.style.overflow).to.not.equal('hidden');
-      expect(document.body.style.position).to.not.equal('fixed');
+      expect(document.body.style.overflow).not.toBe('hidden');
+      expect(document.body.style.position).not.toBe('fixed');
     });
 
-    it('does not lock scrolling on body when platform is iOS but not using WKWebView', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('does not lock scrolling on body when platform is iOS but not using WKWebView', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(false);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+      jest.spyOn(browserDetection, 'isIosWKWebview').mockReturnValue(false);
 
       modal.open();
 
-      expect(document.body.style.overflow).to.not.equal('hidden');
-      expect(document.body.style.position).to.not.equal('fixed');
+      expect(document.body.style.overflow).not.toBe('hidden');
+      expect(document.body.style.position).not.toBe('fixed');
     });
 
-    it('scrolls to top if platform is iOS and using WKWebView', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('scrolls to top if platform is iOS and using WKWebView', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(global, 'scrollTo');
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+      jest.spyOn(browserDetection, 'isIosWKWebview').mockReturnValue(true);
 
       modal.open();
 
-      expect(global.scrollTo).to.be.calledWith(0, 0);
+      expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
     });
   });
 
-  describe('close', function () {
-    it('removes frame and sets frame to null', function () {
-      var container = {
-        appendChild: function () {},
-        removeChild: this.sandbox.stub()
-      };
-      var modal = new Modal({
-        container: container
-      });
+  describe('close', () => {
+    it('removes frame and sets frame to null', () => {
+      const container = { appendChild: noop, removeChild: jest.fn() };
+      const modal = new Modal({ container });
 
       modal.open();
       modal.close();
 
-      expect(modal._frame).to.equal(null);
-      expect(modal.isClosed()).to.equal(true);
-      expect(container.removeChild).to.have.been.calledOnce;
+      expect(modal._frame).toBeNull();
+      expect(modal.isClosed()).toBe(true);
+      expect(container.removeChild).toHaveBeenCalledTimes(1);
     });
 
-    it('unlocks scrolling on body if platform is iOS and using WKWebView', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('unlocks scrolling on body if platform is iOS and using WKWebView', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
       document.body.style.overflow = 'visible';
       document.body.style.position = 'static';
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+      jest.spyOn(browserDetection, 'isIosWKWebview').mockReturnValue(true);
 
       modal.open();
       modal.close();
 
-      expect(document.body.style.overflow).to.equal('visible');
-      expect(document.body.style.position).to.equal('static');
+      expect(document.body.style.overflow).toBe('visible');
+      expect(document.body.style.position).toBe('static');
     });
 
-    it('scrolls back to previous user position if platform is iOS and using WKWebView', function () {
-      var container = document.createElement('div');
-      var modal = new Modal({
-        container: container
-      });
+    it('scrolls back to previous user position if platform is iOS and using WKWebView', () => {
+      const container = document.createElement('div');
+      const modal = new Modal({ container });
 
-      this.sandbox.stub(browserDetection, 'isIos').returns(true);
-      this.sandbox.stub(browserDetection, 'isIosWKWebview').returns(true);
-      this.sandbox.stub(global, 'scrollTo');
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+      jest.spyOn(browserDetection, 'isIosWKWebview').mockReturnValue(true);
 
       modal.open();
 
@@ -221,20 +198,20 @@ describe('Modal', function () {
 
       modal.close();
 
-      expect(global.scrollTo).to.be.calledWith(10, 20);
+      expect(window.scrollTo).toHaveBeenCalledWith(10, 20);
     });
   });
 
-  describe('redirect', function () {
-    it('sets frame src to url', function () {
-      var redirectUrl = 'expected redirect url';
-      var frame = {};
+  describe('redirect', () => {
+    it('sets frame src to url', () => {
+      const redirectUrl = 'expected redirect url';
+      const frame = {};
 
       Modal.prototype.redirect.call({
         _frame: frame
       }, redirectUrl);
 
-      expect(frame.src).to.equal(redirectUrl);
+      expect(frame.src).toBe(redirectUrl);
     });
   });
 });

@@ -1,105 +1,84 @@
 'use strict';
 
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var create = require('../../../src/local-payment').create;
-var analytics = require('../../../src/lib/analytics');
-var fake = require('../../helpers/fake');
-var LocalPayment = require('../../../src/local-payment/external/local-payment');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var Promise = require('../../../src/lib/promise');
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/create-deferred-client');
 
-describe('local payment', function () {
-  afterEach(function () {
+const analytics = require('../../../src/lib/analytics');
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const { create } = require('../../../src/local-payment');
+const { fake } = require('../../helpers');
+const LocalPayment = require('../../../src/local-payment/external/local-payment');
+const BraintreeError = require('../../../src/lib/braintree-error');
+
+describe('local payment', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+  });
+
+  afterEach(() => {
     delete global.popupBridge;
   });
 
-  describe('create', function () {
-    beforeEach(function () {
-      this.configuration = fake.configuration();
-      this.configuration.gatewayConfiguration.paypalEnabled = true;
-
-      this.sandbox.stub(analytics, 'sendEvent');
-      this.client = fake.client({
-        configuration: this.configuration
+  describe('create', () => {
+    beforeEach(() => {
+      testContext.configuration = fake.configuration();
+      testContext.configuration.gatewayConfiguration.paypalEnabled = true;
+      testContext.client = fake.client({
+        configuration: testContext.configuration
       });
-      this.sandbox.stub(basicComponentVerification, 'verify').resolves();
-      this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
-      this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
+      jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.client);
+      jest.spyOn(LocalPayment.prototype, '_initialize').mockResolvedValue(null);
     });
 
-    it('returns a promise when no callback is provided', function () {
-      var promise = create({client: this.client});
-
-      expect(promise).to.be.an.instanceof(Promise);
+    it('returns a promise', () => {
+      expect(create({ client: testContext.client })).resolves.toBeDefined();
     });
 
-    it('verifies with basicComponentVerification', function (done) {
-      var client = this.client;
-
-      this.sandbox.stub(LocalPayment.prototype, '_initialize').resolves();
-
+    it('verifies with basicComponentVerification', () =>
       create({
-        client: client
-      }, function () {
-        expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWithMatch({
+        client: testContext.client
+      }).then(() => {
+        expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+        expect(basicComponentVerification.verify).toHaveBeenCalledWith(expect.objectContaining({
           name: 'Local Payment',
-          client: client
-        });
-        done();
-      });
-    });
+          client: testContext.client
+        }));
+      }));
 
-    it('can create with an authorization instead of a client', function (done) {
-      this.sandbox.stub(LocalPayment.prototype, '_initialize').resolves();
-
+    it('can create with an authorization instead of a client', () =>
       create({
         authorization: fake.clientToken,
         debug: true
-      }, function (err) {
-        expect(err).not.to.exist;
-
-        expect(createDeferredClient.create).to.be.calledOnce;
-        expect(createDeferredClient.create).to.be.calledWith({
+      }).then(() => {
+        expect(createDeferredClient.create).toHaveBeenCalledTimes(1);
+        expect(createDeferredClient.create.mock.calls[0][0].client).toBeUndefined();
+        expect(createDeferredClient.create).toHaveBeenCalledWith({
           authorization: fake.clientToken,
-          client: this.sandbox.match.typeOf('undefined'),
           debug: true,
           assetsUrl: 'https://example.com/assets',
           name: 'Local Payment'
         });
 
-        expect(LocalPayment.prototype._initialize).to.be.calledOnce;
+        expect(LocalPayment.prototype._initialize).toHaveBeenCalledTimes(1);
+      }));
 
-        done();
-      }.bind(this));
-    });
+    it('rejects with an error if LocalPayment is not enabled for the merchant', () => {
+      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
 
-    it('errors out if LocalPayment is not enabled for the merchant', function (done) {
-      this.configuration.gatewayConfiguration.paypalEnabled = false;
-
-      create({client: this.client}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('LOCAL_PAYMENT_NOT_ENABLED');
-        expect(err.message).to.equal('LocalPayment is not enabled for this merchant.');
-        expect(thingy).not.to.exist;
-        done();
+      return create({ client: testContext.client }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('LOCAL_PAYMENT_NOT_ENABLED');
+        expect(err.message).toBe('LocalPayment is not enabled for this merchant.');
       });
     });
 
-    it('sends an analytics event', function (done) {
-      var client = this.client;
-
-      this.sandbox.stub(LocalPayment.prototype, '_initialize').resolves();
-
-      create({client: client}, function (err) {
-        expect(err).not.to.exist;
-        expect(analytics.sendEvent).to.be.calledWith(client, 'local-payment.initialized');
-
-        done();
-      });
-    });
+    it('sends an analytics event', () =>
+      create({ client: testContext.client }).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'local-payment.initialized');
+      }));
   });
 });

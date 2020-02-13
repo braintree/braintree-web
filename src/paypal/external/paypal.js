@@ -503,8 +503,8 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
   var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
   var serviceId = this._frameService._serviceId;
   var paymentResource = {
-    returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-redirect-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
-    cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/paypal-cancel-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
+    returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/redirect-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
+    cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/cancel-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
     offerPaypalCredit: options.offerCredit === true,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,

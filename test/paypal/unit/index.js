@@ -1,112 +1,97 @@
 'use strict';
 
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var create = require('../../../src/paypal').create;
-var isSupported = require('../../../src/paypal').isSupported;
-var analytics = require('../../../src/lib/analytics');
-var fake = require('../../helpers/fake');
-var PayPal = require('../../../src/paypal/external/paypal');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var Promise = require('../../../src/lib/promise');
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const { create, isSupported } = require('../../../src/paypal');
+const analytics = require('../../../src/lib/analytics');
+const { fake } = require('../../helpers');
+const PayPal = require('../../../src/paypal/external/paypal');
+const BraintreeError = require('../../../src/lib/braintree-error');
 
-describe('paypal', function () {
-  afterEach(function () {
+describe('paypal', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+  });
+
+  afterEach(() => {
     delete global.popupBridge;
   });
 
-  describe('create', function () {
-    beforeEach(function () {
-      this.configuration = fake.configuration();
-      this.configuration.gatewayConfiguration.paypalEnabled = true;
-
-      this.sandbox.stub(analytics, 'sendEvent');
-      this.client = fake.client({
-        configuration: this.configuration
+  describe('create', () => {
+    beforeEach(() => {
+      testContext.configuration = fake.configuration();
+      testContext.configuration.gatewayConfiguration.paypalEnabled = true;
+      testContext.client = fake.client({
+        configuration: testContext.configuration
       });
-      this.sandbox.stub(basicComponentVerification, 'verify').resolves();
-      this.sandbox.stub(createDeferredClient, 'create').resolves(this.client);
-      this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
+
+      jest.spyOn(basicComponentVerification, 'verify').mockResolvedValue(null);
+      jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.client);
     });
 
-    it('returns a promise when no callback is provided', function () {
-      var promise = create({client: this.client});
+    it('verifies with basicComponentVerification', () => {
+      const client = testContext.client;
 
-      expect(promise).to.be.an.instanceof(Promise);
-    });
+      jest.spyOn(PayPal.prototype, '_initialize').mockResolvedValue(null);
 
-    it('verifies with basicComponentVerification', function (done) {
-      var client = this.client;
-
-      this.sandbox.stub(PayPal.prototype, '_initialize').resolves();
-
-      create({
+      return create({
         client: client
-      }, function () {
-        expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWithMatch({
+      }).then(() => {
+        expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+        expect(basicComponentVerification.verify).toHaveBeenCalledWith({
           name: 'PayPal',
           client: client
         });
-        done();
       });
     });
 
-    it('can create with an authorization instead of a client', function (done) {
-      this.sandbox.stub(PayPal.prototype, '_initialize').resolves();
+    it('can create with an authorization instead of a client', () => {
+      jest.spyOn(PayPal.prototype, '_initialize').mockResolvedValue(null);
 
-      create({
+      return create({
         authorization: fake.clientToken,
         debug: true
-      }, function (err) {
-        expect(err).not.to.exist;
-
-        expect(createDeferredClient.create).to.be.calledOnce;
-        expect(createDeferredClient.create).to.be.calledWith({
+      }).then(() => {
+        expect(createDeferredClient.create).toHaveBeenCalledTimes(1);
+        expect(createDeferredClient.create.mock.calls[0][0].client).toBeUndefined();
+        expect(createDeferredClient.create).toHaveBeenCalledWith({
           authorization: fake.clientToken,
-          client: this.sandbox.match.typeOf('undefined'),
           debug: true,
           assetsUrl: 'https://example.com/assets',
           name: 'PayPal'
         });
 
-        expect(PayPal.prototype._initialize).to.be.calledOnce;
-
-        done();
-      }.bind(this));
-    });
-
-    it('errors out if paypal is not enabled for the merchant', function (done) {
-      this.configuration.gatewayConfiguration.paypalEnabled = false;
-
-      create({client: this.client}, function (err, thingy) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('PAYPAL_NOT_ENABLED');
-        expect(err.message).to.equal('PayPal is not enabled for this merchant.');
-        expect(thingy).not.to.exist;
-        done();
+        expect(PayPal.prototype._initialize).toHaveBeenCalledTimes(1);
       });
     });
 
-    it('sends an analytics event', function (done) {
-      var client = this.client;
+    it('rejects if paypal is not enabled for the merchant', () => {
+      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
 
-      this.sandbox.stub(PayPal.prototype, '_initialize').resolves();
+      return create({ client: testContext.client }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('PAYPAL_NOT_ENABLED');
+        expect(err.message).toBe('PayPal is not enabled for this merchant.');
+      });
+    });
 
-      create({client: client}, function (err) {
-        expect(err).not.to.exist;
-        expect(analytics.sendEvent).to.be.calledWith(client, 'paypal.initialized');
+    it('sends an analytics event', () => {
+      const client = testContext.client;
 
-        done();
+      jest.spyOn(PayPal.prototype, '_initialize').mockResolvedValue(null);
+
+      return create({ client: client }).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.initialized');
       });
     });
   });
 
-  describe('isSupported', function () {
-    it('returns true', function () {
-      expect(isSupported()).to.be.true;
+  describe('isSupported', () => {
+    it('returns true', () => {
+      expect(isSupported()).toBe(true);
     });
   });
 });

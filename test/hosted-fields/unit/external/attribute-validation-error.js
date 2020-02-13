@@ -1,9 +1,9 @@
 'use strict';
 
-var BraintreeError = require('../../../../src/lib/braintree-error');
-var attributeValidationError = require('../../../../src/hosted-fields/external/attribute-validation-error');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const attributeValidationError = require('../../../../src/hosted-fields/external/attribute-validation-error');
 
-var testCases = {
+const testCases = {
   stringType: {
     supportedAttributes: [
       'placeholder'
@@ -42,130 +42,46 @@ var testCases = {
   },
   shared: {
     invalidValues: {
-      object: {foo: 'bar'},
-      'function': function () { throw new Error('this is evil'); },
+      object: { foo: 'bar' },
+      'function': () => {
+        throw new Error('this is evil');
+      },
       array: [1, 2, 3]
     }
   }
 };
 
-describe('attributeValidationError', function () {
-  it('returns an error for attributes not in allowed list', function (done) {
-    var err;
+describe('attributeValidationError', () => {
+  it('returns an error for attributes not in allowed list', done => {
+    let err;
 
     err = attributeValidationError('garbage', true);
 
-    expect(err).to.be.an.instanceof(BraintreeError);
-    expect(err.type).to.equal('MERCHANT');
-    expect(err.code).to.equal('HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED');
-    expect(err.message).to.equal('The "garbage" attribute is not supported in Hosted Fields.');
-    expect(err.details).not.to.exist;
+    expect(err).toBeInstanceOf(BraintreeError);
+    expect(err.type).toBe('MERCHANT');
+    expect(err.code).toBe('HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED');
+    expect(err.message).toBe('The "garbage" attribute is not supported in Hosted Fields.');
+    expect(err.details).not.toBeDefined();
 
     done();
   });
 
-  describe('string attributes', function () {
-    testCases.stringType.supportedAttributes.forEach(function (attribute) {
-      describe(attribute, function () {
-        Object.keys(testCases.stringType.validValues).forEach(function (valueDescription) {
-          it('does not return an error for ' + valueDescription, function (done) {
-            var err, value;
+  describe.each([['string'], ['boolean']])('%s attributes', (type) => {
+    describe.each(testCases[`${type}Type`].supportedAttributes)(`${type} attributes: %s`, (attribute) => {
+      const invalidValues = Object.entries(testCases[`${type}Type`].invalidValues).concat(Object.entries(testCases.shared.invalidValues));
 
-            value = testCases.stringType.validValues[valueDescription];
-            err = attributeValidationError(attribute, value);
-
-            expect(err).not.to.exist;
-
-            done();
-          });
-        });
-
-        Object.keys(testCases.stringType.invalidValues).forEach(function (valueDescription) {
-          it('returns an error for ' + valueDescription, function (done) {
-            var err, value;
-
-            value = testCases.stringType.invalidValues[valueDescription];
-            err = attributeValidationError(attribute, value);
-
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal('MERCHANT');
-            expect(err.code).to.equal('HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED');
-            expect(err.message).to.equal('Value "' + value + '" is not allowed for "' + attribute + '" attribute.');
-            expect(err.details).not.to.exist;
-
-            done();
-          });
-        });
-
-        Object.keys(testCases.shared.invalidValues).forEach(function (valueDescription) {
-          it('returns an error for ' + valueDescription, function (done) {
-            var err, value;
-
-            value = testCases.shared.invalidValues[valueDescription];
-            err = attributeValidationError(attribute, value);
-
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal('MERCHANT');
-            expect(err.code).to.equal('HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED');
-            expect(err.message).to.equal('Value "' + value + '" is not allowed for "' + attribute + '" attribute.');
-            expect(err.details).not.to.exist;
-
-            done();
-          });
-        });
+      it.each(Object.entries(testCases[`${type}Type`].validValues))('does not return an error for %s', (valueDescription, value) => {
+        expect(attributeValidationError(attribute, value)).not.toBeDefined();
       });
-    });
-  });
 
-  describe('boolean attributes', function () {
-    testCases.booleanType.supportedAttributes.forEach(function (attribute) {
-      describe(attribute, function () {
-        Object.keys(testCases.booleanType.validValues).forEach(function (valueDescription) {
-          it('does not return an error for ' + valueDescription, function (done) {
-            var err, value;
+      it.each(invalidValues)('returns an error for %s', (valueDescription, value) => {
+        const err = attributeValidationError(attribute, value);
 
-            value = testCases.booleanType.validValues[valueDescription];
-            err = attributeValidationError(attribute, value);
-
-            expect(err).not.to.exist;
-
-            done();
-          });
-        });
-
-        Object.keys(testCases.booleanType.invalidValues).forEach(function (valueDescription) {
-          it('returns an error for ' + valueDescription, function (done) {
-            var err, value;
-
-            value = testCases.booleanType.invalidValues[valueDescription];
-            err = attributeValidationError(attribute, value);
-
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal('MERCHANT');
-            expect(err.code).to.equal('HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED');
-            expect(err.message).to.equal('Value "' + value + '" is not allowed for "' + attribute + '" attribute.');
-            expect(err.details).not.to.exist;
-
-            done();
-          });
-        });
-
-        Object.keys(testCases.shared.invalidValues).forEach(function (valueDescription) {
-          it('returns an error for ' + valueDescription, function (done) {
-            var err, value;
-
-            value = testCases.shared.invalidValues[valueDescription];
-            err = attributeValidationError(attribute, value);
-
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.equal('MERCHANT');
-            expect(err.code).to.equal('HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED');
-            expect(err.message).to.equal('Value "' + value + '" is not allowed for "' + attribute + '" attribute.');
-            expect(err.details).not.to.exist;
-
-            done();
-          });
-        });
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED');
+        expect(err.message).toBe(`Value "${value}" is not allowed for "${attribute}" attribute.`);
+        expect(err.details).not.toBeDefined();
       });
     });
   });

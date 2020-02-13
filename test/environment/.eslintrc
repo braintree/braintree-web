@@ -1,0 +1,19 @@
+{
+  "env": {
+    "es6": true,
+    "jest": true
+  },
+  "globals": {
+    "__dirname": true
+  },
+  "rules": {
+    "object-curly-spacing": [
+      "error",
+      "always",
+      {
+        "arraysInObjects": false,
+        "objectsInObjects": false
+      }
+    ]
+  }
+}

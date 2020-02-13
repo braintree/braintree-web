@@ -1,14 +1,14 @@
 'use strict';
 
-var client = require('../../../src/client');
-var packageVersion = require('../../../package.json').version;
+const client = require('../../../src/client');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(client.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(client.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(client.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(client.VERSION).toBe(packageVersion);
   });
 });

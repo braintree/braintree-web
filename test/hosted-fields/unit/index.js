@@ -1,81 +1,87 @@
 'use strict';
 
-var Bus = require('../../../src/lib/bus');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var Promise = require('../../../src/lib/promise');
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var events = require('../../../src/hosted-fields/shared/constants').events;
-var hostedFields = require('../../../src/hosted-fields');
-var HostedFields = require('../../../src/hosted-fields/external/hosted-fields');
-var fake = require('../../helpers/fake');
+jest.mock('../../../src/lib/basic-component-verification');
 
-function callFrameReadyHandler() {
-  setTimeout(function () { // allow hosted fields to begin set up before finding bus handler
-    var frameReadyHandler = Bus.prototype.on.withArgs(events.FRAME_READY).getCall(0).args[1];
+const Bus = require('../../../src/lib/bus');
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const { events } = require('../../../src/hosted-fields/shared/constants');
+const hostedFields = require('../../../src/hosted-fields');
+const HostedFields = require('../../../src/hosted-fields/external/hosted-fields');
+const { fake: { client: fakeClient, clientToken }, noop, findFirstEventCallback } = require('../../helpers');
 
-    frameReadyHandler({field: 'cvv'}, function () {});
-  }, 100);
-}
+describe('hostedFields', () => {
+  let testContext;
 
-describe('hostedFields', function () {
-  describe('create', function () {
-    beforeEach(function () {
-      this.fakeClient = fake.client();
-      this.fakeAuthorization = fake.clientToken;
-      this.fakeClient._request = function () {};
-      this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+  function callFrameReadyHandler() {
+    setTimeout(() => { // allow hosted fields to begin set up before finding bus handler
+      const frameReadyHandler = findFirstEventCallback(events.FRAME_READY, Bus.prototype.on.mock.calls);
+
+      frameReadyHandler({ field: 'cvv' }, noop);
+    }, 100);
+  }
+
+  beforeEach(() => {
+    testContext = {};
+  });
+
+  describe('create', () => {
+    beforeEach(() => {
+      testContext.fakeClient = fakeClient();
+      testContext.fakeAuthorization = clientToken;
+      testContext.fakeClient._request = noop;
     });
 
-    it('verifies with basicComponentVerification with client', function (done) {
-      var client = this.fakeClient;
+    it('verifies with basicComponentVerification with client', done => {
+      const client = testContext.fakeClient;
 
       hostedFields.create({
-        client: client,
+        client,
         fields: {
-          cvv: {selector: '#cvv'}
+          cvv: { selector: '#cvv' }
         }
-      }, function () {
-        expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWithMatch({
+      }, () => {
+        expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+        expect(basicComponentVerification.verify).toHaveBeenCalledWith({
           name: 'Hosted Fields',
-          client: client
+          client
         });
         done();
       });
     });
 
-    it('verifies with basicComponentVerification with authorization', function (done) {
-      var authorization = this.fakeAuthorization;
+    it('verifies with basicComponentVerification with authorization', done => {
+      const authorization = testContext.fakeAuthorization;
 
       hostedFields.create({
-        authorization: authorization,
+        authorization,
         fields: {
-          cvv: {selector: '#cvv'}
+          cvv: { selector: '#cvv' }
         }
-      }, function () {
-        expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWithMatch({
+      }, () => {
+        expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+        expect(basicComponentVerification.verify).toHaveBeenCalledWith({
           name: 'Hosted Fields',
-          authorization: authorization
+          authorization
         });
         done();
       });
     });
 
-    it('instantiates a Hosted Fields integration', function (done) {
-      var cvvNode = document.createElement('div');
+    it('instantiates a Hosted Fields integration', done => {
+      const cvvNode = document.createElement('div');
 
       cvvNode.id = 'cvv';
       document.body.appendChild(cvvNode);
 
       hostedFields.create({
-        client: this.fakeClient,
+        client: testContext.fakeClient,
         fields: {
-          cvv: {selector: '#cvv'}
+          cvv: { selector: '#cvv' }
         }
-      }, function (err, thingy) {
-        expect(err).not.to.exist;
-        expect(thingy).to.be.an.instanceof(HostedFields);
+      }, (err, thingy) => {
+        expect(err).toBeFalsy();
+        expect(thingy).toBeInstanceOf(HostedFields);
 
         done();
       });
@@ -83,62 +89,82 @@ describe('hostedFields', function () {
       callFrameReadyHandler();
     });
 
-    it('calls callback with timeout error', function (done) {
-      var cvvNode = document.createElement('div');
+    it('calls callback with timeout error', done => {
+      const cvvNode = document.createElement('div');
 
-      this.sandbox.stub(HostedFields.prototype, 'on').withArgs('timeout').yields();
+      jest.spyOn(HostedFields.prototype, 'on').mockImplementation((event, callback) => {
+        if (event === 'timeout') {
+          callback();
+        }
+      });
+
       cvvNode.id = 'cvv';
       document.body.appendChild(cvvNode);
 
       hostedFields.create({
-        client: this.fakeClient,
+        client: testContext.fakeClient,
         fields: {
-          cvv: {selector: '#cvv'}
+          cvv: { selector: '#cvv' }
         }
-      }, function (err, thingy) {
-        expect(thingy).to.not.exist;
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.code).to.equal('HOSTED_FIELDS_TIMEOUT');
-        expect(err.type).to.equal('UNKNOWN');
-        expect(err.message).to.equal('Hosted Fields timed out when attempting to set up.');
+      }, (err, thingy) => {
+        expect(thingy).toBeFalsy();
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('HOSTED_FIELDS_TIMEOUT');
+        expect(err.type).toBe('UNKNOWN');
+        expect(err.message).toBe('Hosted Fields timed out when attempting to set up.');
 
+        HostedFields.prototype.on.mockRestore();
         done();
       });
     });
 
-    it('returns a promise', function () {
-      var promise;
-      var cvvNode = document.createElement('div');
+    it('returns a promise', () => {
+      /*
+        I think there's some weirdness going on with a conflict in globals
+        https://github.com/facebook/jest/issues/2549
+
+        Current test results:
+        expect(promise).toBeInstanceOf(Promise);
+
+        Error: expect(received).toBeInstanceOf(expected)
+
+        Expected constructor: Promise
+        Received constructor: Promise
+      */
+
+      let promise;
+      const cvvNode = document.createElement('div');
 
       cvvNode.id = 'cvv';
       document.body.appendChild(cvvNode);
 
       promise = hostedFields.create({
-        client: this.fakeClient,
+        client: testContext.fakeClient,
         fields: {
-          cvv: {selector: '#cvv'}
+          cvv: { selector: '#cvv' }
         }
       });
 
-      expect(promise).to.be.an.instanceof(Promise);
+      expect(promise.then).toStrictEqual(expect.any(Function));
+      expect(promise.catch).toStrictEqual(expect.any(Function));
     });
 
-    it('returns error if hosted fields integration throws an error', function (done) {
+    it('returns error if hosted fields integration throws an error', done => {
       hostedFields.create({
         fields: {
-          cvv: {selector: '#cvv'}
+          cvv: { selector: '#cvv' }
         }
-      }, function (err) {
-        expect(err).to.exist;
+      }, err => {
+        expect(err).toBeDefined();
 
         done();
       });
     });
   });
 
-  describe('supportsInputFormatting', function () {
-    it('returns a boolean', function () {
-      expect(hostedFields.supportsInputFormatting()).to.be.a('boolean');
+  describe('supportsInputFormatting', () => {
+    it('returns a boolean', () => {
+      expect(typeof hostedFields.supportsInputFormatting()).toBe('boolean');
     });
   });
 });

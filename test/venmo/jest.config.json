@@ -1,0 +1,15 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/venmo/coverage",
+  "displayName": "venmo",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/venmo",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/venmo"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js"
+  ]
+}

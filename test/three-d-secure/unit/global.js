@@ -1,10 +1,20 @@
 'use strict';
 
-var Bus = require('../../../src/lib/bus');
+jest.mock('../../../src/lib/analytics');
+jest.mock('../../../src/lib/bus');
 
-beforeEach(function () {
-  this.sandbox.stub(Bus.prototype, 'on');
-  this.sandbox.stub(Bus.prototype, 'off');
-  this.sandbox.stub(Bus.prototype, 'emit');
-  this.sandbox.stub(Bus.prototype, 'teardown');
+const Bus = require('../../../src/lib/bus');
+
+/*
+// for debugging uncaught promise rejections.
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise);
+});
+*/
+
+beforeEach(() => {
+  jest.spyOn(Bus.prototype, 'on');
+  jest.spyOn(Bus.prototype, 'off');
+  jest.spyOn(Bus.prototype, 'emit');
+  jest.spyOn(Bus.prototype, 'teardown');
 });

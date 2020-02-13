@@ -1,0 +1,15 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/masterpass/coverage",
+  "displayName": "masterpass",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/masterpass",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/masterpass"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js"
+  ]
+}

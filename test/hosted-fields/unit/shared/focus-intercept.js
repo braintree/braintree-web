@@ -1,200 +1,218 @@
 'use strict';
 
-var browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
-var focusIntercept = require('../../../../src/hosted-fields/shared/focus-intercept');
-var directions = require('../../../../src/hosted-fields/shared/constants').navigationDirections;
+jest.mock('../../../../src/hosted-fields/shared/browser-detection');
 
-var DOCUMENT_FRAGMENT_NODE_TYPE = 11;
-var ELEMENT_NODE_TYPE = 1;
+const browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
+const focusIntercept = require('../../../../src/hosted-fields/shared/focus-intercept');
+const { navigationDirections: directions } = require('../../../../src/hosted-fields/shared/constants');
+const { triggerEvent } = require('../helpers');
 
-describe('focusIntercept', function () {
-  beforeEach(function () {
-    this.sandbox.stub(browserDetection, 'hasSoftwareKeyboard').returns(true);
+const DOCUMENT_FRAGMENT_NODE_TYPE = 11;
+const ELEMENT_NODE_TYPE = 1;
+
+describe('focusIntercept', () => {
+  beforeEach(() => {
+    browserDetection.hasSoftwareKeyboard.mockReturnValue(true);
   });
 
-  describe('generate', function () {
-    context('on targeted devices', function () {
-      it('adds focus intercept input to page for Firefox', function () {
-        var input;
+  describe('generate', () => {
+    describe('on targeted devices', () => {
+      it('adds focus intercept input to page for Firefox', () => {
+        let input;
 
-        browserDetection.hasSoftwareKeyboard.returns(false);
-        this.sandbox.stub(browserDetection, 'isFirefox').returns(true);
+        browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
+        browserDetection.isFirefox.mockReturnValue(true);
 
-        input = focusIntercept.generate('type', 'direction', this.sandbox.stub());
+        input = focusIntercept.generate('type', 'direction', jest.fn());
 
-        expect(input.nodeType).to.equal(ELEMENT_NODE_TYPE);
+        expect(input.nodeType).toBe(ELEMENT_NODE_TYPE);
       });
 
-      it('adds focus intercept input to page for IE', function () {
-        var input;
+      it('adds focus intercept input to page for IE', () => {
+        let input;
 
-        browserDetection.hasSoftwareKeyboard.returns(false);
-        this.sandbox.stub(browserDetection, 'isIE').returns(true);
+        browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
+        browserDetection.isIE.mockReturnValue(true);
 
-        input = focusIntercept.generate('type', 'direction', this.sandbox.stub());
+        input = focusIntercept.generate('type', 'direction', jest.fn());
 
-        expect(input.nodeType).to.equal(ELEMENT_NODE_TYPE);
+        expect(input.nodeType).toBe(ELEMENT_NODE_TYPE);
       });
 
-      it('has the expected attributes', function () {
-        var input = focusIntercept.generate('type', 'direction', this.sandbox.stub());
+      it('has the expected attributes', () => {
+        const input = focusIntercept.generate('type', 'direction', jest.fn());
 
-        expect(input.getAttribute('aria-hidden')).to.be.string('true');
-        expect(input.getAttribute('autocomplete')).to.be.string('off');
-        expect(input.getAttribute('class')).to.be.string(' focus-intercept');
-        expect(input.getAttribute('data-braintree-direction')).to.be.string('direction');
-        expect(input.getAttribute('data-braintree-type')).to.be.string('type');
-        expect(input.getAttribute('id')).to.be.string('bt-type-direction');
-        expect(input.getAttribute('style')).to.be.string('border:none !important;display:block !important;height:1px !important;left:-1px !important;opacity:0 !important;position:absolute !important;top:-1px !important;width:1px !important');
+        expect(input.getAttribute('aria-hidden')).toContain('true');
+        expect(input.getAttribute('autocomplete')).toContain('off');
+        expect(input.getAttribute('class')).toContain(' focus-intercept');
+        expect(input.getAttribute('data-braintree-direction')).toContain('direction');
+        expect(input.getAttribute('data-braintree-type')).toContain('type');
+        expect(input.getAttribute('id')).toContain('bt-type-direction');
+        expect(input.getAttribute('style')).toContain(
+          'border:none !important;display:block !important;height:1px !important;left:-1px !important;opacity:0 !important;position:absolute !important;top:-1px !important;width:1px !important'
+        );
       });
 
-      it('adds event handlers to inputs', function (done) {
-        var input = focusIntercept.generate('cvv', directions.BACK, function (event) {
-          expect(event.target.getAttribute('id')).to.be.string('bt-cvv-' + directions.BACK);
-          expect(event.type).to.be.string('focus');
+      it('adds event handlers to inputs', done => {
+        const input = focusIntercept.generate('cvv', directions.BACK, event => {
+          expect(event.target.getAttribute('id')).toContain(`bt-cvv-${directions.BACK}`);
+          expect(event.type).toContain('focus');
           done();
         });
 
-        global.triggerEvent('focus', input);
+        triggerEvent('focus', input);
       });
 
-      it('does not blur the input when on a browser with a softrware keyboard', function (done) {
-        var input = focusIntercept.generate('cvv', directions.BACK, function () {
+      it('does not blur the input when on a browser with a software keyboard', done => {
+        const input = focusIntercept.generate('cvv', directions.BACK, () => {
           // would happen after the handler is called
-          setTimeout(function () {
-            expect(input.blur).to.not.be.called;
+          setTimeout(() => {
+            expect(input.blur).not.toBeCalled();
             done();
           }, 1);
         });
 
-        browserDetection.hasSoftwareKeyboard.returns(true);
-        this.sandbox.stub(input, 'blur');
+        browserDetection.hasSoftwareKeyboard.mockReturnValue(true);
+        jest.spyOn(input, 'blur').mockReturnValue(null);
 
-        global.triggerEvent('focus', input);
+        triggerEvent('focus', input);
       });
 
-      it('does blur the input when on a browser without a softrware keyboard', function (done) {
-        var input = focusIntercept.generate('cvv', directions.BACK, function () {
+      it('does blur the input when on a browser without a software keyboard', done => {
+        const input = focusIntercept.generate('cvv', directions.BACK, () => {
           // happens after the handler is called
-          setTimeout(function () {
-            expect(input.blur).to.be.calledOnce;
+          setTimeout(() => {
+            expect(input.blur).toHaveBeenCalledTimes(1);
             done();
           }, 1);
         });
 
-        browserDetection.hasSoftwareKeyboard.returns(false);
-        this.sandbox.stub(input, 'blur');
+        browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
+        jest.spyOn(input, 'blur').mockReturnValue(null);
 
-        global.triggerEvent('focus', input);
+        triggerEvent('focus', input);
       });
     });
 
-    context('on devices that do not require focus intercepts', function () {
-      beforeEach(function () {
-        browserDetection.hasSoftwareKeyboard.returns(false);
-        this.sandbox.stub(browserDetection, 'isFirefox').returns(false);
-        this.sandbox.stub(browserDetection, 'isIE').returns(false);
+    describe('on devices that do not require focus intercepts', () => {
+      beforeEach(() => {
+        browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
+        browserDetection.isFirefox.mockReturnValue(false);
+        browserDetection.isIE.mockReturnValue(false);
       });
 
-      it('returns an empty document fragment', function () {
-        expect(focusIntercept.generate().nodeType).to.equal(DOCUMENT_FRAGMENT_NODE_TYPE);
+      it('returns an empty document fragment', () => {
+        expect(focusIntercept.generate().nodeType).toBe(DOCUMENT_FRAGMENT_NODE_TYPE);
       });
     });
   });
 
-  describe('destroy', function () {
-    it('does nothing if there are not focusIntercept inputs to destroy', function () {
-      this.sandbox.spy(Node.prototype, 'removeChild');
+  describe('destroy', () => {
+    it('does nothing if there are not focusIntercept inputs to destroy', () => {
+      jest.spyOn(Node.prototype, 'removeChild');
       focusIntercept.destroy();
 
-      expect(Node.prototype.removeChild).not.to.be.called;
+      expect(Node.prototype.removeChild).not.toBeCalled();
     });
 
-    context('on targeted devices', function () {
-      it('removes the desired focusInput when called with an ID string', function () {
-        document.body.appendChild(focusIntercept.generate('cvv', directions.FORWARD, this.sandbox.stub()));
+    describe('on targeted devices', () => {
+      let testContext;
 
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(1);
-        focusIntercept.destroy('bt-cvv-' + directions.FORWARD);
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(0);
+      beforeEach(() => {
+        testContext = {};
+
+        testContext.form = document.createElement('form');
+        document.body.appendChild(testContext.form);
       });
 
-      it('removes the desired internal focusInput when called with an ID string', function () {
-        document.body.appendChild(focusIntercept.generate('cvv', directions.FORWARD, this.sandbox.stub()));
-
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(1);
-        focusIntercept.destroy('bt-cvv-' + directions.FORWARD);
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(0);
+      afterEach(() => {
+        document.body.removeChild(testContext.form);
       });
 
-      it('does not remove anything when argument does not match existing element', function () {
-        document.body.appendChild(focusIntercept.generate('cvv', directions.BACK, this.sandbox.stub()));
+      it('removes the desired focusInput when called with an ID string', () => {
+        testContext.form.appendChild(focusIntercept.generate('cvv', directions.FORWARD, jest.fn()));
 
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(1);
-        focusIntercept.destroy('bt-number-' + directions.FORWARD);
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(1);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(1);
+        focusIntercept.destroy(`bt-cvv-${directions.FORWARD}`);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(0);
       });
 
-      it('removes all focusIntercept inputs when called without an ID string', function () {
-        document.body.appendChild(focusIntercept.generate('number', directions.BACK, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('number', directions.FORWARD, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('expirationDate', directions.BACK, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('expirationDate', directions.FORWARD, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('cvv', directions.BACK, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('cvv', directions.FORWARD, this.sandbox.stub()));
+      it('removes the desired internal focusInput when called with an ID string', () => {
+        testContext.form.appendChild(focusIntercept.generate('cvv', directions.FORWARD, jest.fn()));
 
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(6);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(1);
+        focusIntercept.destroy(`bt-cvv-${directions.FORWARD}`);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(0);
+      });
+
+      it('does not remove anything when argument does not match existing element', () => {
+        testContext.form.appendChild(focusIntercept.generate('cvv', directions.BACK, jest.fn()));
+
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(1);
+        focusIntercept.destroy(`bt-number-${directions.FORWARD}`);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(1);
+      });
+
+      it('removes all focusIntercept inputs when called without an ID string', () => {
+        testContext.form.appendChild(focusIntercept.generate('number', directions.BACK, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('number', directions.FORWARD, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('expirationDate', directions.BACK, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('expirationDate', directions.FORWARD, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('cvv', directions.BACK, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('cvv', directions.FORWARD, jest.fn()));
+
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(6);
         focusIntercept.destroy();
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(0);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(0);
       });
 
-      it('removes all focusIntercept inputs when called with a falsy value', function () {
-        document.body.appendChild(focusIntercept.generate('number', directions.BACK, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('number', directions.FORWARD, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('expirationDate', directions.BACK, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('expirationDate', directions.FORWARD, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('cvv', directions.BACK, this.sandbox.stub()));
-        document.body.appendChild(focusIntercept.generate('cvv', directions.FORWARD, this.sandbox.stub()));
+      it('removes all focusIntercept inputs when called with a falsy value', () => {
+        testContext.form.appendChild(focusIntercept.generate('number', directions.BACK, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('number', directions.FORWARD, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('expirationDate', directions.BACK, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('expirationDate', directions.FORWARD, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('cvv', directions.BACK, jest.fn()));
+        testContext.form.appendChild(focusIntercept.generate('cvv', directions.FORWARD, jest.fn()));
 
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(6);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(6);
         focusIntercept.destroy(null);
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(0);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(0);
       });
 
-      it('does not remove element with ID that matches argument but is not a focusIntercept', function () {
-        var protectedElement = document.createElement('input');
+      it('does not remove element with ID that matches argument but is not a focusIntercept', () => {
+        const protectedElement = document.createElement('input');
 
         protectedElement.setAttribute('aria-hidden', 'true');
         protectedElement.setAttribute('autocomplete', 'off');
         protectedElement.setAttribute('class', ' focus-intercept');
         protectedElement.setAttribute('id', 'do-not-destroy-me');
 
-        document.body.appendChild(focusIntercept.generate('number', directions.BACK, this.sandbox.stub()));
-        document.body.appendChild(protectedElement);
-        document.body.appendChild(focusIntercept.generate('number', directions.FORWARD, this.sandbox.stub()));
+        testContext.form.appendChild(focusIntercept.generate('number', directions.BACK, jest.fn()));
+        testContext.form.appendChild(protectedElement);
+        testContext.form.appendChild(focusIntercept.generate('number', directions.FORWARD, jest.fn()));
 
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(3);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(3);
         focusIntercept.destroy('do-not-destroy-me');
-        expect(document.getElementsByClassName('focus-intercept')).to.have.length(3);
+        expect(document.getElementsByClassName('focus-intercept')).toHaveLength(3);
       });
     });
   });
 
-  describe('match', function () {
-    it('returns true when passed in a string matching focusIntercept ids', function () {
-      expect(focusIntercept.matchFocusElement('bt-cvv-' + directions.FORWARD)).to.equal(true);
+  describe('match', () => {
+    it('returns true when passed in a string matching focusIntercept ids', () => {
+      expect(focusIntercept.matchFocusElement(`bt-cvv-${directions.FORWARD}`)).toBe(true);
     });
 
-    it('returns false when no id is passed in', function () {
-      expect(focusIntercept.matchFocusElement()).to.equal(false);
+    it('returns false when no id is passed in', () => {
+      expect(focusIntercept.matchFocusElement()).toBe(false);
     });
 
-    it('returns false when passed in a string that does not contain an allowed field', function () {
-      expect(focusIntercept.matchFocusElement('bt-name-' + directions.FORWARD)).to.equal(false);
+    it('returns false when passed in a string that does not contain an allowed field', () => {
+      expect(focusIntercept.matchFocusElement(`bt-name-${directions.FORWARD}`)).toBe(false);
     });
 
-    it('returns false when passed in a string that does not match focusIntercept ids', function () {
-      expect(focusIntercept.matchFocusElement('bring-me-a-popsicle')).to.equal(false);
+    it('returns false when passed in a string that does not match focusIntercept ids', () => {
+      expect(focusIntercept.matchFocusElement('bring-me-a-popsicle')).toBe(false);
     });
   });
 });

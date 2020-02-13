@@ -1,73 +1,64 @@
 'use strict';
 
-var Promise = require('../../../src/lib/promise');
-var basicComponentVerification = require('../../../src/lib/basic-component-verification');
-var createDeferredClient = require('../../../src/lib/create-deferred-client');
-var createAssetsUrl = require('../../../src/lib/create-assets-url');
-var create = require('../../../src/american-express').create;
-var AmericanExpress = require('../../../src/american-express/american-express');
-var fake = require('../../helpers/fake');
+jest.mock('../../../src/lib/basic-component-verification');
+jest.mock('../../../src/lib/create-assets-url');
+jest.mock('../../../src/lib/create-deferred-client');
 
-describe('americanExpress', function () {
-  describe('create', function () {
-    beforeEach(function () {
-      this.fakeClient = fake.client();
-      this.sandbox.stub(createDeferredClient, 'create').resolves(this.fakeClient);
-      this.sandbox.stub(createAssetsUrl, 'create').returns('https://example.com/assets');
-      this.sandbox.stub(basicComponentVerification, 'verify').resolves();
+const basicComponentVerification = require('../../../src/lib/basic-component-verification');
+const createDeferredClient = require('../../../src/lib/create-deferred-client');
+const { create } = require('../../../src/american-express');
+const AmericanExpress = require('../../../src/american-express/american-express');
+const { fake: { client: fakeClient, clientToken }} = require('../../helpers');
+
+describe('americanExpress', () => {
+  let testContext = {};
+
+  afterEach(() => {
+    testContext = {};
+  });
+
+  describe('create', () => {
+    beforeEach(() => {
+      testContext.fakeClient = fakeClient();
+      jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.fakeClient);
     });
 
-    it('returns a promise', function () {
-      var promise = create({client: this.fakeClient});
+    it('returns a promise', () => {
+      const promise = create({ client: testContext.fakeClient });
 
-      expect(promise).to.be.an.instanceof(Promise);
+      expect(promise).resolves.toBeInstanceOf(AmericanExpress);
     });
 
-    it('verifies with basicComponentVerification', function (done) {
-      var client = this.fakeClient;
-
-      create({
-        client: client
-      }, function () {
-        expect(basicComponentVerification.verify).to.be.calledOnce;
-        expect(basicComponentVerification.verify).to.be.calledWithMatch({
+    it('verifies with basicComponentVerification', () => {
+      return create({ client: testContext.fakeClient }).then(() => {
+        expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+        expect(basicComponentVerification.verify).toHaveBeenCalledWith(expect.objectContaining({
           name: 'American Express',
-          client: client
-        });
-        done();
+          client: testContext.fakeClient
+        }));
       });
     });
 
-    it('can create with an authorization instead of a client', function (done) {
+    it('can create with an authorization instead of a client', () =>
       create({
-        authorization: fake.clientToken,
+        authorization: clientToken,
         debug: true
-      }, function (err, amex) {
-        expect(err).not.to.exist;
-
-        expect(createDeferredClient.create).to.be.calledOnce;
-        expect(createDeferredClient.create).to.be.calledWith({
-          authorization: fake.clientToken,
-          client: this.sandbox.match.typeOf('undefined'),
+      }).then(amex => {
+        expect(createDeferredClient.create).toHaveBeenCalledTimes(1);
+        expect(createDeferredClient.create.mock.calls[0][0].client).not.toBeDefined();
+        expect(createDeferredClient.create).toHaveBeenCalledWith({
+          authorization: clientToken,
           debug: true,
           assetsUrl: 'https://example.com/assets',
           name: 'American Express'
         });
 
-        expect(amex).to.be.an.instanceof(AmericanExpress);
+        expect(amex).toBeInstanceOf(AmericanExpress);
+      }));
 
-        done();
-      }.bind(this));
-    });
-
-    it('creates an AmericanExpress instance', function (done) {
-      create({client: this.fakeClient}, function (err, amex) {
-        expect(err).not.to.exist;
-
-        expect(amex).to.be.an.instanceof(AmericanExpress);
-
-        done();
-      });
-    });
+    it('creates an AmericanExpress instance', () =>
+      create({ client: testContext.fakeClient }).then(amex => {
+        expect(amex).toBeInstanceOf(AmericanExpress);
+      }));
   });
 });

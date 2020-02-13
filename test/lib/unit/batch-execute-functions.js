@@ -1,135 +1,133 @@
 'use strict';
 
-var batchExecuteFunctions = require('../../../src/lib/batch-execute-functions');
-var assert = require('assert');
+const batchExecuteFunctions = require('../../../src/lib/batch-execute-functions');
 
-describe('batchExecuteFunctions', function () {
-  beforeEach(function () {
-    this.syncFn = this.sandbox.spy(function () {
-      return 123;
+describe('batchExecuteFunctions', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.syncFn = jest.fn(() => 123);
+    testContext.asyncFn = jest.fn(done => {
+      process.nextTick(done);
     });
-
-    this.asyncFn = this.sandbox.spy(function (done) {
-      setTimeout(done, 10);
-    });
-
-    this.asyncFnWithError = this.sandbox.spy(function (done) {
-      setTimeout(function () {
+    testContext.asyncFnWithError = jest.fn(done => {
+      process.nextTick(() => {
         done(new Error('Error async'));
-      }, 10);
+      });
     });
   });
 
-  it('calls the callback when running 0 functions', function (done) {
+  it('calls the callback when running 0 functions', done => {
     batchExecuteFunctions([], done);
   });
 
-  it('calls the callback when running 1 synchronous function', function (done) {
-    var fn = this.syncFn;
+  it('calls the callback when running 1 synchronous function', done => {
+    const fn = testContext.syncFn;
 
-    batchExecuteFunctions([fn], function (err) {
-      assert.equal(err, null);
-      assert(fn.calledOnce);
+    batchExecuteFunctions([fn], err => {
+      expect(err).toBeFalsy();
+      expect(fn).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls the callback when running 2 synchronous functions', function (done) {
-    var fn = this.syncFn;
+  it('calls the callback when running 2 synchronous functions', done => {
+    const fn = testContext.syncFn;
 
-    batchExecuteFunctions([fn, fn], function (err) {
-      assert.equal(err, null);
-      assert(fn.calledTwice);
+    batchExecuteFunctions([fn, fn], err => {
+      expect(err).toBeFalsy();
+      expect(fn).toHaveBeenCalledTimes(2);
       done();
     });
   });
 
-  it('calls the callback when running 1 asynchronous function', function (done) {
-    var fn = this.asyncFn;
+  it('calls the callback when running 1 asynchronous function', done => {
+    const fn = testContext.asyncFn;
 
-    batchExecuteFunctions([fn], function (err) {
-      assert.equal(err, null);
-      assert(fn.calledOnce);
+    batchExecuteFunctions([fn], err => {
+      expect(err).toBeFalsy();
+      expect(fn).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls the callback when running 2 asynchronous functions', function (done) {
-    var fn = this.asyncFn;
+  it('calls the callback when running 2 asynchronous functions', done => {
+    const fn = testContext.asyncFn;
 
-    batchExecuteFunctions([fn, fn], function (err) {
-      assert.equal(err, null);
-      assert(fn.calledTwice);
+    batchExecuteFunctions([fn, fn], err => {
+      expect(err).toBeFalsy();
+      expect(fn).toHaveBeenCalledTimes(2);
       done();
     });
   });
 
-  it('calls the callback when running 1 synchronous and 1 asynchronous function', function (done) {
-    var sync = this.syncFn;
-    var async = this.asyncFn;
+  it('calls the callback when running 1 synchronous and 1 asynchronous function', done => {
+    const sync = testContext.syncFn;
+    const async = testContext.asyncFn;
 
-    batchExecuteFunctions([sync, async], function (err) {
-      assert.equal(err, null);
-      assert(sync.calledOnce);
-      assert(async.calledOnce);
+    batchExecuteFunctions([sync, async], err => {
+      expect(err).toBeFalsy();
+      expect(sync).toHaveBeenCalledTimes(1);
+      expect(async).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls the callback when running 1 asynchronous and 1 synchronous function', function (done) {
-    var sync = this.syncFn;
-    var async = this.asyncFn;
+  it('calls the callback when running 1 asynchronous and 1 synchronous function', done => {
+    const sync = testContext.syncFn;
+    const async = testContext.asyncFn;
 
-    batchExecuteFunctions([async, sync], function (err) {
-      assert.equal(err, null);
-      assert(sync.calledOnce);
-      assert(async.calledOnce);
+    batchExecuteFunctions([async, sync], err => {
+      expect(err).toBeFalsy();
+      expect(async).toHaveBeenCalledTimes(1);
+      expect(sync).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls the callback with an error when running 1 asynchronous function with an error', function (done) {
-    var fn = this.asyncFnWithError;
+  it('calls the callback with an error when running 1 asynchronous function with an error', done => {
+    const fn = testContext.asyncFnWithError;
 
-    batchExecuteFunctions([fn], function (errs) {
-      assert.deepEqual(errs, new Error('Error sync'));
-      assert(fn.calledOnce);
+    batchExecuteFunctions([fn], errs => {
+      expect(errs).toStrictEqual(new Error('Error async'));
+      expect(fn).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls the callback with an error when running 1 asynchronous function with an error, and 1 synchronous function', function (done) {
-    var async = this.asyncFnWithError;
-    var sync = this.syncFn;
+  it('calls the callback with an error when running 1 asynchronous function with an error, and 1 synchronous function', done => {
+    const async = testContext.asyncFnWithError;
+    const sync = testContext.syncFn;
 
-    batchExecuteFunctions([async, sync], function (errs) {
-      assert.deepEqual(errs, new Error('Error sync'));
-      assert(async.calledOnce);
-      assert(sync.calledOnce);
+    batchExecuteFunctions([async, sync], errs => {
+      expect(errs).toStrictEqual(new Error('Error async'));
+      expect(sync).toHaveBeenCalledTimes(1);
+      expect(async).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls the callback with an error when running 1 synchronous function, and 1 asynchronous function with an error', function (done) {
-    var async = this.asyncFnWithError;
-    var sync = this.syncFn;
+  it('calls the callback with an error when running 1 synchronous function, and 1 asynchronous function with an error', done => {
+    const async = testContext.asyncFnWithError;
+    const sync = testContext.syncFn;
 
-    batchExecuteFunctions([sync, async], function (errs) {
-      assert.deepEqual(errs, new Error('Error sync'));
-      assert(async.calledOnce);
-      assert(sync.calledOnce);
+    batchExecuteFunctions([sync, async], errs => {
+      expect(errs).toStrictEqual(new Error('Error async'));
+      expect(async).toHaveBeenCalledTimes(1);
+      expect(sync).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls the callback with an error when running 2 asynchronous functions, 1 with an error', function (done) {
-    var async = this.asyncFn;
-    var asyncError = this.asyncFnWithError;
+  it('calls the callback with an error when running 2 asynchronous functions, 1 with an error', done => {
+    const async = testContext.asyncFn;
+    const asyncError = testContext.asyncFnWithError;
 
-    batchExecuteFunctions([asyncError, async], function (errs) {
-      assert.deepEqual(errs, new Error('Error sync'));
-      assert(asyncError.calledOnce);
-      assert(async.calledOnce);
+    batchExecuteFunctions([asyncError, async], errs => {
+      expect(errs).toStrictEqual(new Error('Error async'));
+      expect(asyncError).toHaveBeenCalledTimes(1);
+      expect(async).toHaveBeenCalledTimes(1);
       done();
     });
   });

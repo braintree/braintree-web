@@ -1,21 +1,57 @@
 'use strict';
 
-var FrameService = require('../../../../../src/lib/frame-service/external/frame-service');
-var constants = require('../../../../../src/lib/frame-service/shared/constants');
-var events = require('../../../../../src/lib/frame-service/shared/events');
-var Popup = require('../../../../../src/lib/frame-service/external/strategies/popup');
-var PopupBridge = require('../../../../../src/lib/frame-service/external/strategies/popup-bridge');
-var Modal = require('../../../../../src/lib/frame-service/external/strategies/modal');
-var BraintreeBus = require('../../../../../src/lib/bus');
-var BraintreeError = require('../../../../../src/lib/braintree-error');
-var browserDetection = require('../../../../../src/lib/frame-service/shared/browser-detection');
-var isHTTPS = require('../../../../../src/lib/is-https');
+jest.mock('../../../../../src/lib/frame-service/external/strategies/popup');
+jest.mock('../../../../../src/lib/frame-service/external/strategies/popup-bridge');
+jest.mock('../../../../../src/lib/frame-service/external/strategies/modal');
+jest.mock('../../../../../src/lib/frame-service/shared/browser-detection');
+jest.mock('../../../../../src/lib/is-https');
+jest.mock('../../../../../src/lib/bus');
 
-function noop() {}
+const FrameService = require('../../../../../src/lib/frame-service/external/frame-service');
+const { DISPATCH_FRAME_CLASS, DISPATCH_FRAME_NAME } = require('../../../../../src/lib/frame-service/shared/constants');
+const { DISPATCH_FRAME_READY, DISPATCH_FRAME_REPORT } = require('../../../../../src/lib/frame-service/shared/events');
+const Popup = require('../../../../../src/lib/frame-service/external/strategies/popup');
+const PopupBridge = require('../../../../../src/lib/frame-service/external/strategies/popup-bridge');
+const Modal = require('../../../../../src/lib/frame-service/external/strategies/modal');
+const BraintreeBus = require('../../../../../src/lib/bus');
+const BraintreeError = require('../../../../../src/lib/braintree-error');
+const browserDetection = require('../../../../../src/lib/frame-service/shared/browser-detection');
+const isHTTPS = require('../../../../../src/lib/is-https');
+const { noop, mockWindowOpen } = require('../../../../helpers');
 
-describe('FrameService', function () {
-  beforeEach(function () {
-    var gatewayConfiguration = {
+describe('FrameService', () => {
+  let testContext;
+
+  function createFakeBus() {
+    return {
+      listeners: [],
+      on: function (eventName, callback) {
+        this.listeners.push({ eventName, callback });
+      },
+      off: function (eventName) {
+        this.listeners.forEach((listener, i) => {
+          if (listener.eventName === eventName) {
+            this.listeners.splice(i, 1);
+          }
+        });
+      },
+      emit: function (eventName, payload) {
+        this.listeners.forEach(listener => {
+          if (listener.eventName === eventName) {
+            listener.callback(payload);
+          }
+        });
+      }
+    };
+  }
+
+  beforeEach(() => {
+    jest.spyOn(window, 'open')
+      .mockImplementation(mockWindowOpen);
+
+    testContext = {};
+
+    const gatewayConfiguration = {
       assetsUrl: 'https://assets',
       paypal: {
         assetsUrl: 'https://paypal.assets.url',
@@ -23,15 +59,11 @@ describe('FrameService', function () {
       }
     };
 
-    this.state = {
+    testContext.state = {
       client: {
         authorization: 'fake authorization-key',
-        gatewayConfiguration: gatewayConfiguration,
-        getConfiguration: function () {
-          return {
-            gatewayConfiguration: gatewayConfiguration
-          };
-        }
+        gatewayConfiguration,
+        getConfiguration: () => ({ gatewayConfiguration })
       },
       enableShippingAddress: true,
       amount: 10.00,
@@ -42,585 +74,449 @@ describe('FrameService', function () {
         street: '123 Townsend St'
       }
     };
-    this.options = {
-      state: this.state,
+    testContext.options = {
+      state: testContext.state,
       name: 'fake_name',
       dispatchFrameUrl: 'fake-url',
       openFrameUrl: 'fake-landing-frame-html'
     };
 
-    this.sandbox.stub(isHTTPS, 'isHTTPS').returns(true);
-    this.sandbox.stub(browserDetection, 'isIE').returns(false);
+    jest.spyOn(isHTTPS, 'isHTTPS').mockReturnValue(true);
+    jest.spyOn(browserDetection, 'isIE').mockReturnValue(false);
   });
 
-  describe('Constructor', function () {
-    describe('frameConfiguration validation', function () {
-      it('throws an error if no frameConfiguration is provided', function () {
+  describe('Constructor', () => {
+    describe('frameConfiguration validation', () => {
+      it('throws an error if no frameConfiguration is provided', () => {
         function fn() {
           return new FrameService();
         }
 
-        expect(fn).to.throw('Valid configuration is required');
+        expect(fn).toThrowError('Valid configuration is required');
       });
 
-      it('throws an error if a name is not provided', function () {
+      it('throws an error if a name is not provided', () => {
         function fn() {
-          return new FrameService({dispatchFrameUrl: 'bar'});
+          return new FrameService({ dispatchFrameUrl: 'bar' });
         }
 
-        expect(fn).to.throw('A valid frame name must be provided');
+        expect(fn).toThrowError('A valid frame name must be provided');
       });
 
-      it('throws an error if dispatchFrameUrl is not provided', function () {
+      it('throws an error if dispatchFrameUrl is not provided', () => {
         function fn() {
-          return new FrameService({name: 'foo'});
+          return new FrameService({ name: 'foo' });
         }
 
-        expect(fn).to.throw('A valid frame dispatchFrameUrl must be provided');
+        expect(fn).toThrowError('A valid frame dispatchFrameUrl must be provided');
       });
 
-      it('throws an error if a openFrameUrl is not provided', function () {
+      it('throws an error if a openFrameUrl is not provided', () => {
         function fn() {
-          return new FrameService({name: 'foo', dispatchFrameUrl: 'foo.biz'});
+          return new FrameService({ name: 'foo', dispatchFrameUrl: 'foo.biz' });
         }
 
-        expect(fn).to.throw('A valid frame openFrameUrl must be provided');
+        expect(fn).toThrowError('A valid frame openFrameUrl must be provided');
       });
 
-      [
-        'foo-bar',
-        'foo bar',
-        ' ',
-        '',
-        '!!!'
-      ].forEach(function (frame) {
-        it('throws an error if ' + frame + ' is provided as frame name', function () {
-          function fn() {
-            return new FrameService({}, {
-              url: 'bar',
-              name: frame,
-              landingFrameHTML: 'baz'
-            });
-          }
+      it.each([
+        'foo-bar', 'foo bar', ' ', '', '!!!'
+      ])('throws an error if %p is provided as frame name', name => {
+        function fn() {
+          return new FrameService({}, { url: 'bar', name, landingFrameHTML: 'baz' });
+        }
 
-          expect(fn).to.throw('A valid frame name must be provided');
-        });
+        expect(fn).toThrowError('A valid frame name must be provided');
       });
     });
 
-    it('assigns a _serviceId property', function () {
-      var frameService = new FrameService(this.options);
+    it('assigns a _serviceId property', () => {
+      const frameService = new FrameService(testContext.options);
 
-      expect(frameService._serviceId).to.exist;
+      expect(frameService._serviceId).toBeDefined();
     });
 
-    it('assigns an _options model', function () {
-      var frameService = new FrameService(this.options);
+    it('assigns an _options model', () => {
+      const { _options, _serviceId } = new FrameService(testContext.options);
 
-      expect(frameService._options.name).to.equal(this.options.name + '_' + frameService._serviceId);
-      expect(frameService._options.dispatchFrameUrl).to.equal(this.options.dispatchFrameUrl);
-      expect(frameService._options.openFrameUrl).to.equal(this.options.openFrameUrl);
+      expect(_options.name).toBe(`${testContext.options.name}_${_serviceId}`);
+      expect(_options.dispatchFrameUrl).toBe(testContext.options.dispatchFrameUrl);
+      expect(_options.openFrameUrl).toBe(testContext.options.openFrameUrl);
     });
 
-    it('can optionally assign height and width', function () {
-      var frameService;
+    it('can optionally assign height and width', () => {
+      let frameService;
 
-      this.options.height = 100;
-      this.options.width = 150;
-      frameService = new FrameService(this.options);
+      testContext.options.height = 100;
+      testContext.options.width = 150;
+      frameService = new FrameService(testContext.options);
 
-      expect(frameService._options.height).to.equal(100);
-      expect(frameService._options.width).to.equal(150);
+      expect(frameService._options.height).toBe(100);
+      expect(frameService._options.width).toBe(150);
     });
 
-    it('assigns state property', function () {
-      var frameService = new FrameService(this.options);
+    it('assigns state property', () => {
+      const { state } = new FrameService(testContext.options);
 
-      expect(frameService.state).to.deep.equal(
-        this.state
-      );
+      expect(state).toEqual(testContext.state);
     });
 
-    it('creates a bus instance', function () {
-      var frameService = new FrameService(this.options);
+    it('creates a bus instance', () => {
+      const { _bus, _serviceId } = new FrameService(testContext.options);
 
-      expect(frameService._bus).to.be.an.instanceof(BraintreeBus);
-      expect(frameService._bus.channel).to.equal(frameService._serviceId);
+      expect(_bus).toBeInstanceOf(BraintreeBus);
+      expect(_bus.channel).toBe(_serviceId);
     });
 
-    it('makes call to attach bus event listeners', function () {
-      var frameService;
+    it('makes call to attach bus event listeners', () => {
+      let frameService;
 
-      this.sandbox.stub(FrameService.prototype, '_setBusEvents');
+      jest.spyOn(FrameService.prototype, '_setBusEvents');
 
-      frameService = new FrameService(this.options);
+      frameService = new FrameService(testContext.options);
 
-      expect(frameService._setBusEvents).to.be.called;
+      expect(frameService._setBusEvents).toHaveBeenCalled();
     });
   });
 
-  describe('initialize', function () {
-    it('listens for dispatch frame to report ready', function () {
-      var context = {
-        _bus: {on: this.sandbox.stub()},
+  describe('initialize', () => {
+    it('listens for dispatch frame to report ready', () => {
+      const context = {
+        _bus: { on: jest.fn() },
         _writeDispatchFrame: noop
       };
 
       FrameService.prototype.initialize.call(context, noop);
 
-      expect(context._bus.on).to.be.calledWith(
-        events.DISPATCH_FRAME_READY,
-        this.sandbox.match.func
+      expect(context._bus.on).toHaveBeenCalledWith(
+        DISPATCH_FRAME_READY,
+        expect.any(Function)
       );
     });
 
-    it('calls callback when dispatch frame is ready', function () {
-      var fakeBus = {
-        listeners: [],
-        on: function (eventName, callback) {
-          this.listeners.push({
-            eventName: eventName,
-            callback: callback
-          });
-        },
-        off: function (eventName) {
-          this.listeners.forEach(function (listener, i) {
-            if (listener.eventName === eventName) {
-              this.listeners.splice(i, 1);
-            }
-          }.bind(this));
-        },
-        emit: function (eventName) {
-          this.listeners.forEach(function (listener) {
-            if (listener.eventName === eventName) {
-              listener.callback();
-            }
-          });
-        }
-      };
-
-      var context = {
+    it('calls callback when dispatch frame is ready', () => {
+      const fakeBus = createFakeBus();
+      const context = {
         _bus: fakeBus,
         _writeDispatchFrame: noop
       };
-      var callback = this.sandbox.stub();
+      const callback = jest.fn();
 
       FrameService.prototype.initialize.call(context, callback);
 
-      fakeBus.emit(events.DISPATCH_FRAME_READY);
-      expect(callback).to.be.called;
+      fakeBus.emit(DISPATCH_FRAME_READY);
+      expect(callback).toHaveBeenCalled();
     });
 
-    it('removes event listener once dispatched', function () {
-      var fakeBus = {
-        listeners: [],
-        on: function (eventName, callback) {
-          this.listeners.push({
-            eventName: eventName,
-            callback: callback
-          });
-        },
-        off: function (eventName) {
-          this.listeners.forEach(function (listener, i) {
-            if (listener.eventName === eventName) {
-              this.listeners.splice(i, 1);
-            }
-          }.bind(this));
-        },
-        emit: function (eventName) {
-          this.listeners.forEach(function (listener) {
-            if (listener.eventName === eventName) {
-              listener.callback();
-            }
-          });
-        }
-      };
-
-      var context = {
+    it('removes event listener once dispatched', () => {
+      const fakeBus = createFakeBus();
+      const context = {
         _bus: fakeBus,
         _writeDispatchFrame: noop
       };
-      var callback = this.sandbox.stub();
+      const callback = jest.fn();
 
       FrameService.prototype.initialize.call(context, callback);
 
-      fakeBus.emit(events.DISPATCH_FRAME_READY);
-      fakeBus.emit(events.DISPATCH_FRAME_READY);
-      fakeBus.emit(events.DISPATCH_FRAME_READY);
-      expect(callback).to.be.called;
-      expect(callback.callCount).to.equal(1);
+      fakeBus.emit(DISPATCH_FRAME_READY);
+      fakeBus.emit(DISPATCH_FRAME_READY);
+      fakeBus.emit(DISPATCH_FRAME_READY);
+      expect(callback).toHaveBeenCalled();
+      expect(callback).toHaveBeenCalledTimes(1);
     });
 
-    it('makes a call to write a dispatch frame', function () {
-      var writeDispatchFrameStub = this.sandbox.stub();
-      var context = {
-        _bus: {
-          on: noop,
-          off: noop
-        },
-        _writeDispatchFrame: writeDispatchFrameStub
-      };
+    it('makes a call to write a dispatch frame', () => {
+      const _writeDispatchFrame = jest.fn();
+      const context = { _bus: { on: noop, off: noop }, _writeDispatchFrame };
 
       FrameService.prototype.initialize.call(context, noop);
 
-      expect(writeDispatchFrameStub).to.be.called;
+      expect(_writeDispatchFrame).toHaveBeenCalled();
     });
   });
 
-  describe('_writeDispatchFrame', function () {
-    it('assigns a _dispatchFrame property on the instance', function () {
-      var frameService = new FrameService(this.options);
+  describe('_writeDispatchFrame', () => {
+    it('assigns a _dispatchFrame property on the instance', () => {
+      const frameService = new FrameService(testContext.options);
 
       frameService._writeDispatchFrame();
 
-      expect(frameService._dispatchFrame.nodeType).to.equal(1);
-      expect(frameService._dispatchFrame.getAttribute('src')).to.equal(
-        this.options.dispatchFrameUrl
-      );
-      expect(frameService._dispatchFrame.getAttribute('name')).to.equal(
-        constants.DISPATCH_FRAME_NAME + '_' + frameService._serviceId
-      );
-      expect(frameService._dispatchFrame.style.position).to.equal('absolute');
-      expect(frameService._dispatchFrame.style.left).to.equal('-9999px');
-      expect(frameService._dispatchFrame.className).to.equal(constants.DISPATCH_FRAME_CLASS);
+      expect(frameService._dispatchFrame.nodeType).toBe(1);
+      expect(frameService._dispatchFrame.getAttribute('src')).toBe(testContext.options.dispatchFrameUrl);
+      expect(frameService._dispatchFrame.getAttribute('name')).toBe(`${DISPATCH_FRAME_NAME}_${frameService._serviceId}`);
+      expect(frameService._dispatchFrame.style.position).toBe('absolute');
+      expect(frameService._dispatchFrame.style.left).toBe('-9999px');
+      expect(frameService._dispatchFrame.className).toBe(DISPATCH_FRAME_CLASS);
     });
 
-    it('writes iframe to body', function () {
-      var frameService = new FrameService(this.options);
+    it('writes iframe to body', () => {
+      const frameService = new FrameService(testContext.options);
 
-      this.sandbox.stub(document.body, 'appendChild');
+      jest.spyOn(document.body, 'appendChild');
 
       frameService._writeDispatchFrame();
 
-      expect(document.body.appendChild).to.be.calledWith(frameService._dispatchFrame);
+      expect(document.body.appendChild).toHaveBeenCalledWith(frameService._dispatchFrame);
     });
   });
 
-  describe('_setBusEvents', function () {
-    it('listens for a frame report', function () {
-      var context = {
-        _bus: {on: this.sandbox.stub()}
-      };
+  describe('_setBusEvents', () => {
+    it('listens for a frame report', () => {
+      const context = { _bus: { on: jest.fn() }};
 
       FrameService.prototype._setBusEvents.call(context);
 
-      expect(context._bus.on).to.be.calledWith(events.DISPATCH_FRAME_REPORT, this.sandbox.match.func);
+      expect(context._bus.on).toHaveBeenCalledWith(DISPATCH_FRAME_REPORT, expect.any(Function));
     });
 
-    it('listens for a configuration request', function () {
-      var context = {
-        _bus: {on: this.sandbox.stub()}
-      };
+    it('listens for a configuration request', () => {
+      const context = { _bus: { on: jest.fn() }};
 
       FrameService.prototype._setBusEvents.call(context);
 
-      expect(context._bus.on).to.be.calledWith(BraintreeBus.events.CONFIGURATION_REQUEST, this.sandbox.match.func);
+      expect(context._bus.on).toHaveBeenCalledWith(BraintreeBus.events.CONFIGURATION_REQUEST, expect.any(Function));
     });
 
-    it('calls _onCompleteCallback with provided arguments', function () {
-      var fakeBus = {
-        listeners: [],
-        on: function (eventName, callback) {
-          this.listeners.push({
-            eventName: eventName,
-            callback: callback
-          });
-        },
-        off: function (eventName) {
-          this.listeners.forEach(function (listener, i) {
-            if (listener.eventName === eventName) {
-              this.listeners.splice(i, 1);
-            }
-          }.bind(this));
-        },
-        emit: function (eventName, payload) {
-          this.listeners.forEach(function (listener) {
-            if (listener.eventName === eventName) {
-              listener.callback(payload);
-            }
-          });
-        }
-      };
-      var onCompleteCallbackPayload = null;
-      var context = {
-        _bus: fakeBus,
-        close: this.sandbox.stub(),
-        _onCompleteCallback: function (err, payload) {
+    it('calls _onCompleteCallback with provided arguments', () => {
+      let onCompleteCallbackPayload = null;
+      const context = {
+        _bus: createFakeBus(),
+        close: jest.fn(),
+        _onCompleteCallback: (err, payload) => {
           onCompleteCallbackPayload = [err, payload];
         },
-        _frame: {
-          close: this.sandbox.stub()
-        }
+        _frame: { close: jest.fn() }
       };
-      var fakeErr = 'fakeErr';
-      var fakePayload = 'fakePayload';
+      const err = 'fakeErr';
+      const payload = 'fakePayload';
 
       FrameService.prototype._setBusEvents.call(context);
 
-      context._bus.emit(events.DISPATCH_FRAME_REPORT, {
-        err: fakeErr,
-        payload: fakePayload
-      });
+      context._bus.emit(DISPATCH_FRAME_REPORT, { err, payload });
 
-      expect(onCompleteCallbackPayload).to.deep.equal([
-        fakeErr,
-        fakePayload
-      ]);
+      expect(onCompleteCallbackPayload).toEqual([err, payload]);
     });
 
-    it('sets _onCompleteCallback to null after calling', function () {
-      var fakeBus = {
-        listeners: [],
-        on: function (eventName, callback) {
-          this.listeners.push({
-            eventName: eventName,
-            callback: callback
-          });
-        },
-        off: function (eventName) {
-          this.listeners.forEach(function (listener, i) {
-            if (listener.eventName === eventName) {
-              this.listeners.splice(i, 1);
-            }
-          }.bind(this));
-        },
-        emit: function (eventName, payload) {
-          this.listeners.forEach(function (listener) {
-            if (listener.eventName === eventName) {
-              listener.callback(payload);
-            }
-          });
-        }
-      };
-      var context = {
-        _bus: fakeBus,
-        close: this.sandbox.stub(),
+    it('sets _onCompleteCallback to null after calling', () => {
+      const context = {
+        _bus: createFakeBus(),
+        close: jest.fn(),
         _onCompleteCallback: noop,
-        _frame: {
-          close: this.sandbox.stub()
-        }
+        _frame: { close: jest.fn() }
       };
 
       FrameService.prototype._setBusEvents.call(context);
 
-      context._bus.emit(events.DISPATCH_FRAME_REPORT, {err: null, payload: null});
+      context._bus.emit(DISPATCH_FRAME_REPORT, { err: null, payload: null });
 
-      expect(context._onCompleteCallback).to.equal(null);
+      expect(context._onCompleteCallback).toBeNull();
     });
   });
 
-  describe('open', function () {
-    beforeEach(function () {
-      this.oldPopupBridge = global.popupBridge;
-      delete global.popupBridge;
+  describe('open', () => {
+    beforeEach(() => {
+      delete window.popupBridge;
 
-      this.frameService = new FrameService(this.options);
-      this.fakeFrame = {
-        initialize: this.sandbox.stub(),
-        open: this.sandbox.stub(),
-        isClosed: this.sandbox.stub()
+      testContext.frameService = new FrameService(testContext.options);
+      testContext.fakeFrame = {
+        initialize: jest.fn(),
+        open: jest.fn(),
+        isClosed: jest.fn()
       };
-      this.sandbox.stub(this.frameService, '_getFrameForEnvironment').returns(this.fakeFrame);
-      this.sandbox.stub(Popup.prototype, 'open');
-      this.sandbox.stub(PopupBridge.prototype, 'open');
-      this.sandbox.stub(Modal.prototype, 'open');
+      jest.spyOn(testContext.frameService, '_getFrameForEnvironment').mockReturnValue(testContext.fakeFrame);
+      jest.spyOn(Popup.prototype, 'open');
+      jest.spyOn(PopupBridge.prototype, 'open');
+      jest.spyOn(Modal.prototype, 'open');
     });
 
-    afterEach(function () {
-      global.popupBridge = this.oldPopupBridge;
+    it('uses Modal when in a browser that does not support popups and is not using popup bridge', () => {
+      testContext.frameService._getFrameForEnvironment.mockRestore();
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
+      testContext.frameService.open();
+
+      expect(testContext.frameService._frame).toBeInstanceOf(Modal);
     });
 
-    it('uses Modal when in a browser that does not support popups and is not using popup bridge', function () {
-      this.frameService._getFrameForEnvironment.restore();
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-      this.frameService.open();
+    it('uses PopupBridge when in a browser that does not support popups and is using popup bridge', () => {
+      window.popupBridge = {};
 
-      expect(this.frameService._frame).to.be.an.instanceof(Modal);
+      testContext.frameService._getFrameForEnvironment.mockRestore();
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
+
+      testContext.frameService.open();
+
+      expect(testContext.frameService._frame).toBeInstanceOf(PopupBridge);
     });
 
-    it('uses PopupBridge when in a browser that does not support popups and is using popup bridge', function () {
-      global.popupBridge = {};
+    it('uses a Popup when the browser supports popups', () => {
+      testContext.frameService._getFrameForEnvironment.mockRestore();
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(true);
+      jest.spyOn(Popup.prototype, 'isClosed').mockReturnValue(false);
+      testContext.frameService.open();
 
-      this.frameService._getFrameForEnvironment.restore();
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-
-      this.frameService.open();
-
-      expect(this.frameService._frame).to.be.an.instanceof(PopupBridge);
+      expect(testContext.frameService._frame).toBeInstanceOf(Popup);
     });
 
-    it('uses a Popup when the browser supports popups', function () {
-      this.frameService._getFrameForEnvironment.restore();
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
-      this.sandbox.stub(Popup.prototype, 'isClosed').returns(false);
-      this.frameService.open();
+    it('maps provided callback to instance', () => {
+      const callback = jest.fn();
 
-      expect(this.frameService._frame).to.be.an.instanceof(Popup);
+      jest.spyOn(FrameService.prototype, '_pollForPopupClose');
+
+      testContext.frameService.open({}, callback);
+
+      expect(testContext.frameService._onCompleteCallback).toBe(callback);
     });
 
-    it('maps provided callback to instance', function () {
-      var callback = this.sandbox.stub();
+    it('calls the callback with error when popup fails to open', () => {
+      const callback = jest.fn();
 
-      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+      testContext.fakeFrame.isClosed.mockReturnValue(true);
 
-      this.frameService.open({}, callback);
+      testContext.frameService.open({}, callback);
 
-      expect(this.frameService._onCompleteCallback).to.equal(callback);
-    });
-
-    it('calls the callback with error when popup fails to open', function () {
-      var mockCallback = this.sandbox.stub();
-
-      this.fakeFrame.isClosed.returns(true);
-
-      this.frameService.open({}, mockCallback);
-
-      expect(mockCallback).to.be.calledWith(this.sandbox.match({
+      expect(callback.mock.calls[0][0]).toMatchObject({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
         message: 'Frame failed to open.'
-      }));
+      });
     });
 
-    it('calls the callback with IE specific error when popup failed to open in IE over not-https', function () {
-      var mockCallback = this.sandbox.stub();
+    it('calls the callback with IE specific error when popup failed to open in IE over not-https', () => {
+      const callback = jest.fn();
 
-      isHTTPS.isHTTPS.returns(false);
-      browserDetection.isIE.returns(true);
+      isHTTPS.isHTTPS.mockReturnValue(false);
+      browserDetection.isIE.mockReturnValue(true);
+      testContext.fakeFrame.isClosed.mockReturnValue(true);
 
-      this.fakeFrame.isClosed.returns(true);
+      testContext.frameService.open({}, callback);
 
-      this.frameService.open({}, mockCallback);
-
-      expect(mockCallback).to.be.calledWith(this.sandbox.match({
+      expect(callback.mock.calls[0][0]).toMatchObject({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG',
         message: 'Could not open frame. This may be due to a bug in IE browsers when attempting to open an HTTPS page from a HTTP page. https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11324352/'
-      }));
+      });
     });
 
-    it('calls the callback with generic error when browser is IE and site is using HTTPS', function () {
-      var mockCallback = this.sandbox.stub();
+    it('calls the callback with generic error when browser is IE and site is using HTTPS', () => {
+      const callback = jest.fn();
 
-      isHTTPS.isHTTPS.returns(true);
-      browserDetection.isIE.returns(true);
-      this.fakeFrame.isClosed.returns(true);
+      isHTTPS.isHTTPS.mockReturnValue(true);
+      browserDetection.isIE.mockReturnValue(true);
+      testContext.fakeFrame.isClosed.mockReturnValue(true);
 
-      this.frameService.open({}, mockCallback);
+      testContext.frameService.open({}, callback);
 
-      expect(mockCallback).to.be.calledWith(this.sandbox.match({
+      expect(callback.mock.calls[0][0]).toMatchObject({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
         message: 'Frame failed to open.'
-      }));
+      });
     });
 
-    it('calls the callback with generic error when browser is not IE and site is not using HTTPS', function () {
-      var mockCallback = this.sandbox.stub();
+    it('calls the callback with generic error when browser is not IE and site is not using HTTPS', () => {
+      const callback = jest.fn();
 
-      isHTTPS.isHTTPS.returns(false);
-      browserDetection.isIE.returns(false);
-      this.fakeFrame.isClosed.returns(true);
+      isHTTPS.isHTTPS.mockReturnValue(false);
+      browserDetection.isIE.mockReturnValue(false);
+      testContext.fakeFrame.isClosed.mockReturnValue(true);
 
-      this.frameService.open({}, mockCallback);
+      testContext.frameService.open({}, callback);
 
-      expect(mockCallback).to.be.calledWith(this.sandbox.match({
+      expect(callback.mock.calls[0][0]).toMatchObject({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
         message: 'Frame failed to open.'
-      }));
+      });
     });
 
-    it('cleans up the frame when popup fails to open', function (done) {
-      this.fakeFrame.isClosed.returns(true);
+    it('cleans up the frame when popup fails to open', done => {
+      testContext.fakeFrame.isClosed.mockReturnValue(true);
 
-      this.frameService.open({}, function () {
-        expect(this.frameService._frame).to.not.exist;
-        expect(this.frameService._popupInterval).to.not.exist;
+      testContext.frameService.open({}, () => {
+        expect(testContext.frameService._frame).toBeFalsy();
+        expect(testContext.frameService._popupInterval).toBeFalsy();
         done();
-      }.bind(this));
+      });
     });
 
-    it('uses default options if none passed', function () {
-      var callback = this.sandbox.stub();
+    it('uses default options if none passed', () => {
+      const callback = jest.fn();
 
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
-      this.sandbox.stub(FrameService.prototype, '_getFrameForEnvironment');
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
+      jest.spyOn(FrameService.prototype, '_pollForPopupClose');
+      jest.spyOn(FrameService.prototype, '_getFrameForEnvironment');
 
-      this.frameService.open(null, callback);
+      testContext.frameService.open(null, callback);
 
-      expect(this.frameService._getFrameForEnvironment).to.be.calledWith({});
+      expect(testContext.frameService._getFrameForEnvironment).toHaveBeenCalledWith({});
     });
 
-    it('override values in options with values passed in open', function () {
-      var callback = this.sandbox.stub();
-      var options = {foo: 'bar'};
+    it('override values in options with values passed in open', () => {
+      const callback = jest.fn();
+      const options = { foo: 'bar' };
 
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
-      this.sandbox.stub(FrameService.prototype, '_getFrameForEnvironment');
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
+      jest.spyOn(FrameService.prototype, '_pollForPopupClose');
+      jest.spyOn(FrameService.prototype, '_getFrameForEnvironment');
 
-      this.frameService.open(options, callback);
+      testContext.frameService.open(options, callback);
 
-      expect(this.frameService._getFrameForEnvironment).to.be.calledWith(options);
+      expect(testContext.frameService._getFrameForEnvironment).toHaveBeenCalledWith(options);
     });
 
-    it('initiates polling when frame is a Modal', function () {
-      var callback = this.sandbox.stub();
+    it('initiates polling when frame is a Modal', () => {
+      const callback = jest.fn();
 
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
+      jest.spyOn(FrameService.prototype, '_pollForPopupClose');
 
-      this.frameService.open({}, callback);
+      testContext.frameService.open({}, callback);
 
-      expect(this.frameService._pollForPopupClose).to.be.called;
+      expect(testContext.frameService._pollForPopupClose).toHaveBeenCalled();
     });
 
-    it('initiates polling when frame is a Popup', function () {
-      var callback = this.sandbox.stub();
+    it('initiates polling when frame is a Popup', () => {
+      const callback = jest.fn();
 
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(true);
-      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(true);
+      jest.spyOn(FrameService.prototype, '_pollForPopupClose');
 
-      this.frameService.open({}, callback);
+      testContext.frameService.open({}, callback);
 
-      expect(this.frameService._pollForPopupClose).to.be.called;
+      expect(testContext.frameService._pollForPopupClose).toHaveBeenCalled();
     });
 
-    it('does not initialize polling if frame is a PopupBridge', function () {
-      var callback = this.sandbox.stub();
+    it('does not initialize polling if frame is a PopupBridge', () => {
+      window.popupBridge = {};
 
-      global.popupBridge = {};
+      testContext.frameService._getFrameForEnvironment.mockRestore();
+      jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
+      jest.spyOn(FrameService.prototype, '_pollForPopupClose');
 
-      this.frameService._getFrameForEnvironment.restore();
-      this.sandbox.stub(browserDetection, 'supportsPopups').returns(false);
-      this.sandbox.stub(FrameService.prototype, '_pollForPopupClose');
+      testContext.frameService.open({}, noop);
 
-      this.frameService.open({}, callback);
-
-      expect(this.frameService._pollForPopupClose).to.not.be.called;
+      expect(testContext.frameService._pollForPopupClose).not.toHaveBeenCalled();
     });
 
-    it('calls _frame.initialize', function () {
-      var cb = this.sandbox.stub();
+    it('calls _frame.initialize', () => {
+      const cb = noop;
 
-      this.frameService.open({}, cb);
+      testContext.frameService.open({}, cb);
 
-      expect(this.fakeFrame.initialize).to.be.calledOnce;
-      expect(this.fakeFrame.initialize).to.be.calledWith(cb);
+      expect(testContext.fakeFrame.initialize).toHaveBeenCalledTimes(1);
+      expect(testContext.fakeFrame.initialize).toHaveBeenCalledWith(cb);
     });
 
-    it('can set new state properties', function () {
-      var cb = this.sandbox.stub();
+    it('can set new state properties', () => {
+      const cb = noop;
 
-      this.frameService.state = {
+      testContext.frameService.state = {
         foo: 'Going to change',
         bar: 'existing value that will be null',
         biz: 'unchanged value'
       };
 
-      this.frameService.open({
+      testContext.frameService.open({
         state: {
           foo: 'foo',
           bar: null,
@@ -628,7 +524,7 @@ describe('FrameService', function () {
         }
       }, cb);
 
-      expect(this.frameService.state).to.deep.equal({
+      expect(testContext.frameService.state).toEqual({
         foo: 'foo',
         bar: null,
         baz: 'baz',
@@ -637,316 +533,282 @@ describe('FrameService', function () {
     });
   });
 
-  describe('redirect', function () {
-    beforeEach(function () {
-      this.frameService = new FrameService(this.options);
-      this.fakeFrame = {
-        redirect: this.sandbox.stub()
+  describe('redirect', () => {
+    beforeEach(() => {
+      testContext.frameService = new FrameService(testContext.options);
+      testContext.fakeFrame = {
+        redirect: jest.fn(),
+        isClosed: jest.fn()
       };
-      this.frameService._frame = this.fakeFrame;
+      testContext.frameService._frame = testContext.fakeFrame;
 
-      this.sandbox.stub(this.frameService, 'isFrameClosed');
+      jest.spyOn(testContext.frameService, 'isFrameClosed');
     });
 
-    it('calls frame redirect method', function () {
-      var url = 'http://example.com';
+    it('calls frame redirect method', () => {
+      const url = 'http://example.com';
 
-      this.frameService.redirect(url);
+      testContext.frameService.redirect(url);
 
-      expect(this.fakeFrame.redirect).to.be.calledOnce;
-      expect(this.fakeFrame.redirect).to.be.calledWith(url);
+      expect(testContext.fakeFrame.redirect).toHaveBeenCalledTimes(1);
+      expect(testContext.fakeFrame.redirect).toHaveBeenCalledWith(url);
     });
 
-    it('does not call redirect method if frame does not exist', function () {
-      var url = 'http://example.com';
+    it('does not call redirect method if frame does not exist', () => {
+      const url = 'http://example.com';
 
-      delete this.frameService._frame;
-      this.frameService.redirect(url);
+      delete testContext.frameService._frame;
+      testContext.frameService.redirect(url);
 
-      expect(this.fakeFrame.redirect).to.not.be.called;
+      expect(testContext.fakeFrame.redirect).not.toHaveBeenCalled();
     });
 
-    it('does not call redirect method if frame is closed', function () {
-      var url = 'http://example.com';
+    it('does not call redirect method if frame is closed', () => {
+      const url = 'http://example.com';
 
-      this.frameService.isFrameClosed.returns(true);
-      this.frameService.redirect(url);
+      testContext.frameService.isFrameClosed.mockReturnValue(true);
+      testContext.frameService.redirect(url);
 
-      expect(this.fakeFrame.redirect).to.not.be.called;
+      expect(testContext.fakeFrame.redirect).not.toHaveBeenCalled();
     });
   });
 
-  describe('close', function () {
-    it('closes frame if its open', function () {
-      var frameClosedStub = this.sandbox.stub();
-      var context = {
-        isFrameClosed: function () {
-          return false;
-        },
-        _frame: {
-          close: frameClosedStub
-        }
+  describe('close', () => {
+    it('closes frame if its open', () => {
+      const close = jest.fn();
+      const context = {
+        isFrameClosed: () => false,
+        _frame: { close }
       };
 
       FrameService.prototype.close.call(context);
 
-      expect(frameClosedStub).to.be.called;
+      expect(close).toHaveBeenCalled();
     });
 
-    it('does not attempt to close frame if already closed', function () {
-      var frameClosedStub = this.sandbox.stub();
-      var context = {
-        isFrameClosed: function () {
-          return true;
-        },
-        _frame: {
-          close: frameClosedStub
-        }
+    it('does not attempt to close frame if already closed', () => {
+      const close = jest.fn();
+      const context = {
+        isFrameClosed: () => true,
+        _frame: { close: close }
       };
 
       FrameService.prototype.close.call(context);
 
-      expect(frameClosedStub).not.to.be.called;
+      expect(close).not.toHaveBeenCalled();
     });
   });
 
-  describe('popup closing', function () {
-    var oldOpen;
+  describe('popup closing', () => {
+    it('calls onCompleteCallback when Window is closed', () => {
+      jest.useFakeTimers();
 
-    beforeEach(function () {
-      oldOpen = global.open;
-    });
+      const fakeWindow = { closed: false };
+      const frameService = new FrameService(testContext.options);
+      const onCompleteCallbackStub = jest.fn();
 
-    afterEach(function () {
-      global.open = oldOpen;
-    });
-
-    it('calls onCompleteCallback when Window is closed', function () {
-      var clock = this.sandbox.useFakeTimers();
-      var fakeWindow = {
-        closed: false
-      };
-      var frameService = new FrameService(this.options);
-      var onCompleteCallbackStub = this.sandbox.stub();
-
-      global.open = function () { return fakeWindow; };
+      jest.spyOn(window, 'open').mockImplementation(() => fakeWindow);
 
       frameService.open({}, onCompleteCallbackStub);
-      fakeWindow.closed = true;
-      clock.tick(100);
+      jest.advanceTimersByTime(1);
 
-      expect(onCompleteCallbackStub).to.be.calledWith(this.sandbox.match({
+      frameService._frame.isClosed = jest.fn().mockReturnValue(true);
+
+      jest.advanceTimersByTime(100);
+
+      expect(onCompleteCallbackStub.mock.calls[0][0]).toMatchObject({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_CLOSED',
         message: 'Frame closed before tokenization could occur.'
-      }));
+      });
+      jest.useRealTimers();
     });
   });
 
-  describe('focus', function () {
-    it('focuses frame if its open', function () {
-      var frameFocusedStub = this.sandbox.stub();
-      var context = {
-        isFrameClosed: function () {
-          return false;
-        },
-        _frame: {
-          focus: frameFocusedStub
-        }
+  describe('focus', () => {
+    it('focuses frame if its open', () => {
+      const focus = jest.fn();
+      const context = {
+        isFrameClosed: () => false,
+        _frame: { focus }
       };
 
       FrameService.prototype.focus.call(context);
 
-      expect(frameFocusedStub).to.be.called;
+      expect(focus).toHaveBeenCalled();
     });
 
-    it('does not attempt to focus frame if already closed', function () {
-      var frameFocusedStub = this.sandbox.stub();
-      var context = {
-        isFrameClosed: function () {
-          return true;
-        },
-        _frame: {
-          focus: frameFocusedStub
-        }
+    it('does not attempt to focus frame if already closed', () => {
+      const focus = jest.fn();
+      const context = {
+        isFrameClosed: () => true,
+        _frame: { focus }
       };
 
       FrameService.prototype.focus.call(context);
 
-      expect(frameFocusedStub).not.to.be.called;
+      expect(focus).not.toHaveBeenCalled();
     });
   });
 
-  describe('createHandler', function () {
-    beforeEach(function () {
-      this.context = {
-        focus: this.sandbox.stub(),
-        close: this.sandbox.stub()
+  describe('createHandler', () => {
+    beforeEach(() => {
+      testContext.context = {
+        focus: jest.fn(),
+        close: jest.fn()
       };
     });
 
-    it('returns an object with a close and focus method', function () {
-      var handler = FrameService.prototype.createHandler.call(this.context);
+    it('returns an object with a close and focus method', () => {
+      const { close, focus } = FrameService.prototype.createHandler.call(testContext.context);
 
-      expect(handler.close).to.be.a('function');
-      expect(handler.focus).to.be.a('function');
+      expect(close).toBeInstanceOf(Function);
+      expect(focus).toBeInstanceOf(Function);
     });
 
-    it('the close method on the handler closes the frame', function () {
-      var handler = FrameService.prototype.createHandler.call(this.context);
+    it('the close method on the handler closes the frame', () => {
+      const handler = FrameService.prototype.createHandler.call(testContext.context);
 
       handler.close();
 
-      expect(this.context.close).to.be.calledOnce;
+      expect(testContext.context.close).toHaveBeenCalledTimes(1);
     });
 
-    it('the focus method on the handler focuses the frame', function () {
-      var handler = FrameService.prototype.createHandler.call(this.context);
+    it('the focus method on the handler focuses the frame', () => {
+      const handler = FrameService.prototype.createHandler.call(testContext.context);
 
       handler.focus();
 
-      expect(this.context.focus).to.be.calledOnce;
+      expect(testContext.context.focus).toHaveBeenCalledTimes(1);
     });
 
-    it('allows passing in a function to run before the frame is closed', function () {
-      var closeHook = this.sandbox.stub();
-      var handler = FrameService.prototype.createHandler.call(this.context, {beforeClose: closeHook});
+    it('allows passing in a function to run before the frame is closed', () => {
+      const beforeClose = jest.fn();
+      const handler = FrameService.prototype.createHandler.call(testContext.context, { beforeClose });
 
       handler.close();
 
-      expect(this.context.close).to.be.calledOnce;
-      expect(closeHook).to.be.calledOnce;
+      expect(testContext.context.close).toHaveBeenCalledTimes(1);
+      expect(beforeClose).toHaveBeenCalledTimes(1);
     });
 
-    it('allows passing in a function to run before the frame is focused', function () {
-      var focusHook = this.sandbox.stub();
-      var handler = FrameService.prototype.createHandler.call(this.context, {beforeFocus: focusHook});
+    it('allows passing in a function to run before the frame is focused', () => {
+      const beforeFocus = jest.fn();
+      const handler = FrameService.prototype.createHandler.call(testContext.context, { beforeFocus });
 
       handler.focus();
 
-      expect(this.context.focus).to.be.calledOnce;
-      expect(focusHook).to.be.calledOnce;
+      expect(testContext.context.focus).toHaveBeenCalledTimes(1);
+      expect(beforeFocus).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('createNoopHandler', function () {
-    it('creates a handler with empty functions', function () {
-      var noopHandler = FrameService.prototype.createNoopHandler();
+  describe('createNoopHandler', () => {
+    it('creates a handler with empty functions', () => {
+      const { close, focus } = FrameService.prototype.createNoopHandler();
 
-      expect(noopHandler.close).to.be.a('function');
-      expect(noopHandler.focus).to.be.a('function');
+      expect(close).toBeInstanceOf(Function);
+      expect(focus).toBeInstanceOf(Function);
     });
 
-    it('has the same signature as the object returned from createHandler', function () {
-      var context = {
-        focus: this.sandbox.stub(),
-        close: this.sandbox.stub()
-      };
+    it('has the same signature as the object returned from createHandler', () => {
+      const context = { focus: noop, close: noop };
+      const realHandler = FrameService.prototype.createHandler(context);
+      const noopHandler = FrameService.prototype.createNoopHandler();
+      const realProps = Object.keys(realHandler);
+      const noopProps = Object.keys(noopHandler);
 
-      var realHandler = FrameService.prototype.createHandler(context);
-      var noopHandler = FrameService.prototype.createNoopHandler();
+      expect.assertions(3);
+      expect(realProps.length).toBe(noopProps.length);
 
-      var realProps = Object.keys(realHandler);
-      var noopProps = Object.keys(noopHandler);
-
-      expect(realProps.length).to.equal(noopProps.length);
-
-      realProps.forEach(function (prop) {
-        expect(typeof realHandler[prop]).to.equal(typeof noopHandler[prop]);
+      realProps.forEach(prop => {
+        expect(typeof realHandler[prop]).toBe(typeof noopHandler[prop]);
       });
     });
   });
 
-  describe('teardown', function () {
-    it('makes a call to close', function () {
-      var closeStub = this.sandbox.stub();
-      var context = {
-        close: closeStub,
-        _cleanupFrame: this.sandbox.stub(),
-        _onCompleteCallback: this.sandbox.stub(),
-        _dispatchFrame: {
-          parentNode: {
-            removeChild: noop
-          }
-        }
+  describe('teardown', () => {
+    it('makes a call to close', () => {
+      const close = jest.fn();
+      const context = {
+        close,
+        _cleanupFrame: noop,
+        _onCompleteCallback: noop,
+        _dispatchFrame: { parentNode: { removeChild: noop }}
       };
 
       FrameService.prototype.teardown.call(context);
 
-      expect(closeStub).to.be.called;
+      expect(close).toHaveBeenCalled();
     });
 
-    it('removes the _dispatchFrame from the DOM', function () {
-      var removeChildStub = this.sandbox.stub();
-      var context = {
+    it('removes the _dispatchFrame from the DOM', () => {
+      const removeChild = jest.fn();
+      const context = {
         close: noop,
-        _cleanupFrame: this.sandbox.stub(),
-        _onCompleteCallback: this.sandbox.stub(),
-        _dispatchFrame: {
-          parentNode: {
-            removeChild: removeChildStub
-          }
-        }
+        _cleanupFrame: noop,
+        _onCompleteCallback: noop,
+        _dispatchFrame: { parentNode: { removeChild }}
       };
 
       FrameService.prototype.teardown.call(context);
 
-      expect(removeChildStub).to.be.called;
-      expect(context._dispatchFrame).to.equal(null);
+      expect(removeChild).toHaveBeenCalled();
+      expect(context._dispatchFrame).toBeNull();
     });
   });
 
-  describe('isFrameClosed', function () {
-    it('returns true if frame is null', function () {
-      var context = {_frame: null};
-      var result = FrameService.prototype.isFrameClosed.call(context);
+  describe('isFrameClosed', () => {
+    it('returns true if frame is null', () => {
+      const context = { _frame: null };
+      const result = FrameService.prototype.isFrameClosed.call(context);
 
-      expect(result).to.equal(true);
+      expect(result).toBe(true);
     });
 
-    it('returns true if frame is undefined', function () {
-      var context = {_frame: undefined}; // eslint-disable-line no-undefined
-      var result = FrameService.prototype.isFrameClosed.call(context);
+    it('returns true if frame is undefined', () => {
+      const context = { _frame: undefined }; // eslint-disable-line no-undefined
+      const result = FrameService.prototype.isFrameClosed.call(context);
 
-      expect(result).to.equal(true);
+      expect(result).toBe(true);
     });
 
-    it('returns true if frame is closed', function () {
-      var context = {_frame: {isClosed: function () { return true; }}};
-      var result = FrameService.prototype.isFrameClosed.call(context);
+    it('returns true if frame is closed', () => {
+      const context = { _frame: { isClosed: () => true }};
+      const result = FrameService.prototype.isFrameClosed.call(context);
 
-      expect(result).to.equal(true);
+      expect(result).toBe(true);
     });
 
-    it('returns true if frame exists and is closed', function () {
-      var context = {_frame: {isClosed: function () { return true; }}};
-      var result = FrameService.prototype.isFrameClosed.call(context);
+    it('returns true if frame exists and is closed', () => {
+      const context = { _frame: { isClosed: () => true }};
+      const result = FrameService.prototype.isFrameClosed.call(context);
 
-      expect(result).to.equal(true);
+      expect(result).toBe(true);
     });
 
-    it('returns false if frame is not closed', function () {
-      var context = {_frame: {isClosed: function () { return false; }}};
-      var result = FrameService.prototype.isFrameClosed.call(context);
+    it('returns false if frame is not closed', () => {
+      const context = { _frame: { isClosed: () => false }};
+      const result = FrameService.prototype.isFrameClosed.call(context);
 
-      expect(result).to.equal(false);
+      expect(result).toBe(false);
     });
   });
 
-  describe('_cleanupFrame', function () {
-    it('sets _frame to null', function () {
-      var context = {
+  describe('_cleanupFrame', () => {
+    it('sets _frame to null', () => {
+      const context = {
         _frame: 'frame',
         _popupInterval: setInterval(noop, 2e3)
       };
 
       FrameService.prototype._cleanupFrame.call(context);
 
-      expect(context._frame).to.equal(null);
+      expect(context._frame).toBeNull();
     });
 
-    it('stops the popup polling', function () {
-      var context = {
+    it('stops the popup polling', () => {
+      const context = {
         _frame: 'frame',
         _onCompleteCallback: null,
         _popupInterval: setInterval(noop, 2e3)
@@ -954,75 +816,69 @@ describe('FrameService', function () {
 
       FrameService.prototype._cleanupFrame.call(context);
 
-      expect(context._popupInterval).to.equal(null);
+      expect(context._popupInterval).toBeNull();
     });
   });
 
-  describe('_pollForPopupClose', function () {
-    var timer;
+  describe('_pollForPopupClose', () => {
+    let timer;
 
-    afterEach(function () {
+    afterEach(() => {
       clearInterval(timer);
       timer = null;
     });
 
-    it('creates a timer', function () {
-      var context = {
-        isFrameClosed: function () {
-          return false;
-        },
+    it('creates a timer', () => {
+      const context = {
+        isFrameClosed: () => false,
         _cleanupFrame: noop
       };
 
       timer = FrameService.prototype._pollForPopupClose.call(context);
 
-      expect(context._popupInterval).to.be.a('number');
-      expect(timer).to.equal(context._popupInterval);
+      expect(context._popupInterval).toStrictEqual(expect.any(Number));
+      expect(timer).toBe(context._popupInterval);
     });
 
-    it('calls to _cleanupFrame when frame is closed', function (done) {
-      var frameClosed = false;
-      var cleanupFrameStub = this.sandbox.stub();
-      var context = {
-        isFrameClosed: function () {
-          return frameClosed;
-        },
-        _cleanupFrame: cleanupFrameStub
-      };
+    it('calls to _cleanupFrame when frame is closed', done => {
+      jest.useRealTimers();
+
+      let frameClosed = false;
+      const _cleanupFrame = jest.fn();
+      const context = { isFrameClosed: () => frameClosed, _cleanupFrame };
 
       timer = FrameService.prototype._pollForPopupClose.call(context);
       frameClosed = true;
 
-      setTimeout(function () {
-        expect(cleanupFrameStub).to.be.called;
+      setTimeout(() => {
+        expect(_cleanupFrame).toHaveBeenCalled();
         done();
       }, 200);
     });
 
-    it('calls _onCompleteCallback when frame is closed', function () {
-      var clock = this.sandbox.useFakeTimers();
-      var frameClosed = false;
-      var onCompleteCallbackStub = this.sandbox.stub();
-      var context = {
-        isFrameClosed: function () {
-          return frameClosed;
-        },
-        _onCompleteCallback: onCompleteCallbackStub,
-        _cleanupFrame: this.sandbox.stub()
+    it('calls _onCompleteCallback when frame is closed', () => {
+      jest.useFakeTimers();
+
+      let frameClosed = false;
+      const _onCompleteCallback = jest.fn();
+      const context = {
+        isFrameClosed: () => frameClosed,
+        _onCompleteCallback,
+        _cleanupFrame: jest.fn()
       };
 
       FrameService.prototype._pollForPopupClose.call(context);
       frameClosed = true;
 
-      clock.tick(100);
+      jest.advanceTimersByTime(100);
 
-      expect(onCompleteCallbackStub).to.be.calledWith(this.sandbox.match({
+      expect(_onCompleteCallback.mock.calls[0][0]).toMatchObject({
         type: BraintreeError.types.INTERNAL,
         code: 'FRAME_SERVICE_FRAME_CLOSED',
         message: 'Frame closed before tokenization could occur.'
-      }));
+      });
 
-      clock.restore();
+      jest.useRealTimers();
     });
   });
 });

@@ -1,14 +1,14 @@
 'use strict';
 
-var paymentRequest = require('../../../src/payment-request');
-var packageVersion = require('../../../package.json').version;
+const paymentRequest = require('../../../src/payment-request');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(paymentRequest.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(paymentRequest.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(paymentRequest.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(paymentRequest.VERSION).toBe(packageVersion);
   });
 });

@@ -1,276 +1,295 @@
 'use strict';
 
-var Bus = require('../../../../src/lib/bus');
-var BraintreeError = require('../../../../src/lib/braintree-error');
-var paymentRequestFrame = require('../../../../src/payment-request/internal/');
-var fake = require('../../../helpers/fake');
-var Client = require('../../../../src/client/client');
+jest.mock('../../../../src/lib/bus');
+jest.mock('../../../../src/client/client');
 
-describe('Payment Request Frame', function () {
-  beforeEach(function () {
-    this.fakeClient = fake.client();
-    this.fakeClient.gatewayConfiguration = {};
-    this.sandbox.stub(Bus.prototype, 'emit');
-    this.sandbox.stub(Bus.prototype, 'on');
+const Bus = require('../../../../src/lib/bus');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const paymentRequestFrame = require('../../../../src/payment-request/internal/');
+const { events } = require('../../../../src/payment-request/shared/constants');
+const { fake, findFirstEventCallback, yieldsByEvent } = require('../../../helpers');
+const Client = require('../../../../src/client/client');
+
+describe('Payment Request Frame', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+
+    testContext.completeStub = jest.fn();
+    testContext.showStub = jest.fn();
+    testContext.replyStub = jest.fn();
+    testContext.addEventListenerStub = jest.fn();
+    testContext.canMakePaymentStub = jest.fn();
+
+    testContext.fakeClient = fake.client();
+    testContext.fakeClient.gatewayConfiguration = {};
+
+    jest.spyOn(Bus.prototype, 'emit');
+    jest.spyOn(Bus.prototype, 'on');
+
+    class PaymentRequest {
+      constructor() {
+        this.abort = jest.fn();
+        this.addEventListener = testContext.addEventListenerStub;
+        this.canMakePayment = testContext.canMakePaymentStub;
+        this.id = 'A0D44D4F-0B72-4F7F-85C3-1952C04DB253';
+        this.shippingAddress = 'foo';
+        this.shippingType = 'bar';
+        this.show = testContext.showStub;
+      }
+    }
+
+    global.PaymentRequest = PaymentRequest;
   });
 
-  describe('create', function () {
-    it('gets channel id from window hash', function () {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  describe('create', () => {
+    it('gets channel id from window hash', () => {
       global.location.hash = '123';
 
       paymentRequestFrame.create();
 
-      expect(global.bus.channel).to.equal('123');
+      expect(global.bus.channel).toBe('123');
     });
 
-    it('emits a FRAME_READY event', function () {
+    it('emits a FRAME_READY event', () => {
       paymentRequestFrame.create();
 
-      expect(Bus.prototype.emit).to.be.calledWith('payment-request:FRAME_READY');
+      expect(Bus.prototype.emit).toHaveBeenCalledWith(events.FRAME_READY, expect.any(Function));
     });
 
-    it('emits a FRAME_CAN_MAKE_REQUESTS event', function (done) {
-      var frameReadyHandler;
+    it('emits a FRAME_CAN_MAKE_REQUESTS event', done => {
+      let frameReadyHandler;
 
       paymentRequestFrame.create();
 
-      frameReadyHandler = Bus.prototype.emit.args[0][1];
-      frameReadyHandler(this.fakeClient);
+      frameReadyHandler = findFirstEventCallback(events.FRAME_READY, Bus.prototype.emit.mock.calls);
+      frameReadyHandler(testContext.fakeClient);
 
-      setTimeout(function () {
-        expect(Bus.prototype.emit).to.be.calledWith('payment-request:FRAME_CAN_MAKE_REQUESTS');
+      process.nextTick(() => {
+        expect(Bus.prototype.emit).toHaveBeenNthCalledWith(2, events.FRAME_CAN_MAKE_REQUESTS);
         done();
-      }, 100);
+      });
     });
 
-    it('adds client to the global object', function (done) {
-      var frameReadyHandler;
+    it('adds client to the global object', done => {
+      let frameReadyHandler;
 
       paymentRequestFrame.create();
 
-      frameReadyHandler = Bus.prototype.emit.args[0][1];
+      frameReadyHandler = Bus.prototype.emit.mock.calls[0][1];
 
-      frameReadyHandler(this.fakeClient);
+      frameReadyHandler(testContext.fakeClient);
 
-      setTimeout(function () {
-        expect(global.client).to.be.an.instanceof(Client);
+      process.nextTick(() => {
+        expect(global.client).toBeInstanceOf(Client);
 
         delete global.client;
         done();
-      }, 100);
+      });
     });
 
-    it('listens for initialize payment request event', function () {
+    it('listens for initialize payment request event', () => {
       paymentRequestFrame.create();
 
-      expect(Bus.prototype.on).to.be.calledWith('payment-request:PAYMENT_REQUEST_INITIALIZED');
+      expect(Bus.prototype.on).toHaveBeenCalledWith(events.PAYMENT_REQUEST_INITIALIZED, expect.any(Function));
     });
 
-    it('listens for can make payment event', function () {
+    it('listens for can make payment event', () => {
       paymentRequestFrame.create();
 
-      expect(Bus.prototype.on).to.be.calledWith('payment-request:CAN_MAKE_PAYMENT');
+      expect(Bus.prototype.on).toHaveBeenCalledWith(events.CAN_MAKE_PAYMENT, expect.any(Function));
     });
 
-    it('listens for shipping address change event', function () {
+    it('listens for shipping address change event', () => {
       paymentRequestFrame.create();
 
-      expect(Bus.prototype.on).to.be.calledWith('payment-request:UPDATE_SHIPPING_ADDRESS');
+      expect(Bus.prototype.on).toHaveBeenCalledWith(events.UPDATE_SHIPPING_ADDRESS, expect.any(Function));
     });
 
-    it('calls update with on shipping address change event', function () {
-      var data = {};
+    it('calls update with on shipping address change event', () => {
+      const data = {};
 
-      global.shippingAddressChangeResolveFunction = this.sandbox.stub();
-      Bus.prototype.on.withArgs('payment-request:UPDATE_SHIPPING_ADDRESS').yields(data);
+      global.shippingAddressChangeResolveFunction = jest.fn();
+      Bus.prototype.on.mockImplementation(yieldsByEvent(events.UPDATE_SHIPPING_ADDRESS, data));
       paymentRequestFrame.create();
 
-      expect(global.shippingAddressChangeResolveFunction).to.be.calledOnce;
-      expect(global.shippingAddressChangeResolveFunction).to.be.calledWith(data);
+      expect(global.shippingAddressChangeResolveFunction).toHaveBeenCalledTimes(1);
+      expect(global.shippingAddressChangeResolveFunction).toHaveBeenCalledWith(data);
     });
 
-    it('listens for shipping option change event', function () {
+    it('listens for shipping option change event', () => {
       paymentRequestFrame.create();
 
-      expect(Bus.prototype.on).to.be.calledWith('payment-request:UPDATE_SHIPPING_OPTION');
+      expect(Bus.prototype.on).toHaveBeenCalledWith(events.UPDATE_SHIPPING_OPTION, expect.any(Function));
     });
 
-    it('calls update with on shipping option change event', function () {
-      var data = {};
+    it('calls update with on shipping option change event', () => {
+      const data = {};
 
-      global.shippingOptionChangeResolveFunction = this.sandbox.stub();
-      Bus.prototype.on.withArgs('payment-request:UPDATE_SHIPPING_OPTION').yields(data);
+      global.shippingOptionChangeResolveFunction = jest.fn();
+      Bus.prototype.on.mockImplementation(yieldsByEvent(events.UPDATE_SHIPPING_OPTION, data));
       paymentRequestFrame.create();
 
-      expect(global.shippingOptionChangeResolveFunction).to.be.calledOnce;
-      expect(global.shippingOptionChangeResolveFunction).to.be.calledWith(data);
+      expect(global.shippingOptionChangeResolveFunction).toHaveBeenCalledTimes(1);
+      expect(global.shippingOptionChangeResolveFunction).toHaveBeenCalledWith(data);
     });
   });
 
-  describe('initializePaymentRequest', function () {
-    beforeEach(function () {
-      var showStub, addEventListenerStub;
-
-      this.completeStub = this.sandbox.stub();
-      showStub = this.showStub = this.sandbox.stub();
-      addEventListenerStub = this.addEventListenerStub = this.sandbox.stub();
-
-      this.fakeDetails = {
+  describe('initializePaymentRequest', () => {
+    beforeEach(() => {
+      testContext.fakeDetails = {
         supportedPaymentMethods: ['basic-card'],
         details: {},
         options: {}
       };
-      this.replyStub = this.sandbox.stub();
-      global.bus = {
-        on: this.sandbox.stub(),
-        emit: this.sandbox.stub()
-      };
+      paymentRequestFrame.create();
       global.client = {
-        request: this.sandbox.stub().resolves({
+        request: jest.fn().mockResolvedValue({
           creditCards: [{
             nonce: 'a-nonce',
             details: {}
           }]
         })
       };
-      global.PaymentRequest = function PR() {
-        this.show = showStub;
-        this.addEventListener = addEventListenerStub;
-      };
     });
 
-    afterEach(function () {
+    afterEach(() => {
       delete global.bus;
       delete global.PaymentRequest;
       delete global.client;
     });
 
-    it('initializes a payment request', function () {
-      this.showStub.resolves({
-        complete: this.completeStub,
+    it('initializes a payment request', () => {
+      testContext.showStub.mockResolvedValue({
+        complete: testContext.completeStub,
         methodName: 'basic-card',
         details: {}
       });
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.showStub).to.be.calledOnce;
-      }.bind(this));
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.showStub).toHaveBeenCalledTimes(1);
+      });
     });
 
-    it('creates listeners for shipping events when request shipping is passed', function () {
-      this.showStub.resolves({
-        complete: this.completeStub,
+    it('creates listeners for shipping events when request shipping is passed', () => {
+      testContext.showStub.mockResolvedValue({
+        complete: jest.fn(),
         methodName: 'basic-card',
         details: {}
       });
-      this.fakeDetails.options.requestShipping = true;
+      testContext.fakeDetails.options.requestShipping = true;
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.addEventListenerStub).to.be.calledTwice;
-        expect(this.addEventListenerStub).to.be.calledWith('shippingaddresschange');
-        expect(this.addEventListenerStub).to.be.calledWith('shippingoptionchange');
-      }.bind(this));
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.addEventListenerStub).toHaveBeenCalledTimes(2);
+        expect(testContext.addEventListenerStub).toHaveBeenNthCalledWith(1, 'shippingaddresschange', expect.any(Function));
+        expect(testContext.addEventListenerStub).toHaveBeenNthCalledWith(2, 'shippingoptionchange', expect.any(Function));
+      });
     });
 
-    it('does not create listeners for shipping events when request shipping is not passed', function () {
-      this.showStub.resolves({
-        complete: this.completeStub,
+    it('does not create listeners for shipping events when request shipping is not passed', () => {
+      testContext.showStub.mockResolvedValue({
+        complete: testContext.completeStub,
         methodName: 'basic-card',
         details: {}
       });
-      this.fakeDetails.options.requestShipping = false;
+      testContext.fakeDetails.options.requestShipping = false;
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.addEventListenerStub).to.not.be.called;
-      }.bind(this));
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.addEventListenerStub).not.toHaveBeenCalled();
+      });
     });
 
-    it('emits shipping address when shippingaddresschange event occurs', function () {
-      var event = {
+    it('emits shipping address when shippingaddresschange event occurs', () => {
+      const event = {
         target: {
           shippingAddress: {}
         },
-        updateWith: this.sandbox.stub()
+        updateWith: jest.fn()
       };
 
-      this.showStub.resolves({
-        complete: this.completeStub,
+      testContext.showStub.mockResolvedValue({
+        complete: testContext.completeStub,
         methodName: 'basic-card',
         details: {}
       });
-      this.fakeDetails.options.requestShipping = true;
-      this.addEventListenerStub.withArgs('shippingaddresschange').yields(event);
+      testContext.fakeDetails.options.requestShipping = true;
+      testContext.addEventListenerStub = jest.fn(yieldsByEvent('shippingaddresschange', event));
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(global.bus.emit).to.be.calledWith('payment-request:SHIPPING_ADDRESS_CHANGE', event.target.shippingAddress);
-        expect(event.updateWith).to.be.calledOnce;
-        expect(global.shippingAddressChangeResolveFunction).to.be.undefined;
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(Bus.prototype.emit).toHaveBeenCalledWith(events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
+        expect(event.updateWith).toHaveBeenCalledTimes(1);
+        expect(global.shippingAddressChangeResolveFunction).toBeUndefined();
       });
     });
 
-    it('emits selected shipping option when shippingoptionchange event occurs', function () {
-      var event = {
+    it('emits selected shipping option when shippingoptionchange event occurs', () => {
+      const event = {
         target: {
           shippingOption: 'option'
         },
-        updateWith: this.sandbox.stub()
+        updateWith: jest.fn()
       };
 
-      this.showStub.resolves({
-        complete: this.completeStub,
+      testContext.showStub.mockResolvedValue({
+        complete: testContext.completeStub,
         methodName: 'basic-card',
         details: {}
       });
-      this.fakeDetails.options.requestShipping = true;
-      this.addEventListenerStub.withArgs('shippingoptionchange').yields(event);
+      testContext.fakeDetails.options.requestShipping = true;
+      testContext.addEventListenerStub = jest.fn(yieldsByEvent('shippingoptionchange', event));
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(global.bus.emit).to.be.calledWith('payment-request:SHIPPING_OPTION_CHANGE', event.target.shippingOption);
-        expect(event.updateWith).to.be.calledOnce;
-        expect(global.shippingOptionChangeResolveFunction).to.be.undefined;
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(global.bus.emit).toHaveBeenCalledWith(events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
+        expect(event.updateWith).toHaveBeenCalledTimes(1);
+        expect(global.shippingOptionChangeResolveFunction).toBeUndefined();
       });
     });
 
-    it('replies with TypeError when payment request is misconfigured', function () {
-      var paymentRequestError = new Error('TypeError');
+    it('replies with TypeError when payment request is misconfigured', () => {
+      const paymentRequestError = new Error('TypeError');
 
-      global.PaymentRequest = function FailingPR() {
+      window.PaymentRequest = () => {
         throw paymentRequestError;
       };
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([expect.objectContaining({
           name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
         })]);
-      }.bind(this));
+      });
     });
 
-    it('emits raw error when paymentRequest.show fails', function () {
-      var showError = new Error();
+    it('emits raw error when paymentRequest.show fails', () => {
+      const showError = new Error();
 
       showError.name = 'AbortError';
-      this.showStub.rejects(showError);
+      testContext.showStub.mockRejectedValue(showError);
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([expect.objectContaining({
           name: 'AbortError'
         })]);
-      }.bind(this));
+      });
     });
 
-    it('completes payment request when it succeeds', function () {
-      this.showStub.resolves({
-        complete: this.completeStub,
+    it('completes payment request when it succeeds', () => {
+      testContext.showStub.mockResolvedValue({
+        complete: testContext.completeStub,
         methodName: 'basic-card',
         details: {}
       });
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.completeStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([null, {
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.completeStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([null, {
           nonce: 'a-nonce',
           details: {
             rawPaymentResponse: {
@@ -279,41 +298,41 @@ describe('Payment Request Frame', function () {
             }
           }
         }]);
-      }.bind(this));
+      });
     });
 
-    it('completes payment request when it fails', function () {
-      this.showStub.resolves({
-        complete: this.completeStub,
+    it('completes payment request when it fails', () => {
+      testContext.showStub.mockResolvedValue({
+        complete: testContext.completeStub,
         methodName: 'basic-card',
         details: {}
       });
-      global.client.request.rejects(new Error('some error'));
+      global.client.request.mockRejectedValue(new Error('some error'));
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.completeStub).to.be.calledOnce;
-      }.bind(this));
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.completeStub).toHaveBeenCalledTimes(1);
+      });
     });
 
-    it('emits an error when methodName in paymentResponse is unknown', function () {
-      this.showStub.resolves({
-        complete: this.completeStub,
+    it('emits an error when methodName in paymentResponse is unknown', () => {
+      testContext.showStub.mockResolvedValue({
+        complete: testContext.completeStub,
         methodName: 'unknown',
         details: {}
       });
 
-      return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+      return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([expect.objectContaining({
           name: 'UNSUPPORTED_METHOD_NAME'
         })]);
-      }.bind(this));
+      });
     });
 
-    context('basic-card', function () {
-      beforeEach(function () {
-        this.showStub.resolves({
-          complete: this.completeStub,
+    describe('basic-card', () => {
+      beforeEach(() => {
+        testContext.showStub.mockResolvedValue({
+          complete: testContext.completeStub,
           methodName: 'basic-card',
           details: {
             cardNumber: '4111111111111111',
@@ -324,14 +343,14 @@ describe('Payment Request Frame', function () {
         });
       });
 
-      it('tokenizes result of payment request', function () {
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(global.client.request).to.be.calledOnce;
-          expect(global.client.request).to.be.calledWith({
+      it('tokenizes result of payment request', () =>
+        paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(global.client.request).toHaveBeenCalledTimes(1);
+          expect(global.client.request).toHaveBeenCalledWith({
             endpoint: 'payment_methods/credit_cards',
             method: 'post',
             data: {
-              creditCard: this.sandbox.match({
+              creditCard: expect.objectContaining({
                 number: '4111111111111111',
                 expirationMonth: '12',
                 expirationYear: '2034',
@@ -339,11 +358,10 @@ describe('Payment Request Frame', function () {
               })
             }
           });
-        }.bind(this));
-      });
+        }));
 
-      it('tokenizes billing address if included in payment request', function () {
-        var billingAddress = {
+      it('tokenizes billing address if included in payment request', () => {
+        const billingAddress = {
           addressLine: ['First line', 'Second line'],
           city: 'Chicago',
           country: 'US',
@@ -357,8 +375,8 @@ describe('Payment Request Frame', function () {
           sortingCode: ''
         };
 
-        this.showStub.resolves({
-          complete: this.sandbox.stub(),
+        testContext.showStub.mockResolvedValue({
+          complete: jest.fn(),
           methodName: 'basic-card',
           details: {
             billingAddress: billingAddress,
@@ -369,13 +387,13 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(global.client.request).to.be.calledOnce;
-          expect(global.client.request).to.be.calledWith({
+        return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(global.client.request).toHaveBeenCalledTimes(1);
+          expect(global.client.request).toHaveBeenCalledWith({
             endpoint: 'payment_methods/credit_cards',
             method: 'post',
             data: {
-              creditCard: this.sandbox.match({
+              creditCard: expect.objectContaining({
                 billingAddress: {
                   company: 'Scruff McGruff Payments',
                   locality: 'Chicago',
@@ -388,12 +406,12 @@ describe('Payment Request Frame', function () {
               })
             }
           });
-        }.bind(this));
+        });
       });
 
-      it('includes cardholder name if provided', function () {
-        this.showStub.resolves({
-          complete: this.sandbox.stub(),
+      it('includes cardholder name if provided', () => {
+        testContext.showStub.mockResolvedValue({
+          complete: jest.fn(),
           methodName: 'basic-card',
           details: {
             cardNumber: '4111111111111111',
@@ -404,23 +422,23 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(global.client.request).to.be.calledOnce;
-          expect(global.client.request).to.be.calledWith({
+        return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(global.client.request).toHaveBeenCalledTimes(1);
+          expect(global.client.request).toHaveBeenCalledWith({
             endpoint: 'payment_methods/credit_cards',
             method: 'post',
             data: {
-              creditCard: this.sandbox.match({
+              creditCard: expect.objectContaining({
                 cardholderName: 'First Last'
               })
             }
           });
-        }.bind(this));
+        });
       });
 
-      it('emits tokenized payload with a payment request successful event', function () {
-        this.showStub.resolves({
-          complete: this.sandbox.stub(),
+      it('emits tokenized payload with a payment request successful event', () => {
+        testContext.showStub.mockResolvedValue({
+          complete: jest.fn(),
           methodName: 'basic-card',
           payerEmail: 'asdf@example.com',
           payerName: 'First Last',
@@ -440,9 +458,9 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(this.replyStub).to.be.calledOnce;
-          expect(this.replyStub).to.be.calledWith([null, {
+        return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+          expect(testContext.replyStub.mock.calls[0][0][1]).toMatchObject({
             nonce: 'a-nonce',
             details: {
               rawPaymentResponse: {
@@ -461,34 +479,34 @@ describe('Payment Request Frame', function () {
                 shippingOption: null
               }
             }
-          }]);
-        }.bind(this));
+          });
+        });
       });
 
-      it('emits tokenization error with a payment request failed event', function () {
-        var error = new BraintreeError({
+      it('emits tokenization error with a payment request failed event', () => {
+        const error = new BraintreeError({
           type: 'MERCHANT',
           code: 'SOME_CODE',
           message: 'a message'
         });
 
-        global.client.request.rejects(error);
+        global.client.request.mockRejectedValue(error);
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(this.replyStub).to.be.calledOnce;
-          expect(this.replyStub).to.be.calledWith([{
+        return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+          expect(testContext.replyStub.mock.calls[0][0][0]).toMatchObject({
             code: 'SOME_CODE',
             message: 'a message',
             name: 'BraintreeError'
-          }]);
-        }.bind(this));
+          });
+        });
       });
     });
 
-    context('pay with google', function () {
-      beforeEach(function () {
-        this.showStub.resolves({
-          complete: this.completeStub,
+    describe('pay with google', () => {
+      beforeEach(() => {
+        testContext.showStub.mockResolvedValue({
+          complete: testContext.completeStub,
           methodName: 'https://google.com/pay',
           requestId: '68a2ac68-3f7e-42e4-82f9-a690d9166a16',
           details: {
@@ -505,10 +523,10 @@ describe('Payment Request Frame', function () {
         });
       });
 
-      it('emits tokenized payload with a payment request successful event', function () {
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(this.replyStub).to.be.calledOnce;
-          expect(this.replyStub).to.be.calledWith([null, {
+      it('emits tokenized payload with a payment request successful event', () =>
+        paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+          expect(testContext.replyStub.mock.calls[0][0][1]).toMatchObject({
             nonce: 'a-nonce',
             type: 'AndroidPay',
             details: {
@@ -518,13 +536,12 @@ describe('Payment Request Frame', function () {
                 requestId: '68a2ac68-3f7e-42e4-82f9-a690d9166a16'
               }
             }
-          }]);
-        }.bind(this));
-      });
+          });
+        }));
 
-      it('emits an error when gateway returns an error', function () {
-        this.showStub.resolves({
-          complete: this.completeStub,
+      it('emits an error when gateway returns an error', () => {
+        testContext.showStub.mockResolvedValue({
+          complete: testContext.completeStub,
           methodName: 'https://google.com/pay',
           requestId: '68a2ac68-3f7e-42e4-82f9-a690d9166a16',
           details: {
@@ -536,17 +553,17 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(this.replyStub).to.be.calledOnce;
-          expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+        return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+          expect(testContext.replyStub).toHaveBeenCalledWith([expect.objectContaining({
             name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR'
           })]);
-        }.bind(this));
+        });
       });
 
-      it('emits an error when Gateway response is not parsable', function () {
-        this.showStub.resolves({
-          complete: this.completeStub,
+      it('emits an error when Gateway response is not parsable', () => {
+        testContext.showStub.mockResolvedValue({
+          complete: testContext.completeStub,
           methodName: 'https://google.com/pay',
           requestId: '68a2ac68-3f7e-42e4-82f9-a690d9166a16',
           details: {
@@ -556,91 +573,78 @@ describe('Payment Request Frame', function () {
           }
         });
 
-        return paymentRequestFrame.initializePaymentRequest(this.fakeDetails, this.replyStub).then(function () {
-          expect(this.replyStub).to.be.calledOnce;
-          expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+        return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
+          expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+          expect(testContext.replyStub).toHaveBeenCalledWith([expect.objectContaining({
             name: 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR'
           })]);
-        }.bind(this));
+        });
       });
     });
   });
 
-  describe('makePaymentRequest', function () {
-    beforeEach(function () {
-      var canMakePaymentStub;
-
-      this.completeStub = this.sandbox.stub();
-      canMakePaymentStub = this.canMakePaymentStub = this.sandbox.stub();
-
-      this.fakeDetails = {
+  describe('makePaymentRequest', () => {
+    beforeEach(() => {
+      testContext.fakeDetails = {
         supportedPaymentMethods: ['basic-card'],
         details: {},
         options: {}
       };
-      this.replyStub = this.sandbox.stub();
-      global.bus = {
-        on: this.sandbox.stub(),
-        emit: this.sandbox.stub()
-      };
-      global.PaymentRequest = function PR() {
-        this.canMakePayment = canMakePaymentStub;
-      };
     });
 
-    it('initializes a payment request', function () {
-      this.canMakePaymentStub.resolves(true);
+    it('initializes a payment request', () => {
+      testContext.canMakePaymentStub.mockResolvedValue(true);
 
-      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.canMakePaymentStub).to.be.calledOnce;
-      }.bind(this));
+      return paymentRequestFrame.canMakePayment(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.canMakePaymentStub).toHaveBeenCalledTimes(1);
+      });
     });
 
-    it('replies with true when canMakePayment resolves with true', function () {
-      this.canMakePaymentStub.resolves(true);
+    it('replies with true when canMakePayment resolves with true', () => {
+      testContext.canMakePaymentStub.mockResolvedValue(true);
 
-      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([null, true]);
-      }.bind(this));
+      return paymentRequestFrame.canMakePayment(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([null, true]);
+      });
     });
 
-    it('replies with false when canMakePayment resolves with false', function () {
-      this.canMakePaymentStub.resolves(false);
+    it('replies with false when canMakePayment resolves with false', () => {
+      testContext.canMakePaymentStub.mockResolvedValue(false);
 
-      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([null, false]);
-      }.bind(this));
+      return paymentRequestFrame.canMakePayment(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([null, false]);
+      });
     });
 
-    it('replies with error when payment request initialization fails', function () {
-      var paymentRequestError = new Error('TypeError');
+    it('replies with error when payment request initialization fails', () => {
+      const paymentRequestError = new Error('TypeError');
 
-      global.PaymentRequest = function FailingPR() {
+      global.PaymentRequest = () => {
         throw paymentRequestError;
       };
 
-      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+      return paymentRequestFrame.canMakePayment(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([expect.objectContaining({
           name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED'
         })]);
-      }.bind(this));
+      });
     });
 
-    it('replies with error when canMakePayment fails', function () {
-      var paymentRequestError = new Error('canMakePaymentError');
+    it('replies with error when canMakePayment fails', () => {
+      const paymentRequestError = new Error('canMakePaymentError');
 
       paymentRequestError.name = 'CanMakePaymentError';
-      this.canMakePaymentStub.rejects(paymentRequestError);
+      testContext.canMakePaymentStub.mockRejectedValue(paymentRequestError);
 
-      return paymentRequestFrame.canMakePayment(this.fakeDetails, this.replyStub).then(function () {
-        expect(this.replyStub).to.be.calledOnce;
-        expect(this.replyStub).to.be.calledWith([this.sandbox.match({
+      return paymentRequestFrame.canMakePayment(testContext.fakeDetails, testContext.replyStub).then(() => {
+        expect(testContext.replyStub).toHaveBeenCalledTimes(1);
+        expect(testContext.replyStub).toHaveBeenCalledWith([expect.objectContaining({
           name: 'CanMakePaymentError'
         })]);
-      }.bind(this));
+      });
     });
   });
 });

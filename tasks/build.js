@@ -85,6 +85,8 @@ gulp.task('build:npm:statics', gulp.series('build:npm:packagejson', function () 
 gulp.task('build:npm:src', function () {
   return gulp.src([
     'src/**/*.js',
+    '!src/**/__mocks__/**',
+    '!src/**/coverage/**',
     '!src/**/internal/**' // no need to pass the internal files to npm
   ])
     .pipe(removeCode({production: true}))

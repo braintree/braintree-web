@@ -1,14 +1,21 @@
 'use strict';
 
-var loadingFrame = require('../../../../src/masterpass/internal/loading-frame');
-var querystring = require('../../../../src/lib/querystring');
+jest.mock('../../../../src/lib/querystring');
 
-describe('loading-frame', function () {
-  describe('start', function () {
-    beforeEach(function () {
-      this.fakeScript = {
-      };
-      this.params = {
+const loadingFrame = require('../../../../src/masterpass/internal/loading-frame');
+const querystring = require('../../../../src/lib/querystring');
+
+describe('loading-frame', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+  });
+
+  describe('start', () => {
+    beforeEach(() => {
+      testContext.fakeScript = document.createElement('script');
+      testContext.params = {
         environment: 'production',
         failureCallback: 'fallback',
         cancelCallback: 'cancel',
@@ -16,76 +23,80 @@ describe('loading-frame', function () {
         callbackUrl: 'https://example.com',
         foo: 'bar'
       };
-      this.sandbox.stub(querystring, 'parse').returns(this.params);
-      this.sandbox.stub(document, 'createElement').returns(this.fakeScript);
-      this.sandbox.stub(document.body, 'appendChild');
+      jest.spyOn(querystring, 'parse').mockReturnValue(testContext.params);
+      jest.spyOn(document, 'createElement').mockReturnValue(testContext.fakeScript);
+      jest.spyOn(document.body, 'appendChild');
 
       global.MasterPass = {
         client: {
-          checkout: this.sandbox.stub()
+          checkout: jest.fn()
         }
       };
     });
 
-    afterEach(function () {
+    afterEach(() => {
       delete global.MasterPass;
     });
 
-    it('adds production script to page in production', function () {
+    it('adds production script to page in production', () => {
       loadingFrame.start();
 
-      expect(document.body.appendChild).to.be.calledOnce;
-      expect(document.body.appendChild).to.be.calledWith(this.fakeScript);
-      expect(this.fakeScript.src).to.equal('https://static.masterpass.com/dyn/js/switch/integration/MasterPass.client.js');
+      expect(document.body.appendChild).toHaveBeenCalledTimes(1);
+      expect(document.body.appendChild).toHaveBeenCalledWith(testContext.fakeScript);
+      expect(testContext.fakeScript.src).toBe(
+        'https://static.masterpass.com/dyn/js/switch/integration/MasterPass.client.js'
+      );
     });
 
-    it('adds sandbox script to page in sandbox', function () {
-      this.params.environment = 'sandbox';
+    it('adds sandbox script to page in sandbox', () => {
+      testContext.params.environment = 'sandbox';
 
       loadingFrame.start();
 
-      expect(document.body.appendChild).to.be.calledOnce;
-      expect(document.body.appendChild).to.be.calledWith(this.fakeScript);
-      expect(this.fakeScript.src).to.equal('https://sandbox.static.masterpass.com/dyn/js/switch/integration/MasterPass.client.js');
+      expect(document.body.appendChild).toHaveBeenCalledTimes(1);
+      expect(document.body.appendChild).toHaveBeenCalledWith(testContext.fakeScript);
+      expect(testContext.fakeScript.src).toBe(
+        'https://sandbox.static.masterpass.com/dyn/js/switch/integration/MasterPass.client.js'
+      );
     });
 
-    it('calls Masterpass.client.checkout with config from query params when script loads', function () {
+    it('calls Masterpass.client.checkout with config from query params when script loads', () => {
       loadingFrame.start();
 
-      expect(global.MasterPass.client.checkout).to.not.be.called;
+      expect(global.MasterPass.client.checkout).not.toHaveBeenCalled();
 
-      this.fakeScript.onload();
+      testContext.fakeScript.onload();
 
-      expect(global.MasterPass.client.checkout).to.be.calledOnce;
-      expect(global.MasterPass.client.checkout).to.be.calledWithMatch({
+      expect(global.MasterPass.client.checkout).toHaveBeenCalledTimes(1);
+      expect(global.MasterPass.client.checkout.mock.calls[0][0]).toMatchObject({
         environment: 'production',
         foo: 'bar',
         callbackUrl: 'https://example.com'
       });
     });
 
-    it('overwrites failure, cancel and success callbacks with a noop function', function () {
+    it('overwrites failure, cancel and success callbacks with a noop function', () => {
       loadingFrame.start();
 
-      expect(global.MasterPass.client.checkout).to.not.be.called;
+      expect(global.MasterPass.client.checkout).not.toHaveBeenCalled();
 
       // raw params for these in the test are strings
-      expect(this.params.failureCallback).to.be.a('function');
-      expect(this.params.cancelCallback).to.be.a('function');
-      expect(this.params.successCallback).to.be.a('function');
+      expect(testContext.params.failureCallback).toBeInstanceOf(Function);
+      expect(testContext.params.cancelCallback).toBeInstanceOf(Function);
+      expect(testContext.params.successCallback).toBeInstanceOf(Function);
     });
 
-    it('sanitizes callbackUrl', function () {
-      this.params.callbackUrl = 'Javascript:alert.call(null,document.domain)//'; // eslint-disable-line no-script-url
+    it('sanitizes callbackUrl', () => {
+      testContext.params.callbackUrl = 'Javascript:alert.call(null,document.domain)//'; // eslint-disable-line no-script-url
 
       loadingFrame.start();
 
-      expect(global.MasterPass.client.checkout).to.not.be.called;
+      expect(global.MasterPass.client.checkout).not.toHaveBeenCalled();
 
-      this.fakeScript.onload();
+      testContext.fakeScript.onload();
 
-      expect(global.MasterPass.client.checkout).to.be.calledOnce;
-      expect(global.MasterPass.client.checkout).to.be.calledWithMatch({
+      expect(global.MasterPass.client.checkout).toHaveBeenCalledTimes(1);
+      expect(global.MasterPass.client.checkout.mock.calls[0][0]).toMatchObject({
         callbackUrl: 'about:blank'
       });
     });

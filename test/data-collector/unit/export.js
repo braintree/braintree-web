@@ -1,14 +1,14 @@
 'use strict';
 
-var dataCollector = require('../../../src/data-collector');
-var packageVersion = require('../../../package.json').version;
+const dataCollector = require('../../../src/data-collector');
+const { version } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(dataCollector.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(dataCollector.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(dataCollector.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(dataCollector.VERSION).toBe(version);
   });
 });

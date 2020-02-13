@@ -1,303 +1,304 @@
 'use strict';
 
-var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
-var constants = require('../../../../../src/hosted-fields/shared/constants');
-var browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
-var RestrictedInput = require('restricted-input');
-var FakeRestrictedInput = require('../../../../../src/lib/fake-restricted-input');
+const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
+const constants = require('../../../../../src/hosted-fields/shared/constants');
+const browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
+const RestrictedInput = require('restricted-input');
+const FakeRestrictedInput = require('../../../../../src/lib/fake-restricted-input');
+const { triggerEvent } = require('../../helpers');
 
-describe('Base Input', function () {
-  Object.keys(constants.allowedFields).forEach(function (key) {
-    describe(key, function () {
-      beforeEach(function () {
-        var config = {};
+describe('Base Input', () => {
+  let testContext;
 
-        this.config = config;
-        this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns(config);
+  beforeEach(() => {
+    testContext = {};
+  });
 
-        this.sandbox.stub(BaseInput.prototype, 'addDOMEventListeners');
-        this.sandbox.stub(BaseInput.prototype, 'addModelEventListeners');
-        this.sandbox.stub(BaseInput.prototype, 'render');
+  describe.each(Object.keys(constants.allowedFields))('%p', (key) => {
+    beforeEach(() => {
+      const config = {};
+
+      testContext.config = config;
+      jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue(config);
+
+      jest.spyOn(BaseInput.prototype, 'addDOMEventListeners').mockReturnValue(null);
+      jest.spyOn(BaseInput.prototype, 'addModelEventListeners').mockReturnValue(null);
+      jest.spyOn(BaseInput.prototype, 'render').mockReturnValue(null);
+
+      testContext.model = {
+        set: jest.fn()
+      };
+      testContext.type = key;
+
+      testContext.instance = new BaseInput({
+        model: testContext.model,
+        type: testContext.type
+      });
+    });
+
+    describe('formatter', () => {
+      it('creates a RestrictedInput formatter by default', () => {
+        expect(testContext.instance.formatter).toBeInstanceOf(RestrictedInput);
       });
 
-      beforeEach(function () {
-        this.model = {
-          set: this.sandbox.stub()
-        };
-        this.type = key;
+      it('creates a FakeRestrictedInput formatter if formatting is disabled', () => {
+        let instance;
+
+        BaseInput.prototype.getConfiguration.mockRestore();
+        jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ formatInput: false });
+
+        instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+
+        expect(instance.formatter).toBeInstanceOf(FakeRestrictedInput);
+      });
+    });
+
+    describe('element', () => {
+      it('is an input', () => {
+        expect(testContext.instance.element).toBeInstanceOf(HTMLInputElement);
       });
 
-      beforeEach(function () {
-        this.instance = new BaseInput({
-          model: this.model,
-          type: this.type
-        });
-      });
-
-      describe('formatter', function () {
-        it('creates a RestrictedInput formatter by default', function () {
-          expect(this.instance.formatter).to.be.an.instanceof(RestrictedInput);
+      describe('attributes', () => {
+        afterEach(() => {
+          delete BaseInput.prototype.maxLength;
         });
 
-        it('creates a FakeRestrictedInput formatter if formatting is disabled', function () {
-          var instance;
+        describe('prefill', () => {
+          it('applies prefill provided', () => {
+            let instance;
 
-          BaseInput.prototype.getConfiguration.restore();
-          this.sandbox.stub(BaseInput.prototype, 'getConfiguration').returns({formatInput: false});
+            testContext.config.prefill = 'value';
+            instance = new BaseInput({
+              model: testContext.model,
+              type: testContext.type
+            });
 
-          instance = new BaseInput({
-            model: this.model,
-            type: this.type
+            expect(instance.element.value).toBe('value');
+            expect(testContext.model.set).toHaveBeenCalledTimes(1);
+            expect(testContext.model.set).toHaveBeenCalledWith(`${testContext.type}.value`, 'value');
           });
 
-          expect(instance.formatter).to.be.an.instanceof(FakeRestrictedInput);
+          it('coerces prefill to a string', () => {
+            let instance;
+
+            testContext.config.prefill = 1;
+            instance = new BaseInput({
+              model: testContext.model,
+              type: testContext.type
+            });
+
+            expect(instance.element.value).toBe('1');
+            expect(testContext.model.set).toHaveBeenCalledTimes(1);
+            expect(testContext.model.set).toHaveBeenCalledWith(`${testContext.type}.value`, '1');
+          });
         });
-      });
 
-      describe('element', function () {
-        it('is an input', function () {
-          expect(this.instance.element).to.be.an.instanceof(HTMLInputElement);
+        describe('placeholder', () => {
+          it('applies if provided', () => {
+            let instance;
+
+            testContext.config.placeholder = key.toUpperCase();
+            instance = new BaseInput({ model: testContext.model });
+
+            expect(instance.element.getAttribute('placeholder')).toBe(key.toUpperCase());
+          });
+
+          it('does not apply if not defined', () => {
+            expect(testContext.instance.element.getAttribute('placeholder')).toBeNull();
+          });
         });
 
-        describe('attributes', function () {
-          afterEach(function () {
-            delete BaseInput.prototype.maxLength;
+        describe('masking', () => {
+          beforeEach(() => {
+            jest.spyOn(BaseInput.prototype, 'updateModel').mockReturnValue(null);
+            // prevents adding listeners to document
+            // when calling _addDOMFocusListeners
+            // and polluting other tests
+            jest.spyOn(document.documentElement, 'addEventListener').mockReturnValue(null);
+            jest.spyOn(document, 'addEventListener').mockReturnValue(null);
           });
 
-          describe('prefill', function () {
-            it('applies prefill provided', function () {
-              var instance;
+          it('applies if provided', () => {
+            let instance;
 
-              this.config.prefill = 'value';
-              instance = new BaseInput({
-                model: this.model,
-                type: this.type
-              });
+            testContext.config.maskInput = true;
+            instance = new BaseInput({ model: testContext.model });
+            instance._addDOMFocusListeners();
 
-              expect(instance.element.value).to.equal('value');
-              expect(this.model.set).to.be.calledOnce;
-              expect(this.model.set).to.be.calledWith(this.type + '.value', 'value');
-            });
+            triggerEvent('focus', global);
+            instance.element.value = 'abc 1234-asdf /asdf';
+            triggerEvent('blur', global);
 
-            it('coerces prefill to a string', function () {
-              var instance;
-
-              this.config.prefill = 1;
-              instance = new BaseInput({
-                model: this.model,
-                type: this.type
-              });
-
-              expect(instance.element.value).to.equal('1');
-              expect(this.model.set).to.be.calledOnce;
-              expect(this.model.set).to.be.calledWith(this.type + '.value', '1');
-            });
+            expect(instance.element.value).toBe('••• ••••-•••• /••••');
+            triggerEvent('focus', global);
+            expect(instance.element.value).toBe('abc 1234-asdf /asdf');
           });
 
-          describe('placeholder', function () {
-            it('applies if provided', function () {
-              var instance;
+          it('does not apply if not defined', () => {
+            testContext.instance._addDOMFocusListeners();
 
-              this.config.placeholder = key.toUpperCase();
-              instance = new BaseInput({model: this.model});
+            triggerEvent('focus', global);
+            testContext.instance.element.value = 'abc 1234-asdf /asdf';
+            triggerEvent('blur', global);
 
-              expect(instance.element.getAttribute('placeholder')).to.equal(key.toUpperCase());
-            });
+            expect(testContext.instance.element.value).toBe('abc 1234-asdf /asdf');
+          });
+        });
 
-            it('does not apply if not defined', function () {
-              expect(this.instance.element.getAttribute('placeholder')).to.equal(null);
-            });
+        describe('type', () => {
+          it('applies if provided', () => {
+            let instance;
+
+            testContext.config.type = 'password';
+            instance = new BaseInput({ model: testContext.model, type: 'cvv' });
+
+            expect(instance.element.getAttribute('type')).toBe('password');
           });
 
-          describe('masking', function () {
-            beforeEach(function () {
-              this.sandbox.stub(BaseInput.prototype, 'updateModel');
-              // prevents adding listeners to document
-              // when calling _addDOMFOcusListeners
-              // and polluting other tests
-              this.sandbox.stub(document.documentElement, 'addEventListener');
-              this.sandbox.stub(document, 'addEventListener');
-            });
-
-            it('applies if provided', function () {
-              var instance;
-
-              this.config.maskInput = true;
-              instance = new BaseInput({model: this.model});
-              instance._addDOMFocusListeners();
-
-              triggerEvent('focus', global);
-              instance.element.value = 'abc 1234-asdf /asdf';
-              triggerEvent('blur', global);
-
-              expect(instance.element.value).to.equal('••• ••••-•••• /••••');
-              triggerEvent('focus', global);
-              expect(instance.element.value).to.equal('abc 1234-asdf /asdf');
-            });
-
-            it('does not apply if not defined', function () {
-              this.instance._addDOMFocusListeners();
-
-              triggerEvent('focus', global);
-              this.instance.element.value = 'abc 1234-asdf /asdf';
-              triggerEvent('blur', global);
-
-              expect(this.instance.element.value).to.equal('abc 1234-asdf /asdf');
-            });
+          it('uses "tel" if not provided', () => {
+            expect(testContext.instance.element.getAttribute('type')).toBe('tel');
           });
 
-          describe('type', function () {
-            it('applies if provided', function () {
-              var instance;
+          it('uses "text" with pattern for iOS', () => {
+            let instance;
 
-              this.config.type = 'password';
-              instance = new BaseInput({model: this.model, type: 'cvv'});
+            jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+            instance = new BaseInput({ model: testContext.model, type: 'cvv' });
 
-              expect(instance.element.getAttribute('type')).to.equal('password');
-            });
+            expect(instance.element.getAttribute('type')).toBe('text');
+            expect(instance.element.getAttribute('pattern')).toBe('\\d*');
+          });
+        });
 
-            it('uses "tel" if not provided', function () {
-              expect(this.instance.element.getAttribute('type')).to.equal('tel');
-            });
-
-            it('uses "text" with pattern for iOS', function () {
-              var instance;
-
-              this.sandbox.stub(browserDetection, 'isIos').returns(true);
-              instance = new BaseInput({model: this.model, type: 'cvv'});
-
-              expect(instance.element.getAttribute('type')).to.equal('text');
-              expect(instance.element.getAttribute('pattern')).to.equal('\\d*');
-            });
+        describe('defaults', () => {
+          it('applies type', () => {
+            expect(testContext.instance.element.getAttribute('type')).toBe('tel');
           });
 
-          describe('defaults', function () {
-            it('applies type', function () {
-              expect(this.instance.element.getAttribute('type')).to.equal('tel');
-            });
-
-            it('applies autocomplete', function () {
-              expect(this.instance.element.getAttribute('autocomplete')).to.exist;
-            });
-
-            it('applies autocorrect', function () {
-              expect(this.instance.element.getAttribute('autocorrect')).to.equal('off');
-            });
-
-            it('applies autocapitalize', function () {
-              expect(this.instance.element.getAttribute('autocapitalize')).to.equal('none');
-            });
-
-            it('applies spellcheck', function () {
-              expect(this.instance.element.getAttribute('spellcheck')).to.equal('false');
-            });
-
-            it('applies name', function () {
-              expect(this.instance.element.getAttribute('name')).to.equal(constants.allowedFields[key].name);
-            });
-
-            it('applies id', function () {
-              expect(this.instance.element.getAttribute('id')).to.equal(constants.allowedFields[key].name);
-            });
+          it('applies autocomplete', () => {
+            expect(testContext.instance.element.getAttribute('autocomplete')).toBeDefined();
           });
 
-          describe('class', function () {
-            it('applies as type', function () {
-              expect(this.instance.element.getAttribute('class')).to.equal(key);
-            });
+          it('applies autocorrect', () => {
+            expect(testContext.instance.element.getAttribute('autocorrect')).toBe('off');
           });
 
-          describe('data-braintree-name', function () {
-            it('applies based on type', function () {
-              expect(this.instance.element.getAttribute('data-braintree-name')).to.equal(key);
-            });
+          it('applies autocapitalize', () => {
+            expect(testContext.instance.element.getAttribute('autocapitalize')).toBe('none');
           });
 
-          describe('setAttribute', function () {
-            beforeEach(function () {
-              this.instance.element.setAttribute = this.sandbox.stub();
-            });
-
-            it('calls element.setAttribute', function () {
-              this.instance.setAttribute(this.type, 'disabled', true);
-
-              expect(this.instance.element.setAttribute).to.be.calledWith('disabled', true);
-            });
-
-            it('does not call element.setAttribute when type does not match', function () {
-              this.instance.setAttribute('not-my-type', 'disabled', true);
-
-              expect(this.instance.element.setAttribute).to.not.be.called;
-            });
-
-            it('does not call element.setAttribute when attribute is not allowed', function () {
-              this.instance.setAttribute(this.type, 'maxlength', 0);
-
-              expect(this.instance.element.setAttribute).to.not.be.called;
-            });
-
-            it('does not call element.setAttribute when value does not match attribute type', function () {
-              this.instance.setAttribute(this.type, 'maxlength', false);
-
-              expect(this.instance.element.setAttribute).to.not.be.called;
-            });
+          it('applies spellcheck', () => {
+            expect(testContext.instance.element.getAttribute('spellcheck')).toBe('false');
           });
 
-          describe('maskValue', function () {
-            it('masks element value', function () {
-              this.instance.maskValue('abc 1234-asdf /asdf');
-
-              expect(this.instance.element.value).to.equal('••• ••••-•••• /••••');
-            });
-
-            it('can use custom mask-deliminator', function () {
-              this.instance.maskCharacter = ':)';
-
-              this.instance.maskValue('abc 1234-asdf /asdf');
-
-              expect(this.instance.element.value).to.equal(':):):) :):):):)-:):):):) /:):):):)');
-            });
+          it('applies name', () => {
+            expect(testContext.instance.element.getAttribute('name')).toBe(constants.allowedFields[key].name);
           });
 
-          describe('unmaskValue', function () {
-            it('sets elemnt value to hiddenMaskedValue', function () {
-              this.instance.hiddenMaskedValue = 'abc';
-              this.instance.element.value = '123';
+          it('applies id', () => {
+            expect(testContext.instance.element.getAttribute('id')).toBe(constants.allowedFields[key].name);
+          });
+        });
 
-              this.instance.unmaskValue();
+        describe('class', () => {
+          it('applies as type', () => {
+            expect(testContext.instance.element.getAttribute('class')).toBe(key);
+          });
+        });
 
-              expect(this.instance.element.value).to.equal('abc');
-            });
+        describe('data-braintree-name', () => {
+          it('applies based on type', () => {
+            expect(testContext.instance.element.getAttribute('data-braintree-name')).toBe(key);
+          });
+        });
+
+        describe('setAttribute', () => {
+          beforeEach(() => {
+            jest.spyOn(testContext.instance.element, 'setAttribute').mockReturnValue(null);
           });
 
-          describe('removeAttribute', function () {
-            beforeEach(function () {
-              this.instance.element.removeAttribute = this.sandbox.stub();
-            });
+          it('calls element.setAttribute', () => {
+            testContext.instance.setAttribute(testContext.type, 'disabled', true);
 
-            it('calls element.removeAttribute', function () {
-              this.instance.setAttribute('disabled', true);
+            expect(testContext.instance.element.setAttribute).toHaveBeenCalledWith('disabled', true);
+          });
 
-              this.instance.removeAttribute(this.type, 'disabled');
+          it('does not call element.setAttribute when type does not match', () => {
+            testContext.instance.setAttribute('not-my-type', 'disabled', true);
 
-              expect(this.instance.element.removeAttribute).to.be.calledWith('disabled');
-            });
+            expect(testContext.instance.element.setAttribute).not.toHaveBeenCalled();
+          });
 
-            it('does not call element.removeAttribute when type does not match', function () {
-              this.instance.setAttribute('disabled', true);
+          it('does not call element.setAttribute when attribute is not allowed', () => {
+            testContext.instance.setAttribute(testContext.type, 'maxlength', 0);
 
-              this.instance.removeAttribute('not-my-type', 'disabled');
+            expect(testContext.instance.element.setAttribute).not.toHaveBeenCalled();
+          });
 
-              expect(this.instance.element.removeAttribute).to.not.be.called;
-            });
+          it('does not call element.setAttribute when value does not match attribute type', () => {
+            testContext.instance.setAttribute(testContext.type, 'maxlength', false);
 
-            it('does not call element.removeAttribute when attribute is not allowed', function () {
-              this.instance.element.removeAttribute = this.sandbox.stub();
+            expect(testContext.instance.element.setAttribute).not.toHaveBeenCalled();
+          });
+        });
 
-              this.instance.removeAttribute(this.type, 'maxlength');
+        describe('maskValue', () => {
+          it('masks element value', () => {
+            testContext.instance.maskValue('abc 1234-asdf /asdf');
 
-              expect(this.instance.element.removeAttribute).to.not.be.called;
-            });
+            expect(testContext.instance.element.value).toBe('••• ••••-•••• /••••');
+          });
+
+          it('can use custom mask-deliminator', () => {
+            testContext.instance.maskCharacter = ':)';
+
+            testContext.instance.maskValue('abc 1234-asdf /asdf');
+
+            expect(testContext.instance.element.value).toBe(':):):) :):):):)-:):):):) /:):):):)');
+          });
+        });
+
+        describe('unmaskValue', () => {
+          it('sets element value to hiddenMaskedValue', () => {
+            testContext.instance.hiddenMaskedValue = 'abc';
+            testContext.instance.element.value = '123';
+
+            testContext.instance.unmaskValue();
+
+            expect(testContext.instance.element.value).toBe('abc');
+          });
+        });
+
+        describe('removeAttribute', () => {
+          beforeEach(() => {
+            jest.spyOn(testContext.instance.element, 'removeAttribute').mockReturnValue(null);
+          });
+
+          it('calls element.removeAttribute', () => {
+            testContext.instance.setAttribute('disabled', true);
+
+            testContext.instance.removeAttribute(testContext.type, 'disabled');
+
+            expect(testContext.instance.element.removeAttribute).toHaveBeenCalledWith('disabled');
+          });
+
+          it('does not call element.removeAttribute when type does not match', () => {
+            testContext.instance.setAttribute('disabled', true);
+
+            testContext.instance.removeAttribute('not-my-type', 'disabled');
+
+            expect(testContext.instance.element.removeAttribute).not.toHaveBeenCalled();
+          });
+
+          it('does not call element.removeAttribute when attribute is not allowed', () => {
+            jest.spyOn(testContext.instance.element, 'removeAttribute').mockReturnValue(null);
+
+            testContext.instance.removeAttribute(testContext.type, 'maxlength');
+
+            expect(testContext.instance.element.removeAttribute).not.toHaveBeenCalled();
           });
         });
       });

@@ -1,35 +1,37 @@
 'use strict';
 
-var methods = require('../../../src/lib/methods');
+const methods = require('../../../src/lib/methods');
+const { noop } = require('../../helpers');
 
-describe('methods', function () {
-  it('extracts all methods from an object', function () {
-    var obj = {
-      fnOne: function () {},
-      fnTwo: function () {},
+describe('methods', () => {
+  it('extracts all methods from an object', () => {
+    const obj = {
+      fnOne: noop,
+      fnTwo: noop,
       property1: 'I am a property'
     };
 
-    expect(methods(obj)).to.have.members(['fnOne', 'fnTwo']);
+    expect(methods(obj)).toEqual(expect.arrayContaining(['fnOne', 'fnTwo']));
   });
 
-  it('extracts all methods from an object with a superclass', function () {
-    var obj;
+  it('extracts all methods from an object with a superclass', () => {
+    let obj;
 
     function Klass() {
-      this.childFn = function () {};
+      this.childFn = noop;
       this.childProperty = 'I am a property';
     }
-    Klass.prototype.parentFn = function () {};
+
+    Klass.prototype.parentFn = noop;
 
     obj = new Klass();
 
-    expect(methods(obj)).to.deep.equal(['childFn']);
+    expect(methods(obj)).toEqual(['childFn']);
   });
 
-  it('returns [] with empty object', function () {
-    var obj = {};
+  it('returns [] with empty object', () => {
+    const obj = {};
 
-    expect(methods(obj)).to.deep.equal([]);
+    expect(methods(obj)).toEqual([]);
   });
 });

@@ -1,14 +1,14 @@
 'use strict';
 
-var googlePayment = require('../../../src/google-payment');
-var packageVersion = require('../../../package.json').version;
+const { VERSION, create } = require('../../../src/google-payment');
+const { version } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(googlePayment.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(googlePayment.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(VERSION).toBe(version);
   });
 });

@@ -1,164 +1,169 @@
 'use strict';
+const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
+const { createInput } = require('../../helpers');
 
-var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
+describe('Credit Card Input', () => {
+  let testContext;
 
-describe('Credit Card Input', function () {
-  beforeEach(function () {
-    this.input = helpers.createInput('number');
+  beforeEach(() => {
+    testContext = {};
+    testContext.input = createInput('number');
   });
 
-  describe('inheritance', function () {
-    it('extends BaseInput', function () {
-      expect(this.input).to.be.an.instanceof(BaseInput);
-    });
-  });
-
-  describe('element', function () {
-    it('has type="tel"', function () {
-      expect(this.input.element.getAttribute('type')).to.equal('tel');
-    });
-
-    it('has autocomplete cc-number', function () {
-      expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-number');
+  describe('inheritance', () => {
+    it('extends BaseInput', () => {
+      expect(testContext.input).toBeInstanceOf(BaseInput);
     });
   });
 
-  describe('maxlength', function () {
-    it('has a default maxlength of 22', function () {
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+  describe('element', () => {
+    it('has type="tel"', () => {
+      expect(testContext.input.element.getAttribute('type')).toBe('tel');
     });
 
-    it('should update maxlength based on number', function () {
-      this.input.element.value = '4111';
-      this.input.model.set('number.value', '4111');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+    it('has autocomplete cc-number', () => {
+      expect(testContext.input.element.getAttribute('autocomplete')).toBe('cc-number');
+    });
+  });
 
-      this.input.element.value = '';
-      this.input.model.set('number.value', '');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+  describe('maxlength', () => {
+    it('has a default maxlength of 22', () => {
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
+    });
 
-      this.input.element.value = '3782';
-      this.input.model.set('number.value', '3782');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('17');
+    it('should update maxlength based on number', () => {
+      testContext.input.element.value = '4111';
+      testContext.input.model.set('number.value', '4111');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
+
+      testContext.input.element.value = '';
+      testContext.input.model.set('number.value', '');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
+
+      testContext.input.element.value = '3782';
+      testContext.input.model.set('number.value', '3782');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('17');
 
       // Maestro - multiple lengths allowed, max is 19
-      this.input.element.value = '5063';
-      this.input.model.set('number.value', '5063');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+      testContext.input.element.value = '5063';
+      testContext.input.model.set('number.value', '5063');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
 
-      this.input.element.value = '6304000000000000';
-      this.input.model.set('number.value', '6304000000000000');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+      testContext.input.element.value = '6304000000000000';
+      testContext.input.model.set('number.value', '6304000000000000');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
 
-      this.input.element.value = '63040 0000 0000 000';
-      this.input.model.set('number.value', '63040 0000 0000 000');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+      testContext.input.element.value = '63040 0000 0000 000';
+      testContext.input.model.set('number.value', '63040 0000 0000 000');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
 
-      this.input.element.value = '411';
-      this.input.model.set('number.value', '411');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+      testContext.input.element.value = '411';
+      testContext.input.model.set('number.value', '411');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
 
-      this.input.element.value = '6282001509099283';
-      this.input.model.set('number.value', '6282001509099283');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+      testContext.input.element.value = '6282001509099283';
+      testContext.input.model.set('number.value', '6282001509099283');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
 
-      this.input.element.value = '6011 1111 1111 1117';
-      this.input.model.set('number.value', '6011111111111117');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+      testContext.input.element.value = '6011 1111 1111 1117';
+      testContext.input.model.set('number.value', '6011111111111117');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('22');
 
-      this.input.model.set('number.value', '5555 5555 5555 4444');
-      this.input.model.set('number.value', '5555555555554444');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      testContext.input.model.set('number.value', '5555 5555 5555 4444');
+      testContext.input.model.set('number.value', '5555555555554444');
+      expect(testContext.input.element.getAttribute('maxlength')).toBe('19');
     });
 
-    it('can configure custom max length with maxCardLength option', function () {
-      this.input.model.configuration.fields.number.maxCardLength = 16;
-      this.input.element.value = '4111';
-      this.input.model.set('number.value', '4111');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+    it('can configure custom max length with maxCardLength option', () => {
+      const { model, element } = testContext.input;
 
-      this.input.element.value = '';
-      this.input.model.set('number.value', '');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('22');
+      model.configuration.fields.number.maxCardLength = 16;
+      element.value = '4111';
+      model.set('number.value', '4111');
+      expect(element.getAttribute('maxlength')).toBe('19');
+
+      element.value = '';
+      model.set('number.value', '');
+      expect(element.getAttribute('maxlength')).toBe('22');
 
       // amex have a max length of 15, so that takes precedence
       // over configure max length
-      this.input.element.value = '3782';
-      this.input.model.set('number.value', '3782');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('17');
+      element.value = '3782';
+      model.set('number.value', '3782');
+      expect(element.getAttribute('maxlength')).toBe('17');
 
-      this.input.element.value = '5063';
-      this.input.model.set('number.value', '5063');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      element.value = '5063';
+      model.set('number.value', '5063');
+      expect(element.getAttribute('maxlength')).toBe('19');
 
-      this.input.element.value = '6304000000000000';
-      this.input.model.set('number.value', '6304000000000000');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      element.value = '6304000000000000';
+      model.set('number.value', '6304000000000000');
+      expect(element.getAttribute('maxlength')).toBe('19');
 
-      this.input.element.value = '63040 0000 0000 000';
-      this.input.model.set('number.value', '63040 0000 0000 000');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      element.value = '63040 0000 0000 000';
+      model.set('number.value', '63040 0000 0000 000');
+      expect(element.getAttribute('maxlength')).toBe('19');
 
-      this.input.element.value = '411';
-      this.input.model.set('number.value', '411');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      element.value = '411';
+      model.set('number.value', '411');
+      expect(element.getAttribute('maxlength')).toBe('19');
 
-      this.input.element.value = '6282001509099283';
-      this.input.model.set('number.value', '6282001509099283');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      element.value = '6282001509099283';
+      model.set('number.value', '6282001509099283');
+      expect(element.getAttribute('maxlength')).toBe('19');
 
-      this.input.element.value = '6011 1111 1111 1117';
-      this.input.model.set('number.value', '6011111111111117');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      element.value = '6011 1111 1111 1117';
+      model.set('number.value', '6011111111111117');
+      expect(element.getAttribute('maxlength')).toBe('19');
 
-      this.input.model.set('number.value', '5555 5555 5555 4444');
-      this.input.model.set('number.value', '5555555555554444');
-      expect(this.input.element.getAttribute('maxlength')).to.equal('19');
+      model.set('number.value', '5555 5555 5555 4444');
+      model.set('number.value', '5555555555554444');
+      expect(element.getAttribute('maxlength')).toBe('19');
     });
   });
 
-  describe('maskValue', function () {
-    beforeEach(function () {
-      this.input = helpers.createInput('number');
+  describe('maskValue', () => {
+    beforeEach(() => {
+      testContext.input = createInput('number');
     });
 
-    it('calls mask value on BaseInput', function () {
-      this.sandbox.stub(BaseInput.prototype, 'maskValue');
+    it('calls mask value on BaseInput', () => {
+      jest.spyOn(BaseInput.prototype, 'maskValue');
 
-      this.input.maskValue('1234');
+      testContext.input.maskValue('1234');
 
-      expect(BaseInput.prototype.maskValue).to.be.calledOnce;
-      expect(BaseInput.prototype.maskValue).to.be.calledWith('1234');
+      expect(BaseInput.prototype.maskValue).toHaveBeenCalledTimes(1);
+      expect(BaseInput.prototype.maskValue).toHaveBeenCalledWith('1234');
     });
 
-    it('reveals last four in element value if card is valid and unmaskLastFour is set', function () {
-      this.sandbox.stub(this.input.model, 'get').returns({
+    it('reveals last four in element value if card is valid and unmaskLastFour is set', () => {
+      jest.spyOn(testContext.input.model, 'get').mockReturnValue({
         isValid: true
       });
-      this.input.unmaskLastFour = true;
-      this.input.maskValue('4111 1111 1111 1236');
+      testContext.input.unmaskLastFour = true;
+      testContext.input.maskValue('4111 1111 1111 1236');
 
-      expect(this.input.element.value).to.equal('•••• •••• •••• 1236');
+      expect(testContext.input.element.value).toBe('•••• •••• •••• 1236');
     });
 
-    it('does not reveal last four in element value if card is not valid and unmaskLastFour is set', function () {
-      this.sandbox.stub(this.input.model, 'get').returns({
+    it('does not reveal last four in element value if card is not valid and unmaskLastFour is set', () => {
+      jest.spyOn(testContext.input.model, 'get').mockReturnValue({
         isValid: false
       });
-      this.input.unmaskLastFour = true;
-      this.input.maskValue('4111 1111 1111 123');
+      testContext.input.unmaskLastFour = true;
+      testContext.input.maskValue('4111 1111 1111 123');
 
-      expect(this.input.element.value).to.equal('•••• •••• •••• •••');
+      expect(testContext.input.element.value).toBe('•••• •••• •••• •••');
     });
 
-    it('does not reveal last four in element value if card is not valid and unmaskLastFour is set', function () {
-      this.sandbox.stub(this.input.model, 'get').returns({
+    it('does not reveal last four in element value if card is not valid and unmaskLastFour is set', () => {
+      jest.spyOn(testContext.input.model, 'get').mockReturnValue({
         isValid: true
       });
-      this.input.unmaskLastFour = false;
-      this.input.maskValue('4111 1111 1111 1236');
+      testContext.input.unmaskLastFour = false;
+      testContext.input.maskValue('4111 1111 1111 1236');
 
-      expect(this.input.element.value).to.equal('•••• •••• •••• ••••');
+      expect(testContext.input.element.value).toBe('•••• •••• •••• ••••');
     });
   });
 });

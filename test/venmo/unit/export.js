@@ -1,14 +1,14 @@
 'use strict';
 
-var venmo = require('../../../src/venmo');
-var packageVersion = require('../../../package.json').version;
+const { VERSION, create } = require('../../../src/venmo');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(venmo.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(venmo.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(VERSION).toBe(packageVersion);
   });
 });

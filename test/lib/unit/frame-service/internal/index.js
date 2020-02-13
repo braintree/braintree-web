@@ -1,106 +1,98 @@
 'use strict';
 
-var frameService = require('../../../../../src/lib/frame-service/internal/index');
-var events = require('../../../../../src/lib/frame-service/shared/events');
-var constants = require('../../../../../src/lib/frame-service/shared/constants');
+const frameService = require('../../../../../src/lib/frame-service/internal');
+const { DISPATCH_FRAME_REPORT } = require('../../../../../src/lib/frame-service/shared/events');
+const { DISPATCH_FRAME_NAME, POPUP_CLOSE_TIMEOUT } = require('../../../../../src/lib/frame-service/shared/constants');
 
-describe('frame-service', function () {
-  beforeEach(function () {
-    this.id = 'id';
-    this.cached = {
-      globalOpener: global.opener,
-      globalParent: global.parent
+describe('frame-service', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+
+    jest.spyOn(window, 'open').mockImplementation();
+    testContext.id = 'id';
+    testContext.cached = {
+      globalOpener: window.opener,
+      globalParent: window.parent
     };
-    global.opener = {
-      frames: {}
-    };
+    window.opener = { frames: {}};
   });
 
-  afterEach(function () {
-    global.opener = this.cached.globalOpener;
-    global.parent = this.cached.globalParent;
+  afterEach(() => {
+    window.opener = testContext.cached.globalOpener;
+    window.parent = testContext.cached.globalParent;
   });
 
-  describe('getFrame', function () {
-    it('to return a frame from global.opener', function () {
-      global.name = constants.DISPATCH_FRAME_NAME + '_' + this.id;
-      global.opener.frames[constants.DISPATCH_FRAME_NAME + '_' + this.id] = 'frame';
+  describe('getFrame', () => {
+    it('to return a frame from global.opener', () => {
+      window.name = `${DISPATCH_FRAME_NAME}_${testContext.id}`;
+      window.opener.frames[`${DISPATCH_FRAME_NAME}_${testContext.id}`] = 'frame';
 
-      expect(frameService.getFrame()).to.equal('frame');
+      expect(frameService.getFrame()).toBe('frame');
     });
 
-    it('to return a frame from global.parent', function () {
-      delete global.opener;
-      global.parent = {
-        frames: {}
-      };
+    it('to return a frame from global.parent', () => {
+      delete window.opener;
+      window.parent = { frames: {}};
 
-      global.name = constants.DISPATCH_FRAME_NAME + '_' + this.id;
-      global.parent.frames[constants.DISPATCH_FRAME_NAME + '_' + this.id] = 'frame';
+      window.name = `${DISPATCH_FRAME_NAME}_${testContext.id}`;
+      window.parent.frames[`${DISPATCH_FRAME_NAME}_${testContext.id}`] = 'frame';
 
-      expect(frameService.getFrame()).to.equal('frame');
+      expect(frameService.getFrame()).toBe('frame');
     });
 
-    it('ignores query params in frame name', function () {
-      delete global.opener;
-      global.parent = {
-        frames: {}
-      };
+    it('ignores query params in frame name', () => {
+      delete window.opener;
+      window.parent = { frames: {}};
 
-      global.name = constants.DISPATCH_FRAME_NAME + '_' + this.id + '?query=param';
-      global.parent.frames[constants.DISPATCH_FRAME_NAME + '_' + this.id] = 'frame';
+      window.name = `${DISPATCH_FRAME_NAME}_${testContext.id}?query=param`;
+      window.parent.frames[`${DISPATCH_FRAME_NAME}_${testContext.id}`] = 'frame';
 
-      expect(frameService.getFrame()).to.equal('frame');
+      expect(frameService.getFrame()).toBe('frame');
     });
 
-    it('throws an error when frame is empty', function () {
-      expect(function () {
-        return frameService.getFrame();
-      }).to.throw('Braintree is inactive');
+    it('throws an error when frame is empty', () => {
+      expect(() => frameService.getFrame()).toThrowError('Braintree is inactive');
     });
   });
 
-  describe('report', function () {
-    it('emits an error and a payload', function () {
-      var frame = {
-        bus: {
-          emit: function () {}
-        }
-      };
+  describe('report', () => {
+    it('emits an error and a payload', () => {
+      const frame = { bus: { emit: jest.fn() }};
 
-      this.sandbox.spy(frame.bus, 'emit');
-      global.name = constants.DISPATCH_FRAME_NAME + '_' + this.id;
-      global.opener.frames[constants.DISPATCH_FRAME_NAME + '_' + this.id] = frame;
+      window.name = `${DISPATCH_FRAME_NAME}_${testContext.id}`;
+      window.opener.frames[`${DISPATCH_FRAME_NAME}_${testContext.id}`] = frame;
 
       frameService.report('err', 'payload');
 
-      expect(frame.bus.emit).to.be.calledOnce;
-      expect(frame.bus.emit).to.be.calledWith(events.DISPATCH_FRAME_REPORT, {
+      expect(frame.bus.emit).toHaveBeenCalledTimes(1);
+      expect(frame.bus.emit.mock.calls[0][0]).toBe(DISPATCH_FRAME_REPORT);
+      expect(frame.bus.emit.mock.calls[0][1]).toMatchObject({
         err: 'err',
         payload: 'payload'
       });
     });
 
-    it('passes an error back to the callback if getFrame errors', function (done) {
-      global.name = constants.DISPATCH_FRAME_NAME + '_wont_find_it';
+    it('passes an error back to the callback if getFrame errors', done => {
+      window.name = `${DISPATCH_FRAME_NAME}_wont_find_it`;
 
-      frameService.report('err', 'payload', function (err) {
-        expect(err.message).to.equal('Braintree is inactive');
+      frameService.report('err', 'payload', err => {
+        expect(err.message).toBe('Braintree is inactive');
 
         done();
       });
     });
   });
 
-  describe('asyncClose', function () {
-    it('async call to global.close', function (done) {
-      this.sandbox.stub(global, 'close');
+  describe('asyncClose', () => {
+    it('async call to global.close', () => {
+      jest.useFakeTimers();
+      jest.spyOn(window, 'close');
       frameService.asyncClose();
 
-      setTimeout(function () {
-        expect(global.close).to.be.called;
-        done();
-      }, constants.POPUP_CLOSE_TIMEOUT + 10);
+      jest.advanceTimersByTime(POPUP_CLOSE_TIMEOUT + 10);
+      expect(window.close).toHaveBeenCalled();
     });
   });
 });

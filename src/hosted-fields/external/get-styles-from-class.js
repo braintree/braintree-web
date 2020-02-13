@@ -16,9 +16,9 @@ module.exports = function getStylesFromClass(cssClass) {
   element.style.position = 'fixed !important';
   element.style.left = '-99999px !important';
   element.style.top = '-99999px !important';
-  global.document.body.appendChild(element);
+  document.body.appendChild(element);
 
-  computedStyles = global.getComputedStyle(element);
+  computedStyles = window.getComputedStyle(element);
 
   allowedStyles.forEach(function (style) {
     var value = computedStyles[style];
@@ -28,7 +28,7 @@ module.exports = function getStylesFromClass(cssClass) {
     }
   });
 
-  global.document.body.removeChild(element);
+  document.body.removeChild(element);
 
   return styles;
 };

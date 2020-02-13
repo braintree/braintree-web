@@ -610,7 +610,7 @@ function HostedFields(options) {
     var reply = results[0];
 
     clearTimeout(failureTimeout);
-    reply(self._merchantConfigurationOptions);
+    reply(formatMerchantConfigurationForIframes(self._merchantConfigurationOptions));
 
     self._cleanUpFocusIntercepts();
 
@@ -1326,5 +1326,22 @@ HostedFields.prototype.focus = function (field) {
 HostedFields.prototype.getState = function () {
   return this._state;
 };
+
+// React adds decorations to DOM nodes that cause
+// circular dependencies, so we remove them from the
+// config before sending it to the iframes. However,
+// we don't want to mutate the original object that
+// was passed in, so we create fresh objects via assign
+function formatMerchantConfigurationForIframes(config) {
+  var formattedConfig = assign({}, config);
+
+  formattedConfig.fields = assign({}, formattedConfig.fields);
+  Object.keys(formattedConfig.fields).forEach(function (field) {
+    formattedConfig.fields[field] = assign({}, formattedConfig.fields[field]);
+    delete formattedConfig.fields[field].container;
+  });
+
+  return formattedConfig;
+}
 
 module.exports = wrapPromise.wrapPrototype(HostedFields);

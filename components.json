@@ -10,6 +10,7 @@
   "payment-request",
   "paypal",
   "paypal-checkout",
+  "preferred-payment-methods",
   "three-d-secure",
   "unionpay",
   "us-bank-account",

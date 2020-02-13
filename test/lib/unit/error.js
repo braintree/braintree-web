@@ -1,38 +1,35 @@
 'use strict';
 
-var BraintreeError = require('../../../src/lib/braintree-error');
+const BraintreeError = require('../../../src/lib/braintree-error');
 
-describe('BraintreeError', function () {
-  it('returns a properly formatted error', function () {
-    var options = {
+describe('BraintreeError', () => {
+  it('returns a properly formatted error', () => {
+    const options = {
       type: BraintreeError.types.UNKNOWN,
       code: 'YOU_GOOFED',
       message: 'yep it\'s an error'
     };
 
-    var e = new BraintreeError(options);
+    const { code, message, name, type } = new BraintreeError(options);
 
-    expect(e.name).to.equal('BraintreeError');
-    expect(e.type).to.equal(options.type);
-    expect(e.code).to.equal(options.code);
-    expect(e.message).to.equal(options.message);
+    expect(name).toBe('BraintreeError');
+    expect(type).toBe(options.type);
+    expect(code).toBe(options.code);
+    expect(message).toBe(options.message);
   });
 
-  it('BraintreeError expects a non-empty message', function () {
-    var err;
+  it('BraintreeError expects a non-empty message', () => {
+    expect.assertions(4);
 
     try {
       new BraintreeError({
         type: BraintreeError.types.UNKNOWN,
         code: 'YOU_GOOFED'
       });
-    } catch (e) {
-      err = e;
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe('Error message required.');
     }
-
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal('Error message required.');
-    err = null;
 
     try {
       new BraintreeError({
@@ -40,16 +37,14 @@ describe('BraintreeError', function () {
         code: 'YOU_GOOFED',
         message: ''
       });
-    } catch (e) {
-      err = e;
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe('Error message required.');
     }
-
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal('Error message required.');
   });
 
-  it('BraintreeError expects a non-empty code', function () {
-    var err;
+  it('BraintreeError expects a non-empty code', () => {
+    let err;
 
     try {
       new BraintreeError({
@@ -60,8 +55,8 @@ describe('BraintreeError', function () {
       err = e;
     }
 
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal('Error code required.');
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toBe('Error code required.');
     err = null;
 
     try {
@@ -74,25 +69,22 @@ describe('BraintreeError', function () {
       err = e;
     }
 
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal('Error code required.');
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toBe('Error code required.');
   });
 
-  it('BraintreeError type can only accept a value from the defined error types', function () {
-    var err;
+  it('BraintreeError type can only accept a value from the defined error types', () => {
+    expect.assertions(8);
 
     try {
       new BraintreeError({
         message: 'you goofed',
         code: 'YOU_GOOFED'
       });
-    } catch (e) {
-      err = e;
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe('undefined is not a valid type.');
     }
-
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal('undefined is not a valid type.');
-    err = null;
 
     try {
       new BraintreeError({
@@ -100,13 +92,10 @@ describe('BraintreeError', function () {
         code: 'YOU_GOOFED',
         message: 'you goofed'
       });
-    } catch (e) {
-      err = e;
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe(' is not a valid type.');
     }
-
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal(' is not a valid type.');
-    err = null;
 
     try {
       new BraintreeError({
@@ -114,13 +103,10 @@ describe('BraintreeError', function () {
         code: 'YOU_GOOFED',
         message: 'I should fail'
       });
-    } catch (e) {
-      err = e;
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe('NOPE is not a valid type.');
     }
-
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal('NOPE is not a valid type.');
-    err = null;
 
     try {
       new BraintreeError({
@@ -128,16 +114,14 @@ describe('BraintreeError', function () {
         code: 'YOU_GOOFED',
         message: 'I should fail'
       });
-    } catch (e) {
-      err = e;
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe('hasOwnProperty is not a valid type.');
     }
-
-    expect(err).to.be.an.instanceof(Error);
-    expect(err.message).to.equal('hasOwnProperty is not a valid type.');
   });
 
-  it('BraintreeError.type is an enum of error types', function () {
-    expect(BraintreeError.types).to.deep.equal({
+  it('BraintreeError.type is an enum of error types', () => {
+    expect(BraintreeError.types).toEqual({
       CUSTOMER: 'CUSTOMER',
       MERCHANT: 'MERCHANT',
       NETWORK: 'NETWORK',

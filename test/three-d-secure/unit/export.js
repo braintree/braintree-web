@@ -1,14 +1,14 @@
 'use strict';
 
-var threeDSecure = require('../../../src/three-d-secure');
-var packageVersion = require('../../../package.json').version;
+const threeDSecure = require('../../../src/three-d-secure');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(threeDSecure.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(threeDSecure.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(threeDSecure.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(threeDSecure.VERSION).toBe(packageVersion);
   });
 });

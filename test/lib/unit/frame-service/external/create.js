@@ -1,26 +1,29 @@
 'use strict';
 
-var frameService = require('../../../../../src/lib/frame-service/external');
-var FrameService = require('../../../../../src/lib/frame-service/external/frame-service');
+jest.mock('../../../../../src/lib/frame-service/external/frame-service');
 
-describe('FrameService create', function () {
-  beforeEach(function () {
-    var gatewayConfiguration = {
+const frameService = require('../../../../../src/lib/frame-service/external');
+const FrameService = require('../../../../../src/lib/frame-service/external/frame-service');
+const { noop } = require('../../../../helpers');
+
+describe('FrameService create', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+
+    const gatewayConfiguration = {
       paypal: {
         assetsUrl: 'https://paypal.assets.url',
         displayName: 'my brand'
       }
     };
 
-    this.state = {
+    testContext.state = {
       client: {
         authorization: 'fake authorization-key',
-        gatewayConfiguration: gatewayConfiguration,
-        getConfiguration: function () {
-          return {
-            gatewayConfiguration: gatewayConfiguration
-          };
-        }
+        gatewayConfiguration,
+        getConfiguration: () => ({ gatewayConfiguration })
       },
       enableShippingAddress: true,
       amount: 10.00,
@@ -32,22 +35,19 @@ describe('FrameService create', function () {
       }
     };
 
-    this.options = {
-      state: this.state,
+    testContext.options = {
+      state: testContext.state,
       name: 'fake_name',
       dispatchFrameUrl: 'fake-url',
       openFrameUrl: 'fake-frame-html'
     };
   });
 
-  describe('create', function () {
-    it('initializes a FrameService instance', function () {
-      var callback = this.sandbox.stub();
-      var stub = this.sandbox.stub(FrameService.prototype, 'initialize');
+  describe('create', () => {
+    it('initializes a FrameService instance', () => {
+      frameService.create(testContext.options, noop);
 
-      frameService.create(this.options, callback);
-
-      expect(stub).to.be.called;
+      expect(FrameService.prototype.initialize).toHaveBeenCalled();
     });
   });
 });

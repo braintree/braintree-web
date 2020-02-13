@@ -72,7 +72,7 @@ function addGlobalStyles() {
     sheet = style.sheet;
   }
 
-  sheet.addRule('.placeholder-shim', 'color: #999;', 0);
+  sheet.insertRule('.placeholder-shim { color: #999; }', 0);
 
   hasAddedGlobalStyles = true;
 }

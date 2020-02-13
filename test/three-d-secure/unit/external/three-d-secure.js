@@ -1,160 +1,160 @@
 'use strict';
 
-var ThreeDSecure = require('../../../../src/three-d-secure/external/three-d-secure');
-var LegacyFramework = require('../../../../src/three-d-secure/external/frameworks/legacy');
-var SongbirdFramework = require('../../../../src/three-d-secure/external/frameworks/songbird');
-var CardinalModalFramework = require('../../../../src/three-d-secure/external/frameworks/cardinal-modal');
-var Bootstrap3ModalFramework = require('../../../../src/three-d-secure/external/frameworks/bootstrap3-modal');
-var InlineIframeFramework = require('../../../../src/three-d-secure/external/frameworks/inline-iframe');
-var EventEmitter = require('@braintree/event-emitter');
-var analytics = require('../../../../src/lib/analytics');
-var methods = require('../../../../src/lib/methods');
-var BraintreeError = require('../../../../src/lib/braintree-error');
-var Promise = require('../../../../src/lib/promise');
-var fake = require('../../../helpers/fake');
+const EventEmitter = require('@braintree/event-emitter');
+const ThreeDSecure = require('../../../../src/three-d-secure/external/three-d-secure');
+const LegacyFramework = require('../../../../src/three-d-secure/external/frameworks/legacy');
+const SongbirdFramework = require('../../../../src/three-d-secure/external/frameworks/songbird');
+const CardinalModalFramework = require('../../../../src/three-d-secure/external/frameworks/cardinal-modal');
+const Bootstrap3ModalFramework = require('../../../../src/three-d-secure/external/frameworks/bootstrap3-modal');
+const InlineIframeFramework = require('../../../../src/three-d-secure/external/frameworks/inline-iframe');
+const methods = require('../../../../src/lib/methods');
+const BraintreeError = require('../../../../src/lib/braintree-error');
+const { fake, noop } = require('../../../helpers');
 
-describe('ThreeDSecure', function () {
-  beforeEach(function () {
-    var self = this;
+describe('ThreeDSecure', () => {
+  let testContext;
 
-    this.sandbox.stub(analytics, 'sendEvent');
-
-    this.configuration = {
+  beforeEach(() => {
+    testContext = {};
+    testContext.configuration = {
       authorization: fake.clientToken,
       authorizationFingerprint: 'encoded_auth_fingerprint',
       gatewayConfiguration: {
         assetsUrl: 'http://example.com/assets'
       }
     };
-    this.client = {
-      request: this.sandbox.stub().resolves(),
-      getConfiguration: function () { return self.configuration; }
+    testContext.client = {
+      request: jest.fn().mockResolvedValue(null),
+      getConfiguration() {
+        return testContext.configuration;
+      }
     };
-    this.sandbox.stub(SongbirdFramework.prototype, 'setupSongbird');
+    jest.spyOn(SongbirdFramework.prototype, 'setupSongbird');
   });
 
-  describe('Constructor', function () {
-    it('is an event emitter', function () {
-      var options = {
-        client: this.client,
+  describe('Constructor', () => {
+    it('is an event emitter', () => {
+      const options = {
+        client: testContext.client,
         framework: 'cardinal-modal'
       };
-      var dddS = new ThreeDSecure(options);
+      const dddS = new ThreeDSecure(options);
 
-      expect(dddS).to.be.an.instanceof(EventEmitter);
+      expect(dddS).toBeInstanceOf(EventEmitter);
     });
 
-    it('uses legacy framework when "legacy" is passed in', function () {
-      var options = {
-        client: this.client,
+    it('uses legacy framework when "legacy" is passed in', () => {
+      const options = {
+        client: testContext.client,
         framework: 'legacy'
       };
-      var dddS = new ThreeDSecure(options);
+      const dddS = new ThreeDSecure(options);
 
-      expect(dddS._framework).to.be.an.instanceof(LegacyFramework);
+      expect(dddS._framework).toBeInstanceOf(LegacyFramework);
     });
 
-    it('uses cardinal modal framework when "cardinal-modal" is passed in', function () {
-      var options = {
-        client: this.client,
+    it('uses cardinal modal framework when "cardinal-modal" is passed in', () => {
+      const options = {
+        client: testContext.client,
         framework: 'cardinal-modal'
       };
-      var dddS = new ThreeDSecure(options);
+      const dddS = new ThreeDSecure(options);
 
-      expect(dddS._framework).to.be.an.instanceof(CardinalModalFramework);
+      expect(dddS._framework).toBeInstanceOf(CardinalModalFramework);
     });
 
-    it('uses bootstrap3 modal framework when "bootstrap3-modal" is passed in', function () {
-      var options = {
-        client: this.client,
+    it('uses bootstrap3 modal framework when "bootstrap3-modal" is passed in', () => {
+      const options = {
+        client: testContext.client,
         framework: 'bootstrap3-modal'
       };
-      var dddS = new ThreeDSecure(options);
+      const dddS = new ThreeDSecure(options);
 
-      expect(dddS._framework).to.be.an.instanceof(Bootstrap3ModalFramework);
+      expect(dddS._framework).toBeInstanceOf(Bootstrap3ModalFramework);
     });
 
-    it('uses inline iframe framework when "inline-iframe" is passed in', function () {
-      var options = {
-        client: this.client,
+    it('uses inline iframe framework when "inline-iframe" is passed in', () => {
+      const options = {
+        client: testContext.client,
         framework: 'inline-iframe'
       };
-      var dddS = new ThreeDSecure(options);
+      const dddS = new ThreeDSecure(options);
 
-      expect(dddS._framework).to.be.an.instanceof(InlineIframeFramework);
+      expect(dddS._framework).toBeInstanceOf(InlineIframeFramework);
     });
 
-    it('sets up event listeners for the framework', function (done) {
-      var options = {
-        client: this.client,
+    it('sets up event listeners for the framework', done => {
+      const options = {
+        client: testContext.client,
         framework: 'cardinal-modal'
       };
-      var dddS, handler;
+      let dddS, handler;
 
-      this.sandbox.stub(SongbirdFramework.prototype, 'setUpEventListeners');
+      jest.spyOn(SongbirdFramework.prototype, 'setUpEventListeners');
 
       dddS = new ThreeDSecure(options);
 
-      expect(SongbirdFramework.prototype.setUpEventListeners).to.be.calledOnce;
+      expect(SongbirdFramework.prototype.setUpEventListeners).toHaveBeenCalledTimes(1);
 
-      dddS.on('foo', function (data, otherData) {
-        expect(data).to.equal('some data');
-        expect(otherData).to.equal('other data');
+      dddS.on('foo', (data, otherData) => {
+        expect(data).toBe('some data');
+        expect(otherData).toBe('other data');
 
         done();
       });
 
-      handler = SongbirdFramework.prototype.setUpEventListeners.args[0][0];
+      handler = SongbirdFramework.prototype.setUpEventListeners.mock.calls[0][0];
 
       handler('foo', 'some data', 'other data');
     });
   });
 
-  describe('verifyCard', function () {
-    it('calls the verifyCard method on the framework', function () {
-      var instance = new ThreeDSecure({
-        client: this.client,
+  describe('verifyCard', () => {
+    it('calls the verifyCard method on the framework', () => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
-      var options = {};
+      // const options = { nonce: 'foo', amount: 100, onLookupComplete: noop };
 
-      this.sandbox.stub(instance._framework, 'verifyCard');
+      jest.spyOn(instance._framework, 'verifyCard');
 
-      instance.verifyCard(options);
+      expect.assertions(2);
 
-      expect(instance._framework.verifyCard).to.be.calledOnce;
-      expect(instance._framework.verifyCard).to.be.calledWith(options, this.sandbox.match.undefined);
+      return instance.verifyCard({}).catch(noop).then(() => {
+        expect(instance._framework.verifyCard).toHaveBeenCalledTimes(1);
+        expect(instance._framework.verifyCard).toHaveBeenCalledWith({}, undefined); // eslint-disable-line no-undefined
+      });
     });
 
-    it('passes along `ignoreOnLookupCompleteRequirement` if a listner for it is included', function () {
-      var instance = new ThreeDSecure({
-        client: this.client,
+    it('passes along `ignoreOnLookupCompleteRequirement` if a listener for it is included', () => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
-      var options = {};
 
-      instance.on('lookup-complete', function () {
-        // noop
-      });
+      instance.on('lookup-complete', noop);
 
-      this.sandbox.stub(instance._framework, 'verifyCard');
+      jest.spyOn(instance._framework, 'verifyCard');
 
-      instance.verifyCard(options);
+      expect.assertions(2);
 
-      expect(instance._framework.verifyCard).to.be.calledOnce;
-      expect(instance._framework.verifyCard).to.be.calledWith(options, {
-        ignoreOnLookupCompleteRequirement: true
+      return instance.verifyCard({}).catch(noop).then(() => {
+        expect(instance._framework.verifyCard).toHaveBeenCalledTimes(1);
+        expect(instance._framework.verifyCard).toHaveBeenCalledWith({}, {
+          ignoreOnLookupCompleteRequirement: true
+        });
       });
     });
   });
 
-  describe('initializeChallengeWithLookupResponse', function () {
-    it('calls the initializeChallengeWithLookupResponse method on the framework', function () {
-      var instance = new ThreeDSecure({
-        client: this.client,
+  describe('initializeChallengeWithLookupResponse', () => {
+    it('calls the initializeChallengeWithLookupResponse method on the framework', () => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
-      var options = {
+      const options = {
         paymentMethod: {
           consumed: false,
           description: 'ending in 02',
@@ -178,20 +178,20 @@ describe('ThreeDSecure', function () {
         }
       };
 
-      this.sandbox.stub(instance._framework, 'initializeChallengeWithLookupResponse');
+      jest.spyOn(instance._framework, 'initializeChallengeWithLookupResponse');
 
       instance.initializeChallengeWithLookupResponse(options);
 
-      expect(instance._framework.initializeChallengeWithLookupResponse).to.be.calledOnce;
-      expect(instance._framework.initializeChallengeWithLookupResponse).to.be.calledWith(options);
+      expect(instance._framework.initializeChallengeWithLookupResponse).toHaveBeenCalledTimes(1);
+      expect(instance._framework.initializeChallengeWithLookupResponse).toHaveBeenCalledWith(options);
     });
 
-    it('can pass a string version of lookup response', function () {
-      var instance = new ThreeDSecure({
-        client: this.client,
+    it('can pass a string version of lookup response', () => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
-      var options = {
+      const options = {
         paymentMethod: {
           consumed: false,
           description: 'ending in 02',
@@ -214,71 +214,75 @@ describe('ThreeDSecure', function () {
           liabilityShifted: false
         }
       };
-      var stringifiedOptions = JSON.stringify(options);
+      const stringifiedOptions = JSON.stringify(options);
 
-      this.sandbox.stub(instance._framework, 'initializeChallengeWithLookupResponse');
+      jest.spyOn(instance._framework, 'initializeChallengeWithLookupResponse');
 
       instance.initializeChallengeWithLookupResponse(stringifiedOptions);
 
-      expect(instance._framework.initializeChallengeWithLookupResponse).to.be.calledOnce;
-      expect(instance._framework.initializeChallengeWithLookupResponse).to.be.calledWith(options);
+      expect(instance._framework.initializeChallengeWithLookupResponse).toHaveBeenCalledTimes(1);
+      expect(instance._framework.initializeChallengeWithLookupResponse).toHaveBeenCalledWith(options);
     });
   });
 
-  describe('prepareLookup', function () {
-    it('calls the prepareLookup method on the framework', function () {
-      var instance = new ThreeDSecure({
-        client: this.client,
+  describe('prepareLookup', () => {
+    it('calls the prepareLookup method on the framework', () => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
 
-      this.sandbox.stub(instance._framework, 'prepareLookup').resolves({foo: 'bar'});
+      jest.spyOn(instance._framework, 'prepareLookup').mockResolvedValue({ foo: 'bar' });
 
       instance.prepareLookup();
 
-      expect(instance._framework.prepareLookup).to.be.calledOnce;
+      expect(instance._framework.prepareLookup).toHaveBeenCalledTimes(1);
     });
 
-    it('stringifies the result of prepareLookup on the framework', function () {
-      var instance = new ThreeDSecure({
-        client: this.client,
+    it('stringifies the result of prepareLookup on the framework', () => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
 
-      this.sandbox.stub(instance._framework, 'prepareLookup').resolves({foo: 'bar'});
+      jest.spyOn(instance._framework, 'prepareLookup').mockResolvedValue({ foo: 'bar' });
 
-      return instance.prepareLookup().then(function (data) {
-        expect(data).to.be.a('string');
-        expect(JSON.parse(data)).to.deep.equal({foo: 'bar'});
+      return instance.prepareLookup().then(data => {
+        expect(typeof data).toBe('string');
+        expect(JSON.parse(data)).toEqual({ foo: 'bar' });
       });
     });
   });
 
-  describe('cancelVerifyCard', function () {
-    it('calls the cancelVerifyCard method on the framework', function () {
-      var instance = new ThreeDSecure({
-        client: this.client,
+  describe('cancelVerifyCard', () => {
+    it('calls the cancelVerifyCard method on the framework', () => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
 
-      this.sandbox.stub(instance._framework, 'cancelVerifyCard');
+      jest.spyOn(instance._framework, 'cancelVerifyCard');
 
-      instance.cancelVerifyCard();
+      expect.assertions(1);
 
-      expect(instance._framework.cancelVerifyCard).to.be.calledOnce;
+      return instance.cancelVerifyCard().catch(noop).then(() => {
+        expect(instance._framework.cancelVerifyCard).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
-  describe('teardown', function () {
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var instance = new ThreeDSecure({
-        client: this.client,
+  describe('teardown', () => {
+    it('replaces all methods so error is thrown when methods are invoked', done => {
+      const instance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'legacy'
       });
 
-      instance.teardown(function () {
-        methods(ThreeDSecure.prototype).concat('on', '_emit').forEach(function (method) {
-          var error;
+      expect.assertions(28);
+
+      return instance.teardown().then(() => {
+        methods(ThreeDSecure.prototype).concat('on', '_emit').forEach(method => {
+          let error;
 
           try {
             instance[method]();
@@ -286,35 +290,35 @@ describe('ThreeDSecure', function () {
             error = err;
           }
 
-          expect(error).to.be.an.instanceof(BraintreeError);
-          expect(error.type).to.equal(BraintreeError.types.MERCHANT);
-          expect(error.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-          expect(error.message).to.equal(method + ' cannot be called after teardown.');
+          expect(error).toBeInstanceOf(BraintreeError);
+          expect(error.type).toBe(BraintreeError.types.MERCHANT);
+          expect(error.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(error.message).toBe(`${method} cannot be called after teardown.`);
 
           done();
         });
       });
     });
 
-    it('calls stategies teardown method', function () {
-      var legacyInstance = new ThreeDSecure({
-        client: this.client,
+    it('calls stategies teardown method', () => {
+      const legacyInstance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'legacy'
       });
-      var cardinalModalInstance = new ThreeDSecure({
-        client: this.client,
+      const cardinalModalInstance = new ThreeDSecure({
+        client: testContext.client,
         framework: 'cardinal-modal'
       });
 
-      this.sandbox.stub(legacyInstance._framework, 'teardown').resolves();
-      this.sandbox.stub(cardinalModalInstance._framework, 'teardown').resolves();
+      jest.spyOn(legacyInstance._framework, 'teardown').mockResolvedValue();
+      jest.spyOn(cardinalModalInstance._framework, 'teardown').mockResolvedValue();
 
       return Promise.all([
         legacyInstance.teardown(),
         cardinalModalInstance.teardown()
-      ]).then(function () {
-        expect(legacyInstance._framework.teardown).to.be.calledOnce;
-        expect(cardinalModalInstance._framework.teardown).to.be.calledOnce;
+      ]).then(() => {
+        expect(legacyInstance._framework.teardown).toHaveBeenCalledTimes(1);
+        expect(cardinalModalInstance._framework.teardown).toHaveBeenCalledTimes(1);
       });
     });
   });

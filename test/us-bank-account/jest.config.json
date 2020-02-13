@@ -1,0 +1,15 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/us-bank-account/coverage",
+  "displayName": "us-bank-account",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/us-bank-account",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/us-bank-account"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js"
+  ]
+}

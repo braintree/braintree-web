@@ -1,0 +1,20 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/paypal/coverage",
+  "displayName": "paypal",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/paypal",
+  "roots": [
+    "<rootDir>",
+    "<rootDir>/../../test/paypal"
+  ],
+  "setupFilesAfterEnv": [
+    "<rootDir>/../../test/paypal/unit/global.js"
+  ],
+  "testMatch": [
+    "**/unit/**/*.js",
+    "!**/helpers/*.js",
+    "!**/global.js"
+  ]
+}

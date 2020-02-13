@@ -396,8 +396,12 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
       case 'NOACTION':
       case 'FAILURE':
         self._performJWTValidation(validatedJwt)
-          .then(self._verifyCardPromisePlus.resolve)
-          .catch(self._verifyCardPromisePlus.reject);
+          .then(function (result) {
+            self._verifyCardPromisePlus.resolve(result);
+          })
+          .catch(function (err) {
+            self._verifyCardPromisePlus.reject(err);
+          });
         break;
 
       case 'ERROR':

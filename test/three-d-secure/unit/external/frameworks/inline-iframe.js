@@ -1,25 +1,19 @@
 'use strict';
 
-var InlineIframeFramework = require('../../../../../src/three-d-secure/external/frameworks/inline-iframe');
-var SongbirdFramework = require('../../../../../src/three-d-secure/external/frameworks/songbird');
-var rejectIfResolves = require('../../../../helpers/promise-helper').rejectIfResolves;
-var analytics = require('../../../../../src/lib/analytics');
-var fake = require('../../../../helpers/fake');
-var wait = require('../../../../helpers/promise-helper').wait;
-var assets = require('../../../../../src/lib/assets');
+const InlineIframeFramework = require('../../../../../src/three-d-secure/external/frameworks/inline-iframe');
+const SongbirdFramework = require('../../../../../src/three-d-secure/external/frameworks/songbird');
+const { fake, wait, yields, yieldsByEventAsync, findFirstEventCallback } = require('../../../../helpers');
+const assets = require('../../../../../src/lib/assets');
 
-function callsNext(data, next) {
-  next();
-}
+describe('InlineIframeFramework', () => {
+  let testContext;
 
-describe('InlineIframeFramework', function () {
-  beforeEach(function () {
-    var self = this;
+  beforeEach(() => {
+    testContext = {};
 
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.sandbox.stub(InlineIframeFramework.prototype, 'setupSongbird');
+    jest.spyOn(InlineIframeFramework.prototype, 'setupSongbird');
 
-    this.configuration = {
+    testContext.configuration = {
       authorization: fake.clientToken,
       authorizationFingerprint: 'encoded_auth_fingerprint',
       gatewayConfiguration: {
@@ -29,80 +23,80 @@ describe('InlineIframeFramework', function () {
         }
       }
     };
-    this.client = {
-      request: this.sandbox.stub().resolves(),
-      getConfiguration: function () { return self.configuration; }
+    testContext.client = {
+      request: jest.fn().mockResolvedValue(null),
+      getConfiguration: () => testContext.configuration
     };
-    this.fakeCardinal = {
-      configure: this.sandbox.stub(),
-      setup: this.sandbox.stub(),
-      on: this.sandbox.stub(),
-      trigger: this.sandbox.stub().resolves({Status: false}),
-      'continue': this.sandbox.stub()
+    testContext.fakeCardinal = {
+      configure: jest.fn(),
+      setup: jest.fn(),
+      on: jest.fn(),
+      trigger: jest.fn().mockResolvedValue({ Status: false }),
+      'continue': jest.fn()
     };
-    this.sandbox.stub(assets, 'loadScript').callsFake(function () {
-      global.Cardinal = self.fakeCardinal;
+    jest.spyOn(assets, 'loadScript').mockImplementation(() => {
+      global.Cardinal = testContext.fakeCardinal;
 
       // allow a slight delay so timing tests can run
       return wait(5);
     });
   });
 
-  describe('setUpEventListeners', function () {
-    it('sets up Songbird framework listeners', function () {
-      var options = {
-        client: this.client
+  describe('setUpEventListeners', () => {
+    it('sets up Songbird framework listeners', () => {
+      const options = {
+        client: testContext.client
       };
-      var framework = new InlineIframeFramework(options);
-      var spy = this.sandbox.stub();
+      const framework = new InlineIframeFramework(options);
+      const spy = jest.fn();
 
-      this.sandbox.stub(SongbirdFramework.prototype, 'setUpEventListeners');
+      jest.spyOn(SongbirdFramework.prototype, 'setUpEventListeners');
 
       framework.setUpEventListeners(spy);
 
-      expect(SongbirdFramework.prototype.setUpEventListeners).to.be.calledOnce;
-      expect(SongbirdFramework.prototype.setUpEventListeners).to.be.calledWith(spy);
+      expect(SongbirdFramework.prototype.setUpEventListeners).toHaveBeenCalledTimes(1);
+      expect(SongbirdFramework.prototype.setUpEventListeners).toHaveBeenCalledWith(spy);
     });
 
-    it('sets up listener for on authentication iframe available event', function (done) {
-      var options = {
-        client: this.client
+    it('sets up listener for on authentication iframe available event', done => {
+      const options = {
+        client: testContext.client
       };
-      var framework = new InlineIframeFramework(options);
+      const framework = new InlineIframeFramework(options);
 
-      this.sandbox.stub(framework, 'on').withArgs('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE').yieldsAsync('some data', 'a fake function');
+      jest.spyOn(framework, 'on').mockImplementation(yieldsByEventAsync('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE', 'some data', 'a fake function'));
 
-      framework.setUpEventListeners(function (eventName, data, fakeFunction) {
-        expect(eventName).to.equal('authentication-iframe-available');
-        expect(data).to.equal('some data');
-        expect(fakeFunction).to.equal('a fake function');
+      framework.setUpEventListeners((eventName, data, fakeFunction) => {
+        expect(eventName).toBe('authentication-iframe-available');
+        expect(data).toBe('some data');
+        expect(fakeFunction).toBe('a fake function');
 
         done();
       });
     });
   });
 
-  describe('setupSongbird', function () {
-    beforeEach(function () {
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({});
+  describe('setupSongbird', () => {
+    beforeEach(() => {
+      testContext.fakeCardinal.on.mockImplementation(yieldsByEventAsync('payments.setupComplete', {}));
 
-      this.tds = new InlineIframeFramework({
-        client: this.client
+      testContext.tds = new InlineIframeFramework({
+        client: testContext.client
       });
-      InlineIframeFramework.prototype.setupSongbird.restore();
+      InlineIframeFramework.prototype.setupSongbird.mockClear();
     });
 
-    afterEach(function () {
+    afterEach(() => {
       delete global.Cardinal;
     });
 
-    it('configures Cardinal to use inline framework', function () {
-      var framework = new InlineIframeFramework({
-        client: this.client
+    it('configures Cardinal to use inline framework', () => {
+      const framework = new InlineIframeFramework({
+        client: testContext.client
       });
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWith({
+      return framework.setupSongbird().then(() => {
+        expect(global.Cardinal.configure).toHaveBeenCalledWith({
           payment: {
             framework: 'inline'
           }
@@ -110,14 +104,14 @@ describe('InlineIframeFramework', function () {
       });
     });
 
-    it('configures Cardinal to use verbose logging and the inline framework', function () {
-      var framework = new InlineIframeFramework({
-        client: this.client,
+    it('configures Cardinal to use verbose logging and the inline framework', () => {
+      const framework = new InlineIframeFramework({
+        client: testContext.client,
         loggingEnabled: true
       });
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.configure).to.be.calledWith({
+      return framework.setupSongbird().then(() => {
+        expect(global.Cardinal.configure).toHaveBeenCalledWith({
           payment: {
             framework: 'inline'
           },
@@ -128,23 +122,21 @@ describe('InlineIframeFramework', function () {
       });
     });
 
-    it('configures Cardinal to include a listener for `ui.inline.setup` when `inline-iframe` framework is used', function () {
-      var framework = new InlineIframeFramework({
-        client: this.client
+    it('configures Cardinal to include a listener for `ui.inline.setup` when `inline-iframe` framework is used', () => {
+      const framework = new InlineIframeFramework({
+        client: testContext.client
       });
 
-      return framework.setupSongbird().then(function () {
-        expect(global.Cardinal.on).to.be.calledWith('ui.inline.setup');
+      return framework.setupSongbird().then(() => {
+        expect(global.Cardinal.on).toHaveBeenCalledWith('ui.inline.setup', expect.any(Function));
       });
     });
   });
 
-  describe('initializeChallengeWithLookupResponse', function () {
-    beforeEach(function () {
-      var self = this;
-
-      this.fakeCardinal.on.withArgs('payments.setupComplete').yieldsAsync({});
-      this.lookupResponse = {
+  describe('initializeChallengeWithLookupResponse', () => {
+    beforeEach(() => {
+      testContext.fakeCardinal.on.mockImplementation(yieldsByEventAsync('payments.setupComplete', {}));
+      testContext.lookupResponse = {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
           liabilityShifted: true
@@ -156,154 +148,178 @@ describe('InlineIframeFramework', function () {
           transactionId: 'transaction-id'
         }
       };
-      this.client.request.resolves({
+      testContext.client.request.mockResolvedValue({
         threeDSecure: {},
         lookup: {},
         paymentMethod: {}
       });
-      this.validationArgs = [{
+      testContext.validationArgs = [{
         ActionCode: 'SUCCESS'
       }, 'jwt'];
-      this.failureArgs = [{
+      testContext.failureArgs = [{
         ActionCode: 'ERROR'
       }];
-      this.htmlTemplate = '<div><iframe></iframe></div>';
-      this.iframeDetails = {
+      testContext.htmlTemplate = '<div><iframe></iframe></div>';
+      testContext.iframeDetails = {
         paymentType: 'CCA',
         data: {
           mode: 'static'
         }
       };
-      this.resolveFunction = this.sandbox.stub().callsFake(function () {
-        var handler = self.fakeCardinal.on.withArgs('payments.validated').args[0][1];
+      testContext.resolveFunction = jest.fn(() => {
+        const handler = findFirstEventCallback('payments.validated', testContext.fakeCardinal.on.mock.calls);
 
-        handler.apply(null, self.validationArgs);
+        handler.apply(null, testContext.validationArgs);
       });
-      this.rejectFunction = this.sandbox.stub().callsFake(function () {
-        var handler = self.fakeCardinal.on.withArgs('payments.validated').args[0][1];
+      testContext.rejectFunction = jest.fn(() => {
+        const handler = findFirstEventCallback('payments.validated', testContext.fakeCardinal.on.mock.calls);
 
-        handler.apply(null, self.failureArgs);
+        handler.apply(null, testContext.failureArgs);
       });
 
-      this.instance = new InlineIframeFramework({
-        client: this.client,
+      testContext.instance = new InlineIframeFramework({
+        client: testContext.client,
         framework: 'inline-iframe'
       });
 
-      InlineIframeFramework.prototype.setupSongbird.restore();
+      InlineIframeFramework.prototype.setupSongbird.mockClear();
 
-      this.fakeCardinal.continue.callsFake(function () {
-        wait(5).then(function () {
-          var handler = self.fakeCardinal.on.withArgs('ui.inline.setup').args[0][1];
+      testContext.fakeCardinal.continue.mockImplementation(() => {
+        wait(5).then(() => {
+          const handler = findFirstEventCallback('ui.inline.setup', testContext.fakeCardinal.on.mock.calls);
 
-          handler(self.htmlTemplate, self.iframeDetails, self.resolveFunction, self.rejectFunction);
+          handler(testContext.htmlTemplate, testContext.iframeDetails, testContext.resolveFunction, testContext.rejectFunction);
         });
       });
 
-      return this.instance.setupSongbird();
+      return testContext.instance.setupSongbird();
     });
 
-    it('rejects if no html template is available', function () {
-      delete this.htmlTemplate;
+    it('rejects if no html template is available', () => {
+      delete testContext.htmlTemplate;
 
-      return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        onLookupComplete: callsNext
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_ERROR');
+      return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: yields()
+      }).catch(({ code }) => {
+        expect(code).toBe('THREEDS_CARDINAL_SDK_ERROR');
       });
     });
 
-    it('rejects if no details are available', function () {
-      delete this.iframeDetails;
+    it('rejects if no details are available', () => {
+      delete testContext.iframeDetails;
 
-      return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        onLookupComplete: callsNext
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_ERROR');
+      return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: yields()
+      }).catch(err => {
+        expect(err.code).toBe('THREEDS_CARDINAL_SDK_ERROR');
       });
     });
 
-    it('rejects if paymentType is not CCA (customer card authentication)', function () {
-      this.iframeDetails.paymentType = 'foo';
+    it('rejects if paymentType is not CCA (customer card authentication)', () => {
+      testContext.iframeDetails.paymentType = 'foo';
 
-      return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        onLookupComplete: callsNext
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_ERROR');
+      return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: yields()
+      }).catch(err => {
+        expect(err.code).toBe('THREEDS_CARDINAL_SDK_ERROR');
       });
     });
 
-    it('rejects if mode is not static or suppress', function () {
-      this.iframeDetails.data.mode = 'foo';
+    it('rejects if mode is not static or suppress', () => {
+      testContext.iframeDetails.data.mode = 'foo';
 
-      return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        onLookupComplete: callsNext
-      }).then(rejectIfResolves).catch(function (err) {
-        expect(err.code).to.equal('THREEDS_CARDINAL_SDK_ERROR');
+      return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: jest.fn(yields())
+      }).catch(err => {
+        expect(err.code).toBe('THREEDS_CARDINAL_SDK_ERROR');
       });
     });
 
-    it('adds element to page and calls resolve callback automatically when mode is suppress', function () {
-      var self = this;
+    it('adds element to page and calls resolve callback automatically when mode is suppress', () => {
+      jest.spyOn(document.body, 'appendChild');
+      testContext.iframeDetails.data.mode = 'suppress';
 
-      this.sandbox.stub(document.body, 'appendChild');
-      this.iframeDetails.data.mode = 'suppress';
+      return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: yields()
+      }).then(() => {
+        const domNode = document.body.appendChild.mock.calls[0][0];
 
-      return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        onLookupComplete: callsNext
-      }).then(function () {
-        var domNode = document.body.appendChild.args[0][0];
-
-        expect(self.resolveFunction).to.be.calledOnce;
-        expect(document.body.appendChild).to.be.calledOnce;
-        expect(domNode.querySelector('iframe')).to.exist;
-        expect(domNode.style.display).to.equal('none');
+        expect(testContext.resolveFunction).toHaveBeenCalledTimes(1);
+        expect(document.body.appendChild).toHaveBeenCalledTimes(1);
+        expect(domNode.querySelector('iframe')).toBeDefined();
+        expect(domNode.style.display).toBe('none');
       });
     });
 
-    it('passes iframe to merchant and waits for merchant to resolve when mode is static', function (done) {
-      var self = this;
+    it('passes iframe to merchant and waits for merchant to resolve when mode is static', done => {
+      jest.spyOn(document.body, 'appendChild');
+      testContext.iframeDetails.data.mode = 'static';
 
-      this.sandbox.stub(document.body, 'appendChild');
-      this.iframeDetails.data.mode = 'static';
-
-      this.instance.on('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE', function (payload, next) {
-        expect(self.resolveFunction).to.not.be.called;
-        expect(payload.element.querySelector('iframe')).to.exist;
+      testContext.instance.on('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE', (payload, next) => {
+        expect(testContext.resolveFunction).not.toHaveBeenCalled();
+        expect(payload.element.querySelector('iframe')).toBeDefined();
 
         next();
 
-        expect(self.resolveFunction).to.be.calledOnce;
+        expect(testContext.resolveFunction).toHaveBeenCalledTimes(1);
 
         done();
       });
 
-      this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        onLookupComplete: callsNext
+      testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: yields()
       });
     });
 
-    it('passes iframe to merchant for v1 fallback', function (done) {
-      var framework;
+    /*
+     * The following two tests pass if and only if there is a
+     * `.catch()` appended to the rejection of
+     * `_getDfReferenceIdPromisePlus` within the `setup` method of the
+     * Songbird framework.
+     * */
+    it('passes iframe to merchant for v1 fallback', (done) => {
+      let framework;
 
-      assets.loadScript.rejects(new Error('failed'));
+      assets.loadScript.mockRejectedValue(new Error('failed'));
 
       framework = new InlineIframeFramework({
-        client: this.client
+        client: testContext.client
       });
 
       framework.setupSongbird();
 
-      framework.on('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE', function (payload, next) {
-        expect(payload.element.querySelector('[data-braintree-v1-fallback-iframe-container="true"] iframe')).to.exist;
+      framework.on('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE', (payload, next) => {
+        expect(payload.element.querySelector('[data-braintree-v1-fallback-iframe-container="true"] iframe')).toBeTruthy();
 
         next();
 
         done();
       });
 
-      framework.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        onLookupComplete: callsNext
+      framework.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: yields()
+      });
+    });
+
+    it('passes iframe to merchant for v1 fallback', done => {
+      let framework;
+
+      assets.loadScript.mockRejectedValue(new Error('failed'));
+
+      framework = new InlineIframeFramework({ client: testContext.client });
+
+      framework.setupSongbird();
+
+      framework.on('inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE', (payload, next) => {
+        expect(payload.element.querySelector('[data-braintree-v1-fallback-iframe-container="true"] iframe')).toBeDefined();
+
+        next();
+
+        done();
+      });
+
+      framework.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        onLookupComplete: yields()
       });
     });
   });

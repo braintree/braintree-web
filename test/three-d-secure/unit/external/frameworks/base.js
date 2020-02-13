@@ -1,61 +1,44 @@
 'use strict';
 
-var BaseFramework = require('../../../../../src/three-d-secure/external/frameworks/base');
-var Bus = require('../../../../../src/lib/bus');
-var BraintreeError = require('../../../../../src/lib/braintree-error');
-var analytics = require('../../../../../src/lib/analytics');
-var fake = require('../../../../helpers/fake');
-var events = require('../../../../../src/three-d-secure/shared/events');
-var rejectIfResolves = require('../../../../helpers/promise-helper').rejectIfResolves;
+const BaseFramework = require('../../../../../src/three-d-secure/external/frameworks/base');
+const BraintreeError = require('../../../../../src/lib/braintree-error');
+const analytics = require('../../../../../src/lib/analytics');
+const { fake, noop } = require('../../../../helpers');
 
-function noop() {}
+describe('BaseFramework', () => {
+  let testContext;
 
-function getBusHandler(eventName) {
-  return Bus.prototype.on.withArgs(eventName).args[0][1];
-}
-
-describe('BaseFramework', function () {
-  beforeEach(function () {
-    var self = this;
-
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.Framework = function Framework(options) {
-      BaseFramework.call(this, options);
-    };
-    this.Framework.prototype = Object.create(BaseFramework.prototype, {
-      constructor: this.Framework
-    });
-    this.Framework.prototype._checkForFrameworkSpecificVerifyCardErrors = function () {
-      return null;
-    };
-    this.Framework.prototype._presentChallenge = function () {
-      this._verifyCardPromisePlus.resolve({
+  beforeEach(() => {
+    testContext = {};
+    jest.spyOn(BaseFramework.prototype, '_presentChallenge').mockImplementation(function () {
+      this._verifyCardPromisePlus.resolve({ // eslint-disable-line no-invalid-this
         nonce: 'some-fake-nonce',
         liabilityShifted: true,
         liabilityShiftPossible: true
       });
-    };
+    });
+    jest.spyOn(BaseFramework.prototype, '_checkForFrameworkSpecificVerifyCardErrors').mockReturnValue(null);
 
-    this.configuration = {
+    testContext.configuration = {
       authorization: fake.clientToken,
       authorizationFingerprint: 'encoded_auth_fingerprint',
       gatewayConfiguration: {
         assetsUrl: 'http://example.com/assets'
       }
     };
-    this.client = {
-      request: this.sandbox.stub().resolves(),
-      getConfiguration: function () { return self.configuration; }
+    testContext.client = {
+      request: jest.fn().mockResolvedValue(null),
+      getConfiguration: () => testContext.configuration
     };
   });
 
-  describe('verifyCard', function () {
-    beforeEach(function () {
-      this.instance = new this.Framework({
-        client: this.client
+  describe('verifyCard', () => {
+    beforeEach(() => {
+      testContext.instance = new BaseFramework({
+        client: testContext.client
       });
 
-      this.lookupResponse = {
+      testContext.lookupResponse = {
         paymentMethod: {
           nonce: 'upgraded-nonce',
           details: {
@@ -70,242 +53,251 @@ describe('BaseFramework', function () {
           liabilityShifted: true
         }
       };
-      this.client.request.resolves(this.lookupResponse);
+      testContext.client.request.mockResolvedValue(testContext.lookupResponse);
     });
 
-    context('required params', function () {
-      it('requires a nonce', function () {
-        return this.instance.verifyCard({
+    describe('required params', () => {
+      it('requires a nonce', () =>
+        testContext.instance.verifyCard({
           amount: 100
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.eql('MERCHANT');
-          expect(err.code).to.eql('THREEDS_MISSING_VERIFY_CARD_OPTION');
-          expect(err.message).to.eql('verifyCard options must include a nonce.');
-        });
-      });
+        }).catch(err => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('THREEDS_MISSING_VERIFY_CARD_OPTION');
+          expect(err.message).toBe('verifyCard options must include a nonce.');
+        }));
 
-      it('requires an amount', function () {
-        return this.instance.verifyCard({
+      it('requires an amount', () =>
+        testContext.instance.verifyCard({
           nonce: 'abcdef'
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.type).to.eql('MERCHANT');
-          expect(err.code).to.eql('THREEDS_MISSING_VERIFY_CARD_OPTION');
-          expect(err.message).to.eql('verifyCard options must include an amount.');
-        });
-      });
+        }).catch(err => {
+          expect(err.type).toBe('MERCHANT');
+          expect(err.code).toBe('THREEDS_MISSING_VERIFY_CARD_OPTION');
+          expect(err.message).toBe('verifyCard options must include an amount.');
+        }));
     });
 
-    context('lookup errors', function () {
-      it('handles errors when hitting the 3DS lookup endpoint', function () {
-        var error = new Error('network error');
+    describe('lookup errors', () => {
+      it('handles errors when hitting the 3DS lookup endpoint', () => {
+        const error = new Error('network error');
 
-        this.client.request.rejects(error);
+        testContext.client.request.mockRejectedValue(error);
 
-        return this.instance.verifyCard({
+        expect.assertions(3);
+
+        return testContext.instance.verifyCard({
           nonce: 'abcdef',
           amount: 100
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.details.originalError).to.eql(error);
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.code).to.equal('THREEDS_LOOKUP_ERROR');
+        }).catch(err => {
+          expect(err.details.originalError).toEqual(error);
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe('THREEDS_LOOKUP_ERROR');
         });
       });
 
-      it('sends an analytics event for unknown lookup error', function () {
-        var error = new Error('network error');
+      it('sends an analytics event for unknown lookup error', () => {
+        const error = new Error('network error');
 
-        this.client.request.rejects(error);
+        testContext.client.request.mockRejectedValue(error);
 
-        return this.instance.verifyCard({
+        expect.assertions(2);
+
+        return testContext.instance.verifyCard({
           nonce: 'abcdef',
           amount: 100
-        }).catch(function (err) {
-          expect(err.details.originalError.message).to.equal('network error');
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.lookup-failed');
-        }.bind(this));
+        }).catch(err => {
+          expect(err.details.originalError.message).toBe('network error');
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.lookup-failed');
+        });
       });
 
-      it('rejects with a lookup error when lookup 404s', function () {
-        var err = new Error('failure');
+      it('rejects with a lookup error when lookup 404s', () => {
+        const err = new Error('failure');
 
         err.details = {
           httpStatus: 404
         };
 
-        this.client.request.rejects(err);
+        testContext.client.request.mockRejectedValue(err);
 
-        return this.instance.verifyCard({
+        expect.assertions(2);
+
+        return testContext.instance.verifyCard({
           nonce: 'fake-nonce',
           amount: 100
-        }).then(rejectIfResolves).catch(function (lookupError) {
-          expect(lookupError).to.be.an.instanceof(BraintreeError);
-          expect(lookupError.code).to.equal('THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR');
+        }).catch(lookupError => {
+          expect(lookupError).toBeInstanceOf(BraintreeError);
+          expect(lookupError.code).toBe('THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR');
         });
       });
 
-      it('sends an analytics event for missing nonce', function () {
-        var err = new Error('failure');
+      it('sends an analytics event for missing nonce', () => {
+        const err = new Error('failure');
 
         err.details = {
           httpStatus: 404
         };
 
-        this.client.request.rejects(err);
+        testContext.client.request.mockRejectedValue(err);
 
-        return this.instance.verifyCard({
+        expect.assertions(2);
+
+        return testContext.instance.verifyCard({
           nonce: 'fake-nonce',
           amount: 100
-        }).catch(function (verifyError) {
-          expect(verifyError.details.originalError.message).to.equal('failure');
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.lookup-failed.404');
-        }.bind(this));
-      });
-
-      it('rejects with a lookup error when lookup 422s', function () {
-        var err = new Error('failure');
-
-        err.details = {
-          httpStatus: 422
-        };
-
-        this.client.request.rejects(err);
-
-        return this.instance.verifyCard({
-          nonce: 'fake-nonce',
-          amount: 100
-        }).then(rejectIfResolves).catch(function (lookupError) {
-          expect(lookupError).to.be.an.instanceof(BraintreeError);
-          expect(lookupError.code).to.equal('THREEDS_LOOKUP_VALIDATION_ERROR');
+        }).catch(verifyError => {
+          expect(verifyError.details.originalError.message).toBe('failure');
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.lookup-failed.404');
         });
       });
 
-      it('sends an analytics event when lookup 422s', function () {
-        var err = new Error('failure');
+      it('rejects with a lookup error when lookup 422s', () => {
+        const err = new Error('failure');
 
         err.details = {
           httpStatus: 422
         };
 
-        this.client.request.rejects(err);
+        testContext.client.request.mockRejectedValue(err);
 
-        return this.instance.verifyCard({
+        expect.assertions(2);
+
+        return testContext.instance.verifyCard({
           nonce: 'fake-nonce',
           amount: 100
-        }).catch(function (verifyError) {
-          expect(verifyError.details.originalError.message).to.equal('failure');
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.lookup-failed.422');
-        }.bind(this));
+        }).catch(lookupError => {
+          expect(lookupError).toBeInstanceOf(BraintreeError);
+          expect(lookupError.code).toBe('THREEDS_LOOKUP_VALIDATION_ERROR');
+        });
+      });
+
+      it('sends an analytics event when lookup 422s', () => {
+        const err = new Error('failure');
+
+        err.details = {
+          httpStatus: 422
+        };
+
+        testContext.client.request.mockRejectedValue(err);
+
+        expect.assertions(2);
+
+        return testContext.instance.verifyCard({
+          nonce: 'fake-nonce',
+          amount: 100
+        }).catch(verifyError => {
+          expect(verifyError.details.originalError.message).toBe('failure');
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.lookup-failed.422');
+        });
       });
     });
 
-    context('multiple calls', function () {
-      it('can be called multiple times if canceled in between', function (done) {
-        var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
-        var self = this;
+    describe('multiple calls', () => {
+      it('can be called multiple times if canceled in between', done => {
+        const threeDSecureInfo = { liabilityShiftPossible: true, liabilityShifted: true };
 
-        this.lookupResponse.lookup.acsUrl = 'https://example.com';
-        this.lookupResponse.paymentMethod = {
+        testContext.lookupResponse.lookup.acsUrl = 'https://example.com';
+        testContext.lookupResponse.paymentMethod = {
           nonce: 'upgraded-nonce',
           threeDSecureInfo: threeDSecureInfo
         };
-        this.lookupResponse.threeDSecureInfo = threeDSecureInfo;
-        this.Framework.prototype._presentChallenge = function () {
-          self.instance.cancelVerifyCard().then(function () {
-            delete self.lookupResponse.lookup.acsUrl;
+        testContext.lookupResponse.threeDSecureInfo = threeDSecureInfo;
 
-            return self.instance.verifyCard({
+        BaseFramework.prototype._presentChallenge = () => {
+          testContext.instance.cancelVerifyCard().then(() => {
+            delete testContext.lookupResponse.lookup.acsUrl;
+
+            return testContext.instance.verifyCard({
               nonce: 'fake-nonce',
               amount: 100
-            }).then(function (data) {
-              expect(data.nonce).to.equal('upgraded-nonce');
+            }).then(data => {
+              expect(data.nonce).toBe('upgraded-nonce');
 
               done();
             });
           });
         };
 
-        this.instance.verifyCard({
+        testContext.instance.verifyCard({
           nonce: 'fake-nonce',
           amount: 100
         });
       });
 
-      it('can be called multiple times if first request failed', function () {
-        var self = this;
+      it('can be called multiple times if first request failed', () => {
+        testContext.client.request.mockRejectedValue(new Error('failure'));
 
-        this.client.request.rejects(new Error('failure'));
+        expect.assertions(2);
 
-        return this.instance.verifyCard({
+        return testContext.instance.verifyCard({
           nonce: 'fake-nonce',
           amount: 100
-        }).catch(function (err) {
-          expect(err.details.originalError.message).to.equal('failure');
-        }).then(function () {
-          self.client.request.resolves(self.lookupResponse);
+        }).catch(err => {
+          expect(err.details.originalError.message).toBe('failure');
+        }).then(() => {
+          testContext.client.request.mockResolvedValue(testContext.lookupResponse);
 
-          return self.instance.verifyCard({
+          return testContext.instance.verifyCard({
             nonce: 'fake-nonce',
             amount: 100
           });
-        }).then(function (data) {
-          expect(data.nonce).to.equal('upgraded-nonce');
+        }).then(data => {
+          expect(data.nonce).toBe('upgraded-nonce');
         });
       });
 
-      it('cannot be called twice without cancelling in between', function (done) {
-        var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
-        var self = this;
+      it('cannot be called twice without cancelling in between', done => {
+        const threeDSecureInfo = { liabilityShiftPossible: true, liabilityShifted: true };
 
-        this.lookupResponse.lookup.acsUrl = 'https://example.com';
-        this.lookupResponse.paymentMethod = {
+        testContext.lookupResponse.lookup.acsUrl = 'https://example.com';
+        testContext.lookupResponse.paymentMethod = {
           nonce: 'upgraded-nonce',
           threeDSecureInfo: threeDSecureInfo
         };
-        this.lookupResponse.threeDSecureInfo = threeDSecureInfo;
-        this.Framework.prototype._presentChallenge = function () {
-          delete self.lookupResponse.lookup.acsUrl;
+        testContext.lookupResponse.threeDSecureInfo = threeDSecureInfo;
+        BaseFramework.prototype._presentChallenge = () => {
+          delete testContext.lookupResponse.lookup.acsUrl;
 
-          self.instance.verifyCard({
+          testContext.instance.verifyCard({
             nonce: 'fake-nonce',
             amount: 100,
             addFrame: noop,
             removeFrame: noop
-          }).then(rejectIfResolves).catch(function (err) {
-            expect(err).to.be.an.instanceof(BraintreeError);
-            expect(err.type).to.eql('MERCHANT');
-            expect(err.code).to.eql('THREEDS_AUTHENTICATION_IN_PROGRESS');
-            expect(err.message).to.eql('Cannot call verifyCard while existing authentication is in progress.');
+          }).catch(err => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe('MERCHANT');
+            expect(err.code).toBe('THREEDS_AUTHENTICATION_IN_PROGRESS');
+            expect(err.message).toBe('Cannot call verifyCard while existing authentication is in progress.');
 
             done();
           });
         };
 
-        this.instance.verifyCard({
+        testContext.instance.verifyCard({
           nonce: 'fake-nonce',
           amount: 100
         });
       });
 
-      it('can be called multiple times if authentication completes in between', function () {
-        var instance = this.instance;
+      it('can be called multiple times if authentication completes in between', () => {
+        const instance = testContext.instance;
 
-        var options = {
+        const options = {
           nonce: 'abc123',
           amount: 100
         };
 
-        this.Framework.prototype._presentChallenge = function () {
+        BaseFramework.prototype._presentChallenge = function () {
           this._verifyCardPromisePlus.resolve({
             nonce: 'some-fake-nonce',
             liabilityShifted: true,
             liabilityShiftPossible: true
           });
         };
-        this.lookupResponse.lookup = {
+        testContext.lookupResponse.lookup = {
           acsUrl: 'http://example.com/acs',
           pareq: 'pareq',
           termUrl: 'http://example.com/term',
@@ -313,32 +305,30 @@ describe('BaseFramework', function () {
           threeDSecureVersion: '1.0.2'
         };
 
-        return instance.verifyCard(options).then(function (data) {
-          expect(data.nonce).to.equal('some-fake-nonce');
-          expect(data.liabilityShifted).to.equal(true);
-          expect(data.liabilityShiftPossible).to.equal(true);
+        return instance.verifyCard(options).then(data => {
+          expect(data.nonce).toBe('some-fake-nonce');
+          expect(data.liabilityShifted).toBe(true);
+          expect(data.liabilityShiftPossible).toBe(true);
 
           return instance.verifyCard(options);
-        }).then(function (data2) {
-          expect(data2.nonce).to.equal('some-fake-nonce');
-          expect(data2.liabilityShifted).to.equal(true);
-          expect(data2.liabilityShiftPossible).to.equal(true);
+        }).then(data2 => {
+          expect(data2.nonce).toBe('some-fake-nonce');
+          expect(data2.liabilityShifted).toBe(true);
+          expect(data2.liabilityShiftPossible).toBe(true);
         });
       });
     });
 
-    context('lookup request', function () {
-      it('makes a request to the 3DS lookup endpoint', function () {
-        var self = this;
-
-        return this.instance.verifyCard({
+    describe('lookup request', () => {
+      it('makes a request to the 3DS lookup endpoint', () => {
+        return testContext.instance.verifyCard({
           nonce: 'abcdef',
           amount: 100,
           addFrame: noop,
           removeFrame: noop
-        }).then(function () {
-          expect(self.client.request).to.be.calledOnce;
-          expect(self.client.request).to.be.calledWithMatch({
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
             endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
             method: 'post',
             data: {
@@ -348,179 +338,125 @@ describe('BaseFramework', function () {
         });
       });
 
-      it('sends analytics events for successful verification', function () {
-        var self = this;
-
-        return this.instance.verifyCard({
+      it('sends analytics events for successful verification', () => {
+        return testContext.instance.verifyCard({
           nonce: 'abcdef',
           amount: 100,
           showLoader: false,
           addFrame: noop,
           removeFrame: noop
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(self.client, 'three-d-secure.verification-flow.started');
-          expect(analytics.sendEvent).to.be.calledWith(self.client, 'three-d-secure.verification-flow.3ds-version.1.0.2');
-          expect(analytics.sendEvent).to.be.calledWith(self.client, 'three-d-secure.verification-flow.completed');
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.3ds-version.1.0.2');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.completed');
         });
       });
 
-      it('sends analytics events for failed 3ds verifications', function () {
-        var self = this;
+      it('sends analytics events for failed 3ds verifications', () => {
+        testContext.client.request.mockRejectedValue(new Error('error'));
 
-        this.client.request.rejects(new Error('error'));
-
-        return this.instance.verifyCard({
+        return testContext.instance.verifyCard({
           nonce: 'abcdef',
           amount: 100,
           showLoader: false,
           addFrame: noop,
           removeFrame: noop
-        }).then(rejectIfResolves).catch(function (err) {
-          expect(err.details.originalError.message).to.equal('error');
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(self.client, 'three-d-secure.verification-flow.started');
-          expect(analytics.sendEvent).to.be.calledWith(self.client, 'three-d-secure.verification-flow.failed');
-          expect(analytics.sendEvent).to.not.be.calledWith(self.client, 'three-d-secure.verification-flow.3ds-version.1.0.2');
-          expect(analytics.sendEvent).to.not.be.calledWith(self.client, 'three-d-secure.verification-flow.completed');
+        }).catch(err => {
+          expect(err.details.originalError.message).toBe('error');
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.failed');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.3ds-version.1.0.2');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.completed');
         });
       });
 
-      it('retains verification details object for backwards compatibility in payload', function () {
-        delete this.lookupResponse.lookup.acsUrl;
+      it('retains verification details object for backwards compatibility in payload', () => {
+        delete testContext.lookupResponse.lookup.acsUrl;
 
-        return this.instance.verifyCard({
+        return testContext.instance.verifyCard({
           nonce: 'nonce-that-does-not-require-authentication',
           amount: 100,
           addFrame: noop,
           removeFrame: noop
-        }).then(function (data) {
-          expect(data.liabilityShiftPossible).to.equal(true);
-          expect(data.liabilityShifted).to.equal(true);
+        }).then(data => {
+          expect(data.liabilityShiftPossible).toBe(true);
+          expect(data.liabilityShifted).toBe(true);
         });
       });
 
-      it('resolves with a nonce and verification details', function () {
-        delete this.lookupResponse.lookup.acsUrl;
+      it('resolves with a nonce and verification details', () => {
+        delete testContext.lookupResponse.lookup.acsUrl;
 
-        return this.instance.verifyCard({
+        return testContext.instance.verifyCard({
           nonce: 'nonce-that-does-not-require-authentication',
           amount: 100,
           addFrame: noop,
           removeFrame: noop
-        }).then(function (data) {
-          expect(data.nonce).to.equal('upgraded-nonce');
-          expect(data.details).to.deep.equal({cardType: 'Visa'});
-          expect(data.liabilityShiftPossible).to.equal(true);
-          expect(data.liabilityShifted).to.equal(true);
+        }).then(data => {
+          expect(data.nonce).toBe('upgraded-nonce');
+          expect(data.details).toEqual({ cardType: 'Visa' });
+          expect(data.liabilityShiftPossible).toBe(true);
+          expect(data.liabilityShifted).toBe(true);
         });
       });
     });
   });
 
-  describe('initializeChallengeWithLookupResponse', function () {
-    beforeEach(function () {
-      this.instance = new this.Framework({
-        client: this.client
+  describe('initializeChallengeWithLookupResponse', () => {
+    beforeEach(() => {
+      testContext.instance = new BaseFramework({
+        client: testContext.client
       });
     });
 
-    it('does not call present challenge when no authentication is required', function () {
-      var threeDSecureInfo = {liabilityShiftPossible: true, liabilityShifted: true};
+    it('does not call present challenge when no authentication is required', () => {
+      const threeDSecureInfo = { liabilityShiftPossible: true, liabilityShifted: true };
 
-      this.lookupResponse = {
-        paymentMethod: {nonce: 'upgraded-nonce'},
+      testContext.lookupResponse = {
+        paymentMethod: { nonce: 'upgraded-nonce' },
         threeDSecureInfo: threeDSecureInfo
       };
 
-      this.sandbox.spy(this.instance, '_presentChallenge');
+      jest.spyOn(testContext.instance, '_presentChallenge');
 
-      return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-      }).then(function () {
-        expect(this.instance._presentChallenge).to.not.be.called;
-      }.bind(this));
+      expect.assertions(1);
+
+      return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
+        expect(testContext.instance._presentChallenge).not.toHaveBeenCalled();
+      });
     });
 
-    context('Verify card callback', function () {
-      beforeEach(function () {
-        this.authResponse = {
-          success: true,
-          paymentMethod: {
-            nonce: 'auth-success-nonce',
-            binData: {
-              prepaid: 'No',
-              healthcare: 'Unknown',
-              debit: 'Unknown',
-              durbinRegulated: 'Unknown',
-              commercial: 'Unknown',
-              payroll: 'Unknown',
-              issuingBank: 'Unknown',
-              countryOfIssuance: 'CAN',
-              productId: 'Unknown'
-            },
-            details: {
-              last2: 11
-            },
-            description: 'a description',
-            threeDSecureInfo: {
-              threeDSecureVersion: '1.0.2'
-            }
-          },
-          threeDSecureInfo: {
-            liabilityShiftPossible: true,
-            liabilityShifted: true
-          }
-        };
-
-        this.lookupResponse = {
-          paymentMethod: {
-            nonce: 'lookup-nonce'
-          },
-          lookup: {
-            acsUrl: 'http://example.com/acs',
-            pareq: 'pareq',
-            termUrl: 'http://example.com/term',
-            md: 'md'
-          }
-        };
-
-        this.makeAddFrameFunction = function (authResponse) {
-          return function () {
-            var authenticationCompleteHandler = getBusHandler(events.AUTHENTICATION_COMPLETE);
-
-            authenticationCompleteHandler({
-              auth_response: JSON.stringify(authResponse) // eslint-disable-line camelcase
-            });
-          };
-        };
+    describe('Verify card callback', () => {
+      beforeEach(() => {
+        testContext.lookupResponse = fake.basicLookupResponse;
       });
 
-      it('sends analytics events for successful liability shift', function () {
-        return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.challenge-presented.true');
-          expect(analytics.sendEvent).to.not.be.calledWith(this.client, 'three-d-secure.verification-flow.challenge-presented.false');
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.liability-shifted.true');
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.liability-shift-possible.true');
-        }.bind(this));
+      it('sends analytics events for successful liability shift', () => {
+        return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.true');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.false');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.liability-shifted.true');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.liability-shift-possible.true');
+        });
       });
 
-      it('sends analytics events when no challenge is presented', function () {
-        delete this.lookupResponse.lookup.acsUrl;
+      it('sends analytics events when no challenge is presented', () => {
+        delete testContext.lookupResponse.lookup.acsUrl;
 
-        return this.instance.initializeChallengeWithLookupResponse(this.lookupResponse, {
-        }).then(function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'three-d-secure.verification-flow.challenge-presented.false');
-          expect(analytics.sendEvent).to.not.be.calledWith(this.client, 'three-d-secure.verification-flow.challenge-presented.true');
-        }.bind(this));
+        return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.false');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.true');
+        });
       });
     });
   });
 
-  describe('cancelVerifyCard', function () {
-    beforeEach(function () {
-      this.framework = new this.Framework({client: this.client});
-      this.framework._verifyCardInProgress = true;
-      this.framework._lookupPaymentMethod = {
+  describe('cancelVerifyCard', () => {
+    beforeEach(() => {
+      testContext.framework = new BaseFramework({ client: testContext.client });
+      testContext.framework._verifyCardInProgress = true;
+      testContext.framework._lookupPaymentMethod = {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
           liabilityShifted: true
@@ -528,27 +464,31 @@ describe('BaseFramework', function () {
       };
     });
 
-    it('sets _verifyCardInProgress to false', function () {
-      this.framework._verifyCardInProgress = true;
+    it('sets _verifyCardInProgress to false', () => {
+      testContext.framework._verifyCardInProgress = true;
 
-      this.framework.cancelVerifyCard().then(function () {
-        expect(this.framework._verifyCardInProgress).to.equal(false);
-      }.bind(this));
-    });
+      expect.assertions(1);
 
-    it('passes back an error if there is no initial lookup payment method', function () {
-      delete this.framework._lookupPaymentMethod;
-
-      return this.framework.cancelVerifyCard().then(rejectIfResolves).catch(function (err) {
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-        expect(err.code).to.eql('THREEDS_NO_VERIFICATION_PAYLOAD');
-        expect(err.message).to.equal('No verification payload available.');
+      return testContext.framework.cancelVerifyCard().then(() => {
+        expect(testContext.framework._verifyCardInProgress).toBe(false);
       });
     });
 
-    it('passes back the result of the initial lookup', function () {
-      this.framework._lookupPaymentMethod = {
+    it('passes back an error if there is no initial lookup payment method', () => {
+      delete testContext.framework._lookupPaymentMethod;
+
+      expect.assertions(4);
+
+      return testContext.framework.cancelVerifyCard().catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe('THREEDS_NO_VERIFICATION_PAYLOAD');
+        expect(err.message).toBe('No verification payload available.');
+      });
+    });
+
+    it('passes back the result of the initial lookup', () => {
+      testContext.framework._lookupPaymentMethod = {
         nonce: 'fake-nonce',
         threeDSecureInfo: {
           liabilityShiftPossible: true,
@@ -556,60 +496,59 @@ describe('BaseFramework', function () {
         }
       };
 
-      return this.framework.cancelVerifyCard().then(function (response) {
-        expect(response.nonce).to.eql('fake-nonce');
-        expect(response.liabilityShiftPossible).to.eql(true);
-        expect(response.liabilityShifted).to.eql(false);
+      expect.assertions(3);
+
+      return testContext.framework.cancelVerifyCard().then(response => {
+        expect(response.nonce).toBe('fake-nonce');
+        expect(response.liabilityShiftPossible).toBe(true);
+        expect(response.liabilityShifted).toBe(false);
       });
     });
   });
 
-  describe('teardown', function () {
-    beforeEach(function () {
-      this.framework = new this.Framework({client: this.client});
+  describe('teardown', () => {
+    beforeEach(() => {
+      jest.spyOn(analytics, 'sendEvent');
+      testContext.framework = new BaseFramework({ client: testContext.client });
     });
 
-    it('calls teardown analytic', function () {
-      var client = this.client;
+    it('calls teardown analytic', () => {
+      const client = testContext.client;
 
-      return this.framework.teardown().then(function () {
-        expect(analytics.sendEvent).to.be.calledWith(client, 'three-d-secure.teardown-completed');
+      return testContext.framework.teardown().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'three-d-secure.teardown-completed');
       });
     });
 
-    it('tears down v1Bus if it exists', function () {
-      var bus = {
-        teardown: this.sandbox.stub()
+    it('tears down v1Bus if it exists', () => {
+      const bus = {
+        teardown: jest.fn()
       };
 
-      this.framework._v1Bus = bus;
+      testContext.framework._v1Bus = bus;
 
-      return this.framework.teardown().then(function () {
-        expect(bus.teardown).to.be.calledOnce;
+      return testContext.framework.teardown().then(() => {
+        expect(bus.teardown).toHaveBeenCalledTimes(1);
       });
     });
 
-    it('does not teardown bankFrame if is has no parent node', function () {
-      var iframe = {
-        parentNode: {
-          removeChild: this.sandbox.stub()
-        }
+    it('does not teardown bankFrame if is has no parent node', () => {
+      const iframe = {
+        parentNode: { removeChild: jest.fn() }
       };
 
-      this.framework._v1Iframe = iframe;
+      testContext.framework._v1Iframe = iframe;
 
-      return this.framework.teardown().then(function () {
-        expect(iframe.parentNode.removeChild).to.be.calledOnce;
-        expect(iframe.parentNode.removeChild).to.be.calledWith(iframe);
+      return testContext.framework.teardown().then(() => {
+        expect(iframe.parentNode.removeChild).toHaveBeenCalledTimes(1);
+        expect(iframe.parentNode.removeChild).toHaveBeenCalledWith(iframe);
       });
     });
 
-    it('does not teardown bankFrame if is has no parent node', function () {
-      var iframe = {};
+    it('does not teardown bankFrame if is has no parent node', () => {
+      testContext.framework._v1Iframe = {};
 
-      this.framework._v1Iframe = iframe;
-
-      return this.framework.teardown().catch(function () {
+      return testContext.framework.teardown().catch(() => {
         throw new Error('Did not expect teardown to error');
       });
     });

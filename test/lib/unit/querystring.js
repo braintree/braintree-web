@@ -1,90 +1,87 @@
 'use strict';
 
-var querystring = require('../../../src/lib/querystring');
+const querystring = require('../../../src/lib/querystring');
+const { noop } = require('../../helpers');
 
-describe('querystring', function () {
-  describe('createURLParams', function () {
-    it('returns an unmodified url if no params are given', function () {
-      var url = 'http://httpbin.org/ip';
+describe('querystring', () => {
+  describe('createURLParams', () => {
+    it('returns an unmodified url if no params are given', () => {
+      const url = 'http://httpbin.org/ip';
 
-      expect(querystring.queryify(url)).to.equal(url);
+      expect(querystring.queryify(url)).toBe(url);
     });
 
-    it('returns an unmodified url if given an empty params object', function () {
-      var url = 'http://httpbin.org/ip';
+    it('returns an unmodified url if given an empty params object', () => {
+      const url = 'http://httpbin.org/ip';
 
-      expect(querystring.queryify(url, {})).to.equal(url);
+      expect(querystring.queryify(url, {})).toBe(url);
     });
 
-    it('returns a url with params', function () {
-      var url = 'http://httpbin.org/ip';
-      var params = {foo: 'bar', baz: 'qux'};
+    it('returns a url with params', () => {
+      const url = 'http://httpbin.org/ip';
+      const params = { foo: 'bar', baz: 'qux' };
 
-      expect(querystring.queryify(url, params)).to.equal(url + '?foo=bar&baz=qux');
+      expect(querystring.queryify(url, params)).toBe(`${url}?foo=bar&baz=qux`);
     });
 
-    it('returns a url with params if given a nested params object', function () {
-      var url = 'http://httpbin.org/ip';
-      var params = {foo: {bar: {baz: 'qux'}}};
+    it('returns a url with params if given a nested params object', () => {
+      const url = 'http://httpbin.org/ip';
+      const params = { foo: { bar: { baz: 'qux' }}};
 
-      expect(querystring.queryify(url, params)).to.equal(url + encodeURI('?foo[bar][baz]=qux'));
+      expect(querystring.queryify(url, params)).toBe(url + encodeURI('?foo[bar][baz]=qux'));
     });
 
-    it('returns query params if no url is given', function () {
-      var url;
-      var params = {foo: 'bar', baz: 'qux'};
+    it('returns query params if no url is given', () => {
+      const params = { foo: 'bar', baz: 'qux' };
 
-      expect(querystring.queryify(url, params)).to.equal('?foo=bar&baz=qux');
+      expect(querystring.queryify(null, params)).toBe('?foo=bar&baz=qux');
     });
 
-    it('returns query params if url is "?"', function () {
-      var url = '?';
-      var params = {foo: 'bar', baz: 'qux'};
+    it('returns query params if url is "?"', () => {
+      const url = '?';
+      const params = { foo: 'bar', baz: 'qux' };
 
-      expect(querystring.queryify(url, params)).to.equal(url + 'foo=bar&baz=qux');
+      expect(querystring.queryify(url, params)).toBe(`${url}foo=bar&baz=qux`);
     });
 
-    it('returns query params appended if url already has query params', function () {
-      var url = '?oogle=foogle';
-      var params = {foo: 'bar', baz: 'qux'};
+    it('returns query params appended if url already has query params', () => {
+      const url = '?oogle=foogle';
+      const params = { foo: 'bar', baz: 'qux' };
 
-      expect(querystring.queryify(url, params)).to.equal(url + '&foo=bar&baz=qux');
+      expect(querystring.queryify(url, params)).toBe(`${url}&foo=bar&baz=qux`);
     });
 
-    it('returns unmodified url if invalid params are passed', function () {
-      var url = 'http://httpbin.org/ip';
+    it('returns unmodified url if invalid params are passed', () => {
+      const url = 'http://httpbin.org/ip';
 
-      expect(querystring.queryify(url, 1)).to.equal(url);
-      expect(querystring.queryify(url, null)).to.equal(url);
-      expect(querystring.queryify(url, '')).to.equal(url);
-      expect(querystring.queryify(url)).to.equal(url);
+      expect(querystring.queryify(url, 1)).toBe(url);
+      expect(querystring.queryify(url, null)).toBe(url);
+      expect(querystring.queryify(url, '')).toBe(url);
+      expect(querystring.queryify(url)).toBe(url);
     });
   });
 
-  describe('stringify', function () {
-    it('turns an object into a GET string', function () {
-      var params = {hello: '1', world: 'some string', integer: 1, dbl: 2.0};
-      var result = querystring.stringify(params);
+  describe('stringify', () => {
+    it('turns an object into a GET string', () => {
+      const params = { hello: '1', world: 'some string', integer: 1, dbl: 2.0 };
 
-      expect(result).to.eql('hello=1&world=some%20string&integer=1&dbl=2');
+      expect(querystring.stringify(params)).toBe('hello=1&world=some%20string&integer=1&dbl=2');
     });
 
-    it('encodes an array as a url encoded string', function () {
-      var params = {
+    it('encodes an array as a url encoded string', () => {
+      const params = {
         myArray: [
           0,
           'second',
-          {ordinal: 'third'}
+          { ordinal: 'third' }
         ]
       };
-      var result = querystring.stringify(params);
-      var expected = 'myArray%5B%5D=0&myArray%5B%5D=second&myArray%5B%5D%5Bordinal%5D=third';
 
-      expect(result).to.eql(expected);
+      expect(querystring.stringify(params)).toEqual('myArray%5B%5D=0&myArray%5B%5D=second&myArray%5B%5D%5Bordinal%5D=third');
     });
 
-    it('encodes a nested object as a url encoded string', function () {
-      var params = {
+    it('encodes a nested object as a url encoded string', () => {
+      const params = {
         topLevel: '1',
         nested: {
           hello: '2',
@@ -94,42 +91,32 @@ describe('querystring', function () {
           }
         }
       };
-      var result = querystring.stringify(params);
-      var expected = 'topLevel=1&nested%5Bhello%5D=2&nested%5Bworld%5D=3&nested%5BnestedNested%5D%5B1%5D=1';
 
-      expect(result).to.eql(expected);
+      expect(querystring.stringify(params)).toEqual('topLevel=1&nested%5Bhello%5D=2&nested%5Bworld%5D=3&nested%5BnestedNested%5D%5B1%5D=1');
     });
 
-    it('does not include prototyped methods in encoded string', function () {
-      var result;
-
+    it('does not include prototyped methods in encoded string', () => {
       function MyClass() {}
-      MyClass.prototype.shouldNotBeIncluded = function () {};
+      MyClass.prototype.shouldNotBeIncluded = noop;
 
-      result = querystring.stringify(new MyClass());
-
-      expect(result).to.not.match(/shouldNotBeIncluded/i);
+      expect(querystring.stringify(new MyClass())).not.toMatch(/shouldNotBeIncluded/i);
     });
   });
 
-  describe('parse', function () {
-    it('returns empty object when no query params', function () {
-      var actual = querystring.parse('https://example.com');
-
-      expect(actual).to.be.empty;
+  describe('parse', () => {
+    it('returns empty object when no query params', () => {
+      expect(Object.keys(querystring.parse('https://example.com'))).toHaveLength(0);
     });
 
-    it('does not return hash data', function () {
-      var actual = querystring.parse('https://example.com?var=a#something');
-
-      expect(actual.var).to.equal('a');
+    it('does not return hash data', () => {
+      expect(querystring.parse('https://example.com?var=a#something').var).toBe('a');
     });
 
-    it('handles a querystring with multiple variables', function () {
-      var actual = querystring.parse('https://example.com?var=a&var2=b#something');
+    it('handles a querystring with multiple variables', () => {
+      const actual = querystring.parse('https://example.com?var=a&var2=b#something');
 
-      expect(actual.var).to.equal('a');
-      expect(actual.var2).to.equal('b');
+      expect(actual.var).toBe('a');
+      expect(actual.var2).toBe('b');
     });
   });
 });

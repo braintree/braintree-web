@@ -1,25 +1,31 @@
 'use strict';
 
-var BaseInput = require('../../../../../src/hosted-fields/internal/components/base-input').BaseInput;
-var ExpirationSplitInput = require('../../../../../src/hosted-fields/internal/components/expiration-split-input').ExpirationSplitInput;
-var ExpirationMonthInput = require('../../../../../src/hosted-fields/internal/components/expiration-month-input').ExpirationMonthInput;
-var CreditCardForm = require('../../../../../src/hosted-fields/internal/models/credit-card-form').CreditCardForm;
+const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
+const { ExpirationSplitInput } = require('../../../../../src/hosted-fields/internal/components/expiration-split-input');
+const { ExpirationMonthInput } = require('../../../../../src/hosted-fields/internal/components/expiration-month-input');
+const { CreditCardForm } = require('../../../../../src/hosted-fields/internal/models/credit-card-form');
+const { events } = require('../../../../../src/hosted-fields/shared/constants');
+const { createInput } = require('../../helpers');
+const { findFirstEventCallback } = require('../../../../helpers');
 
-describe('Expiration Month Input', function () {
-  beforeEach(function () {
-    this.input = helpers.createInput('expirationMonth');
+describe('Expiration Month Input', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.input = createInput('expirationMonth');
   });
 
-  describe('inheritance', function () {
-    it('extends BaseInput', function () {
-      expect(this.input).to.be.an.instanceof(BaseInput);
+  describe('inheritance', () => {
+    it('extends BaseInput', () => {
+      expect(testContext.input).toBeInstanceOf(BaseInput);
     });
   });
 
-  describe('element creation', function () {
-    describe('prefill', function () {
-      it('applies prefill', function () {
-        var input = new ExpirationMonthInput({
+  describe('element creation', () => {
+    describe('prefill', () => {
+      it('applies prefill', () => {
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -32,11 +38,11 @@ describe('Expiration Month Input', function () {
           })
         });
 
-        expect(input.element.value).to.equal('09');
+        expect(input.element.value).toMatch('09');
       });
 
-      it('prefixes month value with a leading zero if it is one digit', function () {
-        var input = new ExpirationMonthInput({
+      it('prefixes month value with a leading zero if it is one digit', () => {
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -49,11 +55,11 @@ describe('Expiration Month Input', function () {
           })
         });
 
-        expect(input.element.value).to.equal('09');
+        expect(input.element.value).toMatch('09');
       });
 
-      it('does not prefix month value with a leading zero if it is not one digit', function () {
-        var input = new ExpirationMonthInput({
+      it('does not prefix month value with a leading zero if it is not one digit', () => {
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -66,31 +72,29 @@ describe('Expiration Month Input', function () {
           })
         });
 
-        expect(input.element.value).to.equal('11');
+        expect(input.element.value).toMatch('11');
       });
     });
 
-    describe('without a `select` option', function () {
-      it('is an <input> element', function () {
-        expect(this.input.element).to.be.an.instanceOf(HTMLInputElement);
+    describe('without a `select` option', () => {
+      it('is an <input> element', () => {
+        expect(testContext.input.element).toBeInstanceOf(HTMLInputElement);
       });
 
-      it('has type="tel"', function () {
-        expect(this.input.element.getAttribute('type')).to.equal('tel');
+      it('has type="tel"', () => {
+        expect(testContext.input.element.getAttribute('type')).toMatch('tel');
       });
 
-      it('sets the maxLength to 2', function () {
-        expect(this.input.element.getAttribute('maxlength')).to.equal('2');
+      it('sets the maxLength to 2', () => {
+        expect(testContext.input.element.getAttribute('maxlength')).toMatch('2');
       });
     });
 
-    describe('with a `select` option', function () {
-      it("select: false calls BaseInput's constructElement", function () {
-        var input;
+    describe('with a `select` option', () => {
+      it('select: false calls BaseInput\'s constructElement', () => {
+        jest.spyOn(BaseInput.prototype, 'constructElement');
 
-        this.sandbox.spy(BaseInput.prototype, 'constructElement');
-
-        input = new ExpirationMonthInput({
+        new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -102,13 +106,13 @@ describe('Expiration Month Input', function () {
           })
         });
 
-        expect(BaseInput.prototype.constructElement).to.be.calledOnce;
-        expect(BaseInput.prototype.constructElement).to.be.calledOn(input);
+        expect(BaseInput.prototype.constructElement).toHaveBeenCalledTimes(1);
+        // expect(BaseInput.prototype.constructElement).to.be.calledOn(input);
       });
 
-      it('select: true creates a <select> with twelve <option>s inside', function () {
-        var month, optionEl;
-        var input = new ExpirationMonthInput({
+      it('select: true creates a <select> with twelve <option>s inside', () => {
+        let month, optionEl;
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -120,25 +124,25 @@ describe('Expiration Month Input', function () {
           })
         });
 
-        expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth valid');
-        expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
-        expect(input.element.name).to.equal('expiration-month');
-        expect(input.element.id).to.equal('expiration-month');
+        expect(input.element).toBeInstanceOf(HTMLSelectElement);
+        expect(input.element.className).toMatch('expirationMonth valid');
+        expect(input.element.getAttribute('data-braintree-name')).toMatch('expirationMonth');
+        expect(input.element.name).toMatch('expiration-month');
+        expect(input.element.id).toMatch('expiration-month');
 
         for (month = 1; month <= 12; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.include(month.toString());
-          expect(optionEl.innerHTML).to.equal(month.toString());
+          expect(optionEl).toBeInstanceOf(HTMLOptionElement);
+          expect(optionEl.value).toMatch(month.toString());
+          expect(optionEl.textContent).toMatch(month.toString());
         }
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);
+        expect(input.element.querySelectorAll('option')).toHaveLength(12);
       });
 
-      it('prepends select values with a 0 for months 1-9', function () {
-        var input = new ExpirationMonthInput({
+      it('prepends select values with a 0 for months 1-9', () => {
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -149,25 +153,25 @@ describe('Expiration Month Input', function () {
             }
           })
         });
-        var nodes = input.element.childNodes;
+        const nodes = input.element.childNodes;
 
-        expect(nodes[0].value).to.equal('01');
-        expect(nodes[1].value).to.equal('02');
-        expect(nodes[2].value).to.equal('03');
-        expect(nodes[3].value).to.equal('04');
-        expect(nodes[4].value).to.equal('05');
-        expect(nodes[5].value).to.equal('06');
-        expect(nodes[6].value).to.equal('07');
-        expect(nodes[7].value).to.equal('08');
-        expect(nodes[8].value).to.equal('09');
-        expect(nodes[9].value).to.equal('10');
-        expect(nodes[10].value).to.equal('11');
-        expect(nodes[11].value).to.equal('12');
+        expect(nodes[0].value).toMatch('01');
+        expect(nodes[1].value).toMatch('02');
+        expect(nodes[2].value).toMatch('03');
+        expect(nodes[3].value).toMatch('04');
+        expect(nodes[4].value).toMatch('05');
+        expect(nodes[5].value).toMatch('06');
+        expect(nodes[6].value).toMatch('07');
+        expect(nodes[7].value).toMatch('08');
+        expect(nodes[8].value).toMatch('09');
+        expect(nodes[9].value).toMatch('10');
+        expect(nodes[10].value).toMatch('11');
+        expect(nodes[11].value).toMatch('12');
       });
 
-      it('select: {} creates a <select> with twelve <option>s inside', function () {
-        var month, optionEl;
-        var input = new ExpirationMonthInput({
+      it('select: {} creates a <select> with twelve <option>s inside', () => {
+        let month, optionEl;
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -179,147 +183,147 @@ describe('Expiration Month Input', function () {
           })
         });
 
-        expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth valid');
-        expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
-        expect(input.element.name).to.equal('expiration-month');
-        expect(input.element.id).to.equal('expiration-month');
+        expect(input.element).toBeInstanceOf(HTMLSelectElement);
+        expect(input.element.className).toMatch('expirationMonth valid');
+        expect(input.element.getAttribute('data-braintree-name')).toMatch('expirationMonth');
+        expect(input.element.name).toMatch('expiration-month');
+        expect(input.element.id).toMatch('expiration-month');
 
         for (month = 1; month <= 12; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.include(month.toString());
-          expect(optionEl.innerHTML).to.equal(month.toString());
+          expect(optionEl).toBeInstanceOf(HTMLOptionElement);
+          expect(optionEl.value).toMatch(month.toString());
+          expect(optionEl.textContent).toMatch(month.toString());
         }
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);
+        expect(input.element.querySelectorAll('option')).toHaveLength(12);
       });
 
-      it('select: { options: null } creates a <select> with twelve <option>s inside', function () {
-        var month, optionEl;
-        var input = new ExpirationMonthInput({
+      it('select: { options: null } creates a <select> with twelve <option>s inside', () => {
+        let month, optionEl;
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
               expirationMonth: {
                 selector: '#expiration-month',
-                select: {options: null}
+                select: { options: null }
               }
             }
           })
         });
 
-        expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth valid');
-        expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
-        expect(input.element.name).to.equal('expiration-month');
-        expect(input.element.id).to.equal('expiration-month');
+        expect(input.element).toBeInstanceOf(HTMLSelectElement);
+        expect(input.element.className).toMatch('expirationMonth valid');
+        expect(input.element.getAttribute('data-braintree-name')).toMatch('expirationMonth');
+        expect(input.element.name).toMatch('expiration-month');
+        expect(input.element.id).toMatch('expiration-month');
 
         for (month = 1; month <= 12; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.include(month.toString());
-          expect(optionEl.innerHTML).to.equal(month.toString());
+          expect(optionEl).toBeInstanceOf(HTMLOptionElement);
+          expect(optionEl.value).toMatch(month.toString());
+          expect(optionEl.textContent).toMatch(month.toString());
         }
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);
+        expect(input.element.querySelectorAll('option')).toHaveLength(12);
       });
 
-      it('select options with 13 strings creates a <select> with twelve <option>s inside', function () {
-        var month, optionEl;
-        var options = 'abcdefghijklm'.split('');
-        var input = new ExpirationMonthInput({
+      it('select options with 13 strings creates a <select> with twelve <option>s inside', () => {
+        let month, optionEl;
+        const options = 'abcdefghijklm'.split('');
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
               expirationMonth: {
                 selector: '#expiration-month',
-                select: {options: options}
+                select: { options }
               }
             }
           })
         });
 
-        expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth valid');
-        expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
-        expect(input.element.name).to.equal('expiration-month');
-        expect(input.element.id).to.equal('expiration-month');
+        expect(input.element).toBeInstanceOf(HTMLSelectElement);
+        expect(input.element.className).toMatch('expirationMonth valid');
+        expect(input.element.getAttribute('data-braintree-name')).toMatch('expirationMonth');
+        expect(input.element.name).toMatch('expiration-month');
+        expect(input.element.id).toMatch('expiration-month');
 
         for (month = 1; month <= 12; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl).to.be.an.instanceOf(HTMLOptionElement);
-          expect(optionEl.value).to.include(month.toString());
-          expect(optionEl.innerHTML).to.equal(options[month - 1]);
+          expect(optionEl).toBeInstanceOf(HTMLOptionElement);
+          expect(optionEl.value).toMatch(month.toString());
+          expect(optionEl.textContent).toMatch(options[month - 1]);
         }
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);
+        expect(input.element.querySelectorAll('option')).toHaveLength(12);
       });
 
-      it('select options with 3 strings creates a <select> with twelve <option>s inside', function () {
-        var month, optionEl;
-        var input = new ExpirationMonthInput({
+      it('select options with 3 strings creates a <select> with twelve <option>s inside', () => {
+        let month, optionEl;
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
               expirationMonth: {
                 selector: '#expiration-month',
-                select: {options: ['a', 'b', 'c']}
+                select: { options: ['a', 'b', 'c']}
               }
             }
           })
         });
 
-        expect(input.element).to.be.an.instanceOf(HTMLSelectElement);
-        expect(input.element.className).to.equal('expirationMonth valid');
-        expect(input.element.getAttribute('data-braintree-name')).to.equal('expirationMonth');
-        expect(input.element.name).to.equal('expiration-month');
-        expect(input.element.id).to.equal('expiration-month');
+        expect(input.element).toBeInstanceOf(HTMLSelectElement);
+        expect(input.element.className).toMatch('expirationMonth valid');
+        expect(input.element.getAttribute('data-braintree-name')).toMatch('expirationMonth');
+        expect(input.element.name).toMatch('expiration-month');
+        expect(input.element.id).toMatch('expiration-month');
 
         for (month = 1; month <= 3; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl.value).to.include(month.toString());
-          expect(optionEl.innerHTML).to.equal(['a', 'b', 'c'][month - 1]);
+          expect(optionEl.value).toMatch(month.toString());
+          expect(optionEl.textContent).toBe(['a', 'b', 'c'][month - 1]);
         }
 
         for (month = 4; month <= 12; month++) {
           optionEl = input.element.childNodes[month - 1];
 
-          expect(optionEl.value).to.include(month.toString());
-          expect(optionEl.innerHTML).to.equal(month.toString());
+          expect(optionEl.value).toMatch(month.toString());
+          expect(optionEl.textContent).toMatch(month.toString());
         }
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);
+        expect(input.element.querySelectorAll('option')).toHaveLength(12);
       });
 
-      it('select options with non-strings ignores the non-string options', function () {
-        var optionEl;
-        var input = new ExpirationMonthInput({
+      it('select options with non-strings ignores the non-string options', () => {
+        let optionEl;
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
               expirationMonth: {
                 selector: '#expiration-month',
-                select: {options: [99]}
+                select: { options: [99]}
               }
             }
           })
         });
 
         optionEl = input.element.childNodes[0];
-        expect(optionEl.value).to.equal('01');
-        expect(optionEl.innerHTML).to.equal('1');
+        expect(optionEl.value).toMatch('01');
+        expect(optionEl.textContent).toMatch('1');
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(12);
+        expect(input.element.querySelectorAll('option')).toHaveLength(12);
       });
 
-      it('allows a placeholder in the select', function () {
-        var placeholderEl;
-        var input = new ExpirationMonthInput({
+      it('allows a placeholder in the select', () => {
+        let placeholderEl;
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -333,18 +337,18 @@ describe('Expiration Month Input', function () {
         });
 
         placeholderEl = input.element.childNodes[0];
-        expect(placeholderEl.value).to.equal('');
-        expect(placeholderEl.getAttribute('selected')).to.equal('selected');
-        expect(placeholderEl.getAttribute('disabled')).to.equal('disabled');
-        expect(placeholderEl.innerHTML).to.equal('foo &amp; &lt;boo&gt;');
+        expect(placeholderEl.value).toMatch('');
+        expect(placeholderEl.getAttribute('selected')).toMatch('selected');
+        expect(placeholderEl.getAttribute('disabled')).toMatch('disabled');
+        expect(placeholderEl.innerHTML).toMatch('foo &amp; &lt;boo&gt;');
 
-        expect(input.element.querySelectorAll('option')).to.have.lengthOf(13);
+        expect(input.element.querySelectorAll('option')).toHaveLength(13);
       });
 
-      it('selects current month value when no placeholder is set', function () {
-        var i, el;
-        var currentMonth = parseInt((new Date()).getMonth(), 10); // eslint-disable-line no-extra-parens
-        var input = new ExpirationMonthInput({
+      it('selects current month value when no placeholder is set', () => {
+        let i, el;
+        const currentMonth = parseInt((new Date()).getMonth(), 10); // eslint-disable-line no-extra-parens
+        const input = new ExpirationMonthInput({
           type: 'expirationMonth',
           model: new CreditCardForm({
             fields: {
@@ -360,27 +364,27 @@ describe('Expiration Month Input', function () {
           el = input.element.childNodes[i];
 
           if (i === currentMonth) {
-            expect(el.getAttribute('selected')).to.equal('selected');
+            expect(el.getAttribute('selected')).toMatch('selected');
           } else {
-            expect(el.getAttribute('selected')).to.equal(null);
+            expect(el.getAttribute('selected')).toBeNull();
           }
         }
-        expect(input.element.selectedIndex).to.equal(currentMonth);
+        expect(input.element.selectedIndex).toBe(currentMonth);
       });
     });
 
-    it('has autocomplete cc-exp-month', function () {
-      expect(this.input.element.getAttribute('autocomplete')).to.equal('cc-exp-month');
+    it('has autocomplete cc-exp-month', () => {
+      expect(testContext.input.element.getAttribute('autocomplete')).toMatch('cc-exp-month');
     });
   });
 
-  describe('addBusEventListeners', function () {
-    beforeEach(function () {
-      this.sandbox.stub(ExpirationSplitInput.prototype, 'addBusEventListeners');
+  describe('addBusEventListeners', () => {
+    beforeEach(() => {
+      jest.spyOn(ExpirationSplitInput.prototype, 'addBusEventListeners');
     });
 
-    it('calls parent class method', function () {
-      new ExpirationMonthInput({
+    it('calls parent class method', () => {
+      new ExpirationMonthInput({ // eslint-disable-line no-new
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -391,11 +395,11 @@ describe('Expiration Month Input', function () {
         })
       });
 
-      expect(ExpirationSplitInput.prototype.addBusEventListeners).to.be.calledOnce;
+      expect(ExpirationSplitInput.prototype.addBusEventListeners).toHaveBeenCalledTimes(1);
     });
 
-    it('sets up listener for SET_MONTH_OPTIONS if expiration month is a select', function () {
-      new ExpirationMonthInput({
+    it('sets up listener for SET_MONTH_OPTIONS if expiration month is a select', () => {
+      new ExpirationMonthInput({ // eslint-disable-line no-new
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -407,11 +411,11 @@ describe('Expiration Month Input', function () {
         })
       });
 
-      expect(global.bus.on).to.be.calledWith('hosted-fields:SET_MONTH_OPTIONS');
+      expect(global.bus.on).toHaveBeenCalledWith(events.SET_MONTH_OPTIONS, expect.any(Function));
     });
 
-    it('does not set up listener for SET_MONTH_OPTIONS if expiration month is not a select', function () {
-      new ExpirationMonthInput({
+    it('does not set up listener for SET_MONTH_OPTIONS if expiration month is not a select', () => {
+      new ExpirationMonthInput({ // eslint-disable-line no-new
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -422,12 +426,12 @@ describe('Expiration Month Input', function () {
         })
       });
 
-      expect(global.bus.on).to.not.be.calledWith('hosted-fields:SET_MONTH_OPTIONS');
+      expect(global.bus.on).not.toHaveBeenCalledWith(events.SET_MONTH_OPTIONS);
     });
 
-    it('renames the options when SET_MONTH_OPTIONS is emitted', function (done) {
-      var callback;
-      var input = new ExpirationMonthInput({
+    it('renames the options when SET_MONTH_OPTIONS is emitted', done => {
+      let callback;
+      const input = new ExpirationMonthInput({
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -454,10 +458,11 @@ describe('Expiration Month Input', function () {
         })
       });
 
-      expect(input.element.querySelectorAll('option')[0].innerText).to.equal('January');
-      expect(input.element.querySelectorAll('option')[11].innerText).to.equal('December');
+      document.body.appendChild(input.element);
+      expect(input.element.querySelectorAll('option')[0].textContent).toMatch('January');
+      expect(input.element.querySelectorAll('option')[11].textContent).toMatch('December');
 
-      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
 
       callback([
         'Jan',
@@ -472,17 +477,17 @@ describe('Expiration Month Input', function () {
         'Oct',
         'Nov',
         'Dec'
-      ], function () {
-        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Jan');
-        expect(input.element.querySelectorAll('option')[11].innerText).to.equal('Dec');
+      ], () => {
+        expect(input.element.querySelectorAll('option')[0].textContent).toMatch('Jan');
+        expect(input.element.querySelectorAll('option')[11].textContent).toMatch('Dec');
 
         done();
       });
     });
 
-    it('defaults to existing value if passed options are less than the options', function (done) {
-      var callback;
-      var input = new ExpirationMonthInput({
+    it('defaults to existing value if passed options are less than the options', done => {
+      let callback;
+      const input = new ExpirationMonthInput({ // eslint-disable-line no-new
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -509,22 +514,22 @@ describe('Expiration Month Input', function () {
         })
       });
 
-      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
 
       callback([
         'Jan'
-      ], function () {
-        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Jan');
-        expect(input.element.querySelectorAll('option')[1].innerText).to.equal('February');
-        expect(input.element.querySelectorAll('option')[11].innerText).to.equal('December');
+      ], () => {
+        expect(input.element.querySelectorAll('option')[0].textContent).toMatch('Jan');
+        expect(input.element.querySelectorAll('option')[1].textContent).toMatch('February');
+        expect(input.element.querySelectorAll('option')[11].textContent).toMatch('December');
 
         done();
       });
     });
 
-    it('ignores options beyond the 12th', function (done) {
-      var callback;
-      var input = new ExpirationMonthInput({
+    it('ignores options beyond the 12th', done => {
+      let callback;
+      const input = new ExpirationMonthInput({ // eslint-disable-line no-new
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -551,10 +556,10 @@ describe('Expiration Month Input', function () {
         })
       });
 
-      expect(input.element.querySelectorAll('option')[0].innerText).to.equal('January');
-      expect(input.element.querySelectorAll('option')[11].innerText).to.equal('December');
+      expect(input.element.querySelectorAll('option')[0].textContent).toMatch('January');
+      expect(input.element.querySelectorAll('option')[11].textContent).toMatch('December');
 
-      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
 
       callback([
         'Jan',
@@ -572,18 +577,18 @@ describe('Expiration Month Input', function () {
         'foo',
         'bar',
         'baz'
-      ], function () {
-        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Jan');
-        expect(input.element.querySelectorAll('option')[11].innerText).to.equal('Dec');
-        expect(input.element.querySelectorAll('option')[12]).to.not.exist;
+      ], () => {
+        expect(input.element.querySelectorAll('option')[0].textContent).toMatch('Jan');
+        expect(input.element.querySelectorAll('option')[11].textContent).toMatch('Dec');
+        expect(input.element.querySelectorAll('option')[12]).toBeFalsy();
 
         done();
       });
     });
 
-    it('does not override the placeholder if set', function (done) {
-      var callback;
-      var input = new ExpirationMonthInput({
+    it('does not override the placeholder if set', done => {
+      let callback;
+      const input = new ExpirationMonthInput({ // eslint-disable-line no-new
         type: 'expirationMonth',
         model: new CreditCardForm({
           fields: {
@@ -611,11 +616,11 @@ describe('Expiration Month Input', function () {
         })
       });
 
-      expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Month');
-      expect(input.element.querySelectorAll('option')[1].innerText).to.equal('January');
-      expect(input.element.querySelectorAll('option')[12].innerText).to.equal('December');
+      expect(input.element.querySelectorAll('option')[0].textContent).toMatch('Month');
+      expect(input.element.querySelectorAll('option')[1].textContent).toMatch('January');
+      expect(input.element.querySelectorAll('option')[12].textContent).toMatch('December');
 
-      callback = global.bus.on.withArgs('hosted-fields:SET_MONTH_OPTIONS').args[0][1];
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
 
       callback([
         'Jan',
@@ -630,10 +635,10 @@ describe('Expiration Month Input', function () {
         'Oct',
         'Nov',
         'Dec'
-      ], function () {
-        expect(input.element.querySelectorAll('option')[0].innerText).to.equal('Month');
-        expect(input.element.querySelectorAll('option')[1].innerText).to.equal('Jan');
-        expect(input.element.querySelectorAll('option')[12].innerText).to.equal('Dec');
+      ], () => {
+        expect(input.element.querySelectorAll('option')[0].textContent).toMatch('Month');
+        expect(input.element.querySelectorAll('option')[1].textContent).toMatch('Jan');
+        expect(input.element.querySelectorAll('option')[12].textContent).toMatch('Dec');
 
         done();
       });

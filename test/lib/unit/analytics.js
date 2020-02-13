@@ -1,110 +1,120 @@
 'use strict';
 
-var Promise = require('../../../src/lib/promise');
-var analytics = require('../../../src/lib/analytics');
-var constants = require('../../../src/lib/constants');
+const analytics = require('../../../src/lib/analytics');
+const constants = require('../../../src/lib/constants');
+const { yieldsAsync } = require('../../helpers');
 
-describe('analytics.sendEvent', function () {
-  beforeEach(function () {
-    this.client = {
-      _request: this.sandbox.stub().yieldsAsync(),
-      getConfiguration: function () {
-        return {
-          authorization: 'development_testing_merchant_id',
-          analyticsMetadata: {sessionId: 'sessionId'},
-          gatewayConfiguration: {
-            analytics: {url: 'https://example.com/analytics-url'}
-          }
-        };
-      }
+describe('analytics.sendEvent', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.fauxDate = 1000000;
+
+    jest.useFakeTimers();
+
+    jest.spyOn(Date, 'now').mockImplementation(() => {
+      testContext.fauxDate += 400;
+
+      return testContext.fauxDate;
+    });
+    testContext.client = {
+      _request: jest.fn(yieldsAsync()),
+      getConfiguration: () => ({
+        authorization: 'development_testing_merchant_id',
+        analyticsMetadata: { sessionId: 'sessionId' },
+        gatewayConfiguration: {
+          analytics: { url: 'https://example.com/analytics-url' }
+        }
+      })
     };
   });
 
-  it('correctly sends an analytics event with a callback', function (done) {
-    analytics.sendEvent(this.client, 'test.event.kind', function () {
-      var currentTimestamp = Date.now();
-      var postArgs = this.client._request.firstCall.args;
+  it('correctly sends an analytics event with a callback', done => {
+    analytics.sendEvent(testContext.client, 'test.event.kind', () => {
+      const currentTimestamp = Date.now();
+      const { timeout, url, method, data } = testContext.client._request.mock.calls[0][0];
 
-      expect(this.client._request).to.be.called;
+      expect(testContext.client._request).toHaveBeenCalled();
 
-      expect(postArgs[0].url).to.equal('https://example.com/analytics-url');
-      expect(postArgs[0].method).to.equal('post');
-      expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
-      expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
-      expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
-      expect(postArgs[0].timeout).to.equal(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-      expect(postArgs[0].data.analytics[0].isAsync).to.equal(false);
-
-      done();
-    }.bind(this));
-  });
-
-  it('correctly sends an analytics event with no callback (fire-and-forget)', function (done) {
-    this.client._request.reset();
-
-    analytics.sendEvent(this.client, 'test.event.kind');
-
-    setTimeout(function () {
-      var currentTimestamp = Date.now();
-      var postArgs = this.client._request.firstCall.args;
-
-      expect(this.client._request).to.be.called;
-
-      expect(postArgs[0].url).to.equal('https://example.com/analytics-url');
-      expect(postArgs[0].method).to.equal('post');
-      expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
-      expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
-      expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
-      expect(postArgs[1]).not.to.exist;
-      expect(postArgs[0].timeout).to.equal(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-      expect(postArgs[0].data.analytics[0].isAsync).to.equal(false);
+      expect(url).toBe('https://example.com/analytics-url');
+      expect(method).toBe('post');
+      expect(data.analytics[0].kind).toBe('web.test.event.kind');
+      expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
+      expect(data._meta.sessionId).toBe('sessionId');
+      expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
+      expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
+      expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
+      expect(data.analytics[0].isAsync).toBe(false);
 
       done();
-    }.bind(this), 1);
+    });
   });
 
-  it('can send a defered analytics event if client is a promise', function (done) {
-    var clientPromise = Promise.resolve(this.client);
+  it('correctly sends an analytics event with no callback (fire-and-forget)', done => {
+    testContext.client._request.mockReset();
 
-    analytics.sendEvent(clientPromise, 'test.event.kind', function () {
-      var currentTimestamp = Date.now();
-      var postArgs = this.client._request.firstCall.args;
+    analytics.sendEvent(testContext.client, 'test.event.kind');
 
-      expect(this.client._request).to.be.called;
+    process.nextTick(() => {
+      const currentTimestamp = Date.now();
+      const postArgs = testContext.client._request.mock.calls[0];
+      const { timeout, url, method, data } = postArgs[0];
 
-      expect(postArgs[0].url).to.equal('https://example.com/analytics-url');
-      expect(postArgs[0].method).to.equal('post');
-      expect(postArgs[0].data.analytics[0].kind).to.equal('web.test.event.kind');
-      expect(postArgs[0].data.braintreeLibraryVersion).to.equal(constants.BRAINTREE_LIBRARY_VERSION);
-      expect(postArgs[0].data._meta.sessionId).to.equal('sessionId');
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
-      expect(postArgs[0].timeout).to.equal(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-      expect(postArgs[0].data.analytics[0].isAsync).to.equal(false);
+      expect(testContext.client._request).toHaveBeenCalled();
+      expect(url).toBe('https://example.com/analytics-url');
+      expect(method).toBe('post');
+      expect(data.analytics[0].kind).toBe('web.test.event.kind');
+      expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
+      expect(data._meta.sessionId).toBe('sessionId');
+      expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
+      expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
+      expect(postArgs[1]).toBeFalsy();
+      expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
+      expect(data.analytics[0].isAsync).toBe(false);
 
       done();
-    }.bind(this));
+    });
   });
 
-  it('sets timestamp to the time when the event was initialized, not when it was sent', function (done) {
-    var client = this.client;
-    var clientPromise = new Promise(function (resolve) {
-      setTimeout(function () {
-        resolve(client);
-      }, 1000);
+  it('can send a deferred analytics event if client is a promise', done => {
+    const clientPromise = Promise.resolve(testContext.client);
+
+    analytics.sendEvent(clientPromise, 'test.event.kind', () => {
+      const currentTimestamp = Date.now();
+      const { timeout, url, method, data } = testContext.client._request.mock.calls[0][0];
+
+      expect(testContext.client._request).toHaveBeenCalled();
+
+      expect(url).toBe('https://example.com/analytics-url');
+      expect(method).toBe('post');
+      expect(data.analytics[0].kind).toBe('web.test.event.kind');
+      expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
+      expect(data._meta.sessionId).toBe('sessionId');
+      expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
+      expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
+      expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
+      expect(data.analytics[0].isAsync).toBe(false);
+
+      done();
+    });
+  });
+
+  it('sets timestamp to the time when the event was initialized, not when it was sent', done => {
+    const client = testContext.client;
+
+    testContext.fauxDate += 1500;
+    const clientPromise = new Promise(resolve => {
+      resolve(client);
     });
 
-    analytics.sendEvent(clientPromise, 'test.event.kind', function () {
-      var currentTimestamp = Date.now();
-      var postArgs = client._request.firstCall.args;
+    analytics.sendEvent(clientPromise, 'test.event.kind', () => {
+      const currentTimestamp = Date.now();
+      const { timestamp, isAsync } = client._request.mock.calls[0][0].data.analytics[0];
 
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.lessThan(2000);
-      expect(currentTimestamp - postArgs[0].data.analytics[0].timestamp).to.be.greaterThan(0);
-      expect(postArgs[0].data.analytics[0].isAsync).to.equal(true);
+      expect(currentTimestamp - timestamp).toBeLessThan(2000);
+      expect(currentTimestamp - timestamp).toBeGreaterThan(0);
+      expect(isAsync).toBe(true);
 
       done();
     });

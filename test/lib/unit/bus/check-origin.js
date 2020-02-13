@@ -1,21 +1,22 @@
 'use strict';
 
-var checkOrigin = require('../../../../src/lib/bus/check-origin').checkOrigin;
+const { checkOrigin } = require('../../../../src/lib/bus/check-origin');
 
-describe('origin-restriction', function () {
-  describe('#check-origin', function () {
-    describe('for merchant domains', function () {
-      it('accepts if it equals a passed merchant origin', function () {
-        var merchantOrigin = 'https://example.com:3443';
-        var actual = checkOrigin('https://example.com:3443', merchantOrigin);
+describe('origin-restriction', () => {
+  describe('#check-origin', () => {
+    describe('for merchant domains', () => {
+      it('accepts if it equals a passed merchant origin', () => {
+        const merchantOrigin = 'https://example.com:3443';
+        const actual = checkOrigin('https://example.com:3443', merchantOrigin);
 
-        expect(actual).to.be.true;
+        expect(actual).toBe(true);
       });
-      it('rejects if it doesn\'t quite equal a passed merchant origin', function () {
-        var merchantOrigin = 'https://example.com:3000';
-        var actual = checkOrigin('https://example.com:3443', merchantOrigin);
 
-        expect(actual).to.be.false;
+      it('rejects if it doesn\'t quite equal a passed merchant origin', () => {
+        const merchantOrigin = 'https://example.com:3000';
+        const actual = checkOrigin('https://example.com:3443', merchantOrigin);
+
+        expect(actual).toBe(false);
       });
     });
   });

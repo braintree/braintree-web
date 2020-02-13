@@ -1,199 +1,170 @@
 'use strict';
 
-var AmericanExpress = require('../../../src/american-express/american-express');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var Promise = require('../../../src/lib/promise');
-var methods = require('../../../src/lib/methods');
+const AmericanExpress = require('../../../src/american-express/american-express');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const methods = require('../../../src/lib/methods');
 
-var NONCE = 'ed1704dc-e98c-427f-9836-0f1933755b6a';
+describe('AmericanExpress', () => {
+  let testContext;
 
-describe('AmericanExpress', function () {
-  beforeEach(function () {
-    this.client = {
-      request: this.sandbox.stub().resolves()
+  beforeEach(() => {
+    testContext = {};
+    testContext.NONCE = 'ed1704dc-e98c-427f-9836-0f1933755b6a';
+    testContext.client = {
+      request: jest.fn().mockResolvedValue(null)
     };
-    this.amex = new AmericanExpress({client: this.client});
+    testContext.amex = new AmericanExpress({ client: testContext.client });
   });
 
-  describe('getRewardsBalance', function () {
-    it('returns a promise', function () {
-      var promise = this.amex.getRewardsBalance({nonce: NONCE});
+  describe('getRewardsBalance', () => {
+    it('returns a promise', () => {
+      const promise = testContext.amex.getRewardsBalance({ nonce: testContext.NONCE });
 
-      expect(promise).to.be.an.instanceof(Promise);
+      expect(promise).resolves.toBeNull();
     });
 
-    it('calls the callback with an error if called without a nonce', function (done) {
-      this.amex.getRewardsBalance({}, function (err, response) {
-        expect(response).not.to.exist;
+    it('calls the callback with an error if called without a nonce', () =>
+      testContext.amex.getRewardsBalance({}).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('AMEX_NONCE_REQUIRED');
+        expect(err.message).toBe('getRewardsBalance must be called with a nonce.');
 
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('AMEX_NONCE_REQUIRED');
-        expect(err.message).to.equal('getRewardsBalance must be called with a nonce.');
+        expect(testContext.client.request).not.toHaveBeenCalled();
+      }));
 
-        expect(this.client.request).not.to.have.beenCalled;
+    it('makes a request to the gateway and rejects if it fails', () => {
+      const requestError = new Error('something went wrong');
 
-        done();
-      }.bind(this));
-    });
+      testContext.client.request.mockRejectedValue(requestError);
 
-    it('makes a request to the gateway and calls the callback if it fails', function (done) {
-      var requestError = new Error('something went wrong');
-
-      this.client.request.rejects(requestError);
-
-      this.amex.getRewardsBalance({nonce: NONCE}, function (err, response) {
-        expect(response).not.to.exist;
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('AMEX_NETWORK_ERROR');
-        expect(err.message).to.equal('A network error occurred when getting the American Express rewards balance.');
-        expect(err.details).to.deep.equal({originalError: requestError});
-
-        done();
+      return testContext.amex.getRewardsBalance({ nonce: testContext.NONCE }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('NETWORK');
+        expect(err.code).toBe('AMEX_NETWORK_ERROR');
+        expect(err.message).toBe(
+          'A network error occurred when getting the American Express rewards balance.'
+        );
+        expect(err.details).toEqual({ originalError: requestError });
       });
     });
 
-    it('makes a request to the gateway and calls the callback if it succeeds', function (done) {
-      var fakeResponseData = {foo: 'boo'};
+    it('makes a request to the gateway and resolves if it succeeds', () => {
+      const fakeResponseData = { foo: 'boo' };
 
-      this.client.request.resolves(fakeResponseData);
+      testContext.client.request.mockResolvedValue(fakeResponseData);
 
-      this.amex.getRewardsBalance({nonce: NONCE}, function (err, response) {
-        expect(err).to.equal(null);
-
-        expect(this.client.request).to.be.calledWith(this.sandbox.match({
+      return testContext.amex.getRewardsBalance({ nonce: testContext.NONCE }).then(response => {
+        expect(testContext.client.request).toHaveBeenCalledWith(expect.objectContaining({
           method: 'get',
           endpoint: 'payment_methods/amex_rewards_balance',
           data: {
             _meta: {
               source: 'american-express'
             },
-            paymentMethodNonce: NONCE
+            paymentMethodNonce: testContext.NONCE
           }
         }));
 
-        expect(response).to.equal(fakeResponseData);
-
-        done();
-      }.bind(this));
+        expect(response).toBe(fakeResponseData);
+      });
     });
 
-    it('passes along options to gateway', function (done) {
-      this.client.request.resolves();
+    it('passes along options to gateway', () => {
+      testContext.client.request.mockResolvedValue(null);
 
-      this.amex.getRewardsBalance({nonce: NONCE, foo: 'bar'}, function () {
-        expect(this.client.request).to.be.calledWithMatch({
+      return testContext.amex.getRewardsBalance({ nonce: testContext.NONCE, foo: 'bar' }).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(expect.objectContaining({
           data: {
-            _meta: {source: 'american-express'},
-            paymentMethodNonce: NONCE,
+            _meta: { source: 'american-express' },
+            paymentMethodNonce: testContext.NONCE,
             foo: 'bar'
           }
-        });
-
-        done();
-      }.bind(this));
+        }));
+      });
     });
 
-    it("doesn't modify the options that are passed in", function (done) {
-      var options = {
-        nonce: NONCE,
+    it('does not modify the options that are passed in', () => {
+      const options = {
+        nonce: testContext.NONCE,
         foo: 'boo'
       };
 
-      this.client.request.resolves();
+      testContext.client.request.mockResolvedValue(null);
 
-      this.amex.getRewardsBalance(options, function () {
-        expect(options).to.deep.equal({
-          nonce: NONCE,
+      return testContext.amex.getRewardsBalance(options).then(() => {
+        expect(options).toEqual({
+          nonce: testContext.NONCE,
           foo: 'boo'
         });
-
-        done();
       });
     });
   });
 
-  describe('getExpressCheckoutProfile', function () {
-    it('returns a promise', function () {
-      var promise = this.amex.getExpressCheckoutProfile({nonce: NONCE});
+  describe('getExpressCheckoutProfile', () => {
+    it('returns a promise', () => {
+      const promise = testContext.amex.getExpressCheckoutProfile({ nonce: testContext.NONCE });
 
-      expect(promise).to.respondTo('then');
-      expect(promise).to.respondTo('catch');
+      expect(promise).resolves.toBeNull();
     });
 
-    it('calls the callback with an error if called without a nonce', function (done) {
-      this.amex.getExpressCheckoutProfile({}, function (err, response) {
-        expect(response).not.to.exist;
+    it('rejects with an error if called without a nonce', () =>
+      testContext.amex.getExpressCheckoutProfile({}).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('AMEX_NONCE_REQUIRED');
+        expect(err.message).toBe('getExpressCheckoutProfile must be called with a nonce.');
 
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.code).to.equal('AMEX_NONCE_REQUIRED');
-        expect(err.message).to.equal('getExpressCheckoutProfile must be called with a nonce.');
+        expect(testContext.client.request).not.toHaveBeenCalled();
+      }));
 
-        expect(this.client.request).not.to.have.beenCalled;
+    it('makes a request to the gateway and calls the callback if it fails', () => {
+      const requestError = new Error('something went wrong');
 
-        done();
-      }.bind(this));
-    });
+      testContext.client.request.mockRejectedValue(requestError);
 
-    it('makes a request to the gateway and calls the callback if it fails', function (done) {
-      var requestError = new Error('something went wrong');
-
-      this.client.request.rejects(requestError);
-      this.amex.getExpressCheckoutProfile({nonce: NONCE}, function (err, response) {
-        expect(response).not.to.exist;
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.type).to.equal('NETWORK');
-        expect(err.code).to.equal('AMEX_NETWORK_ERROR');
-        expect(err.message).to.equal('A network error occurred when getting the American Express Checkout nonce profile.');
-        expect(err.details).to.deep.equal({originalError: requestError});
-
-        done();
+      return testContext.amex.getExpressCheckoutProfile({ nonce: testContext.NONCE }).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('NETWORK');
+        expect(err.code).toBe('AMEX_NETWORK_ERROR');
+        expect(err.message).toBe(
+          'A network error occurred when getting the American Express Checkout nonce profile.'
+        );
+        expect(err.details).toEqual({ originalError: requestError });
       });
     });
 
-    it('makes a request to the gateway and calls the callback if it succeeds', function (done) {
-      var fakeResponseData = {foo: 'boo'};
+    it('makes a request to the gateway and calls the callback if it succeeds', () => {
+      const fakeResponseData = { foo: 'boo' };
 
-      this.client.request.resolves(fakeResponseData);
+      testContext.client.request.mockResolvedValue(fakeResponseData);
 
-      this.amex.getExpressCheckoutProfile({nonce: NONCE}, function (err, response) {
-        expect(err).to.equal(null);
-
-        expect(this.client.request).to.be.calledWith(this.sandbox.match({
+      return testContext.amex.getExpressCheckoutProfile({ nonce: testContext.NONCE }).then(response => {
+        expect(testContext.client.request).toHaveBeenCalledWith(expect.objectContaining({
           method: 'get',
-          endpoint: 'payment_methods/amex_express_checkout_cards/' + NONCE,
+          endpoint: 'payment_methods/amex_express_checkout_cards/' + testContext.NONCE,
           data: {
             _meta: {
               source: 'american-express'
             },
-            paymentMethodNonce: NONCE
+            paymentMethodNonce: testContext.NONCE
           }
         }));
 
-        expect(response).to.equal(fakeResponseData);
-
-        done();
-      }.bind(this));
+        expect(response).toBe(fakeResponseData);
+      });
     });
   });
 
-  describe('teardown', function () {
-    it('returns a promise', function () {
-      var promise = this.amex.teardown();
+  describe('teardown', () => {
+    it('returns a promise', () => testContext.amex.teardown());
 
-      expect(promise).to.be.an.instanceof(Promise);
-    });
+    it('replaces all methods so error is thrown when methods are invoked', done => {
+      const instance = testContext.amex;
 
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var instance = this.amex;
-
-      instance.teardown(function () {
-        methods(AmericanExpress.prototype).forEach(function (method) {
-          var err;
+      instance.teardown(() => {
+        methods(AmericanExpress.prototype).forEach(method => {
+          let err;
 
           try {
             instance[method]();
@@ -201,10 +172,10 @@ describe('AmericanExpress', function () {
             err = e;
           }
 
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-          expect(err.message).to.equal(method + ' cannot be called after teardown.');
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+          expect(err.message).toBe(method + ' cannot be called after teardown.');
         });
 
         done();

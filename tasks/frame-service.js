@@ -14,7 +14,7 @@ var DIST_DIR = 'dist/hosted/web/' + VERSION + '/';
 var JS_TASKS = [];
 var JS_DELETE_TASKS = [];
 var HTML_TASKS = [];
-var FRAMES = ['dispatch'];
+var FRAMES = ['dispatch', 'cancel', 'redirect'];
 
 FRAMES.forEach(function (frame) {
   var jsTaskName = 'build:frame-service:js:' + frame + '-frame';
@@ -24,7 +24,7 @@ FRAMES.forEach(function (frame) {
   gulp.task(jsTaskName, function (done) {
     browserify({
       standalone: 'frameService',
-      main: 'src/lib/frame-service/internal/dispatch-frame/index.js',
+      main: `src/lib/frame-service/internal/${frame}-frame.js`,
       out: 'frame-service-' + frame + '-frame.js',
       dist: DIST_DIR + 'js',
       uglify: false
@@ -34,11 +34,11 @@ FRAMES.forEach(function (frame) {
   JS_TASKS.push(jsTaskName);
 
   gulp.task(htmlTaskName, function () {
-    var jsFile = fs.readFileSync(DIST_DIR + 'js/frame-service-dispatch-frame.js');
-    var stream = gulp.src('src/lib/frame-service/internal/dispatch-frame/index.html')
+    var jsFile = fs.readFileSync(DIST_DIR + `js/frame-service-${frame}-frame.js`);
+    var stream = gulp.src(`src/lib/frame-service/internal/frame.html`)
       .pipe(replace('@BUILT_FILE', jsFile))
       .pipe(rename(function (path) {
-        path.basename = 'dispatch-frame';
+        path.basename = `${frame}-frame`;
       }))
       .pipe(replace('@FRAME', frame));
 
@@ -48,7 +48,7 @@ FRAMES.forEach(function (frame) {
   HTML_TASKS.push(htmlTaskName);
 
   gulp.task(jsDeleteTaskName, function () {
-    var jsFilePath = DIST_DIR + 'js/frame-service-dispatch-frame.js';
+    var jsFilePath = DIST_DIR + `js/frame-service-${frame}-frame.js`;
 
     return del(jsFilePath);
   });

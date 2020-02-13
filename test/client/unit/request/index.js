@@ -1,68 +1,61 @@
 'use strict';
 
-var request = require('../../../../src/client/request');
-var AJAXDriver = require('../../../../src/client/request/ajax-driver');
+const request = require('../../../../src/client/request');
+const AJAXDriver = require('../../../../src/client/request/ajax-driver');
+const { noop } = require('../../../helpers');
 
-describe('Client request driver', function () {
-  beforeEach(function () {
-    this.sandbox.stub(AJAXDriver, 'request');
+describe('Client request driver', () => {
+  beforeEach(() => {
+    jest.spyOn(AJAXDriver, 'request').mockReturnValue(null);
   });
 
-  it('defaults the timeout if not given', function () {
-    request({
-    }, function () {});
+  it('defaults the timeout if not given', () => {
+    request({}, noop);
 
-    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request).toBeCalledWith(expect.objectContaining({
       timeout: 60000
-    }));
+    }), expect.any(Function));
   });
 
-  it('defaults the data if not given', function () {
-    request({
-    }, function () {});
+  it('defaults the data if not given', () => {
+    request({}, noop);
 
-    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request.mock.calls[0][0]).toMatchObject({
       data: {}
-    }));
+    });
   });
 
-  it('defaults the method if not given', function () {
-    request({
-    }, function () {});
+  it('defaults the method if not given', () => {
+    request({}, noop);
 
-    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request.mock.calls[0][0]).toMatchObject({
       method: 'GET'
-    }));
+    });
   });
 
-  it('uppercases the method if given', function () {
-    request({
-      method: 'post'
-    }, function () {});
+  it('uppercases the method if given', () => {
+    request({ method: 'post' }, noop);
 
-    expect(AJAXDriver.request).to.be.calledWith(this.sandbox.match({
+    expect(AJAXDriver.request.mock.calls[0][0]).toMatchObject({
       method: 'POST'
-    }));
+    });
   });
 
-  it('prevents the callback from being accidentally invoked multiple times', function () {
-    var count = 0;
+  it('prevents the callback from being accidentally invoked multiple times', () => {
+    let count = 0;
 
     function callback() {
       count++;
     }
 
-    AJAXDriver.request.restore();
-    this.sandbox.stub(AJAXDriver, 'request').callsFake(function (_, cb) {
+    jest.spyOn(AJAXDriver, 'request').mockImplementation((_, cb) => {
       cb();
       cb();
       cb();
     });
 
-    request({
-      method: 'post'
-    }, callback);
+    request({ method: 'post' }, callback);
 
-    expect(count).to.equal(1);
+    expect(count).toBe(1);
   });
 });

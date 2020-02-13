@@ -1,14 +1,14 @@
 'use strict';
 
-var applePay = require('../../../src/apple-pay');
-var packageVersion = require('../../../package.json').version;
+const applePay = require('../../../src/apple-pay');
+const { version: packageVersion } = require('../../../package.json');
 
-describe('export', function () {
-  it('contains create', function () {
-    expect(applePay.create).to.be.a('function');
+describe('export', () => {
+  it('contains create', () => {
+    expect(applePay.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', function () {
-    expect(applePay.VERSION).to.equal(packageVersion);
+  it('sets the version', () => {
+    expect(applePay.VERSION).toBe(packageVersion);
   });
 });

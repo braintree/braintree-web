@@ -1,0 +1,34 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`internal initialize calls FieldComponent to generate the input 1`] = `
+<body>
+  <form
+    action="#"
+    novalidate="true"
+  >
+    <label
+      for="cvv"
+    >
+      CVV
+    </label>
+    <input
+      aria-describedby="field-description-cvv"
+      autocapitalize="none"
+      autocomplete="cc-csc"
+      autocorrect="off"
+      class="cvv"
+      data-braintree-name="cvv"
+      id="cvv"
+      maxlength="4"
+      name="cvv"
+      spellcheck="false"
+      type="tel"
+    />
+    <div
+      class=" field-description"
+      id="field-description-cvv"
+      style="height: 1px; width: 1px; overflow: hidden;"
+    />
+  </form>
+</body>
+`;

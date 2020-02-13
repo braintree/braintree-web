@@ -1,117 +1,110 @@
 'use strict';
 
-var VisaCheckout = require('../../../src/visa-checkout/visa-checkout');
-var Promise = require('../../../src/lib/promise');
-var BraintreeError = require('../../../src/lib/braintree-error');
-var analytics = require('../../../src/lib/analytics');
-var fake = require('../../helpers/fake');
-var methods = require('../../../src/lib/methods');
+jest.mock('../../../src/lib/analytics');
 
-describe('Visa Checkout', function () {
-  beforeEach(function () {
-    this.sandbox.stub(analytics, 'sendEvent');
-    this.configuration = fake.configuration();
-    this.client = {
-      request: this.sandbox.stub().resolves({
+const analytics = require('../../../src/lib/analytics');
+const VisaCheckout = require('../../../src/visa-checkout/visa-checkout');
+const BraintreeError = require('../../../src/lib/braintree-error');
+const { fake: { configuration }} = require('../../helpers');
+const methods = require('../../../src/lib/methods');
+
+describe('Visa Checkout', () => {
+  let testContext;
+
+  beforeEach(() => {
+    testContext = {};
+    testContext.configuration = configuration();
+    testContext.client = {
+      request: jest.fn().mockResolvedValue({
         visaCheckoutCards: []
       }),
-      getConfiguration: function () {
-        return this.configuration;
-      }.bind(this)
+      getConfiguration: () => testContext.configuration
     };
-    this.visaCheckout = new VisaCheckout({
-      client: this.client
+    testContext.visaCheckout = new VisaCheckout({
+      client: testContext.client
     });
   });
 
-  describe('createInitOptions', function () {
-    it('throws an error if options is not defined', function () {
-      var err;
+  describe('createInitOptions', () => {
+    it('throws an error if options is not defined', () => {
+      expect.assertions(4);
 
       try {
         VisaCheckout.prototype.createInitOptions.call({
-          _client: this.client,
+          _client: testContext.client,
           _transformCardTypes: VisaCheckout.prototype._transformCardTypes
         });
-      } catch (e) {
-        err = e;
+      } catch (err) {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('VISA_CHECKOUT_INIT_OPTIONS_REQUIRED');
+        expect(err.type).toBe('MERCHANT');
+        expect(err.message).toBe('initOptions requires an object.');
       }
-
-      expect(err).to.be.an.instanceof(BraintreeError);
-      expect(err.code).to.equal('VISA_CHECKOUT_INIT_OPTIONS_REQUIRED');
-      expect(err.type).to.equal('MERCHANT');
-      expect(err.message).to.equal('initOptions requires an object.');
     });
 
-    it('sets apikey if undefined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
+    it('sets apikey if undefined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
       }, {});
 
-      expect(initOptions.apikey).to.equal('gwApikey');
+      expect(initOptions.apikey).toBe('gwApikey');
     });
 
-    it('does not overwrite apikey if defined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
-      }, {
-        apikey: 'apikey'
-      });
+    it('does not overwrite apikey if defined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
+      }, { apikey: 'apikey' });
 
-      expect(initOptions.apikey).to.equal('apikey');
+      expect(initOptions.apikey).toBe('apikey');
     });
 
-    it('sets externalClientId if undefined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
+    it('sets externalClientId if undefined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
       }, {});
 
-      expect(initOptions.externalClientId).to.equal('gwExternalClientId');
+      expect(initOptions.externalClientId).toBe('gwExternalClientId');
     });
 
-    it('does not overwrite externalClientId if defined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
-      }, {
-        externalClientId: 'externalClientId'
-      });
+    it('does not overwrite externalClientId if defined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
+      }, { externalClientId: 'externalClientId' });
 
-      expect(initOptions.externalClientId).to.equal('externalClientId');
+      expect(initOptions.externalClientId).toBe('externalClientId');
     });
 
-    it('sets settings.dataLevel if undefined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
-      }, {});
+    it('sets settings.dataLevel if undefined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({ _client: testContext.client }, {});
 
-      expect(initOptions.settings.dataLevel).to.equal('FULL');
+      expect(initOptions.settings.dataLevel).toBe('FULL');
     });
 
-    it('overwrites settings.dataLevel if defined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
+    it('overwrites settings.dataLevel if defined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
       }, {
         settings: {
           dataLevel: 'summary'
         }
       });
 
-      expect(initOptions.settings.dataLevel).to.equal('FULL');
+      expect(initOptions.settings.dataLevel).toBe('FULL');
     });
 
-    it('transforms gateway visaCheckout.supportedCardTypes to settings.payment.cardBrands if undefined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
+    it('transforms gateway visaCheckout.supportedCardTypes to settings.payment.cardBrands if undefined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
       }, {});
 
-      expect(initOptions.settings.payment.cardBrands).to.deep.equal([
+      expect(initOptions.settings.payment.cardBrands).toEqual([
         'VISA', 'MASTERCARD', 'DISCOVER', 'AMEX'
       ]);
     });
 
-    it('does not overwrite settings.payment.cardBrands if defined', function () {
-      var initOptions = VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client
+    it('does not overwrite settings.payment.cardBrands if defined', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
       }, {
         settings: {
           payment: {
@@ -120,24 +113,24 @@ describe('Visa Checkout', function () {
         }
       });
 
-      expect(initOptions.settings.payment.cardBrands).to.deep.equal([
+      expect(initOptions.settings.payment.cardBrands).toEqual([
         'CARD1', 'CARD2'
       ]);
     });
 
-    it('does not mutate incoming options', function () {
-      var originalOptions = {
+    it('does not mutate incoming options', () => {
+      const originalOptions = {
         settings: {
           dataLevel: 'summary'
         }
       };
 
       VisaCheckout.prototype.createInitOptions.call({
-        _client: this.client,
+        _client: testContext.client,
         _transformCardTypes: VisaCheckout.prototype._transformCardTypes
       }, originalOptions);
 
-      expect(originalOptions).to.deep.equal({
+      expect(originalOptions).toEqual({
         settings: {
           dataLevel: 'summary'
         }
@@ -145,195 +138,138 @@ describe('Visa Checkout', function () {
     });
   });
 
-  describe('tokenize', function () {
-    it('returns a promise', function () {
-      var promise = this.visaCheckout.tokenize({
-        callid: 'callid',
-        encKey: 'encKey',
-        encPaymentData: 'encPaymentData'
-      });
-
-      expect(promise).to.be.respondTo('then');
-      expect(promise).to.be.respondTo('catch');
-    });
-
-    it('calls callback with error when payment.callid is undefined', function (done) {
-      this.visaCheckout.tokenize({
+  describe('tokenize', () => {
+    it.each([
+      ['callid'], ['encKey'], ['encPaymentData']
+    ])('rejects with error when payment.%s is undefined', (optionKey) => {
+      const options = {
+        callid: 'callId',
         encKey: 'encKey',
         encPaymentdata: 'encPaymentData'
-      }, function (err, paymentData) {
-        expect(paymentData).not.to.exist;
+      };
 
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.code).to.equal('VISA_CHECKOUT_PAYMENT_REQUIRED');
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.message).to.equal('tokenize requires callid, encKey, and encPaymentData.');
+      delete options[optionKey];
 
-        done();
+      return testContext.visaCheckout.tokenize(options).catch(err => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe('VISA_CHECKOUT_PAYMENT_REQUIRED');
+        expect(err.type).toBe('MERCHANT');
+        expect(err.message).toBe('tokenize requires callid, encKey, and encPaymentData.');
       });
     });
 
-    it('calls callback with error when payment.encKey is undefined', function (done) {
-      this.visaCheckout.tokenize({
-        callid: 'callId',
-        encPaymentdata: 'encPaymentData'
-      }, function (err, paymentData) {
-        expect(paymentData).not.to.exist;
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.code).to.equal('VISA_CHECKOUT_PAYMENT_REQUIRED');
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.message).to.equal('tokenize requires callid, encKey, and encPaymentData.');
-
-        done();
-      });
-    });
-
-    it('calls callback with error when payment.encPaymentData is undefined', function (done) {
-      this.visaCheckout.tokenize({
-        callid: 'callId',
-        encKey: 'encKey'
-      }, function (err, paymentData) {
-        expect(paymentData).not.to.exist;
-
-        expect(err).to.be.an.instanceof(BraintreeError);
-        expect(err.code).to.equal('VISA_CHECKOUT_PAYMENT_REQUIRED');
-        expect(err.type).to.equal('MERCHANT');
-        expect(err.message).to.equal('tokenize requires callid, encKey, and encPaymentData.');
-
-        done();
-      });
-    });
-
-    it('makes a request with the proper data', function () {
-      var payment = {
+    it('makes a request with the proper data', () => {
+      const payment = {
         callid: 'callid',
         encKey: 'encKey',
         encPaymentData: 'encPaymentData'
       };
 
-      this.visaCheckout.tokenize(payment, function () {});
-
-      expect(this.client.request).to.be.calledWith(this.sandbox.match({
-        method: 'post',
-        endpoint: 'payment_methods/visa_checkout_cards',
-        data: {
-          _meta: {source: 'visa-checkout'},
-          visaCheckoutCard: {
-            callId: 'callid',
-            encryptedKey: 'encKey',
-            encryptedPaymentData: 'encPaymentData'
+      return testContext.visaCheckout.tokenize(payment).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith({
+          method: 'post',
+          endpoint: 'payment_methods/visa_checkout_cards',
+          data: {
+            _meta: { source: 'visa-checkout' },
+            visaCheckoutCard: {
+              callId: 'callid',
+              encryptedKey: 'encKey',
+              encryptedPaymentData: 'encPaymentData'
+            }
           }
-        }
-      }));
+        });
+      });
     });
 
-    it('calls the callback if the request fails', function (done) {
-      var originalError = new BraintreeError({
+    it('rejects with error if the request fails', () => {
+      const originalError = new BraintreeError({
         type: 'NETWORK',
         code: 'CODE',
         message: 'message'
       });
 
-      this.client.request.rejects(originalError);
+      testContext.client.request.mockRejectedValue(originalError);
 
-      this.visaCheckout.tokenize({
+      return testContext.visaCheckout.tokenize({
         callid: 'callId',
         encKey: 'encKey',
         encPaymentData: 'encPaymentData'
-      }, function (err, data) {
-        expect(err.type).to.equal(BraintreeError.types.NETWORK);
-        expect(err.code).to.equal('VISA_CHECKOUT_TOKENIZATION');
-        expect(err.message).to.equal('A network error occurred when processing the Visa Checkout payment.');
-        expect(err.details.originalError).to.equal(originalError);
-        expect(data).to.not.exist;
-        done();
+      }).catch(err => {
+        expect(err.type).toBe(BraintreeError.types.NETWORK);
+        expect(err.code).toBe('VISA_CHECKOUT_TOKENIZATION');
+        expect(err.message).toBe('A network error occurred when processing the Visa Checkout payment.');
+        expect(err.details.originalError).toBe(originalError);
       });
     });
 
-    it('calls the callback with a tokenized payload when success', function () {
-      var tokenizedPayload = {
+    it('resolves with a tokenized payload when success', () => {
+      const tokenizedPayload = {
         foo: 'baz'
       };
 
-      this.client.request.resolves({
+      testContext.client.request.mockResolvedValue({
         visaCheckoutCards: [tokenizedPayload]
       });
 
-      this.visaCheckout.tokenize({
+      return testContext.visaCheckout.tokenize({
         callid: 'callId',
         encKey: 'encKey',
         encPaymentData: 'encPaymentData'
-      }, function (err, payload) {
-        expect(err).to.not.exist;
-        expect(payload.foo).to.equal('baz');
+      }).then(payload => {
+        expect(payload.foo).toBe('baz');
       });
     });
   });
 
-  describe('analytics', function () {
-    describe('tokenize', function () {
-      it('submits succeeded', function (done) {
-        this.client.request.resolves({
+  describe('analytics', () => {
+    describe('tokenize', () => {
+      it('submits succeeded', () => {
+        testContext.client.request.mockResolvedValue({
           visaCheckoutCards: [{}]
         });
 
-        VisaCheckout.prototype.tokenize.call({
-          _client: this.client
+        return VisaCheckout.prototype.tokenize.call({
+          _client: testContext.client
         }, {
           callid: 'callId',
           encKey: 'encKey',
           encPaymentData: 'encPaymentData'
-        }, function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.succeeded');
-          done();
-        }.bind(this));
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'visacheckout.tokenize.succeeded');
+        });
       });
 
-      it('submits failed', function (done) {
-        this.client.request.rejects(new Error());
+      it('submits failed', () => {
+        testContext.client.request.mockRejectedValue(new Error());
 
-        VisaCheckout.prototype.tokenize.call({
-          _client: this.client
+        return VisaCheckout.prototype.tokenize.call({
+          _client: testContext.client
         }, {
           callid: 'callId',
           encKey: 'encKey',
           encPaymentData: 'encPaymentData'
-        }, function () {
-          expect(analytics.sendEvent).to.be.calledWith(this.client, 'visacheckout.tokenize.failed');
-          done();
-        }.bind(this));
+        }).catch(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'visacheckout.tokenize.failed');
+        });
       });
     });
   });
 
-  describe('teardown', function () {
-    it('returns a promise', function () {
-      var promise = this.visaCheckout.teardown();
+  describe('teardown', () => {
+    it('replaces all methods so error is thrown when methods are invoked', () => {
+      const instance = testContext.visaCheckout;
 
-      expect(promise).to.be.an.instanceof(Promise);
-    });
-
-    it('replaces all methods so error is thrown when methods are invoked', function (done) {
-      var instance = this.visaCheckout;
-
-      instance.teardown(function () {
-        methods(VisaCheckout.prototype).forEach(function (method) {
-          var err;
-
+      instance.teardown().then(() => {
+        methods(VisaCheckout.prototype).forEach(method => {
           try {
             instance[method]();
-          } catch (e) {
-            err = e;
+          } catch (err) {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe(BraintreeError.types.MERCHANT);
+            expect(err.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
+            expect(err.message).toBe(`${method} cannot be called after teardown.`);
           }
-
-          expect(err).to.be.an.instanceof(BraintreeError);
-          expect(err.type).to.equal(BraintreeError.types.MERCHANT);
-          expect(err.code).to.equal('METHOD_CALLED_AFTER_TEARDOWN');
-          expect(err.message).to.equal(method + ' cannot be called after teardown.');
         });
-
-        done();
       });
     });
   });
