@@ -55,6 +55,7 @@ function configuration() {
       environment: 'sandbox',
       configUrl: 'https://braintreegateway.com/config',
       clientApiUrl: 'https://braintreegateway.com',
+      challenges: ['cvv', 'postal_code'],
       creditCards: {
         collectDeviceData: false,
         supportedCardTypes: [

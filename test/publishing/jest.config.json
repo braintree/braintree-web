@@ -1,0 +1,17 @@
+{
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/test/publishing/coverage",
+  "displayName": "publishing",
+  "restoreMocks": true,
+  "rootDir": "../../",
+  "roots": [
+    "<rootDir>/test/publishing"
+  ],
+  "globalSetup": "<rootDir>/test/publishing/setup.js",
+  "testPathIgnorePatterns": [
+    "setup.js"
+  ],
+  "testMatch": [
+    "**/*.js"
+  ]
+}

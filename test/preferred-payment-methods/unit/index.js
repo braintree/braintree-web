@@ -4,7 +4,7 @@ jest.mock('../../../src/lib/analytics');
 jest.mock('../../../src/lib/basic-component-verification');
 
 const basicComponentVerification = require('../../../src/lib/basic-component-verification');
-const fake = require('../../helpers/fake');
+const { fake } = require('../../helpers');
 const { create } = require('../../../src/preferred-payment-methods');
 const PreferredPaymentMethods = require('../../../src/preferred-payment-methods/preferred-payment-methods');
 

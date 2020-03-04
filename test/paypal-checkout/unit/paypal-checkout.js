@@ -8,7 +8,8 @@ const analytics = require('../../../src/lib/analytics');
 const createDeferredClient = require('../../../src/lib/create-deferred-client');
 const PayPalCheckout = require('../../../src/paypal-checkout/paypal-checkout');
 const BraintreeError = require('../../../src/lib/braintree-error');
-const { fake } = require('../../helpers');
+const frameService = require('../../../src/lib/frame-service/external');
+const { fake, yieldsAsync } = require('../../helpers');
 const methods = require('../../../src/lib/methods');
 
 describe('PayPalCheckout', () => {
@@ -20,6 +21,7 @@ describe('PayPalCheckout', () => {
 
     testContext.configuration.gatewayConfiguration.paypalEnabled = true;
     testContext.configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
+    testContext.configuration.gatewayConfiguration.paypal.clientId = 'client-id';
     testContext.client = {
       request: jest.fn().mockResolvedValue({
         paymentResource: {
@@ -30,7 +32,19 @@ describe('PayPalCheckout', () => {
       }),
       getConfiguration: jest.fn().mockReturnValue(testContext.configuration)
     };
+    testContext.fakeFrameService = {
+      close: jest.fn(),
+      focus: jest.fn(),
+      open: jest.fn().mockImplementation(yieldsAsync(null, {
+        token: 'token',
+        PayerID: 'payer-id',
+        paymentId: 'payment-id'
+      })),
+      redirect: jest.fn(),
+      _serviceId: 'service-id'
+    };
 
+    jest.spyOn(frameService, 'create').mockImplementation(yieldsAsync(testContext.fakeFrameService));
     jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.client);
 
     testContext.paypalCheckout = new PayPalCheckout({});
@@ -117,6 +131,23 @@ describe('PayPalCheckout', () => {
       }).then(pp => {
         expect(pp).toBeInstanceOf(PayPalCheckout);
       });
+    });
+
+    it('sets up the frame service', async () => {
+      const instance = new PayPalCheckout({});
+
+      // reset state from before each
+      frameService.create.mockReset();
+
+      await instance._initialize({ client: testContext.client });
+
+      expect(frameService.create).toBeCalledTimes(1);
+      expect(frameService.create).toBeCalledWith({
+        name: 'braintreepaypallanding',
+        dispatchFrameUrl: expect.stringMatching('/html/dispatch-frame.min.html'),
+        openFrameUrl: expect.stringMatching('/html/paypal-landing-frame.min.html')
+
+      }, expect.any(Function));
     });
 
     it('resolves with paypalCheckoutInstance', () => {
@@ -720,6 +751,302 @@ describe('PayPalCheckout', () => {
     });
   });
 
+  describe('startVaultInitiatedCheckout', () => {
+    beforeEach(() => {
+      testContext.options = {
+        amount: '100.00',
+        currency: 'USD',
+        vaultInitiatedCheckoutPaymentMethodToken: 'fake-nonce'
+      };
+      testContext.client.request.mockResolvedValue({
+        paymentResource: {
+          redirectUrl: 'https://example.com/redirect'
+        }
+      });
+
+      jest.spyOn(testContext.paypalCheckout, 'tokenizePayment').mockResolvedValue({
+        nonce: 'new-fake-nonce',
+        type: 'PayPalAccount'
+      });
+    });
+
+    it('rejects if auth is already in progress', async () => {
+      const firstAttempt = testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      await expect(testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toMatchObject({
+        code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS',
+        message: 'Vault initiated checkout already in progress.'
+      });
+
+      expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress');
+
+      await firstAttempt;
+
+      // can run again when auth is completed
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+    });
+
+    it.each([
+      'amount',
+      'currency',
+      'vaultInitiatedCheckoutPaymentMethodToken'
+    ])('rejects with an error if %param is not present', async (param) => {
+      delete testContext.options[param];
+
+      await expect(testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toMatchObject({
+        code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED',
+        message: `Required param ${param} is missing.`
+      });
+    });
+
+    it('rejects if there is a client setup error', async () => {
+      const paypalCheckout = new PayPalCheckout({});
+
+      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
+
+      await paypalCheckout._initialize({
+        authorization: 'fake-auth'
+      });
+
+      await expect(paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toMatchObject({
+        code: 'PAYPAL_NOT_ENABLED'
+      });
+    });
+
+    it('rejects if there is a frame service setup error', async () => {
+      const paypalCheckout = new PayPalCheckout({});
+
+      frameService.create.mockImplementation(function () {
+        // never set up
+      });
+      jest.useFakeTimers();
+
+      await paypalCheckout._initialize({
+        authorization: 'fake-auth'
+      });
+
+      const promise = paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      jest.runOnlyPendingTimers();
+
+      await expect(promise).rejects.toMatchObject({
+        code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED'
+      });
+      expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'paypal-checkout.frame-service.timed-out');
+    });
+
+    it('requests a payment resource', async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(testContext.client.request).toBeCalledTimes(1);
+      expect(testContext.client.request).toBeCalledWith({
+        endpoint: 'paypal_hermes/create_payment_resource',
+        method: 'post',
+        data: expect.objectContaining({
+          amount: '100.00',
+          currencyIsoCode: 'USD',
+          vaultInitiatedCheckoutPaymentMethodToken: 'fake-nonce',
+          returnUrl: expect.stringContaining('/redirect-frame.min.html?channel=service-id'),
+          cancelUrl: expect.stringContaining('/cancel-frame.min.html?channel=service-id')
+        })
+      });
+    });
+
+    it('opens frame service and redirects', async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(testContext.fakeFrameService.open).toBeCalledTimes(1);
+      expect(testContext.fakeFrameService.open).toBeCalledWith({}, expect.any(Function));
+      expect(testContext.fakeFrameService.redirect).toBeCalledTimes(2);
+      expect(testContext.fakeFrameService.redirect).toBeCalledWith('https://example.com/redirect');
+      expect(testContext.fakeFrameService.redirect).toBeCalledWith(expect.stringContaining('/paypal-landing-frame.min.html'));
+    });
+
+    it('tokenizes data from frameservice', async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(testContext.paypalCheckout.tokenizePayment).toBeCalledTimes(1);
+      expect(testContext.paypalCheckout.tokenizePayment).toBeCalledWith({
+        paymentToken: 'token',
+        payerID: 'payer-id',
+        paymentID: 'payment-id'
+      });
+    });
+
+    it('closes frame service and resolves data from tokenization', async () => {
+      const data = await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(testContext.fakeFrameService.close).toBeCalledTimes(1);
+      expect(data.nonce).toBe('new-fake-nonce');
+      expect(data.type).toBe('PayPalAccount');
+    });
+
+    it('sends analtyic events for success', async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'paypal-checkout.startVaultInitiatedCheckout.succeeded');
+      expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'paypal-checkout.startVaultInitiatedCheckout.started');
+    });
+
+    it('opens a modal backdrop in the background', async () => {
+      const promise = testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeTruthy();
+
+      await promise;
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeFalsy();
+    });
+
+    it('closes modal when user cancels', async () => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync({
+        code: 'FRAME_SERVICE_FRAME_CLOSED'
+      }));
+
+      const promise = testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeTruthy();
+
+      await expect(promise).rejects.toMatchObject({
+        code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED',
+        message: 'Customer closed PayPal popup before authorizing.'
+      });
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeFalsy();
+    });
+
+    it('closes modal when startVaultInitiatedCheckout fails', async () => {
+      testContext.paypalCheckout.tokenizePayment.mockRejectedValue(new Error('foo'));
+
+      const promise = testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeTruthy();
+
+      await expect(promise).rejects.toThrow('foo');
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeFalsy();
+    });
+
+    it('can opt out of the modal', async () => {
+      testContext.options.optOutOfModalBackdrop = true;
+      const promise = testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeFalsy();
+
+      await promise;
+
+      expect(document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]')).toBeFalsy();
+    });
+
+    it('clicking on the modal focuses the PayPal window', async () => {
+      jest.spyOn(testContext.paypalCheckout, 'focusVaultInitiatedCheckoutWindow').mockImplementation();
+      const promise = testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      const modal = document.querySelector('[data-braintree-paypal-vault-initiated-checkout-modal]');
+
+      modal.click();
+
+      expect(testContext.paypalCheckout.focusVaultInitiatedCheckoutWindow).toBeCalledTimes(1);
+
+      await promise;
+    });
+
+    it('only creates the modal once', async () => {
+      jest.spyOn(document, 'createElement');
+
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(document.createElement).toBeCalledTimes(1);
+
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options);
+
+      expect(document.createElement).toBeCalledTimes(1);
+    });
+
+    it('rejects when user cancels', async () => {
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync({
+        code: 'FRAME_SERVICE_FRAME_CLOSED'
+      }));
+
+      await expect(testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toMatchObject({
+        code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED',
+        message: 'Customer closed PayPal popup before authorizing.'
+      });
+
+      expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer');
+      expect(testContext.fakeFrameService.close).toBeCalledTimes(0);
+    });
+
+    it('rejects when frame service errors with a popup failed error', async () => {
+      const err = new Error('Something went wrong');
+
+      err.code = 'FRAME_SERVICE_FRAME_OPEN_FAILED';
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(err));
+
+      await expect(testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toMatchObject({
+        code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED',
+        message: 'PayPal popup failed to open, make sure to initiate the vault checkout in response to a user action.',
+        details: {
+          originalError: err
+        }
+      });
+
+      expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened');
+      expect(testContext.fakeFrameService.close).toBeCalledTimes(1);
+    });
+
+    it('rejects when frame service errors with a generic error', async () => {
+      const err = new Error('Something went wrong');
+
+      testContext.fakeFrameService.open.mockImplementation(yieldsAsync(err));
+
+      await expect(testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toThrow(err);
+
+      expect(testContext.fakeFrameService.close).toBeCalledTimes(1);
+    });
+
+    it('rejects when tokenizing fails', async () => {
+      testContext.paypalCheckout.tokenizePayment.mockRejectedValue(new Error('foo'));
+
+      await expect(testContext.paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toThrow('foo');
+    });
+  });
+
+  describe('focusVaultInitiatedCheckoutWindow', () => {
+    it('calls focus on the frame service', async () => {
+      await testContext.paypalCheckout.focusVaultInitiatedCheckoutWindow();
+
+      expect(testContext.fakeFrameService.focus).toBeCalledTimes(1);
+    });
+  });
+
+  describe('closeVaultInitiatedCheckoutWindow', () => {
+    it('calls close on the frame service', async () => {
+      await testContext.paypalCheckout.closeVaultInitiatedCheckoutWindow();
+
+      expect(testContext.fakeFrameService.close).toBeCalledTimes(1);
+    });
+
+    it('sends an analytics event when vault initiated checkout is in progress', async () => {
+      await testContext.paypalCheckout.closeVaultInitiatedCheckoutWindow();
+
+      expect(analytics.sendEvent).not.toBeCalledWith(expect.anything(), 'paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant');
+
+      const promise = testContext.paypalCheckout.startVaultInitiatedCheckout({
+        amount: '10.00',
+        currency: 'USD',
+        vaultInitiatedCheckoutPaymentMethodToken: 'fake-nonce'
+      });
+
+      await testContext.paypalCheckout.closeVaultInitiatedCheckoutWindow();
+
+      expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant');
+
+      await promise;
+    });
+  });
+
   describe('tokenizePayment', () => {
     it('rejects with a BraintreeError if a non-Braintree error comes back from the client', () => {
       const error = new Error('Error');
@@ -749,7 +1076,7 @@ describe('PayPalCheckout', () => {
       });
     });
 
-    it('resolves with the back account data in response', () => {
+    it('resolves with blank account details in response if unavailable', () => {
       testContext.client.request.mockResolvedValue({
         paypalAccounts: [{ nonce: 'nonce', type: 'PayPal' }]
       });
@@ -980,6 +1307,26 @@ describe('PayPalCheckout', () => {
       });
     });
 
+    it('does not validate if merchant opts out even when flow is vault and auth is not tokenization key', () => {
+      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
+
+      return testContext.paypalCheckout.tokenizePayment({
+        billingToken: 'token',
+        vault: false
+      }).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+          data: {
+            paypalAccount: {
+              options: {
+                validate: false
+              }
+            }
+          }
+        });
+      });
+    });
+
     it('does not validate if flow is vault and auth is tokenization key', () => {
       testContext.configuration.authorizationType = 'TOKENIZATION_KEY';
 
@@ -1063,6 +1410,14 @@ describe('PayPalCheckout', () => {
 
       return testContext.paypalCheckout.tokenizePayment({}).catch(() => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.paypalCheckout._clientPromise, 'paypal-checkout.tokenization.failed');
+      });
+    });
+  });
+
+  describe('getClientId', () => {
+    it('resolves with the client id from the GW configuration', () => {
+      return testContext.paypalCheckout.getClientId().then(id => {
+        expect(id).toBe('client-id');
       });
     });
   });

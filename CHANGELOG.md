@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.59.0
+* Data Collector
+  * Add `useDeferredClient` option when creating instance
+  * Add `getDeviceData` method to get device data asyncronously
+* Hosted Fields
+  * add `getChallenges` method
+  * add `getSupportedCardTypes` method
+* PayPal Checkout
+  * Provide way to opt-out of auto-vaulting behavior
+  * Add `getClientId` method
+
 ## 3.58.0
 * Update `@braintree/extended-promise` to v0.3.0
 * Data Collector

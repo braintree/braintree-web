@@ -16,6 +16,7 @@
     "<rootDir>/../test/paypal/jest.config.json",
     "<rootDir>/../test/paypal-checkout/jest.config.json",
     "<rootDir>/../test/preferred-payment-methods/jest.config.json",
+    "<rootDir>/../test/publishing/jest.config.json",
     "<rootDir>/../test/three-d-secure/jest.config.json",
     "<rootDir>/../test/unionpay/jest.config.json",
     "<rootDir>/../test/us-bank-account/jest.config.json",

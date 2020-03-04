@@ -1,21 +1,16 @@
-/* globals __dirname */
-
 'use strict';
 
-var path = require('path');
-var files = require('../helpers/components').files;
-var checkFile = require('check-ecmascript-version-compatibility');
-var version = require('../../package.json').version;
+const { resolve } = require('path');
+const { files } = require('../helpers/components');
+const checkFile = require('check-ecmascript-version-compatibility');
+const { version } = require('../../package.json');
 
-describe('ECMAScript version', function () {
-  files.forEach(function (file) {
-    it(file + ' only uses ES5 for browser compatibility', function (done) {
-      var jsPath = path.resolve(__dirname, '..', '..', 'dist', 'hosted', 'web', version, 'js', file + '.js');
+describe('ECMAScript version', () => {
+  jest.setTimeout(6000);
 
-      this.slow(12000);
-      this.timeout(15000);
+  it.each(files)('%s only uses ES5 for browser compatibility', (file, done) => {
+    const jsPath = resolve(__dirname, '..', '..', 'dist', 'hosted', 'web', version, 'js', `${file}.js`);
 
-      checkFile(jsPath, done);
-    });
+    checkFile(jsPath, done);
   });
 });

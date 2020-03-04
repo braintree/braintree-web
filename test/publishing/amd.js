@@ -1,39 +1,34 @@
-/* globals __dirname */
-
 'use strict';
 
-var expect = require('chai').expect;
-var fs = require('fs');
-var path = require('path');
-var requirejs = require('requirejs');
-var tmp = require('tmp');
-var version = require('../../package.json').version;
-var files = require('../helpers/components').files;
+jest.mock('vm');
 
-var MINIMUM_SIZE = 100;
+const { readFileSync, writeSync } = require('fs');
+const { resolve } = require('path');
+const { optimize } = require('requirejs');
+const { fileSync, tmpNameSync } = require('tmp');
+const { version } = require('../../package.json');
+const { files } = require('../helpers/components');
 
-describe('AMD exports', function () {
-  files.forEach(function (file) {
-    it('builds a file that requires ' + file + ' that has at least ' + MINIMUM_SIZE + ' characters', function (done) {
-      var inputFile = tmp.fileSync({postfix: '.js'});
-      var outputFileName = tmp.tmpNameSync({postfix: '.js'});
-      var config = {
-        baseUrl: path.resolve(__dirname, '..', '..', 'dist', 'hosted', 'web', version, 'js'),
-        name: inputFile.name,
-        out: outputFileName
-      };
+const MINIMUM_SIZE = 100;
 
-      this.slow(3000);
+describe('AMD exports', () => {
+  it.each(files)(`builds a file that requires %s and has at least ${MINIMUM_SIZE} characters`, (file, done) => {
+    const inputFile = fileSync({ postfix: '.js' });
+    const outputFileName = tmpNameSync({ postfix: '.js' });
+    const config = {
+      baseUrl: resolve(__dirname, '..', '..', 'dist', 'hosted', 'web', version, 'js'),
+      name: inputFile.name,
+      out: outputFileName
+    };
 
-      fs.writeSync(inputFile.fd, 'requirejs(["' + file + '"], function () {})');
+    writeSync(inputFile.fd, `requirejs(["${file}"], function () {})`);
 
-      requirejs.optimize(config, function () {
-        var contents = fs.readFileSync(config.out, 'utf8');
+    optimize(config, () => {
+      const contents = readFileSync(config.out, 'utf8');
 
-        expect(contents.length).to.be.above(MINIMUM_SIZE);
+      expect(contents.length).toBeGreaterThan(MINIMUM_SIZE);
 
-        done();
-      }, done);
-    });
+      done();
+    }, done);
   });
 });

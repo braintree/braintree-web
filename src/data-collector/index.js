@@ -55,6 +55,32 @@ var errors = require('./errors');
  */
 
 /**
+ * @memberof DataCollector
+ * @name getDeviceData
+ * @function
+ * @description Resolves with device data once it is ready.
+ * @param {object} [options] Options for how device data is resolved.
+ * @param {boolean} [stringify=false] Whether or not to return the device data as a JSON string.
+ * @param {callback} [callback] Called on completion. If no callback is provided, `getDeviceData` returns a promise.
+ * @instance
+ * @example
+ * dataCollectorInstance.getDeviceData();
+ * @example <caption>Without options</caption>
+ * dataCollectorInstance.getDeviceData().then(function (deviceData) {
+ *   // typeof deviceData === 'string'
+ *   // pass onto your server with the payment method nonce
+ * });
+ * @example <caption>With options</caption>
+ * dataCollectorInstance.getDeviceData({
+ *   raw: true
+ * }).then(function (deviceData) {
+ *   // typeof deviceData === 'object'
+ *   // for if you'd like to parse the data before sending it to your server
+ * });
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ */
+
+/**
  * @static
  * @function create
  * @description Creates a DataCollector instance and collects device data based on your merchant configuration. We recommend that you call this method as early as possible, e.g. as soon as your website loads. If that's too early, call it at the beginning of customer checkout.
@@ -62,6 +88,7 @@ var errors = require('./errors');
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
+ * @param {boolean} [options.useDeferredClient] Used in conjunction with `authorization`, allows the Data Collector instance to be available right away by allowing the client configuration to happen in the background. When this option is used, {@link GooglePayment#getDeviceData} must be used to collect the device data.
  * @param {boolean} [options.kount] Kount fraud data collection will occur if the merchant configuration has it enabled.
  * **Note:** the data sent to Kount is asynchronous and may not have completed by the time the data collector create call is complete. In most cases, this will not matter, but if you create the data collector instance and immediately navigate away from the page, the device information may fail to be sent to Kount.
  * @param {boolean} [options.paypal] *Deprecated:* PayPal fraud data collection will occur when the DataCollector instance is created.
@@ -70,8 +97,9 @@ var errors = require('./errors');
  */
 function create(options) {
   var name = 'Data Collector';
-  var result = {};
-  var instances = [];
+  var result = {
+    _instances: []
+  };
   var data;
 
   return basicComponentVerification.verify({
@@ -79,76 +107,97 @@ function create(options) {
     client: options.client,
     authorization: options.authorization
   }).then(function () {
-    return createDeferredClient.create({
+    result._instantiatedWithAClient = !options.useDeferredClient;
+    result._createPromise = createDeferredClient.create({
       authorization: options.authorization,
       client: options.client,
       debug: options.debug,
       assetsUrl: createAssetsUrl.create(options.authorization),
       name: name
-    });
-  }).then(function (client) {
-    var kountInstance;
-    var config = client.getConfiguration();
+    }).then(function (client) {
+      var kountInstance;
+      var config = client.getConfiguration();
 
-    if (options.kount === true && config.gatewayConfiguration.kount) {
-      try {
-        kountInstance = kount.setup({
-          environment: config.gatewayConfiguration.environment,
-          merchantId: config.gatewayConfiguration.kount.kountMerchantId
-        });
-      } catch (err) {
-        return Promise.reject(new BraintreeError({
-          type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
-          code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
-          message: err.message
-        }));
+      if (options.kount === true && config.gatewayConfiguration.kount) {
+        try {
+          kountInstance = kount.setup({
+            environment: config.gatewayConfiguration.environment,
+            merchantId: config.gatewayConfiguration.kount.kountMerchantId
+          });
+        } catch (err) {
+          return Promise.reject(new BraintreeError({
+            type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
+            code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
+            message: err.message
+          }));
+        }
+
+        data = kountInstance.deviceData;
+        result._instances.push(kountInstance);
+      } else {
+        data = {};
       }
 
-      data = kountInstance.deviceData;
-      instances.push(kountInstance);
-    } else {
-      data = {};
-    }
-
-    return Promise.resolve();
-  }).then(function () {
-    return fraudnet.setup().then(function (fraudnetInstance) {
-      if (fraudnetInstance) {
-        data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
-        instances.push(fraudnetInstance);
+      return Promise.resolve();
+    }).then(function () {
+      return fraudnet.setup().then(function (fraudnetInstance) {
+        if (fraudnetInstance) {
+          data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
+          result._instances.push(fraudnetInstance);
+        }
+      });
+    }).then(function () {
+      if (result._instances.length === 0) {
+        // NEXT_MAJOR_VERSION either this should error with a specific error that
+        // no data collector instances could be set up, or we should just swallow
+        // the error and document that no device data will be returned if
+        // data collector cannot be instantiated. We can't change the error code here
+        // without possibly breaking merchant integrations relying on this inccorrect
+        // behavior.
+        return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
       }
-    });
-  }).then(function () {
-    if (instances.length === 0) {
-      // NEXT_MAJOR_VERSION either this should error with a specific error that
-      // no data collector instances could be set up, or we should just swallow
-      // the error and document that no device data will be returned if
-      // data collector cannot be instantiated. We can't change the error code here
-      // without possibly breaking merchant integrations relying on this inccorrect
-      // behavior.
-      return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
-    }
 
-    result.deviceData = JSON.stringify(data);
-    result.rawDeviceData = data;
-    result.teardown = createTeardownMethod(result, instances);
+      result.deviceData = JSON.stringify(data);
+      result.rawDeviceData = data;
+
+      return result;
+    });
+
+    result.teardown = createTeardownMethod(result);
+    result.getDeviceData = createGetDeviceDataMethod(result);
+
+    if (result._instantiatedWithAClient) {
+      return result._createPromise;
+    }
 
     return result;
   });
 }
 
-function createTeardownMethod(result, instances) {
+function createTeardownMethod(result) {
   return wrapPromise(function teardown() {
-    return new Promise(function (resolve) {
-      instances.forEach(function (instance) {
+    return result._createPromise.then(function () {
+      result._instances.forEach(function (instance) {
         if (instance) {
           instance.teardown();
         }
       });
 
       convertMethodsToError(result, methods(result));
+    });
+  });
+}
 
-      resolve();
+function createGetDeviceDataMethod(result) {
+  return wrapPromise(function getDeviceData(options) {
+    options = options || {};
+
+    return result._createPromise.then(function () {
+      if (options.raw) {
+        return Promise.resolve(result.rawDeviceData);
+      }
+
+      return Promise.resolve(result.deviceData);
     });
   });
 }

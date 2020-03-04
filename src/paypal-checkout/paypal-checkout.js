@@ -1,16 +1,28 @@
 'use strict';
 
 var analytics = require('../lib/analytics');
+var assign = require('../lib/assign').assign;
 var createDeferredClient = require('../lib/create-deferred-client');
 var createAssetsUrl = require('../lib/create-assets-url');
 var Promise = require('../lib/promise');
+var ExtendedPromise = require('@braintree/extended-promise');
 var wrapPromise = require('@braintree/wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
 var convertToBraintreeError = require('../lib/convert-to-braintree-error');
 var errors = require('./errors');
 var constants = require('../paypal/shared/constants');
+var frameService = require('../lib/frame-service/external');
 var methods = require('../lib/methods');
+var useMin = require('../lib/use-min');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
+var VERSION = process.env.npm_package_version;
+var INTEGRATION_TIMEOUT_MS = require('../lib/constants').INTEGRATION_TIMEOUT_MS;
+
+var REQUIRED_PARAMS_FOR_START_VAULT_INITIATED_CHECKOUT = [
+  'amount',
+  'currency',
+  'vaultInitiatedCheckoutPaymentMethodToken'
+];
 
 /**
  * PayPal Checkout tokenized payload. Returned in {@link PayPalCheckout#tokenizePayment}'s callback as the second argument, `data`.
@@ -228,6 +240,7 @@ PayPalCheckout.prototype._initialize = function (options) {
     }
 
     analytics.sendEvent(client, 'paypal-checkout.initialized');
+    this._frameServicePromise = this._setupFrameService(client);
 
     return client;
   }.bind(this));
@@ -241,6 +254,33 @@ PayPalCheckout.prototype._initialize = function (options) {
   }
 
   return Promise.resolve(this);
+};
+
+PayPalCheckout.prototype._setupFrameService = function (client) {
+  var frameServicePromise = new ExtendedPromise();
+  var config = client.getConfiguration();
+  var timeoutRef = setTimeout(function () {
+    analytics.sendEvent(client, 'paypal-checkout.frame-service.timed-out');
+    frameServicePromise.reject(new BraintreeError(errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED));
+  }, INTEGRATION_TIMEOUT_MS);
+
+  this._assetsUrl = config.gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION;
+  this._isDebug = config.isDebug;
+  // Note: this is using the static landing frame that the deprecated PayPal component builds and uses
+  this._loadingFrameUrl = this._assetsUrl + '/html/paypal-landing-frame' + useMin(this._isDebug) + '.html';
+
+  frameService.create({
+    name: 'braintreepaypallanding',
+    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame' + useMin(this._isDebug) + '.html',
+    openFrameUrl: this._loadingFrameUrl
+  }, function (service) {
+    this._frameService = service;
+    clearTimeout(timeoutRef);
+
+    frameServicePromise.resolve();
+  }.bind(this));
+
+  return frameServicePromise;
 };
 
 /**
@@ -411,27 +451,13 @@ PayPalCheckout.prototype._initialize = function (options) {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.createPayment = function (options) {
-  var self = this;
-  var endpoint;
-
   if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
     return Promise.reject(new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED));
   }
 
-  endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
-
   analytics.sendEvent(this._clientPromise, 'paypal-checkout.createPayment');
-  if (options.offerCredit === true) {
-    analytics.sendEvent(this._clientPromise, 'paypal-checkout.credit.offered');
-  }
 
-  return this._clientPromise.then(function (client) {
-    return client.request({
-      endpoint: endpoint,
-      method: 'post',
-      data: self._formatPaymentResourceData(options)
-    });
-  }).then(function (response) {
+  return this._createPaymentResource(options).then(function (response) {
     var flowToken;
 
     if (options.flow === 'checkout') {
@@ -441,6 +467,25 @@ PayPalCheckout.prototype.createPayment = function (options) {
     }
 
     return flowToken;
+  });
+};
+
+PayPalCheckout.prototype._createPaymentResource = function (options, config) {
+  var self = this;
+  var endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
+
+  config = config || {};
+
+  if (options.offerCredit === true) {
+    analytics.sendEvent(this._clientPromise, 'paypal-checkout.credit.offered');
+  }
+
+  return this._clientPromise.then(function (client) {
+    return client.request({
+      endpoint: endpoint,
+      method: 'post',
+      data: self._formatPaymentResourceData(options, config)
+    });
   }).catch(function (err) {
     var status;
 
@@ -470,6 +515,221 @@ PayPalCheckout.prototype.createPayment = function (options) {
 };
 
 /**
+ * Initializes the PayPal checkout flow with a payment method nonce that represents a vaulted PayPal account.
+ * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the checkout.js library. Otherwise, it returns a Promise that resolves with the id.
+ * @public
+ * @param {object} options All {@link PayPalCheckout#createPayment|options for creating a payment resource}, cannot be set except `flow`(will always be `'checkout'`). `amount`, `currency`, and `vaultInitiatedCheckoutPaymentMethodToken` are required. Additional options listed below.
+ * @param {boolean} [options.optOutOfModalBackdrop=false] By default, the webpage will darken and become unusable while the PayPal window is open. For full control of the UI, pass `true` for this option.
+ * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
+ * @example
+ * paypalCheckoutInstance.startVaultInitiatedCheckout({
+ *   vaultInitiatedCheckoutPaymentMethodToken: 'nonce-that-represents-a-vaulted-paypal-account',
+ *   amount: '10.00',
+ *   currency: 'USD'
+ * }).then(function (payload) {
+ *   // send payload.nonce to your server
+ * }).catch(function (err) {
+ *   if (err.code === 'PAYPAL_POPUP_CLOSED') {
+ *     // indicates that customer canceled by
+ *     // manually closing the PayPal popup
+ *   }
+ *
+ *   // handle other errors
+ * });
+ *
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ */
+PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
+  var missingRequiredParam;
+  var self = this;
+
+  if (this._vaultInitiatedCheckoutInProgress) {
+    analytics.sendEvent(this._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress');
+
+    return Promise.reject(new BraintreeError(errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS));
+  }
+
+  REQUIRED_PARAMS_FOR_START_VAULT_INITIATED_CHECKOUT.forEach(function (param) {
+    if (!options.hasOwnProperty(param)) {
+      missingRequiredParam = param;
+    }
+  });
+
+  if (missingRequiredParam) {
+    return Promise.reject(new BraintreeError({
+      type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED.type,
+      code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED.code,
+      message: 'Required param ' + missingRequiredParam + ' is missing.'
+    }));
+  }
+
+  this._vaultInitiatedCheckoutInProgress = true;
+  this._addModalBackdrop(options);
+
+  options = assign({}, options, {
+    flow: 'checkout'
+  });
+
+  analytics.sendEvent(this._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.started');
+
+  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
+    var frameCommunicationPromise = new ExtendedPromise();
+    var startVaultInitiatedCheckoutPromise = self._createPaymentResource(options, {
+      returnUrl: self._constructVaultCheckutUrl('redirect-frame'),
+      cancelUrl: self._constructVaultCheckutUrl('cancel-frame')
+    }).then(function (response) {
+      var redirectUrl = response.paymentResource.redirectUrl;
+
+      self._frameService.redirect(redirectUrl);
+
+      return frameCommunicationPromise;
+    });
+
+    self._frameService.open({}, self._createFrameServiceCallback(frameCommunicationPromise));
+
+    return startVaultInitiatedCheckoutPromise;
+  }).catch(function (err) {
+    self._vaultInitiatedCheckoutInProgress = false;
+    self._removeModalBackdrop();
+
+    if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
+      analytics.sendEvent(self._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer');
+
+      return Promise.reject(new BraintreeError(errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED));
+    }
+
+    if (self._frameService) {
+      self._frameService.close();
+    }
+
+    if (err.code && err.code.indexOf('FRAME_SERVICE_FRAME_OPEN_FAILED') > -1) {
+      analytics.sendEvent(self._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened');
+
+      return Promise.reject(new BraintreeError({
+        code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED.code,
+        type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED.type,
+        message: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED.message,
+        details: {
+          originalError: err
+        }
+      }));
+    }
+
+    return Promise.reject(err);
+  }).then(function (response) {
+    self._frameService.close();
+    self._vaultInitiatedCheckoutInProgress = false;
+    self._removeModalBackdrop();
+    analytics.sendEvent(self._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.succeeded');
+
+    return Promise.resolve(response);
+  });
+};
+
+PayPalCheckout.prototype._addModalBackdrop = function (options) {
+  if (options.optOutOfModalBackdrop) {
+    return;
+  }
+
+  if (!this._modalBackdrop) {
+    this._modalBackdrop = document.createElement('div');
+    this._modalBackdrop.setAttribute('data-braintree-paypal-vault-initiated-checkout-modal', true);
+    this._modalBackdrop.style.position = 'fixed';
+    this._modalBackdrop.style.top = 0;
+    this._modalBackdrop.style.bottom = 0;
+    this._modalBackdrop.style.left = 0;
+    this._modalBackdrop.style.right = 0;
+    this._modalBackdrop.style.zIndex = 9999;
+    this._modalBackdrop.style.background = 'black';
+    this._modalBackdrop.style.opacity = '0.7';
+    this._modalBackdrop.addEventListener('click', function () {
+      this.focusVaultInitiatedCheckoutWindow();
+    }.bind(this));
+  }
+
+  document.body.appendChild(this._modalBackdrop);
+};
+
+PayPalCheckout.prototype._removeModalBackdrop = function () {
+  if (!(this._modalBackdrop && this._modalBackdrop.parentNode)) {
+    return;
+  }
+
+  this._modalBackdrop.parentNode.removeChild(this._modalBackdrop);
+};
+
+/**
+ * Closes the PayPal window if it is opened via `startVaultInitiatedCheckout`.
+ * @public
+ * @ignore
+ * @param {callback} [callback] Gets called when window is closed.
+ * @example
+ * paypalCheckoutInstance.closeVaultInitiatedCheckoutWindow();
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ */
+PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
+  if (this._vaultInitiatedCheckoutInProgress) {
+    analytics.sendEvent(this._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant');
+  }
+
+  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
+    this._frameService.close();
+  }.bind(this));
+};
+
+/**
+ * Focuses the PayPal window if it is opened via `startVaultInitiatedCheckout`.
+ * @public
+ * @param {callback} [callback] Gets called when window is focused.
+ * @example
+ * paypalCheckoutInstance.focusVaultInitiatedCheckoutWindow();
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ */
+PayPalCheckout.prototype.focusVaultInitiatedCheckoutWindow = function () {
+  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
+    this._frameService.focus();
+  }.bind(this));
+};
+
+PayPalCheckout.prototype._createFrameServiceCallback = function (frameCommunicationPromise) {
+  var self = this;
+
+  // TODO when a merchant integrates an iOS or Android integration
+  // with a webview using the web SDK, we will have to add popupbridge
+  // support
+  return function (err, payload) {
+    if (err) {
+      frameCommunicationPromise.reject(err);
+    } else if (payload) {
+      self._frameService.redirect(self._loadingFrameUrl);
+      self.tokenizePayment({
+        paymentToken: payload.token,
+        payerID: payload.PayerID,
+        paymentID: payload.paymentId
+      }).then(function (res) {
+        frameCommunicationPromise.resolve(res);
+      }).catch(function (tokenizationError) {
+        frameCommunicationPromise.reject(tokenizationError);
+      });
+    }
+  };
+};
+
+PayPalCheckout.prototype._waitForVaultInitiatedCheckoutDependencies = function () {
+  var self = this;
+
+  return this._clientPromise.then(function () {
+    return self._frameServicePromise;
+  });
+};
+
+PayPalCheckout.prototype._constructVaultCheckutUrl = function (frameName) {
+  var serviceId = this._frameService._serviceId;
+
+  return this._assetsUrl + '/html/' + frameName + useMin(this._isDebug) + '.html?channel=' + serviceId;
+};
+
+/**
  * Tokenizes the authorize data from PayPal's checkout.js library when completing a buyer approval flow.
  * When a {@link callback} is defined, invokes the callback with {@link PayPalCheckout~tokenizePayload|tokenizePayload} and returns undefined. Otherwise, returns a Promise that resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @public
@@ -477,11 +737,30 @@ PayPalCheckout.prototype.createPayment = function (options) {
  * @param {string} tokenizeOptions.payerId Payer ID returned by PayPal `onApproved` callback.
  * @param {string} [tokenizeOptions.paymentId] Payment ID returned by PayPal `onApproved` callback.
  * @param {string} [tokenizeOptions.billingToken] Billing Token returned by PayPal `onApproved` callback.
+ * @param {boolean} [tokenizeOptions.vault=true] Whether or not to vault the resulting PayPal account (if using a client token generated with a customer id and the vault flow).
  * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
+ * @example <caption>Opt out of auto-vaulting behavior</caption>
+ * // create the paypalCheckoutInstance with a client token generated with a customer id
+ * paypal.Buttons({
+ *   createBillingAgreement: function () {
+ *     return paypalCheckoutInstance.createPayment({
+ *       flow: 'vault'
+ *       // your other createPayment options here
+ *     });
+ *   },
+ *   onApproved: function (data) {
+ *     data.vault = false;
+ *
+ *     return paypalCheckoutInstance.tokenizePayment(data);
+ *   },
+ *   // Add other options, e.g. onCancel, onError
+ * }).render('#paypal-button');
+ *
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
   var self = this;
+  var shouldVault = true;
   var payload;
   var options = {
     flow: tokenizeOptions.billingToken ? 'vault' : 'checkout',
@@ -495,6 +774,12 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     paymentId: tokenizeOptions.paymentID,
     shippingOptionsId: tokenizeOptions.shippingOptionsId
   };
+
+  if (tokenizeOptions.hasOwnProperty('vault')) {
+    shouldVault = tokenizeOptions.vault;
+  }
+
+  options.vault = shouldVault;
 
   analytics.sendEvent(this._clientPromise, 'paypal-checkout.tokenization.started');
 
@@ -528,7 +813,30 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
   });
 };
 
-PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
+/**
+ * Resolves with the PayPal client id to be used when loading the PayPal SDK.
+ * @public
+ * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @example
+ * paypalCheckoutInstance.getClientId().then(function (id) {
+ *  var script = document.createElement('script');
+ *
+ *  script.src = 'https://www.paypal.com/sdk/js?client-id=' + id;
+ *  script.onload = function () {
+ *    // setup the PayPal SDK
+ *  };
+ *
+ *  document.body.appendChild(script);
+ * });
+ */
+PayPalCheckout.prototype.getClientId = function () {
+  return this._clientPromise.then(function (client) {
+    return client.getConfiguration().gatewayConfiguration.paypal.clientId;
+  });
+};
+
+PayPalCheckout.prototype._formatPaymentResourceData = function (options, config) {
   var key;
   var gatewayConfiguration = this._configuration.gatewayConfiguration;
   // NEXT_MAJOR_VERSION default value for intent in PayPal SDK is capture
@@ -538,8 +846,8 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options) {
   var paymentResource = {
     // returnUrl and cancelUrl are required in hermes create_payment_resource route
     // but are not used by the PayPal sdk, except to redirect to an error page
-    returnUrl: 'https://www.paypal.com/checkoutnow/error',
-    cancelUrl: 'https://www.paypal.com/checkoutnow/error',
+    returnUrl: config.returnUrl || 'https://www.paypal.com/checkoutnow/error',
+    cancelUrl: config.cancelUrl || 'https://www.paypal.com/checkoutnow/error',
     offerPaypalCredit: options.offerCredit === true,
     merchantAccountId: this._merchantAccountId,
     experienceProfile: {
@@ -602,7 +910,7 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
     paypalAccount: {
       correlationId: params.billingToken || params.ecToken,
       options: {
-        validate: options.flow === 'vault' && !isTokenizationKey
+        validate: options.flow === 'vault' && !isTokenizationKey && options.vault
       }
     }
   };

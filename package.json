@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.58.0",
+  "version": "3.59.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -13,8 +13,8 @@
     "build": "./scripts/npm-to-gulp build",
     "lint": "./scripts/npm-to-gulp lint",
     "release": "./scripts/release",
-    "jest": "BRAINTREE_JS_ENV=development jest --config=jest.config.json",
-    "test": "npm run jest && ./scripts/npm-to-gulp test"
+    "posttest": "npm run lint",
+    "test": "BRAINTREE_JS_ENV=development jest"
   },
   "dependencies": {
     "@braintree/asset-loader": "0.3.1",

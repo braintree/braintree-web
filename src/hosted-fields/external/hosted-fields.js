@@ -736,6 +736,49 @@ HostedFields.prototype._attachInvalidFieldContainersToError = function (err) {
 };
 
 /**
+ * Get card verification challenges, such as requirements for cvv and postal code.
+ * @public
+ * @param {callback} [callback] Called on completion, containing an error if one occurred. If no callback is provided, `getChallenges` returns a promise.
+ * @example
+ * hostedFieldsInstance.getChallenges().then(function (challenges) {
+ *   challenges // ['cvv', 'postal_code']
+ * });
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ */
+HostedFields.prototype.getChallenges = function () {
+  return this._clientPromise.then(function (client) {
+    return client.getConfiguration().gatewayConfiguration.challenges;
+  });
+};
+
+/**
+ * Get supported card types configured in the Braintree Control Panel
+ * @public
+ * @param {callback} [callback] Called on completion, containing an error if one occurred. If no callback is provided, `getSupportedCardTypes` returns a promise.
+ * @example
+ * hostedFieldsInstance.getSupportedCardTypes().then(function (cardTypes) {
+ *   cardTypes // ['Visa', 'American Express', 'Mastercard']
+ * });
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ */
+HostedFields.prototype.getSupportedCardTypes = function () {
+  return this._clientPromise.then(function (client) {
+    var cards = client.getConfiguration().gatewayConfiguration.creditCards.supportedCardTypes.map(function (cardType) {
+      if (cardType === 'MasterCard') {
+        // Mastercard changed their branding. We can't update our
+        // config without creating a breaking change, so we just
+        // hard code the change here
+        return 'Mastercard';
+      }
+
+      return cardType;
+    });
+
+    return cards;
+  });
+};
+
+/**
  * Cleanly remove anything set up by {@link module:braintree-web/hosted-fields.create|create}.
  * @public
  * @param {callback} [callback] Called on completion, containing an error if one occurred. No data is returned if teardown completes successfully. If no callback is provided, `teardown` returns a promise.

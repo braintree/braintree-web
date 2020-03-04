@@ -1,7 +1,6 @@
 'use strict';
 
 jest.mock('../../../../src/hosted-fields/external/get-styles-from-class');
-jest.mock('../../../../src/lib/create-deferred-client');
 
 const analytics = require('../../../../src/lib/analytics');
 const Bus = require('../../../../src/lib/bus');
@@ -17,32 +16,28 @@ const { fake, noop, rejectIfResolves, findFirstEventCallback, yieldsAsync, yield
 const methods = require('../../../../src/lib/methods');
 const getCardTypes = require('../../../../src/hosted-fields/shared/get-card-types');
 
-function generateDefaultObject() {
-  const fakeClient = fake.client();
-  const testObject = {
-    fakeClient,
-    numberDiv: document.createElement('div'),
-    defaultConfiguration: {
-      client: fakeClient,
-      fields: {
-        number: {
-          container: '#number'
-        }
-      }
-    }
-  };
-
-  testObject.defaultConfiguration.client._request = noop;
-  testObject.numberDiv.setAttribute('id', 'number');
-
-  return testObject;
-}
-
 describe('HostedFields', () => {
   let testContext;
 
   beforeEach(() => {
-    testContext = generateDefaultObject();
+    const fakeClient = fake.client();
+
+    testContext = {
+      fakeClient,
+      numberDiv: document.createElement('div'),
+      defaultConfiguration: {
+        client: fakeClient,
+        fields: {
+          number: {
+            container: '#number'
+          }
+        }
+      }
+    };
+
+    testContext.defaultConfiguration.client._request = noop;
+    testContext.numberDiv.setAttribute('id', 'number');
+
     document.body.appendChild(testContext.numberDiv);
 
     jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.fakeClient);
@@ -1428,6 +1423,66 @@ describe('HostedFields', () => {
 
       testContext.instance._state = 'field state';
       expect(testContext.instance.getState()).toBe('field state');
+    });
+  });
+
+  describe('getChallenges', () => {
+    it('resolves with the array of challenges from configuration', async () => {
+      const instance = new HostedFields(testContext.defaultConfiguration);
+      const challenges = await instance.getChallenges();
+
+      expect(challenges).toEqual(['cvv', 'postal_code']);
+    });
+
+    it('rejects if client fails to setup', async () => {
+      createDeferredClient.create.mockRejectedValue(new Error('error'));
+
+      const instance = new HostedFields(testContext.defaultConfiguration);
+
+      await expect(instance.getChallenges()).rejects.toThrow('error');
+    });
+  });
+
+  describe('getSupportedCardTypes', () => {
+    it('resolves with the array of supported card types from configuration', async () => {
+      const instance = new HostedFields(testContext.defaultConfiguration);
+      const cardTypes = await instance.getSupportedCardTypes();
+
+      expect(cardTypes).toEqual([
+        'American Express',
+        'Discover',
+        'Visa'
+      ]);
+    });
+
+    it('converts MasterCard -> Mastercard', async () => {
+      testContext.defaultConfiguration.client.getConfiguration = () => {
+        return {
+          gatewayConfiguration: {
+            creditCards: {
+              supportedCardTypes: [
+                'Visa',
+                'MasterCard'
+              ]
+            }
+          }
+        };
+      };
+      const instance = new HostedFields(testContext.defaultConfiguration);
+      const cardTypes = await instance.getSupportedCardTypes();
+
+      expect(cardTypes).toEqual([
+        'Visa',
+        'Mastercard'
+      ]);
+    });
+
+    it('rejects if client fails to setup', async () => {
+      createDeferredClient.create.mockRejectedValue(new Error('error'));
+
+      const instance = new HostedFields(testContext.defaultConfiguration);
+
+      await expect(instance.getSupportedCardTypes()).rejects.toThrow('error');
     });
   });
 });

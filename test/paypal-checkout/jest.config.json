@@ -1,8 +1,9 @@
 {
-  "restoreMocks": true,
+  "clearMocks": true,
   "coverageDirectory": "<rootDir>/../../test/paypal-checkout/coverage",
   "displayName": "paypal-checkout",
   "//": "In the future, tests should live in the same directory as the files they are testing",
+  "restoreMocks": true,
   "rootDir": "../../src/paypal-checkout",
   "roots": [
     "<rootDir>",

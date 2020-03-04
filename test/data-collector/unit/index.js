@@ -79,6 +79,7 @@ describe('dataCollector', () => {
       return dataCollector.create({
         kount: true,
         authorization: clientToken,
+        useDeferredClient: true,
         debug: true
       }).then(dtInstance => {
         expect(dtInstance).toBeDefined();
@@ -227,7 +228,7 @@ describe('dataCollector', () => {
       });
 
       return dataCollector.create({
-        client: this.client
+        client: testContext.client
       }).then(data => {
         const actual = JSON.parse(data.deviceData);
 
@@ -338,8 +339,8 @@ describe('dataCollector', () => {
         paypal: true,
         kount: true
       }).then(actual => {
-        actual.teardown();
-
+        return actual.teardown();
+      }).then(() => {
         expect(fraudnetTeardown).toHaveBeenCalled();
         expect(kountTeardown).toHaveBeenCalled();
       });
@@ -402,6 +403,113 @@ describe('dataCollector', () => {
           });
 
           done();
+        });
+      });
+    });
+
+    it('waits for deferred client to be ready when using authorization setup', () => {
+      let clientHasResolved = false;
+
+      kount.setup.mockReturnValue({
+        teardown: jest.fn(),
+        deviceData: {
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: '12345' // eslint-disable-line camelcase
+        }
+      });
+      fraudnet.setup.mockResolvedValue({
+        teardown: jest.fn(),
+        sessionId: 'paypal_id'
+      });
+
+      createDeferredClient.create.mockImplementation(() =>
+        new Promise(resolve => {
+          setTimeout(() => {
+            clientHasResolved = true;
+            resolve(testContext.client);
+          }, 5);
+        }));
+
+      return dataCollector.create({
+        authorization: 'fake-auth',
+        useDeferredClient: true,
+        paypal: true,
+        kount: true
+      }).then(instance => {
+        expect(clientHasResolved).toBe(false);
+
+        return instance.teardown().then(() => {
+          expect(clientHasResolved).toBe(true);
+        });
+      });
+    });
+  });
+
+  describe('getDeviceData', () => {
+    beforeEach(() => {
+      kount.setup.mockReturnValue({
+        deviceData: {
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: '12345' // eslint-disable-line camelcase
+        }
+      });
+      fraudnet.setup.mockResolvedValue({
+        sessionId: 'paypal_id'
+      });
+    });
+
+    it('resolves with device data', () =>
+      dataCollector.create({
+        client: testContext.client,
+        paypal: true,
+        kount: true
+      }).then(instance => instance.getDeviceData()).then(deviceData => {
+        expect(JSON.parse(deviceData)).toEqual({
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: '12345', // eslint-disable-line camelcase
+          correlation_id: 'paypal_id' // eslint-disable-line camelcase
+        });
+      }));
+
+    it('resolves with raw device data', () =>
+      dataCollector.create({
+        client: testContext.client,
+        paypal: true,
+        kount: true
+      }).then(instance =>
+        instance.getDeviceData({
+          raw: true
+        })).then(deviceData => {
+        expect(deviceData).toEqual({
+          device_session_id: 'did', // eslint-disable-line camelcase
+          fraud_merchant_id: '12345', // eslint-disable-line camelcase
+          correlation_id: 'paypal_id' // eslint-disable-line camelcase
+        });
+      }));
+
+    it('waits for deferred client to be ready when using authorization setup', () => {
+      let clientHasResolved = false;
+
+      createDeferredClient.create.mockImplementation(() =>
+        new Promise(resolve => {
+          setTimeout(() => {
+            clientHasResolved = true;
+            resolve(testContext.client);
+          }, 5);
+        }));
+
+      return dataCollector.create({
+        authorization: 'fake-auth',
+        useDeferredClient: true,
+        paypal: true,
+        kount: true
+      }).then(instance => {
+        expect(clientHasResolved).toBe(false);
+
+        return instance.getDeviceData({
+          stringify: true
+        }).then(() => {
+          expect(clientHasResolved).toBe(true);
         });
       });
     });

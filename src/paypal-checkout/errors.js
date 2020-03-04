@@ -16,6 +16,16 @@
  */
 
 /**
+ * @name BraintreeError.PayPal Checkout - startVaultInitiatedCheckout Error Codes
+ * @description Errors that occur when using the [`startVaultInitiatedCheckout` method](/current/PayPalCheckout.html#startVaultInitiatedCheckout).
+ * @property {MERCHANT} PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED Occurs when a required param is missing when calling the method.
+ * @property {MERCHANT} PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED Occurs when PayPal window could not be opened. This often occurs because the call to start the vault initiated flow was not triggered from a click event.
+ * @property {CUSTOMER} PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED Occurs when a customer closes the PayPal flow before completion.
+ * @property {MERCHANT} PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS Occurs when the flow is initialized while an authorization is already in progress.
+ * @property {NETWORK} PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED Occurs when something went wrong setting up the flow.
+ */
+
+/**
  * @name BraintreeError.PayPal Checkout - tokenizePayment Error Codes
  * @description Errors that occur when using the [`tokenizePayment` method](/current/PayPalCheckout.html#tokenizePayment).
  * @property {NETWORK} PAYPAL_ACCOUNT_TOKENIZATION_FAILED Occurs when PayPal account could not be tokenized.
@@ -48,6 +58,30 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'PAYPAL_FLOW_OPTION_REQUIRED',
     message: 'PayPal flow property is invalid or missing.'
+  },
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED'
+  },
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED',
+    message: 'Something went wrong when setting up the checkout workflow.'
+  },
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED',
+    message: 'PayPal popup failed to open, make sure to initiate the vault checkout in response to a user action.'
+  },
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED',
+    message: 'Customer closed PayPal popup before authorizing.'
+  },
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS',
+    message: 'Vault initiated checkout already in progress.'
   },
   PAYPAL_INVALID_PAYMENT_OPTION: {
     type: BraintreeError.types.MERCHANT,
