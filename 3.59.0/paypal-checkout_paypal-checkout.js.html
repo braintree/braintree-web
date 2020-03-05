@@ -622,7 +622,10 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the checkout.js library. Otherwise, it returns a Promise that resolves with the id.
  * @public
  * @ignore
- * @param {object} options All {@link PayPalCheckout#createPayment|options for creating a payment resource}, can be set except `flow` (will always be `'checkout'`). `amount`, `currency`, and `vaultInitiatedCheckoutPaymentMethodToken` are required. Additional options listed below.
+ * @param {object} options These options are identical to the {@link PayPalCheckout#createPayment|options for creating a payment resource}, except for the following:
+ * * `flow` cannot be set (will always be `'checkout'`)
+ * * `amount`, `currency`, and `vaultInitiatedCheckoutPaymentMethodToken` are required instead of optional
+ * * Additional configuration is available (listed below)
  * @param {boolean} [options.optOutOfModalBackdrop=false] By default, the webpage will darken and become unusable while the PayPal window is open. For full control of the UI, pass `true` for this option.
  * @param {callback} [callback] The second argument, &lt;code>payload&lt;/code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @example
