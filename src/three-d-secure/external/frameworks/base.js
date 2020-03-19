@@ -22,12 +22,30 @@ function BaseFramework(options) {
   EventEmitter.call(this);
 
   this._client = options.client;
-  this._isDebug = this._client.getConfiguration().isDebug;
-  this._assetsUrl = this._client.getConfiguration().gatewayConfiguration.assetsUrl + '/web/' + VERSION;
+  this._createPromise = options.createPromise;
   this._createOptions = options;
+
+  if (this._client) {
+    this._isDebug = this._client.getConfiguration().isDebug;
+    this._assetsUrl = this._client.getConfiguration().gatewayConfiguration.assetsUrl;
+  } else {
+    this._isDebug = Boolean(options.isDebug);
+    this._assetsUrl = options.assetsUrl;
+  }
+  this._assetsUrl = this._assetsUrl + '/web/' + VERSION;
 }
 
 EventEmitter.createChild(BaseFramework);
+
+BaseFramework.prototype._waitForClient = function () {
+  if (this._client) {
+    return Promise.resolve();
+  }
+
+  return this._createPromise.then(function (client) {
+    this._client = client;
+  }.bind(this));
+};
 
 BaseFramework.prototype.setUpEventListeners = function () {
   throw new BraintreeError(errors.THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED);
@@ -50,11 +68,11 @@ BaseFramework.prototype.verifyCard = function (options, privateOptions) {
   formattedOptions = this._formatVerifyCardOptions(options);
 
   return this._formatLookupData(formattedOptions).then(function (data) {
-    analytics.sendEvent(self._client, 'three-d-secure.verification-flow.started');
+    analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.started');
 
     return self._performLookup(formattedOptions.nonce, data);
   }).then(function (response) {
-    analytics.sendEvent(self._client, 'three-d-secure.verification-flow.3ds-version.' + response.lookup.threeDSecureVersion);
+    analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.3ds-version.' + response.lookup.threeDSecureVersion);
 
     return self._onLookupComplete(response, formattedOptions);
   }).then(function (response) {
@@ -62,13 +80,13 @@ BaseFramework.prototype.verifyCard = function (options, privateOptions) {
   }).then(function (payload) {
     self._resetVerificationState();
 
-    analytics.sendEvent(self._client, 'three-d-secure.verification-flow.completed');
+    analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.completed');
 
     return payload;
   }).catch(function (err) {
     self._resetVerificationState();
 
-    analytics.sendEvent(self._client, 'three-d-secure.verification-flow.failed');
+    analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.failed');
 
     return Promise.reject(err);
   });
@@ -95,35 +113,37 @@ BaseFramework.prototype._performLookup = function (nonce, data) {
   var self = this;
   var url = 'payment_methods/' + nonce + '/three_d_secure/lookup';
 
-  return this._client.request({
-    endpoint: url,
-    method: 'post',
-    data: data
-  }).catch(function (err) {
-    var status = err && err.details && err.details.httpStatus;
-    var analyticsMessage = 'three-d-secure.verification-flow.lookup-failed';
-    var lookupError;
+  return this._waitForClient().then(function () {
+    return self._client.request({
+      endpoint: url,
+      method: 'post',
+      data: data
+    }).catch(function (err) {
+      var status = err && err.details && err.details.httpStatus;
+      var analyticsMessage = 'three-d-secure.verification-flow.lookup-failed';
+      var lookupError;
 
-    if (status === 404) {
-      lookupError = errors.THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR;
-      analyticsMessage += '.404';
-    } else if (status === 422) {
-      lookupError = errors.THREEDS_LOOKUP_VALIDATION_ERROR;
-      analyticsMessage += '.422';
-    } else {
-      lookupError = errors.THREEDS_LOOKUP_ERROR;
-    }
-
-    analytics.sendEvent(self._client, analyticsMessage);
-
-    return Promise.reject(new BraintreeError({
-      type: lookupError.type,
-      code: lookupError.code,
-      message: lookupError.message,
-      details: {
-        originalError: err
+      if (status === 404) {
+        lookupError = errors.THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR;
+        analyticsMessage += '.404';
+      } else if (status === 422) {
+        lookupError = errors.THREEDS_LOOKUP_VALIDATION_ERROR;
+        analyticsMessage += '.422';
+      } else {
+        lookupError = errors.THREEDS_LOOKUP_ERROR;
       }
-    }));
+
+      analytics.sendEvent(self._createPromise, analyticsMessage);
+
+      return Promise.reject(new BraintreeError({
+        type: lookupError.type,
+        code: lookupError.code,
+        message: lookupError.message,
+        details: {
+          originalError: err
+        }
+      }));
+    });
   });
 };
 
@@ -167,8 +187,8 @@ BaseFramework.prototype.initializeChallengeWithLookupResponse = function (lookup
   self._handleLookupResponse(lookupResponse, options);
 
   return self._verifyCardPromisePlus.then(function (payload) {
-    analytics.sendEvent(self._client, 'three-d-secure.verification-flow.liability-shifted.' + String(payload.liabilityShifted));
-    analytics.sendEvent(self._client, 'three-d-secure.verification-flow.liability-shift-possible.' + String(payload.liabilityShiftPossible));
+    analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.liability-shifted.' + String(payload.liabilityShifted));
+    analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.liability-shift-possible.' + String(payload.liabilityShiftPossible));
 
     return payload;
   });
@@ -178,7 +198,7 @@ BaseFramework.prototype._handleLookupResponse = function (lookupResponse, option
   var challengeShouldBePresented = Boolean(lookupResponse.lookup && lookupResponse.lookup.acsUrl);
   var details;
 
-  analytics.sendEvent(this._client, 'three-d-secure.verification-flow.challenge-presented.' + String(challengeShouldBePresented));
+  analytics.sendEvent(this._createPromise, 'three-d-secure.verification-flow.challenge-presented.' + String(challengeShouldBePresented));
 
   if (challengeShouldBePresented) {
     this._presentChallenge(lookupResponse, options);
@@ -317,7 +337,7 @@ BaseFramework.prototype._teardownV1Elements = function () {
 };
 
 BaseFramework.prototype.teardown = function () {
-  analytics.sendEvent(this._client, 'three-d-secure.teardown-completed');
+  analytics.sendEvent(this._createPromise, 'three-d-secure.teardown-completed');
 
   this._teardownV1Elements();
 

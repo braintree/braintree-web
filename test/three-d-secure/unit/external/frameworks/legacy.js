@@ -32,7 +32,8 @@ describe('LegacyFramework', () => {
   describe('verifyCard', () => {
     beforeEach(() => {
       testContext.instance = new LegacyFramework({
-        client: testContext.client
+        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client)
       });
 
       testContext.lookupResponse = {
@@ -250,7 +251,8 @@ describe('LegacyFramework', () => {
   describe('initializeChallengeWithLookupResponse', () => {
     beforeEach(() => {
       testContext.instance = new LegacyFramework({
-        client: testContext.client
+        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client)
       });
     });
 
@@ -409,7 +411,7 @@ describe('LegacyFramework', () => {
 
     describe('Verify card resolution', () => {
       beforeEach(() => {
-        testContext.authResponse = fake.authResponse;
+        testContext.authResponse = fake.authResponse();
         testContext.lookupResponse = fake.basicLookupResponse;
 
         testContext.makeAddFrameFunction = authResponse => () => {
@@ -461,15 +463,16 @@ describe('LegacyFramework', () => {
         });
       });
 
-      it('sends back the new nonce if auth is successful', () =>
-        testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+      it('sends back the new nonce if auth is successful', () => {
+        return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
           addFrame: testContext.makeAddFrameFunction(testContext.authResponse),
           removeFrame: noop
         }).then(data => {
           expect(data.nonce).toBe('auth-success-nonce');
           expect(data.liabilityShiftPossible).toBe(true);
           expect(data.liabilityShifted).toBe(true);
-        }));
+        });
+      });
 
       it('sends back the lookup nonce if auth is not successful but liability shift is possible', () => {
         delete testContext.authResponse.success;
@@ -492,20 +495,15 @@ describe('LegacyFramework', () => {
           message: 'an error'
         };
 
-        return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
+        return expect(testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {
           addFrame: testContext.makeAddFrameFunction(testContext.authResponse),
           removeFrame: noop
-        }).catch(err => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toEqual(BraintreeError.types.UNKNOWN);
-          expect(err.message).toBe('an error');
+        })).rejects.toMatchObject({
+          type: BraintreeError.types.UNKNOWN,
+          message: 'an error'
         });
       });
 
-      /*
-       * Either this test needs refactoring or the code it's testing
-       * does. There's an otherwise uncaught rejection here.
-      * */
       it('sends analytics events for failed liability shift', () => {
         testContext.authResponse.threeDSecureInfo.liabilityShifted = false;
         testContext.authResponse.threeDSecureInfo.liabilityShiftPossible = false;
@@ -514,9 +512,9 @@ describe('LegacyFramework', () => {
           addFrame: testContext.makeAddFrameFunction(testContext.authResponse),
           removeFrame: noop
         }).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.liability-shifted.false');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.liability-shift-possible.false');
-        }).catch(noop);
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.liability-shifted.false');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.liability-shift-possible.false');
+        });
       });
     });
   });

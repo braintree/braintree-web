@@ -1,10 +1,26 @@
 CHANGELOG
 =========
 
+## 3.60.0
+* Apple Pay
+  * Add `useDeferredClient` option when creating instance
+  * `createPaymentRequest` will return a promise if instantiated with `useDeferredClient` and `authorization` instead of a client
+* Google Pay
+  * Add `useDeferredClient` option when creating instance
+  * `createPaymentDataRequest` will return a promise if instantiated with `useDeferredClient` and `authorization` instead of a client
+* PayPal Checkout
+  * Added `cobrandedCardLabel` to the `tokenizePayment` response
+* 3D Secure
+  * Update to use deferred client
+* Venmo
+  * Update to use deferred client
+* Vault Manager
+  * Update to use deferred client
+
 ## 3.59.0
 * Data Collector
   * Add `useDeferredClient` option when creating instance
-  * Add `getDeviceData` method to get device data asyncronously
+  * Add `getDeviceData` method to get device data asynchronously
 * Hosted Fields
   * add `getChallenges` method
   * add `getSupportedCardTypes` method

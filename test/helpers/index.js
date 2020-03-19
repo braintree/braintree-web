@@ -5,34 +5,6 @@ const COMPONENTS = require('../../components');
 const constants = require('../../src/lib/constants');
 const tokenizationKey = 'development_testing_merchant_id';
 
-const authResponse = {
-  success: true,
-  paymentMethod: {
-    nonce: 'auth-success-nonce',
-    binData: {
-      prepaid: 'No',
-      healthcare: 'Unknown',
-      debit: 'Unknown',
-      durbinRegulated: 'Unknown',
-      commercial: 'Unknown',
-      payroll: 'Unknown',
-      issuingBank: 'Unknown',
-      countryOfIssuance: 'CAN',
-      productId: 'Unknown'
-    },
-    details: {
-      last2: 11
-    },
-    description: 'a description',
-    threeDSecureInfo: {
-      threeDSecureVersion: '1.0.2'
-    }
-  },
-  threeDSecureInfo: {
-    liabilityShiftPossible: true,
-    liabilityShifted: true
-  }
-};
 const basicLookupResponse = {
   paymentMethod: {
     nonce: 'lookup-nonce'
@@ -170,7 +142,36 @@ module.exports = {
     }, [])
   },
   fake: {
-    authResponse,
+    authResponse() {
+      return {
+        success: true,
+        paymentMethod: {
+          nonce: 'auth-success-nonce',
+          binData: {
+            prepaid: 'No',
+            healthcare: 'Unknown',
+            debit: 'Unknown',
+            durbinRegulated: 'Unknown',
+            commercial: 'Unknown',
+            payroll: 'Unknown',
+            issuingBank: 'Unknown',
+            countryOfIssuance: 'CAN',
+            productId: 'Unknown'
+          },
+          details: {
+            last2: 11
+          },
+          description: 'a description',
+          threeDSecureInfo: {
+            threeDSecureVersion: '1.0.2'
+          }
+        },
+        threeDSecureInfo: {
+          liabilityShiftPossible: true,
+          liabilityShifted: true
+        }
+      };
+    },
     basicLookupResponse,
     tokenizationKey,
     clientToken,

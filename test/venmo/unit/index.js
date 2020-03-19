@@ -58,22 +58,13 @@ describe('venmo static methods', () => {
       expect(create({ client: testContext.client })).resolves.toBeInstanceOf(Venmo);
     });
 
-    it('calls _initialize on the Venmo instance', () => {
-      jest.spyOn(Venmo.prototype, '_initialize').mockResolvedValue({});
-
-      return create({ client: testContext.client }).then(() => {
-        expect(Venmo.prototype._initialize).toBeCalledTimes(1);
-      });
-    });
-
-    it('errors out if Venmo is not enabled for the merchant', () => {
+    it('errors out if Venmo is not enabled for the merchant when using client', () => {
       delete testContext.configuration.gatewayConfiguration.payWithVenmo;
 
-      return create({ client: testContext.client }).catch(err => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe('MERCHANT');
-        expect(err.code).toBe('VENMO_NOT_ENABLED');
-        expect(err.message).toBe('Venmo is not enabled for this merchant.');
+      return expect(create({ client: testContext.client })).rejects.toMatchObject({
+        type: 'MERCHANT',
+        code: 'VENMO_NOT_ENABLED',
+        message: 'Venmo is not enabled for this merchant.'
       });
     });
 
@@ -100,8 +91,14 @@ describe('venmo static methods', () => {
     it('sends an analytics event when successful', () => create({ client: testContext.client })
       .then(() => {
         expect(analytics.sendEvent).toBeCalledTimes(1);
-        expect(analytics.sendEvent).toBeCalledWith(testContext.client, 'venmo.initialized');
+        expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.initialized');
       }));
+
+    it('does not error out if Venmo is not enabled for the merchant when using deferred client', () => {
+      delete testContext.configuration.gatewayConfiguration.payWithVenmo;
+
+      return create({ authorization: 'fake-auth' });
+    });
   });
 
   describe('venmo.isBrowserSupported', () => {

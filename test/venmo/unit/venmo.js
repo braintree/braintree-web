@@ -13,6 +13,9 @@ const { version: VERSION } = require('../../../package.json');
 const methods = require('../../../src/lib/methods');
 
 function triggerAppSwitchReturnEvents(instance) {
+  // TODO we should have it trigger the actual
+  // visibility event if possible, rather than
+  // calling the method saved on the instance
   instance._visibilityChangeListener();
 
   jest.runAllTimers();
@@ -35,7 +38,7 @@ describe('Venmo', () => {
       request: () => Promise.resolve({}),
       getConfiguration: () => testContext.configuration
     };
-    testContext.venmo = new Venmo({ client: testContext.client });
+    testContext.venmo = new Venmo({ createPromise: Promise.resolve(testContext.client) });
 
     jest.spyOn(document, 'addEventListener');
     jest.spyOn(document, 'removeEventListener');
@@ -43,102 +46,101 @@ describe('Venmo', () => {
     window.location.href = originalLocation;
   });
 
-  describe('_initialize', () => {
+  describe('getUrl', () => {
     afterEach(() => {
       history.replaceState({}, '', testContext.location);
     });
 
-    it('resolves with the Venmo instance', () => {
-      expect(testContext.venmo._initialize()).resolves.toBeInstanceOf(Venmo);
-    });
+    it('is set to correct base URL', () =>
+      testContext.venmo.getUrl().then(url => {
+        expect(url.indexOf('https://venmo.com/braintree/checkout')).toBe(0);
+      })
+    );
 
-    describe('_url', () => {
-      it('is set to correct base URL', () =>
-        testContext.venmo._initialize().then(venmoInstance => {
-          expect(venmoInstance._url.indexOf('https://venmo.com/braintree/checkout')).toBe(0);
-        })
-      );
+    it.each([
+      ['', window.location.href, false],
+      ['when deepLinkReturnUrl is specified', 'com.braintreepayments.test://', true],
+      ['when checkout page URL has query params', `${window.location.href}?hey=now`, false]
+    ])('contains return URL %s', (s, location, deepLinked) => {
+      let params;
+      const expectedReturnUrls = {
+        'x-success': `${location}#venmoSuccess=1`,
+        'x-cancel': `${location}#venmoCancel=1`,
+        'x-error': `${location}#venmoError=1`
+      };
 
-      it.each([
-        ['', window.location.href, false],
-        ['when deepLinkReturnUrl is specified', 'com.braintreepayments.test://', true],
-        ['when checkout page URL has query params', `${window.location.href}?hey=now`, false]
-      ])('contains return URL %s', (s, location, deepLinked) => {
-        let params;
-        const expectedReturnUrls = {
-          'x-success': `${location}#venmoSuccess=1`,
-          'x-cancel': `${location}#venmoCancel=1`,
-          'x-error': `${location}#venmoError=1`
-        };
-
-        if (deepLinked) {
-          testContext.venmo = new Venmo({
-            client: testContext.client,
-            deepLinkReturnUrl: location
-          });
-        } else if (location !== testContext.location) {
-          history.replaceState({}, '', location);
-        }
-
-        return testContext.venmo._initialize().then(venmoInstance => {
-          params = querystring.parse(venmoInstance._url);
-          expect(params['x-success']).toBe(expectedReturnUrls['x-success']);
-          expect(params['x-cancel']).toBe(expectedReturnUrls['x-cancel']);
-          expect(params['x-error']).toBe(expectedReturnUrls['x-error']);
-        });
-      });
-
-      it('contains user agent in query params', () => {
-        let params;
-        const userAgent = window.navigator.userAgent;
-
-        return testContext.venmo._initialize().then(venmoInstance => {
-          params = querystring.parse(venmoInstance._url);
-          expect(params.ua).toBe(userAgent);
-        });
-      });
-
-      it.each([
-        ['pwv-merchant-id'], ['pwv-profile-id']
-      ])('contains correct Braintree configuration options in query params when "braintree_merchant_id" is %p', (merchantID) => {
-        /* eslint-disable camelcase */
-        const braintreeConfig = {
-          braintree_merchant_id: merchantID,
-          braintree_access_token: 'pwv-access-token',
-          braintree_environment: 'sandbox'
-        };
-
+      if (deepLinked) {
         testContext.venmo = new Venmo({
-          client: testContext.client,
-          profileId: merchantID
+          createPromise: Promise.resolve(testContext.client),
+          deepLinkReturnUrl: location
         });
+      } else if (location !== testContext.location) {
+        history.replaceState({}, '', location);
+      }
 
-        return testContext.venmo._initialize().then(venmoInstance => {
-          const params = querystring.parse(venmoInstance._url);
-
-          expect(params.braintree_merchant_id).toBe(braintreeConfig.braintree_merchant_id);
-          expect(params.braintree_access_token).toBe(braintreeConfig.braintree_access_token);
-          expect(params.braintree_environment).toBe(braintreeConfig.braintree_environment);
-        });
-        /* eslint-enable camelcase */
-      });
-
-      it('contains metadata in query params to forward to Venmo', () => {
-        let params, braintreeData, metadata;
-
-        return testContext.venmo._initialize().then(venmoInstance => {
-          params = querystring.parse(venmoInstance._url);
-          braintreeData = JSON.parse(atob(params.braintree_sdk_data)); // eslint-disable-line camelcase
-          metadata = braintreeData._meta;
-
-          expect(metadata.version).toBe(VERSION);
-          expect(metadata.sessionId).toBe('fakeSessionId');
-          expect(metadata.integration).toBe('custom');
-          expect(metadata.platform).toBe('web');
-          expect(Object.keys(metadata).length).toBe(4);
-        });
+      return testContext.venmo.getUrl().then(url => {
+        params = querystring.parse(url);
+        expect(params['x-success']).toBe(expectedReturnUrls['x-success']);
+        expect(params['x-cancel']).toBe(expectedReturnUrls['x-cancel']);
+        expect(params['x-error']).toBe(expectedReturnUrls['x-error']);
       });
     });
+
+    it('contains user agent in query params', () => {
+      let params;
+      const userAgent = window.navigator.userAgent;
+
+      return testContext.venmo.getUrl().then(url => {
+        params = querystring.parse(url);
+        expect(params.ua).toBe(userAgent);
+      });
+    });
+
+    it.each([
+      ['pwv-merchant-id'], ['pwv-profile-id']
+    ])('contains correct Braintree configuration options in query params when "braintree_merchant_id" is %p', (merchantID) => {
+      /* eslint-disable camelcase */
+      const braintreeConfig = {
+        braintree_merchant_id: merchantID,
+        braintree_access_token: 'pwv-access-token',
+        braintree_environment: 'sandbox'
+      };
+
+      testContext.venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        profileId: merchantID
+      });
+
+      return testContext.venmo.getUrl().then(url => {
+        const params = querystring.parse(url);
+
+        expect(params.braintree_merchant_id).toBe(braintreeConfig.braintree_merchant_id);
+        expect(params.braintree_access_token).toBe(braintreeConfig.braintree_access_token);
+        expect(params.braintree_environment).toBe(braintreeConfig.braintree_environment);
+      });
+      /* eslint-enable camelcase */
+    });
+
+    it('contains metadata in query params to forward to Venmo', () => {
+      let params, braintreeData, metadata;
+
+      return testContext.venmo.getUrl().then(url => {
+        params = querystring.parse(url);
+        braintreeData = JSON.parse(atob(params.braintree_sdk_data)); // eslint-disable-line camelcase
+        metadata = braintreeData._meta;
+
+        expect(metadata.version).toBe(VERSION);
+        expect(metadata.sessionId).toBe('fakeSessionId');
+        expect(metadata.integration).toBe('custom');
+        expect(metadata.platform).toBe('web');
+        expect(Object.keys(metadata).length).toBe(4);
+      });
+    });
+
+    it('rejects if client creation rejects', () =>
+      expect(new Venmo({
+        createPromise: Promise.reject(new Error('client error'))
+      }).getUrl()).rejects.toThrow('client error'));
   });
 
   describe('isBrowserSupported', () => {
@@ -166,7 +168,7 @@ describe('Venmo', () => {
 
     it('calls isBrowserSupported with allowNewBrowserTab: false when venmo instance is configured to do so', () => {
       testContext.venmo = new Venmo({
-        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client),
         allowNewBrowserTab: false
       });
 
@@ -220,6 +222,12 @@ describe('Venmo', () => {
         expect(err.type).toBe('MERCHANT');
         expect(err.message).toBe('Another tokenization request is active.');
       });
+    });
+
+    it('errors if getUrl fails', () => {
+      jest.spyOn(testContext.venmo, 'getUrl').mockRejectedValue(new Error('client error'));
+
+      return expect(testContext.venmo.tokenize()).rejects.toThrow('client error');
     });
 
     describe('when URL has Venmo results before calling tokenize', () => {
@@ -277,7 +285,6 @@ describe('Venmo', () => {
         expect(details.username).toBe('keanu');
       });
 
-      expect.assertions(3);
       history.replaceState({}, '', `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu`);
       triggerAppSwitchReturnEvents(testContext.venmo);
 
@@ -433,9 +440,9 @@ describe('Venmo', () => {
         ['Success'],
         ['Error'],
         ['Cancel']
-      ])('sends an event on app switch return %p', (result) => {
+      ])('sends an event on app switch return %p', result => {
         const promise = testContext.venmo.tokenize().then(rejectIfResolves).catch(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, `venmo.appswitch.handle.${result.toLowerCase()}`);
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), `venmo.appswitch.handle.${result.toLowerCase()}`);
         });
 
         history.replaceState({}, '', `${testContext.location}#venmo${result}=1`);
@@ -446,10 +453,9 @@ describe('Venmo', () => {
 
       it('sends an event when there\'s no app switch result before timeout', () => {
         let promise;
-        const client = testContext.client;
 
         promise = testContext.venmo.tokenize().catch(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'venmo.appswitch.cancel-or-unavailable');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'venmo.appswitch.cancel-or-unavailable');
         });
 
         triggerAppSwitchReturnEvents(testContext.venmo);

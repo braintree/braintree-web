@@ -28,17 +28,15 @@ function create(options) {
     client: options.client,
     authorization: options.authorization
   }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
-      client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
+    return new VaultManager({
+      createPromise: createDeferredClient.create({
+        authorization: options.authorization,
+        client: options.client,
+        debug: options.debug,
+        assetsUrl: createAssetsUrl.create(options.authorization),
+        name: name
+      })
     });
-  }).then(function (client) {
-    options.client = client;
-
-    return new VaultManager(options);
   });
 }
 

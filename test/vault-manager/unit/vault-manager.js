@@ -26,29 +26,12 @@ describe('VaultManager', () => {
       type: 'type',
       garbage: 'garbage'
     };
-    vaultManager = new VaultManager({ client });
+    vaultManager = new VaultManager({
+      createPromise: Promise.resolve(client)
+    });
   });
 
   describe('fetchPaymentMethods', () => {
-    it('supports a callback', function (done) {
-      client.request.mockResolvedValue({
-        paymentMethods: [fakePaymentMethod]
-      });
-
-      return vaultManager.fetchPaymentMethods((err, paymentMethods) => {
-        expect(err).toBeFalsy();
-        expect(paymentMethods).toEqual([{
-          nonce: 'nonce',
-          'default': false,
-          details: {},
-          hasSubscription: false,
-          type: 'type'
-        }]);
-
-        done();
-      });
-    });
-
     it('requests payment methods', function () {
       client.request.mockResolvedValue({
         paymentMethods: [fakePaymentMethod]
@@ -91,7 +74,7 @@ describe('VaultManager', () => {
       });
 
       return vaultManager.fetchPaymentMethods().then(() => {
-        expect(analytics.sendEvent).toBeCalledWith(client, 'vault-manager.fetch-payment-methods.succeeded');
+        expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'vault-manager.fetch-payment-methods.succeeded');
       });
     });
 
@@ -195,6 +178,16 @@ describe('VaultManager', () => {
       return vaultManager.fetchPaymentMethods().then(rejectIfResolves).catch(err => {
         expect(err).toBe(fakeError);
       });
+    });
+
+    it('sends back error if createPromise rejects', () => {
+      const fakeError = new Error('error');
+
+      vaultManager = new VaultManager({
+        createPromise: Promise.reject(fakeError)
+      });
+
+      return expect(vaultManager.fetchPaymentMethods()).rejects.toThrow(fakeError);
     });
   });
 
@@ -376,6 +369,16 @@ describe('VaultManager', () => {
         expect(analytics.sendEvent).toBeCalledTimes(1);
         expect(analytics.sendEvent).toBeCalledWith(client, 'vault-manager.delete-payment-method.failed');
       });
+    });
+
+    it('sends back error if createPromise rejects', () => {
+      const fakeError = new Error('error');
+
+      vaultManager = new VaultManager({
+        createPromise: Promise.reject(fakeError)
+      });
+
+      return expect(vaultManager.deletePaymentMethod('fake-nonce')).rejects.toThrow(fakeError);
     });
   });
 

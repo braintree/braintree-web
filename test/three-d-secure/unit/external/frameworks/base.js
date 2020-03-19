@@ -35,7 +35,8 @@ describe('BaseFramework', () => {
   describe('verifyCard', () => {
     beforeEach(() => {
       testContext.instance = new BaseFramework({
-        client: testContext.client
+        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client)
       });
 
       testContext.lookupResponse = {
@@ -78,6 +79,19 @@ describe('BaseFramework', () => {
     });
 
     describe('lookup errors', () => {
+      it('errors if create promise errors', () => {
+        const error = new Error('network error');
+        const instance = new BaseFramework({
+          authorization: fake.clientToken,
+          createPromise: Promise.reject(error)
+        });
+
+        return expect(instance.verifyCard({
+          nonce: 'abcdef',
+          amount: 100
+        })).rejects.toThrow('network error');
+      });
+
       it('handles errors when hitting the 3DS lookup endpoint', () => {
         const error = new Error('network error');
 
@@ -108,7 +122,7 @@ describe('BaseFramework', () => {
         }).catch(err => {
           expect(err.details.originalError.message).toBe('network error');
         }).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.lookup-failed');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.lookup-failed');
         });
       });
 
@@ -149,7 +163,7 @@ describe('BaseFramework', () => {
         }).catch(verifyError => {
           expect(verifyError.details.originalError.message).toBe('failure');
         }).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.lookup-failed.404');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.lookup-failed.404');
         });
       });
 
@@ -190,7 +204,7 @@ describe('BaseFramework', () => {
         }).catch(verifyError => {
           expect(verifyError.details.originalError.message).toBe('failure');
         }).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.lookup-failed.422');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.lookup-failed.422');
         });
       });
     });
@@ -346,9 +360,9 @@ describe('BaseFramework', () => {
           addFrame: noop,
           removeFrame: noop
         }).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.started');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.3ds-version.1.0.2');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.completed');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.3ds-version.1.0.2');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.completed');
         });
       });
 
@@ -364,10 +378,10 @@ describe('BaseFramework', () => {
         }).catch(err => {
           expect(err.details.originalError.message).toBe('error');
         }).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.started');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.failed');
-          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.3ds-version.1.0.2');
-          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.completed');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.failed');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.3ds-version.1.0.2');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.completed');
         });
       });
 
@@ -406,7 +420,8 @@ describe('BaseFramework', () => {
   describe('initializeChallengeWithLookupResponse', () => {
     beforeEach(() => {
       testContext.instance = new BaseFramework({
-        client: testContext.client
+        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client)
       });
     });
 
@@ -434,10 +449,10 @@ describe('BaseFramework', () => {
 
       it('sends analytics events for successful liability shift', () => {
         return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.true');
-          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.false');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.liability-shifted.true');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.liability-shift-possible.true');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.challenge-presented.true');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.challenge-presented.false');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.liability-shifted.true');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.liability-shift-possible.true');
         });
       });
 
@@ -445,8 +460,8 @@ describe('BaseFramework', () => {
         delete testContext.lookupResponse.lookup.acsUrl;
 
         return testContext.instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.false');
-          expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.challenge-presented.true');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.challenge-presented.false');
+          expect(analytics.sendEvent).not.toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.challenge-presented.true');
         });
       });
     });
@@ -454,7 +469,10 @@ describe('BaseFramework', () => {
 
   describe('cancelVerifyCard', () => {
     beforeEach(() => {
-      testContext.framework = new BaseFramework({ client: testContext.client });
+      testContext.framework = new BaseFramework({
+        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client)
+      });
       testContext.framework._verifyCardInProgress = true;
       testContext.framework._lookupPaymentMethod = {
         threeDSecureInfo: {
@@ -509,14 +527,15 @@ describe('BaseFramework', () => {
   describe('teardown', () => {
     beforeEach(() => {
       jest.spyOn(analytics, 'sendEvent');
-      testContext.framework = new BaseFramework({ client: testContext.client });
+      testContext.framework = new BaseFramework({
+        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client)
+      });
     });
 
     it('calls teardown analytic', () => {
-      const client = testContext.client;
-
       return testContext.framework.teardown().then(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'three-d-secure.teardown-completed');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.teardown-completed');
       });
     });
 

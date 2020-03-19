@@ -140,7 +140,7 @@ describe('internal', () => {
         expect(global.cardForm.setSupportedCardTypes).toHaveBeenCalledTimes(1);
       });
 
-      it('sets supported card types asyncronously when rejectUnsupportedCards is set', () => {
+      it('sets supported card types asynchronously when rejectUnsupportedCards is set', () => {
         const config = {
           fields: {
             number: { selector: '#foo', rejectUnsupportedCards: true },
@@ -165,7 +165,7 @@ describe('internal', () => {
         });
       });
 
-      it('sets supported card types asyncronously when supportedCardBrands is set', () => {
+      it('sets supported card types asynchronously when supportedCardBrands is set', () => {
         const config = {
           fields: {
             number: {

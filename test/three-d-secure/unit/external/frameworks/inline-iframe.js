@@ -45,6 +45,7 @@ describe('InlineIframeFramework', () => {
   describe('setUpEventListeners', () => {
     it('sets up Songbird framework listeners', () => {
       const options = {
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       };
       const framework = new InlineIframeFramework(options);
@@ -60,6 +61,7 @@ describe('InlineIframeFramework', () => {
 
     it('sets up listener for on authentication iframe available event', done => {
       const options = {
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       };
       const framework = new InlineIframeFramework(options);
@@ -81,6 +83,7 @@ describe('InlineIframeFramework', () => {
       testContext.fakeCardinal.on.mockImplementation(yieldsByEventAsync('payments.setupComplete', {}));
 
       testContext.tds = new InlineIframeFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
       InlineIframeFramework.prototype.setupSongbird.mockClear();
@@ -92,6 +95,7 @@ describe('InlineIframeFramework', () => {
 
     it('configures Cardinal to use inline framework', () => {
       const framework = new InlineIframeFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -106,6 +110,7 @@ describe('InlineIframeFramework', () => {
 
     it('configures Cardinal to use verbose logging and the inline framework', () => {
       const framework = new InlineIframeFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client,
         loggingEnabled: true
       });
@@ -124,6 +129,7 @@ describe('InlineIframeFramework', () => {
 
     it('configures Cardinal to include a listener for `ui.inline.setup` when `inline-iframe` framework is used', () => {
       const framework = new InlineIframeFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -178,6 +184,7 @@ describe('InlineIframeFramework', () => {
       });
 
       testContext.instance = new InlineIframeFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client,
         framework: 'inline-iframe'
       });
@@ -283,6 +290,7 @@ describe('InlineIframeFramework', () => {
       assets.loadScript.mockRejectedValue(new Error('failed'));
 
       framework = new InlineIframeFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -306,7 +314,10 @@ describe('InlineIframeFramework', () => {
 
       assets.loadScript.mockRejectedValue(new Error('failed'));
 
-      framework = new InlineIframeFramework({ client: testContext.client });
+      framework = new InlineIframeFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       framework.setupSongbird();
 

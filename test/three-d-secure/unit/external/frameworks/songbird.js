@@ -21,9 +21,9 @@ describe('SongbirdFramework', () => {
 
     jest.spyOn(SongbirdFramework.prototype, 'setupSongbird');
     jest.spyOn(assets, 'loadScript').mockImplementation(() => {
-      window.Cardinal = testContext.fakeCardinal;
-
-      return Promise.resolve();
+      return wait().then(() => {
+        window.Cardinal = testContext.fakeCardinal;
+      });
     });
 
     testContext.onEventBehavior = [
@@ -70,19 +70,28 @@ describe('SongbirdFramework', () => {
 
   describe('Constructor', () => {
     it('adds sdkVersion to clientMetadata', () => {
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       expect(framework._clientMetadata.sdkVersion).toBe(`${PLATFORM}/${VERSION}`);
     });
 
     it('adds requestedThreeDSVersion to clientMetadata as "2"', () => {
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       expect(framework._clientMetadata.requestedThreeDSecureVersion).toBe('2');
     });
 
     it('sets up songbird when instance is created', () => {
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       expect(framework.setupSongbird).toHaveBeenCalledTimes(1);
     });
@@ -90,7 +99,10 @@ describe('SongbirdFramework', () => {
 
   describe('setUpEventListeners', () => {
     it('sets up listener for on lookup complete event', done => {
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       jest.spyOn(framework, 'on').mockImplementation(yieldsAsync('some data', 'a fake function'));
 
@@ -107,6 +119,7 @@ describe('SongbirdFramework', () => {
   describe('verifyCard', () => {
     beforeEach(() => {
       testContext.instance = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -605,52 +618,33 @@ describe('SongbirdFramework', () => {
         });
       });
 
-      describe.each`
-songbirdCode | braintreeCode | analytic
-${10001} | ${'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT'}    | ${['three-d-secure.verification-flow.cardinal-sdk-error.10001']}
-${10002} | ${'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT'}    | ${['three-d-secure.verification-flow.cardinal-sdk-error.10002']}
-${10003} | ${'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'} | ${['three-d-secure.verification-flow.cardinal-sdk-error.10003']}
-${10007} | ${'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'} | ${['three-d-secure.verification-flow.cardinal-sdk-error.10007']}
-${10009} | ${'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT'} | ${['three-d-secure.verification-flow.cardinal-sdk-error.10009']}
-${10005} | ${'THREEDS_CARDINAL_SDK_BAD_CONFIG'}        | ${['three-d-secure.verification-flow.cardinal-sdk-error.10005']}
-${10006} | ${'THREEDS_CARDINAL_SDK_BAD_CONFIG'}        | ${['three-d-secure.verification-flow.cardinal-sdk-error.10006']}
-${10008} | ${'THREEDS_CARDINAL_SDK_BAD_JWT'}           | ${['three-d-secure.verification-flow.cardinal-sdk-error.10008']}
-${10010} | ${'THREEDS_CARDINAL_SDK_BAD_JWT'}           | ${['three-d-secure.verification-flow.cardinal-sdk-error.10010']}
-${10011} | ${'THREEDS_CARDINAL_SDK_CANCELED'}          | ${['three-d-secure.verification-flow.canceled', 'three-d-secure.verification-flow.cardinal-sdk-error.10011']}
-${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
-      `('$songbirdCode error codes', ({ songbirdCode, braintreeCode, analytic }) => {
-  it(`rejects with error with code ${braintreeCode} when Songbird returns an error with code ${songbirdCode}`, () => {
-    testContext.applyActionCode('ERROR', songbirdCode);
+      it.each([
+        [10001, 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT', ['three-d-secure.verification-flow.cardinal-sdk-error.10001']],
+        [10002, 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT', ['three-d-secure.verification-flow.cardinal-sdk-error.10002']],
+        [10003, 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT', ['three-d-secure.verification-flow.cardinal-sdk-error.10003']],
+        [10007, 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT', ['three-d-secure.verification-flow.cardinal-sdk-error.10007']],
+        [10009, 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT', ['three-d-secure.verification-flow.cardinal-sdk-error.10009']],
+        [10005, 'THREEDS_CARDINAL_SDK_BAD_CONFIG', ['three-d-secure.verification-flow.cardinal-sdk-error.10005']],
+        [10006, 'THREEDS_CARDINAL_SDK_BAD_CONFIG', ['three-d-secure.verification-flow.cardinal-sdk-error.10006']],
+        [10008, 'THREEDS_CARDINAL_SDK_BAD_JWT', ['three-d-secure.verification-flow.cardinal-sdk-error.10008']],
+        [10010, 'THREEDS_CARDINAL_SDK_BAD_JWT', ['three-d-secure.verification-flow.cardinal-sdk-error.10010']],
+        [10011, 'THREEDS_CARDINAL_SDK_CANCELED', ['three-d-secure.verification-flow.canceled', 'three-d-secure.verification-flow.cardinal-sdk-error.10011']],
+        [99999, 'THREEDS_CARDINAL_SDK_ERROR', []]
+      ])('rejects when it receives %p with error code %p', (songbirdCode, braintreeCode, analytic) => {
+        testContext.applyActionCode('ERROR', songbirdCode);
 
-    expect.assertions(1);
-
-    return testContext.instance.verifyCard({
-      nonce: 'nonce',
-      amount: 100,
-      onLookupComplete: yieldsAsync()
-    }).catch(err => {
-      expect(err.code).toBe(braintreeCode);
-    });
-  });
-
-  it.each([analytic])('sends the analytic %p', (currentAnalytic) => {
-    if (currentAnalytic) {
-      testContext.applyActionCode('ERROR', songbirdCode);
-
-      expect.assertions(1);
-
-      return testContext.instance.verifyCard({
-        nonce: 'nonce',
-        amount: 100,
-        onLookupComplete: yieldsAsync()
-      }).catch(() => {
-        expect(analytics.sendEvent.mock.calls).toEqual(expect.arrayContaining([[testContext.client, currentAnalytic]]));
+        return expect(testContext.instance.verifyCard({
+          nonce: 'nonce',
+          amount: 100,
+          onLookupComplete: yieldsAsync()
+        })).rejects.toMatchObject({
+          code: braintreeCode
+        }).then(() => {
+          analytic.forEach(a => {
+            expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), a);
+          });
+        });
       });
-    }
-
-    return Promise.resolve();
-  });
-});
 
       it('authenticate jwt', () => {
         testContext.applyActionCode();
@@ -682,8 +676,8 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
           amount: 100,
           onLookupComplete: yieldsAsync()
         }).then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.started');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.succeeded');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.upgrade-payment-method.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.upgrade-payment-method.succeeded');
         });
       });
 
@@ -702,8 +696,8 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
           amount: 100,
           onLookupComplete: yieldsAsync()
         }).catch(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.started');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.upgrade-payment-method.errored');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.upgrade-payment-method.started');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.upgrade-payment-method.errored');
         });
       });
 
@@ -736,11 +730,15 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       jest.spyOn(testContext.fakeCardinal, 'on').mockImplementation(yieldsByEvents(testContext.onEventBehavior));
 
       testContext.tds = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
-      window.Cardinal.setup.mockClear();
-      assets.loadScript.mockClear();
-      analytics.sendEvent.mockClear();
+
+      return wait().then(() => {
+        testContext.fakeCardinal.setup.mockClear();
+        assets.loadScript.mockClear();
+        analytics.sendEvent.mockClear();
+      });
     });
 
     it('only lets songbird be setup once', () =>
@@ -755,7 +753,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
     it('loads cardinal production script onto page', () => {
       testContext.configuration.gatewayConfiguration.environment = 'production';
 
-      return new SongbirdFramework({ client: testContext.client }).setupSongbird()
+      return new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      }).setupSongbird()
         .then(() => {
           expect(assets.loadScript).toHaveBeenCalledTimes(1);
           expect(assets.loadScript).toHaveBeenCalledWith({
@@ -765,7 +766,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
     });
 
     it('loads cardinal sandbox script onto page', () =>
-      new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
+      new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      }).setupSongbird().then(() => {
         expect(assets.loadScript).toHaveBeenCalledTimes(1);
         expect(assets.loadScript).toHaveBeenCalledWith({
           src: 'https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js'
@@ -773,29 +777,36 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       }));
 
     it('configures Cardinal to use verbose logging with loggingEnabled', () =>
-      new SongbirdFramework({ client: testContext.client, loggingEnabled: true })
-        .setupSongbird().then(() => {
-          expect(window.Cardinal.configure).toHaveBeenCalledWith({
-            logging: {
-              level: 'verbose'
-            },
-            payment: expect.any(Object)
-          });
-        }));
+      new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client,
+        loggingEnabled: true
+      }).setupSongbird().then(() => {
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
+          logging: {
+            level: 'verbose'
+          },
+          payment: expect.any(Object)
+        });
+      }));
 
     it('configures Cardinal to use logging object provided by merchant', () =>
-      new SongbirdFramework({ client: testContext.client, cardinalSDKConfig: { logging: { level: 'off' }}})
-        .setupSongbird().then(() => {
-          expect(window.Cardinal.configure).toHaveBeenCalledWith({
-            logging: {
-              level: 'off'
-            },
-            payment: expect.any(Object)
-          });
-        }));
+      new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client,
+        cardinalSDKConfig: { logging: { level: 'off' }}
+      }).setupSongbird().then(() => {
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
+          logging: {
+            level: 'off'
+          },
+          payment: expect.any(Object)
+        });
+      }));
 
     it('configures Cardinal to use logging object provided by merchant when loggingEnabled is also used', () => {
       const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client,
         loggingEnabled: true,
         cardinalSDKConfig: {
@@ -817,6 +828,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
     it('configures Cardinal to use timeout setting provided by the merchant', () => {
       const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client,
         cardinalSDKConfig: {
           timeout: 1000
@@ -833,6 +845,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
     it('configures Cardinal to use maxRequestRetries setting provided by the merchant', () => {
       const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client,
         cardinalSDKConfig: {
           maxRequestRetries: 3
@@ -849,6 +862,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
     it('configures Cardinal to use a subset of payment options provided by the merchant', () => {
       const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client,
         cardinalSDKConfig: {
           payment: {
@@ -871,7 +885,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
     });
 
     it('sets up payments.setupComplete listener', () => {
-      return new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
+      return new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      }).setupSongbird().then(() => {
         expect(window.Cardinal.on).toHaveBeenCalledWith('payments.setupComplete', expect.any(Function));
       });
     });
@@ -881,7 +898,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
         sessionId: 'df-reference'
       }));
 
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       return framework.setupSongbird().then(() =>
         framework.getDfReferenceId())
@@ -897,7 +917,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       jest.spyOn(testContext.fakeCardinal, 'on')
         .mockImplementation(yieldsByEventAsync('payments.setupComplete', { sessionId: 'df-reference' }));
 
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       promises = [
         framework.getDfReferenceId(),
@@ -939,7 +962,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
         return currentTime;
       };
 
-      instance = new SongbirdFramework({ client: testContext.client });
+      instance = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       return instance.setupSongbird().then(() => {
         expect(instance._clientMetadata.cardinalDeviceDataCollectionTimeElapsed).toBeDefined();
@@ -949,18 +975,24 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
     });
 
     it('sends analytics event when setup is complete', () =>
-      new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.cardinal-sdk.init.setup-completed');
+      new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      }).setupSongbird().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.cardinal-sdk.init.setup-completed');
       }));
 
     it('uses v1 fallback if loadScript fails', () => {
       assets.loadScript.mockRejectedValue(new Error('uses v1 fallback if loadScript fails'));
 
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       return framework.setupSongbird().then(() => {
         expect(framework._useV1Fallback).toBe(true);
-        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
       });
     });
 
@@ -968,11 +1000,14 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       delete window.Cardinal;
       jest.spyOn(assets, 'loadScript').mockResolvedValue(document.createElement('script'));
 
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       return framework.setupSongbird().then(() => {
         expect(framework._useV1Fallback).toBe(true);
-        expect(analytics.sendEvent).toHaveBeenNthCalledWith(5, testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-global-unavailable');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-global-unavailable');
       });
     });
 
@@ -982,10 +1017,13 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
           throw new Error('uses v1 fallback if loadScript resolves but Cardinal configuration throws an error');
         });
 
-      return new SongbirdFramework({ client: testContext.client }).setupSongbird().then(() => {
+      return new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      }).setupSongbird().then(() => {
         return wait();
       }).then(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-configuration-threw-error');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-configuration-threw-error');
         expect(testContext.tds._useV1Fallback).toBe(true);
       });
     });
@@ -1005,7 +1043,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       testContext.fakeCardinal.on.mockImplementation(() => {
         throw new Error('uses v1 fallback if Cardinal method throws an error');
       });
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       return framework.setupSongbird().then(() => {
         expect(framework._useV1Fallback).toBe(true);
@@ -1016,11 +1057,13 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       testContext.fakeCardinal.on.mockImplementation(() => {
         throw new Error('sends analytics event when Cardinal fails to set up');
       });
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       return framework.setupSongbird().then(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledTimes(5);
-        expect(analytics.sendEvent).toHaveBeenNthCalledWith(4, testContext.client, 'three-d-secure.cardinal-sdk.init.setup-failed');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.cardinal-sdk.init.setup-failed');
       });
     });
 
@@ -1030,7 +1073,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       testContext.fakeCardinal.on.mockImplementation(() => {
         throw new Error('failure');
       });
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       return framework.setupSongbird().then(() =>
         framework.getDfReferenceId()
@@ -1042,7 +1088,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
     it('does not send timeout event when `payments.setupComplete` callback is called', () =>
       testContext.tds.setupSongbird().then(() => {
-        expect(analytics.sendEvent).not.toHaveBeenCalledWith(testContext.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
+        expect(analytics.sendEvent).not.toHaveBeenCalledWith(expect.anything(), 'three-d-secure.cardinal-sdk.init.setup-timeout');
       }));
 
     describe('when timing out', () => {
@@ -1054,7 +1100,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
           return Promise.resolve();
         });
-        testContext.tds = new SongbirdFramework({ client: testContext.client });
+        testContext.tds = new SongbirdFramework({
+          createPromise: Promise.resolve(testContext.client),
+          client: testContext.client
+        });
       });
 
       afterEach(() => { jest.useRealTimers(); });
@@ -1063,13 +1112,13 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
         testContext.tds.setupSongbird({ timeout: 60 })
           .then(() => {
             expect(testContext.tds._useV1Fallback).toBe(true);
-            expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-timeout');
+            expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-timeout');
           }));
 
       it('sends analytics event when Cardinal times out during setup', () =>
         testContext.tds.setupSongbird({ timeout: 60 })
           .then(() => {
-            expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
+            expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.cardinal-sdk.init.setup-timeout');
           }));
     });
   });
@@ -1107,6 +1156,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
     it('calls setupSongbird before continuing with the call', () => {
       const instance = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -1123,7 +1173,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
     });
 
     it('reports action code in analytics event', () => {
-      const instance = new SongbirdFramework({ client: testContext.client });
+      const instance = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       jest.spyOn(testContext.fakeCardinal, 'on').mockImplementation(yieldsByEventAsync('payments.setupComplete', {
         sessionId: 'df'
@@ -1132,7 +1185,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
       testContext.applyActionCode();
 
       return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse, {}).then(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.verification-flow.cardinal-sdk.action-code.success');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.cardinal-sdk.action-code.success');
       });
     });
 
@@ -1142,6 +1195,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
         jest.spyOn(assets, 'loadScript').mockRejectedValue(null);
         instance = new SongbirdFramework({
+          createPromise: Promise.resolve(testContext.client),
           client: testContext.client
         });
         jest.spyOn(Bus.prototype, 'on')
@@ -1152,7 +1206,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
         return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse).then(result => {
           expect(result.nonce).toBe('nonce-from-v1-fallback-flow');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load');
         });
       });
 
@@ -1165,6 +1219,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
         }];
 
         instance = new SongbirdFramework({
+          createPromise: Promise.resolve(testContext.client),
           client: testContext.client
         });
         Bus.prototype.on.mockImplementation(yieldsByEventAsync('threedsecure:AUTHENTICATION_COMPLETE', {
@@ -1173,7 +1228,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
         return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse).then(result => {
           expect(result.nonce).toBe('nonce-from-v1-fallback-flow');
-          expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'three-d-secure.v1-fallback.cardinal-sdk-setup-error.number-1010');
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-error.number-1010');
         });
       });
     });
@@ -1182,6 +1237,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
   describe('transformBillingAddress', () => {
     beforeEach(() => {
       testContext.instance = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
     });
@@ -1225,6 +1281,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
   describe('transformShippingAddress', () => {
     beforeEach(() => {
       testContext.instance = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
     });
@@ -1264,6 +1321,7 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
     beforeEach(() => {
       window.Cardinal = testContext.fakeCardinal;
       testContext.instance = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -1360,7 +1418,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
   describe('cancelVerifyCard', () => {
     beforeEach(() => {
-      testContext.framework = new SongbirdFramework({ client: testContext.client });
+      testContext.framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
       testContext.lookupResponse = {
         paymentMethod: {
           nonce: 'upgraded-nonce',
@@ -1436,7 +1497,10 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
   describe('setCardinalListener', () => {
     it('sets up listener for Cardinal', () => {
       const spy = jest.fn();
-      const framework = new SongbirdFramework({ client: testContext.client });
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
 
       framework.setCardinalListener('foo', spy);
 
@@ -1447,7 +1511,14 @@ ${99999} | ${'THREEDS_CARDINAL_SDK_ERROR'}             | ${['']}
 
   describe('teardown', () => {
     beforeEach(() => {
-      testContext.framework = new SongbirdFramework({ client: testContext.client });
+      testContext.framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
+
+      jest.spyOn(testContext.fakeCardinal, 'on').mockImplementation(yieldsByEvents(testContext.onEventBehavior));
+
+      return testContext.framework.setupSongbird();
     });
 
     it('removes all configured Cardinal listeners', () => {

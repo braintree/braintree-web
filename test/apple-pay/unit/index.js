@@ -8,10 +8,9 @@ jest.mock('../../../src/lib/create-deferred-client');
 const analytics = require('../../../src/lib/analytics');
 const basicComponentVerification = require('../../../src/lib/basic-component-verification');
 const createDeferredClient = require('../../../src/lib/create-deferred-client');
-const BraintreeError = require('../../../src/lib/braintree-error');
 const { create } = require('../../../src/apple-pay');
 const ApplePay = require('../../../src/apple-pay/apple-pay');
-const { fake: { client: fakeClient, clientToken, configuration }} = require('../../helpers');
+const { wait, fake: { client: fakeClient, clientToken, configuration }} = require('../../helpers');
 
 describe('applePay.create', () => {
   let testContext;
@@ -26,12 +25,7 @@ describe('applePay.create', () => {
     });
 
     jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.client);
-    jest.spyOn(analytics, 'sendEvent').mockReturnValue(null);
     jest.spyOn(basicComponentVerification, 'verify').mockResolvedValue(null);
-  });
-
-  it('returns a promise', async () => {
-    await expect(create({ client: testContext.client })).resolves.toBeDefined();
   });
 
   it('verifies with basicComponentVerification', () => {
@@ -48,11 +42,25 @@ describe('applePay.create', () => {
     });
   });
 
-  it('can create with an authorization instead of a client', () =>
-    create({
+  it('can create with an authorization instead of a client', () => {
+    let clientIsReady = false;
+
+    createDeferredClient.create.mockImplementation(() => {
+      return wait(10).then(() => {
+        clientIsReady = true;
+
+        return testContext.client;
+      });
+    });
+
+    jest.useFakeTimers();
+
+    return create({
       authorization: clientToken,
+      useDeferredClient: true,
       debug: true
     }).then(applePayInstance => {
+      expect(clientIsReady).toBe(false);
       expect(createDeferredClient.create).toBeCalledTimes(1);
       expect(createDeferredClient.create).toHaveBeenCalledWith(expect.objectContaining({
         authorization: clientToken,
@@ -62,16 +70,20 @@ describe('applePay.create', () => {
       }));
 
       expect(applePayInstance).toBeInstanceOf(ApplePay);
-    }));
+
+      jest.advanceTimersByTime(11);
+    }).then(() => {
+      expect(clientIsReady).toBe(true);
+    });
+  });
 
   it('rejects with an error when apple pay is not enabled in configuration', () => {
     delete testContext.configuration.gatewayConfiguration.applePayWeb;
 
-    return create({ client: testContext.client }).catch(err => {
-      expect(err).toBeInstanceOf(BraintreeError);
-      expect(err.code).toBe('APPLE_PAY_NOT_ENABLED');
-      expect(err.type).toBe('MERCHANT');
-      expect(err.message).toBe('Apple Pay is not enabled for this merchant.');
+    return expect(create({ client: testContext.client })).rejects.toMatchObject({
+      code: 'APPLE_PAY_NOT_ENABLED',
+      type: 'MERCHANT',
+      message: 'Apple Pay is not enabled for this merchant.'
     });
   });
 

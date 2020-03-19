@@ -42,6 +42,7 @@ describe('Bootstrap3ModalFramework', () => {
       testContext.fakeCardinal.on.mockImplementation(yieldsByEventAsync('payments.setupComplete', {}));
 
       testContext.tds = new Bootstrap3ModalFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
       Bootstrap3ModalFramework.prototype.setupSongbird.mockClear();
@@ -60,6 +61,7 @@ describe('Bootstrap3ModalFramework', () => {
 
     it('configures Cardinal to use bootstrap3 framework', () => {
       const framework = new Bootstrap3ModalFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -74,6 +76,7 @@ describe('Bootstrap3ModalFramework', () => {
 
     it('configures Cardinal to use verbose logging and the bootstrap3 framework', () => {
       const framework = new Bootstrap3ModalFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client,
         loggingEnabled: true
       });
@@ -97,6 +100,7 @@ describe('Bootstrap3ModalFramework', () => {
 
       it('creates a bootstrap modal for v1 fallback', () => {
         const framework = new Bootstrap3ModalFramework({
+          createPromise: Promise.resolve(testContext.client),
           client: testContext.client
         });
 
@@ -112,6 +116,7 @@ describe('Bootstrap3ModalFramework', () => {
 
       it('closes the modal when close button is clicked', () => {
         const framework = new Bootstrap3ModalFramework({
+          createPromise: Promise.resolve(testContext.client),
           client: testContext.client
         });
 
@@ -138,6 +143,7 @@ describe('Bootstrap3ModalFramework', () => {
 
       it('closes the modal when backdrop is clicked', () => {
         const framework = new Bootstrap3ModalFramework({
+          createPromise: Promise.resolve(testContext.client),
           client: testContext.client
         });
 
@@ -164,6 +170,7 @@ describe('Bootstrap3ModalFramework', () => {
 
       it('pressing escape key closes the modal', () => {
         const framework = new Bootstrap3ModalFramework({
+          createPromise: Promise.resolve(testContext.client),
           client: testContext.client
         });
 

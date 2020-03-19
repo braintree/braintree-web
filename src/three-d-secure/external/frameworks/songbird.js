@@ -56,6 +56,8 @@ SongbirdFramework.prototype.prepareLookup = function (options) {
     // catch and ignore errors from looking up
     // df reference and Cardinal bin process
   }).then(function () {
+    return self._waitForClient();
+  }).then(function () {
     data.clientMetadata = self._clientMetadata;
     data.authorizationFingerprint = self._client.getConfiguration().authorizationFingerprint;
     data.braintreeLibraryVersion = 'braintree/web/' + VERSION;
@@ -72,7 +74,7 @@ SongbirdFramework.prototype.initializeChallengeWithLookupResponse = function (lo
 
 SongbirdFramework.prototype._initiateV1Fallback = function (errorType) {
   this._useV1Fallback = true;
-  analytics.sendEvent(this._client, 'three-d-secure.v1-fallback.' + errorType);
+  analytics.sendEvent(this._createPromise, 'three-d-secure.v1-fallback.' + errorType);
   this._songbirdPromise.resolve();
 };
 
@@ -234,7 +236,7 @@ SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
 SongbirdFramework.prototype._configureCardinalSdk = function (config) {
   var self = this;
 
-  return Promise.resolve().then(function () {
+  return this._waitForClient().then(function () {
     var jwt = self._client.getConfiguration().gatewayConfiguration.threeDSecure.cardinalAuthenticationJWT;
     var setupOptions = config.setupOptions;
     var setupStartTime = config.setupStartTime;
@@ -294,18 +296,21 @@ SongbirdFramework.prototype._createCardinalConfigurationOptions = function (setu
 SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
   var self = this;
   var scriptSource = constants.CARDINAL_SCRIPT_SOURCE.sandbox;
-  var isProduction = this._client.getConfiguration().gatewayConfiguration.environment === 'production';
 
-  this._songbirdSetupTimeoutReference = global.setTimeout(function () {
-    analytics.sendEvent(self._client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
-    self._initiateV1Fallback('cardinal-sdk-setup-timeout');
-  }, setupOptions.timeout || INTEGRATION_TIMEOUT_MS);
+  return this._waitForClient().then(function () {
+    var isProduction = self._client.getConfiguration().gatewayConfiguration.environment === 'production';
 
-  if (isProduction) {
-    scriptSource = constants.CARDINAL_SCRIPT_SOURCE.production;
-  }
+    self._songbirdSetupTimeoutReference = global.setTimeout(function () {
+      analytics.sendEvent(self._client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
+      self._initiateV1Fallback('cardinal-sdk-setup-timeout');
+    }, setupOptions.timeout || INTEGRATION_TIMEOUT_MS);
 
-  return assets.loadScript({src: scriptSource}).catch(function (err) {
+    if (isProduction) {
+      scriptSource = constants.CARDINAL_SCRIPT_SOURCE.production;
+    }
+
+    return assets.loadScript({src: scriptSource});
+  }).catch(function (err) {
     self._v2SetupFailureReason = 'songbird-js-failed-to-load';
 
     return Promise.reject(convertToBraintreeError(err, errors.THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED));
@@ -319,7 +324,7 @@ SongbirdFramework.prototype._createPaymentsSetupCompleteCallback = function () {
     self._getDfReferenceIdPromisePlus.resolve(data.sessionId);
 
     global.clearTimeout(self._songbirdSetupTimeoutReference);
-    analytics.sendEvent(self._client, 'three-d-secure.cardinal-sdk.init.setup-completed');
+    analytics.sendEvent(self._createPromise, 'three-d-secure.cardinal-sdk.init.setup-completed');
 
     self._songbirdPromise.resolve();
   };
@@ -334,15 +339,17 @@ SongbirdFramework.prototype._performJWTValidation = function (jwt) {
   var url = 'payment_methods/' + nonce + '/three_d_secure/authenticate_from_jwt';
   var self = this;
 
-  analytics.sendEvent(self._client, 'three-d-secure.verification-flow.upgrade-payment-method.started');
+  analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.upgrade-payment-method.started');
 
-  return this._client.request({
-    method: 'post',
-    endpoint: url,
-    data: {
-      jwt: jwt,
-      paymentMethodNonce: nonce
-    }
+  return this._waitForClient().then(function () {
+    return self._client.request({
+      method: 'post',
+      endpoint: url,
+      data: {
+        jwt: jwt,
+        paymentMethodNonce: nonce
+      }
+    });
   }).then(function (response) {
     var paymentMethod = response.paymentMethod || self._lookupPaymentMethod;
     var formattedResponse = self._formatAuthResponse(paymentMethod, response.threeDSecureInfo);
@@ -382,7 +389,7 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
   return function (data, validatedJwt) {
     var formattedError;
 
-    analytics.sendEvent(self._client, 'three-d-secure.verification-flow.cardinal-sdk.action-code.' + data.ActionCode.toLowerCase());
+    analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.cardinal-sdk.action-code.' + data.ActionCode.toLowerCase());
 
     if (!self._verifyCardPromisePlus) {
       self._initiateV1Fallback('cardinal-sdk-setup-error.number-' + data.ErrorNumber);
@@ -405,7 +412,7 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
         break;
 
       case 'ERROR':
-        analytics.sendEvent(self._client, 'three-d-secure.verification-flow.cardinal-sdk-error.' + data.ErrorNumber);
+        analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.cardinal-sdk-error.' + data.ErrorNumber);
 
         switch (data.ErrorNumber) {
           case 10001: // Cardinal Docs: Timeout when sending an /Init message
@@ -429,7 +436,7 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
             // This may never get called, according to the Cardinal docs:
             // The user has canceled the transaction. This is generally found in alternative
             // payments that supply a cancel button on the payment brand side.
-            analytics.sendEvent(self._client, 'three-d-secure.verification-flow.canceled');
+            analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.canceled');
             formattedError = new BraintreeError(errors.THREEDS_CARDINAL_SDK_CANCELED);
             break;
           default:

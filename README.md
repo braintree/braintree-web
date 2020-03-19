@@ -134,7 +134,7 @@ For more examples, [see the reference](https://braintree.github.io/braintree-web
 
 #### Promises
 
-All the asyncronous methods will return a `Promise` if no callback is provided.
+All the asynchronous methods will return a `Promise` if no callback is provided.
 
 ```js
 var submitBtn = document.getElementById('my-submit');

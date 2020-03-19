@@ -11,7 +11,7 @@ const createDeferredClient = require('../../../src/lib/create-deferred-client');
 const threeDSecure = require('../../../src/three-d-secure');
 const ThreeDSecure = require('../../../src/three-d-secure/external/three-d-secure');
 const BraintreeError = require('../../../src/lib/braintree-error');
-const { fake } = require('../../helpers');
+const { fake, noop } = require('../../helpers');
 
 describe('three-d-secure.create', () => {
   let testContext;
@@ -110,6 +110,18 @@ describe('three-d-secure.create', () => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
       });
     });
+
+    it(`does not error when ${versionEnum} is used with deferred client`, () => {
+      testContext.configuration.gatewayConfiguration.threeDSecure = {};
+
+      return threeDSecure.create({
+        authorization: fake.clientToken,
+        version: versionEnum
+      }).then(instance => {
+        expect(instance).toBeInstanceOf(ThreeDSecure);
+        instance._framework._createPromise.catch(noop); // handle eventual promise rejection
+      });
+    });
   });
 
   it('can create with an authorization instead of a client', () =>
@@ -142,6 +154,17 @@ describe('three-d-secure.create', () => {
     });
   });
 
+  it('does not error when three-d-secure is not enabled when it is used with deferred client', () => {
+    testContext.configuration.gatewayConfiguration.threeDSecureEnabled = false;
+
+    return threeDSecure.create({
+      authorization: fake.clientToken
+    }).then(instance => {
+      expect(instance).toBeInstanceOf(ThreeDSecure);
+      instance._framework._createPromise.catch(noop); // handle eventual promise rejection
+    });
+  });
+
   it('errors out if tokenization key is used', () => {
     testContext.configuration.authorizationType = 'TOKENIZATION_KEY';
 
@@ -152,6 +175,17 @@ describe('three-d-secure.create', () => {
       expect(err.type).toBe('MERCHANT');
       expect(err.code).toBe('THREEDS_CAN_NOT_USE_TOKENIZATION_KEY');
       expect(err.message).toBe('3D Secure can not use a tokenization key for authorization.');
+    });
+  });
+
+  it('does not error out if tokenization key is used with deferred client', () => {
+    testContext.configuration.authorizationType = 'TOKENIZATION_KEY';
+
+    return threeDSecure.create({
+      authorization: fake.clientToken
+    }).then(instance => {
+      expect(instance).toBeInstanceOf(ThreeDSecure);
+      instance._framework._createPromise.catch(noop); // handle eventual promise rejection
     });
   });
 
@@ -168,6 +202,18 @@ describe('three-d-secure.create', () => {
       expect(err.type).toBe('MERCHANT');
       expect(err.code).toBe('THREEDS_HTTPS_REQUIRED');
       expect(err.message).toBe('3D Secure requires HTTPS.');
+    });
+  });
+
+  it('does not error out if browser is nott https and environemnt is production when using deferred client', () => {
+    testContext.configuration.gatewayConfiguration.environment = 'production';
+    isHTTPS.isHTTPS.mockReturnValue(false);
+
+    return threeDSecure.create({
+      authorization: fake.clientToken
+    }).then(instance => {
+      expect(instance).toBeInstanceOf(ThreeDSecure);
+      instance._framework._createPromise.catch(noop); // handle eventual promise rejection
     });
   });
 

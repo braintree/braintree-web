@@ -49,6 +49,7 @@ describe('CardinalModalFramework', () => {
       let framework;
 
       framework = new CardinalModalFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -65,6 +66,7 @@ describe('CardinalModalFramework', () => {
       let framework;
 
       framework = new CardinalModalFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -93,6 +95,7 @@ describe('CardinalModalFramework', () => {
       let framework;
 
       framework = new CardinalModalFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 
@@ -121,6 +124,7 @@ describe('CardinalModalFramework', () => {
       let framework;
 
       framework = new CardinalModalFramework({
+        createPromise: Promise.resolve(testContext.client),
         client: testContext.client
       });
 

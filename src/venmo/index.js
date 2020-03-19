@@ -41,22 +41,7 @@ function create(options) {
     client: options.client,
     authorization: options.authorization
   }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
-      client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
-    });
-  }).then(function (client) {
-    var instance;
-    var configuration = client.getConfiguration();
-
-    options.client = client;
-
-    if (!configuration.gatewayConfiguration.payWithVenmo) {
-      return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
-    }
+    var createPromise, instance;
 
     if (options.profileId && typeof options.profileId !== 'string') {
       return Promise.reject(new BraintreeError(errors.VENMO_INVALID_PROFILE_ID));
@@ -66,11 +51,36 @@ function create(options) {
       return Promise.reject(new BraintreeError(errors.VENMO_INVALID_DEEP_LINK_RETURN_URL));
     }
 
+    createPromise = createDeferredClient.create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: name
+    }).then(function (client) {
+      var configuration = client.getConfiguration();
+
+      options.client = client;
+
+      if (!configuration.gatewayConfiguration.payWithVenmo) {
+        return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
+      }
+
+      return client;
+    });
+
+    options.createPromise = createPromise;
     instance = new Venmo(options);
 
-    analytics.sendEvent(options.client, 'venmo.initialized');
+    analytics.sendEvent(createPromise, 'venmo.initialized');
 
-    return instance._initialize();
+    if (options.client) {
+      return createPromise.then(function () {
+        return instance;
+      });
+    }
+
+    return instance;
   });
 }
 

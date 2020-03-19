@@ -50,7 +50,33 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @classdesc This class represents an Apple Pay component. Instances of this class have methods for validating the merchant server and tokenizing payments.
  */
 function ApplePay(options) {
+  this._instantiatedWithClient = Boolean(!options.useDeferredClient);
   this._client = options.client;
+  this._createPromise = options.createPromise;
+
+  if (this._client) {
+    this._setMerchantIdentifier();
+  }
+}
+
+ApplePay.prototype._waitForClient = function () {
+  if (this._client) {
+    return Promise.resolve();
+  }
+
+  return this._createPromise.then(function (client) {
+    this._client = client;
+
+    this._setMerchantIdentifier();
+  }.bind(this));
+};
+
+ApplePay.prototype._setMerchantIdentifier = function () {
+  var applePayConfig = this._client.getConfiguration().gatewayConfiguration.applePayWeb;
+
+  if (!applePayConfig) {
+    return;
+  }
   /**
    * @name ApplePay#merchantIdentifier
    * @description A special merchant ID which represents the merchant association with Braintree. Required when using `ApplePaySession.canMakePaymentsWithActiveCard`.
@@ -63,11 +89,11 @@ function ApplePay(options) {
    * });
    */
   Object.defineProperty(this, 'merchantIdentifier', {
-    value: this._client.getConfiguration().gatewayConfiguration.applePayWeb.merchantIdentifier,
+    value: applePayConfig.merchantIdentifier,
     configurable: false,
     writable: false
   });
-}
+};
 
 /**
  * Merges a payment request with Braintree defaults to return an {external:ApplePayPaymentRequest}.
@@ -79,7 +105,7 @@ function ApplePay(options) {
  * - `supportedNetworks`
  * @public
  * @param {external:ApplePayPaymentRequest} paymentRequest The payment request details to apply on top of those from Braintree.
- * @returns {external:ApplePayPaymentRequest} The decorated `paymentRequest` object.
+ * @returns {external:ApplePayPaymentRequest|Promise} The decorated `paymentRequest` object. If `useDeferredClient` is used along with an `authorization`, this method will return a promise that resolves with the `paymentRequest` object.
  * @example
  * var applePay = require('braintree-web/apple-pay');
  *
@@ -99,8 +125,40 @@ function ApplePay(options) {
  *   var session = new ApplePaySession(3, paymentRequest);
  *
  *   // ...
+ * @example <caption>With deferred client</caption>
+ * var applePay = require('braintree-web/apple-pay');
+ *
+ * applePay.create({
+ *   authorization: 'client-token-or-tokenization-key',
+ *   useDeferredClient: true
+ * }, function (applePayErr, applePayInstance) {
+ *   if (applePayErr) {
+ *     // Handle error here
+ *     return;
+ *   }
+ *
+ *   applePayInstance.createPaymentRequest({
+ *     total: {
+ *       label: 'My Company',
+ *       amount: '19.99'
+ *     }
+ *   }).then(function (paymentRequest) {
+ *     var session = new ApplePaySession(3, paymentRequest);
+ *
+ *     // ...
+ *   });
  */
 ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
+  if (this._instantiatedWithClient) {
+    return this._createPaymentRequestSynchronously(paymentRequest);
+  }
+
+  return this._waitForClient().then(function () {
+    return this._createPaymentRequestSynchronously(paymentRequest);
+  }.bind(this));
+};
+
+ApplePay.prototype._createPaymentRequestSynchronously = function (paymentRequest) {
   var applePay = this._client.getConfiguration().gatewayConfiguration.applePayWeb;
   var defaults = {
     countryCode: applePay.countryCode,
@@ -157,30 +215,31 @@ ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
  * });
  */
 ApplePay.prototype.performValidation = function (options) {
-  var applePayWebSession;
   var self = this;
 
   if (!options || !options.validationURL) {
     return Promise.reject(new BraintreeError(errors.APPLE_PAY_VALIDATION_URL_REQUIRED));
   }
 
-  applePayWebSession = {
-    validationUrl: options.validationURL,
-    domainName: options.domainName || global.location.hostname,
-    merchantIdentifier: options.merchantIdentifier || this.merchantIdentifier
-  };
+  return this._waitForClient().then(function () {
+    var applePayWebSession = {
+      validationUrl: options.validationURL,
+      domainName: options.domainName || global.location.hostname,
+      merchantIdentifier: options.merchantIdentifier || self.merchantIdentifier
+    };
 
-  if (options.displayName != null) {
-    applePayWebSession.displayName = options.displayName;
-  }
-
-  return this._client.request({
-    method: 'post',
-    endpoint: 'apple_pay_web/sessions',
-    data: {
-      _meta: {source: 'apple-pay'},
-      applePayWebSession: applePayWebSession
+    if (options.displayName != null) {
+      applePayWebSession.displayName = options.displayName;
     }
+
+    return self._client.request({
+      method: 'post',
+      endpoint: 'apple_pay_web/sessions',
+      data: {
+        _meta: {source: 'apple-pay'},
+        applePayWebSession: applePayWebSession
+      }
+    });
   }).then(function (response) {
     analytics.sendEvent(self._client, 'applepay.performValidation.succeeded');
 
@@ -260,18 +319,20 @@ ApplePay.prototype.tokenize = function (options) {
     return Promise.reject(new BraintreeError(errors.APPLE_PAY_PAYMENT_TOKEN_REQUIRED));
   }
 
-  return this._client.request({
-    method: 'post',
-    endpoint: 'payment_methods/apple_payment_tokens',
-    data: {
-      _meta: {
-        source: 'apple-pay'
-      },
-      applePaymentToken: Object.assign({}, options.token, {
-        // The gateway requires this key to be base64-encoded.
-        paymentData: btoa(JSON.stringify(options.token.paymentData))
-      })
-    }
+  return this._waitForClient().then(function () {
+    return self._client.request({
+      method: 'post',
+      endpoint: 'payment_methods/apple_payment_tokens',
+      data: {
+        _meta: {
+          source: 'apple-pay'
+        },
+        applePaymentToken: Object.assign({}, options.token, {
+          // The gateway requires this key to be base64-encoded.
+          paymentData: btoa(JSON.stringify(options.token.paymentData))
+        })
+      }
+    });
   }).then(function (response) {
     analytics.sendEvent(self._client, 'applepay.tokenize.succeeded');
 

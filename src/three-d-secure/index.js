@@ -122,52 +122,62 @@ function create(options) {
     client: options.client,
     authorization: options.authorization
   }).then(function () {
-    return createDeferredClient.create({
+    var assetsUrl = createAssetsUrl.create(options.authorization);
+    var framework = getFramework(options);
+    var createPromise = createDeferredClient.create({
       authorization: options.authorization,
       client: options.client,
       debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
+      assetsUrl: assetsUrl,
       name: name
+    }).then(function (client) {
+      var error, isProduction;
+      var config = client.getConfiguration();
+      var gwConfig = config.gatewayConfiguration;
+
+      options.client = client;
+
+      if (!gwConfig.threeDSecureEnabled) {
+        error = errors.THREEDS_NOT_ENABLED;
+      }
+
+      if (config.authorizationType === 'TOKENIZATION_KEY') {
+        error = errors.THREEDS_CAN_NOT_USE_TOKENIZATION_KEY;
+      }
+
+      isProduction = gwConfig.environment === 'production';
+
+      if (isProduction && !isHTTPS()) {
+        error = errors.THREEDS_HTTPS_REQUIRED;
+      }
+
+      if (framework !== 'legacy' && !(gwConfig.threeDSecure && gwConfig.threeDSecure.cardinalAuthenticationJWT)) {
+        analytics.sendEvent(options.client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
+        error = errors.THREEDS_NOT_ENABLED_FOR_V2;
+      }
+
+      if (error) {
+        return Promise.reject(new BraintreeError(error));
+      }
+
+      analytics.sendEvent(options.client, 'three-d-secure.initialized');
+
+      return client;
     });
-  }).then(function (client) {
-    var error, isProduction, instance;
-    var config = client.getConfiguration();
-    var gwConfig = config.gatewayConfiguration;
-    var framework = getFramework(options);
-
-    options.client = client;
-
-    if (!gwConfig.threeDSecureEnabled) {
-      error = errors.THREEDS_NOT_ENABLED;
-    }
-
-    if (config.authorizationType === 'TOKENIZATION_KEY') {
-      error = errors.THREEDS_CAN_NOT_USE_TOKENIZATION_KEY;
-    }
-
-    isProduction = gwConfig.environment === 'production';
-
-    if (isProduction && !isHTTPS()) {
-      error = errors.THREEDS_HTTPS_REQUIRED;
-    }
-
-    if (framework !== 'legacy' && !(gwConfig.threeDSecure && gwConfig.threeDSecure.cardinalAuthenticationJWT)) {
-      analytics.sendEvent(options.client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
-      error = errors.THREEDS_NOT_ENABLED_FOR_V2;
-    }
-
-    if (error) {
-      return Promise.reject(new BraintreeError(error));
-    }
-
-    analytics.sendEvent(options.client, 'three-d-secure.initialized');
-
-    instance = new ThreeDSecure({
+    var instance = new ThreeDSecure({
       client: options.client,
+      assetsUrl: assetsUrl,
+      createPromise: createPromise,
       loggingEnabled: options.loggingEnabled,
       cardinalSDKConfig: options.cardinalSDKConfig,
       framework: framework
     });
+
+    if (options.client) {
+      return createPromise.then(function () {
+        return instance;
+      });
+    }
 
     return instance;
   });

@@ -49,7 +49,7 @@ function callback(err, clientInstance) { ... }
 <a id="promises"></a>
 ### Promises
 
-In addition to callbacks, all asyncronous methods will return a `Promise` if no callback is provided:
+In addition to callbacks, all asynchronous methods will return a `Promise` if no callback is provided:
 
 ```javascript
 braintree.client.create({

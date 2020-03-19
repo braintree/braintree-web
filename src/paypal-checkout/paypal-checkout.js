@@ -518,7 +518,11 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * Initializes the PayPal checkout flow with a payment method nonce that represents a vaulted PayPal account.
  * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the checkout.js library. Otherwise, it returns a Promise that resolves with the id.
  * @public
- * @param {object} options All {@link PayPalCheckout#createPayment|options for creating a payment resource}, cannot be set except `flow`(will always be `'checkout'`). `amount`, `currency`, and `vaultInitiatedCheckoutPaymentMethodToken` are required. Additional options listed below.
+ * @ignore
+ * @param {object} options These options are identical to the {@link PayPalCheckout#createPayment|options for creating a payment resource}, except for the following:
+ * * `flow` cannot be set (will always be `'checkout'`)
+ * * `amount`, `currency`, and `vaultInitiatedCheckoutPaymentMethodToken` are required instead of optional
+ * * Additional configuration is available (listed below)
  * @param {boolean} [options.optOutOfModalBackdrop=false] By default, the webpage will darken and become unusable while the PayPal window is open. For full control of the UI, pass `true` for this option.
  * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @example
@@ -680,6 +684,7 @@ PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
 /**
  * Focuses the PayPal window if it is opened via `startVaultInitiatedCheckout`.
  * @public
+ * @ignore
  * @param {callback} [callback] Gets called when window is focused.
  * @example
  * paypalCheckoutInstance.focusVaultInitiatedCheckoutWindow();
@@ -958,6 +963,10 @@ PayPalCheckout.prototype._formatTokenizePayload = function (response) {
 
   if (account.details && account.details.shippingOptionId) {
     payload.shippingOptionId = account.details.shippingOptionId;
+  }
+
+  if (account.details && account.details.cobrandedCardLabel) {
+    payload.cobrandedCardLabel = account.details.cobrandedCardLabel;
   }
 
   return payload;

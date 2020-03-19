@@ -6,10 +6,9 @@ jest.mock('../../../src/lib/create-deferred-client');
 
 const basicComponentVerification = require('../../../src/lib/basic-component-verification');
 const createDeferredClient = require('../../../src/lib/create-deferred-client');
-const BraintreeError = require('../../../src/lib/braintree-error');
 const googlePayment = require('../../../src/google-payment');
 const GooglePayment = require('../../../src/google-payment/google-payment');
-const { fake } = require('../../helpers');
+const { fake, wait } = require('../../helpers');
 
 describe('googlePayment', () => {
   let testContext;
@@ -34,21 +33,17 @@ describe('googlePayment', () => {
       jest.spyOn(createDeferredClient, 'create').mockResolvedValue(testContext.fakeClient);
     });
 
-    it('returns a promise', () => googlePayment.create({
-      client: testContext.fakeClient
-    }));
-
-    it('verifies with basicComponentVerification', () => {
+    it('verifies with basicComponentVerification', async () => {
       const client = testContext.fakeClient;
 
-      return googlePayment.create({
+      await googlePayment.create({
         client: client
-      }).then(() => {
-        expect(basicComponentVerification.verify).toBeCalledTimes(1);
-        expect(basicComponentVerification.verify).toHaveBeenCalledWith({
-          name: 'Google Pay',
-          client: client
-        });
+      });
+
+      expect(basicComponentVerification.verify).toBeCalledTimes(1);
+      expect(basicComponentVerification.verify).toHaveBeenCalledWith({
+        name: 'Google Pay',
+        client
       });
     });
 
@@ -59,35 +54,89 @@ describe('googlePayment', () => {
         expect(instance).toBeInstanceOf(GooglePayment);
       }));
 
-    it('can create with an authorization instead of a client', () => {
-      googlePayment.create({
-        authorization: fake.clientToken,
-        debug: true
-      }).then(instance => {
-        expect(createDeferredClient.create).toBeCalledTimes(1);
-        expect(createDeferredClient.create).toHaveBeenCalledWith({
-          authorization: fake.clientToken,
-          debug: true,
-          assetsUrl: 'https://example.com/assets',
-          name: 'Google Pay'
-        });
+    it('can create with an authorization instead of a client', async () => {
+      let clientIsReady = false;
 
-        expect(instance).toBeInstanceOf(GooglePayment);
+      createDeferredClient.create.mockImplementation(() => {
+        return wait(10).then(() => {
+          clientIsReady = true;
+
+          return testContext.fakeClient;
+        });
       });
+
+      jest.useFakeTimers();
+
+      const instance = await googlePayment.create({
+        authorization: fake.clientToken,
+        useDeferredClient: true,
+        debug: true
+      });
+
+      expect(clientIsReady).toBe(false);
+      expect(createDeferredClient.create).toBeCalledTimes(1);
+      expect(createDeferredClient.create).toHaveBeenCalledWith({
+        authorization: fake.clientToken,
+        debug: true,
+        assetsUrl: 'https://example.com/assets',
+        name: 'Google Pay'
+      });
+
+      expect(instance).toBeInstanceOf(GooglePayment);
+
+      await jest.advanceTimersByTime(11);
+
+      expect(clientIsReady).toBe(true);
     });
 
-    it('returns error if android pay is not enabled', () => {
+    it('waits for client before resolving when not passing `useDeferredClient`', async () => {
+      let clientIsReady = false;
+
+      createDeferredClient.create.mockImplementation(() => {
+        return wait(10).then(() => {
+          clientIsReady = true;
+
+          return testContext.fakeClient;
+        });
+      });
+
+      jest.useFakeTimers();
+
+      const promise = googlePayment.create({
+        authorization: fake.clientToken,
+        debug: true
+      });
+
+      await jest.advanceTimersByTime(1);
+
+      expect(clientIsReady).toBe(false);
+      expect(createDeferredClient.create).toBeCalledTimes(1);
+      expect(createDeferredClient.create).toHaveBeenCalledWith({
+        authorization: fake.clientToken,
+        debug: true,
+        assetsUrl: 'https://example.com/assets',
+        name: 'Google Pay'
+      });
+
+      expect(clientIsReady).toBe(false);
+
+      await jest.advanceTimersByTime(11);
+      await promise;
+
+      expect(clientIsReady).toBe(true);
+    });
+
+    it('returns error if android pay is not enabled', async () => {
       const client = fake.client();
 
       jest.spyOn(createDeferredClient, 'create').mockResolvedValue(client);
 
-      return googlePayment.create({
-        client: client
-      }).catch(err => {
-        expect(err).toBeDefined();
-        expect(err.type).toBe('MERCHANT');
-        expect(err.code).toBe('GOOGLE_PAYMENT_NOT_ENABLED');
-        expect(err.message).toBe('Google Pay is not enabled for this merchant.');
+      await expect(googlePayment.create({
+        client
+      })).rejects.toMatchObject({
+        type: 'MERCHANT',
+        code: 'GOOGLE_PAYMENT_NOT_ENABLED',
+        message: 'Google Pay is not enabled for this merchant.'
       });
     });
 
@@ -103,18 +152,14 @@ describe('googlePayment', () => {
       }));
 
     it('errors if an unsupported Google Pay API version is passed', () =>
-      googlePayment.create({
+      expect(googlePayment.create({
         client: testContext.fakeClient,
         googlePayVersion: 9001,
         googleMerchantId: 'some-merchant-id'
-      }).catch(err => {
-        expect(err).toBeDefined();
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.code).toBe('GOOGLE_PAYMENT_UNSUPPORTED_VERSION');
-        expect(err.type).toBe('MERCHANT');
-        expect(err.message).toBe(
-          'The Braintree SDK does not support Google Pay version 9001. Please upgrade the version of your Braintree SDK and contact support if this error persists.'
-        );
+      })).rejects.toMatchObject({
+        code: 'GOOGLE_PAYMENT_UNSUPPORTED_VERSION',
+        type: 'MERCHANT',
+        message: 'The Braintree SDK does not support Google Pay version 9001. Please upgrade the version of your Braintree SDK and contact support if this error persists.'
       }));
   });
 });

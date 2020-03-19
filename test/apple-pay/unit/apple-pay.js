@@ -6,22 +6,23 @@ const analytics = require('../../../src/lib/analytics');
 const methods = require('../../../src/lib/methods');
 const ApplePay = require('../../../src/apple-pay/apple-pay');
 const BraintreeError = require('../../../src/lib/braintree-error');
-const { fake: { configuration: fakeConfiguration }} = require('../../helpers');
+const { fake } = require('../../helpers');
 
 describe('ApplePay', () => {
   let testContext;
 
   beforeEach(() => {
-    const configuration = fakeConfiguration();
+    const configuration = fake.configuration();
 
     testContext = {};
     jest.spyOn(analytics, 'sendEvent').mockImplementation();
     testContext.configuration = configuration;
-    testContext.client = {
-      request: jest.fn().mockResolvedValue(null),
-      getConfiguration: () => configuration
-    };
+    testContext.client = fake.client({
+      configuration
+    });
+    jest.spyOn(testContext.client, 'request').mockResolvedValue(null);
     testContext.applePay = new ApplePay({
+      createPromise: Promise.resolve(testContext.client),
       client: testContext.client,
       displayName: 'Awesome Merchant'
     });
@@ -62,6 +63,21 @@ describe('ApplePay', () => {
       };
 
       testContext.client.getConfiguration = () => ({ gatewayConfiguration: testContext.gatewayConfiguration });
+    });
+
+    it('returns a promise that resolves with the data request object if instance was instanitated with an authorization', () => {
+      const ap = new ApplePay({
+        useDeferredClient: true,
+        createPromise: Promise.resolve(testContext.client)
+      });
+
+      return ap.createPaymentRequest({}).then((dataRquest) => {
+        expect(dataRquest).toMatchObject({
+          countryCode: 'decorated',
+          currencyCode: 'decorated',
+          merchantCapabilities: ['decorated']
+        });
+      });
     });
 
     it('does not mutate the argument', () => {
@@ -115,10 +131,6 @@ describe('ApplePay', () => {
   });
 
   describe('performValidation', () => {
-    it('returns a promise', () => {
-      expect(testContext.applePay.performValidation({ validationURL: 'something' })).resolves.toBeDefined();
-    });
-
     it('rejects with error when event is undefined', () =>
       testContext.applePay.performValidation(false).catch(err => {
         expect(err).toBeInstanceOf(BraintreeError);
@@ -170,12 +182,15 @@ describe('ApplePay', () => {
         return Promise.reject(requestError);
       };
 
-      return testContext.applePay.performValidation(validationOptions).catch(err => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.code).toBe(expectedError.code);
-        expect(err.type).toBe(expectedError.type);
-        expect(err.message).toBe(expectedError.message);
-        expect(err.details.originalError.message).toBe(expectedError.originalMessage);
+      return expect(testContext.applePay.performValidation(validationOptions)).rejects.toMatchObject({
+        code: expectedError.code,
+        type: expectedError.type,
+        message: expectedError.message,
+        details: {
+          originalError: expect.objectContaining({
+            message: expectedError.originalMessage
+          })
+        }
       });
     });
 
@@ -206,19 +221,6 @@ describe('ApplePay', () => {
   });
 
   describe('tokenize', () => {
-    it('returns a promise', async () => {
-      const token = {
-        foo: 'boo',
-        paymentData: {
-          bar: 'yar'
-        }
-      };
-
-      jest.spyOn(testContext.client, 'request').mockResolvedValue({ applePayCards: []});
-
-      await expect(testContext.applePay.tokenize({ token })).resolves.not.toBeDefined();
-    });
-
     it('rejects with error when token is undefined', () =>
       testContext.applePay.tokenize(false).catch(err => {
         expect(err).toBeInstanceOf(BraintreeError);
@@ -315,7 +317,8 @@ describe('ApplePay', () => {
         testContext.client.request = () => Promise.resolve({});
 
         return ApplePay.prototype.performValidation.call({
-          _client: testContext.client
+          _client: testContext.client,
+          _waitForClient: jest.fn().mockResolvedValue(testContext.client)
         }, {
           validationURL: 'validationURL',
           displayName: 'JS SDK Integration'
@@ -328,7 +331,8 @@ describe('ApplePay', () => {
         testContext.client.request = () => Promise.reject({});
 
         return ApplePay.prototype.performValidation.call({
-          _client: testContext.client
+          _client: testContext.client,
+          _waitForClient: jest.fn().mockResolvedValue(testContext.client)
         }, {
           validationURL: 'validationURL',
           displayName: 'JS SDK Integration'
@@ -345,7 +349,8 @@ describe('ApplePay', () => {
         });
 
         return ApplePay.prototype.tokenize.call({
-          _client: testContext.client
+          _client: testContext.client,
+          _waitForClient: jest.fn().mockResolvedValue(testContext.client)
         }, {
           token: 'token'
         }).then(() => {
@@ -357,7 +362,8 @@ describe('ApplePay', () => {
         testContext.client.request = () => Promise.reject({});
 
         return ApplePay.prototype.tokenize.call({
-          _client: testContext.client
+          _client: testContext.client,
+          _waitForClient: jest.fn().mockResolvedValue(testContext.client)
         }, {
           token: 'token'
         }).catch(() => {
@@ -368,10 +374,6 @@ describe('ApplePay', () => {
   });
 
   describe('teardown', () => {
-    it('returns a promise', async () => {
-      await expect(testContext.applePay.teardown()).resolves.not.toBeDefined();
-    });
-
     it('replaces all methods so error is thrown when methods are invoked', done => {
       const instance = testContext.applePay;
 

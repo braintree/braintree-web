@@ -1124,6 +1124,24 @@ describe('PayPalCheckout', () => {
       });
     });
 
+    it('resolves with cobrandedCardLabel if available', () => {
+      const accountDetails = {
+        cobrandedCardLabel: 'foo'
+      };
+
+      testContext.client.request.mockResolvedValue({
+        paypalAccounts: [{
+          nonce: 'nonce',
+          type: 'PayPal',
+          details: accountDetails
+        }]
+      });
+
+      return testContext.paypalCheckout.tokenizePayment({}).then(({ cobrandedCardLabel }) => {
+        expect(cobrandedCardLabel).toBe(accountDetails.cobrandedCardLabel);
+      });
+    });
+
     it('passes along intent property', () => {
       const accountDetails = {
         creditFinancingOffered: { foo: 'bar' }

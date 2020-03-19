@@ -33,7 +33,7 @@ var DELETE_PAYMENT_METHOD_MUTATION = 'mutation DeletePaymentMethodFromSingleUseT
  * @classdesc This class allows you to manage a customer's payment methods on the client.
  */
 function VaultManager(options) {
-  this._client = options.client;
+  this._createPromise = options.createPromise;
 }
 
 /**
@@ -60,14 +60,16 @@ VaultManager.prototype.fetchPaymentMethods = function (options) {
 
   defaultFirst = options.defaultFirst === true ? 1 : 0;
 
-  return this._client.request({
-    endpoint: 'payment_methods',
-    method: 'get',
-    data: {
-      defaultFirst: defaultFirst
-    }
+  return this._createPromise.then(function (client) {
+    return client.request({
+      endpoint: 'payment_methods',
+      method: 'get',
+      data: {
+        defaultFirst: defaultFirst
+      }
+    });
   }).then(function (paymentMethodsPayload) {
-    analytics.sendEvent(this._client, 'vault-manager.fetch-payment-methods.succeeded');
+    analytics.sendEvent(this._createPromise, 'vault-manager.fetch-payment-methods.succeeded');
 
     return paymentMethodsPayload.paymentMethods.map(formatPaymentMethodPayload);
   }.bind(this));
@@ -87,57 +89,58 @@ VaultManager.prototype.fetchPaymentMethods = function (options) {
  * });
  */
 VaultManager.prototype.deletePaymentMethod = function (paymentMethodNonce) {
-  var client = this._client;
-  var usesClientToken = this._client.getConfiguration().authorizationType === 'CLIENT_TOKEN';
+  return this._createPromise.then(function (client) {
+    var usesClientToken = client.getConfiguration().authorizationType === 'CLIENT_TOKEN';
 
-  if (!usesClientToken) {
-    return Promise.reject(new BraintreeError(errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN));
-  }
-
-  return this._client.request({
-    api: 'graphQLApi',
-    data: {
-      query: DELETE_PAYMENT_METHOD_MUTATION,
-      variables: {
-        input: {
-          singleUseTokenId: paymentMethodNonce
-        }
-      },
-      operationName: 'DeletePaymentMethodFromSingleUseToken'
-    }
-  }).then(function () {
-    analytics.sendEvent(client, 'vault-manager.delete-payment-method.succeeded');
-
-    // noop to prevent sending back the raw graphql data
-  }).catch(function (error) {
-    var originalError = error.details.originalError;
-    var formattedError;
-
-    analytics.sendEvent(client, 'vault-manager.delete-payment-method.failed');
-
-    if (originalError[0] && originalError[0].extensions.errorClass === 'NOT_FOUND') {
-      formattedError = new BraintreeError({
-        type: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.type,
-        code: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.code,
-        message: 'A payment method for payment method nonce `' + paymentMethodNonce + '` could not be found.',
-        details: {
-          originalError: originalError
-        }
-      });
+    if (!usesClientToken) {
+      return Promise.reject(new BraintreeError(errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN));
     }
 
-    if (!formattedError) {
-      formattedError = new BraintreeError({
-        type: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.type,
-        code: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.code,
-        message: 'An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `' + paymentMethodNonce + '`.',
-        details: {
-          originalError: originalError
-        }
-      });
-    }
+    return client.request({
+      api: 'graphQLApi',
+      data: {
+        query: DELETE_PAYMENT_METHOD_MUTATION,
+        variables: {
+          input: {
+            singleUseTokenId: paymentMethodNonce
+          }
+        },
+        operationName: 'DeletePaymentMethodFromSingleUseToken'
+      }
+    }).then(function () {
+      analytics.sendEvent(client, 'vault-manager.delete-payment-method.succeeded');
 
-    return Promise.reject(formattedError);
+      // noop to prevent sending back the raw graphql data
+    }).catch(function (error) {
+      var originalError = error.details.originalError;
+      var formattedError;
+
+      analytics.sendEvent(client, 'vault-manager.delete-payment-method.failed');
+
+      if (originalError[0] && originalError[0].extensions.errorClass === 'NOT_FOUND') {
+        formattedError = new BraintreeError({
+          type: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.type,
+          code: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.code,
+          message: 'A payment method for payment method nonce `' + paymentMethodNonce + '` could not be found.',
+          details: {
+            originalError: originalError
+          }
+        });
+      }
+
+      if (!formattedError) {
+        formattedError = new BraintreeError({
+          type: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.type,
+          code: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.code,
+          message: 'An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `' + paymentMethodNonce + '`.',
+          details: {
+            originalError: originalError
+          }
+        });
+      }
+
+      return Promise.reject(formattedError);
+    });
   });
 };
 
