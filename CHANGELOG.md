@@ -4,7 +4,7 @@ CHANGELOG
 ## 3.61.0
 * Update sanitize-url to v4.0.1
 * Google Pay
-  * Add `bin` to GogglePayment `tokenizedPayload`
+  * Add `bin` to GooglePayment `tokenizedPayload`
 
 ## 3.60.0
 * Apple Pay
