@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.61.0
+* Update sanitize-url to v4.0.1
+* Google Pay
+  * Add `bin` to GogglePayment `tokenizedPayload`
+
 ## 3.60.0
 * Apple Pay
   * Add `useDeferredClient` option when creating instance
@@ -45,7 +50,7 @@ CHANGELOG
 
 ## 3.56.0
 * 3D Secure
-  * Add `cardinalSDKConfig` option to `create` method. Supported properties:      
+  * Add `cardinalSDKConfig` option to `create` method. Supported properties:
     * `timeout`
     * `maxRequestRetries`
     * `logging`
