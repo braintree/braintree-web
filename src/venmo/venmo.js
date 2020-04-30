@@ -32,6 +32,7 @@ function Venmo(options) {
   this._allowNewBrowserTab = options.allowNewBrowserTab !== false;
   this._profileId = options.profileId;
   this._deepLinkReturnUrl = options.deepLinkReturnUrl;
+  this._ignoreHistoryChanges = options.ignoreHistoryChanges;
 }
 
 Venmo.prototype.getUrl = function () {
@@ -93,7 +94,13 @@ Venmo.prototype.isBrowserSupported = function () {
  * @returns {boolean} True if the results of Venmo payment authorization are available and ready to process.
  */
 Venmo.prototype.hasTokenizationResult = function () {
-  var params = getFragmentParameters();
+  return this._hasTokenizationResult();
+};
+
+// a private version that lets us pass in a custom hash
+// when listening on a hashchange event
+Venmo.prototype._hasTokenizationResult = function (hash) {
+  var params = getFragmentParameters(hash);
 
   return typeof (params.venmoSuccess || params.venmoError || params.venmoCancel) !== 'undefined';
 };
@@ -138,6 +145,7 @@ Venmo.prototype.hasTokenizationResult = function () {
  */
 Venmo.prototype.tokenize = function (options) {
   var self = this;
+  var resultProcessingInProgress, visibilityChangeListenerTimeout;
 
   options = options || {};
 
@@ -152,38 +160,70 @@ Venmo.prototype.tokenize = function (options) {
   this._tokenizationInProgress = true;
   this._tokenizePromise = new ExtendedPromise();
 
-  // Subscribe to document visibility change events to detect when app switch
-  // has returned.
   this._previousHash = global.location.hash;
-  this._visibilityChangeListener = function () {
+
+  function completeFlow(hash) {
     var error;
+
+    self._processResults(hash).catch(function (err) {
+      error = err;
+    }).then(function (res) {
+      if (!self._ignoreHistoryChanges && global.location.hash !== self._previousHash) {
+        global.location.hash = self._previousHash;
+      }
+      self._removeVisibilityEventListener();
+
+      if (error) {
+        self._tokenizePromise.reject(error);
+      } else {
+        self._tokenizePromise.resolve(res);
+      }
+      delete self._tokenizePromise;
+    });
+  }
+
+  // The Venmo SDK app switches back with the results of the
+  // tokenization encoded in the hash
+  this._onHashChangeListener = function (e) {
+    var hash = e.newURL.split('#')[1];
+
+    if (!self._hasTokenizationResult(hash)) {
+      return;
+    }
+
+    resultProcessingInProgress = true;
+    clearTimeout(visibilityChangeListenerTimeout);
+    self._tokenizationInProgress = false;
+    completeFlow(hash);
+  };
+
+  window.addEventListener('hashchange', this._onHashChangeListener, false);
+
+  // Subscribe to document visibility change events to detect when app switch
+  // has returned. Acts as a fallback for the hashchange listener and catches
+  // the cancel case via manual app switch back
+  this._visibilityChangeListener = function () {
+    var delay = options.processResultsDelay || constants.DEFAULT_PROCESS_RESULTS_DELAY;
 
     if (!global.document.hidden) {
       self._tokenizationInProgress = false;
 
-      setTimeout(function () {
-        self._processResults().catch(function (err) {
-          error = err;
-        }).then(function (res) {
-          global.location.hash = self._previousHash;
-          self._removeVisibilityEventListener();
-          delete self._visibilityChangeListener;
-
-          if (error) {
-            self._tokenizePromise.reject(error);
-          } else {
-            self._tokenizePromise.resolve(res);
-          }
-          delete self._tokenizePromise;
-        });
-      }, options.processResultsDelay || constants.DEFAULT_PROCESS_RESULTS_DELAY);
+      if (!resultProcessingInProgress) {
+        visibilityChangeListenerTimeout = setTimeout(completeFlow, delay);
+      }
     }
   };
 
   return this.getUrl().then(function (url) {
-    // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open.
     if (self._deepLinkReturnUrl) {
-      global.location = url;
+      if (isIosWebview()) {
+        // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open.
+        global.location.href = url;
+      } else if (global.popupBridge && typeof global.popupBridge.open === 'function') {
+        global.popupBridge.open(url);
+      } else {
+        global.open(url);
+      }
     } else {
       global.open(url);
     }
@@ -217,12 +257,16 @@ Venmo.prototype.teardown = function () {
 };
 
 Venmo.prototype._removeVisibilityEventListener = function () {
+  global.removeEventListener('hashchange', this._onHashChangeListener);
   global.document.removeEventListener(documentVisibilityChangeEventName(), this._visibilityChangeListener);
+
+  delete this._visibilityChangeListener;
+  delete this._onHashChangeListener;
 };
 
-Venmo.prototype._processResults = function () {
+Venmo.prototype._processResults = function (hash) {
   var self = this;
-  var params = getFragmentParameters();
+  var params = getFragmentParameters(hash);
 
   return new Promise(function (resolve, reject) {
     if (params.venmoSuccess) {
@@ -250,12 +294,22 @@ Venmo.prototype._processResults = function () {
       reject(new BraintreeError(errors.VENMO_CANCELED));
     }
 
-    clearFragmentParameters();
+    self._clearFragmentParameters();
   });
 };
 
-function getFragmentParameters() {
-  var keyValuesArray = global.location.hash.substring(1).split('&');
+Venmo.prototype._clearFragmentParameters = function () {
+  if (this._ignoreHistoryChanges) {
+    return;
+  }
+
+  if (typeof global.history.replaceState === 'function' && global.location.hash) {
+    history.pushState({}, '', global.location.href.slice(0, global.location.href.indexOf('#')));
+  }
+};
+
+function getFragmentParameters(hash) {
+  var keyValuesArray = (hash || global.location.hash.substring(1)).split('&');
 
   return keyValuesArray.reduce(function (toReturn, keyValue) {
     var parts = keyValue.split('=');
@@ -270,12 +324,6 @@ function getFragmentParameters() {
 
     return toReturn;
   }, {});
-}
-
-function clearFragmentParameters() {
-  if (typeof global.history.replaceState === 'function' && global.location.hash) {
-    history.pushState({}, '', global.location.href.slice(0, global.location.href.indexOf('#')));
-  }
 }
 
 function formatTokenizePayload(fragmentParams) {
@@ -301,6 +349,14 @@ function documentVisibilityChangeEventName() {
   }
 
   return visibilityChange;
+}
+
+function isIosWebview() {
+  // we know it's a webview because this flow only gets
+  // used when checking the deep link flow
+  // test the platform here to get around custom useragents
+  return global.navigator.platform &&
+    /iPhone|iPad|iPod/.test(global.navigator.platform);
 }
 
 module.exports = wrapPromise.wrapPrototype(Venmo);
