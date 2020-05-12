@@ -127,6 +127,7 @@ function adaptConfigurationResponseBody(body, ctx) {
       enabled: true,
       environment: configuration.googlePay.environment.toLowerCase(),
       googleAuthorizationFingerprint: configuration.googlePay.googleAuthorization,
+      paypalClientId: configuration.googlePay.paypalClientId,
       supportedNetworks: mapCardTypes(configuration.googlePay.supportedCardBrands, cardTypeTransforms.googlePay)
     };
   }

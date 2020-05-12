@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.62.1
+* Google Pay
+  * Fix issue where PayPal via Google Pay would not be enabled for eligible merchants
+
 ## 3.62.0
 * Venmo
   * Fix issue where a single page app's router may disrupt the Venmo tokenization

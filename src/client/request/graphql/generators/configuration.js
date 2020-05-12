@@ -26,6 +26,7 @@ var CONFIGURATION_QUERY = 'query ClientConfiguration { ' +
 '      supportedCardBrands ' +
 '      environment ' +
 '      googleAuthorization ' +
+'      paypalClientId ' +
 '    } ' +
 '    ideal { ' +
 '      routeId ' +
