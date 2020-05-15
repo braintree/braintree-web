@@ -55,6 +55,7 @@ var constants = {
     '-webkit-tap-highlight-color',
     '-webkit-transition',
     'appearance',
+    'background-color',
     'color',
     'direction',
     'font',
