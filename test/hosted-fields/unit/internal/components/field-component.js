@@ -47,7 +47,10 @@ describe('FieldComponent', () => {
 
       handler();
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, 'cvv', directions.BACK);
+      expect(global.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, {
+        field: 'cvv',
+        direction: directions.BACK
+      });
     });
 
     it('emits a TRIGGER_FOCUS_CHANGE when focus intercept forward handler is triggered', () => {
@@ -55,7 +58,10 @@ describe('FieldComponent', () => {
 
       handler();
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, 'cvv', directions.FORWARD);
+      expect(global.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, {
+        field: 'cvv',
+        direction: directions.FORWARD
+      });
     });
   });
 });

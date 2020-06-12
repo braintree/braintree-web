@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## 3.62.2
+* Update framebus to v4.0.1
+
 ## 3.62.1
 * Google Pay
   * Fix issue where PayPal via Google Pay would not be enabled for eligible merchants

@@ -523,7 +523,9 @@ function HostedFields(options) {
     });
 
     this._injectedNodes.push.apply(this._injectedNodes, injectFrame(frame, container, function () {
-      self._bus.emit(events.TRIGGER_INPUT_FOCUS, key);
+      self._bus.emit(events.TRIGGER_INPUT_FOCUS, {
+        field: key
+      });
     }));
 
     this._setupLabelFocus(key, container);
@@ -574,14 +576,20 @@ function HostedFields(options) {
     });
   }
 
-  this._bus.on(events.REMOVE_FOCUS_INTERCEPTS, destroyFocusIntercept);
+  this._bus.on(events.REMOVE_FOCUS_INTERCEPTS, function (data) {
+    destroyFocusIntercept(data && data.id);
+  });
 
   this._bus.on(events.TRIGGER_FOCUS_CHANGE, focusChange.createFocusChangeHandler({
     onRemoveFocusIntercepts: function (element) {
-      self._bus.emit(events.REMOVE_FOCUS_INTERCEPTS, element);
+      self._bus.emit(events.REMOVE_FOCUS_INTERCEPTS, {
+        id: element
+      });
     },
     onTriggerInputFocus: function (targetType) {
-      self._bus.emit(events.TRIGGER_INPUT_FOCUS, targetType);
+      self._bus.emit(events.TRIGGER_INPUT_FOCUS, {
+        field: targetType
+      });
     }
   }));
 
@@ -627,8 +635,8 @@ function HostedFields(options) {
   );
 
   if (browserDetection.isIos()) {
-    this._bus.on(events.TRIGGER_INPUT_FOCUS, function (fieldName) {
-      var container = fields[fieldName].containerElement;
+    this._bus.on(events.TRIGGER_INPUT_FOCUS, function (data) {
+      var container = fields[data.field].containerElement;
 
       // Inputs outside of the viewport don't always scroll into view on
       // focus in iOS Safari. 5ms timeout gives the browser a chance to
@@ -681,7 +689,9 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
   if (container.id == null) { return; }
 
   function triggerFocus() {
-    bus.emit(events.TRIGGER_INPUT_FOCUS, type);
+    bus.emit(events.TRIGGER_INPUT_FOCUS, {
+      field: type
+    });
   }
 
   labels = Array.prototype.slice.call(document.querySelectorAll('label[for="' + container.id + '"]'));
@@ -717,7 +727,9 @@ HostedFields.prototype._cleanUpFocusIntercepts = function () {
 
     if (checkoutForm) {
       focusChange.removeExtraFocusElements(checkoutForm, function (id) {
-        this._bus.emit(events.REMOVE_FOCUS_INTERCEPTS, id);
+        this._bus.emit(events.REMOVE_FOCUS_INTERCEPTS, {
+          id: id
+        });
       }.bind(this));
     } else {
       this._bus.emit(events.REMOVE_FOCUS_INTERCEPTS);
@@ -993,7 +1005,10 @@ HostedFields.prototype.addClass = function (field, classname) {
       message: 'Cannot add class to "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
-    this._bus.emit(events.ADD_CLASS, field, classname);
+    this._bus.emit(events.ADD_CLASS, {
+      field: field,
+      classname: classname
+    });
   }
 
   if (err) {
@@ -1038,7 +1053,10 @@ HostedFields.prototype.removeClass = function (field, classname) {
       message: 'Cannot remove class from "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
-    this._bus.emit(events.REMOVE_CLASS, field, classname);
+    this._bus.emit(events.REMOVE_CLASS, {
+      field: field,
+      classname: classname
+    });
   }
 
   if (err) {
@@ -1104,7 +1122,11 @@ HostedFields.prototype.setAttribute = function (options) {
     if (attributeErr) {
       err = attributeErr;
     } else {
-      this._bus.emit(events.SET_ATTRIBUTE, options.field, options.attribute, options.value);
+      this._bus.emit(events.SET_ATTRIBUTE, {
+        field: options.field,
+        attribute: options.attribute,
+        value: options.value
+      });
     }
   }
 
@@ -1187,7 +1209,10 @@ HostedFields.prototype.setMonthOptions = function (options) {
  * @returns {void}
  */
 HostedFields.prototype.setMessage = function (options) {
-  this._bus.emit(events.SET_MESSAGE, options.field, options.message);
+  this._bus.emit(events.SET_MESSAGE, {
+    field: options.field,
+    message: options.message
+  });
 };
 
 /**
@@ -1232,7 +1257,10 @@ HostedFields.prototype.removeAttribute = function (options) {
     if (attributeErr) {
       err = attributeErr;
     } else {
-      this._bus.emit(events.REMOVE_ATTRIBUTE, options.field, options.attribute);
+      this._bus.emit(events.REMOVE_ATTRIBUTE, {
+        field: options.field,
+        attribute: options.attribute
+      });
     }
   }
 
@@ -1295,7 +1323,9 @@ HostedFields.prototype.clear = function (field) {
       message: 'Cannot clear "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
-    this._bus.emit(events.CLEAR_FIELD, field);
+    this._bus.emit(events.CLEAR_FIELD, {
+      field: field
+    });
   }
 
   if (err) {
@@ -1345,7 +1375,9 @@ HostedFields.prototype.focus = function (field) {
       message: 'Cannot focus "' + field + '" field because it is not part of the current Hosted Fields options.'
     });
   } else {
-    this._bus.emit(events.TRIGGER_INPUT_FOCUS, field);
+    this._bus.emit(events.TRIGGER_INPUT_FOCUS, {
+      field: field
+    });
   }
 
   if (err) {

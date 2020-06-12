@@ -19,7 +19,7 @@ var allowedStyles = constants.allowedStyles;
 var tokenizationErrorCodes = constants.tokenizationErrorCodes;
 var formatCardRequestData = require('./format-card-request-data');
 var normalizeCardType = require('./normalize-card-type');
-var destroyFocusIntercept = require('../shared/focus-intercept').destroy;
+var focusIntercept = require('../shared/focus-intercept');
 
 var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
 var ALLOWED_BILLING_ADDRESS_FIELDS = [
@@ -66,7 +66,9 @@ function initialize(cardForm) {
 
   global.bus.on(events.AUTOFILL_EXPIRATION_DATE, autofillHandler(fieldComponent));
 
-  global.bus.on(events.REMOVE_FOCUS_INTERCEPTS, destroyFocusIntercept);
+  global.bus.on(events.REMOVE_FOCUS_INTERCEPTS, function (data) {
+    focusIntercept.destroy(data && data.id);
+  });
 
   document.body.appendChild(form);
 

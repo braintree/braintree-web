@@ -242,23 +242,27 @@ BaseInput.prototype.removeAttribute = function (type, attribute) {
 };
 
 BaseInput.prototype.addBusEventListeners = function () {
-  global.bus.on(events.TRIGGER_INPUT_FOCUS, function (type) {
-    if (type === this.type) { this.focus(); }
+  global.bus.on(events.TRIGGER_INPUT_FOCUS, function (data) {
+    if (data.field === this.type) { this.focus(); }
   }.bind(this));
 
-  global.bus.on(events.SET_ATTRIBUTE, this.setAttribute.bind(this));
-  global.bus.on(events.REMOVE_ATTRIBUTE, this.removeAttribute.bind(this));
-
-  global.bus.on(events.ADD_CLASS, function (type, classname) {
-    if (type === this.type) { classList.add(this.element, classname); }
+  global.bus.on(events.SET_ATTRIBUTE, function (data) {
+    this.setAttribute(data.field, data.attribute, data.value);
+  }.bind(this));
+  global.bus.on(events.REMOVE_ATTRIBUTE, function (data) {
+    this.removeAttribute(data.field, data.attribute);
   }.bind(this));
 
-  global.bus.on(events.REMOVE_CLASS, function (type, classname) {
-    if (type === this.type) { classList.remove(this.element, classname); }
+  global.bus.on(events.ADD_CLASS, function (data) {
+    if (data.field === this.type) { classList.add(this.element, data.classname); }
   }.bind(this));
 
-  global.bus.on(events.CLEAR_FIELD, function (type) {
-    if (type === this.type) {
+  global.bus.on(events.REMOVE_CLASS, function (data) {
+    if (data.field === this.type) { classList.remove(this.element, data.classname); }
+  }.bind(this));
+
+  global.bus.on(events.CLEAR_FIELD, function (data) {
+    if (data.field === this.type) {
       this.element.value = '';
       this.hiddenMaskedValue = '';
       this.updateModel('value', '');

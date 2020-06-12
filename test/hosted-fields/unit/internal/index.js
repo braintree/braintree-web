@@ -84,7 +84,16 @@ describe('internal', () => {
       });
 
       it('is ready to destroy focusIntercept inputs if `REMOVE_FOCUS_INTERCEPTS` fires', () => {
-        expect(global.bus.on).toHaveBeenCalledWith(events.REMOVE_FOCUS_INTERCEPTS, focusIntercept.destroy);
+        expect(global.bus.on).toHaveBeenCalledWith(events.REMOVE_FOCUS_INTERCEPTS, expect.any(Function));
+
+        const handler = global.bus.on.mock.calls.find((call) => call[0] === events.REMOVE_FOCUS_INTERCEPTS)[1];
+
+        jest.spyOn(focusIntercept, 'destroy');
+
+        handler({ id: 'id' });
+
+        expect(focusIntercept.destroy).toBeCalledTimes(1);
+        expect(focusIntercept.destroy).toBeCalledWith('id');
       });
     });
   });

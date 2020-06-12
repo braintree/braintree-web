@@ -66,10 +66,9 @@ describe('PreferredPaymentMethods', () => {
     it('sends a GraphQL request for preferred payment methods', () => {
       testContext.fakeClient.request.mockResolvedValue({
         data: {
-          clientConfiguration: {
-            paypal: {
-              paymentMethodAvailableOnDevice: true
-            }
+          preferredPaymentMethods: {
+            paypalPreferred: true,
+            venmoPreferred: true
           }
         }
       });
@@ -79,49 +78,61 @@ describe('PreferredPaymentMethods', () => {
         expect(testContext.fakeClient.request).toHaveBeenCalledWith({
           api: 'graphQLApi',
           data: {
-            query: 'query ClientConfiguration { clientConfiguration { paypal { paymentMethodAvailableOnDevice } } }'
+            query: 'query PreferredPaymentMethods { ' +
+              'preferredPaymentMethods { ' +
+                'paypalPreferred ' +
+                'venmoPreferred ' +
+              '} ' +
+            '}'
           }
         });
       });
     });
 
-    it('returns a promise with PayPal preferred true when GraphQL returns true', () => {
+    it('returns a promise with both Venmo and PayPal preferred true when GraphQL returns true', () => {
       testContext.fakeClient.request.mockResolvedValue({
         data: {
-          clientConfiguration: {
-            paypal: { paymentMethodAvailableOnDevice: true }
+          preferredPaymentMethods: {
+            paypalPreferred: true,
+            venmoPreferred: true
           }
         }
       });
 
-      return testContext.instance.fetchPreferredPaymentMethods().then(({ paypalPreferred }) => {
+      return testContext.instance.fetchPreferredPaymentMethods().then(({ paypalPreferred, venmoPreferred }) => {
         expect(paypalPreferred).toBe(true);
-        expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+        expect(venmoPreferred).toBe(true);
+        expect(analytics.sendEvent).toHaveBeenCalledTimes(2);
         expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'preferred-payment-methods.paypal.api-detected.true');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'preferred-payment-methods.venmo.api-detected.true');
       });
     });
 
-    it('returns a promise with PayPal preferred false when GraphQL returns false', () => {
+    it('returns a promise with both PayPal and Venmo preferred false when GraphQL returns false', () => {
       testContext.fakeClient.request.mockResolvedValue({
         data: {
-          clientConfiguration: {
-            paypal: { paymentMethodAvailableOnDevice: false }
+          preferredPaymentMethods: {
+            paypalPreferred: false,
+            venmoPreferred: false
           }
         }
       });
 
-      return testContext.instance.fetchPreferredPaymentMethods().then(({ paypalPreferred }) => {
+      return testContext.instance.fetchPreferredPaymentMethods().then(({ paypalPreferred, venmoPreferred }) => {
         expect(paypalPreferred).toBe(false);
-        expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+        expect(venmoPreferred).toBe(false);
+        expect(analytics.sendEvent).toHaveBeenCalledTimes(2);
         expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'preferred-payment-methods.paypal.api-detected.false');
+        expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'preferred-payment-methods.venmo.api-detected.false');
       });
     });
 
-    it('returns a promise with PayPal preferred false when an error occurs', () => {
-      testContext.fakeClient.request.mockRejectedValue(new Error('No preferred PayPal for you!'));
+    it('returns a promise with both PayPal and Venmo preferred false when an error occurs', () => {
+      testContext.fakeClient.request.mockRejectedValue(new Error('No preferred payment methods for you!'));
 
-      return testContext.instance.fetchPreferredPaymentMethods().then(({ paypalPreferred }) => {
+      return testContext.instance.fetchPreferredPaymentMethods().then(({ paypalPreferred, venmoPreferred }) => {
         expect(paypalPreferred).toBe(false);
+        expect(venmoPreferred).toBe(false);
         expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
         expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.fakeClient, 'preferred-payment-methods.api-error');
       });
@@ -134,8 +145,9 @@ describe('PreferredPaymentMethods', () => {
 
       fakeClient.request.mockResolvedValue({
         data: {
-          clientConfiguration: {
-            paypal: { isPaymentMethodAvailableOnDevice: true }
+          preferredPaymentMethods: {
+            paypalPreferred: true,
+            venmoPreferred: true
           }
         }
       });

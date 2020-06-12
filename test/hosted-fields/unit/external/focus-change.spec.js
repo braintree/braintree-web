@@ -135,7 +135,10 @@ describe('focus-change', () => {
 
       document.body.removeChild(testContext.formNode);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
       expect(testContext.removeStub).toHaveBeenCalledTimes(1);
@@ -144,13 +147,19 @@ describe('focus-change', () => {
     });
 
     it('moves focus forward when direction is forward', () => {
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
 
     it('moves focus backward when direction is backward', () => {
-      testContext.handler('cvv', directions.BACK);
+      testContext.handler({
+        field: 'cvv',
+        direction: directions.BACK
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('number');
     });
@@ -160,7 +169,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(button, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -172,7 +184,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -184,7 +199,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -196,7 +214,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -208,7 +229,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -220,7 +244,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -232,7 +259,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -244,7 +274,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -258,7 +291,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });
@@ -271,7 +307,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
     });
@@ -284,7 +323,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
     });
@@ -297,7 +339,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
     });
@@ -310,7 +355,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
     });
@@ -323,7 +371,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
     });
@@ -336,7 +387,10 @@ describe('focus-change', () => {
 
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
     });
@@ -344,7 +398,10 @@ describe('focus-change', () => {
     it('does nothing if there is no user-focusable element in the requested direction', () => {
       testContext.formNode.appendChild(createSampleIntercept('cvv', directions.FORWARD));
 
-      testContext.handler('cvv', directions.FORWARD);
+      testContext.handler({
+        field: 'cvv',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
       expect(testContext.removeStub).not.toBeCalled();
@@ -356,14 +413,20 @@ describe('focus-change', () => {
       input.setAttribute('name', 'cardholder-name');
       testContext.formNode.insertBefore(input, testContext.cvvBefore);
 
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).not.toBeCalled();
       expect(document.activeElement.getAttribute('name')).toContain('cardholder-name');
     });
 
     it('fires `onTriggerInputFocus` with correct type when hosted field is next user-focusable', () => {
-      testContext.handler('number', directions.FORWARD);
+      testContext.handler({
+        field: 'number',
+        direction: directions.FORWARD
+      });
 
       expect(testContext.triggerStub).toHaveBeenCalledWith('cvv');
     });

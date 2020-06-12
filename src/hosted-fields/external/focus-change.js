@@ -83,9 +83,9 @@ module.exports = {
   },
 
   createFocusChangeHandler: function (callbacks) {
-    return function (type, direction) {
+    return function (data) {
       var currentIndex, targetElement, checkoutForm, navHelper;
-      var sourceElement = document.getElementById('bt-' + type + '-' + direction);
+      var sourceElement = document.getElementById('bt-' + data.field + '-' + data.direction);
 
       if (!sourceElement) {
         return;
@@ -101,7 +101,7 @@ module.exports = {
 
       checkoutForm = [].slice.call(checkoutForm.elements);
       currentIndex = checkoutForm.indexOf(sourceElement);
-      navHelper = _createNavigationHelper(direction, checkoutForm.length);
+      navHelper = _createNavigationHelper(data.direction, checkoutForm.length);
 
       do {
         currentIndex += navHelper.indexChange;

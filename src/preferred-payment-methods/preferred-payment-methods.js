@@ -49,6 +49,12 @@ PreferredPaymentMethods.prototype.initialize = function (options) {
  *   } else {
  *     // PayPal not preferred
  *   }
+ *
+ *   if (result.venmoPreferred) {
+ *     // Venmo preferred
+ *   } else {
+ *     // Venmo not preferred
+ *   }
  * });
  */
 PreferredPaymentMethods.prototype.fetchPreferredPaymentMethods = function () {
@@ -61,16 +67,24 @@ PreferredPaymentMethods.prototype.fetchPreferredPaymentMethods = function () {
     return client.request({
       api: 'graphQLApi',
       data: {
-        query: 'query ClientConfiguration { clientConfiguration { paypal { paymentMethodAvailableOnDevice } } }'
+        query: 'query PreferredPaymentMethods { ' +
+          'preferredPaymentMethods { ' +
+            'paypalPreferred ' +
+            'venmoPreferred ' +
+          '} ' +
+        '}'
       }
     });
   }).then(function (result) {
-    var paypalPreferred = result.data.clientConfiguration.paypal.paymentMethodAvailableOnDevice;
+    var paypalPreferred = result.data.preferredPaymentMethods.paypalPreferred;
+    var venmoPreferred = result.data.preferredPaymentMethods.venmoPreferred;
 
     analytics.sendEvent(client, 'preferred-payment-methods.paypal.api-detected.' + paypalPreferred);
+    analytics.sendEvent(client, 'preferred-payment-methods.venmo.api-detected.' + venmoPreferred);
 
     return {
-      paypalPreferred: paypalPreferred
+      paypalPreferred: paypalPreferred,
+      venmoPreferred: venmoPreferred
     };
   }).catch(function () {
     if (self._setupError) {
@@ -80,7 +94,8 @@ PreferredPaymentMethods.prototype.fetchPreferredPaymentMethods = function () {
     analytics.sendEvent(client, 'preferred-payment-methods.api-error');
 
     return {
-      paypalPreferred: false
+      paypalPreferred: false,
+      venmoPreferred: false
     };
   });
 };

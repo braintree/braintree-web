@@ -839,7 +839,10 @@ describe('HostedFields', () => {
     it('emits ADD_CLASS event', () => {
       testContext.instance.addClass('number', 'my-class');
 
-      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.ADD_CLASS, 'number', 'my-class');
+      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.ADD_CLASS, {
+        field: 'number',
+        classname: 'my-class'
+      });
     });
 
     it('calls callback if provided', done => {
@@ -882,7 +885,10 @@ describe('HostedFields', () => {
 
     it('emits REMOVE_CLASS event', () => {
       testContext.instance.removeClass('number', 'my-class');
-      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.REMOVE_CLASS, 'number', 'my-class');
+      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.REMOVE_CLASS, {
+        field: 'number',
+        classname: 'my-class'
+      });
     });
 
     it('calls callback if provided', done => {
@@ -928,7 +934,11 @@ describe('HostedFields', () => {
         value: '1111 1111 1111 1111'
       });
 
-      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.SET_ATTRIBUTE, 'number', 'placeholder', '1111 1111 1111 1111');
+      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.SET_ATTRIBUTE, {
+        field: 'number',
+        attribute: 'placeholder',
+        value: '1111 1111 1111 1111'
+      });
     });
 
     it('calls callback if provided', done => {
@@ -958,9 +968,7 @@ describe('HostedFields', () => {
         expect(err.details).not.toBeDefined();
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -976,9 +984,7 @@ describe('HostedFields', () => {
       }, () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1001,9 +1007,7 @@ describe('HostedFields', () => {
         expect(err.details).not.toBeDefined();
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1019,9 +1023,7 @@ describe('HostedFields', () => {
       }, () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1111,7 +1113,10 @@ describe('HostedFields', () => {
         message: 'This is a test message'
       });
 
-      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.SET_MESSAGE, 'number', 'This is a test message');
+      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.SET_MESSAGE, {
+        field: 'number',
+        message: 'This is a test message'
+      });
     });
   });
 
@@ -1124,7 +1129,10 @@ describe('HostedFields', () => {
         attribute: 'disabled'
       });
 
-      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.REMOVE_ATTRIBUTE, 'number', 'disabled');
+      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.REMOVE_ATTRIBUTE, {
+        field: 'number',
+        attribute: 'disabled'
+      });
     });
 
     it('calls callback if provided', done => {
@@ -1163,9 +1171,7 @@ describe('HostedFields', () => {
       }, () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.REMOVE_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1198,9 +1204,7 @@ describe('HostedFields', () => {
       }, () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.REMOVE_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1231,9 +1235,7 @@ describe('HostedFields', () => {
       }, () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.REMOVE_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1273,9 +1275,7 @@ describe('HostedFields', () => {
         expect(err.details).not.toBeDefined();
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1287,9 +1287,7 @@ describe('HostedFields', () => {
       testContext.instance.setPlaceholder('rogue-field', 'rogue-placeholder', () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1308,9 +1306,7 @@ describe('HostedFields', () => {
         expect(err.details).not.toBeDefined();
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1322,9 +1318,7 @@ describe('HostedFields', () => {
       testContext.instance.setPlaceholder('cvv', 'great-placeholder', () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.SET_ATTRIBUTE,
-          expect.any(String),
-          expect.any(String),
-          expect.any(String)
+          expect.anything()
         );
         done();
       });
@@ -1338,7 +1332,9 @@ describe('HostedFields', () => {
 
     it('emits CLEAR_FIELD event', () => {
       testContext.instance.clear('number');
-      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.CLEAR_FIELD, expect.any(String));
+      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.CLEAR_FIELD, {
+        field: expect.any(String)
+      });
     });
 
     it('calls callback if provided', done => {
@@ -1354,7 +1350,9 @@ describe('HostedFields', () => {
           '"rogue-field" is not a valid field. You must use a valid field option when clearing a field.'
         );
         expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.CLEAR_FIELD, expect.any(String));
+        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.CLEAR_FIELD, {
+          field: expect.any(String)
+        });
         done();
       });
     });
@@ -1368,7 +1366,9 @@ describe('HostedFields', () => {
           'Cannot clear "cvv" field because it is not part of the current Hosted Fields options.'
         );
         expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.CLEAR_FIELD, expect.any(String));
+        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.CLEAR_FIELD, {
+          field: expect.any(String)
+        });
         done();
       });
     });
@@ -1381,7 +1381,9 @@ describe('HostedFields', () => {
 
     it('emits TRIGGER_INPUT_FOCUS event', () => {
       testContext.instance.focus('number');
-      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.TRIGGER_INPUT_FOCUS, expect.any(String));
+      expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.TRIGGER_INPUT_FOCUS, {
+        field: expect.any(String)
+      });
     });
 
     it('calls callback if provided', done => {
@@ -1397,7 +1399,9 @@ describe('HostedFields', () => {
           '"rogue-field" is not a valid field. You must use a valid field option when focusing a field.'
         );
         expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.TRIGGER_INPUT_FOCUS, expect.any(String));
+        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.TRIGGER_INPUT_FOCUS, {
+          field: expect.any(String)
+        });
         done();
       });
     });
@@ -1411,7 +1415,9 @@ describe('HostedFields', () => {
           'Cannot focus "cvv" field because it is not part of the current Hosted Fields options.'
         );
         expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.TRIGGER_INPUT_FOCUS, expect.any(String));
+        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(events.TRIGGER_INPUT_FOCUS, {
+          field: expect.any(String)
+        });
         done();
       });
     });
