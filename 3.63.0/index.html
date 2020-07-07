@@ -332,6 +332,33 @@ function callback(err, clientInstance) { ... }
 </table>
 <h3>Data Collector Specific Directives</h3>
 <p>If using Kount with the <a href="DataCollector.html">Data Collector component</a>, adhere to the <a href="https://support.kount.com/s/article/How-is-Content-Security-Policy-Used">Kount CSP guide</a>.</p>
+<p>For <a href="https://developers.braintreepayments.com/guides/advanced-fraud-management-tools/overview">Braintree Fraud Protection</a>, use these directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+<tr>
+<td>child-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+<tr>
+<td>frame-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+</tbody>
+</table>
     </article>
   </section>
 
