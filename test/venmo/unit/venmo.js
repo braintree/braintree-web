@@ -638,6 +638,7 @@ describe('Venmo', () => {
 
         await promise;
 
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'venmo.appswitch.start.ios-webview');
         expect(window.open).not.toBeCalled();
         expect(window.location.href).toContain('https://venmo.com/braintree');
       });
@@ -653,6 +654,7 @@ describe('Venmo', () => {
 
         await promise;
 
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'venmo.appswitch.start.popup-bridge');
         expect(window.location.href).toContain('old');
         expect(window.open).not.toBeCalled();
         expect(window.popupBridge.open).toBeCalledWith(expect.stringContaining('https://venmo.com/braintree'));
@@ -668,12 +670,24 @@ describe('Venmo', () => {
 
         await promise;
 
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'venmo.appswitch.start.webview');
         expect(window.location.href).toContain('old');
         expect(window.open).toBeCalledWith(expect.stringContaining('https://venmo.com/braintree'));
       });
     });
 
     describe('analytics events', () => {
+      it('sends an event on app switch starting', async () => {
+        const promise = testContext.venmo.tokenize();
+
+        history.replaceState({}, '', `${testContext.location}#venmoSuccess=1`);
+        triggerVisibilityHandler(testContext.venmo);
+
+        await promise;
+
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'venmo.appswitch.start.browser');
+      });
+
       it('sends an event on app switch return Success', async () => {
         const promise = testContext.venmo.tokenize();
 

@@ -411,7 +411,7 @@ describe('Expiration Month Input', () => {
         })
       });
 
-      expect(global.bus.on).toHaveBeenCalledWith(events.SET_MONTH_OPTIONS, expect.any(Function));
+      expect(window.bus.on).toHaveBeenCalledWith(events.SET_MONTH_OPTIONS, expect.any(Function));
     });
 
     it('does not set up listener for SET_MONTH_OPTIONS if expiration month is not a select', () => {
@@ -426,7 +426,7 @@ describe('Expiration Month Input', () => {
         })
       });
 
-      expect(global.bus.on).not.toHaveBeenCalledWith(events.SET_MONTH_OPTIONS);
+      expect(window.bus.on).not.toHaveBeenCalledWith(events.SET_MONTH_OPTIONS);
     });
 
     it('renames the options when SET_MONTH_OPTIONS is emitted', done => {
@@ -462,7 +462,7 @@ describe('Expiration Month Input', () => {
       expect(input.element.querySelectorAll('option')[0].textContent).toMatch('January');
       expect(input.element.querySelectorAll('option')[11].textContent).toMatch('December');
 
-      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, window.bus.on.mock.calls);
 
       callback([
         'Jan',
@@ -514,7 +514,7 @@ describe('Expiration Month Input', () => {
         })
       });
 
-      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, window.bus.on.mock.calls);
 
       callback([
         'Jan'
@@ -559,7 +559,7 @@ describe('Expiration Month Input', () => {
       expect(input.element.querySelectorAll('option')[0].textContent).toMatch('January');
       expect(input.element.querySelectorAll('option')[11].textContent).toMatch('December');
 
-      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, window.bus.on.mock.calls);
 
       callback([
         'Jan',
@@ -620,7 +620,7 @@ describe('Expiration Month Input', () => {
       expect(input.element.querySelectorAll('option')[1].textContent).toMatch('January');
       expect(input.element.querySelectorAll('option')[12].textContent).toMatch('December');
 
-      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, global.bus.on.mock.calls);
+      callback = findFirstEventCallback(events.SET_MONTH_OPTIONS, window.bus.on.mock.calls);
 
       callback([
         'Jan',

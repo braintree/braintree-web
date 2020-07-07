@@ -165,8 +165,7 @@ braintree.client.create({authorization: CLIENT_AUTHORIZATION}).then(function (cl
 Releases
 ========
 
-Subscribe to our [Google Group](https://groups.google.com/forum/#!forum/braintree-sdk-announce) to
-be notified when SDK releases go out.
+Subscribe to this repo to be notified when SDK releases go out.
 
 License
 =======

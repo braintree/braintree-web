@@ -8,7 +8,7 @@ function start() {
   // focus. This timer will close the popup frame if the parent hasn't replied to the event to
   // indicate that it can close the popup.
   var closeTimer = setTimeout(function () {
-    global.close();
+    window.close();
   }, 1000);
   var params = querystring.parse();
 

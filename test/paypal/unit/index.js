@@ -16,7 +16,7 @@ describe('paypal', () => {
   });
 
   afterEach(() => {
-    delete global.popupBridge;
+    delete window.popupBridge;
   });
 
   describe('create', () => {

@@ -185,14 +185,14 @@ BaseInput.prototype._addDOMFocusListeners = function () {
     this.updateModel('isFocused', false);
   }.bind(this), false);
 
-  global.addEventListener('focus', function () {
+  window.addEventListener('focus', function () {
     if (this.shouldMask) {
       this.unmaskValue();
     }
     this.updateModel('isFocused', true);
   }.bind(this), false);
 
-  global.addEventListener('blur', function () {
+  window.addEventListener('blur', function () {
     if (this.shouldMask) {
       this.maskValue();
     }
@@ -209,8 +209,8 @@ BaseInput.prototype._addDOMFocusListeners = function () {
 
     // fixes the issue on iOS where the input doesn't focus properly
     // on touch events after the initial one
-    global.addEventListener('touchend', function () {
-      global.focus();
+    window.addEventListener('touchend', function () {
+      window.focus();
     });
   }
 };
@@ -242,26 +242,26 @@ BaseInput.prototype.removeAttribute = function (type, attribute) {
 };
 
 BaseInput.prototype.addBusEventListeners = function () {
-  global.bus.on(events.TRIGGER_INPUT_FOCUS, function (data) {
+  window.bus.on(events.TRIGGER_INPUT_FOCUS, function (data) {
     if (data.field === this.type) { this.focus(); }
   }.bind(this));
 
-  global.bus.on(events.SET_ATTRIBUTE, function (data) {
+  window.bus.on(events.SET_ATTRIBUTE, function (data) {
     this.setAttribute(data.field, data.attribute, data.value);
   }.bind(this));
-  global.bus.on(events.REMOVE_ATTRIBUTE, function (data) {
+  window.bus.on(events.REMOVE_ATTRIBUTE, function (data) {
     this.removeAttribute(data.field, data.attribute);
   }.bind(this));
 
-  global.bus.on(events.ADD_CLASS, function (data) {
+  window.bus.on(events.ADD_CLASS, function (data) {
     if (data.field === this.type) { classList.add(this.element, data.classname); }
   }.bind(this));
 
-  global.bus.on(events.REMOVE_CLASS, function (data) {
+  window.bus.on(events.REMOVE_CLASS, function (data) {
     if (data.field === this.type) { classList.remove(this.element, data.classname); }
   }.bind(this));
 
-  global.bus.on(events.CLEAR_FIELD, function (data) {
+  window.bus.on(events.CLEAR_FIELD, function (data) {
     if (data.field === this.type) {
       this.element.value = '';
       this.hiddenMaskedValue = '';

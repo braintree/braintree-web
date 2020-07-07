@@ -18,7 +18,7 @@ function _createScriptTag(url, callbackName) {
   script.src = url;
   script.async = true;
   script.onerror = function () {
-    global[callbackName]({message: 'error', status: 500});
+    window[callbackName]({message: 'error', status: 500});
   };
 
   script.onload = script.onreadystatechange = function () {
@@ -35,9 +35,9 @@ function _createScriptTag(url, callbackName) {
 
 function _cleanupGlobal(callbackName) {
   try {
-    delete global[callbackName];
+    delete window[callbackName];
   } catch (_) {
-    global[callbackName] = null;
+    window[callbackName] = null;
   }
 }
 
@@ -45,19 +45,19 @@ function _setupTimeout(timeout, callbackName) {
   timeouts[callbackName] = setTimeout(function () {
     timeouts[callbackName] = null;
 
-    global[callbackName]({
+    window[callbackName]({
       error: 'timeout',
       status: -1
     });
 
-    global[callbackName] = function () {
+    window[callbackName] = function () {
       _cleanupGlobal(callbackName);
     };
   }, timeout);
 }
 
 function _setupGlobalCallback(script, callback, callbackName) {
-  global[callbackName] = function (response) {
+  window[callbackName] = function (response) {
     var status = response.status || 500;
     var err = null;
     var data = null;

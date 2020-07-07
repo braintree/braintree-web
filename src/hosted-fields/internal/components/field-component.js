@@ -17,7 +17,7 @@ module.exports = {
     this.element = document.createDocumentFragment();
 
     this.element.appendChild(focusIntercept.generate(type, directions.BACK, function () {
-      global.bus.emit(events.TRIGGER_FOCUS_CHANGE, {
+      window.bus.emit(events.TRIGGER_FOCUS_CHANGE, {
         field: type,
         direction: directions.BACK
       });
@@ -33,7 +33,7 @@ module.exports = {
     this.input.element.setAttribute('aria-describedby', 'field-description-' + type);
     this.element.appendChild(this.input.element);
     this.element.appendChild(focusIntercept.generate(type, directions.FORWARD, function () {
-      global.bus.emit(events.TRIGGER_FOCUS_CHANGE, {
+      window.bus.emit(events.TRIGGER_FOCUS_CHANGE, {
         field: type,
         direction: directions.FORWARD
       });
@@ -48,7 +48,7 @@ module.exports = {
 
     this.element.appendChild(this.description);
 
-    global.bus.on(events.SET_MESSAGE, function (data) {
+    window.bus.on(events.SET_MESSAGE, function (data) {
       if (data.field === type) {
         this.description.textContent = data.message;
       }

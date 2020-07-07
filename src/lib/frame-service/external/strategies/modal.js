@@ -89,7 +89,7 @@ Modal.prototype.redirect = function (redirectUrl) {
 Modal.prototype._unlockScrolling = function () {
   document.body.style.overflow = this._savedBodyProperties.overflowStyle;
   document.body.style.position = this._savedBodyProperties.positionStyle;
-  global.scrollTo(this._savedBodyProperties.left, this._savedBodyProperties.top);
+  window.scrollTo(this._savedBodyProperties.left, this._savedBodyProperties.top);
   delete this._savedBodyProperties;
 };
 
@@ -98,14 +98,14 @@ Modal.prototype._lockScrolling = function () {
 
   // From https://stackoverflow.com/questions/9538868/prevent-body-from-scrolling-when-a-modal-is-opened#comment65626743_24727206
   this._savedBodyProperties = {
-    left: (global.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0),
-    top: (global.pageYOffset || doc.scrollTop) - (doc.clientTop || 0),
+    left: (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0),
+    top: (window.pageYOffset || doc.scrollTop) - (doc.clientTop || 0),
     overflowStyle: document.body.style.overflow,
     positionStyle: document.body.style.position
   };
   document.body.style.overflow = 'hidden';
   document.body.style.position = 'fixed';
-  global.scrollTo(0, 0);
+  window.scrollTo(0, 0);
 };
 
 module.exports = Modal;

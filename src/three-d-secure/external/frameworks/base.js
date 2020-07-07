@@ -278,11 +278,11 @@ BaseFramework.prototype.cancelVerifyCard = function () {
 };
 
 BaseFramework.prototype._setupV1Bus = function (options) {
-  var parentURL = global.location.href.split('#')[0];
+  var parentURL = window.location.href.split('#')[0];
   var lookupResponse = options.lookupResponse;
   var bus = new Bus({
     channel: uuid(),
-    merchantUrl: global.location.href
+    merchantUrl: window.location.href
   });
   var authenticationCompleteBaseUrl = this._assetsUrl + '/html/three-d-secure-authentication-complete-frame.html?channel=' + encodeURIComponent(bus.channel) + '&';
 

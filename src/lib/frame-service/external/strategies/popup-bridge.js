@@ -13,7 +13,7 @@ function PopupBridge(options) {
 PopupBridge.prototype.initialize = function (callback) {
   var self = this;
 
-  global.popupBridge.onComplete = function (err, payload) {
+  window.popupBridge.onComplete = function (err, payload) {
     var popupDismissed = !payload && !err;
 
     self._closed = true;
@@ -36,7 +36,7 @@ PopupBridge.prototype.open = function (options) {
   url = options.openFrameUrl || this._options.openFrameUrl;
 
   this._closed = false;
-  global.popupBridge.open(url);
+  window.popupBridge.open(url);
 };
 
 PopupBridge.prototype.focus = noop;

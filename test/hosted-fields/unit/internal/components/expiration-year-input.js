@@ -7,7 +7,7 @@ const { CreditCardForm } = require('../../../../../src/hosted-fields/internal/mo
 const constants = require('../../../../../src/hosted-fields/shared/constants');
 const { createInput } = require('../../helpers');
 
-global.bus = new Bus({ channel: 'foo' });
+window.bus = new Bus({ channel: 'foo' });
 
 describe('Expiration Year Input', () => {
   let testContext;

@@ -48,7 +48,7 @@ describe('Bootstrap3ModalFramework', () => {
       Bootstrap3ModalFramework.prototype.setupSongbird.mockClear();
 
       jest.spyOn(assets, 'loadScript').mockImplementation(() => {
-        global.Cardinal = fakeCardinal;
+        window.Cardinal = fakeCardinal;
 
         // allow a slight delay so timing tests can run
         return wait(5);
@@ -56,7 +56,7 @@ describe('Bootstrap3ModalFramework', () => {
     });
 
     afterEach(() => {
-      delete global.Cardinal;
+      delete window.Cardinal;
     });
 
     it('configures Cardinal to use bootstrap3 framework', () => {
@@ -66,7 +66,7 @@ describe('Bootstrap3ModalFramework', () => {
       });
 
       return framework.setupSongbird().then(() => {
-        expect(global.Cardinal.configure).toHaveBeenCalledWith({
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
           payment: {
             framework: 'bootstrap3'
           }
@@ -82,7 +82,7 @@ describe('Bootstrap3ModalFramework', () => {
       });
 
       return framework.setupSongbird().then(() => {
-        expect(global.Cardinal.configure).toHaveBeenCalledWith({
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
           payment: {
             framework: 'bootstrap3'
           },

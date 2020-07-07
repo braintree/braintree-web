@@ -25,14 +25,14 @@ describe('frame-service', () => {
   });
 
   describe('getFrame', () => {
-    it('to return a frame from global.opener', () => {
+    it('to return a frame from window.opener', () => {
       window.name = `${DISPATCH_FRAME_NAME}_${testContext.id}`;
       window.opener.frames[`${DISPATCH_FRAME_NAME}_${testContext.id}`] = 'frame';
 
       expect(frameService.getFrame()).toBe('frame');
     });
 
-    it('to return a frame from global.parent', () => {
+    it('to return a frame from window.parent', () => {
       delete window.opener;
       window.parent = { frames: {}};
 
@@ -86,7 +86,7 @@ describe('frame-service', () => {
   });
 
   describe('asyncClose', () => {
-    it('async call to global.close', () => {
+    it('async call to window.close', () => {
       jest.useFakeTimers();
       jest.spyOn(window, 'close');
       frameService.asyncClose();

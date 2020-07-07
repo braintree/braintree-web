@@ -43,7 +43,7 @@ describe('redirect-frame', () => {
 
     it('can put a redirect link onto the page if parent frame cannot be found and fallback is configured', done => {
       frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = global.encodeURIComponent('https://example.com/fallback-url');
+      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
       testContext.params.t = 'Return to Site';
 
       redirectFrame.start(() => {
@@ -73,7 +73,7 @@ describe('redirect-frame', () => {
 
     it('does not put a redirect link if text param is missing', done => {
       frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = global.encodeURIComponent('https://example.com/fallback-url');
+      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
 
       redirectFrame.start(() => {
         const link = document.querySelector('#container a');
@@ -86,7 +86,7 @@ describe('redirect-frame', () => {
 
     it('sanitizes fallback url', done => {
       frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = global.encodeURIComponent('javascript:alert("hey")'); // eslint-disable-line no-script-url
+      testContext.params.r = window.encodeURIComponent('javascript:alert("hey")'); // eslint-disable-line no-script-url
       testContext.params.t = 'Return to Site';
 
       redirectFrame.start(() => {

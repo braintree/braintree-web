@@ -229,7 +229,7 @@ LocalPayment.prototype.tokenize = function (params) {
   }).then(function (response) {
     var payload = self._formatTokenizePayload(response);
 
-    if (global.popupBridge) {
+    if (window.popupBridge) {
       analytics.sendEvent(client, self._paymentType + '.local-payment.tokenization.success-popupbridge');
     } else {
       analytics.sendEvent(client, self._paymentType + '.local-payment.tokenization.success');
@@ -293,7 +293,7 @@ LocalPayment.prototype._createStartPaymentCallback = function (resolve, reject) 
         }));
       }
     } else if (params) {
-      if (!global.popupBridge) {
+      if (!window.popupBridge) {
         self._frameService.redirect(self._loadingFrameUrl);
       }
 

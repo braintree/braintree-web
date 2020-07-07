@@ -20,7 +20,7 @@ function _isArray(value) {
 function parse(url) {
   var query, params;
 
-  url = url || global.location.href;
+  url = url || window.location.href;
 
   if (!/\?/.test(url)) {
     return {};

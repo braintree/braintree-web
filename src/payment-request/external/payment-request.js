@@ -518,7 +518,7 @@ PaymentRequestComponent.prototype.canMakePayment = function (configuration) {
   var unsupportedPaymentMethod;
 
   // NEXT_MAJOR_VERSION Move this check to component creation
-  if (!global.PaymentRequest) {
+  if (!window.PaymentRequest) {
     analytics.sendEvent(self._client, 'payment-request.can-make-payment.not-available');
 
     return Promise.resolve(false);

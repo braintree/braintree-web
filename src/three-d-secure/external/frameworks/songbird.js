@@ -87,7 +87,7 @@ SongbirdFramework.prototype._triggerCardinalBinProcess = function (bin) {
     return Promise.resolve();
   }
 
-  return global.Cardinal.trigger('bin.process', bin).then(function (binResults) {
+  return window.Cardinal.trigger('bin.process', bin).then(function (binResults) {
     self._clientMetadata.issuerDeviceDataCollectionTimeElapsed = Date.now() - issuerStartTime;
     self._clientMetadata.issuerDeviceDataCollectionResult = binResults && binResults.Status;
   });
@@ -206,7 +206,7 @@ SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
   this._v2SetupFailureReason = 'reason-unknown';
 
   self._loadCardinalScript(setupOptions).then(function () {
-    if (!global.Cardinal) {
+    if (!window.Cardinal) {
       self._v2SetupFailureReason = 'cardinal-global-unavailable';
 
       return Promise.reject(new BraintreeError(errors.THREEDS_CARDINAL_SDK_SETUP_FAILED));
@@ -225,7 +225,7 @@ SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
 
     self._getDfReferenceIdPromisePlus.reject(error);
 
-    global.clearTimeout(self._songbirdSetupTimeoutReference);
+    window.clearTimeout(self._songbirdSetupTimeoutReference);
     analytics.sendEvent(self._client, 'three-d-secure.cardinal-sdk.init.setup-failed');
     self._initiateV1Fallback('cardinal-sdk-setup-failed.' + self._v2SetupFailureReason);
   });
@@ -246,9 +246,9 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
 
     self._setupFrameworkSpecificListeners();
 
-    global.Cardinal.configure(cardinalConfiguration);
+    window.Cardinal.configure(cardinalConfiguration);
 
-    global.Cardinal.setup('init', {
+    window.Cardinal.setup('init', {
       jwt: jwt
     });
 
@@ -264,7 +264,7 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
 
 SongbirdFramework.prototype.setCardinalListener = function (eventName, cb) {
   this._cardinalEvents.push(eventName);
-  global.Cardinal.on(eventName, cb);
+  window.Cardinal.on(eventName, cb);
 };
 
 SongbirdFramework.prototype._setupFrameworkSpecificListeners = function () {
@@ -300,7 +300,7 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
   return this._waitForClient().then(function () {
     var isProduction = self._client.getConfiguration().gatewayConfiguration.environment === 'production';
 
-    self._songbirdSetupTimeoutReference = global.setTimeout(function () {
+    self._songbirdSetupTimeoutReference = window.setTimeout(function () {
       analytics.sendEvent(self._client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
       self._initiateV1Fallback('cardinal-sdk-setup-timeout');
     }, setupOptions.timeout || INTEGRATION_TIMEOUT_MS);
@@ -323,7 +323,7 @@ SongbirdFramework.prototype._createPaymentsSetupCompleteCallback = function () {
   return function (data) {
     self._getDfReferenceIdPromisePlus.resolve(data.sessionId);
 
-    global.clearTimeout(self._songbirdSetupTimeoutReference);
+    window.clearTimeout(self._songbirdSetupTimeoutReference);
     analytics.sendEvent(self._createPromise, 'three-d-secure.cardinal-sdk.init.setup-completed');
 
     self._songbirdPromise.resolve();
@@ -527,7 +527,7 @@ SongbirdFramework.prototype._presentChallenge = function (lookupResponse) {
   }
 
   // set up listener for ref id to call out to bt before calling verify callback
-  global.Cardinal.continue('cca',
+  window.Cardinal.continue('cca',
     {
       AcsUrl: lookupResponse.lookup.acsUrl,
       Payload: lookupResponse.lookup.pareq
@@ -573,9 +573,9 @@ SongbirdFramework.prototype.cancelVerifyCard = function (verifyCardError) {
 };
 
 SongbirdFramework.prototype.teardown = function () {
-  if (global.Cardinal) {
+  if (window.Cardinal) {
     this._cardinalEvents.forEach(function (eventName) {
-      global.Cardinal.off(eventName);
+      window.Cardinal.off(eventName);
     });
   }
 

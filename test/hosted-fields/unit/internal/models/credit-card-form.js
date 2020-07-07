@@ -270,8 +270,8 @@ describe('credit card model', () => {
         ]
       }, 'number', 'foo');
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
-      expect(global.bus.emit.mock.calls[0][1]).toMatchObject({
+      expect(window.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
+      expect(window.bus.emit.mock.calls[0][1]).toMatchObject({
         merchantPayload: {
           cards: [],
           emittedBy: 'number',
@@ -312,8 +312,8 @@ describe('credit card model', () => {
         _fieldKeys: []
       }, 'number', 'foo');
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
-      expect(global.bus.emit.mock.calls[0][1]).toMatchObject({
+      expect(window.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
+      expect(window.bus.emit.mock.calls[0][1]).toMatchObject({
         merchantPayload: {
           cards: [],
           emittedBy: 'number',
@@ -358,8 +358,8 @@ describe('credit card model', () => {
         _fieldKeys: []
       }, 'number', 'foo');
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
-      expect(global.bus.emit.mock.calls[0][1]).toMatchObject({
+      expect(window.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
+      expect(window.bus.emit.mock.calls[0][1]).toMatchObject({
         merchantPayload: {
           cards: cards.map(card => ({
             niceType: card.niceType,
@@ -395,8 +395,8 @@ describe('credit card model', () => {
         _fieldKeys: []
       }, 'number', 'foo');
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
-      expect(global.bus.emit.mock.calls[0][1]).toMatchObject({
+      expect(window.bus.emit).toHaveBeenCalledWith(events.INPUT_EVENT, expect.any(Object));
+      expect(window.bus.emit.mock.calls[0][1]).toMatchObject({
         merchantPayload: {
           cards: [{
             niceType: 'Visa',
@@ -425,14 +425,14 @@ describe('credit card model', () => {
 
       card.set('cvv.isFocused', true);
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.CARD_FORM_ENTRY_HAS_BEGUN);
+      expect(window.bus.emit).toHaveBeenCalledWith(events.CARD_FORM_ENTRY_HAS_BEGUN);
 
-      global.bus.emit.mockReset();
+      window.bus.emit.mockReset();
 
       card.set('cvv.isFocused', false);
       card.set('cvv.isFocused', true);
 
-      expect(global.bus.emit).not.toHaveBeenCalledWith(events.CARD_FORM_ENTRY_HAS_BEGUN);
+      expect(window.bus.emit).not.toHaveBeenCalledWith(events.CARD_FORM_ENTRY_HAS_BEGUN);
     });
   });
 
@@ -987,41 +987,41 @@ describe('credit card model', () => {
     it('emits BIN_AVAILABLE event when number goes from 5 digits to 6', () => {
       testContext.card.set('number.value', '41111');
 
-      expect(global.bus.emit).not.toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE');
+      expect(window.bus.emit).not.toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE');
 
       testContext.card.set('number.value', '411111');
 
-      expect(global.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
+      expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
     });
 
     it('emits BIN_AVAILABLE event when number goes from non-existent to 6 digits', () => {
       testContext.card.set('number.value', '411111');
 
-      expect(global.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
+      expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
     });
 
     it('emits BIN_AVAILABLE event when number goes from non-existent to more than 6 digits', () => {
       testContext.card.set('number.value', '4111111111111');
 
-      expect(global.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
+      expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
     });
 
     it('emits BIN_AVAILABLE event when number starts with more than 6 digits, dips below 6, and then receives 6 again', () => {
       testContext.card.set('number.value', '123456789');
 
-      global.bus.emit.mockReset();
+      window.bus.emit.mockReset();
 
       testContext.card.set('number.value', '12345');
-      expect(global.bus.emit).not.toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE');
+      expect(window.bus.emit).not.toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE');
 
       testContext.card.set('number.value', '123456');
-      expect(global.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '123456');
+      expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '123456');
     });
 
     it('emits only the first 6 digits of the number when emitting even when more than 6 digits are set', () => {
       testContext.card.set('number.value', '1234567890');
 
-      expect(global.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '123456');
+      expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '123456');
     });
   });
 

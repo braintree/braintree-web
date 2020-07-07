@@ -21,6 +21,6 @@ describe('placeholder shim', () => {
       return {};
     });
 
-    global.placeholderShim(inputEl);
+    window.placeholderShim(inputEl);
   });
 });

@@ -27,7 +27,7 @@ describe('loading-frame', () => {
       jest.spyOn(document, 'createElement').mockReturnValue(testContext.fakeScript);
       jest.spyOn(document.body, 'appendChild');
 
-      global.MasterPass = {
+      window.MasterPass = {
         client: {
           checkout: jest.fn()
         }
@@ -35,7 +35,7 @@ describe('loading-frame', () => {
     });
 
     afterEach(() => {
-      delete global.MasterPass;
+      delete window.MasterPass;
     });
 
     it('adds production script to page in production', () => {
@@ -63,12 +63,12 @@ describe('loading-frame', () => {
     it('calls Masterpass.client.checkout with config from query params when script loads', () => {
       loadingFrame.start();
 
-      expect(global.MasterPass.client.checkout).not.toHaveBeenCalled();
+      expect(window.MasterPass.client.checkout).not.toHaveBeenCalled();
 
       testContext.fakeScript.onload();
 
-      expect(global.MasterPass.client.checkout).toHaveBeenCalledTimes(1);
-      expect(global.MasterPass.client.checkout.mock.calls[0][0]).toMatchObject({
+      expect(window.MasterPass.client.checkout).toHaveBeenCalledTimes(1);
+      expect(window.MasterPass.client.checkout.mock.calls[0][0]).toMatchObject({
         environment: 'production',
         foo: 'bar',
         callbackUrl: 'https://example.com'
@@ -78,7 +78,7 @@ describe('loading-frame', () => {
     it('overwrites failure, cancel and success callbacks with a noop function', () => {
       loadingFrame.start();
 
-      expect(global.MasterPass.client.checkout).not.toHaveBeenCalled();
+      expect(window.MasterPass.client.checkout).not.toHaveBeenCalled();
 
       // raw params for these in the test are strings
       expect(testContext.params.failureCallback).toBeInstanceOf(Function);
@@ -91,12 +91,12 @@ describe('loading-frame', () => {
 
       loadingFrame.start();
 
-      expect(global.MasterPass.client.checkout).not.toHaveBeenCalled();
+      expect(window.MasterPass.client.checkout).not.toHaveBeenCalled();
 
       testContext.fakeScript.onload();
 
-      expect(global.MasterPass.client.checkout).toHaveBeenCalledTimes(1);
-      expect(global.MasterPass.client.checkout.mock.calls[0][0]).toMatchObject({
+      expect(window.MasterPass.client.checkout).toHaveBeenCalledTimes(1);
+      expect(window.MasterPass.client.checkout.mock.calls[0][0]).toMatchObject({
         callbackUrl: 'about:blank'
       });
     });

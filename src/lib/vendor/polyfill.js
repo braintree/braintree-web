@@ -1,8 +1,8 @@
 'use strict';
 
-var atobNormalized = typeof global.atob === 'function' ? global.atob : atob;
+var atobNormalized = typeof atob === 'function' ? window.atob : atobPolyfill;
 
-function atob(base64String) {
+function atobPolyfill(base64String) {
   var a, b, c, b1, b2, b3, b4, i;
   var base64Matcher = new RegExp('^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})([=]{1,2})?$');
   var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
@@ -31,7 +31,7 @@ function atob(base64String) {
 
 module.exports = {
   atob: function (base64String) {
-    return atobNormalized.call(global, base64String);
+    return atobNormalized.call(window, base64String);
   },
-  _atob: atob
+  _atob: atobPolyfill
 };

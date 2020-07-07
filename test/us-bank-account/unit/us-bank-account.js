@@ -791,13 +791,13 @@ describe('USBankAccount', () => {
     });
 
     afterEach(() => {
-      delete global.Plaid;
+      delete window.Plaid;
     });
 
     it('returns the Plaid instance if it already existed on the global', done => {
       const fakePlaid = { open: noop };
 
-      global.Plaid = fakePlaid;
+      window.Plaid = fakePlaid;
 
       USBankAccount.prototype._loadPlaid.call(testContext.context, (err, plaid) => {
         expect(plaid).toBe(fakePlaid);
@@ -866,7 +866,7 @@ describe('USBankAccount', () => {
 
       script = document.body.appendChild.mock.calls[0][0];
 
-      global.Plaid = fakePlaid;
+      window.Plaid = fakePlaid;
       script.dispatchEvent(new Event('load'));
     });
 
@@ -883,7 +883,7 @@ describe('USBankAccount', () => {
       script = document.body.appendChild.mock.calls[0][0];
       script.readyState = 'loaded';
 
-      global.Plaid = fakePlaid;
+      window.Plaid = fakePlaid;
       script.dispatchEvent(new Event('readystatechange'));
     });
 
@@ -900,7 +900,7 @@ describe('USBankAccount', () => {
       script = document.body.appendChild.mock.calls[0][0];
       script.readyState = 'complete';
 
-      global.Plaid = fakePlaid;
+      window.Plaid = fakePlaid;
       script.dispatchEvent(new Event('readystatechange'));
     });
 
@@ -914,7 +914,7 @@ describe('USBankAccount', () => {
       script = document.body.appendChild.mock.calls[0][0];
       script.readyState = 'loading';
 
-      global.Plaid = fakePlaid;
+      window.Plaid = fakePlaid;
       script.dispatchEvent(new Event('readystatechange'));
 
       expect(callbackSpy).not.toHaveBeenCalled();
@@ -929,7 +929,7 @@ describe('USBankAccount', () => {
 
       script = document.body.appendChild.mock.calls[0][0];
 
-      global.Plaid = fakePlaid;
+      window.Plaid = fakePlaid;
 
       script.dispatchEvent(new Event('load'));
       script.dispatchEvent(new Event('error'));

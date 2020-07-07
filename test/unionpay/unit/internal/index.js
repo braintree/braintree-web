@@ -13,19 +13,19 @@ describe('internal', () => {
 
   beforeEach(() => {
     testContext = {};
-    testContext._oldGlobalName = global.name;
-    global.name = 'frame-name_123';
+    testContext._oldGlobalName = window.name;
+    window.name = 'frame-name_123';
   });
 
   afterEach(() => {
-    global.name = testContext._oldGlobalName;
+    window.name = testContext._oldGlobalName;
   });
 
   describe('create', () => {
     it('creates a global bus', () => {
       internal.create();
 
-      expect(global.bus.channel).toBe('123');
+      expect(window.bus.channel).toBe('123');
     });
 
     it('emits a CONFIGURATION_REQUEST event', () => {

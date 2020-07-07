@@ -84,9 +84,9 @@ describe('internal', () => {
       });
 
       it('is ready to destroy focusIntercept inputs if `REMOVE_FOCUS_INTERCEPTS` fires', () => {
-        expect(global.bus.on).toHaveBeenCalledWith(events.REMOVE_FOCUS_INTERCEPTS, expect.any(Function));
+        expect(window.bus.on).toHaveBeenCalledWith(events.REMOVE_FOCUS_INTERCEPTS, expect.any(Function));
 
-        const handler = global.bus.on.mock.calls.find((call) => call[0] === events.REMOVE_FOCUS_INTERCEPTS)[1];
+        const handler = window.bus.on.mock.calls.find((call) => call[0] === events.REMOVE_FOCUS_INTERCEPTS)[1];
 
         jest.spyOn(focusIntercept, 'destroy');
 
@@ -104,7 +104,7 @@ describe('internal', () => {
 
       location.hash = '#test-uuid';
       internal.create();
-      expect(global.bus.channel).toBe('test-uuid');
+      expect(window.bus.channel).toBe('test-uuid');
 
       location.hash = originalLocationHash;
     });
@@ -114,8 +114,8 @@ describe('internal', () => {
 
       internal.create();
 
-      expect(global.bus.emit).toHaveBeenCalledTimes(1);
-      expect(global.bus.emit).toHaveBeenCalledWith(events.FRAME_READY, {
+      expect(window.bus.emit).toHaveBeenCalledTimes(1);
+      expect(window.bus.emit).toHaveBeenCalledWith(events.FRAME_READY, {
         field: 'cvv'
       }, expect.any(Function));
     });
@@ -123,7 +123,7 @@ describe('internal', () => {
 
   describe('orchestrate', () => {
     afterEach(() => {
-      delete global.cardForm;
+      delete window.cardForm;
     });
 
     describe('supporting card types', () => {
@@ -145,8 +145,8 @@ describe('internal', () => {
 
         internal.orchestrate(config);
 
-        expect(global.cardForm.supportedCardTypes.length).toBeGreaterThan(9);
-        expect(global.cardForm.setSupportedCardTypes).toHaveBeenCalledTimes(1);
+        expect(window.cardForm.supportedCardTypes.length).toBeGreaterThan(9);
+        expect(window.cardForm.setSupportedCardTypes).toHaveBeenCalledTimes(1);
       });
 
       it('sets supported card types asynchronously when rejectUnsupportedCards is set', () => {
@@ -158,7 +158,7 @@ describe('internal', () => {
           }
         };
 
-        jest.spyOn(global.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
+        jest.spyOn(window.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
 
         return internal.orchestrate(config).then(() => {
           expect(CreditCardForm.prototype.validateField).toHaveBeenCalledTimes(1);
@@ -189,7 +189,7 @@ describe('internal', () => {
           }
         };
 
-        jest.spyOn(global.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
+        jest.spyOn(window.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
 
         return internal.orchestrate(config).then(() => {
           expect(CreditCardForm.prototype.validateField).toHaveBeenCalledTimes(1);
@@ -224,7 +224,7 @@ describe('internal', () => {
 
         delete gwConfig.gatewayConfiguration.creditCards;
 
-        jest.spyOn(global.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, gwConfig));
+        jest.spyOn(window.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, gwConfig));
 
         return internal.orchestrate(config).then(() => {
           expect(CreditCardForm.prototype.validateField).toHaveBeenCalledTimes(1);
@@ -255,7 +255,7 @@ describe('internal', () => {
           }
         };
 
-        jest.spyOn(global.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
+        jest.spyOn(window.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
 
         return internal.orchestrate(config).then(() => {
           expect(CreditCardForm.prototype.setSupportedCardTypes).toHaveBeenCalledTimes(2);
@@ -279,7 +279,7 @@ describe('internal', () => {
           }
         };
 
-        jest.spyOn(global.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
+        jest.spyOn(window.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
 
         return internal.orchestrate(config).then(() => {
           expect(CreditCardForm.prototype.setSupportedCardTypes).toHaveBeenCalledTimes(1);
@@ -294,7 +294,7 @@ describe('internal', () => {
           }
         };
 
-        jest.spyOn(global.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
+        jest.spyOn(window.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
 
         return internal.orchestrate(config).then(() => {
           expect(CreditCardForm.prototype.setSupportedCardTypes).toHaveBeenCalledTimes(1);
@@ -373,12 +373,12 @@ describe('internal', () => {
         }
       });
 
-      expect(global.bus.on).toHaveBeenCalledTimes(1);
-      expect(global.bus.on).toHaveBeenCalledWith(events.TOKENIZATION_REQUEST, expect.any(Function));
+      expect(window.bus.on).toHaveBeenCalledTimes(1);
+      expect(window.bus.on).toHaveBeenCalledWith(events.TOKENIZATION_REQUEST, expect.any(Function));
     });
 
     it('sets up a global card form', () => {
-      expect(global.cardForm).toBeFalsy();
+      expect(window.cardForm).toBeFalsy();
 
       jest.spyOn(assembleIFrames, 'assembleIFrames').mockReturnValue([]);
 
@@ -391,11 +391,11 @@ describe('internal', () => {
         }
       });
 
-      expect(global.cardForm).toBeInstanceOf(CreditCardForm);
+      expect(window.cardForm).toBeInstanceOf(CreditCardForm);
     });
 
     it('creates a client initialization promise', () => {
-      jest.spyOn(global.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
+      jest.spyOn(window.bus, 'emit').mockImplementation(yieldsByEventAsync(events.READY_FOR_CLIENT, configuration()));
       jest.spyOn(assembleIFrames, 'assembleIFrames').mockReturnValue([]);
 
       internal.orchestrate({
@@ -406,7 +406,7 @@ describe('internal', () => {
         }
       });
 
-      expect(global.bus.emit.mock.calls.filter(value => value[0] === events.READY_FOR_CLIENT).length).toEqual(1);
+      expect(window.bus.emit.mock.calls.filter(value => value[0] === events.READY_FOR_CLIENT).length).toEqual(1);
     });
   });
 

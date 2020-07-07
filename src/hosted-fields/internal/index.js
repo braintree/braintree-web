@@ -64,9 +64,9 @@ function initialize(cardForm) {
     createInputsForAutofill(form);
   }
 
-  global.bus.on(events.AUTOFILL_EXPIRATION_DATE, autofillHandler(fieldComponent));
+  window.bus.on(events.AUTOFILL_EXPIRATION_DATE, autofillHandler(fieldComponent));
 
-  global.bus.on(events.REMOVE_FOCUS_INTERCEPTS, function (data) {
+  window.bus.on(events.REMOVE_FOCUS_INTERCEPTS, function (data) {
     focusIntercept.destroy(data && data.id);
   });
 
@@ -116,7 +116,7 @@ function createInputsForAutofill(form) {
   expMonthInput.addEventListener('keydown', function () {
     setTimeout(function () {
       fix1PasswordAdjustment(form);
-      global.bus.emit(events.AUTOFILL_EXPIRATION_DATE, {
+      window.bus.emit(events.AUTOFILL_EXPIRATION_DATE, {
         month: expMonthInput.value,
         year: expYearInput.value,
         cvv: cvvInput.value
@@ -185,21 +185,21 @@ function resetPlaceholder(element) {
 function shimPlaceholder() {
   var input;
 
-  if (!global.placeholderShim) { return; }
+  if (!window.placeholderShim) { return; }
 
   input = document.querySelector('input[data-braintree-name]');
   if (!input) { return; }
 
-  global.placeholderShim(input);
+  window.placeholderShim(input);
 }
 
 function create() {
   var componentId = location.hash.slice(1, location.hash.length);
   var name = frameName.getFrameName();
 
-  global.bus = new Bus({channel: componentId});
+  window.bus = new Bus({channel: componentId});
 
-  global.bus.emit(events.FRAME_READY, {
+  window.bus.emit(events.FRAME_READY, {
     field: name
   }, orchestrate);
 }
@@ -319,7 +319,7 @@ function orchestrate(configuration) {
   var cardForm = new CreditCardForm(configuration);
   var iframes = assembleIFrames.assembleIFrames(window.parent);
   var clientPromise = new Promise(function (resolve) {
-    global.bus.emit(events.READY_FOR_CLIENT, function (configurationFromMerchantPage) {
+    window.bus.emit(events.READY_FOR_CLIENT, function (configurationFromMerchantPage) {
       resolve(new Client(configurationFromMerchantPage));
     });
   }).then(function (client) {
@@ -346,14 +346,14 @@ function orchestrate(configuration) {
 
   analytics.sendEvent(clientPromise, 'custom.hosted-fields.load.succeeded');
 
-  global.bus.on(events.TOKENIZATION_REQUEST, function (options, reply) {
+  window.bus.on(events.TOKENIZATION_REQUEST, function (options, reply) {
     var tokenizationHandler = createTokenizationHandler(clientPromise, cardForm);
 
     tokenizationHandler(options, reply);
   });
 
   // Globalize cardForm is global so other components (UnionPay) can access it
-  global.cardForm = cardForm;
+  window.cardForm = cardForm;
 
   return clientPromise;
 }

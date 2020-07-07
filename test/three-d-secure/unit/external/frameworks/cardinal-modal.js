@@ -42,7 +42,7 @@ describe('CardinalModalFramework', () => {
     });
 
     afterEach(() => {
-      delete global.Cardinal;
+      delete window.Cardinal;
     });
 
     it('creates a cardinal style modal for v1 fallback', () => {

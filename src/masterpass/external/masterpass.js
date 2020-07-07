@@ -66,8 +66,8 @@ function Masterpass(options) {
   this._assetsUrl = configuration.gatewayConfiguration.assetsUrl + '/web/' + VERSION;
   this._isDebug = configuration.isDebug;
   this._authInProgress = false;
-  if (global.popupBridge && typeof global.popupBridge.getReturnUrlPrefix === 'function') {
-    this._callbackUrl = global.popupBridge.getReturnUrlPrefix() + 'return';
+  if (window.popupBridge && typeof window.popupBridge.getReturnUrlPrefix === 'function') {
+    this._callbackUrl = window.popupBridge.getReturnUrlPrefix() + 'return';
   } else {
     this._callbackUrl = this._assetsUrl + '/html/redirect-frame' + (this._isDebug ? '' : '.min') + '.html';
   }
@@ -180,7 +180,7 @@ Masterpass.prototype._navigateFrameToLoadingPage = function (options) {
     endpoint: 'masterpass/request_token',
     data: {
       requestToken: {
-        originUrl: global.location.protocol + '//' + global.location.hostname,
+        originUrl: window.location.protocol + '//' + window.location.hostname,
         subtotal: options.subtotal,
         currencyCode: options.currencyCode,
         callbackUrl: this._callbackUrl
@@ -228,7 +228,7 @@ Masterpass.prototype._navigateFrameToLoadingPage = function (options) {
 Masterpass.prototype._createFrameOpenHandler = function (resolve, reject) {
   var self = this;
 
-  if (global.popupBridge) {
+  if (window.popupBridge) {
     return function (popupBridgeErr, payload) {
       self._authInProgress = false;
 
@@ -313,7 +313,7 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
     }
   }).then(function (response) {
     self._closeWindow();
-    if (global.popupBridge) {
+    if (window.popupBridge) {
       analytics.sendEvent(self._client, 'masterpass.tokenization.success-popupbridge');
     } else {
       analytics.sendEvent(self._client, 'masterpass.tokenization.success');
@@ -322,7 +322,7 @@ Masterpass.prototype._tokenizeMasterpass = function (payload) {
     return response.masterpassCards[0];
   }).catch(function (tokenizeErr) {
     self._closeWindow();
-    if (global.popupBridge) {
+    if (window.popupBridge) {
       analytics.sendEvent(self._client, 'masterpass.tokenization.failed-popupbridge');
     } else {
       analytics.sendEvent(self._client, 'masterpass.tokenization.failed');

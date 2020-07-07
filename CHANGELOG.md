@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## 3.63.0
+* Update framebus to v4.0.2 (fixes #504)
+* Update restricted-input to v2.1.1
+* Update @braintree/extended-promise to v0.3.1
+* Use `window` instead of `global` in source code (closes #401)
+* PayPal Checkout
+  * Add `loadPayPalSDK` method to dynamically load the v5 PayPal SDK
+
 ## 3.62.2
 * Update framebus to v4.0.1
 

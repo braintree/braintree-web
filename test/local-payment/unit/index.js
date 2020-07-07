@@ -19,7 +19,7 @@ describe('local payment', () => {
   });
 
   afterEach(() => {
-    delete global.popupBridge;
+    delete window.popupBridge;
   });
 
   describe('create', () => {

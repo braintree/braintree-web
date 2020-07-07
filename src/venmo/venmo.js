@@ -43,7 +43,7 @@ Venmo.prototype.getUrl = function () {
   return this._createPromise.then(function (client) {
     var configuration = client.getConfiguration();
     var params = {};
-    var currentUrl = this._deepLinkReturnUrl || global.location.href.replace(global.location.hash, '');
+    var currentUrl = this._deepLinkReturnUrl || window.location.href.replace(window.location.hash, '');
     var venmoConfiguration = configuration.gatewayConfiguration.payWithVenmo;
     var analyticsMetadata = configuration.analyticsMetadata;
     var braintreeData = {
@@ -58,7 +58,7 @@ Venmo.prototype.getUrl = function () {
     params['x-success'] = currentUrl + '#venmoSuccess=1';
     params['x-cancel'] = currentUrl + '#venmoCancel=1';
     params['x-error'] = currentUrl + '#venmoError=1';
-    params.ua = global.navigator.userAgent;
+    params.ua = window.navigator.userAgent;
     /* eslint-disable camelcase */
     params.braintree_merchant_id = this._profileId || venmoConfiguration.merchantId;
     params.braintree_access_token = venmoConfiguration.accessToken;
@@ -160,7 +160,7 @@ Venmo.prototype.tokenize = function (options) {
   this._tokenizationInProgress = true;
   this._tokenizePromise = new ExtendedPromise();
 
-  this._previousHash = global.location.hash;
+  this._previousHash = window.location.hash;
 
   function completeFlow(hash) {
     var error;
@@ -168,8 +168,8 @@ Venmo.prototype.tokenize = function (options) {
     self._processResults(hash).catch(function (err) {
       error = err;
     }).then(function (res) {
-      if (!self._ignoreHistoryChanges && global.location.hash !== self._previousHash) {
-        global.location.hash = self._previousHash;
+      if (!self._ignoreHistoryChanges && window.location.hash !== self._previousHash) {
+        window.location.hash = self._previousHash;
       }
       self._removeVisibilityEventListener();
 
@@ -205,7 +205,7 @@ Venmo.prototype.tokenize = function (options) {
   this._visibilityChangeListener = function () {
     var delay = options.processResultsDelay || constants.DEFAULT_PROCESS_RESULTS_DELAY;
 
-    if (!global.document.hidden) {
+    if (!window.document.hidden) {
       self._tokenizationInProgress = false;
 
       if (!resultProcessingInProgress) {
@@ -217,20 +217,24 @@ Venmo.prototype.tokenize = function (options) {
   return this.getUrl().then(function (url) {
     if (self._deepLinkReturnUrl) {
       if (isIosWebview()) {
+        analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.ios-webview');
         // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open.
-        global.location.href = url;
+        window.location.href = url;
       } else if (global.popupBridge && typeof global.popupBridge.open === 'function') {
-        global.popupBridge.open(url);
+        analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.popup-bridge');
+        window.popupBridge.open(url);
       } else {
-        global.open(url);
+        analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.webview');
+        window.open(url);
       }
     } else {
-      global.open(url);
+      analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.browser');
+      window.open(url);
     }
 
     // Add a brief delay to ignore visibility change events that occur right before app switch
     setTimeout(function () {
-      global.document.addEventListener(documentVisibilityChangeEventName(), self._visibilityChangeListener);
+      window.document.addEventListener(documentVisibilityChangeEventName(), self._visibilityChangeListener);
     }, constants.DOCUMENT_VISIBILITY_CHANGE_EVENT_DELAY);
 
     return self._tokenizePromise;
@@ -257,8 +261,8 @@ Venmo.prototype.teardown = function () {
 };
 
 Venmo.prototype._removeVisibilityEventListener = function () {
-  global.removeEventListener('hashchange', this._onHashChangeListener);
-  global.document.removeEventListener(documentVisibilityChangeEventName(), this._visibilityChangeListener);
+  window.removeEventListener('hashchange', this._onHashChangeListener);
+  window.document.removeEventListener(documentVisibilityChangeEventName(), this._visibilityChangeListener);
 
   delete this._visibilityChangeListener;
   delete this._onHashChangeListener;
@@ -303,13 +307,13 @@ Venmo.prototype._clearFragmentParameters = function () {
     return;
   }
 
-  if (typeof global.history.replaceState === 'function' && global.location.hash) {
-    history.pushState({}, '', global.location.href.slice(0, global.location.href.indexOf('#')));
+  if (typeof window.history.replaceState === 'function' && window.location.hash) {
+    history.pushState({}, '', window.location.href.slice(0, window.location.href.indexOf('#')));
   }
 };
 
 function getFragmentParameters(hash) {
-  var keyValuesArray = (hash || global.location.hash.substring(1)).split('&');
+  var keyValuesArray = (hash || window.location.hash.substring(1)).split('&');
 
   return keyValuesArray.reduce(function (toReturn, keyValue) {
     var parts = keyValue.split('=');
@@ -340,11 +344,11 @@ function formatTokenizePayload(fragmentParams) {
 function documentVisibilityChangeEventName() {
   var visibilityChange;
 
-  if (typeof global.document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and later support
+  if (typeof window.document.hidden !== 'undefined') { // Opera 12.10 and Firefox 18 and later support
     visibilityChange = 'visibilitychange';
-  } else if (typeof global.document.msHidden !== 'undefined') {
+  } else if (typeof window.document.msHidden !== 'undefined') {
     visibilityChange = 'msvisibilitychange';
-  } else if (typeof global.document.webkitHidden !== 'undefined') {
+  } else if (typeof window.document.webkitHidden !== 'undefined') {
     visibilityChange = 'webkitvisibilitychange';
   }
 
@@ -355,8 +359,8 @@ function isIosWebview() {
   // we know it's a webview because this flow only gets
   // used when checking the deep link flow
   // test the platform here to get around custom useragents
-  return global.navigator.platform &&
-    /iPhone|iPad|iPod/.test(global.navigator.platform);
+  return window.navigator.platform &&
+    /iPhone|iPad|iPod/.test(window.navigator.platform);
 }
 
 module.exports = wrapPromise.wrapPrototype(Venmo);

@@ -10,18 +10,18 @@ var getHostedFieldsCardForm = require('./get-hosted-fields-cardform');
 var UnionPay = require('../shared/unionpay');
 
 function create() {
-  global.bus = new Bus({
+  window.bus = new Bus({
     channel: getFrameName()
   });
 
-  global.bus.emit(Bus.events.CONFIGURATION_REQUEST, initialize);
+  window.bus.emit(Bus.events.CONFIGURATION_REQUEST, initialize);
 }
 
 function initialize(clientConfiguration) {
   var client = new Client(clientConfiguration);
   var unionpay = new UnionPay({client: client});
 
-  global.bus.on(events.HOSTED_FIELDS_FETCH_CAPABILITIES, function (options, reply) {
+  window.bus.on(events.HOSTED_FIELDS_FETCH_CAPABILITIES, function (options, reply) {
     var hostedFieldsNumber;
     var hostedFieldsCardForm = getHostedFieldsCardForm.get(client, options.hostedFields);
 
@@ -45,7 +45,7 @@ function initialize(clientConfiguration) {
     }
   });
 
-  global.bus.on(events.HOSTED_FIELDS_ENROLL, function (options, reply) {
+  window.bus.on(events.HOSTED_FIELDS_ENROLL, function (options, reply) {
     var hostedFieldsCardData;
     var hostedFieldsCardForm = getHostedFieldsCardForm.get(client, options.hostedFields);
 
@@ -75,7 +75,7 @@ function initialize(clientConfiguration) {
     }
   });
 
-  global.bus.on(events.HOSTED_FIELDS_TOKENIZE, function (options, reply) {
+  window.bus.on(events.HOSTED_FIELDS_TOKENIZE, function (options, reply) {
     var hostedFieldsCardData;
     var hostedFieldsCardForm = getHostedFieldsCardForm.get(client, options.hostedFields);
 
@@ -107,7 +107,7 @@ function initialize(clientConfiguration) {
 }
 
 function getFrameName() {
-  return global.name.split('_')[1].split('?')[0];
+  return window.name.split('_')[1].split('?')[0];
 }
 
 module.exports = {

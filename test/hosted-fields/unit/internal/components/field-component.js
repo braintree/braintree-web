@@ -47,7 +47,7 @@ describe('FieldComponent', () => {
 
       handler();
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, {
+      expect(window.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, {
         field: 'cvv',
         direction: directions.BACK
       });
@@ -58,7 +58,7 @@ describe('FieldComponent', () => {
 
       handler();
 
-      expect(global.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, {
+      expect(window.bus.emit).toHaveBeenCalledWith(events.TRIGGER_FOCUS_CHANGE, {
         field: 'cvv',
         direction: directions.FORWARD
       });

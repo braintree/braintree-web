@@ -955,8 +955,8 @@ describe('SongbirdFramework', () => {
       let currentTime = 0;
       let instance;
 
-      testContext.date = global.Date;
-      global.Date.now = () => {
+      testContext.date = window.Date;
+      window.Date.now = () => {
         currentTime += 10;
 
         return currentTime;
@@ -970,7 +970,7 @@ describe('SongbirdFramework', () => {
       return instance.setupSongbird().then(() => {
         expect(instance._clientMetadata.cardinalDeviceDataCollectionTimeElapsed).toBeDefined();
         expect(instance._clientMetadata.cardinalDeviceDataCollectionTimeElapsed).toBeGreaterThan(0);
-        global.Date = testContext.date;
+        window.Date = testContext.date;
       });
     });
 

@@ -373,10 +373,10 @@ function isVisibleEnough(node) {
   var horizontalMidpoint = Math.floor(boundingBox.width / 2);
 
   return (
-    boundingBox.top < (global.innerHeight - verticalMidpoint || document.documentElement.clientHeight - verticalMidpoint) &&
+    boundingBox.top < (window.innerHeight - verticalMidpoint || document.documentElement.clientHeight - verticalMidpoint) &&
     boundingBox.right > horizontalMidpoint &&
     boundingBox.bottom > verticalMidpoint &&
-    boundingBox.left < (global.innerWidth - horizontalMidpoint || document.documentElement.clientWidth - horizontalMidpoint)
+    boundingBox.left < (window.innerWidth - horizontalMidpoint || document.documentElement.clientWidth - horizontalMidpoint)
   );
 }
 

@@ -14,7 +14,7 @@ function Popup(options) {
 Popup.prototype.initialize = noop;
 
 Popup.prototype.open = function () {
-  this._frame = global.open(
+  this._frame = window.open(
     this._options.openFrameUrl,
     this._options.name,
     composeOptions(this._options)

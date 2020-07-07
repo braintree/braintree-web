@@ -1,3 +1,3 @@
 'use strict';
 
-global.placeholderShim = require('./simple-placeholder-shim');
+window.placeholderShim = require('./simple-placeholder-shim');

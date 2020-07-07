@@ -1440,6 +1440,221 @@ describe('PayPalCheckout', () => {
     });
   });
 
+  describe('loadPayPalSDK', () => {
+    let fakeScript;
+
+    beforeEach(() => {
+      fakeScript = document.createElement('script');
+      jest.spyOn(document.body, 'appendChild').mockImplementation();
+      jest.spyOn(document, 'createElement').mockReturnValue(fakeScript);
+    });
+
+    afterEach(() => {
+      if (fakeScript.parentNode) {
+        fakeScript.parentNode.removeChild(fakeScript);
+      }
+    });
+
+    it('loads the PayPal script onto the page', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(document.body.appendChild).toBeCalledTimes(1);
+        expect(document.body.appendChild).toBeCalledWith(fakeScript);
+        expect(fakeScript.src).toMatch('https://www.paypal.com/sdk/js?');
+      });
+    });
+
+    it('resolves with the PayPal Checkout instance', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then((ppInstance) => {
+        expect(ppInstance).toBe(instance);
+      });
+    });
+
+    it('uses the client id from getClientId by default when in production', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._configuration.gatewayConfiguration.environment = 'production';
+      jest.spyOn(instance, 'getClientId').mockResolvedValue('fake-id');
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(instance.getClientId).toBeCalledTimes(1);
+        expect(fakeScript.src).toMatch('client-id=fake-id');
+      });
+    });
+
+    it('uses sb for client id when not in production', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._configuration.gatewayConfiguration.environment = 'sandbox';
+      jest.spyOn(instance, 'getClientId').mockResolvedValue('fake-id');
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(instance.getClientId).toBeCalledTimes(1);
+        expect(fakeScript.src).toMatch('client-id=sb');
+      });
+    });
+
+    it('can use a custom client id', () => {
+      const instance = testContext.paypalCheckout;
+
+      jest.spyOn(instance, 'getClientId').mockResolvedValue('wrong-id');
+
+      const promise = instance.loadPayPalSDK({
+        'client-id': 'custom-id'
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(instance.getClientId).toBeCalledTimes(0);
+        expect(fakeScript.src).toMatch('client-id=custom-id');
+      });
+    });
+
+    it('uses components=buttons by default', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).toMatch('components=buttons');
+      });
+    });
+
+    it('can pass a custom components property', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        components: 'messages,buttons,mark'
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).toMatch('components=messages%2Cbuttons%2Cmark');
+      });
+    });
+
+    it('uses intent=authorize by default', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).toMatch('intent=authorize');
+      });
+    });
+
+    it('does not pass a default intent when using the vault flow', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        vault: true
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).not.toMatch('intent=');
+      });
+    });
+
+    it('can pass a custom intent property', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        intent: 'capture'
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).toMatch('intent=capture');
+      });
+    });
+
+    it('uses currency=USD by default', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).toMatch('currency=USD');
+      });
+    });
+
+    it('does not pass a default currency when using the vault flow', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        vault: true
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).not.toMatch('currency=');
+      });
+    });
+
+    it('can pass a custom currency property', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        currency: 'XYZ'
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).toMatch('currency=XYZ');
+      });
+    });
+
+    it('can pass arbitrary params', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        foo: 'foo',
+        bar: 'bar',
+        baz: 'baz'
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).toMatch('foo=foo');
+        expect(fakeScript.src).toMatch('bar=bar');
+        expect(fakeScript.src).toMatch('baz=baz');
+      });
+    });
+  });
+
   describe('teardown', () => {
     it('replaces all methods so error is thrown when methods are invoked', done => {
       const instance = testContext.paypalCheckout;
@@ -1457,6 +1672,32 @@ describe('PayPalCheckout', () => {
         });
 
         done();
+      });
+    });
+
+    it('removes PayPal script from the page if it exists', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._paypalScript = document.createElement('script');
+
+      jest.spyOn(document.body, 'removeChild');
+      document.body.appendChild(instance._paypalScript);
+
+      return instance.teardown().then(() => {
+        expect(document.body.removeChild).toBeCalledTimes(1);
+        expect(document.body.removeChild).toBeCalledWith(instance._paypalScript);
+      });
+    });
+
+    it('does not remove paypal script if it is not on the DOM', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._paypalScript = document.createElement('script');
+
+      jest.spyOn(document.body, 'removeChild');
+
+      return instance.teardown().then(() => {
+        expect(document.body.removeChild).toBeCalledTimes(0);
       });
     });
   });

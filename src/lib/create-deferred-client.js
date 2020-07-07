@@ -14,7 +14,7 @@ function createDeferredClient(options) {
     return Promise.resolve(options.client);
   }
 
-  if (!(global.braintree && global.braintree.client)) {
+  if (!(window.braintree && window.braintree.client)) {
     promise = assets.loadScript({
       src: options.assetsUrl + '/web/' + VERSION + '/js/client.min.js'
     }).catch(function (err) {
@@ -30,15 +30,15 @@ function createDeferredClient(options) {
   }
 
   return promise.then(function () {
-    if (global.braintree.client.VERSION !== VERSION) {
+    if (window.braintree.client.VERSION !== VERSION) {
       return Promise.reject(new BraintreeError({
         type: sharedErrors.INCOMPATIBLE_VERSIONS.type,
         code: sharedErrors.INCOMPATIBLE_VERSIONS.code,
-        message: 'Client (version ' + global.braintree.client.VERSION + ') and ' + options.name + ' (version ' + VERSION + ') components must be from the same SDK version.'
+        message: 'Client (version ' + window.braintree.client.VERSION + ') and ' + options.name + ' (version ' + VERSION + ') components must be from the same SDK version.'
       }));
     }
 
-    return global.braintree.client.create({
+    return window.braintree.client.create({
       authorization: options.authorization,
       debug: options.debug
     });

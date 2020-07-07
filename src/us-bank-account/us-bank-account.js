@@ -356,8 +356,8 @@ USBankAccount.prototype._loadPlaid = function (callback) {
 
   callback = once(callback);
 
-  if (global.Plaid) {
-    callback(null, global.Plaid);
+  if (window.Plaid) {
+    callback(null, window.Plaid);
 
     return;
   }
@@ -386,7 +386,7 @@ function addLoadListeners(script, callback) {
 
     if (!readyState || readyState === 'loaded' || readyState === 'complete') {
       removeLoadListeners();
-      callback(null, global.Plaid);
+      callback(null, window.Plaid);
     }
   }
 

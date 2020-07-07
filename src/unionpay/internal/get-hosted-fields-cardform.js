@@ -4,7 +4,7 @@ var composeHostedFieldsUrl = require('../../hosted-fields/external/compose-url')
 
 function getCardForm(client, hostedFieldsInstance) {
   var i, frame;
-  var frames = global.parent.frames;
+  var frames = window.parent.frames;
   var clientConfig = client.getConfiguration();
   var assetsUrl = clientConfig.gatewayConfiguration.assetsUrl;
   var isDebug = clientConfig.isDebug;

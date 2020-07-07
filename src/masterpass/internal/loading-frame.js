@@ -19,7 +19,7 @@ function start() {
   script.src = 'https://' + envSubdomain + 'static.masterpass.com/dyn/js/switch/integration/MasterPass.client.js';
 
   script.onload = function () {
-    global.MasterPass.client.checkout(config);
+    window.MasterPass.client.checkout(config);
   };
 
   document.body.appendChild(script);

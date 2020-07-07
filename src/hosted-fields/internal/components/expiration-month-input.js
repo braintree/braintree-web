@@ -49,7 +49,7 @@ ExpirationMonthInput.prototype.addBusEventListeners = function () {
   ExpirationSplitInput.prototype.addBusEventListeners.call(this);
 
   if (this.getConfiguration().select) {
-    global.bus.on(events.SET_MONTH_OPTIONS, this._updateMonthOptions.bind(this));
+    window.bus.on(events.SET_MONTH_OPTIONS, this._updateMonthOptions.bind(this));
   }
 };
 

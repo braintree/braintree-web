@@ -224,7 +224,7 @@ ApplePay.prototype.performValidation = function (options) {
   return this._waitForClient().then(function () {
     var applePayWebSession = {
       validationUrl: options.validationURL,
-      domainName: options.domainName || global.location.hostname,
+      domainName: options.domainName || window.location.hostname,
       merchantIdentifier: options.merchantIdentifier || self.merchantIdentifier
     };
 

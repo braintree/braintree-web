@@ -219,7 +219,7 @@ FrameService.prototype._pollForPopupClose = function () {
 
 FrameService.prototype._getFrameForEnvironment = function (options) {
   var usePopup = browserDetection.supportsPopups();
-  var popupBridgeExists = Boolean(global.popupBridge);
+  var popupBridgeExists = Boolean(window.popupBridge);
 
   var initOptions = assign({}, this._options, options);
 

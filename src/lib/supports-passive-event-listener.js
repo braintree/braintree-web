@@ -12,8 +12,8 @@ try {
     }
   });
 
-  global.addEventListener('testPassive', null, opts);
-  global.removeEventListener('testPassive', null, opts);
+  window.addEventListener('testPassive', null, opts);
+  window.removeEventListener('testPassive', null, opts);
 } catch (e) {
   // ignore errors
 }

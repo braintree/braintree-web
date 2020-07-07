@@ -748,8 +748,8 @@ describe('Payment Request component', () => {
 
   describe('canMakePayment', () => {
     beforeEach(() => {
-      testContext.originalPaymentRequest = global.PaymentRequest;
-      global.PaymentRequest = testContext.originalPaymentRequest || {};
+      testContext.originalPaymentRequest = window.PaymentRequest;
+      window.PaymentRequest = testContext.originalPaymentRequest || {};
 
       testContext.configuration = {
         details: {},
@@ -763,7 +763,7 @@ describe('Payment Request component', () => {
     });
 
     afterEach(() => {
-      global.PaymentRequest = testContext.originalPaymentRequest;
+      window.PaymentRequest = testContext.originalPaymentRequest;
     });
 
     it('emits a canMakePayment event', () =>
@@ -809,7 +809,7 @@ describe('Payment Request component', () => {
     it('resolves with `false` if Payment Request global is not present', () => {
       Bus.prototype.emit.mockImplementation(yieldsAsync([null, true]));
 
-      delete global.PaymentRequest;
+      delete window.PaymentRequest;
 
       return testContext.pr.canMakePayment(testContext.configuration).then(result => {
         expect(result).toBe(false);

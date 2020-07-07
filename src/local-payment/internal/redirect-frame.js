@@ -9,14 +9,14 @@ function start(cb) {
   // focus. This timer will close the popup frame if the parent hasn't replied to the event to
   // indicate that it can close the popup.
   var closeTimer = setTimeout(function () {
-    global.close();
+    window.close();
   }, 1000);
   var redirectUrl, returnText;
   var params = querystring.parse();
 
   if (params.r && params.t) {
-    redirectUrl = sanitizeUrl(global.decodeURIComponent(params.r));
-    returnText = global.decodeURIComponent(params.t);
+    redirectUrl = sanitizeUrl(window.decodeURIComponent(params.r));
+    returnText = window.decodeURIComponent(params.t);
   }
 
   frameService.report(null, params, function (err) {

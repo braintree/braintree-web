@@ -5,15 +5,15 @@ var events = require('../shared/events');
 var clone = require('../../json-clone');
 
 function start() {
-  var serviceChannel = global.name.split('_')[1].split('?')[0];
+  var serviceChannel = window.name.split('_')[1].split('?')[0];
   var configuration;
 
-  global.bus = new Bus({channel: serviceChannel});
-  global.bus.emit(Bus.events.CONFIGURATION_REQUEST, function (localConfiguration) {
+  window.bus = new Bus({channel: serviceChannel});
+  window.bus.emit(Bus.events.CONFIGURATION_REQUEST, function (localConfiguration) {
     configuration = localConfiguration;
-    global.bus.emit(events.DISPATCH_FRAME_READY);
+    window.bus.emit(events.DISPATCH_FRAME_READY);
   });
-  global.getConfiguration = function () {
+  window.getConfiguration = function () {
     return clone(configuration);
   };
 }

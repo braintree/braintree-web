@@ -98,13 +98,13 @@ describe('Masterpass', () => {
 
   describe('PopupBridge exists', () => {
     beforeEach(() => {
-      global.popupBridge = {
+      window.popupBridge = {
         getReturnUrlPrefix: () => 'testscheme://'
       };
     });
 
     afterEach(() => {
-      delete global.popupBridge;
+      delete window.popupBridge;
     });
 
     it('returns popupbridge callbackUrl', () => {
@@ -128,11 +128,11 @@ describe('Masterpass', () => {
 
     describe('with popupbridge', () => {
       beforeEach(() => {
-        global.popupBridge = {};
+        window.popupBridge = {};
       });
 
       afterEach(() => {
-        delete global.popupBridge;
+        delete window.popupBridge;
       });
 
       it('resolves with nonce when tokenize is called', () => {
@@ -687,7 +687,7 @@ describe('Masterpass', () => {
             method: 'post',
             data: {
               requestToken: {
-                originUrl: `${global.location.protocol}//${global.location.hostname}`,
+                originUrl: `${window.location.protocol}//${window.location.hostname}`,
                 subtotal: testContext.options.subtotal,
                 currencyCode: testContext.options.currencyCode,
                 callbackUrl: expect.stringMatching(/^https:\/\/assets.braintreegateway.com\/web\/.*redirect-frame.html$/)

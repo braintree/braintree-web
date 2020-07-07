@@ -86,11 +86,11 @@ describe('masterpass', () => {
 
     describe('with popupbridge', () => {
       beforeEach(() => {
-        global.popupBridge = {};
+        window.popupBridge = {};
       });
 
       afterEach(() => {
-        delete global.popupBridge;
+        delete window.popupBridge;
       });
 
       it('allows unsupported browser when PopupBridge is defined', () => {
@@ -105,11 +105,11 @@ describe('masterpass', () => {
 
   describe('isSupported', () => {
     afterEach(() => {
-      delete global.popupBridge;
+      delete window.popupBridge;
     });
 
     it('returns true if popupBridge exists', () => {
-      global.popupBridge = {};
+      window.popupBridge = {};
 
       expect(isSupported()).toBe(true);
     });
@@ -127,7 +127,7 @@ describe('masterpass', () => {
     });
 
     it('returns true if popupBridge exists and browser does not support popups', () => {
-      global.popupBridge = {};
+      window.popupBridge = {};
       jest.spyOn(browserDetection, 'supportsPopups').mockReturnValue(false);
 
       expect(isSupported()).toBe(true);

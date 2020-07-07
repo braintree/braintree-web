@@ -122,7 +122,7 @@ CreditCardForm.prototype.emitEvent = function (fieldKey, eventType) {
     };
   });
 
-  global.bus.emit(events.INPUT_EVENT, {
+  window.bus.emit(events.INPUT_EVENT, {
     merchantPayload: {
       cards: cards,
       emittedBy: fieldKey,
@@ -166,7 +166,7 @@ CreditCardForm.prototype._onNumberChange = function (number, metadata) {
   }
 
   if ((!oldNumber || oldNumber.length < 6) && (number && number.length >= 6)) {
-    global.bus.emit(events.BIN_AVAILABLE, number.substr(0, 6));
+    window.bus.emit(events.BIN_AVAILABLE, number.substr(0, 6));
   }
 };
 
@@ -347,7 +347,7 @@ function onFieldFocusChange(form, field) {
   return function (isFocused) {
     if (!cardFormHasStartedBeingFilled) {
       cardFormHasStartedBeingFilled = true;
-      global.bus.emit(events.CARD_FORM_ENTRY_HAS_BEGUN);
+      window.bus.emit(events.CARD_FORM_ENTRY_HAS_BEGUN);
     }
 
     form._fieldKeys.forEach(function (key) {

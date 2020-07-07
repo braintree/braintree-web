@@ -4,11 +4,11 @@ var events = require('../shared/events');
 var constants = require('../shared/constants');
 
 function getServiceId() {
-  return global.name.split('_')[1].split('?')[0];
+  return window.name.split('_')[1].split('?')[0];
 }
 
 function getFrame() {
-  var parent = global.opener || global.parent;
+  var parent = window.opener || window.parent;
   var frameRef = constants.DISPATCH_FRAME_NAME + '_' + getServiceId();
   var frame = parent.frames[frameRef];
 
@@ -40,7 +40,7 @@ function report(err, payload, callback) {
 
 function asyncClose() {
   setTimeout(function () {
-    global.close();
+    window.close();
   }, constants.POPUP_CLOSE_TIMEOUT);
 }
 

@@ -18,7 +18,7 @@ function getConfiguration(authData) {
     var configuration, attrs, configUrl, reqOptions;
     var sessionId = uuid();
     var analyticsMetadata = {
-      merchantAppId: global.location.host,
+      merchantAppId: window.location.host,
       platform: constants.PLATFORM,
       sdkVersion: constants.VERSION,
       source: constants.SOURCE,

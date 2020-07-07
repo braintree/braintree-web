@@ -29,7 +29,7 @@ describe('PayPal', () => {
   });
 
   afterEach(() => {
-    delete global.popupBridge;
+    delete window.popupBridge;
   });
 
   describe('Constructor', () => {
@@ -331,7 +331,7 @@ describe('PayPal', () => {
     });
 
     it('returns PopupBridge return and cancel urls', () => {
-      global.popupBridge = {
+      window.popupBridge = {
         getReturnUrlPrefix: () => 'testscheme://'
       };
       const actual = PayPal.prototype._formatPaymentResourceData.call({
@@ -460,7 +460,7 @@ describe('PayPal', () => {
       testContext.context._client.request.mockResolvedValue({
         paymentResource: {}
       });
-      global.popupBridge = {};
+      window.popupBridge = {};
 
       return PayPal.prototype._navigateFrameToAuth.call(testContext.context, testContext.options).then(() => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.context._client, 'paypal.tokenization.opened-popupbridge');
@@ -868,7 +868,7 @@ describe('PayPal', () => {
       ['not', undefined, ''] // eslint-disable-line no-undefined
     ])('%s using popupBridge', (s, popupBridgeValue, analytic) => {
       beforeEach(() => {
-        global.popupBridge = popupBridgeValue;
+        window.popupBridge = popupBridgeValue;
       });
 
       it('calls _tokenizePayPal with appropriate options when successful', () => {
@@ -993,7 +993,7 @@ describe('PayPal', () => {
     it('calls analytics with popupBridge failure if there was a problem', () => {
       const fakeError = {};
 
-      global.popupBridge = {};
+      window.popupBridge = {};
 
       testContext.context._client.request.mockRejectedValue(fakeError);
 
@@ -1030,7 +1030,7 @@ describe('PayPal', () => {
     it('calls popupBridge analytics with success if no error', () => {
       const fakeResponse = {};
 
-      global.popupBridge = {};
+      window.popupBridge = {};
       testContext.context._formatTokenizePayload = () => fakeResponse;
       testContext.context._client.request.mockResolvedValue();
 

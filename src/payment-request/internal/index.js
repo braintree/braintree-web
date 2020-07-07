@@ -8,28 +8,28 @@ var Client = require('../../client/client');
 var Promise = require('../../lib/promise');
 
 function create() {
-  var componentId = global.location.hash.slice(1, global.location.hash.length);
+  var componentId = window.location.hash.slice(1, window.location.hash.length);
 
-  global.bus = new Bus({channel: componentId});
+  window.bus = new Bus({channel: componentId});
 
-  global.bus.on(constants.events.PAYMENT_REQUEST_INITIALIZED, initializePaymentRequest);
+  window.bus.on(constants.events.PAYMENT_REQUEST_INITIALIZED, initializePaymentRequest);
 
-  global.bus.on(constants.events.CAN_MAKE_PAYMENT, canMakePayment);
+  window.bus.on(constants.events.CAN_MAKE_PAYMENT, canMakePayment);
 
-  global.bus.emit(constants.events.FRAME_READY, function (response) {
-    global.client = new Client(response);
-    global.bus.emit(constants.events.FRAME_CAN_MAKE_REQUESTS);
+  window.bus.emit(constants.events.FRAME_READY, function (response) {
+    window.client = new Client(response);
+    window.bus.emit(constants.events.FRAME_CAN_MAKE_REQUESTS);
   });
 
-  global.bus.on(constants.events.UPDATE_SHIPPING_ADDRESS, function (data) {
-    if (global.shippingAddressChangeResolveFunction) {
-      global.shippingAddressChangeResolveFunction(data);
+  window.bus.on(constants.events.UPDATE_SHIPPING_ADDRESS, function (data) {
+    if (window.shippingAddressChangeResolveFunction) {
+      window.shippingAddressChangeResolveFunction(data);
     }
   });
 
-  global.bus.on(constants.events.UPDATE_SHIPPING_OPTION, function (data) {
-    if (global.shippingOptionChangeResolveFunction) {
-      global.shippingOptionChangeResolveFunction(data);
+  window.bus.on(constants.events.UPDATE_SHIPPING_OPTION, function (data) {
+    if (window.shippingOptionChangeResolveFunction) {
+      window.shippingOptionChangeResolveFunction(data);
     }
   });
 }
@@ -38,7 +38,7 @@ function makePaymentRequest(data) {
   var paymentRequest;
 
   try {
-    paymentRequest = new global.PaymentRequest(data.supportedPaymentMethods, data.details, data.options);
+    paymentRequest = new window.PaymentRequest(data.supportedPaymentMethods, data.details, data.options);
   } catch (err) {
     return Promise.reject({
       name: 'PAYMENT_REQUEST_INITIALIZATION_FAILED',
@@ -71,18 +71,18 @@ function initializePaymentRequest(data, reply) {
     if (data.options && data.options.requestShipping) {
       paymentRequest.addEventListener('shippingaddresschange', function (event) {
         event.updateWith(new Promise(function (resolve) {
-          global.shippingAddressChangeResolveFunction = resolve;
+          window.shippingAddressChangeResolveFunction = resolve;
         }));
 
-        global.bus.emit(constants.events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
+        window.bus.emit(constants.events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
       });
 
       paymentRequest.addEventListener('shippingoptionchange', function (event) {
         event.updateWith(new Promise(function (resolve) {
-          global.shippingOptionChangeResolveFunction = resolve;
+          window.shippingOptionChangeResolveFunction = resolve;
         }));
 
-        global.bus.emit(constants.events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
+        window.bus.emit(constants.events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
       });
     }
 
@@ -117,8 +117,8 @@ function initializePaymentRequest(data, reply) {
       name: err.name
     }]);
   }).then(function () {
-    delete global.shippingAddressChangeResolveFunction;
-    delete global.shippingOptionChangeResolveFunction;
+    delete window.shippingAddressChangeResolveFunction;
+    delete window.shippingOptionChangeResolveFunction;
 
     if (paymentResponse) {
       paymentResponse.complete();
@@ -130,7 +130,7 @@ function tokenize(paymentResponse) {
   var parsedResponse;
 
   if (paymentResponse.methodName === 'basic-card') {
-    return global.client.request({
+    return window.client.request({
       endpoint: 'payment_methods/credit_cards',
       method: 'post',
       data: formatPaymentResponse(paymentResponse)

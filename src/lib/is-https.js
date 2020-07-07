@@ -1,7 +1,7 @@
 'use strict';
 
 function isHTTPS(protocol) {
-  protocol = protocol || global.location.protocol;
+  protocol = protocol || window.location.protocol;
 
   return protocol === 'https:';
 }

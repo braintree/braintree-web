@@ -86,7 +86,7 @@ function create(options) {
  * @returns {Boolean} Returns true if Masterpass supports this browser.
  */
 function isSupported() {
-  return Boolean(global.popupBridge || browserDetection.supportsPopups());
+  return Boolean(window.popupBridge || browserDetection.supportsPopups());
 }
 
 module.exports = {

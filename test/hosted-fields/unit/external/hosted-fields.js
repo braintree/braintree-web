@@ -51,7 +51,7 @@ describe('HostedFields', () => {
     testContext = null;
     document.body.innerHTML = null;
     Client.clearCache();
-    delete global.braintree;
+    delete window.braintree;
   });
 
   describe('Constructor', () => {

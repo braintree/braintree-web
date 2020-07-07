@@ -33,7 +33,7 @@ describe('LocalPayment', () => {
   });
 
   afterEach(() => {
-    delete global.popupBridge;
+    delete window.popupBridge;
   });
 
   describe('Constructor', () => {
@@ -489,13 +489,13 @@ describe('LocalPayment', () => {
       }));
 
     it('sends analytics event for successful tokenizations with popupbridge', () => {
-      global.popupBridge = {};
+      window.popupBridge = {};
 
       return testContext.localPayment.tokenize(testContext.options).then(() => {
         expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
         expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.client, 'ideal.local-payment.tokenization.success-popupbridge');
 
-        delete global.popupBridge;
+        delete window.popupBridge;
       });
     });
 

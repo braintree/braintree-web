@@ -35,7 +35,7 @@ describe('InlineIframeFramework', () => {
       'continue': jest.fn()
     };
     jest.spyOn(assets, 'loadScript').mockImplementation(() => {
-      global.Cardinal = testContext.fakeCardinal;
+      window.Cardinal = testContext.fakeCardinal;
 
       // allow a slight delay so timing tests can run
       return wait(5);
@@ -90,7 +90,7 @@ describe('InlineIframeFramework', () => {
     });
 
     afterEach(() => {
-      delete global.Cardinal;
+      delete window.Cardinal;
     });
 
     it('configures Cardinal to use inline framework', () => {
@@ -100,7 +100,7 @@ describe('InlineIframeFramework', () => {
       });
 
       return framework.setupSongbird().then(() => {
-        expect(global.Cardinal.configure).toHaveBeenCalledWith({
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
           payment: {
             framework: 'inline'
           }
@@ -116,7 +116,7 @@ describe('InlineIframeFramework', () => {
       });
 
       return framework.setupSongbird().then(() => {
-        expect(global.Cardinal.configure).toHaveBeenCalledWith({
+        expect(window.Cardinal.configure).toHaveBeenCalledWith({
           payment: {
             framework: 'inline'
           },
@@ -134,7 +134,7 @@ describe('InlineIframeFramework', () => {
       });
 
       return framework.setupSongbird().then(() => {
-        expect(global.Cardinal.on).toHaveBeenCalledWith('ui.inline.setup', expect.any(Function));
+        expect(window.Cardinal.on).toHaveBeenCalledWith('ui.inline.setup', expect.any(Function));
       });
     });
   });

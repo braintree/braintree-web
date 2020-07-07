@@ -1,15 +1,15 @@
 'use strict';
 
 function top(height) {
-  var windowHeight = global.outerHeight || document.documentElement.clientHeight;
-  var windowTop = global.screenY == null ? global.screenTop : global.screenY;
+  var windowHeight = window.outerHeight || document.documentElement.clientHeight;
+  var windowTop = window.screenY == null ? window.screenTop : window.screenY;
 
   return center(windowHeight, height, windowTop);
 }
 
 function left(width) {
-  var windowWidth = global.outerWidth || document.documentElement.clientWidth;
-  var windowLeft = global.screenX == null ? global.screenLeft : global.screenX;
+  var windowWidth = window.outerWidth || document.documentElement.clientWidth;
+  var windowLeft = window.screenX == null ? window.screenLeft : window.screenX;
 
   return center(windowWidth, width, windowLeft);
 }

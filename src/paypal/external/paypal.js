@@ -275,7 +275,7 @@ PayPal.prototype.tokenize = function (options, callback) {
     } else {
       self._authorizationInProgress = true;
 
-      if (!global.popupBridge) {
+      if (!window.popupBridge) {
         analytics.sendEvent(client, 'paypal.tokenization.opened');
       }
 
@@ -308,7 +308,7 @@ PayPal.prototype._createFrameServiceCallback = function (options, resolve, rejec
   var self = this;
   var client = this._client;
 
-  if (global.popupBridge) {
+  if (window.popupBridge) {
     return function (err, payload) {
       var canceled = payload && payload.path && payload.path.substring(0, 7) === '/cancel';
 
@@ -352,7 +352,7 @@ PayPal.prototype._tokenizePayPal = function (options, params) {
   var self = this;
   var client = this._client;
 
-  if (!global.popupBridge) {
+  if (!window.popupBridge) {
     this._frameService.redirect(this._loadingFrameUrl);
   }
 
@@ -363,7 +363,7 @@ PayPal.prototype._tokenizePayPal = function (options, params) {
   }).then(function (response) {
     var payload = self._formatTokenizePayload(response);
 
-    if (global.popupBridge) {
+    if (window.popupBridge) {
       analytics.sendEvent(client, 'paypal.tokenization.success-popupbridge');
     } else {
       analytics.sendEvent(client, 'paypal.tokenization.success');
@@ -377,7 +377,7 @@ PayPal.prototype._tokenizePayPal = function (options, params) {
 
     return payload;
   }).catch(function (err) {
-    if (global.popupBridge) {
+    if (window.popupBridge) {
       analytics.sendEvent(client, 'paypal.tokenization.failed-popupbridge');
     } else {
       analytics.sendEvent(client, 'paypal.tokenization.failed');
@@ -468,7 +468,7 @@ PayPal.prototype._navigateFrameToAuth = function (options) {
       redirectUrl = querystring.queryify(redirectUrl, {useraction: 'commit'});
     }
 
-    if (global.popupBridge) {
+    if (window.popupBridge) {
       analytics.sendEvent(client, 'paypal.tokenization.opened-popupbridge');
     }
 
@@ -515,9 +515,9 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
     }
   };
 
-  if (global.popupBridge && typeof global.popupBridge.getReturnUrlPrefix === 'function') {
-    paymentResource.returnUrl = global.popupBridge.getReturnUrlPrefix() + 'return';
-    paymentResource.cancelUrl = global.popupBridge.getReturnUrlPrefix() + 'cancel';
+  if (window.popupBridge && typeof window.popupBridge.getReturnUrlPrefix === 'function') {
+    paymentResource.returnUrl = window.popupBridge.getReturnUrlPrefix() + 'return';
+    paymentResource.cancelUrl = window.popupBridge.getReturnUrlPrefix() + 'cancel';
   }
 
   if (options.flow === 'checkout') {

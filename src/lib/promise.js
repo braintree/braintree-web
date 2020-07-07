@@ -1,9 +1,12 @@
 'use strict';
 
-var Promise = global.Promise || require('promise-polyfill');
+var PromisePolyfill = require('promise-polyfill');
 var ExtendedPromise = require('@braintree/extended-promise');
 
-ExtendedPromise.suppressUnhandledPromiseMessage = true;
-ExtendedPromise.setPromise(Promise);
+// eslint-disable-next-line no-undef
+var PromiseGlobal = typeof Promise !== 'undefined' ? Promise : PromisePolyfill;
 
-module.exports = Promise;
+ExtendedPromise.suppressUnhandledPromiseMessage = true;
+ExtendedPromise.setPromise(PromiseGlobal);
+
+module.exports = PromiseGlobal;

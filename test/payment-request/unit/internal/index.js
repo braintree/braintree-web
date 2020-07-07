@@ -40,7 +40,7 @@ describe('Payment Request Frame', () => {
       }
     }
 
-    global.PaymentRequest = PaymentRequest;
+    window.PaymentRequest = PaymentRequest;
   });
 
   afterEach(() => {
@@ -49,11 +49,11 @@ describe('Payment Request Frame', () => {
 
   describe('create', () => {
     it('gets channel id from window hash', () => {
-      global.location.hash = '123';
+      window.location.hash = '123';
 
       paymentRequestFrame.create();
 
-      expect(global.bus.channel).toBe('123');
+      expect(window.bus.channel).toBe('123');
     });
 
     it('emits a FRAME_READY event', () => {
@@ -86,9 +86,9 @@ describe('Payment Request Frame', () => {
       frameReadyHandler(testContext.fakeClient);
 
       process.nextTick(() => {
-        expect(global.client).toBeInstanceOf(Client);
+        expect(window.client).toBeInstanceOf(Client);
 
-        delete global.client;
+        delete window.client;
         done();
       });
     });
@@ -114,12 +114,12 @@ describe('Payment Request Frame', () => {
     it('calls update with on shipping address change event', () => {
       const data = {};
 
-      global.shippingAddressChangeResolveFunction = jest.fn();
+      window.shippingAddressChangeResolveFunction = jest.fn();
       Bus.prototype.on.mockImplementation(yieldsByEvent(events.UPDATE_SHIPPING_ADDRESS, data));
       paymentRequestFrame.create();
 
-      expect(global.shippingAddressChangeResolveFunction).toHaveBeenCalledTimes(1);
-      expect(global.shippingAddressChangeResolveFunction).toHaveBeenCalledWith(data);
+      expect(window.shippingAddressChangeResolveFunction).toHaveBeenCalledTimes(1);
+      expect(window.shippingAddressChangeResolveFunction).toHaveBeenCalledWith(data);
     });
 
     it('listens for shipping option change event', () => {
@@ -131,12 +131,12 @@ describe('Payment Request Frame', () => {
     it('calls update with on shipping option change event', () => {
       const data = {};
 
-      global.shippingOptionChangeResolveFunction = jest.fn();
+      window.shippingOptionChangeResolveFunction = jest.fn();
       Bus.prototype.on.mockImplementation(yieldsByEvent(events.UPDATE_SHIPPING_OPTION, data));
       paymentRequestFrame.create();
 
-      expect(global.shippingOptionChangeResolveFunction).toHaveBeenCalledTimes(1);
-      expect(global.shippingOptionChangeResolveFunction).toHaveBeenCalledWith(data);
+      expect(window.shippingOptionChangeResolveFunction).toHaveBeenCalledTimes(1);
+      expect(window.shippingOptionChangeResolveFunction).toHaveBeenCalledWith(data);
     });
   });
 
@@ -148,7 +148,7 @@ describe('Payment Request Frame', () => {
         options: {}
       };
       paymentRequestFrame.create();
-      global.client = {
+      window.client = {
         request: jest.fn().mockResolvedValue({
           creditCards: [{
             nonce: 'a-nonce',
@@ -159,9 +159,9 @@ describe('Payment Request Frame', () => {
     });
 
     afterEach(() => {
-      delete global.bus;
-      delete global.PaymentRequest;
-      delete global.client;
+      delete window.bus;
+      delete window.PaymentRequest;
+      delete window.client;
     });
 
     it('initializes a payment request', () => {
@@ -223,7 +223,7 @@ describe('Payment Request Frame', () => {
       return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
         expect(Bus.prototype.emit).toHaveBeenCalledWith(events.SHIPPING_ADDRESS_CHANGE, event.target.shippingAddress);
         expect(event.updateWith).toHaveBeenCalledTimes(1);
-        expect(global.shippingAddressChangeResolveFunction).toBeUndefined();
+        expect(window.shippingAddressChangeResolveFunction).toBeUndefined();
       });
     });
 
@@ -244,9 +244,9 @@ describe('Payment Request Frame', () => {
       testContext.addEventListenerStub = jest.fn(yieldsByEvent('shippingoptionchange', event));
 
       return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
-        expect(global.bus.emit).toHaveBeenCalledWith(events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
+        expect(window.bus.emit).toHaveBeenCalledWith(events.SHIPPING_OPTION_CHANGE, event.target.shippingOption);
         expect(event.updateWith).toHaveBeenCalledTimes(1);
-        expect(global.shippingOptionChangeResolveFunction).toBeUndefined();
+        expect(window.shippingOptionChangeResolveFunction).toBeUndefined();
       });
     });
 
@@ -307,7 +307,7 @@ describe('Payment Request Frame', () => {
         methodName: 'basic-card',
         details: {}
       });
-      global.client.request.mockRejectedValue(new Error('some error'));
+      window.client.request.mockRejectedValue(new Error('some error'));
 
       return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
         expect(testContext.completeStub).toHaveBeenCalledTimes(1);
@@ -345,8 +345,8 @@ describe('Payment Request Frame', () => {
 
       it('tokenizes result of payment request', () =>
         paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
-          expect(global.client.request).toHaveBeenCalledTimes(1);
-          expect(global.client.request).toHaveBeenCalledWith({
+          expect(window.client.request).toHaveBeenCalledTimes(1);
+          expect(window.client.request).toHaveBeenCalledWith({
             endpoint: 'payment_methods/credit_cards',
             method: 'post',
             data: {
@@ -388,8 +388,8 @@ describe('Payment Request Frame', () => {
         });
 
         return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
-          expect(global.client.request).toHaveBeenCalledTimes(1);
-          expect(global.client.request).toHaveBeenCalledWith({
+          expect(window.client.request).toHaveBeenCalledTimes(1);
+          expect(window.client.request).toHaveBeenCalledWith({
             endpoint: 'payment_methods/credit_cards',
             method: 'post',
             data: {
@@ -423,8 +423,8 @@ describe('Payment Request Frame', () => {
         });
 
         return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
-          expect(global.client.request).toHaveBeenCalledTimes(1);
-          expect(global.client.request).toHaveBeenCalledWith({
+          expect(window.client.request).toHaveBeenCalledTimes(1);
+          expect(window.client.request).toHaveBeenCalledWith({
             endpoint: 'payment_methods/credit_cards',
             method: 'post',
             data: {
@@ -490,7 +490,7 @@ describe('Payment Request Frame', () => {
           message: 'a message'
         });
 
-        global.client.request.mockRejectedValue(error);
+        window.client.request.mockRejectedValue(error);
 
         return paymentRequestFrame.initializePaymentRequest(testContext.fakeDetails, testContext.replyStub).then(() => {
           expect(testContext.replyStub).toHaveBeenCalledTimes(1);
@@ -621,7 +621,7 @@ describe('Payment Request Frame', () => {
     it('replies with error when payment request initialization fails', () => {
       const paymentRequestError = new Error('TypeError');
 
-      global.PaymentRequest = () => {
+      window.PaymentRequest = () => {
         throw paymentRequestError;
       };
 

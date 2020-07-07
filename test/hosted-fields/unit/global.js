@@ -9,7 +9,7 @@ beforeEach(() => {
 
   document.body.innerHTML = '';
 
-  global.bus = {
+  window.bus = {
     on: jest.fn(),
     emit: jest.fn()
   };

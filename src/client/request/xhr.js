@@ -1,9 +1,9 @@
 'use strict';
 
-var isXHRAvailable = global.XMLHttpRequest && 'withCredentials' in new global.XMLHttpRequest();
+var isXHRAvailable = typeof window !== 'undefined' && window.XMLHttpRequest && 'withCredentials' in new window.XMLHttpRequest();
 
 function getRequestObject() {
-  return isXHRAvailable ? new global.XMLHttpRequest() : new global.XDomainRequest();
+  return isXHRAvailable ? new window.XMLHttpRequest() : new window.XDomainRequest();
 }
 
 module.exports = {
