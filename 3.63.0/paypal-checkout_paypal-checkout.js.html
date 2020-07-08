@@ -279,7 +279,9 @@ var REQUIRED_PARAMS_FOR_START_VAULT_INITIATED_CHECKOUT = [
  *
  * #### Integrate with Checkout.js (deprecated PayPal SDK)
  *
- * You must have PayPal's checkout.js script loaded on your page. You can either use the [paypal-checkout package on npm](https://www.npmjs.com/package/paypal-checkout) with a build tool or use a script hosted by PayPal:
+ * If you are creating a new PayPal integration, please follow the previous integration guide to use the current version of the PayPal SDK. Use this integration guide only as a reference if you are already integrated with Checkout.js.
+ *
+ * You must have PayPal's Checkout.js script loaded on your page.
  *
  * ```html
  * &lt;script src="https://www.paypalobjects.com/api/checkout.js" data-version-4 log-level="warn">&lt;/script>
@@ -413,8 +415,8 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  */
 
 /**
- * Creates a PayPal payment ID or billing token using the given options. This is meant to be passed to PayPal's checkout.js library.
- * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the checkout.js library. Otherwise, it returns a Promise that resolves with the id.
+ * Creates a PayPal payment ID or billing token using the given options. This is meant to be passed to the PayPal JS SDK.
+ * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the PayPal JS SDK. Otherwise, it returns a Promise that resolves with the id.
  * @public
  * @param {object} options All options for the PayPalCheckout component.
  * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow. If 'vault' is used with a client token generated with a customer ID, the PayPal account will be added to that customer as a saved payment method.
@@ -473,11 +475,11 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
 * @property {lineItem[]} [options.lineItems] The line items for this transaction. It can include up to 249 line items.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
- * // this paypal object is created by checkout.js
- * // see https://github.com/paypal/paypal-checkout
+ * // this paypal object is created by the PayPal JS SDK
+ * // see https://github.com/paypal/paypal-checkout-components
  * paypal.Buttons({
  *   createOrder: function () {
- *     // when createPayment resolves, it is automatically passed to checkout.js
+ *     // when createPayment resolves, it is automatically passed to the PayPal JS SDK
  *     return paypalCheckoutInstance.createPayment({
  *       flow: 'checkout',
  *       amount: '10.00',
@@ -620,7 +622,7 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
 
 /**
  * Initializes the PayPal checkout flow with a payment method nonce that represents a vaulted PayPal account.
- * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the checkout.js library. Otherwise, it returns a Promise that resolves with the id.
+ * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the PayPal JS SDK. Otherwise, it returns a Promise that resolves with the id.
  * @public
  * @ignore
  * @param {object} options These options are identical to the {@link PayPalCheckout#createPayment|options for creating a payment resource}, except for the following:
@@ -839,7 +841,7 @@ PayPalCheckout.prototype._constructVaultCheckutUrl = function (frameName) {
 };
 
 /**
- * Tokenizes the authorize data from PayPal's checkout.js library when completing a buyer approval flow.
+ * Tokenizes the authorize data from the PayPal JS SDK when completing a buyer approval flow.
  * When a {@link callback} is defined, invokes the callback with {@link PayPalCheckout~tokenizePayload|tokenizePayload} and returns undefined. Otherwise, returns a Promise that resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @public
  * @param {object} tokenizeOptions Tokens and IDs required to tokenize the payment.
@@ -876,7 +878,7 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     intent: tokenizeOptions.intent
   };
   var params = {
-    // The paymentToken provided by Checkout.js v4 is the ECToken
+    // The paymentToken provided by the PayPal JS SDK is the EC Token
     ecToken: tokenizeOptions.paymentToken,
     billingToken: tokenizeOptions.billingToken,
     payerId: tokenizeOptions.payerID,

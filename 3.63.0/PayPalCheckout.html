@@ -225,7 +225,8 @@
 });
 </code></pre>
 <h4>Integrate with Checkout.js (deprecated PayPal SDK)</h4>
-<p>You must have PayPal's checkout.js script loaded on your page. You can either use the <a href="https://www.npmjs.com/package/paypal-checkout">paypal-checkout package on npm</a> with a build tool or use a script hosted by PayPal:</p>
+<p>If you are creating a new PayPal integration, please follow the previous integration guide to use the current version of the PayPal SDK. Use this integration guide only as a reference if you are already integrated with Checkout.js.</p>
+<p>You must have PayPal's Checkout.js script loaded on your page.</p>
 <pre class="prettyprint source lang-html"><code>&lt;script src=&quot;https://www.paypalobjects.com/api/checkout.js&quot; data-version-4 log-level=&quot;warn&quot;>&lt;/script>
 </code></pre>
 <pre class="prettyprint source lang-javascript"><code>braintree.client.create({
@@ -352,7 +353,7 @@
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line214">line 214</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line216">line 216</a>
         </li>
       </ul>
     </dd>
@@ -418,8 +419,8 @@
 
 
   <div class="description">
-    <p>Creates a PayPal payment ID or billing token using the given options. This is meant to be passed to PayPal's checkout.js library.
-When a <a href="global.html#callback">callback</a> is defined, the function returns undefined and invokes the callback with the id to be used with the checkout.js library. Otherwise, it returns a Promise that resolves with the id.</p>
+    <p>Creates a PayPal payment ID or billing token using the given options. This is meant to be passed to the PayPal JS SDK.
+When a <a href="global.html#callback">callback</a> is defined, the function returns undefined and invokes the callback with the id to be used with the PayPal JS SDK. Otherwise, it returns a Promise that resolves with the id.</p>
   </div>
 
 
@@ -1642,7 +1643,7 @@ and <code>zh_TW</code>.</p>
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line454">line 454</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line456">line 456</a>
         </li>
       </ul>
     </dd>
@@ -1676,11 +1677,11 @@ and <code>zh_TW</code>.</p>
     <h5 id="createPayment-examples">Examples</h5>
     
 
-  <pre class="prettyprint"><code>// this paypal object is created by checkout.js
-// see https://github.com/paypal/paypal-checkout
+  <pre class="prettyprint"><code>// this paypal object is created by the PayPal JS SDK
+// see https://github.com/paypal/paypal-checkout-components
 paypal.Buttons({
   createOrder: function () {
-    // when createPayment resolves, it is automatically passed to checkout.js
+    // when createPayment resolves, it is automatically passed to the PayPal JS SDK
     return paypalCheckoutInstance.createPayment({
       flow: 'checkout',
       amount: '10.00',
@@ -1891,7 +1892,7 @@ braintree.client.create({
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line839">line 839</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line841">line 841</a>
         </li>
       </ul>
     </dd>
@@ -2362,7 +2363,7 @@ braintree.client.create({
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line876">line 876</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line878">line 878</a>
         </li>
       </ul>
     </dd>
@@ -2565,7 +2566,7 @@ braintree.client.create({
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line1063">line 1063</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line1065">line 1065</a>
         </li>
       </ul>
     </dd>
@@ -2636,7 +2637,7 @@ braintree.client.create({
 
 
   <div class="description">
-    <p>Tokenizes the authorize data from PayPal's checkout.js library when completing a buyer approval flow.
+    <p>Tokenizes the authorize data from the PayPal JS SDK when completing a buyer approval flow.
 When a <a href="global.html#callback">callback</a> is defined, invokes the callback with <a href="PayPalCheckout.html#~tokenizePayload">tokenizePayload</a> and returns undefined. Otherwise, returns a Promise that resolves with a <a href="PayPalCheckout.html#~tokenizePayload">tokenizePayload</a>.</p>
   </div>
 
@@ -2986,7 +2987,7 @@ When a <a href="global.html#callback">callback</a> is defined, invokes the callb
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line767">line 767</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line769">line 769</a>
         </li>
       </ul>
     </dd>
@@ -3430,7 +3431,7 @@ paypal.Buttons({
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line287">line 287</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line289">line 289</a>
         </li>
       </ul>
     </dd>
@@ -3779,7 +3780,7 @@ paypal.Buttons({
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line299">line 299</a>
+          <a href="paypal-checkout_paypal-checkout.js.html">paypal-checkout/paypal-checkout.js</a>, <a href="paypal-checkout_paypal-checkout.js.html#line301">line 301</a>
         </li>
       </ul>
     </dd>

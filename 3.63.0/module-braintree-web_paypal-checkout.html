@@ -108,7 +108,7 @@
       
         
           <div class="description">
-            <p>A component to integrate with the <a href="https://github.com/paypal/paypal-checkout">PayPal Checkout.js library</a>.</p>
+            <p>A component to integrate with the <a href="https://github.com/paypal/paypal-checkout-components">PayPal JS SDK</a>.</p>
           </div>
         
 
@@ -629,7 +629,7 @@
     client: clientInstance
   });
 }).then(function (paypalCheckoutInstance) {
-  // set up checkout.js
+  // set up the PayPal JS SDK
 }).catch(function (err) {
   console.error('Error!', err);
 });</code></pre>
@@ -694,7 +694,7 @@
         <dd>
           <ul class="dummy">
             <li>
-              Previously, this method checked for Popup support in the browser. Checkout.js now falls back to a modal if popups are not supported.
+              Previously, this method checked for Popup support in the browser. The PayPal JS SDK now falls back to a modal if popups are not supported.
             </li>
           </ul>
         </dd>
