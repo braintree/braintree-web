@@ -369,7 +369,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.landingPageType] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.
  * * `login` - A PayPal account login page is used.
  * * `billing` - A non-PayPal account landing page is used.
-* @property {lineItem[]} [options.lineItems] The line items for this transaction. It can include up to 249 line items.
+ * @param {lineItem[]} [options.lineItems] The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK

@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## 3.64.1
+* Update restricted-input to v3.0.2
+
 ## 3.64.0
 * Use @braintree/uuid for uuid generation
 * Update @braintree/browser-detection to v1.10.0

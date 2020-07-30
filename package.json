@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.64.0",
+  "version": "3.64.1",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -31,7 +31,7 @@
     "framebus": "4.0.2",
     "inject-stylesheet": "3.0.0",
     "promise-polyfill": "8.1.3",
-    "restricted-input": "3.0.1"
+    "restricted-input": "3.0.2"
   },
   "devDependencies": {
     "browserify": "^16.5.0",
