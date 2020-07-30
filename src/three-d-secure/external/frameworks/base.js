@@ -10,7 +10,7 @@ var errors = require('../../shared/errors');
 var iFramer = require('@braintree/iframer');
 var Bus = require('../../../lib/bus');
 var constants = require('../../shared/constants');
-var uuid = require('../../../lib/vendor/uuid');
+var uuid = require('@braintree/uuid');
 var events = require('../../shared/events');
 var useMin = require('../../../lib/use-min');
 

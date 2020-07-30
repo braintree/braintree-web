@@ -3,6 +3,7 @@
 const internal = require('../../../../src/hosted-fields/internal/index');
 const frameName = require('../../../../src/hosted-fields/internal/get-frame-name');
 const { events } = require('../../../../src/hosted-fields/shared/constants');
+const browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
 const { CreditCardForm } = require('../../../../src/hosted-fields/internal/models/credit-card-form');
 const analytics = require('../../../../src/lib/analytics');
 const { fake: { configuration }, yieldsByEventAsync } = require('../../../helpers');
@@ -65,6 +66,131 @@ describe('internal', () => {
         expect(cvv.autocomplete).toBe('cc-csc');
         expect(expMonth.autocomplete).toBe('cc-exp-month');
         expect(expYear.autocomplete).toBe('cc-exp-year');
+        expect(cvv.tabIndex).toBe(-1);
+        expect(expMonth.tabIndex).toBe(-1);
+        expect(expYear.tabIndex).toBe(-1);
+        expect(cvv.getAttribute('aria-hidden')).toBe('true');
+        expect(expMonth.getAttribute('aria-hidden')).toBe('true');
+        expect(expYear.getAttribute('aria-hidden')).toBe('true');
+      });
+
+      it('periodically checks for changes to the values of the hidden inputs', () => {
+        let cvv, expMonth, expYear;
+
+        document.body.innerHTML = '';
+
+        jest.useFakeTimers();
+
+        frameName.getFrameName.mockReturnValue('number');
+        internal.initialize(testContext.cardForm);
+
+        cvv = document.querySelector('#cvv-autofill-field');
+        expMonth = document.querySelector('#expiration-month-autofill-field');
+        expYear = document.querySelector('#expiration-year-autofill-field');
+
+        jest.advanceTimersByTime(1000);
+
+        expect(window.bus.emit).not.toBeCalled();
+
+        cvv.value = '123';
+
+        jest.advanceTimersByTime(1000);
+
+        expect(window.bus.emit).toBeCalledTimes(1);
+        expect(window.bus.emit).toBeCalledWith('hosted-fields:AUTOFILL_DATA_AVAILABLE', {
+          month: '',
+          year: '',
+          cvv: '123'
+        });
+
+        window.bus.emit.mockClear();
+
+        jest.advanceTimersByTime(1000);
+
+        expect(window.bus.emit).not.toBeCalled();
+
+        expMonth.value = '02';
+        expYear.value = '31';
+
+        jest.advanceTimersByTime(1000);
+
+        expect(window.bus.emit).toBeCalledTimes(1);
+        expect(window.bus.emit).toBeCalledWith('hosted-fields:AUTOFILL_DATA_AVAILABLE', {
+          month: '02',
+          year: '31',
+          cvv: '123'
+        });
+
+        window.bus.emit.mockClear();
+
+        jest.advanceTimersByTime(1000);
+
+        expect(window.bus.emit).not.toBeCalled();
+      });
+
+      it('does not set tabindex for hidden autofill inputs on Chrome for iOS', () => {
+        let cvv, expMonth, expYear;
+
+        document.body.innerHTML = '';
+
+        jest.spyOn(browserDetection, 'isChromeIos').mockReturnValue(true);
+
+        frameName.getFrameName.mockReturnValue('number');
+        internal.initialize(testContext.cardForm);
+
+        cvv = document.querySelector('#cvv-autofill-field');
+        expMonth = document.querySelector('#expiration-month-autofill-field');
+        expYear = document.querySelector('#expiration-year-autofill-field');
+
+        expect(cvv.autocomplete).toBe('cc-csc');
+        expect(expMonth.autocomplete).toBe('cc-exp-month');
+        expect(expYear.autocomplete).toBe('cc-exp-year');
+        expect(cvv.tabIndex).toBeFalsy();
+        expect(expMonth.tabIndex).toBeFalsy();
+        expect(expYear.tabIndex).toBeFalsy();
+      });
+
+      it('blurs hidden inputs automatically on Chrome for iOS', () => {
+        let cvv, expMonth, expYear;
+
+        document.body.innerHTML = '';
+
+        jest.spyOn(browserDetection, 'isChromeIos').mockReturnValue(true);
+
+        frameName.getFrameName.mockReturnValue('number');
+        internal.initialize(testContext.cardForm);
+
+        cvv = document.querySelector('#cvv-autofill-field');
+        expMonth = document.querySelector('#expiration-month-autofill-field');
+        expYear = document.querySelector('#expiration-year-autofill-field');
+
+        jest.spyOn(cvv, 'blur');
+        jest.spyOn(expMonth, 'blur');
+        jest.spyOn(expYear, 'blur');
+
+        expect(cvv.blur).toBeCalledTimes(0);
+        cvv.focus();
+        expect(cvv.blur).toBeCalledTimes(1);
+
+        expect(expMonth.blur).toBeCalledTimes(0);
+        expMonth.focus();
+        expect(expMonth.blur).toBeCalledTimes(1);
+
+        expect(expYear.blur).toBeCalledTimes(0);
+        expYear.focus();
+        expect(expYear.blur).toBeCalledTimes(1);
+      });
+
+      it('skips autofill input setup when configured', () => {
+        document.body.innerHTML = '';
+
+        testContext.fakeConfig.preventAutofill = true;
+        frameName.getFrameName.mockReturnValue('number');
+        internal.initialize(testContext.cardForm);
+
+        expect(document.querySelector('#cvv-autofill-field')).toBeFalsy();
+        expect(document.querySelector('#expiration-month-autofill-field')).toBeFalsy();
+        expect(document.querySelector('#expiration-year-autofill-field')).toBeFalsy();
       });
 
       it('triggers events on the bus when events occur', () => {

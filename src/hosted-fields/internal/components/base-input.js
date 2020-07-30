@@ -11,7 +11,21 @@ var allowedFields = constants.allowedFields;
 var ENTER_KEY_CODE = 13;
 var DEFAULT_MASK_CHARACTER = '•';
 
-function constructAttributes(attributes) {
+function constructAttributes(options) {
+  var field = options.field;
+  var name = options.name;
+  var attributes = {
+    autocomplete: constants.autocompleteMappings[name],
+    type: options.type,
+    autocorrect: 'off',
+    autocapitalize: 'none',
+    spellcheck: 'false',
+    'class': field,
+    'data-braintree-name': field,
+    name: name,
+    id: name
+  };
+
   if (!attributes.type) {
     if (browserDetection.isIos()) {
       attributes.type = 'text';
@@ -19,6 +33,10 @@ function constructAttributes(attributes) {
     } else {
       attributes.type = 'tel';
     }
+  }
+
+  if (!options.shouldAutofill) {
+    attributes.autocomplete = 'off';
   }
 
   return attributes;
@@ -79,15 +97,10 @@ BaseInput.prototype.constructElement = function () {
   var name = allowedFields[type] ? allowedFields[type].name : null;
 
   var attributes = constructAttributes({
+    field: type,
     type: this.getConfiguration().type,
-    autocomplete: constants.autocompleteMappings[name],
-    autocorrect: 'off',
-    autocapitalize: 'none',
-    spellcheck: 'false',
-    'class': type,
-    'data-braintree-name': type,
     name: name,
-    id: name
+    shouldAutofill: this.model.configuration.preventAutofill !== true
   });
 
   if (this.maxLength) {

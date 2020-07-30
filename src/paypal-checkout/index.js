@@ -1,7 +1,7 @@
 'use strict';
 /**
  * @module braintree-web/paypal-checkout
- * @description A component to integrate with the [PayPal Checkout.js library](https://github.com/paypal/paypal-checkout).
+ * @description A component to integrate with the [PayPal JS SDK](https://github.com/paypal/paypal-checkout-components).
  */
 
 var basicComponentVerification = require('../lib/basic-component-verification');
@@ -27,7 +27,7 @@ var VERSION = process.env.npm_package_version;
  *     client: clientInstance
  *   });
  * }).then(function (paypalCheckoutInstance) {
- *   // set up checkout.js
+ *   // set up the PayPal JS SDK
  * }).catch(function (err) {
  *   console.error('Error!', err);
  * });
@@ -51,7 +51,7 @@ function create(options) {
  * @static
  * @function isSupported
  * @description Returns true if PayPal Checkout [supports this browser](index.html#browser-support-webviews).
- * @deprecated Previously, this method checked for Popup support in the browser. Checkout.js now falls back to a modal if popups are not supported.
+ * @deprecated Previously, this method checked for Popup support in the browser. The PayPal JS SDK now falls back to a modal if popups are not supported.
  * @returns {Boolean} Returns true if PayPal Checkout supports this browser.
  */
 function isSupported() {

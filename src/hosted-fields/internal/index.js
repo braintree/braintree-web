@@ -13,6 +13,7 @@ var FieldComponent = require('./components/field-component').FieldComponent;
 var analytics = require('../../lib/analytics');
 var BraintreeError = require('../../lib/braintree-error');
 var constants = require('../shared/constants');
+var browserDetection = require('../shared/browser-detection');
 var errors = require('../shared/errors');
 var events = constants.events;
 var allowedStyles = constants.allowedStyles;
@@ -21,7 +22,7 @@ var formatCardRequestData = require('./format-card-request-data');
 var normalizeCardType = require('./normalize-card-type');
 var focusIntercept = require('../shared/focus-intercept');
 
-var TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL = 5;
+var CHECK_FOR_NEW_AUTOFILL_DATA_INTERVAL = 100;
 var ALLOWED_BILLING_ADDRESS_FIELDS = [
   'company',
   'countryCodeNumeric',
@@ -60,11 +61,11 @@ function initialize(cardForm) {
 
   form.appendChild(fieldComponent.element);
 
-  if (name === 'number') {
+  if (name === 'number' && !cardForm.configuration.preventAutofill) {
     createInputsForAutofill(form);
   }
 
-  window.bus.on(events.AUTOFILL_EXPIRATION_DATE, autofillHandler(fieldComponent));
+  window.bus.on(events.AUTOFILL_DATA_AVAILABLE, autofillHandler(fieldComponent));
 
   window.bus.on(events.REMOVE_FOCUS_INTERCEPTS, function (data) {
     focusIntercept.destroy(data && data.id);
@@ -80,15 +81,45 @@ function makeMockInput(name) {
   var label = document.createElement('label');
   var input = document.createElement('input');
 
+  label.setAttribute('aria-hidden', true);
   label.setAttribute('for', name + '-autofill-field');
   label.textContent = name;
 
+  input.setAttribute('aria-hidden', true);
   input.id = name + '-autofill-field';
   input.className = 'autofill-field';
   input.type = 'text';
   input.name = name;
-  input.setAttribute('tabindex', -1);
   input.setAttribute('autocomplete', constants.autocompleteMappings[name]);
+
+  // Normally we'd mark these hidden inputs
+  // with tabindex=-1 to prevent the customer
+  // from accidentally navigating to them via
+  // the tab key or software keyboard arrows.
+  // This is fine in most browsers, but Chrome
+  // for iOS has a custom autofill implementation
+  // that will not fill in any inputs that have tabindex
+  // set to -1. To get around this, we simply do not
+  // set the tabindex property for iOS Chrome, but
+  // this leaves the software arrows, making it possible
+  // for the customer to jump to the hidden inputs
+  // inside those iframes. To mitigate this, we simply
+  // blur the hidden input when it is focussed this way.
+  // We have fancy logic in most browsers to navigate
+  // to the following Hosted Fields iframe when a
+  // tab event is detected, but iOS does not allow us
+  // to do that anyway, so there's little downside to
+  // doing this blurring strategy for now. In the future,
+  // if Safari allows us to programmatically focus on
+  // another Hosted Fields iframe, we should update
+  // this logic to focus the next Hosted Fields iframe.
+  if (browserDetection.isChromeIos()) {
+    input.addEventListener('focus', function () {
+      input.blur();
+    });
+  } else {
+    input.setAttribute('tabindex', -1);
+  }
 
   fragment.appendChild(label);
   fragment.appendChild(input);
@@ -106,6 +137,11 @@ function fix1PasswordAdjustment(form) {
 }
 
 function createInputsForAutofill(form) {
+  var cachedValues = {
+    month: '',
+    year: '',
+    cvv: ''
+  };
   var expMonth = makeMockInput('expiration-month');
   var expYear = makeMockInput('expiration-year');
   var cvv = makeMockInput('cvv');
@@ -113,16 +149,24 @@ function createInputsForAutofill(form) {
   var expYearInput = expYear.querySelector('input');
   var cvvInput = cvv.querySelector('input');
 
-  expMonthInput.addEventListener('keydown', function () {
-    setTimeout(function () {
+  setInterval(function () {
+    if (
+      cachedValues.month !== expMonthInput.value ||
+      cachedValues.year !== expYearInput.value ||
+      cachedValues.cvv !== cvvInput.value
+    ) {
+      cachedValues.month = expMonthInput.value;
+      cachedValues.year = expYearInput.value;
+      cachedValues.cvv = cvvInput.value;
+
       fix1PasswordAdjustment(form);
-      window.bus.emit(events.AUTOFILL_EXPIRATION_DATE, {
+      window.bus.emit(events.AUTOFILL_DATA_AVAILABLE, {
         month: expMonthInput.value,
         year: expYearInput.value,
         cvv: cvvInput.value
       });
-    }, TIMEOUT_TO_ALLOW_SAFARI_TO_AUTOFILL);
-  });
+    }
+  }, CHECK_FOR_NEW_AUTOFILL_DATA_INTERVAL);
 
   form.appendChild(expMonth);
   form.appendChild(expYear);

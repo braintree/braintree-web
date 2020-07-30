@@ -2,6 +2,7 @@
 
 var InputComponents = require('./index');
 var constants = require('../../shared/constants');
+var assign = require('../../../lib/assign').assign;
 var LabelComponent = require('./label').LabelComponent;
 var classList = require('@braintree/class-list');
 var focusIntercept = require('../../shared/focus-intercept');
@@ -12,7 +13,12 @@ var directions = constants.navigationDirections;
 module.exports = {
   FieldComponent: function FieldComponent(options) {
     var type = options.type;
-    var attribution = allowedFields[type];
+    var attribution = assign({}, allowedFields[type]);
+    var customLabel = options.cardForm.configuration.fields[type].internalLabel;
+
+    if (customLabel) {
+      attribution.label = customLabel;
+    }
 
     this.element = document.createDocumentFragment();
 

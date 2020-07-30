@@ -1,6 +1,27 @@
 CHANGELOG
 =========
 
+## 3.64.0
+* Use @braintree/uuid for uuid generation
+* Update @braintree/browser-detection to v1.10.0
+* Update card-validator to v8.0.0
+* Update credit-card-type to v9.0.1
+* Update iframer to v1.1.0
+* Update inject-stylesheet to v3.0.0
+* Update restricted-input to v3.0.1
+* Update @braintree/asset-loader to v0.4.4
+* Update @braintree/class-list to v0.2.0
+* Update @braintree/event-emitter to v0.4.0
+* Update @braintree/extended-promise to v0.4.0
+* Update @braintree/sanitize-url to v4.1.1
+* Update @braintree/wrap-promise to v2.1.0
+* Hosted Fields
+  * Allow internal labels to be configured for localization with `internalLabel` field property
+  * Mark hidden inputs inside iframe (used to support autofill capabilities in browsers) with `aria-hidden`
+  * Fix issue where autofill would not function in Chrome for iOS (closes #491)
+  * Allow opt out of credit card autofill with `preventAutofill` option
+  * Support web components (closes #495)
+
 ## 3.63.0
 * Update framebus to v4.0.2 (fixes #504)
 * Update restricted-input to v2.1.1

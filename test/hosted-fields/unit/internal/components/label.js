@@ -19,6 +19,6 @@ describe('LabelComponent', () => {
     });
 
     expect(element.getAttribute('for')).toBe('foo');
-    expect(element.innerHTML).toBe('Foo');
+    expect(element.innerText).toBe('Foo');
   });
 });

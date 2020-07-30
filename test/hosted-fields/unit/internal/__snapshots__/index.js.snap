@@ -8,9 +8,7 @@ exports[`internal initialize calls FieldComponent to generate the input 1`] = `
   >
     <label
       for="cvv"
-    >
-      CVV
-    </label>
+    />
     <input
       aria-describedby="field-description-cvv"
       autocapitalize="none"

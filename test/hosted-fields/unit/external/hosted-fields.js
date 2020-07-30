@@ -10,6 +10,7 @@ const HostedFields = require('../../../../src/hosted-fields/external/hosted-fiel
 const getStylesFromClass = require('../../../../src/hosted-fields/external/get-styles-from-class');
 const { events } = require('../../../../src/hosted-fields/shared/constants');
 const Destructor = require('../../../../src/lib/destructor');
+const shadow = require('../../../../src/lib/shadow');
 const EventEmitter = require('@braintree/event-emitter');
 const BraintreeError = require('../../../../src/lib/braintree-error');
 const { fake, noop, rejectIfResolves, findFirstEventCallback, yieldsAsync, yieldsByEvent } = require('../../../helpers');
@@ -261,6 +262,37 @@ describe('HostedFields', () => {
       frameReadyHandler({ field: 'number' }, replyStub);
       frameReadyHandler({ field: 'cvv' }, replyStub);
       frameReadyHandler({ field: 'expirationDate' }, replyStub);
+    });
+
+    it('can pass shadow DOM node directly as container', done => {
+      let frameReadyHandler;
+      const configuration = testContext.defaultConfiguration;
+      const replyStub = jest.fn();
+      const numberNodeContainer = document.createElement('div');
+      const wrapper = document.createElement('div');
+      const numberNode = document.createElement('div');
+      const shadowDom = numberNodeContainer.attachShadow({ mode: 'open' });
+
+      numberNode.id = 'number';
+      shadowDom.appendChild(wrapper);
+      wrapper.appendChild(numberNode);
+
+      document.body.appendChild(numberNodeContainer);
+      jest.spyOn(shadow, 'transformToSlot');
+
+      configuration.fields = {
+        number: { container: numberNode }
+      };
+
+      testContext.instance = new HostedFields(configuration);
+      frameReadyHandler = findFirstEventCallback(events.FRAME_READY, testContext.instance._bus.on.mock.calls);
+
+      testContext.instance.on('ready', () => {
+        expect(shadow.transformToSlot).toBeCalledTimes(1);
+        done();
+      });
+
+      frameReadyHandler({ field: 'number' }, replyStub);
     });
 
     it('must pass a DOM node of type 1', () => {

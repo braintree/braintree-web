@@ -186,3 +186,11 @@ If using the [3D Secure component](module-braintree-web_three-d-secure.html), in
 ### Data Collector Specific Directives
 
 If using Kount with the [Data Collector component](DataCollector.html), adhere to the [Kount CSP guide](https://support.kount.com/s/article/How-is-Content-Security-Policy-Used).
+
+For [Braintree Fraud Protection](https://developers.braintreepayments.com/guides/advanced-fraud-management-tools/overview), use these directives:
+
+|            | Sandbox          | Production       |
+|------------|------------------|------------------|
+| script-src | &#42;.paypal.com | &#42;.paypal.com |
+| child-src  | &#42;.paypal.com | &#42;.paypal.com |
+| frame-src  | &#42;.paypal.com | &#42;.paypal.com |

@@ -13,7 +13,7 @@ var getStylesFromClass = require('./get-styles-from-class');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
 var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
-var uuid = require('../../lib/vendor/uuid');
+var uuid = require('@braintree/uuid');
 var findParentTags = require('../shared/find-parent-tags');
 var browserDetection = require('../shared/browser-detection');
 var events = constants.events;
@@ -22,6 +22,8 @@ var injectFrame = require('./inject-frame');
 var analytics = require('../../lib/analytics');
 var allowedFields = constants.allowedFields;
 var methods = require('../../lib/methods');
+var shadow = require('../../lib/shadow');
+var findRootNode = require('../../lib/find-root-node');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var sharedErrors = require('../../lib/errors');
 var getCardTypes = require('../shared/get-card-types');
@@ -450,7 +452,7 @@ function HostedFields(options) {
   }
 
   Object.keys(options.fields).forEach(function (key) {
-    var field, container, frame, frameReadyPromise;
+    var field, externalContainer, internalContainer, frame, frameReadyPromise;
 
     if (!constants.allowedFields.hasOwnProperty(key)) {
       throw new BraintreeError({
@@ -463,13 +465,13 @@ function HostedFields(options) {
     field = options.fields[key];
     // NEXT_MAJOR_VERSION remove selector as an option
     // and simply make the API take a container
-    container = field.container || field.selector;
+    externalContainer = field.container || field.selector;
 
-    if (typeof container === 'string') {
-      container = document.querySelector(container);
+    if (typeof externalContainer === 'string') {
+      externalContainer = document.querySelector(externalContainer);
     }
 
-    if (!container || container.nodeType !== 1) {
+    if (!externalContainer || externalContainer.nodeType !== 1) {
       throw new BraintreeError({
         type: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.type,
         code: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.code,
@@ -480,7 +482,7 @@ function HostedFields(options) {
           fieldKey: key
         }
       });
-    } else if (container.querySelector('iframe[name^="braintree-"]')) {
+    } else if (externalContainer.querySelector('iframe[name^="braintree-"]')) {
       throw new BraintreeError({
         type: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.type,
         code: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.code,
@@ -491,6 +493,12 @@ function HostedFields(options) {
           fieldKey: key
         }
       });
+    }
+
+    internalContainer = externalContainer;
+
+    if (shadow.isShadowElement(internalContainer)) {
+      internalContainer = shadow.transformToSlot(internalContainer);
     }
 
     if (field.maxlength && typeof field.maxlength !== 'number') {
@@ -522,16 +530,16 @@ function HostedFields(options) {
       title: 'Secure Credit Card Frame - ' + constants.allowedFields[key].label
     });
 
-    this._injectedNodes.push.apply(this._injectedNodes, injectFrame(frame, container, function () {
+    this._injectedNodes.push.apply(this._injectedNodes, injectFrame(frame, internalContainer, function () {
       self._bus.emit(events.TRIGGER_INPUT_FOCUS, {
         field: key
       });
     }));
 
-    this._setupLabelFocus(key, container);
+    this._setupLabelFocus(key, externalContainer);
     fields[key] = {
       frameElement: frame,
-      containerElement: container
+      containerElement: externalContainer
     };
     frameReadyPromise = new Promise(function (resolve) {
       frameReadyPromiseResolveFunctions[key] = resolve;
@@ -543,7 +551,7 @@ function HostedFields(options) {
       isValid: false,
       isPotentiallyValid: true,
       isFocused: false,
-      container: container
+      container: externalContainer
     };
 
     setTimeout(function () {
@@ -684,6 +692,7 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
   var labels, i;
   var shouldSkipLabelFocus = browserDetection.isIos();
   var bus = this._bus;
+  var rootNode = findRootNode(container);
 
   if (shouldSkipLabelFocus) { return; }
   if (container.id == null) { return; }
@@ -694,8 +703,18 @@ HostedFields.prototype._setupLabelFocus = function (type, container) {
     });
   }
 
+  // find any labels in the normal DOM
   labels = Array.prototype.slice.call(document.querySelectorAll('label[for="' + container.id + '"]'));
+  if (rootNode !== document) {
+    // find any labels within the shadow dom
+    labels = labels.concat(Array.prototype.slice.call(rootNode.querySelectorAll('label[for="' + container.id + '"]')));
+  }
+  // find any labels surrounding the container that don't also have the `for` attribute
   labels = labels.concat(findParentTags(container, 'label'));
+  // filter out any accidental duplicates
+  labels = labels.filter(function (label, index, arr) {
+    return arr.indexOf(label) === index;
+  });
 
   for (i = 0; i < labels.length; i++) {
     labels[i].addEventListener('click', triggerFocus, false);

@@ -123,7 +123,7 @@ var constants = {
 
 constants.events = enumerate([
   'ADD_CLASS',
-  'AUTOFILL_EXPIRATION_DATE',
+  'AUTOFILL_DATA_AVAILABLE',
   'BIN_AVAILABLE',
   'CARD_FORM_ENTRY_HAS_BEGUN',
   'CLEAR_FIELD',

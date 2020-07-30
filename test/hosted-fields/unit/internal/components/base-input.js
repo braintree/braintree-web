@@ -26,6 +26,7 @@ describe('Base Input', () => {
       jest.spyOn(BaseInput.prototype, 'render').mockReturnValue(null);
 
       testContext.model = {
+        configuration: {},
         set: jest.fn()
       };
       testContext.type = key;
@@ -153,7 +154,10 @@ describe('Base Input', () => {
             let instance;
 
             testContext.config.type = 'password';
-            instance = new BaseInput({ model: testContext.model, type: 'cvv' });
+            instance = new BaseInput({
+              model: testContext.model,
+              type: testContext.type
+            });
 
             expect(instance.element.getAttribute('type')).toBe('password');
           });
@@ -166,10 +170,27 @@ describe('Base Input', () => {
             let instance;
 
             jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
-            instance = new BaseInput({ model: testContext.model, type: 'cvv' });
+            instance = new BaseInput({
+              model: testContext.model,
+              type: testContext.type
+            });
 
             expect(instance.element.getAttribute('type')).toBe('text');
             expect(instance.element.getAttribute('pattern')).toBe('\\d*');
+          });
+        });
+
+        describe('autocomplete', () => {
+          it('opts out if configured', () => {
+            let instance;
+
+            testContext.model.configuration.preventAutofill = true;
+            instance = new BaseInput({
+              model: testContext.model,
+              type: testContext.type
+            });
+
+            expect(instance.element.getAttribute('autocomplete')).toBe('off');
           });
         });
 
@@ -180,6 +201,7 @@ describe('Base Input', () => {
 
           it('applies autocomplete', () => {
             expect(testContext.instance.element.getAttribute('autocomplete')).toBeDefined();
+            expect(testContext.instance.element.getAttribute('autocomplete')).not.toBe('off');
           });
 
           it('applies autocorrect', () => {

@@ -13,19 +13,38 @@ describe('FieldComponent', () => {
 
   beforeEach(() => {
     testContext = {};
+
+    testContext.focusBackElement = document.createElement('div');
+    testContext.focusBackElement.id = 'back-element';
+    testContext.focusForwardElement = document.createElement('div');
+    testContext.focusForwardElement.id = 'forward-element';
+
+    focusIntercept.generate
+      .mockReturnValueOnce(testContext.focusBackElement)
+      .mockReturnValueOnce(testContext.focusForwardElement);
   });
 
   it.todo('tests filling out logic in Field Component file');
 
+  it('can set a custom label', () => {
+    const modelConfig = getModelConfig([
+      'number',
+      'cvv',
+      'expirationDate'
+    ]);
+
+    modelConfig.fields.cvv.internalLabel = 'Custom Label';
+
+    const fieldComponent = new FieldComponent({
+      cardForm: new CreditCardForm(modelConfig),
+      type: 'cvv'
+    });
+
+    expect(fieldComponent.element.querySelector('label').innerText).toBe('Custom Label');
+  });
+
   describe('focus interceptors', () => {
     beforeEach(() => {
-      testContext.focusBackElement = document.createElement('div');
-      testContext.focusBackElement.id = 'back-element';
-      testContext.focusForwardElement = document.createElement('div');
-      testContext.focusForwardElement.id = 'forward-element';
-
-      focusIntercept.generate.mockReturnValueOnce(testContext.focusBackElement).mockReturnValueOnce(testContext.focusForwardElement);
-
       testContext.fieldComponent = new FieldComponent({
         cardForm: new CreditCardForm(getModelConfig([
           'number',

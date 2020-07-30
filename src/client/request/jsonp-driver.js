@@ -1,7 +1,7 @@
 'use strict';
 
 var head;
-var uuid = require('../../lib/vendor/uuid');
+var uuid = require('@braintree/uuid');
 var querystring = require('../../lib/querystring');
 var timeouts = {};
 
