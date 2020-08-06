@@ -37,6 +37,11 @@ function constructAttributes(options) {
 
   if (!options.shouldAutofill) {
     attributes.autocomplete = 'off';
+    // Chrome ignores the autocomplete=off setting
+    // so we also need to make the name field generic.
+    // Screenreaders should ignore this and use the
+    // label instead of the name attribute
+    attributes.name = 'field';
   }
 
   return attributes;

@@ -191,6 +191,7 @@ describe('Base Input', () => {
             });
 
             expect(instance.element.getAttribute('autocomplete')).toBe('off');
+            expect(instance.element.getAttribute('name')).toBe('field');
           });
         });
 

@@ -49,6 +49,7 @@ function GooglePayment(options) {
   this._createPromise = options.createPromise;
   this._client = options.client;
   this._useDeferredClient = options.useDeferredClient;
+  // NEXT_MAJOR_VERSION this should be updated to 2 (or whatever the current latest version is)
   this._googlePayVersion = options.googlePayVersion || 1;
   this._googleMerchantId = options.googleMerchantId;
 

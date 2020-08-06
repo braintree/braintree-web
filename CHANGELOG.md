@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.64.2
+* Update inject-stylesheet to v4.0.0
+* Hosted Fields
+  * Fix issue where inputs would not load if `-moz` attributes are used in Google Chrome (#516)
+  * Fix issue where `preventAutofill` did not work in the Chrome browser
+
 ## 3.64.1
 * Update restricted-input to v3.0.2
 
