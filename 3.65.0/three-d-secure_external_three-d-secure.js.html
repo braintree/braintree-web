@@ -397,13 +397,29 @@ var FRAMEWORKS = require('./frameworks');
  * &lt;caption>Listening for when the lookup request is complete&lt;/caption>
  * braintree.threeDSecure.create({
  *   client: clientInstance,
- *   version: '2-inline-iframe'
+ *   version: '2'
  * }, function (createErr, threeDSecureInstance) {
  *   threeDSecureInstance.on('lookup-complete', function (data, next) {
  *     // inspect the data
  *
  *     // call next when ready to proceed with the challenge
  *     next();
+ *   });
+ * });
+ */
+
+/**
+ * This event is emitted when using the 3D Secure 2.0 flow and the customer cancels the 3D Secure challenge.
+ * @event ThreeDSecure#customer-canceled
+ * @type {object}
+ * @example
+ * &lt;caption>Listening for when the customer cancels the 3D Secure challenge&lt;/caption>
+ * braintree.threeDSecure.create({
+ *   client: clientInstance,
+ *   version: '2'
+ * }, function (createErr, threeDSecureInstance) {
+ *   threeDSecureInstance.on('customer-canceled', function () {
+ *     // the customer canceled the 3D Secure challenge
  *   });
  * });
  */

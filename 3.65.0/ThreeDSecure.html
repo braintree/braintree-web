@@ -238,7 +238,7 @@
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line316">line 316</a>
+          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line332">line 332</a>
         </li>
       </ul>
     </dd>
@@ -414,7 +414,7 @@
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line695">line 695</a>
+          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line711">line 711</a>
         </li>
       </ul>
     </dd>
@@ -667,7 +667,7 @@ threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line576">line 576</a>
+          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line592">line 592</a>
         </li>
       </ul>
     </dd>
@@ -1403,7 +1403,7 @@ threeDSecure.initializeChallengeWithLookupResponse(lookupResponseFromServer).the
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line608">line 608</a>
+          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line624">line 624</a>
         </li>
       </ul>
     </dd>
@@ -1589,7 +1589,7 @@ threeDSecure.initializeChallengeWithLookupResponse(lookupResponseFromServer).the
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line711">line 711</a>
+          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line727">line 727</a>
         </li>
       </ul>
     </dd>
@@ -2332,7 +2332,7 @@ threeDSecure.initializeChallengeWithLookupResponse(lookupResponseFromServer).the
     <dd class="tag-source">
       <ul class="dummy">
         <li>
-          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line541">line 541</a>
+          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line557">line 557</a>
         </li>
       </ul>
     </dd>
@@ -7709,6 +7709,122 @@ threeDSecure.verifyCard({
   
 
   <span class='name-container'>
+    <a class="link-icon" href="#event:customer-canceled">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="event:customer-canceled">
+      <span class="type-signature"></span>customer-canceled<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>This event is emitted when using the 3D Secure 2.0 flow and the customer cancels the 3D Secure challenge.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="three-d-secure_external_three-d-secure.js.html">three-d-secure/external/three-d-secure.js</a>, <a href="three-d-secure_external_three-d-secure.js.html#line308">line 308</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#customer-canceled-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="customer-canceled-examples">Example</h5>
+    
+  <p class="code-caption">
+    Listening for when the customer cancels the 3D Secure challenge
+  </p>
+
+
+  <pre class="prettyprint"><code>braintree.threeDSecure.create({
+  client: clientInstance,
+  version: '2'
+}, function (createErr, threeDSecureInstance) {
+  threeDSecureInstance.on('customer-canceled', function () {
+    // the customer canceled the 3D Secure challenge
+  });
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
     <a class="link-icon" href="#event:lookup-complete">
       <svg height="20" width="20" style="fill: black;">
         <use xlink:href="#linkIcon"></use>
@@ -7807,7 +7923,7 @@ threeDSecure.verifyCard({
 
   <pre class="prettyprint"><code>braintree.threeDSecure.create({
   client: clientInstance,
-  version: '2-inline-iframe'
+  version: '2'
 }, function (createErr, threeDSecureInstance) {
   threeDSecureInstance.on('lookup-complete', function (data, next) {
     // inspect the data
