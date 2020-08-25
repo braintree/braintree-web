@@ -170,6 +170,7 @@ BaseInput.prototype._addPasteEventListeners = function () {
 
 BaseInput.prototype._addDOMInputListeners = function () {
   this.element.addEventListener(this._getDOMChangeEvent(), function () {
+    this.hiddenMaskedValue = this.element.value;
     this.updateModel('value', this.getUnformattedValue());
   }.bind(this), false);
 };

@@ -260,6 +260,10 @@ CreditCardForm.prototype.getCardData = function (fieldKeys) {
 
   fieldKeys = this._filterCustomFieldKeys(fieldKeys);
 
+  if (fieldKeys.indexOf('cardholderName') !== -1) {
+    keys.push('cardholderName');
+  }
+
   if (fieldKeys.indexOf('number') !== -1) {
     keys.push('number');
   }

@@ -59,6 +59,41 @@ describe('shadow', () => {
   });
 
   describe('transformToSlot', () => {
+    // this terrible test setup stuff is required because
+    // jest doesn't recognize the sheet property of a
+    // style element if it is inside the shadow DOM
+    // so we have to tie ourselves into knots to
+    // make fake elements in order to get any test coverage
+    // on this. Also, this is going to be a big pain to
+    // migrate to Typescript. Sorry future Aki and Blade!
+    let fakeStyleNode, fakeSlot, fakeDiv;
+
+    function mockDocumentCreateElement() {
+      document.createElement.mockImplementation((tagName) => {
+        switch (tagName) {
+          case 'style':
+            return fakeStyleNode;
+          case 'slot':
+            return fakeSlot;
+          case 'div':
+          default:
+            return fakeDiv;
+        }
+      });
+    }
+
+    beforeEach(() => {
+      fakeSlot = document.createElement('slot');
+      fakeDiv = document.createElement('div');
+      fakeStyleNode = document.createElement('style');
+      jest.spyOn(document, 'createElement');
+      Object.defineProperty(fakeStyleNode, 'sheet', {
+        value: {
+          insertRule: jest.fn()
+        }
+      });
+    });
+
     it('adds a slot element to element, a slot provider on the host and returns the slot provider', () => {
       const el = document.createElement('div');
       const shadowEl = el.attachShadow({ mode: 'open' });
@@ -80,6 +115,100 @@ describe('shadow', () => {
 
       expect(slotProvider).toBe(el.querySelector(`[slot="${id}"]`));
       expect(li.querySelector('slot').name).toBe(id);
+    });
+
+    it('can add styles to the root node of the provided element', () => {
+      const el = document.createElement('div');
+      const shadowEl = el.attachShadow({ mode: 'open' });
+      const wrapper = document.createElement('div');
+
+      wrapper.innerHTML = `
+        <ul>
+          <li class="active">Active el</li>
+          <li>Not active</li>
+        </ul>
+      `;
+      const li = wrapper.querySelector('.active');
+
+      shadowEl.appendChild(wrapper);
+
+      mockDocumentCreateElement();
+      const slotProvider = shadow.transformToSlot(li, 'height: 100%; background: red;');
+      const id = slotProvider.getAttribute('slot');
+
+      const style = wrapper.querySelector('style');
+
+      expect(style).toBeTruthy();
+      expect(style.sheet.insertRule).toBeCalledWith(`::slotted([slot="${id}"]) { height: 100%; background: red; }`);
+    });
+
+    it('adds only a single style node when called multiple times on the same shadow DOM', () => {
+      const el = document.createElement('div');
+      const shadowEl = el.attachShadow({ mode: 'open' });
+      const wrapper = document.createElement('div');
+      const secondFakeSlot = document.createElement('slot');
+      const secondFakeDiv = document.createElement('div');
+
+      wrapper.innerHTML = `
+        <ul>
+          <li class="active">Active el</li>
+          <li class="not-active">Not active</li>
+        </ul>
+      `;
+      const activeLi = wrapper.querySelector('.active');
+      const notActiveLi = wrapper.querySelector('.not-active');
+
+      shadowEl.appendChild(wrapper);
+
+      mockDocumentCreateElement();
+      const activeSlotProvider = shadow.transformToSlot(activeLi, 'color: red;');
+
+      fakeSlot = secondFakeSlot;
+      fakeDiv = secondFakeDiv;
+
+      const notActiveSlotProvider = shadow.transformToSlot(notActiveLi, 'color: blue;');
+      const activeId = activeSlotProvider.getAttribute('slot');
+      const notActiveId = notActiveSlotProvider.getAttribute('slot');
+
+      const styles = wrapper.querySelectorAll('style');
+
+      expect(styles.length).toBe(1);
+
+      const style = styles[0];
+
+      expect(style).toBeTruthy();
+      expect(style.sheet.insertRule).toBeCalledTimes(2);
+      expect(style.sheet.insertRule).toBeCalledWith(`::slotted([slot="${activeId}"]) { color: red; }`);
+      expect(style.sheet.insertRule).toBeCalledWith(`::slotted([slot="${notActiveId}"]) { color: blue; }`);
+    });
+
+    it('adds style to existing style node when a style element already exists', () => {
+      const el = document.createElement('div');
+      const shadowEl = el.attachShadow({ mode: 'open' });
+      const wrapper = document.createElement('div');
+
+      wrapper.innerHTML = `
+        <ul>
+          <li class="active">Active el</li>
+          <li>Not active</li>
+        </ul>
+      `;
+      wrapper.appendChild(fakeStyleNode);
+      const li = wrapper.querySelector('.active');
+      const existingStyleNode = wrapper.querySelector('style');
+
+      shadowEl.appendChild(wrapper);
+
+      mockDocumentCreateElement();
+
+      const slotProvider = shadow.transformToSlot(li, 'height: 100%; background: red;');
+      const id = slotProvider.getAttribute('slot');
+
+      const style = wrapper.querySelector('style');
+
+      expect(style).toBe(existingStyleNode);
+      expect(document.createElement).not.toBeCalledWith('style');
+      expect(style.sheet.insertRule).toBeCalledWith(`::slotted([slot="${id}"]) { height: 100%; background: red; }`);
     });
   });
 });

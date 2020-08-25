@@ -24,6 +24,7 @@ var VERSION = process.env.npm_package_version;
  * * expirationMonth: Expiration Month
  * * expirationYear: Expiration Year
  * * postalCode: Postal Code
+ * * cardholderName: Cardholder Name
  * @property {boolean} [formatInput=true] Enable or disable automatic formatting on this field.
  * @property {(object|boolean)} [maskInput=false] Enable or disable input masking when input is not focused. If set to `true` instead of an object, the defaults for the `maskInput` parameters will be used.
  * @property {string} [maskInput.character=•] The character to use when masking the input. The default character ('•') uses a unicode symbol, so the webpage must support UTF-8 characters when using the default.
@@ -63,6 +64,7 @@ var VERSION = process.env.npm_package_version;
  * @property {field} [expirationYear] A field for expiration year in `YYYY` or `YY` format. This should be used with the `expirationMonth` property.
  * @property {field} [cvv] A field for 3 or 4 digit card verification code (like CVV or CID). If you wish to create a CVV-only payment method nonce to verify a card already stored in your Vault, omit all other fields to only collect CVV.
  * @property {field} [postalCode] A field for postal or region code.
+ * @property {field} [cardholderName] A field for the cardholder name on the customer's credit card.
  */
 
 /**
@@ -94,7 +96,15 @@ var VERSION = process.env.npm_package_version;
  * `opacity`
  * `outline`
  * `margin`
+ * `margin-top`
+ * `margin-right`
+ * `margin-bottom`
+ * `margin-left`
  * `padding`
+ * `padding-top`
+ * `padding-right`
+ * `padding-bottom`
+ * `padding-left`
  * `text-shadow`
  * `transition`
  * `-moz-appearance`
@@ -141,6 +151,24 @@ var VERSION = process.env.npm_package_version;
  *     cvv: {
  *       container: '#cvv',
  *       placeholder: '•••'
+ *     },
+ *     expirationDate: {
+ *       container: '#expiration-date'
+ *     }
+ *   }
+ * }, callback);
+ * @example <caption>With cardholder name</caption>
+ * braintree.hostedFields.create({
+ *   client: clientInstance,
+ *   fields: {
+ *     number: {
+ *       container: '#card-number'
+ *     },
+ *     cardholderName: {
+ *       container: '#cardholder-name'
+ *     },
+ *     cvv: {
+ *       container: '#cvv',
  *     },
  *     expirationDate: {
  *       container: '#expiration-date'

@@ -45,6 +45,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
  * @property {string} details.expirationMonth The expiration month of the card.
  * @property {string} details.expirationYear The expiration year of the card.
+ * @property {string} details.cardholderName The cardholder name tokenized with the card.
  * @property {string} details.lastFour Last four digits of card number.
  * @property {string} details.lastTwo Last two digits of card number.
  * @property {string} description A human-readable description.
@@ -76,6 +77,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * - `"expirationMonth"`
  * - `"expirationYear"`
  * - `"postalCode"`
+ * - `"cardholderName"`
  * @property {object} fields
  * @property {?HostedFields~hostedFieldsFieldData} fields.number {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the number field, if it is present.
  * @property {?HostedFields~hostedFieldsFieldData} fields.cvv {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the CVV field, if it is present.
@@ -83,6 +85,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @property {?HostedFields~hostedFieldsFieldData} fields.expirationMonth {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the expiration month field, if it is present.
  * @property {?HostedFields~hostedFieldsFieldData} fields.expirationYear {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the expiration year field, if it is present.
  * @property {?HostedFields~hostedFieldsFieldData} fields.postalCode {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the postal code field, if it is present.
+ * @property {?HostedFields~hostedFieldsFieldData} fields.cardholderName {@link HostedFields~hostedFieldsFieldData|hostedFieldsFieldData} for the cardholder name field, if it is present.
  */
 
 /**
@@ -498,7 +501,7 @@ function HostedFields(options) {
     internalContainer = externalContainer;
 
     if (shadow.isShadowElement(internalContainer)) {
-      internalContainer = shadow.transformToSlot(internalContainer);
+      internalContainer = shadow.transformToSlot(internalContainer, 'height: 100%');
     }
 
     if (field.maxlength && typeof field.maxlength !== 'number') {
@@ -846,7 +849,7 @@ HostedFields.prototype.teardown = function () {
  * @param {boolean} [options.vault=false] When true, will vault the tokenized card. Cards will only be vaulted when using a client created with a client token that includes a customer ID. Note: merchants using Advanced Fraud Tools should not use this option, as device data will not be included.
  * @param {object} [options.authenticationInsight] Options for checking authentication insight - the [regulatory environment](https://developers.braintreepayments.com/guides/3d-secure/advanced-options/javascript/v3#authentication-insight) of the tokenized card.
  * @param {string} options.authenticationInsight.merchantAccountId The Braintree merchant account id to use to look up the authentication insight information.
- * @param {array} [options.fieldsToTokenize] By default, all fields will be tokenized. You may specify which fields specifically you wish to tokenize with this property. Valid options are `'number'`, `'cvv'`, `'expirationDate'`, `'expirationMonth'`, `'expirationYear'`, `'postalCode'`.
+ * @param {array} [options.fieldsToTokenize] By default, all fields will be tokenized. You may specify which fields specifically you wish to tokenize with this property. Valid options are `'number'`, `'cvv'`, `'expirationDate'`, `'expirationMonth'`, `'expirationYear'`, `'postalCode'`, `'cardholderName'`.
  * @param {string} [options.cardholderName] When supplied, the cardholder name to be tokenized with the contents of the fields.
  * @param {string} [options.billingAddress.postalCode] When supplied, this postal code will be tokenized along with the contents of the fields. If a postal code is provided as part of the Hosted Fields configuration, the value of the field will be tokenized and this value will be ignored.
  * @param {string} [options.billingAddress.firstName] When supplied, this customer first name will be tokenized along with the contents of the fields.
@@ -923,7 +926,7 @@ HostedFields.prototype.teardown = function () {
  *     console.log('Got nonce:', payload.nonce);
  *   }
  * });
- * @example <caption>Tokenize a card with cardholder name</caption>
+ * @example <caption>Tokenize a card with non-Hosted Fields cardholder name</caption>
  * hostedFieldsInstance.tokenize({
  *   cardholderName: 'First Last'
  * }, function (tokenizeErr, payload) {
@@ -933,7 +936,7 @@ HostedFields.prototype.teardown = function () {
  *     console.log('Got nonce:', payload.nonce);
  *   }
  * });
- * @example <caption>Tokenize a card with the postal code option</caption>
+ * @example <caption>Tokenize a card with non-Hosted Fields postal code option</caption>
  * hostedFieldsInstance.tokenize({
  *   billingAddress: {
  *     postalCode: '11111'
@@ -962,6 +965,30 @@ HostedFields.prototype.teardown = function () {
  *     countryCodeAlpha3: 'USA',
  *     countryCodeNumeric: '840'
  *   }
+ * }, function (tokenizeErr, payload) {
+ *   if (tokenizeErr) {
+ *     console.error(tokenizeErr);
+ *   } else {
+ *     console.log('Got nonce:', payload.nonce);
+ *   }
+ * });
+ * @example <caption>Allow tokenization with empty cardholder name field</caption>
+ * var state = hostedFieldsInstance.getState();
+ * var fields = Object.keys(state.fields);
+ *
+ * // normally, if you tried to tokenize an empty cardholder name field
+ * // you would get an error, to allow making this field optional,
+ * // tokenize all the fields except for the cardholder name field
+ * // when the cardholder name field is empty. Otherwise, tokenize
+ * // all the fields
+ * if (state.fields.cardholderName.isEmpty) {
+ *  fields = fields.filter(function (field) {
+ *    return field !== 'cardholderName';
+ *  });
+ * }
+ *
+ * hostedFieldsInstance.tokenize({
+ *  fieldsToTokenize: fields
  * }, function (tokenizeErr, payload) {
  *   if (tokenizeErr) {
  *     console.error(tokenizeErr);

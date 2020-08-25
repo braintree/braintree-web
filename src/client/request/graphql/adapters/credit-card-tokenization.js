@@ -67,6 +67,7 @@ function adaptTokenizeCreditCardResponseBody(body) {
         description: lastTwo ? 'ending in ' + lastTwo : '',
         nonce: data.token,
         details: {
+          cardholderName: creditCard.cardholderName,
           expirationMonth: creditCard.expirationMonth,
           expirationYear: creditCard.expirationYear,
           bin: creditCard.bin || '',

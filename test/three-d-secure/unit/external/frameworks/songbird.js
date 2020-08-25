@@ -54,14 +54,13 @@ describe('SongbirdFramework', () => {
       'continue': jest.fn()
     };
 
-    testContext.applyActionCode = (actionCode = 'SUCCESS', errorNumber) => {
+    testContext.applyActionCode = (actionCode = 'SUCCESS', options = {}) => {
       testContext.fakeCardinal.continue.mockImplementation(() => {
         const handler = findFirstEventCallback('payments.validated', testContext.fakeCardinal.on.mock.calls);
-        const handlerOptions = { ActionCode: actionCode };
-
-        if (errorNumber) {
-          handlerOptions.ErrorNumber = errorNumber;
-        }
+        const handlerOptions = {
+          ActionCode: actionCode,
+          ...options
+        };
 
         handler(handlerOptions, 'jwt');
       });
@@ -104,7 +103,7 @@ describe('SongbirdFramework', () => {
         client: testContext.client
       });
 
-      jest.spyOn(framework, 'on').mockImplementation(yieldsAsync('some data', 'a fake function'));
+      jest.spyOn(framework, 'on').mockImplementationOnce(yieldsAsync('some data', 'a fake function'));
 
       framework.setUpEventListeners((eventName, data, fakeFunction) => {
         expect(eventName).toBe('lookup-complete');
@@ -176,7 +175,7 @@ describe('SongbirdFramework', () => {
       it('it does not require an onLookupComplete function if override is passed into additional options', () => {
         jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
 
-        testContext.instance.on(SongbirdFramework.events.ON_LOOKUP_COMPLETE, (data, next) => {
+        testContext.instance.on(SongbirdFramework.events.LOOKUP_COMPLETE, (data, next) => {
           next();
         });
 
@@ -550,6 +549,7 @@ describe('SongbirdFramework', () => {
         'FAILURE'
       ])('ActionCode cases: %s', (actionCode) => {
         it(`resolves with result from performJWTValidation on ${actionCode}`, () => {
+          expect.assertions(4);
           testContext.client.request
             .mockResolvedValueOnce(testContext.lookupResponse)
             .mockResolvedValueOnce(testContext.payloadTestsResponse);
@@ -567,6 +567,30 @@ describe('SongbirdFramework', () => {
             expect(data.details).toEqual({ cardType: 'Visa', bin: '123456' });
             expect(data.liabilityShiftPossible).toBe(true);
             expect(data.liabilityShifted).toBe(true);
+          });
+        });
+
+        it('includes the raw response from Cardinal', () => {
+          expect.assertions(1);
+          testContext.client.request
+            .mockResolvedValueOnce(testContext.lookupResponse)
+            .mockResolvedValueOnce(testContext.payloadTestsResponse);
+
+          testContext.instance.setupSongbird();
+
+          testContext.applyActionCode(actionCode, {
+            foo: 'bar'
+          });
+
+          return testContext.instance.verifyCard({
+            nonce: 'nonce',
+            amount: 100,
+            onLookupComplete: yieldsAsync()
+          }).then(data => {
+            expect(data.rawCardinalSDKVerificationData).toEqual({
+              ActionCode: actionCode,
+              foo: 'bar'
+            });
           });
         });
 
@@ -631,7 +655,9 @@ describe('SongbirdFramework', () => {
         [10011, 'THREEDS_CARDINAL_SDK_CANCELED', ['three-d-secure.verification-flow.canceled', 'three-d-secure.verification-flow.cardinal-sdk-error.10011']],
         [99999, 'THREEDS_CARDINAL_SDK_ERROR', []]
       ])('rejects when it receives %p with error code %p', (songbirdCode, braintreeCode, analytic) => {
-        testContext.applyActionCode('ERROR', songbirdCode);
+        testContext.applyActionCode('ERROR', {
+          ErrorNumber: songbirdCode
+        });
 
         return expect(testContext.instance.verifyCard({
           nonce: 'nonce',
@@ -698,6 +724,71 @@ describe('SongbirdFramework', () => {
         }).catch(() => {
           expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.upgrade-payment-method.started');
           expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.upgrade-payment-method.errored');
+        });
+      });
+
+      it('emits cancel event when customer cancels', () => {
+        expect.assertions(1);
+        testContext.applyActionCode('FAILURE', {
+          Payment: {
+            ExtendedData: {
+              ChallengeCancel: '01' // customer canceled the modal
+            }
+          }
+        });
+
+        const spy = jest.fn();
+
+        testContext.instance.on('songbird-framework:CUSTOMER_CANCELED', spy);
+
+        return testContext.instance.verifyCard({
+          nonce: 'nonce',
+          amount: 100,
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(spy).toBeCalledTimes(1);
+        });
+      });
+
+      it('does not emit cancel event when cancelation is not from a customer', () => {
+        expect.assertions(1);
+        testContext.applyActionCode('FAILURE', {
+          Payment: {
+            ExtendedData: {
+              ChallengeCancel: '03' // transaction timed out
+            }
+          }
+        });
+
+        const spy = jest.fn();
+
+        testContext.instance.on('songbird-framework:CUSTOMER_CANCELED', spy);
+
+        return testContext.instance.verifyCard({
+          nonce: 'nonce',
+          amount: 100,
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(spy).not.toBeCalled();
+        });
+      });
+
+      it('sends analytics events for verification cancelation', () => {
+        expect.assertions(1);
+        testContext.applyActionCode('FAILURE', {
+          Payment: {
+            ExtendedData: {
+              ChallengeCancel: '02'
+            }
+          }
+        });
+
+        return testContext.instance.verifyCard({
+          nonce: 'nonce',
+          amount: 100,
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.verification-flow.cardinal-sdk.cancel-code.02');
         });
       });
 

@@ -433,6 +433,10 @@ describe('PayPalCheckout', () => {
               url: 'example.com'
             }
           ];
+          testContext.options.requestBillingAgreement = true;
+          testContext.options.billingAgreementDetails = {
+            description: 'A vaulted payment'
+          };
 
           return testContext.paypalCheckout.createPayment(testContext.options).then(() => {
             expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
@@ -457,7 +461,11 @@ describe('PayPalCheckout', () => {
                     productCode: '123xyz',
                     url: 'example.com'
                   }
-                ]
+                ],
+                requestBillingAgreement: true,
+                billingAgreementDetails: {
+                  description: 'A vaulted payment'
+                }
               }
             });
           });

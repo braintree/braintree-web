@@ -1,6 +1,23 @@
 CHANGELOG
 =========
 
+## 3.65.0
+* Update @braintree/event-emitter to v0.4.1
+* Update card-validator to v8.1.0
+* Update restricted-input to v3.0.3
+* Hosted Fields
+  * Allow setting `margin-top`, `margin-right`, `margin-bottom`, `margin-left` in styles (#513)
+  * Allow setting `padding-top`, `padding-right`, `padding-bottom`, `padding-left` in styles (#513)
+  * Fix issue where autofilling with a Google Pay card while using `maskInput` would fail to fill the card number
+  * Fix issue where fields in shadow DOM would have incorrect high compared to container
+  * Add `cardholderName` as supported field
+  * Add `cardholderName` as a field in the tokenization payload
+* PayPal Checkout
+  * Add `requestBillingAgreement` and `billingAgreementDetails` to createPayment
+* 3D Secure
+  * Add event for when a customer cancels the verification
+  * Add `rawCardinalSDKVerificationData` to `verifyCard` payload
+
 ## 3.64.2
 * Update inject-stylesheet to v4.0.0
 * Hosted Fields

@@ -22,7 +22,8 @@ function getShadowHost(element) {
   return element.host;
 }
 
-function transformToSlot(element) {
+function transformToSlot(element, styles) {
+  var styleNode = findRootNode(element).querySelector('style');
   var shadowHost = getShadowHost(element);
   var slotName = 'shadow-slot-' + uuid();
   var slot = document.createElement('slot');
@@ -33,6 +34,15 @@ function transformToSlot(element) {
 
   slotProvider.setAttribute('slot', slotName);
   shadowHost.appendChild(slotProvider);
+
+  if (styles) {
+    if (!styleNode) {
+      styleNode = document.createElement('style');
+      element.appendChild(styleNode);
+    }
+
+    styleNode.sheet.insertRule('::slotted([slot="' + slotName + '"]) { ' + styles + ' }');
+  }
 
   return slotProvider;
 }

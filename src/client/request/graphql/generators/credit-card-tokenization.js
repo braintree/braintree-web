@@ -17,6 +17,7 @@ function createMutation(config) {
     '      bin ' +
     '      brandCode ' +
     '      last4 ' +
+    '      cardholderName ' +
     '      expirationMonth' +
     '      expirationYear' +
     '      binData { ' +

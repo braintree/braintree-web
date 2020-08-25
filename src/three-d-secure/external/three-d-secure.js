@@ -69,6 +69,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} threeDSecureInfo.threeDSecureVersion The version of 3D Secure authentication used for the transaction.
  * @property {string} threeDSecureInfo.eciFlag The value of the electronic commerce indicator (ECI) flag, which indicates the outcome of the 3DS authentication. This will be a two-digit value.
  * @property {string} threeDSecureInfo.threeDSecureAuthenticationId ID of the 3D Secure authentication performed for this transaction. Do not provide this field as a transaction sale parameter if you are using the returned payment method nonce from the payload.
+ * @property {object} rawCardinalSDKVerificationData The response back from the Cardinal SDK after verification has completed. See [Cardinal's Documentation](https://cardinaldocs.atlassian.net/wiki/spaces/CC/pages/98315/Response+Objects) for more information. If the customer was not required to do a 3D Secure challenge, this object will not be available.
  */
 
 /**
@@ -233,8 +234,11 @@ var FRAMEWORKS = require('./frameworks');
  * <caption>Listening to a 3D Secure event</caption>
  * braintree.threeDSecure.create({ ... }, function (createErr, threeDSecureInstance) {
  *   threeDSecureInstance.on('lookup-complete', function (data, next) {
- *     console.log(event);
+ *     console.log('data from the lookup', data);
  *     next();
+ *   });
+ *   threeDSecureInstance.on('customer-canceled', function () {
+ *     console.log('log that the customer canceled');
  *   });
  * });
  * @returns {void}
@@ -249,15 +253,21 @@ var FRAMEWORKS = require('./frameworks');
  * @example
  * <caption>Subscribing and then unsubscribing from a 3D Secure eld event</caption>
  * braintree.threeDSecure.create({ ... }, function (createErr, threeDSecureInstance) {
- *   var callback = function (data, next) {
+ *   var lookupCallback = function (data, next) {
  *     console.log(data);
  *     next();
  *   };
+ *   var cancelCallback = function () {
+ *     // log the cancelation
+ *     // or update UI
+ *   };
  *
- *   threeDSecureInstance.on('lookup-complete', callback);
+ *   threeDSecureInstance.on('lookup-complete', lookupCallback);
+ *   threeDSecureInstance.on('customer-canceled', cancelCallback);
  *
  *   // later on
- *   threeDSecureInstance.off('lookup-complete', callback);
+ *   threeDSecureInstance.off('lookup-complete', lookupCallback);
+ *   threeDSecureInstance.off('customer-canceled', cancelCallback);
  * });
  * @returns {void}
  */
@@ -633,7 +643,7 @@ ThreeDSecure.prototype.prepareLookup = function (options) {
  * }, function (verifyError, payload) {
  *   if (verifyError) {
  *     if (verifyError.code === 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT ') {
- *       // flow was cancelled by merchant, 3ds info can be found in the payload
+ *       // flow was canceled by merchant, 3ds info can be found in the payload
  *       // for cancelVerifyCard
  *     }
  *   }
@@ -662,7 +672,7 @@ ThreeDSecure.prototype.prepareLookup = function (options) {
  * }, function (verifyError, payload) {
  *   if (verifyError) {
  *     if (verifyError.code === 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT ') {
- *       // flow was cancelled by merchant, 3ds info can be found in the payload
+ *       // flow was canceled by merchant, 3ds info can be found in the payload
  *       // for cancelVerifyCard
  *     }
  *   }

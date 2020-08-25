@@ -488,6 +488,18 @@ describe('credit card model', () => {
       expect(testContext.card.getCardData().cvv).toBe('');
     });
 
+    it('gets cardholder name if specified in the config', () => {
+      const card = new CreditCardForm(getModelConfig([
+        'number',
+        'cardholderName'
+      ]));
+
+      card.set('cardholderName.value', 'Given Sur');
+      expect(card.getCardData().cardholderName).toBe('Given Sur');
+      card.set('cardholderName.value', '');
+      expect(card.getCardData().cardholderName).toBe('');
+    });
+
     it('can get expiration month and year from the expirationDate', () => {
       let cardData;
 

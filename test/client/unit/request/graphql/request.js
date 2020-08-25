@@ -1253,6 +1253,7 @@ describe('GraphQL', () => {
           tokenizeCreditCard: {
             token: 'faketoken',
             creditCard: {
+              cardholderName: 'Given Sur',
               expirationMonth: '09',
               expirationYear: '2020',
               brandCode: 'VISA',
@@ -1281,6 +1282,7 @@ describe('GraphQL', () => {
           description: 'ending in 34',
           nonce: 'faketoken',
           details: {
+            cardholderName: 'Given Sur',
             expirationMonth: '09',
             expirationYear: '2020',
             bin: '401111',

@@ -16,6 +16,7 @@ var ExtendedPromise = require('@braintree/extended-promise');
 var INTEGRATION_TIMEOUT_MS = require('../../../lib/constants').INTEGRATION_TIMEOUT_MS;
 var PLATFORM = require('../../../lib/constants').PLATFORM;
 var VERSION = process.env.npm_package_version;
+var CUSTOMER_CANCELED_SONGBIRD_MODAL = '01';
 
 function SongbirdFramework(options) {
   BaseFramework.call(this, options);
@@ -35,12 +36,16 @@ SongbirdFramework.prototype = Object.create(BaseFramework.prototype, {
 });
 
 SongbirdFramework.events = enumerate([
-  'ON_LOOKUP_COMPLETE'
+  'LOOKUP_COMPLETE',
+  'CUSTOMER_CANCELED'
 ], 'songbird-framework:');
 
 SongbirdFramework.prototype.setUpEventListeners = function (reply) {
-  this.on(SongbirdFramework.events.ON_LOOKUP_COMPLETE, function (data, next) {
+  this.on(SongbirdFramework.events.LOOKUP_COMPLETE, function (data, next) {
     reply('lookup-complete', data, next);
+  });
+  this.on(SongbirdFramework.events.CUSTOMER_CANCELED, function () {
+    reply('customer-canceled');
   });
 };
 
@@ -334,12 +339,26 @@ SongbirdFramework.prototype.getDfReferenceId = function () {
   return this._getDfReferenceIdPromisePlus;
 };
 
-SongbirdFramework.prototype._performJWTValidation = function (jwt) {
+SongbirdFramework.prototype._performJWTValidation = function (rawCardinalSDKVerificationData, jwt) {
+  var self = this;
   var nonce = this._lookupPaymentMethod.nonce;
   var url = 'payment_methods/' + nonce + '/three_d_secure/authenticate_from_jwt';
-  var self = this;
+  var cancelCode = rawCardinalSDKVerificationData &&
+    rawCardinalSDKVerificationData.Payment &&
+    rawCardinalSDKVerificationData.Payment.ExtendedData &&
+    rawCardinalSDKVerificationData.Payment.ExtendedData.ChallengeCancel;
 
-  analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.upgrade-payment-method.started');
+  if (cancelCode) {
+    // see ChallengeCancel docs here for different values:
+    // https://cardinaldocs.atlassian.net/wiki/spaces/CC/pages/98315/Response+Objects
+    analytics.sendEvent(this._createPromise, 'three-d-secure.verification-flow.cardinal-sdk.cancel-code.' + cancelCode);
+
+    if (cancelCode === CUSTOMER_CANCELED_SONGBIRD_MODAL) {
+      this._emit(SongbirdFramework.events.CUSTOMER_CANCELED);
+    }
+  }
+
+  analytics.sendEvent(this._createPromise, 'three-d-secure.verification-flow.upgrade-payment-method.started');
 
   return this._waitForClient().then(function () {
     return self._client.request({
@@ -354,6 +373,7 @@ SongbirdFramework.prototype._performJWTValidation = function (jwt) {
     var paymentMethod = response.paymentMethod || self._lookupPaymentMethod;
     var formattedResponse = self._formatAuthResponse(paymentMethod, response.threeDSecureInfo);
 
+    formattedResponse.rawCardinalSDKVerificationData = rawCardinalSDKVerificationData;
     analytics.sendEvent(self._client, 'three-d-secure.verification-flow.upgrade-payment-method.succeeded');
 
     return Promise.resolve(formattedResponse);
@@ -381,6 +401,7 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
    * @see {@link https://cardinaldocs.atlassian.net/wiki/spaces/CC/pages/98315/Response+Objects#ResponseObjects-ObjectDefinition}
    * @param {string} data.ActionCode The resulting state of the transaction.
    * @param {boolean} data.Validated Represents whether transaction was successfully or not.
+   * @param {object} data.Payment Represents additional information about the verification.
    * @param {number} data.ErrorNumber A non-zero value represents the error encountered while attempting the process the message request.
    * @param {string} data.ErrorDescription Application error description for the associated error number.
    * @param {string} validatedJwt Response JWT
@@ -402,7 +423,7 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
       case 'SUCCESS':
       case 'NOACTION':
       case 'FAILURE':
-        self._performJWTValidation(validatedJwt)
+        self._performJWTValidation(data, validatedJwt)
           .then(function (result) {
             self._verifyCardPromisePlus.resolve(result);
           })
@@ -513,7 +534,7 @@ SongbirdFramework.prototype._onLookupComplete = function (lookupResponse, option
       if (options.onLookupComplete) {
         options.onLookupComplete(response, next);
       } else {
-        self._emit(SongbirdFramework.events.ON_LOOKUP_COMPLETE, response, next);
+        self._emit(SongbirdFramework.events.LOOKUP_COMPLETE, response, next);
       }
     });
   });

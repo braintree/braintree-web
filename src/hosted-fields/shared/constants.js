@@ -73,13 +73,25 @@ var constants = {
     'letter-spacing',
     'line-height',
     'margin',
+    'margin-top',
+    'margin-right',
+    'margin-bottom',
+    'margin-left',
     'opacity',
     'outline',
     'padding',
+    'padding-top',
+    'padding-right',
+    'padding-bottom',
+    'padding-left',
     'text-shadow',
     'transition'
   ],
   allowedFields: {
+    cardholderName: {
+      name: 'cardholder-name',
+      label: 'Cardholder Name'
+    },
     number: {
       name: 'credit-card-number',
       label: 'Credit Card Number'
@@ -112,6 +124,7 @@ var constants = {
     placeholder: 'string'
   },
   autocompleteMappings: {
+    'cardholder-name': 'cc-name',
     'credit-card-number': 'cc-number',
     expiration: 'cc-exp',
     'expiration-month': 'cc-exp-month',

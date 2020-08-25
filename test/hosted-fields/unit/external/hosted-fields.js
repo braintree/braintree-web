@@ -278,7 +278,11 @@ describe('HostedFields', () => {
       wrapper.appendChild(numberNode);
 
       document.body.appendChild(numberNodeContainer);
-      jest.spyOn(shadow, 'transformToSlot');
+      // we have to fake this because jest doesn't recognize
+      // the style sheet property on style nodes within
+      // the shadow DOM
+      jest.spyOn(shadow, 'transformToSlot')
+        .mockReturnValue(document.createElement('div'));
 
       configuration.fields = {
         number: { container: numberNode }
@@ -289,6 +293,7 @@ describe('HostedFields', () => {
 
       testContext.instance.on('ready', () => {
         expect(shadow.transformToSlot).toBeCalledTimes(1);
+        expect(shadow.transformToSlot).toBeCalledWith(numberNode, 'height: 100%');
         done();
       });
 

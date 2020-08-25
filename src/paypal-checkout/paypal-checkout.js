@@ -326,6 +326,9 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
  * @param {string} [options.locale=en_US] Use this option to change the language, links, and terminology used in the PayPal flow. This locale will be used unless the buyer has set a preferred locale for their account. If an unsupported locale is supplied, a fallback locale (determined by buyer preference or browser data) will be used and no error will be thrown.
+ * @param {boolean} [options.requestBillingAgreement] If `true` and `flow = checkout`, the customer will be prompted to consent to a billing agreement during the checkout flow. This value is ignored when `flow = vault`.
+ * @param {object} [options.billingAgreementDetails] When `requestBillingAgreement = true`, allows for details to be set for the billing agreement portion of the flow.
+ * @param {string} [options.billingAgreementDetails.description] Description of the billing agreement to display to the customer.
  * @param {string} [options.vaultInitiatedCheckoutPaymentMethodToken] Use the payment method nonce representing a PayPal account with a Billing Agreement ID to create the payment and redirect the customer to select a new financial instrument. This option is only applicable to the `checkout` flow.
  *
  * Supported locales are:
@@ -946,6 +949,7 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
   if (options.flow === 'checkout') {
     paymentResource.amount = options.amount;
     paymentResource.currencyIsoCode = options.currency;
+    paymentResource.requestBillingAgreement = options.requestBillingAgreement;
 
     if (intent) {
       // 'sale' has been changed to 'capture' in PayPal's backend, but
@@ -973,6 +977,10 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
       if (options.shippingAddressOverride.hasOwnProperty(key)) {
         paymentResource[key] = options.shippingAddressOverride[key];
       }
+    }
+
+    if (options.hasOwnProperty('billingAgreementDetails')) {
+      paymentResource.billingAgreementDetails = options.billingAgreementDetails;
     }
   } else {
     paymentResource.shippingAddress = options.shippingAddressOverride;
