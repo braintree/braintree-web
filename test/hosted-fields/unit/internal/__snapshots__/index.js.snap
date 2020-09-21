@@ -27,6 +27,66 @@ exports[`internal initialize calls FieldComponent to generate the input 1`] = `
       id="field-description-cvv"
       style="height: 1px; width: 1px; overflow: hidden;"
     />
+    <label
+      aria-hidden="true"
+      for="cardholder-name-autofill-field"
+    >
+      cardholder-name
+    </label>
+    <input
+      aria-hidden="true"
+      autocomplete="cc-name"
+      class="autofill-field"
+      id="cardholder-name-autofill-field"
+      name="cardholder-name"
+      tabindex="-1"
+      type="text"
+    />
+    <label
+      aria-hidden="true"
+      for="credit-card-number-autofill-field"
+    >
+      credit-card-number
+    </label>
+    <input
+      aria-hidden="true"
+      autocomplete="cc-number"
+      class="autofill-field"
+      id="credit-card-number-autofill-field"
+      name="credit-card-number"
+      tabindex="-1"
+      type="text"
+    />
+    <label
+      aria-hidden="true"
+      for="expiration-month-autofill-field"
+    >
+      expiration-month
+    </label>
+    <input
+      aria-hidden="true"
+      autocomplete="cc-exp-month"
+      class="autofill-field"
+      id="expiration-month-autofill-field"
+      name="expiration-month"
+      tabindex="-1"
+      type="text"
+    />
+    <label
+      aria-hidden="true"
+      for="expiration-year-autofill-field"
+    >
+      expiration-year
+    </label>
+    <input
+      aria-hidden="true"
+      autocomplete="cc-exp-year"
+      class="autofill-field"
+      id="expiration-year-autofill-field"
+      name="expiration-year"
+      tabindex="-1"
+      type="text"
+    />
   </form>
 </body>
 `;

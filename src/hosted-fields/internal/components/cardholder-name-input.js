@@ -16,6 +16,10 @@ function CardholderNameInput() {
 
   this.formatter.setPattern(pattern);
   this.element.setAttribute('type', this.getConfiguration().type || 'text');
+  // all the other fields are number based, so they have a digit
+  // pattern set on iOS to ensure that the number keyboard is
+  // presented, so we manually remove the pattern attribute here
+  this.element.removeAttribute('pattern');
 }
 
 CardholderNameInput.prototype = Object.create(BaseInput.prototype);

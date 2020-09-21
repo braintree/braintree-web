@@ -69,7 +69,15 @@ function CreditCardInput() {
 CreditCardInput.prototype = Object.create(BaseInput.prototype);
 CreditCardInput.prototype.constructor = CreditCardInput;
 
+CreditCardInput.resetPatternCache = function () {
+  PATTERN_CACHE = {};
+};
+
 CreditCardInput.prototype.setPattern = function (card) {
+  if (typeof card === 'string') {
+    card = this._getCardObjectFromString(card);
+  }
+
   this.formatter.setPattern(_generatePattern(card, {
     maxCardLength: this.getConfiguration().maxCardLength
   }));
@@ -86,6 +94,13 @@ CreditCardInput.prototype.maskValue = function (value) {
   if (this.unmaskLastFour && this.model.get(this.type).isValid) {
     this.element.value = maskedValue.substring(0, maskedValue.length - 4) + cardValue.substring(cardValue.length - 4, cardValue.length);
   }
+};
+
+CreditCardInput.prototype._getCardObjectFromString = function (cardNumber) {
+  var possibleCardTypes = getCardTypes(cardNumber);
+  var result = this._parseCardTypes(possibleCardTypes);
+
+  return result.card;
 };
 
 CreditCardInput.prototype._parseCardTypes = function (possibleCardTypes) {
@@ -113,10 +128,7 @@ CreditCardInput.prototype._createRestrictedInputOptions = function (options) {
   var self = this;
 
   baseConfig.onPasteEvent = function (payload) {
-    var possibleCardTypes = getCardTypes(payload.unformattedInputValue);
-    var result = self._parseCardTypes(possibleCardTypes);
-
-    self.setPattern(result.card);
+    self.setPattern(payload.unformattedInputValue);
   };
 
   return baseConfig;

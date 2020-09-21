@@ -220,7 +220,7 @@ Venmo.prototype.tokenize = function (options) {
         analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.ios-webview');
         // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open.
         window.location.href = url;
-      } else if (global.popupBridge && typeof global.popupBridge.open === 'function') {
+      } else if (window.popupBridge && typeof window.popupBridge.open === 'function') {
         analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.popup-bridge');
         window.popupBridge.open(url);
       } else {

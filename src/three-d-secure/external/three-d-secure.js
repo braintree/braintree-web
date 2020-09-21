@@ -229,7 +229,12 @@ var FRAMEWORKS = require('./frameworks');
  * @function
  * @param {string} event The name of the event to which you are subscribing.
  * @param {function} handler A callback to handle the event.
- * @description Subscribes a handler function to a named event.
+ * @description Subscribes a handler function to a named event. The following events are available:
+ *   * {@link ThreeDSecure#event:lookup-complete|lookup-complete}
+ *   * {@link ThreeDSecure#event:customer-canceled|customer-canceled}
+ *   * {@link ThreeDSecure#event:authentication-iframe-available|authentication-iframe-available}
+ *   * {@link ThreeDSecure#event:authentication-modal-render|authentication-modal-render}
+ *   * {@link ThreeDSecure#event:authentication-modal-close|authentication-modal-close}
  * @example
  * <caption>Listening to a 3D Secure event</caption>
  * braintree.threeDSecure.create({ ... }, function (createErr, threeDSecureInstance) {
@@ -275,7 +280,6 @@ var FRAMEWORKS = require('./frameworks');
 /**
  * This event is emitted when the `2-inline-iframe` version is specified when creating the 3D Secure instance and the authentication iframe becomes available.
  * @event ThreeDSecure#authentication-iframe-available
- * @type {object}
  * @example
  * <caption>Listening for the authentication iframe to be available</caption>
  *   threeDSecureInstance.on('authentication-iframe-available', function (event, next) {
@@ -289,18 +293,60 @@ var FRAMEWORKS = require('./frameworks');
 /**
  * This event is emitted when using the 3D Secure 2.0 flow and the initial lookup request completes. If this is not used, a `onLookupComplete` callback must be passed into the `verifyCard` method.
  * @event ThreeDSecure#lookup-complete
- * @type {object}
  * @example
  * <caption>Listening for when the lookup request is complete</caption>
  * braintree.threeDSecure.create({
  *   client: clientInstance,
- *   version: '2-inline-iframe'
+ *   version: '2'
  * }, function (createErr, threeDSecureInstance) {
  *   threeDSecureInstance.on('lookup-complete', function (data, next) {
  *     // inspect the data
  *
  *     // call next when ready to proceed with the challenge
  *     next();
+ *   });
+ * });
+ */
+
+/**
+ * This event is emitted when using the 3D Secure 2.0 flow and the customer cancels the 3D Secure challenge.
+ * @event ThreeDSecure#customer-canceled
+ * @example
+ * <caption>Listening for when the customer cancels the 3D Secure challenge</caption>
+ * braintree.threeDSecure.create({
+ *   client: clientInstance,
+ *   version: '2'
+ * }, function (createErr, threeDSecureInstance) {
+ *   threeDSecureInstance.on('customer-canceled', function () {
+ *     // the customer canceled the 3D Secure challenge
+ *   });
+ * });
+ */
+
+/**
+ * This event is emitted when using the 3D Secure 2.0 flow and the authentication modal closes, either because the authentication was completed or because the customer canceled the process.
+ * @event ThreeDSecure#authentication-modal-close
+ * @example
+ * braintree.threeDSecure.create({
+ *   client: clientInstance,
+ *   version: '2'
+ * }, function (createErr, threeDSecureInstance) {
+ *   threeDSecureInstance.on('authentication-modal-close', function () {
+ *     // the modal was closed
+ *   });
+ * });
+ */
+
+/**
+ * This event is emitted when using the 3D Secure 2.0 flow and the authentication modal is rendered.
+ * @event ThreeDSecure#authentication-modal-render
+ * @example
+ * braintree.threeDSecure.create({
+ *   client: clientInstance,
+ *   version: '2'
+ * }, function (createErr, threeDSecureInstance) {
+ *   threeDSecureInstance.on('authentication-modal-render', function () {
+ *     // the modal was rendered, presenting the authentication form to the customer
  *   });
  * });
  */

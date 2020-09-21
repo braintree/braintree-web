@@ -1,6 +1,22 @@
 CHANGELOG
 =========
 
+## 3.66.0
+* Hosted Fields
+  * Fix issue where cardholder name field would present a number keyboard on iOS devices (closes #523)
+  * Fix issue where incorrect keyboard would be used for mobile devices that do not support input formatting
+  * Fix issue where autocomplete cannot run multiple times (closes #479)
+  * Add autofill handling for every hosted field (closes #480)
+* PayPal Checkout
+  * In sandbox, use client id found in merchant configuration for `loadPayPalSDK` instead of always using `sb`
+  * Allow data attributes to be passed to `loadPayPalSDK`
+  * Fix issue when tokenizing during `requestBillingAgreement: true` flows
+  * Fix issue where `intent` used in `createPayment` was not passed to `tokenizePayment` in PayPal JS SDK
+* Venmo
+  * Remove use of `global` (use `window` instead for better compatibility)
+* 3D Secure
+  * Add `authentication-modal-render` and `authentication-modal-close` events
+
 ## 3.65.0
 * Update @braintree/event-emitter to v0.4.1
 * Update card-validator to v8.1.0

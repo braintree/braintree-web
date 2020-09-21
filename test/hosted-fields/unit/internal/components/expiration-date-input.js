@@ -3,6 +3,7 @@
 const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
 const { ExpirationDateInput } = require('../../../../../src/hosted-fields/internal/components/expiration-date-input');
 const { createInput } = require('../../helpers');
+const RestrictedInput = require('restricted-input');
 
 describe('Expiration Date Input', () => {
   let testContext;
@@ -15,6 +16,18 @@ describe('Expiration Date Input', () => {
   describe('inheritance', () => {
     it('extends BaseInput', () => {
       expect(testContext.input).toBeInstanceOf(BaseInput);
+    });
+
+    it('sets element type to "text" when browser does not support formatting', () => {
+      const inputWithFormatting = createInput('expirationDate');
+
+      expect(inputWithFormatting.element.type).toBe('tel');
+
+      jest.spyOn(RestrictedInput, 'supportsFormatting').mockReturnValue(false);
+
+      const inputWithoutFormatting = createInput('expirationDate');
+
+      expect(inputWithoutFormatting.element.type).toBe('text');
     });
   });
 

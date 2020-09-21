@@ -14,6 +14,15 @@ var allowedFields = constants.allowedFields;
 
 var cardFormHasStartedBeingFilled = false;
 
+var CARD_FORM_FIELDS = [
+  'cardholderName',
+  'number',
+  'cvv',
+  'postalCode',
+  'expirationMonth',
+  'expirationYear'
+];
+
 function CreditCardForm(configuration) {
   this._fieldKeys = Object.keys(configuration.fields).filter(function (key) {
     return allowedFields.hasOwnProperty(key);
@@ -260,29 +269,12 @@ CreditCardForm.prototype.getCardData = function (fieldKeys) {
 
   fieldKeys = this._filterCustomFieldKeys(fieldKeys);
 
-  if (fieldKeys.indexOf('cardholderName') !== -1) {
-    keys.push('cardholderName');
-  }
-
-  if (fieldKeys.indexOf('number') !== -1) {
-    keys.push('number');
-  }
-
-  if (fieldKeys.indexOf('cvv') !== -1) {
-    keys.push('cvv');
-  }
-
-  if (fieldKeys.indexOf('postalCode') !== -1) {
-    keys.push('postalCode');
-  }
-
-  if (fieldKeys.indexOf('expirationMonth') !== -1) {
-    keys.push('expirationMonth');
-  }
-
-  if (fieldKeys.indexOf('expirationYear') !== -1) {
-    keys.push('expirationYear');
-  }
+  CARD_FORM_FIELDS.forEach(function (fieldName) {
+    if (fieldKeys.indexOf(fieldName) === -1) {
+      return;
+    }
+    keys.push(fieldName);
+  });
 
   if (fieldKeys.indexOf('expirationDate') !== -1) {
     expirationData = splitDate(this.get('expirationDate.value'));

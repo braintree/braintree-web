@@ -94,10 +94,18 @@ describe('venmo static methods', () => {
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.initialized');
       }));
 
-    it('does not error out if Venmo is not enabled for the merchant when using deferred client', () => {
+    it('does not error until using an instance method if Venmo is not enabled for the merchant when using deferred client', () => {
+      expect.assertions(2);
+
       delete testContext.configuration.gatewayConfiguration.payWithVenmo;
 
-      return create({ authorization: 'fake-auth' });
+      return create({ authorization: 'fake-auth' }).then((venmo) => {
+        expect(venmo).toBeDefined();
+
+        return venmo.tokenize();
+      }).catch((err) => {
+        expect(err.code).toBe('VENMO_NOT_ENABLED');
+      });
     });
   });
 

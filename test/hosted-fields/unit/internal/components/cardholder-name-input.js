@@ -5,6 +5,7 @@ const { CreditCardForm } = require('../../../../../src/hosted-fields/internal/mo
 const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
 const { CardholderNameInput } = require('../../../../../src/hosted-fields/internal/components/cardholder-name-input');
 const { createInput, getModelConfig } = require('../../helpers');
+const browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
 
 describe('Cardholder Name Input', () => {
   let testContext;
@@ -47,6 +48,14 @@ describe('Cardholder Name Input', () => {
 
     it('sets the maxLength to 255', () => {
       expect(testContext.input.element.getAttribute('maxlength')).toBe('255');
+    });
+
+    it('removes the pattern attribute added for iOS keyboards', () => {
+      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+
+      const input = createInput('cardholderName');
+
+      expect(input.element.pattern).toBeFalsy();
     });
   });
 

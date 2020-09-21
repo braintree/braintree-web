@@ -1,6 +1,7 @@
 'use strict';
 
 var BaseInput = require('./base-input').BaseInput;
+var RestrictedInput = require('restricted-input');
 
 var DEFAULT_PATTERN = '{{99}} / {{9999}}';
 var ZERO_PADDED_PATTERN = '0{{9}} / {{9999}}';
@@ -9,6 +10,15 @@ function ExpirationDateInput() {
   this.maxLength = 9;
 
   BaseInput.apply(this, arguments);
+
+  if (!RestrictedInput.supportsFormatting()) {
+    // browsers that can't support formatting
+    // should not bring up the number keyboard
+    // for entering expiration date, because
+    // it does not allow them to enter a `/`
+    this.element.setAttribute('type', 'text');
+  }
+
   this.formatter.setPattern(DEFAULT_PATTERN);
 
   this.element.addEventListener('keyup', function (event) {

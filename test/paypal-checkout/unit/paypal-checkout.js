@@ -227,6 +227,48 @@ describe('PayPalCheckout', () => {
       });
     });
 
+    it('saves intent when passed', () => {
+      testContext.client.request.mockResolvedValue({
+        agreementSetup: {
+          tokenId: 'stub'
+        },
+        paymentResource: {
+          paymentToken: 'stub',
+          redirectUrl: 'https://example.com?foo=bar&EC-token&foo2=bar2'
+        }
+      });
+
+      return testContext.paypalCheckout.createPayment({
+        flow: 'vault',
+        intent: 'saved intent'
+      }).then(() => {
+        expect(testContext.paypalCheckout.intentFromCreatePayment).toBe('saved intent');
+      });
+    });
+
+    it('removes intent on additonal createPayment calls', () => {
+      testContext.client.request.mockResolvedValue({
+        agreementSetup: {
+          tokenId: 'stub'
+        },
+        paymentResource: {
+          paymentToken: 'stub',
+          redirectUrl: 'https://example.com?foo=bar&EC-token&foo2=bar2'
+        }
+      });
+
+      return testContext.paypalCheckout.createPayment({
+        flow: 'vault',
+        intent: 'saved intent'
+      }).then(() => {
+        expect(testContext.paypalCheckout.intentFromCreatePayment).toBe('saved intent');
+
+        return testContext.paypalCheckout.createPayment({ flow: 'vault' });
+      }).then(() => {
+        expect(testContext.paypalCheckout.intentFromCreatePayment).toBeFalsy();
+      });
+    });
+
     describe('Hermes payment resource', () => {
       beforeEach(() => {
         testContext.options = {
@@ -1084,6 +1126,24 @@ describe('PayPalCheckout', () => {
       });
     });
 
+    it('includes intent from createPayment', () => {
+      testContext.client.request.mockResolvedValue({
+        paypalAccounts: [{ nonce: 'nonce', type: 'PayPal' }]
+      });
+
+      testContext.paypalCheckout.intentFromCreatePayment = 'saved intent';
+
+      return testContext.paypalCheckout.tokenizePayment({}).then(() => {
+        expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+          data: {
+            paypalAccount: {
+              intent: 'saved intent'
+            }
+          }
+        });
+      });
+    });
+
     it('resolves with blank account details in response if unavailable', () => {
       testContext.client.request.mockResolvedValue({
         paypalAccounts: [{ nonce: 'nonce', type: 'PayPal' }]
@@ -1353,6 +1413,26 @@ describe('PayPalCheckout', () => {
       });
     });
 
+    it('does not validate if merchant is using the pay later flow', () => {
+      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
+
+      return testContext.paypalCheckout.tokenizePayment({
+        billingToken: 'token',
+        paymentID: 'payment-id'
+      }).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+          data: {
+            paypalAccount: {
+              options: {
+                validate: false
+              }
+            }
+          }
+        });
+      });
+    });
+
     it('does not validate if flow is vault and auth is tokenization key', () => {
       testContext.configuration.authorizationType = 'TOKENIZATION_KEY';
 
@@ -1429,6 +1509,16 @@ describe('PayPalCheckout', () => {
         expect(arg.data.paypalAccount).not.toHaveProperty('billingAgreementToken');
       }));
 
+    it('does not send along billing token if both a token and a payment ID are provided', () =>
+      testContext.paypalCheckout.tokenizePayment({
+        billingToken: 'billing token',
+        paymentID: 'payment id'
+      }).then(() => {
+        const arg = testContext.client.request.mock.calls[0][0];
+
+        expect(arg.data.paypalAccount).not.toHaveProperty('billingAgreementToken');
+      }));
+
     it('sends a tokenization failure event when request fails', () => {
       const client = testContext.client;
 
@@ -1489,10 +1579,9 @@ describe('PayPalCheckout', () => {
       });
     });
 
-    it('uses the client id from getClientId by default when in production', () => {
+    it('uses the client id from getClientId by default', () => {
       const instance = testContext.paypalCheckout;
 
-      instance._configuration.gatewayConfiguration.environment = 'production';
       jest.spyOn(instance, 'getClientId').mockResolvedValue('fake-id');
 
       const promise = instance.loadPayPalSDK();
@@ -1502,22 +1591,6 @@ describe('PayPalCheckout', () => {
       return promise.then(() => {
         expect(instance.getClientId).toBeCalledTimes(1);
         expect(fakeScript.src).toMatch('client-id=fake-id');
-      });
-    });
-
-    it('uses sb for client id when not in production', () => {
-      const instance = testContext.paypalCheckout;
-
-      instance._configuration.gatewayConfiguration.environment = 'sandbox';
-      jest.spyOn(instance, 'getClientId').mockResolvedValue('fake-id');
-
-      const promise = instance.loadPayPalSDK();
-
-      fakeScript.onload();
-
-      return promise.then(() => {
-        expect(instance.getClientId).toBeCalledTimes(1);
-        expect(fakeScript.src).toMatch('client-id=sb');
       });
     });
 
@@ -1659,6 +1732,113 @@ describe('PayPalCheckout', () => {
         expect(fakeScript.src).toMatch('foo=foo');
         expect(fakeScript.src).toMatch('bar=bar');
         expect(fakeScript.src).toMatch('baz=baz');
+      });
+    });
+
+    it('can pass data attributes', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        dataAttributes: {
+          foo: 'bar',
+          'client-token': 'value',
+          amount: '100.00'
+        }
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-foo')).toBe('bar');
+        expect(fakeScript.getAttribute('data-client-token')).toBe('value');
+        expect(fakeScript.getAttribute('data-amount')).toBe('100.00');
+        expect(fakeScript.src).not.toMatch('dataAttributes');
+        expect(fakeScript.src).not.toMatch('foo');
+        expect(fakeScript.src).not.toMatch('client-token');
+        expect(fakeScript.src).not.toMatch('foo');
+      });
+    });
+
+    it('passes authorization fingerprint as data-user-id-token when a client token is used and is enabled for setting it', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
+      testContext.configuration.authorizationFingerprint = 'auth-fingerprint';
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-user-id-token')).toBe('auth-fingerprint');
+      });
+    });
+
+    it('passes authorization fingerprint as data-user-id-token without the customer query param', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
+      testContext.configuration.authorizationFingerprint = 'auth-fingerprint?customer=';
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-user-id-token')).toBe('auth-fingerprint');
+      });
+    });
+
+    it('does not create data-user-id-token attribute for tokenization keys', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+      testContext.configuration.authorizationType = 'TOKENIZATION_KEY';
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-user-id-token')).toBeFalsy();
+      });
+    });
+
+    it('does not pass authorization fingerprint as data-user-id-token when not enabled for it', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = false;
+      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
+      testContext.configuration.authorizationFingerprint = 'auth-fingerprint?customer=';
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-user-id-token')).toBeFalsy();
+      });
+    });
+
+    it('uses passed in user-id-token when both exist', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
+      testContext.configuration.authorizationFingerprint = 'unused-auth-fingerprint';
+
+      const promise = instance.loadPayPalSDK({
+        dataAttributes: {
+          'user-id-token': 'custom-auth-fingerprint'
+        }
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-user-id-token')).toBe('custom-auth-fingerprint');
       });
     });
   });

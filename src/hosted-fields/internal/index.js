@@ -61,8 +61,8 @@ function initialize(cardForm) {
 
   form.appendChild(fieldComponent.element);
 
-  if (name === 'number' && !cardForm.configuration.preventAutofill) {
-    createInputsForAutofill(form);
+  if (!cardForm.configuration.preventAutofill) {
+    createInputsForAutofill(fieldComponent, form);
   }
 
   window.bus.on(events.AUTOFILL_DATA_AVAILABLE, autofillHandler(fieldComponent));
@@ -136,83 +136,151 @@ function fix1PasswordAdjustment(form) {
   form.style.position = 'absolute';
 }
 
-function createInputsForAutofill(form) {
+function createInputsForAutofill(fieldComponent, form) {
+  var name = frameName.getFrameName();
   var cachedValues = {
+    cardholderName: '',
+    number: '',
     month: '',
     year: '',
     cvv: ''
   };
+  var cardholderName = makeMockInput('cardholder-name');
+  var number = makeMockInput('credit-card-number');
   var expMonth = makeMockInput('expiration-month');
   var expYear = makeMockInput('expiration-year');
   var cvv = makeMockInput('cvv');
+  var cardholderNameInput = cardholderName.querySelector('input');
+  var numberInput = number.querySelector('input');
   var expMonthInput = expMonth.querySelector('input');
   var expYearInput = expYear.querySelector('input');
   var cvvInput = cvv.querySelector('input');
 
+  // we want to reset the autofill fields when the real
+  // hosted fields input changes so we can re-send new
+  // autofill events
+  fieldComponent.input.element.addEventListener('input', function () {
+    cardholderNameInput.value = '';
+    numberInput.value = '';
+    expMonthInput.value = '';
+    expYearInput.value = '';
+    cvvInput.value = '';
+    cachedValues.cardholderName = '';
+    cachedValues.number = '';
+    cachedValues.month = '';
+    cachedValues.year = '';
+    cachedValues.cvv = '';
+  });
+
   setInterval(function () {
+    var nameValue = cardholderNameInput.value;
+    var numberValue = numberInput.value;
+    var monthValue = expMonthInput.value;
+    var yearValue = expYearInput.value;
+    var cvvValue = cvvInput.value;
+
     if (
-      cachedValues.month !== expMonthInput.value ||
-      cachedValues.year !== expYearInput.value ||
-      cachedValues.cvv !== cvvInput.value
+      (nameValue && cachedValues.cardholderName !== nameValue) ||
+      (numberValue && cachedValues.number !== numberValue) ||
+      (monthValue && cachedValues.month !== monthValue) ||
+      (yearValue && cachedValues.year !== yearValue) ||
+      (cvvValue && cachedValues.cvv !== cvvValue)
     ) {
-      cachedValues.month = expMonthInput.value;
-      cachedValues.year = expYearInput.value;
-      cachedValues.cvv = cvvInput.value;
+      cachedValues.cardholderName = nameValue;
+      cachedValues.number = numberValue;
+      cachedValues.month = monthValue;
+      cachedValues.year = yearValue;
+      cachedValues.cvv = cvvValue;
 
       fix1PasswordAdjustment(form);
       window.bus.emit(events.AUTOFILL_DATA_AVAILABLE, {
-        month: expMonthInput.value,
-        year: expYearInput.value,
-        cvv: cvvInput.value
+        cardholderName: nameValue,
+        number: numberValue,
+        month: monthValue,
+        year: yearValue,
+        cvv: cvvValue
       });
     }
   }, CHECK_FOR_NEW_AUTOFILL_DATA_INTERVAL);
 
-  form.appendChild(expMonth);
-  form.appendChild(expYear);
-  form.appendChild(cvv);
+  if (name !== 'cardholderName') {
+    form.appendChild(cardholderName);
+  }
+  if (name !== 'number') {
+    form.appendChild(number);
+  }
+  if (name !== 'expirationDate' && name !== 'expirationMonth') {
+    form.appendChild(expMonth);
+  }
+  if (name !== 'expirationDate' && name !== 'expirationYear') {
+    form.appendChild(expYear);
+  }
+  if (name !== 'cvv') {
+    form.appendChild(cvv);
+  }
 }
 
 function autofillHandler(fieldComponent) {
   return function (payload) {
-    var name, value, month, year, cvv, thisYear;
+    var name, value, cardholderName, number, month, year, cvv, thisYear;
 
-    if (!payload || !payload.month || !payload.year) {
+    if (!payload) {
+      return;
+    }
+
+    if (fieldComponent.input.element.value) {
       return;
     }
 
     name = frameName.getFrameName();
+    cardholderName = payload.cardholderName;
+    number = payload.number;
     month = payload.month;
     year = payload.year;
     cvv = payload.cvv;
 
-    if (year.length === 2) {
+    if (year && year.length === 2) {
       thisYear = String((new Date()).getFullYear()); // eslint-disable-line no-extra-parens
       year = thisYear.substring(0, 2) + year;
     }
 
-    if (name === 'expirationDate') {
+    if (name === 'cardholderName' && cardholderName) {
+      value = cardholderName;
+    } else if (name === 'number' && number) {
+      value = number;
+    } else if (name === 'expirationDate' && month && year) {
       value = month + ' / ' + year;
-    } else if (name === 'expirationMonth') {
+    } else if (name === 'expirationMonth' && month) {
       value = month;
-    } else if (name === 'expirationYear') {
+    } else if (name === 'expirationYear' && year) {
       value = year;
     } else if (name === 'cvv' && cvv) {
       value = cvv;
     }
 
     if (value) {
-      fieldComponent.input.updateModel('value', value);
-
-      if (fieldComponent.input.shouldMask) {
-        fieldComponent.input.maskValue(value);
-      } else {
-        fieldComponent.input.element.value = value;
-      }
-
-      resetPlaceholder(fieldComponent.input.element);
+      applyAutofillValue(fieldComponent, value);
     }
   };
+}
+
+function applyAutofillValue(fieldComponent, value) {
+  var name = frameName.getFrameName();
+
+  fieldComponent.input.element.value = '';
+
+  fieldComponent.input.updateModel('value', value);
+  fieldComponent.input.element.value = value;
+
+  if (name === 'number') {
+    fieldComponent.input.setPattern(value);
+  }
+
+  if (fieldComponent.input.shouldMask) {
+    fieldComponent.input.maskValue(fieldComponent.input.element.value);
+  }
+
+  resetPlaceholder(fieldComponent.input.element);
 }
 
 function resetPlaceholder(element) {

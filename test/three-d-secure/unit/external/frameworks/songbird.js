@@ -113,6 +113,32 @@ describe('SongbirdFramework', () => {
         done();
       });
     });
+
+    it.each([
+      ['CUSTOMER_CANCELED', 'customer-canceled'],
+      ['UI.CLOSE', 'authentication-modal-close'],
+      ['UI.RENDER', 'authentication-modal-render'],
+      ['UI.RENDERHIDDEN', 'authentication-modal-render-hidden'],
+      ['UI.LOADING.CLOSE', 'authentication-modal-loader-close'],
+      ['UI.LOADING.RENDER', 'authentication-modal-loader-render']
+    ])('sets up %s event without payload', (eventName, publicEventName, done) => {
+      const framework = new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      });
+
+      jest.spyOn(framework, 'on').mockImplementation((event, cb) => {
+        if (event === `songbird-framework:${eventName}`) {
+          cb();
+        }
+      });
+
+      framework.setUpEventListeners((event) => {
+        expect(event).toBe(publicEventName);
+
+        done();
+      });
+    });
   });
 
   describe('verifyCard', () => {
@@ -975,6 +1001,39 @@ describe('SongbirdFramework', () => {
       });
     });
 
+    it.each([
+      'ui.close',
+      'ui.render',
+      'ui.renderHidden',
+      'ui.loading.close',
+      'ui.loading.render'
+    ])('sets up %s listener', (eventName) => {
+      expect.assertions(4);
+
+      jest.spyOn(SongbirdFramework.prototype, 'setCardinalListener').mockImplementation((name, cb) => {
+        if (name === eventName) {
+          // ensure that this specific event was listened for
+          expect(name).toBe(eventName);
+          cb();
+        }
+
+        // ensure that the framework finishes setting up
+        if (name === 'payments.setupComplete') {
+          cb();
+        }
+      });
+
+      jest.spyOn(SongbirdFramework.prototype, '_emit');
+
+      return new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      }).setupSongbird().then(() => {
+        expect(SongbirdFramework.prototype.setCardinalListener).toHaveBeenCalledWith(eventName, expect.any(Function));
+        expect(SongbirdFramework.prototype._emit).toBeCalledWith(`songbird-framework:${eventName.toUpperCase()}`);
+      });
+    });
+
     it('sets up payments.setupComplete listener', () => {
       return new SongbirdFramework({
         createPromise: Promise.resolve(testContext.client),
@@ -1617,9 +1676,8 @@ describe('SongbirdFramework', () => {
       testContext.framework.setCardinalListener('bar', jest.fn());
 
       return testContext.framework.teardown().then(() => {
-        expect(window.Cardinal.off).toHaveBeenCalledTimes(4);
-        expect(window.Cardinal.off).toHaveBeenNthCalledWith(3, 'foo');
-        expect(window.Cardinal.off).toHaveBeenNthCalledWith(4, 'bar');
+        expect(window.Cardinal.off).toHaveBeenCalledWith('foo');
+        expect(window.Cardinal.off).toHaveBeenCalledWith('bar');
       });
     });
   });

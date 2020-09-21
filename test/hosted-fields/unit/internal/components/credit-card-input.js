@@ -1,5 +1,6 @@
 'use strict';
 const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
+const { CreditCardInput } = require('../../../../../src/hosted-fields/internal/components/credit-card-input');
 const { createInput } = require('../../helpers');
 
 describe('Credit Card Input', () => {
@@ -164,6 +165,78 @@ describe('Credit Card Input', () => {
       testContext.input.maskValue('4111 1111 1111 1236');
 
       expect(testContext.input.element.value).toBe('•••• •••• •••• ••••');
+    });
+  });
+
+  describe('setPattern', () => {
+    beforeEach(() => {
+      jest.spyOn(testContext.input.formatter, 'setPattern').mockImplementation();
+    });
+
+    afterEach(() => {
+      CreditCardInput.resetPatternCache();
+    });
+
+    it('sets pattern with default card type pattern', () => {
+      testContext.input.setPattern();
+
+      expect(testContext.input.formatter.setPattern).toBeCalledTimes(1);
+      expect(testContext.input.formatter.setPattern).toBeCalledWith('{{9999}} {{9999}} {{9999}} {{9999}}');
+    });
+
+    it('sets pattern with card object', () => {
+      testContext.input.setPattern({
+        lengths: [5, 8, 11],
+        gaps: [2, 5, 7],
+        type: 'foocard'
+      });
+
+      expect(testContext.input.formatter.setPattern).toBeCalledTimes(1);
+      expect(testContext.input.formatter.setPattern).toBeCalledWith('{{99}} {{999}} {{99}} {{9999}}');
+    });
+
+    it('sets pattern with string number', () => {
+      testContext.input.setPattern('378282246310005');
+
+      expect(testContext.input.formatter.setPattern).toBeCalledTimes(1);
+      expect(testContext.input.formatter.setPattern).toBeCalledWith('{{9999}} {{999999}} {{99999}}');
+    });
+
+    it('sets pattern with card object with custom max length', () => {
+      jest.spyOn(testContext.input, 'getConfiguration').mockReturnValue({
+        maxCardLength: 8
+      });
+
+      testContext.input.setPattern({
+        lengths: [5, 8, 11],
+        gaps: [2, 5, 7],
+        type: 'foocard'
+      });
+
+      expect(testContext.input.formatter.setPattern).toBeCalledTimes(1);
+      expect(testContext.input.formatter.setPattern).toBeCalledWith('{{99}} {{999}} {{99}} {{9}}');
+    });
+
+    it('caches patterns for card types', () => {
+      testContext.input.setPattern({
+        lengths: [5, 8, 11],
+        gaps: [2, 5, 7],
+        type: 'foocard'
+      });
+
+      expect(testContext.input.formatter.setPattern).toBeCalledTimes(1);
+      expect(testContext.input.formatter.setPattern).toBeCalledWith('{{99}} {{999}} {{99}} {{9999}}');
+
+      testContext.input.formatter.setPattern.mockReset();
+
+      testContext.input.setPattern({
+        lengths: [2, 3, 8],
+        gaps: [1, 3, 5],
+        type: 'foocard'
+      });
+
+      expect(testContext.input.formatter.setPattern).toBeCalledTimes(1);
+      expect(testContext.input.formatter.setPattern).toBeCalledWith('{{99}} {{999}} {{99}} {{9999}}');
     });
   });
 });

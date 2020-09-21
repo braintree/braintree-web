@@ -17,6 +17,17 @@ var INTEGRATION_TIMEOUT_MS = require('../../../lib/constants').INTEGRATION_TIMEO
 var PLATFORM = require('../../../lib/constants').PLATFORM;
 var VERSION = process.env.npm_package_version;
 var CUSTOMER_CANCELED_SONGBIRD_MODAL = '01';
+var SONGBIRD_UI_EVENTS = [
+  'ui.close',
+  'ui.render',
+
+  // TODO these events are not documented in the
+  // client reference because so far we have
+  // not been able to trigger them in our testing
+  'ui.renderHidden',
+  'ui.loading.close',
+  'ui.loading.render'
+];
 
 function SongbirdFramework(options) {
   BaseFramework.call(this, options);
@@ -37,7 +48,12 @@ SongbirdFramework.prototype = Object.create(BaseFramework.prototype, {
 
 SongbirdFramework.events = enumerate([
   'LOOKUP_COMPLETE',
-  'CUSTOMER_CANCELED'
+  'CUSTOMER_CANCELED',
+  'UI.CLOSE',
+  'UI.RENDER',
+  'UI.RENDERHIDDEN',
+  'UI.LOADING.CLOSE',
+  'UI.LOADING.RENDER'
 ], 'songbird-framework:');
 
 SongbirdFramework.prototype.setUpEventListeners = function (reply) {
@@ -46,6 +62,21 @@ SongbirdFramework.prototype.setUpEventListeners = function (reply) {
   });
   this.on(SongbirdFramework.events.CUSTOMER_CANCELED, function () {
     reply('customer-canceled');
+  });
+  this.on(SongbirdFramework.events['UI.CLOSE'], function () {
+    reply('authentication-modal-close');
+  });
+  this.on(SongbirdFramework.events['UI.RENDER'], function () {
+    reply('authentication-modal-render');
+  });
+  this.on(SongbirdFramework.events['UI.RENDERHIDDEN'], function () {
+    reply('authentication-modal-render-hidden');
+  });
+  this.on(SongbirdFramework.events['UI.LOADING.CLOSE'], function () {
+    reply('authentication-modal-loader-close');
+  });
+  this.on(SongbirdFramework.events['UI.LOADING.RENDER'], function () {
+    reply('authentication-modal-loader-render');
   });
 };
 
@@ -247,6 +278,11 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
     var setupStartTime = config.setupStartTime;
     var cardinalConfiguration = self._createCardinalConfigurationOptions(setupOptions);
 
+    SONGBIRD_UI_EVENTS.forEach(function (eventName) {
+      self.setCardinalListener(eventName, function () {
+        self._emit(SongbirdFramework.events[eventName.toUpperCase()]);
+      });
+    });
     self.setCardinalListener('payments.setupComplete', self._createPaymentsSetupCompleteCallback());
 
     self._setupFrameworkSpecificListeners();
@@ -530,6 +566,7 @@ SongbirdFramework.prototype._onLookupComplete = function (lookupResponse, option
 
       self._verifyCardPromisePlus.catch(reject);
 
+      // If both event and callback are mistakenly used together,
       // prefer the callback when it is passed into the verifyCard options
       if (options.onLookupComplete) {
         options.onLookupComplete(response, next);
