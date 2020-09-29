@@ -25,6 +25,7 @@
  * @property {NETWORK} CLIENT_GRAPHQL_REQUEST_ERROR The response from a request to GraphQL contained an error.
  * @property {MERCHANT} CLIENT_RATE_LIMITED The response from a request had a status of 429, indicating rate limiting.
  * @property {MERCHANT} CLIENT_AUTHORIZATION_INSUFFICIENT The user assocaited with the client token or tokenization key does not have permissions to make the request.
+ * @property {MERCHANT} CLIENT_AUTHORIZATION_INVALID The provided authorization could not be found. Either the client token has expired and a new client token must be generated or the tokenization key used is set to be inactive or has been deleted.
  */
 
 var BraintreeError = require('../lib/braintree-error');
@@ -81,5 +82,10 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'CLIENT_AUTHORIZATION_INSUFFICIENT',
     message: 'The authorization used has insufficient privileges.'
+  },
+  CLIENT_AUTHORIZATION_INVALID: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'CLIENT_AUTHORIZATION_INVALID',
+    message: 'Either the client token has expired and a new one should be generated or the tokenization key has been deactivated or deleted.'
   }
 };

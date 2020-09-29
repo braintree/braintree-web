@@ -64,6 +64,24 @@ describe('getConfiguration', () => {
       });
     });
 
+    it('calls the callback with a CLIENT_AUTHORIZATION_INVALID error if request 401s', done => {
+      const fakeErr = new Error('you goofed!');
+
+      jest.spyOn(AJAXDriver, 'request').mockImplementation(yieldsAsync(fakeErr, null, 401));
+
+      getConfiguration(createAuthorizationData(tokenizationKey), (err, response) => {
+        expect(response).toBeFalsy();
+
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe('MERCHANT');
+        expect(err.code).toBe('CLIENT_AUTHORIZATION_INVALID');
+        expect(err.message).toBe('Either the client token has expired and a new one should be generated or the tokenization key has been deactivated or deleted.');
+        expect(err.details.originalError).toBe(fakeErr);
+
+        done();
+      });
+    });
+
     it('calls the callback with a CLIENT_AUTHORIZATION_INSUFFICIENT error if request 403s', done => {
       const fakeErr = new Error('you goofed!');
 

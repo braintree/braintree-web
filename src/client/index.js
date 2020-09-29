@@ -22,7 +22,17 @@ var sharedErrors = require('../lib/errors');
  * createClient({
  *   authorization: CLIENT_AUTHORIZATION
  * }, function (createErr, clientInstance) {
- *   // ...
+ *   if (createErr) {
+ *     if (createErr.code === 'CLIENT_AUTHORIZATION_INVALID') {
+ *       // either the client token has expired, and a new one should be generated
+ *       // or the tokenization key was deactivated or deleted
+ *     } else {
+ *       console.log('something went wrong creating the client instance', createErr);
+ *     }
+ *     return;
+ *   }
+ *
+ *  // set up other components
  * });
  * @static
  */

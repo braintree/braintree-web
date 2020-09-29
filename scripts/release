@@ -8,7 +8,7 @@ MAGENTA="$(tput setaf 5)"
 CYAN="$(tput setaf 6)"
 RESET="$(tput sgr0)"
 YES="^(y|yes|yas)$"
-SOURCE_IGNORES="Jenkinsfile Drakefile Dockerfile .dockerignore btjsenv .github/PULL_REQUEST_TEMPLATE.md"
+SOURCE_IGNORES="Jenkinsfile Drakefile Dockerfile .dockerignore btjsenv .github/PULL_REQUEST_TEMPLATE.md .github/CODEOWNERS"
 
 dotenv() {
   if [ ! -f .env ]; then

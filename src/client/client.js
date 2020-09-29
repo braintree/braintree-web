@@ -389,6 +389,8 @@ function formatRequestError(status, err) { // eslint-disable-line consistent-ret
 
   if (status === -1) {
     requestError = new BraintreeError(errors.CLIENT_REQUEST_TIMEOUT);
+  } else if (status === 401) {
+    requestError = new BraintreeError(errors.CLIENT_AUTHORIZATION_INVALID);
   } else if (status === 403) {
     requestError = new BraintreeError(errors.CLIENT_AUTHORIZATION_INSUFFICIENT);
   } else if (status === 429) {

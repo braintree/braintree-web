@@ -80,6 +80,8 @@ function getConfiguration(authData) {
       if (err) {
         if (status === 403) {
           errorTemplate = errors.CLIENT_AUTHORIZATION_INSUFFICIENT;
+        } else if (status === 401) {
+          errorTemplate = errors.CLIENT_AUTHORIZATION_INVALID;
         } else {
           errorTemplate = errors.CLIENT_GATEWAY_NETWORK;
         }

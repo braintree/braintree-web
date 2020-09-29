@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.67.0
+* Update @braintree/sanitize-url to v5.0.0
+* Client
+  * Provide `CLIENT_AUTHORIZATION_INVALID` error when client token has expired or a tokenization key has been deactivated or deleted
+* Venmo
+  * Add `allowWebviews` configuration to `isBrowserSupported`
+
 ## 3.66.0
 * Hosted Fields
   * Fix issue where cardholder name field would present a number keyboard on iOS devices (closes #523)

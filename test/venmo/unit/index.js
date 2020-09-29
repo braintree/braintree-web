@@ -127,5 +127,13 @@ describe('venmo static methods', () => {
         allowNewBrowserTab: true
       });
     });
+
+    it('can call isBrowserSupported with allowWebviews', () => {
+      isBrowserSupported({ allowWebviews: true });
+
+      expect(supportsVenmo.isBrowserSupported).toBeCalledWith({
+        allowWebviews: true
+      });
+    });
   });
 });

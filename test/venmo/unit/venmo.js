@@ -169,9 +169,17 @@ describe('Venmo', () => {
     it('calls isBrowserSupported with allowNewBrowserTab: true by default', () => {
       testContext.venmo.isBrowserSupported();
 
-      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith({
+      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith(expect.objectContaining({
         allowNewBrowserTab: true
-      });
+      }));
+    });
+
+    it('calls isBrowserSupported with allowWebviews: true by default', () => {
+      testContext.venmo.isBrowserSupported();
+
+      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith(expect.objectContaining({
+        allowWebviews: true
+      }));
     });
 
     it('calls isBrowserSupported with allowNewBrowserTab: false when venmo instance is configured to do so', () => {
@@ -182,9 +190,22 @@ describe('Venmo', () => {
 
       testContext.venmo.isBrowserSupported();
 
-      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith({
+      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith(expect.objectContaining({
         allowNewBrowserTab: false
+      }));
+    });
+
+    it('calls isBrowserSupported with allowWebviews: false when venmo instance is configured to do so', () => {
+      testContext.venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        allowWebviews: false
       });
+
+      testContext.venmo.isBrowserSupported();
+
+      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith(expect.objectContaining({
+        allowWebviews: false
+      }));
     });
   });
 

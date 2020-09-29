@@ -30,6 +30,7 @@ var ExtendedPromise = require('@braintree/extended-promise');
 function Venmo(options) {
   this._createPromise = options.createPromise;
   this._allowNewBrowserTab = options.allowNewBrowserTab !== false;
+  this._allowWebviews = options.allowWebviews !== false;
   this._profileId = options.profileId;
   this._deepLinkReturnUrl = options.deepLinkReturnUrl;
   this._ignoreHistoryChanges = options.ignoreHistoryChanges;
@@ -76,12 +77,14 @@ Venmo.prototype.getUrl = function () {
  * Returns a boolean indicating whether the current browser supports Venmo as a payment method.
  *
  * If `options.allowNewBrowserTab` is false when calling {@link module:braintree-web/venmo.create|venmo.create}, this method will return true only for browsers known to support returning from the Venmo app to the same browser tab. Currently, this is limited to iOS Safari and Android Chrome.
+ * If `options.allowWebviews` is false when calling {@link module:braintree-web/venmo.create|venmo.create}, this method will return true only for mobile browsers that are not webviews.
  * @public
  * @returns {boolean} True if the current browser is supported, false if not.
  */
 Venmo.prototype.isBrowserSupported = function () {
   return isBrowserSupported.isBrowserSupported({
-    allowNewBrowserTab: this._allowNewBrowserTab
+    allowNewBrowserTab: this._allowNewBrowserTab,
+    allowWebviews: this._allowWebviews
   });
 };
 
