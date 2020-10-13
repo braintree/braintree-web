@@ -68,7 +68,7 @@ describe('GraphQL Configuration', () => {
               countryCode: 'US',
               currencyCode: 'USD',
               merchantIdentifier: 'merchant_id',
-              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER']
+              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER', 'INTERNATIONAL_MAESTRO']
             },
             googlePay: {
               displayName: 'merchant',
@@ -147,7 +147,7 @@ describe('GraphQL Configuration', () => {
           countryCode: 'US',
           currencyCode: 'USD',
           merchantIdentifier: 'merchant_id',
-          supportedNetworks: ['visa', 'mastercard', 'amex', 'discover']
+          supportedNetworks: ['visa', 'mastercard', 'amex', 'discover', 'maestro']
         },
         kount: {
           kountMerchantId: '600000'
@@ -330,4 +330,3 @@ describe('GraphQL Configuration', () => {
     });
   });
 });
-

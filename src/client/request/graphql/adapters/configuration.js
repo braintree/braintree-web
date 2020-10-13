@@ -20,7 +20,8 @@ var cardTypeTransforms = {
     VISA: 'visa',
     MASTERCARD: 'mastercard',
     DISCOVER: 'discover',
-    AMERICAN_EXPRESS: 'amex'
+    AMERICAN_EXPRESS: 'amex',
+    INTERNATIONAL_MAESTRO: 'maestro'
   },
   visaCheckout: {
     VISA: 'Visa',

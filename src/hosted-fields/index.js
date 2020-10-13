@@ -105,6 +105,7 @@ var VERSION = process.env.npm_package_version;
  * `padding-right`
  * `padding-bottom`
  * `padding-left`
+ * `text-align`
  * `text-shadow`
  * `transition`
  * `-moz-appearance`

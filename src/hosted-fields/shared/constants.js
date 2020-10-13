@@ -84,6 +84,7 @@ var constants = {
     'padding-right',
     'padding-bottom',
     'padding-left',
+    'text-align',
     'text-shadow',
     'transition'
   ],

@@ -941,7 +941,7 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     options['client-id'] = id;
 
     this._paypalScript.src = querystring.queryify(src, options);
-    document.body.appendChild(this._paypalScript);
+    document.head.insertBefore(this._paypalScript, document.head.firstElementChild);
   }.bind(this));
 
   return loadPromise.then(function () {

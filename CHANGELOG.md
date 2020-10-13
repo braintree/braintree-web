@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.68.0
+* Update framebus to v4.0.4
+* Apple Pay
+  * Support Maestro cards
+* Hosted Fields
+  * Support `text-align` style
+* PayPal Checkout
+  * Fix issue in `loadPayPalSDK` where PayPal SDK should have been loaded in the head of the document instead of the body to allow re-loading the SDK dynamically
+
 ## 3.67.0
 * Update @braintree/sanitize-url to v5.0.0
 * Client

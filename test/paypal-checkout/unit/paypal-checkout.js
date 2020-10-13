@@ -1539,11 +1539,13 @@ describe('PayPalCheckout', () => {
   });
 
   describe('loadPayPalSDK', () => {
-    let fakeScript;
+    let fakeScript, firstHeadElement;
 
     beforeEach(() => {
       fakeScript = document.createElement('script');
-      jest.spyOn(document.body, 'appendChild').mockImplementation();
+      firstHeadElement = document.createElement('meta');
+      document.head.appendChild(firstHeadElement);
+      jest.spyOn(document.head, 'insertBefore').mockImplementation();
       jest.spyOn(document, 'createElement').mockReturnValue(fakeScript);
     });
 
@@ -1553,7 +1555,7 @@ describe('PayPalCheckout', () => {
       }
     });
 
-    it('loads the PayPal script onto the page', () => {
+    it('loads the PayPal script onto the top of the head', () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK();
@@ -1561,8 +1563,8 @@ describe('PayPalCheckout', () => {
       fakeScript.onload();
 
       return promise.then(() => {
-        expect(document.body.appendChild).toBeCalledTimes(1);
-        expect(document.body.appendChild).toBeCalledWith(fakeScript);
+        expect(document.head.insertBefore).toBeCalledTimes(1);
+        expect(document.head.insertBefore).toBeCalledWith(fakeScript, firstHeadElement);
         expect(fakeScript.src).toMatch('https://www.paypal.com/sdk/js?');
       });
     });
