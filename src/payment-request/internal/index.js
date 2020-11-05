@@ -1,7 +1,7 @@
 'use strict';
 
 var assign = require('../../lib/assign').assign;
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var constants = require('../shared/constants');
 var clone = require('../../lib/json-clone');
 var Client = require('../../client/client');

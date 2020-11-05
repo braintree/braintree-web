@@ -1,9 +1,9 @@
 'use strict';
 
-jest.mock('../../../../src/lib/bus');
+jest.mock('framebus');
 jest.mock('../../../../src/client/client');
 
-const Bus = require('../../../../src/lib/bus');
+const Bus = require('framebus');
 const BraintreeError = require('../../../../src/lib/braintree-error');
 const paymentRequestFrame = require('../../../../src/payment-request/internal/');
 const { events } = require('../../../../src/payment-request/shared/constants');
@@ -53,7 +53,10 @@ describe('Payment Request Frame', () => {
 
       paymentRequestFrame.create();
 
-      expect(window.bus.channel).toBe('123');
+      expect(Bus).toBeCalledWith({
+        channel: '123'
+      });
+      expect(window.bus).toBeInstanceOf(Bus);
     });
 
     it('emits a FRAME_READY event', () => {

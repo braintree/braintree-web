@@ -3,7 +3,7 @@
 jest.mock('../../../../../src/lib/assets');
 jest.mock('@braintree/asset-loader/load-script');
 
-const Bus = require('../../../../../src/lib/bus');
+const Bus = require('framebus');
 const BaseFramework = require('../../../../../src/three-d-secure/external/frameworks/base');
 const SongbirdFramework = require('../../../../../src/three-d-secure/external/frameworks/songbird');
 const { wait, fake: { clientToken }, yieldsAsync, yieldsByEventAsync, yieldsByEvents, findFirstEventCallback } = require('../../../../helpers');

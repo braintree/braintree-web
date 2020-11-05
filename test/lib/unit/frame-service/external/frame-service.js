@@ -5,7 +5,7 @@ jest.mock('../../../../../src/lib/frame-service/external/strategies/popup-bridge
 jest.mock('../../../../../src/lib/frame-service/external/strategies/modal');
 jest.mock('../../../../../src/lib/frame-service/shared/browser-detection');
 jest.mock('../../../../../src/lib/is-https');
-jest.mock('../../../../../src/lib/bus');
+jest.mock('framebus');
 
 const FrameService = require('../../../../../src/lib/frame-service/external/frame-service');
 const { DISPATCH_FRAME_CLASS, DISPATCH_FRAME_NAME } = require('../../../../../src/lib/frame-service/shared/constants');
@@ -13,7 +13,7 @@ const { DISPATCH_FRAME_READY, DISPATCH_FRAME_REPORT } = require('../../../../../
 const Popup = require('../../../../../src/lib/frame-service/external/strategies/popup');
 const PopupBridge = require('../../../../../src/lib/frame-service/external/strategies/popup-bridge');
 const Modal = require('../../../../../src/lib/frame-service/external/strategies/modal');
-const BraintreeBus = require('../../../../../src/lib/bus');
+const BraintreeBus = require('framebus');
 const BraintreeError = require('../../../../../src/lib/braintree-error');
 const browserDetection = require('../../../../../src/lib/frame-service/shared/browser-detection');
 const isHTTPS = require('../../../../../src/lib/is-https');
@@ -165,7 +165,9 @@ describe('FrameService', () => {
       const { _bus, _serviceId } = new FrameService(testContext.options);
 
       expect(_bus).toBeInstanceOf(BraintreeBus);
-      expect(_bus.channel).toBe(_serviceId);
+      expect(BraintreeBus).toBeCalledWith({
+        channel: _serviceId
+      });
     });
 
     it('makes call to attach bus event listeners', () => {
@@ -274,7 +276,7 @@ describe('FrameService', () => {
 
       FrameService.prototype._setBusEvents.call(context);
 
-      expect(context._bus.on).toHaveBeenCalledWith(BraintreeBus.events.CONFIGURATION_REQUEST, expect.any(Function));
+      expect(context._bus.on).toHaveBeenCalledWith('BUS_CONFIGURATION_REQUEST', expect.any(Function));
     });
 
     it('calls _onCompleteCallback with provided arguments', () => {

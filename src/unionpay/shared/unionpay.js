@@ -2,8 +2,9 @@
 
 var analytics = require('../../lib/analytics');
 var BraintreeError = require('../../lib/braintree-error');
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var constants = require('./constants');
+var isVerifiedDomain = require('../../lib/is-verified-domain');
 var useMin = require('../../lib/use-min');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var errors = require('./errors');
@@ -14,6 +15,7 @@ var VERSION = process.env.npm_package_version;
 var uuid = require('@braintree/uuid');
 var Promise = require('../../lib/promise');
 var wrapPromise = require('@braintree/wrap-promise');
+var BUS_CONFIGURATION_REQUEST_EVENT = require('../../lib/constants').BUS_CONFIGURATION_REQUEST_EVENT;
 
 /**
  * @class
@@ -370,7 +372,7 @@ UnionPay.prototype._initializeHostedFields = function () {
 
     self._bus = new Bus({
       channel: componentId,
-      merchantUrl: location.href
+      verifyDomain: isVerifiedDomain
     });
     self._hostedFieldsFrame = iFramer({
       name: constants.HOSTED_FIELDS_FRAME_NAME + '_' + componentId,
@@ -379,7 +381,7 @@ UnionPay.prototype._initializeHostedFields = function () {
       width: 0
     });
 
-    self._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
+    self._bus.on(BUS_CONFIGURATION_REQUEST_EVENT, function (reply) {
       reply(self._options.client);
 
       resolve();

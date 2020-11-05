@@ -2,10 +2,11 @@
 
 var assign = require('../../lib/assign').assign;
 var createAssetsUrl = require('../../lib/create-assets-url');
+var isVerifiedDomain = require('../../lib/is-verified-domain');
 var Destructor = require('../../lib/destructor');
 var classList = require('@braintree/class-list');
 var iFramer = require('@braintree/iframer');
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var createDeferredClient = require('../../lib/create-deferred-client');
 var BraintreeError = require('../../lib/braintree-error');
 var composeUrl = require('./compose-url');
@@ -440,7 +441,7 @@ function HostedFields(options) {
 
   this._bus = new Bus({
     channel: componentId,
-    merchantUrl: location.href
+    verifyDomain: isVerifiedDomain
   });
 
   this._destructor.registerFunctionForTeardown(function () {
@@ -533,7 +534,7 @@ function HostedFields(options) {
       title: 'Secure Credit Card Frame - ' + constants.allowedFields[key].label
     });
 
-    this._injectedNodes.push.apply(this._injectedNodes, injectFrame(frame, internalContainer, function () {
+    this._injectedNodes.push.apply(this._injectedNodes, injectFrame(componentId, frame, internalContainer, function () {
       self._bus.emit(events.TRIGGER_INPUT_FOCUS, {
         field: key
       });
@@ -591,7 +592,7 @@ function HostedFields(options) {
     destroyFocusIntercept(data && data.id);
   });
 
-  this._bus.on(events.TRIGGER_FOCUS_CHANGE, focusChange.createFocusChangeHandler({
+  this._bus.on(events.TRIGGER_FOCUS_CHANGE, focusChange.createFocusChangeHandler(componentId, {
     onRemoveFocusIntercepts: function (element) {
       self._bus.emit(events.REMOVE_FOCUS_INTERCEPTS, {
         id: element

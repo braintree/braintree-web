@@ -1,10 +1,10 @@
 'use strict';
 
 jest.mock('../../../../src/lib/analytics');
-jest.mock('../../../../src/lib/bus');
+jest.mock('framebus');
 
 const analytics = require('../../../../src/lib/analytics');
-const Bus = require('../../../../src/lib/bus');
+const Bus = require('framebus');
 const BraintreeError = require('../../../../src/lib/braintree-error');
 const { INTEGRATION, PLATFORM, SOURCE, VERSION } = require('../../../../src/lib/constants');
 const methods = require('../../../../src/lib/methods');
@@ -45,8 +45,10 @@ describe('Payment Request component', () => {
       const instance = new PaymentRequestComponent({
         client: testContext.fakeClient
       });
+      const channel = Bus.mock.calls[0][0].channel;
 
-      expect(instance._bus.channel).toMatch(/\w{8}-\w{4}-4\w{3}-\w{4}-\w{8}/);
+      expect(channel).toMatch(/\w{8}-\w{4}-4\w{3}-\w{4}-\w{8}/);
+      expect(instance._bus).toBeInstanceOf(Bus);
     });
 
     it('sets default supported payment methods', () => {

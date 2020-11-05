@@ -1,5 +1,6 @@
 'use strict';
 
+const Framebus = require('framebus');
 const internal = require('../../../../src/hosted-fields/internal/index');
 const frameName = require('../../../../src/hosted-fields/internal/get-frame-name');
 const { events } = require('../../../../src/hosted-fields/shared/constants');
@@ -292,7 +293,8 @@ describe('internal', () => {
 
       location.hash = '#test-uuid';
       internal.create();
-      expect(window.bus.channel).toBe('test-uuid');
+      expect(Framebus).toBeCalledWith({ channel: 'test-uuid' });
+      expect(window.bus).toBeInstanceOf(Framebus);
 
       location.hash = originalLocationHash;
     });

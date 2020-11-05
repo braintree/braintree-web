@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.69.0
+* Update @braintree/browser-detection to v1.11.0
+* Update @braintree/extended-promise to v0.4.1
+* Update framebus to v5.0.0
+* Hosted Fields
+  * Fix issue where multiple Hosted Fields instances would issue warnings in the console about duplicate ids (closes #533)
+* PayPal Checkout
+  * Support displaying a customer's vaulted PayPal account when rendering the PayPal SDK using `options.autoSetDataUserIdToken` in the create call
+
 ## 3.68.0
 * Update framebus to v4.0.4
 * Apple Pay

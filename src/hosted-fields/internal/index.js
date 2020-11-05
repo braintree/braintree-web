@@ -1,7 +1,7 @@
 'use strict';
 
 var assign = require('../../lib/assign').assign;
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var Promise = require('../../lib/promise');
 var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
 var frameName = require('./get-frame-name');
@@ -55,6 +55,7 @@ function initialize(cardForm) {
   );
 
   fieldComponent = new FieldComponent({
+    componentId: location.hash.slice(1, location.hash.length),
     cardForm: cardForm,
     type: name
   });

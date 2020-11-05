@@ -3,7 +3,7 @@
 jest.mock('../../../../src/hosted-fields/external/get-styles-from-class');
 
 const analytics = require('../../../../src/lib/analytics');
-const Bus = require('../../../../src/lib/bus');
+const Bus = require('framebus');
 const createDeferredClient = require('../../../../src/lib/create-deferred-client');
 const Client = require('../../../../src/client/client');
 const HostedFields = require('../../../../src/hosted-fields/external/hosted-fields');

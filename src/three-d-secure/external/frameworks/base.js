@@ -4,15 +4,17 @@ var assign = require('../../../lib/assign').assign;
 var analytics = require('../../../lib/analytics');
 var BraintreeError = require('../../../lib/braintree-error');
 var Promise = require('../../../lib/promise');
+var isVerifiedDomain = require('../../../lib/is-verified-domain');
 var ExtendedPromise = require('@braintree/extended-promise');
 var EventEmitter = require('@braintree/event-emitter');
 var errors = require('../../shared/errors');
 var iFramer = require('@braintree/iframer');
-var Bus = require('../../../lib/bus');
+var Bus = require('framebus');
 var constants = require('../../shared/constants');
 var uuid = require('@braintree/uuid');
 var events = require('../../shared/events');
 var useMin = require('../../../lib/use-min');
+var BUS_CONFIGURATION_REQUEST_EVENT = require('../../../lib/constants').BUS_CONFIGURATION_REQUEST_EVENT;
 
 var VERSION = process.env.npm_package_version;
 var IFRAME_HEIGHT = 400;
@@ -280,13 +282,14 @@ BaseFramework.prototype.cancelVerifyCard = function () {
 BaseFramework.prototype._setupV1Bus = function (options) {
   var parentURL = window.location.href.split('#')[0];
   var lookupResponse = options.lookupResponse;
+  var channel = uuid();
   var bus = new Bus({
-    channel: uuid(),
-    merchantUrl: window.location.href
+    channel: channel,
+    verifyDomain: isVerifiedDomain
   });
-  var authenticationCompleteBaseUrl = this._assetsUrl + '/html/three-d-secure-authentication-complete-frame.html?channel=' + encodeURIComponent(bus.channel) + '&';
+  var authenticationCompleteBaseUrl = this._assetsUrl + '/html/three-d-secure-authentication-complete-frame.html?channel=' + encodeURIComponent(channel) + '&';
 
-  bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
+  bus.on(BUS_CONFIGURATION_REQUEST_EVENT, function (reply) {
     reply({
       acsUrl: lookupResponse.acsUrl,
       pareq: lookupResponse.pareq,

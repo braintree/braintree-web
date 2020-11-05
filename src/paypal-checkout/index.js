@@ -18,6 +18,7 @@ var VERSION = process.env.npm_package_version;
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {string} [options.merchantAccountId] A non-default merchant account ID to use for tokenization.
+ * @param {boolean} [options.autoSetDataUserIdToken=false] Whether or not to render the PayPal SDK button with a customer's vaulted PayPal account. Must be used in conjunction with a Client Token generated with a customer id.
  * @param {callback} [callback] The second argument, `data`, is the {@link PayPalCheckout} instance.
  * @example
  * braintree.client.create({

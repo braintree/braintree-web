@@ -1,20 +1,21 @@
 'use strict';
 
 var BraintreeError = require('../../lib/braintree-error');
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var Client = require('../../client/client');
 var constants = require('../shared/constants');
 var errors = require('../shared/errors');
 var events = constants.events;
 var getHostedFieldsCardForm = require('./get-hosted-fields-cardform');
 var UnionPay = require('../shared/unionpay');
+var BUS_CONFIGURATION_REQUEST_EVENT = require('../../lib/constants').BUS_CONFIGURATION_REQUEST_EVENT;
 
 function create() {
   window.bus = new Bus({
     channel: getFrameName()
   });
 
-  window.bus.emit(Bus.events.CONFIGURATION_REQUEST, initialize);
+  window.bus.emit(BUS_CONFIGURATION_REQUEST_EVENT, initialize);
 }
 
 function initialize(clientConfiguration) {

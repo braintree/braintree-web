@@ -36,6 +36,7 @@ describe('FieldComponent', () => {
     modelConfig.fields.cvv.internalLabel = 'Custom Label';
 
     const fieldComponent = new FieldComponent({
+      componentId: 'unique-id',
       cardForm: new CreditCardForm(modelConfig),
       type: 'cvv'
     });
@@ -46,6 +47,7 @@ describe('FieldComponent', () => {
   describe('focus interceptors', () => {
     beforeEach(() => {
       testContext.fieldComponent = new FieldComponent({
+        componentId: 'unique-id',
         cardForm: new CreditCardForm(getModelConfig([
           'number',
           'cvv',
@@ -62,7 +64,7 @@ describe('FieldComponent', () => {
     });
 
     it('emits a TRIGGER_FOCUS_CHANGE when focus intercept back handler is triggered', () => {
-      const handler = focusIntercept.generate.mock.calls[0][2];
+      const handler = focusIntercept.generate.mock.calls[0][3];
 
       handler();
 
@@ -73,7 +75,7 @@ describe('FieldComponent', () => {
     });
 
     it('emits a TRIGGER_FOCUS_CHANGE when focus intercept forward handler is triggered', () => {
-      const handler = focusIntercept.generate.mock.calls[1][2];
+      const handler = focusIntercept.generate.mock.calls[1][3];
 
       handler();
 

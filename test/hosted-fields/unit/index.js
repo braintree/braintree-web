@@ -2,7 +2,7 @@
 
 jest.mock('../../../src/lib/basic-component-verification');
 
-const Bus = require('../../../src/lib/bus');
+const Bus = require('framebus');
 const basicComponentVerification = require('../../../src/lib/basic-component-verification');
 const BraintreeError = require('../../../src/lib/braintree-error');
 const { events } = require('../../../src/hosted-fields/shared/constants');

@@ -1,6 +1,6 @@
 'use strict';
 
-const Bus = require('../../../../../src/lib/bus/index.js');
+const Bus = require('framebus');
 const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
 const { ExpirationYearInput } = require('../../../../../src/hosted-fields/internal/components/expiration-year-input');
 const { CreditCardForm } = require('../../../../../src/hosted-fields/internal/models/credit-card-form');

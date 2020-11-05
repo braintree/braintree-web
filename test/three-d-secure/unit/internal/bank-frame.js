@@ -1,7 +1,7 @@
 'use strict';
 
 const initializeBankFrame = require('../../../../src/three-d-secure/internal/bank-frame');
-const Bus = require('../../../../src/lib/bus');
+const Bus = require('framebus');
 const BraintreeError = require('../../../../src/lib/braintree-error');
 const queryString = require('../../../../src/lib/querystring');
 
@@ -33,10 +33,10 @@ describe('initializeBankFrame', () => {
     HTMLFormElement.prototype.submit = testContext.oldFormSubmit;
   });
 
-  it('emits a CONFIGURATION_REQUEST on the bus', () => {
+  it('emits a BUS_CONFIGURATION_REQUEST on the bus', () => {
     initializeBankFrame();
 
-    expect(Bus.prototype.emit).toHaveBeenCalledWith(Bus.events.CONFIGURATION_REQUEST, expect.any(Function));
+    expect(Bus.prototype.emit).toHaveBeenCalledWith('BUS_CONFIGURATION_REQUEST', expect.any(Function));
   });
 
   it('removes hidden class from loader if params include showLoader=true', () => {

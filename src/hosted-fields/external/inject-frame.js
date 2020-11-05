@@ -3,12 +3,12 @@
 var focusIntercept = require('../shared/focus-intercept');
 var directions = require('../shared/constants').navigationDirections;
 
-module.exports = function injectFrame(frame, container, focusHandler) {
+module.exports = function injectFrame(id, frame, container, focusHandler) {
   var frameType = frame.getAttribute('type');
   var clearboth = document.createElement('div');
   var fragment = document.createDocumentFragment();
-  var focusInterceptBefore = focusIntercept.generate(frameType, directions.BACK, focusHandler);
-  var focusInterceptAfter = focusIntercept.generate(frameType, directions.FORWARD, focusHandler);
+  var focusInterceptBefore = focusIntercept.generate(id, frameType, directions.BACK, focusHandler);
+  var focusInterceptAfter = focusIntercept.generate(id, frameType, directions.FORWARD, focusHandler);
 
   clearboth.style.clear = 'both';
 

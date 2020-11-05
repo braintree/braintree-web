@@ -1,7 +1,7 @@
 'use strict';
 
 const internal = require('../../../../src/unionpay/internal');
-const Bus = require('../../../../src/lib/bus');
+const Bus = require('framebus');
 const BraintreeError = require('../../../../src/lib/braintree-error');
 const { fake: { configuration }} = require('../../../helpers');
 const getHostedFieldsCardForm = require('../../../../src/unionpay/internal/get-hosted-fields-cardform');
@@ -25,13 +25,16 @@ describe('internal', () => {
     it('creates a global bus', () => {
       internal.create();
 
-      expect(window.bus.channel).toBe('123');
+      expect(Bus).toBeCalledWith({
+        channel: '123'
+      });
+      expect(window.bus).toBeInstanceOf(Bus);
     });
 
-    it('emits a CONFIGURATION_REQUEST event', () => {
+    it('emits a BUS_CONFIGURATION_REQUEST event', () => {
       internal.create();
 
-      expect(Bus.prototype.emit).toBeCalledWith(Bus.events.CONFIGURATION_REQUEST, expect.any(Function));
+      expect(Bus.prototype.emit).toBeCalledWith('BUS_CONFIGURATION_REQUEST', expect.any(Function));
     });
   });
 

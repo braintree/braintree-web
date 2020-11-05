@@ -1,7 +1,7 @@
 'use strict';
 
 jest.mock('../../../src/lib/basic-component-verification');
-jest.mock('../../../src/lib/bus');
+jest.mock('framebus');
 jest.mock('../../../src/lib/create-assets-url');
 jest.mock('../../../src/lib/create-deferred-client');
 

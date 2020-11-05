@@ -15,6 +15,7 @@ module.exports = {
     var type = options.type;
     var attribution = assign({}, allowedFields[type]);
     var customLabel = options.cardForm.configuration.fields[type].internalLabel;
+    var componentId = options.componentId;
 
     if (customLabel) {
       attribution.label = customLabel;
@@ -22,7 +23,7 @@ module.exports = {
 
     this.element = document.createDocumentFragment();
 
-    this.element.appendChild(focusIntercept.generate(type, directions.BACK, function () {
+    this.element.appendChild(focusIntercept.generate(componentId, type, directions.BACK, function () {
       window.bus.emit(events.TRIGGER_FOCUS_CHANGE, {
         field: type,
         direction: directions.BACK
@@ -38,7 +39,7 @@ module.exports = {
     });
     this.input.element.setAttribute('aria-describedby', 'field-description-' + type);
     this.element.appendChild(this.input.element);
-    this.element.appendChild(focusIntercept.generate(type, directions.FORWARD, function () {
+    this.element.appendChild(focusIntercept.generate(componentId, type, directions.FORWARD, function () {
       window.bus.emit(events.TRIGGER_FOCUS_CHANGE, {
         field: type,
         direction: directions.FORWARD

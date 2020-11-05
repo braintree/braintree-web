@@ -1,3 +1,3 @@
 'use strict';
 
-jest.mock('../../../src/lib/bus');
+jest.mock('framebus');

@@ -19,6 +19,7 @@ describe('PayPalCheckout', () => {
     testContext = {};
     testContext.configuration = fake.configuration();
 
+    testContext.configuration.authorizationFingerprint = 'auth-fingerprint';
     testContext.configuration.gatewayConfiguration.paypalEnabled = true;
     testContext.configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
     testContext.configuration.gatewayConfiguration.paypal.clientId = 'client-id';
@@ -855,7 +856,7 @@ describe('PayPalCheckout', () => {
       testContext.configuration.gatewayConfiguration.paypalEnabled = false;
 
       await paypalCheckout._initialize({
-        authorization: 'fake-auth'
+        authorization: 'sandbox_fake_tokenization_key'
       });
 
       await expect(paypalCheckout.startVaultInitiatedCheckout(testContext.options)).rejects.toMatchObject({
@@ -872,7 +873,7 @@ describe('PayPalCheckout', () => {
       jest.useFakeTimers();
 
       await paypalCheckout._initialize({
-        authorization: 'fake-auth'
+        authorization: 'sandbox_fake_tokenization_key'
       });
 
       const promise = paypalCheckout.startVaultInitiatedCheckout(testContext.options);
@@ -1546,7 +1547,9 @@ describe('PayPalCheckout', () => {
       firstHeadElement = document.createElement('meta');
       document.head.appendChild(firstHeadElement);
       jest.spyOn(document.head, 'insertBefore').mockImplementation();
-      jest.spyOn(document, 'createElement').mockReturnValue(fakeScript);
+      jest.spyOn(document, 'createElement').mockReturnValueOnce(fakeScript);
+      jest.spyOn(XMLHttpRequest.prototype, 'open').mockImplementation();
+      jest.spyOn(XMLHttpRequest.prototype, 'send').mockImplementation();
     });
 
     afterEach(() => {
@@ -1765,8 +1768,6 @@ describe('PayPalCheckout', () => {
       const instance = testContext.paypalCheckout;
 
       instance._autoSetDataUserIdToken = true;
-      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
-      testContext.configuration.authorizationFingerprint = 'auth-fingerprint';
 
       const promise = instance.loadPayPalSDK();
 
@@ -1774,6 +1775,47 @@ describe('PayPalCheckout', () => {
 
       return promise.then(() => {
         expect(fakeScript.getAttribute('data-user-id-token')).toBe('auth-fingerprint');
+
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('https://www.sandbox.paypal.com/smart/buttons/preload?'));
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('user-id-token=auth-fingerprint'));
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('client-id=client-id'));
+      });
+    });
+
+    it('uses production domain for preload pixel when environemnt is production', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+      instance._authorizationInformation.environment = 'production';
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('https://www.paypal.com/smart/buttons/preload?'));
+      });
+    });
+
+    it('can pass amount, currency and merchant id along to preload pixel', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+
+      const promise = instance.loadPayPalSDK({
+        currency: 'USD',
+        'merchant-id': 'merchantid',
+        dataAttributes: {
+          amount: '123.45'
+        }
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('currency=USD'));
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('merchant-id=merchantid'));
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('amount=123.45'));
       });
     });
 
@@ -1781,8 +1823,7 @@ describe('PayPalCheckout', () => {
       const instance = testContext.paypalCheckout;
 
       instance._autoSetDataUserIdToken = true;
-      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
-      testContext.configuration.authorizationFingerprint = 'auth-fingerprint?customer=';
+      instance._authorizationInformation.fingerprint = 'auth-fingerprint?customer=';
 
       const promise = instance.loadPayPalSDK();
 
@@ -1790,6 +1831,9 @@ describe('PayPalCheckout', () => {
 
       return promise.then(() => {
         expect(fakeScript.getAttribute('data-user-id-token')).toBe('auth-fingerprint');
+
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('user-id-token=auth-fingerprint'));
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('client-id=client-id'));
       });
     });
 
@@ -1797,7 +1841,7 @@ describe('PayPalCheckout', () => {
       const instance = testContext.paypalCheckout;
 
       instance._autoSetDataUserIdToken = true;
-      testContext.configuration.authorizationType = 'TOKENIZATION_KEY';
+      delete instance._authorizationInformation.fingerprint;
 
       const promise = instance.loadPayPalSDK();
 
@@ -1805,6 +1849,7 @@ describe('PayPalCheckout', () => {
 
       return promise.then(() => {
         expect(fakeScript.getAttribute('data-user-id-token')).toBeFalsy();
+        expect(document.querySelector('[data-preload-id="paypal-preload-pixel-img"]')).toBeFalsy();
       });
     });
 
@@ -1812,8 +1857,6 @@ describe('PayPalCheckout', () => {
       const instance = testContext.paypalCheckout;
 
       instance._autoSetDataUserIdToken = false;
-      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
-      testContext.configuration.authorizationFingerprint = 'auth-fingerprint?customer=';
 
       const promise = instance.loadPayPalSDK();
 
@@ -1821,6 +1864,7 @@ describe('PayPalCheckout', () => {
 
       return promise.then(() => {
         expect(fakeScript.getAttribute('data-user-id-token')).toBeFalsy();
+        expect(document.querySelector('[data-preload-id="paypal-preload-pixel-img"]')).toBeFalsy();
       });
     });
 
@@ -1828,8 +1872,7 @@ describe('PayPalCheckout', () => {
       const instance = testContext.paypalCheckout;
 
       instance._autoSetDataUserIdToken = true;
-      testContext.configuration.authorizationType = 'CLIENT_TOKEN';
-      testContext.configuration.authorizationFingerprint = 'unused-auth-fingerprint';
+      instance._authorizationInformation.fingerprint = 'unused-auth-fingerprint';
 
       const promise = instance.loadPayPalSDK({
         dataAttributes: {
@@ -1841,6 +1884,7 @@ describe('PayPalCheckout', () => {
 
       return promise.then(() => {
         expect(fakeScript.getAttribute('data-user-id-token')).toBe('custom-auth-fingerprint');
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('user-id-token=custom-auth-fingerprint'));
       });
     });
   });

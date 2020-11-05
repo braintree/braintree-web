@@ -7,7 +7,7 @@ var allowedFields = Object.keys(constants.allowedFields);
 var directions = constants.navigationDirections;
 
 var focusIntercept = {
-  generate: function (type, direction, handler) {
+  generate: function (hostedFieldsId, type, direction, handler) {
     var input = document.createElement('input');
     var focusInterceptStyles = {
       border: 'none !important',
@@ -28,7 +28,7 @@ var focusIntercept = {
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('data-braintree-direction', direction);
     input.setAttribute('data-braintree-type', type);
-    input.setAttribute('id', 'bt-' + type + '-' + direction);
+    input.setAttribute('id', 'bt-' + type + '-' + direction + '-' + hostedFieldsId);
     input.setAttribute('style',
       JSON.stringify(focusInterceptStyles)
         .replace(/[{}"]/g, '')
@@ -78,7 +78,7 @@ var focusIntercept = {
 
     idComponents = idString.split('-');
 
-    if (idComponents.length !== 3) { return false; }
+    if (idComponents.length < 4) { return false; }
 
     hasBTPrefix = idComponents[0] === 'bt';
     isAllowedType = allowedFields.indexOf(idComponents[1]) > -1;

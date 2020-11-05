@@ -10,7 +10,7 @@ jest.mock('../../../../src/hosted-fields/shared/browser-detection');
 function createSampleIntercept(type, direction) {
   const sampleIntercept = document.createElement('input');
 
-  sampleIntercept.id = `bt-${type}-${direction}`;
+  sampleIntercept.id = `bt-${type}-${direction}-unique-id`;
   sampleIntercept.setAttribute('data-braintree-type', type);
 
   return sampleIntercept;
@@ -116,7 +116,7 @@ describe('focus-change', () => {
 
       testContext.removeStub = jest.fn();
       testContext.triggerStub = jest.fn();
-      testContext.handler = focusChange.createFocusChangeHandler({
+      testContext.handler = focusChange.createFocusChangeHandler('unique-id', {
         onRemoveFocusIntercepts: testContext.removeStub,
         onTriggerInputFocus: testContext.triggerStub
       });

@@ -1,11 +1,12 @@
 'use strict';
 
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var isVerifiedDomain = require('../../lib/is-verified-domain');
 var queryString = require('../../lib/querystring');
 var BraintreeError = require('../../lib/braintree-error');
 var sanitizeUrl = require('@braintree/sanitize-url').sanitizeUrl;
 var errors = require('../shared/errors');
+var BUS_CONFIGURATION_REQUEST_EVENT = require('../../lib/constants').BUS_CONFIGURATION_REQUEST_EVENT;
 
 module.exports = function () {
   var bus = new Bus({
@@ -17,7 +18,7 @@ module.exports = function () {
     document.querySelector('#loader').className = '';
   }
 
-  bus.emit(Bus.events.CONFIGURATION_REQUEST, handleConfiguration);
+  bus.emit(BUS_CONFIGURATION_REQUEST_EVENT, handleConfiguration);
 };
 
 function handleConfiguration(configuration) {

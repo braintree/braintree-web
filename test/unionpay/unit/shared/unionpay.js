@@ -1,7 +1,7 @@
 'use strict';
 
 const analytics = require('../../../../src/lib/analytics');
-const Bus = require('../../../../src/lib/bus');
+const Bus = require('framebus');
 const UnionPay = require('../../../../src/unionpay/shared/unionpay');
 const BraintreeError = require('../../../../src/lib/braintree-error');
 const { events } = require('../../../../src/unionpay/shared/constants');

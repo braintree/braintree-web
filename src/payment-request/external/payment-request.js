@@ -2,7 +2,7 @@
 
 var analytics = require('../../lib/analytics');
 var assign = require('../../lib/assign').assign;
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var convertMethodsToError = require('../../lib/convert-methods-to-error');
 var generateGooglePayConfiguration = require('../../lib/generate-google-pay-configuration');
 var iFramer = require('@braintree/iframer');

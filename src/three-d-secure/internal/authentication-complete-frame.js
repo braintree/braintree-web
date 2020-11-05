@@ -1,7 +1,7 @@
 'use strict';
 
 var querystring = require('../../lib/querystring');
-var Bus = require('../../lib/bus');
+var Bus = require('framebus');
 var events = require('../shared/events');
 
 module.exports = function (currentURL) {

@@ -1,7 +1,7 @@
 'use strict';
 
 const initializeAuthenticationCompleteFrame = require('../../../../src/three-d-secure/internal/authentication-complete-frame');
-const Bus = require('../../../../src/lib/bus');
+const Bus = require('framebus');
 const events = require('../../../../src/three-d-secure/shared/events');
 const querystring = require('../../../../src/lib/querystring');
 

@@ -3,7 +3,7 @@
 var Popup = require('./strategies/popup');
 var PopupBridge = require('./strategies/popup-bridge');
 var Modal = require('./strategies/modal');
-var Bus = require('../../bus');
+var Bus = require('framebus');
 var events = require('../shared/events');
 var errors = require('../shared/errors');
 var constants = require('../shared/constants');
@@ -13,6 +13,7 @@ var BraintreeError = require('../../braintree-error');
 var browserDetection = require('../shared/browser-detection');
 var isHTTPS = require('../../is-https');
 var assign = require('./../../assign').assign;
+var BUS_CONFIGURATION_REQUEST_EVENT = require('../../constants').BUS_CONFIGURATION_REQUEST_EVENT;
 
 var REQUIRED_CONFIG_KEYS = [
   'name',
@@ -103,7 +104,7 @@ FrameService.prototype._setBusEvents = function () {
     }
   }.bind(this));
 
-  this._bus.on(Bus.events.CONFIGURATION_REQUEST, function (reply) {
+  this._bus.on(BUS_CONFIGURATION_REQUEST_EVENT, function (reply) {
     reply(this.state);
   }.bind(this));
 };

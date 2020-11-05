@@ -2,7 +2,7 @@
 
 const BaseFramework = require('../../../../../src/three-d-secure/external/frameworks/base');
 const LegacyFramework = require('../../../../../src/three-d-secure/external/frameworks/legacy');
-const Bus = require('../../../../../src/lib/bus');
+const Bus = require('framebus');
 const BraintreeError = require('../../../../../src/lib/braintree-error');
 const { parse: parseUrl } = require('url');
 const analytics = require('../../../../../src/lib/analytics');

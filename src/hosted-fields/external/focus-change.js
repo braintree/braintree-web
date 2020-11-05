@@ -82,10 +82,10 @@ module.exports = {
     });
   },
 
-  createFocusChangeHandler: function (callbacks) {
+  createFocusChangeHandler: function (hostedFieldsId, callbacks) {
     return function (data) {
       var currentIndex, targetElement, checkoutForm, navHelper;
-      var sourceElement = document.getElementById('bt-' + data.field + '-' + data.direction);
+      var sourceElement = document.getElementById('bt-' + data.field + '-' + data.direction + '-' + hostedFieldsId);
 
       if (!sourceElement) {
         return;
