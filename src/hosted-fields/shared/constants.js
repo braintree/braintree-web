@@ -132,6 +132,15 @@ var constants = {
     'expiration-year': 'cc-exp-year',
     cvv: 'cc-csc',
     'postal-code': 'billing postal-code'
+  },
+  inputmodeMappings: {
+    'cardholder-name': 'text',
+    'credit-card-number': 'numeric',
+    expiration: 'numeric',
+    'expiration-month': 'numeric',
+    'expiration-year': 'numeric',
+    cvv: 'numeric',
+    'postal-code': 'text'
   }
 };
 

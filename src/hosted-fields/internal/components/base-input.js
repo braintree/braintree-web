@@ -16,6 +16,7 @@ function constructAttributes(options) {
   var name = options.name;
   var attributes = {
     autocomplete: constants.autocompleteMappings[name],
+    inputmode: constants.inputmodeMappings[name],
     type: options.type,
     autocorrect: 'off',
     autocapitalize: 'none',
