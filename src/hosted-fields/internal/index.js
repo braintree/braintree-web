@@ -92,7 +92,6 @@ function makeMockInput(name) {
   input.type = 'text';
   input.name = name;
   input.setAttribute('autocomplete', constants.autocompleteMappings[name]);
-  input.setAttribute('inputmode', constants.inputmodeMappings[name]);
 
   // Normally we'd mark these hidden inputs
   // with tabindex=-1 to prevent the customer
