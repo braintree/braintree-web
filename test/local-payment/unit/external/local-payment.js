@@ -162,6 +162,7 @@ describe('LocalPayment', () => {
           start();
         },
         paymentType: 'ideal',
+        paymentTypeCountryCode: 'NL',
         amount: '10.00',
         fallback: {
           url: 'https://example.com/fallback',
@@ -249,6 +250,7 @@ describe('LocalPayment', () => {
             cancelUrl: `https://example.com:9292/web/${VERSION}/html/cancel-frame.min.html?channel=service-id`,
             returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text`,
             fundingSource: 'ideal',
+            paymentTypeCountryCode: 'NL',
             amount: '10.00',
             intent: 'sale',
             experienceProfile: {

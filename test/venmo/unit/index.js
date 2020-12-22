@@ -90,7 +90,6 @@ describe('venmo static methods', () => {
 
     it('sends an analytics event when successful', () => create({ client: testContext.client })
       .then(() => {
-        expect(analytics.sendEvent).toBeCalledTimes(1);
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.initialized');
       }));
 

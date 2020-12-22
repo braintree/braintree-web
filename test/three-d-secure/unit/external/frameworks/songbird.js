@@ -157,7 +157,8 @@ describe('SongbirdFramework', () => {
           }
         },
         lookup: {
-          threeDSecureVersion: '2.1.0'
+          threeDSecureVersion: '2.1.0',
+          transactionId: 'txn-id'
         },
         threeDSecureInfo: {
           liabilityShiftPossible: true,
@@ -223,7 +224,8 @@ describe('SongbirdFramework', () => {
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
-            threeDSecureVersion: '2.1.0'
+            threeDSecureVersion: '2.1.0',
+            transactionId: 'txn-id'
           }
         });
 
@@ -275,7 +277,8 @@ describe('SongbirdFramework', () => {
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
-            threeDSecureVersion: '2.1.0'
+            threeDSecureVersion: '2.1.0',
+            transactionId: 'txn-id'
           }
         });
 
@@ -371,7 +374,8 @@ describe('SongbirdFramework', () => {
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
-            threeDSecureVersion: '2.1.0'
+            threeDSecureVersion: '2.1.0',
+            transactionId: 'txn-id'
           }
         });
 
@@ -399,7 +403,8 @@ describe('SongbirdFramework', () => {
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
-            threeDSecureVersion: '2.1.0'
+            threeDSecureVersion: '2.1.0',
+            transactionId: 'txn-id'
           }
         });
 
@@ -429,7 +434,8 @@ describe('SongbirdFramework', () => {
           paymentMethod: {},
           threeDSecureInfo: {},
           lookup: {
-            threeDSecureVersion: '2.1.0'
+            threeDSecureVersion: '2.1.0',
+            transactionId: 'txn-id'
           }
         });
 
@@ -482,6 +488,7 @@ describe('SongbirdFramework', () => {
 
         testContext.lookupResponse.lookup = {
           acsUrl: 'http://example.com/acs',
+          transactionId: 'txn-id',
           pareq: 'pareq',
           termUrl: 'http://example.com/term',
           md: 'md',
@@ -655,7 +662,7 @@ describe('SongbirdFramework', () => {
         });
       });
 
-      it('passes back a `requiresUserAuthentication=false` when an acs url is nots present', () => {
+      it('passes back a `requiresUserAuthentication=false` when an acs url is not present', () => {
         delete testContext.lookupResponse.lookup.acsUrl;
 
         return testContext.instance.verifyCard({
@@ -1178,6 +1185,31 @@ describe('SongbirdFramework', () => {
       });
     });
 
+    it('uses v1 fallback if configuration includes mpiProvider information and it is not cardinal', () => {
+      testContext.configuration.gatewayConfiguration.threeDSecure.versionTwo = null;
+
+      return new SongbirdFramework({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client
+      }).setupSongbird().then(() => {
+        return wait();
+      }).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-failed.cardinal-api-not-available-or-configured');
+        expect(testContext.tds._useV1Fallback).toBe(true);
+      });
+    });
+
+    it('sets up Cardinal if mpiProvider information is available and it is cardinal', () => {
+      testContext.configuration.gatewayConfiguration.threeDSecure.versionTwo = 'cardinal';
+
+      return testContext.tds.setupSongbird().then(() => {
+        expect(window.Cardinal.setup).toHaveBeenCalledTimes(1);
+        expect(window.Cardinal.setup).toHaveBeenCalledWith('init', {
+          jwt: 'jwt'
+        });
+      });
+    });
+
     it('sets getDfReferenceId to reject if Cardinal cannot be set up', () => {
       jest.spyOn(assets, 'loadScript').mockRejectedValue(new Error('sets getDfReferenceId to reject if Cardinal cannot be set up'));
 
@@ -1379,6 +1411,24 @@ describe('SongbirdFramework', () => {
         return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse).then(result => {
           expect(result.nonce).toBe('nonce-from-v1-fallback-flow');
           expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'three-d-secure.v1-fallback.cardinal-sdk-setup-error.number-1010');
+        });
+      });
+
+      it('uses v1 fallback flow when lookup response does not have a transaction id', () => {
+        let instance;
+
+        instance = new SongbirdFramework({
+          createPromise: Promise.resolve(testContext.client),
+          client: testContext.client
+        });
+        Bus.prototype.on.mockImplementation(yieldsByEventAsync('threedsecure:AUTHENTICATION_COMPLETE', {
+          auth_response: '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}' // eslint-disable-line camelcase
+        }));
+
+        delete testContext.lookupResponse.lookup.transactionId;
+
+        return instance.initializeChallengeWithLookupResponse(testContext.lookupResponse).then(result => {
+          expect(result.nonce).toBe('nonce-from-v1-fallback-flow');
         });
       });
     });
@@ -1585,7 +1635,8 @@ describe('SongbirdFramework', () => {
           }
         },
         lookup: {
-          threeDSecureVersion: '2.1.0'
+          threeDSecureVersion: '2.1.0',
+          transactionId: 'txn-id'
         },
         threeDSecureInfo: {
           liabilityShiftPossible: true,

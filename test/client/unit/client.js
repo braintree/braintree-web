@@ -437,9 +437,11 @@ describe('Client', () => {
       expect(client._request.mock.calls[0][0]).toMatchObject({
         data: {
           clientSdkMetadata: {
+            platform: 'web',
             source: 'client',
             integration: 'custom',
-            sessionId: 'fakeSessionId'
+            sessionId: 'fakeSessionId',
+            version: expect.stringMatching(/^3\./)
           },
           foo: 'bar'
         },

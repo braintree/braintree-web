@@ -33,6 +33,14 @@ var VERSION = process.env.npm_package_version;
  * }).catch(function (createErr) {
  *   console.error('Error creating Venmo instance', createErr);
  * });
+ * @example <caption>Allow desktop flow to be used</caption>
+ * braintree.venmo.create({
+ *   client: clientInstance,
+ * }).then(function (venmoInstance) {
+ *   // venmoInstance is ready to be used.
+ * }).catch(function (createErr) {
+ *   console.error('Error creating Venmo instance', createErr);
+ * });
  * @returns {(Promise|void)} Returns the Venmo instance.
  */
 function create(options) {

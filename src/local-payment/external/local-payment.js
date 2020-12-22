@@ -64,6 +64,7 @@ LocalPayment.prototype._initialize = function () {
  * @param {string} options.amount The amount to authorize for the transaction.
  * @param {string} options.currencyCode The currency to process the payment.
  * @param {string} options.paymentType The type of local payment.
+ * @param {string} options.paymentTypeCountryCode The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed {@link https://developers.braintreepayments.com/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons|here}. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.
  * @param {string} options.email Payer email of the customer.
  * @param {string} options.givenName First name of the customer.
  * @param {string} options.surname Last name of the customer.
@@ -86,6 +87,7 @@ LocalPayment.prototype._initialize = function () {
  *   // as a result of a user action, such as a button click.
  *   localPaymentInstance.startPayment({
  *     paymentType: 'ideal',
+ *     paymentTypeCountryCode: 'NL',
  *     fallback: {
  *       buttonText: 'Return to Merchant',
  *       url: 'https://example.com/my-checkout-page'
@@ -132,6 +134,7 @@ LocalPayment.prototype.startPayment = function (options) {
       noShipping: !options.shippingAddressRequired
     },
     fundingSource: options.paymentType,
+    paymentTypeCountryCode: options.paymentTypeCountryCode,
     amount: options.amount,
     currencyIsoCode: options.currencyCode,
     firstName: options.givenName,

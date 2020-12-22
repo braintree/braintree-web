@@ -2,15 +2,24 @@
 
 var analytics = require('../lib/analytics');
 var isBrowserSupported = require('./shared/supports-venmo');
+var browserDetection = require('./shared/browser-detection');
 var constants = require('./shared/constants');
 var errors = require('./shared/errors');
 var querystring = require('../lib/querystring');
+var isVerifiedDomain = require('../lib/is-verified-domain');
 var methods = require('../lib/methods');
 var convertMethodsToError = require('../lib/convert-methods-to-error');
 var wrapPromise = require('@braintree/wrap-promise');
 var BraintreeError = require('../lib/braintree-error');
 var Promise = require('../lib/promise');
 var ExtendedPromise = require('@braintree/extended-promise');
+// NEXT_MAJOR_VERSION the source code for this is actually in a
+// typescript repo called venmo-desktop, once the SDK is migrated
+// to typescript, we can move the TS files out of that separate
+// repo and into the web SDK properly
+var createVenmoDesktop = require('./external/');
+
+var VERSION = process.env.npm_package_version;
 
 /**
  * Venmo tokenize payload.
@@ -28,12 +37,55 @@ var ExtendedPromise = require('@braintree/extended-promise');
  * @classdesc This class represents a Venmo component produced by {@link module:braintree-web/venmo.create|braintree-web/venmo.create}. Instances of this class have methods for tokenizing Venmo payments.
  */
 function Venmo(options) {
+  var self = this;
+
   this._createPromise = options.createPromise;
   this._allowNewBrowserTab = options.allowNewBrowserTab !== false;
   this._allowWebviews = options.allowWebviews !== false;
+  this._allowDesktop = options.allowDesktop === true;
   this._profileId = options.profileId;
   this._deepLinkReturnUrl = options.deepLinkReturnUrl;
   this._ignoreHistoryChanges = options.ignoreHistoryChanges;
+  this._useDesktopFlow = this._allowDesktop && this._isDesktop();
+
+  analytics.sendEvent(this._createPromise, 'venmo.desktop-flow.configured.' + String(Boolean(this._allowDesktop)));
+
+  if (this._useDesktopFlow) {
+    this._createPromise = this._createPromise.then(function (client) {
+      var config = client.getConfiguration().gatewayConfiguration;
+
+      return createVenmoDesktop({
+        url: config.assetsUrl + '/web/' + VERSION + '/html/venmo-desktop-frame.html',
+        environment: config.environment === 'production' ? 'PRODUCTION' : 'SANDBOX',
+        Promise: Promise,
+        apiRequest: function (query, data) {
+          return client.request({
+            api: 'graphQLApi',
+            data: {
+              query: query,
+              variables: data
+            }
+          }).then(function (response) {
+            return response.data;
+          });
+        },
+        sendEvent: function (eventName) {
+          analytics.sendEvent(self._createPromise, eventName);
+        },
+        verifyDomain: isVerifiedDomain
+      }).then(function (venmoDesktopInstance) {
+        self._venmoDesktopInstance = venmoDesktopInstance;
+        analytics.sendEvent(self._createPromise, 'venmo.desktop-flow.presented');
+
+        return client;
+      }).catch(function () {
+        analytics.sendEvent(self._createPromise, 'venmo.desktop-flow.setup-failed');
+        self._useDesktopFlow = false;
+
+        return client;
+      });
+    });
+  }
 }
 
 Venmo.prototype.getUrl = function () {
@@ -84,7 +136,8 @@ Venmo.prototype.getUrl = function () {
 Venmo.prototype.isBrowserSupported = function () {
   return isBrowserSupported.isBrowserSupported({
     allowNewBrowserTab: this._allowNewBrowserTab,
-    allowWebviews: this._allowWebviews
+    allowWebviews: this._allowWebviews,
+    allowDesktop: this._allowDesktop
   });
 };
 
@@ -106,6 +159,10 @@ Venmo.prototype._hasTokenizationResult = function (hash) {
   var params = getFragmentParameters(hash);
 
   return typeof (params.venmoSuccess || params.venmoError || params.venmoCancel) !== 'undefined';
+};
+
+Venmo.prototype._isDesktop = function () {
+  return !(browserDetection.isIos() || browserDetection.isAndroid());
 };
 
 /**
@@ -148,7 +205,7 @@ Venmo.prototype._hasTokenizationResult = function (hash) {
  */
 Venmo.prototype.tokenize = function (options) {
   var self = this;
-  var resultProcessingInProgress, visibilityChangeListenerTimeout;
+  var tokenizationPromise;
 
   options = options || {};
 
@@ -156,11 +213,34 @@ Venmo.prototype.tokenize = function (options) {
     return Promise.reject(new BraintreeError(errors.VENMO_TOKENIZATION_REQUEST_ACTIVE));
   }
 
+  this._tokenizationInProgress = true;
+
+  if (this._useDesktopFlow) {
+    tokenizationPromise = this._tokenizeForDesktop(options);
+  } else {
+    tokenizationPromise = this._tokenizeForMobile(options);
+  }
+
+  return tokenizationPromise.then(function (payload) {
+    self._tokenizationInProgress = false;
+
+    return formatTokenizePayload(payload);
+  }).catch(function (err) {
+    self._tokenizationInProgress = false;
+
+    return Promise.reject(err);
+  });
+};
+
+Venmo.prototype._tokenizeForMobile = function (options) {
+  var self = this;
+  var resultProcessingInProgress, visibilityChangeListenerTimeout;
+
   if (this.hasTokenizationResult()) {
     return this._processResults();
   }
 
-  this._tokenizationInProgress = true;
+  analytics.sendEvent(this._createPromise, 'venmo.tokenize.mobile.start');
   this._tokenizePromise = new ExtendedPromise();
 
   this._previousHash = window.location.hash;
@@ -196,7 +276,6 @@ Venmo.prototype.tokenize = function (options) {
 
     resultProcessingInProgress = true;
     clearTimeout(visibilityChangeListenerTimeout);
-    self._tokenizationInProgress = false;
     completeFlow(hash);
   };
 
@@ -209,8 +288,6 @@ Venmo.prototype.tokenize = function (options) {
     var delay = options.processResultsDelay || constants.DEFAULT_PROCESS_RESULTS_DELAY;
 
     if (!window.document.hidden) {
-      self._tokenizationInProgress = false;
-
       if (!resultProcessingInProgress) {
         visibilityChangeListenerTimeout = setTimeout(completeFlow, delay);
       }
@@ -244,6 +321,46 @@ Venmo.prototype.tokenize = function (options) {
   });
 };
 
+Venmo.prototype._tokenizeForDesktop = function () {
+  var self = this;
+
+  analytics.sendEvent(this._createPromise, 'venmo.tokenize.desktop.start');
+
+  return this._createPromise.then(function () {
+    return self._venmoDesktopInstance.launchDesktopFlow();
+  }).then(function (payload) {
+    self._venmoDesktopInstance.hideDesktopFlow();
+
+    analytics.sendEvent(self._createPromise, 'venmo.tokenize.desktop.success');
+
+    return payload;
+  }).catch(function (err) {
+    analytics.sendEvent(self._createPromise, 'venmo.tokenize.desktop.failure');
+
+    if (self._venmoDesktopInstance) {
+      self._venmoDesktopInstance.hideDesktopFlow();
+    }
+
+    if (err && err.reason === 'CUSTOMER_CANCELED') {
+      return Promise.reject(new BraintreeError(errors.VENMO_DESKTOP_CANCELED));
+    }
+
+    return Promise.reject(new BraintreeError({
+      type: errors.VENMO_DESKTOP_UNKNOWN_ERROR.type,
+      code: errors.VENMO_DESKTOP_UNKNOWN_ERROR.code,
+      message: errors.VENMO_DESKTOP_UNKNOWN_ERROR.message,
+      details: {
+        originalError: err
+      }
+    }));
+  });
+};
+
+// TODO remove this once initial testing is done
+Venmo.prototype._updateVenmoDesktopPaymentContext = function (status, options) {
+  return this._venmoDesktopInstance.updateVenmoDesktopPaymentContext(status, options);
+};
+
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/venmo.create|create}.
  * @public
@@ -257,10 +374,17 @@ Venmo.prototype.tokenize = function (options) {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 Venmo.prototype.teardown = function () {
-  this._removeVisibilityEventListener();
-  convertMethodsToError(this, methods(Venmo.prototype));
+  var self = this;
 
-  return Promise.resolve();
+  this._removeVisibilityEventListener();
+
+  return this._createPromise.then(function () {
+    if (self._venmoDesktopInstance) {
+      self._venmoDesktopInstance.teardown();
+    }
+
+    convertMethodsToError(this, methods(Venmo.prototype));
+  }.bind(this));
 };
 
 Venmo.prototype._removeVisibilityEventListener = function () {
@@ -278,7 +402,7 @@ Venmo.prototype._processResults = function (hash) {
   return new Promise(function (resolve, reject) {
     if (params.venmoSuccess) {
       analytics.sendEvent(self._createPromise, 'venmo.appswitch.handle.success');
-      resolve(formatTokenizePayload(params));
+      resolve(params);
     } else if (params.venmoError) {
       analytics.sendEvent(self._createPromise, 'venmo.appswitch.handle.error');
       reject(new BraintreeError({
@@ -333,12 +457,14 @@ function getFragmentParameters(hash) {
   }, {});
 }
 
-function formatTokenizePayload(fragmentParams) {
+function formatTokenizePayload(payload) {
   return {
-    nonce: fragmentParams.paymentMethodNonce,
+    nonce: payload.paymentMethodNonce,
     type: 'VenmoAccount',
     details: {
-      username: fragmentParams.username
+      // NEXT_MAJOR_VERSION the web sdks have a prepended @ sign
+      // but the ios and android ones do not. This should be standardized
+      username: payload.username
     }
   };
 }

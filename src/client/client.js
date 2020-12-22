@@ -312,9 +312,11 @@ Client.prototype.request = function (options, callback) {
       requestOptions.method = 'post';
       requestOptions.data = assign({
         clientSdkMetadata: {
+          platform: self._configuration.analyticsMetadata.platform,
           source: self._configuration.analyticsMetadata.source,
           integration: self._configuration.analyticsMetadata.integration,
-          sessionId: self._configuration.analyticsMetadata.sessionId
+          sessionId: self._configuration.analyticsMetadata.sessionId,
+          version: VERSION
         }
       }, options.data);
 

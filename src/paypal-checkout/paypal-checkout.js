@@ -380,7 +380,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * `zh_HK`,
  * and `zh_TW`.
  *
- * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
+ * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items. **Note:** `shippingOptions` may not be passed with `intent="order"`.
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
  * @param {string} options.shippingAddressOverride.line1 Street address.

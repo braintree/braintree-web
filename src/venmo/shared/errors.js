@@ -14,6 +14,8 @@
  * @property {UNKNOWN} VENMO_APP_FAILED Occurs when tokenization fails.
  * @property {CUSTOMER} VENMO_APP_CANCELED Occurs when customer cancels flow from the Venmo app.
  * @property {CUSTOMER} VENMO_CANCELED Occurs when customer cancels the flow or Venmo app is not available.
+ * @property {CUSTOMER} VENMO_DESKTOP_CANCELED Occurs when customer cancels the Venmo Desktop flow by closing the modal.
+ * @property {UNKNOWN} VENMO_DESKTOP_UNKNOWN_ERROR Occurs when an unknown error causes the Venmo Desktop flow to fail.
  */
 
 var BraintreeError = require('../../lib/braintree-error');
@@ -43,6 +45,16 @@ module.exports = {
     type: BraintreeError.types.CUSTOMER,
     code: 'VENMO_CANCELED',
     message: 'User canceled Venmo authorization, or Venmo app is not available.'
+  },
+  VENMO_DESKTOP_CANCELED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'VENMO_DESKTOP_CANCELED',
+    message: 'User canceled Venmo authorization by closing the Venmo Desktop modal.'
+  },
+  VENMO_DESKTOP_UNKNOWN_ERROR: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'VENMO_DESKTOP_UNKNOWN_ERROR',
+    message: 'Something went wrong with the Venmo Desktop flow.'
   },
   VENMO_INVALID_PROFILE_ID: {
     type: BraintreeError.types.MERCHANT,

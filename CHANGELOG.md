@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.70.0
+* Local Payments
+  * Add `paymentTypeCountryCode` as supported field when starting a local payment
+
 ## 3.69.0
 * Update @braintree/browser-detection to v1.11.0
 * Update @braintree/extended-promise to v0.4.1

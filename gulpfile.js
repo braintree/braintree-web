@@ -28,6 +28,8 @@ function setNpmVersion () {
 }
 
 function watch () {
+  process.env.BRAINTREE_JS_ENV = 'development';
+
   COMPONENTS.forEach(function (component) {
     gulp.watch([
       'src/' + component + '/**',
