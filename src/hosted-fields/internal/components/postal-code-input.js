@@ -5,16 +5,11 @@ var BaseInput = require('./base-input').BaseInput;
 var DEFAULT_MAX_LENGTH = 10;
 
 function PostalCodeInput() {
-  var length, pattern;
+  var pattern;
 
   BaseInput.apply(this, arguments);
 
-  this.maxLength = DEFAULT_MAX_LENGTH;
-  length = this.getConfiguration().maxlength;
-
-  if (length && length < this.maxLength) {
-    this.maxLength = length;
-  }
+  this.maxLength = this.getConfiguration().maxlength || DEFAULT_MAX_LENGTH;
   this.element.setAttribute('maxlength', this.maxLength);
 
   pattern = '{{' + Array(this.maxLength + 1).join('*') + '}}';

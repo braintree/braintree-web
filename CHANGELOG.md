@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.71.0
+* Update promise-polyfill to v8.2.0
+* Update credit-card-type to v9.1.0
+* Hosted Fields
+  * Fix issue where card number would present as invalid when autofilled from cardholder name field (#547)
+  * Allow maxlength field to be greater than 10 for postal code inputs (#551)
+
 ## 3.70.0
 * Local Payments
   * Add `paymentTypeCountryCode` as supported field when starting a local payment

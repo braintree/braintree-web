@@ -268,10 +268,8 @@ function autofillHandler(fieldComponent) {
 function applyAutofillValue(fieldComponent, value) {
   var name = frameName.getFrameName();
 
-  fieldComponent.input.element.value = '';
-
-  fieldComponent.input.updateModel('value', value);
   fieldComponent.input.element.value = value;
+  fieldComponent.input.updateModel('value', value);
 
   if (name === 'number') {
     fieldComponent.input.setPattern(value);

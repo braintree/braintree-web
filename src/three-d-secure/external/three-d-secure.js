@@ -33,7 +33,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} [customer.billingAddress.streetAddress] Line 1 of the Address (eg. number, street, etc).
  * @property {string} [customer.billingAddress.extendedAddress] Line 2 of the Address (eg. suite, apt #, etc.).
  * @property {string} [customer.billingAddress.locality] The locality (city) name associated with the address.
- * @property {string} [customer.billingAddress.region] The 2 letter code for US states, and the equivalent for other countries.
+ * @property {string} [customer.billingAddress.region] The 2 letter code for US states or an ISO-3166-2 country subdivision code of up to three letters.
  * @property {string} [customer.billingAddress.postalCode] The zip code or equivalent for countries that have them.
  * @property {string} [customer.billingAddress.countryCodeAlpha2] The 2 character country code.
  * @property {string} [customer.billingAddress.phoneNumber] The phone number associated with the address. Only numbers; remove dashes, parenthesis and other characters.
@@ -96,7 +96,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} [extendedAddress] Line 2 of the billing address (eg. suite, apt #, etc.).
  * @property {string} [line3] Line 3 of the billing address if needed (eg. suite, apt #, etc).
  * @property {string} [locality] The locality (city) name associated with the billing address.
- * @property {string} [region] The 2 letter code for US states, and the equivalent for other countries.
+ * @property {string} [region] The 2 letter code for US states or an ISO-3166-2 country subdivision code of up to three letters.
  * @property {string} [postalCode] The zip code or equivalent for countries that have them.
  * @property {string} [countryCodeAlpha2] The 2 character country code.
 */
@@ -111,7 +111,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} [shippingAddress.extendedAddress] The last name associated with the shipping address.
  * @property {string} [shippingAddress.line3] Line 3 of the shipping address if needed (eg. suite, apt #, etc).
  * @property {string} [shippingAddress.locality] The locality (city) name associated with the shipping address.
- * @property {string} [shippingAddress.region] The 2 letter code for US states, and the equivalent for other countries.
+ * @property {string} [shippingAddress.region] The 2 letter code for US states or an ISO-3166-2 country subdivision code of up to three letters.
  * @property {string} [shippingAddress.postalCode] The zip code or equivalent for countries that have them.
  * @property {string} [shippingAddress.countryCodeAlpha2] The 2 character country code.
  * @property {string} [shippingPhone] The phone number associated with the shipping address. Only numbers; remove dashes, parenthesis and other characters.

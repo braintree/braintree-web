@@ -37,24 +37,17 @@ describe('Postal Code Input', () => {
       expect(testContext.input.element.getAttribute('maxlength')).toBe('10');
     });
 
-    it('sets the maxLength to 10 if a custom maxlength is provided but is greater than 10', () => {
-      let input;
-
-      jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ maxlength: 11 });
-
-      input = createInput('postalCode');
-
-      expect(input.element.getAttribute('maxlength')).toBe('10');
-    });
-
-    it('sets the maxLength to custom maxlength if one is provided and is less than 10', () => {
-      let input;
-
+    it('sets the maxLength to custom maxlength if one is provided', () => {
       jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ maxlength: 5 });
 
-      input = createInput('postalCode');
+      let input = createInput('postalCode');
 
       expect(input.element.getAttribute('maxlength')).toBe('5');
+
+      BaseInput.prototype.getConfiguration.mockReturnValue({ maxlength: 11 });
+      input = createInput('postalCode');
+
+      expect(input.element.getAttribute('maxlength')).toBe('11');
     });
 
     it('handles a specific type being set', () => {
