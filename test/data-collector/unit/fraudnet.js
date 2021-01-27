@@ -24,14 +24,30 @@ describe('FraudNet', () => {
     expect(parsedData.b).toContain(sessionId);
     expect(parsedData.f).toBe(sessionId);
     expect(parsedData.s).toBe('BRAINTREE_SIGNIN');
+    expect(parsedData.sandbox).toBe(true);
   });
 
   it('re-uses session id when initialized more than once', () => {
     const originalSessionId = instance.sessionId;
 
+    instance.teardown();
+
     return fraudNet.setup().then(result => {
       expect(result.sessionId).toBeDefined();
       expect(result.sessionId).toBe(originalSessionId);
+    });
+  });
+
+  it('does not include a sandbox param when production env is passed', () => {
+    fraudNet.clearSessionIdCache();
+
+    instance.teardown();
+
+    return fraudNet.setup('production').then(() => {
+      const scriptEl = document.querySelector('[fncls][type="application/json"]');
+      const data = JSON.parse(scriptEl.text);
+
+      expect(data).not.toHaveProperty('sandbox');
     });
   });
 });

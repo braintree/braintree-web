@@ -169,6 +169,17 @@ describe('dataCollector', () => {
       });
     });
 
+    it('sets up fraudnet with the gateway environment', () => {
+      testContext.configuration.gatewayConfiguration.environment = 'custom-environment-value';
+
+      return dataCollector.create({
+        client: testContext.client,
+        paypal: true
+      }).then(() => {
+        expect(fraudnet.setup).toBeCalledWith('custom-environment-value');
+      });
+    });
+
     it('returns only fraudnet information if kount is not present but paypal is true', () => {
       delete testContext.configuration.gatewayConfiguration.kount;
 

@@ -8,7 +8,7 @@ var Promise = require('../lib/promise');
 
 var cachedSessionId;
 
-function setup() {
+function setup(environment) {
   var fraudNet = new Fraudnet();
 
   if (cachedSessionId) {
@@ -17,7 +17,7 @@ function setup() {
     return Promise.resolve(fraudNet);
   }
 
-  return fraudNet.initialize();
+  return fraudNet.initialize(environment);
 }
 
 function clearSessionIdCache() {
@@ -27,12 +27,12 @@ function clearSessionIdCache() {
 function Fraudnet() {
 }
 
-Fraudnet.prototype.initialize = function () {
+Fraudnet.prototype.initialize = function (environment) {
   var self = this;
 
   this.sessionId = cachedSessionId = _generateSessionId();
   this._beaconId = _generateBeaconId(this.sessionId);
-  this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId);
+  this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId, environment);
 
   return loadScript({
     src: FRAUDNET_URL
@@ -83,16 +83,26 @@ function _generateBeaconId(sessionId) {
     '&a=14';
 }
 
-function _createParameterBlock(sessionId, beaconId) {
+function _createParameterBlock(sessionId, beaconId, environment) {
   var el = document.body.appendChild(document.createElement('script'));
-
-  el.type = 'application/json';
-  el.setAttribute('fncls', FRAUDNET_FNCLS);
-  el.text = JSON.stringify({
+  var config = {
     f: sessionId,
     s: FRAUDNET_SOURCE,
     b: beaconId
-  });
+  };
+
+  // for some reason, the presence of the sandbox
+  // attribute in a production environment causes
+  // some weird behavior with what url paths are
+  // hit, so instead, we only apply this attribute
+  // when it is not a production environment
+  if (environment !== 'production') {
+    config.sandbox = true;
+  }
+
+  el.type = 'application/json';
+  el.setAttribute('fncls', FRAUDNET_FNCLS);
+  el.text = JSON.stringify(config);
 
   return el;
 }

@@ -138,9 +138,9 @@ function create(options) {
         data = {};
       }
 
-      return Promise.resolve();
-    }).then(function () {
-      return fraudnet.setup().then(function (fraudnetInstance) {
+      return Promise.resolve(client);
+    }).then(function (client) {
+      return fraudnet.setup(client.getConfiguration().gatewayConfiguration.environment).then(function (fraudnetInstance) {
         if (fraudnetInstance) {
           data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
           result._instances.push(fraudnetInstance);

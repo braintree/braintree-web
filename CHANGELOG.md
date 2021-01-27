@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.71.1
+* Update framebus to v5.1.0
+* Data Collector
+  * Fix issue where sandbox environment was not set for Advanced Fraud Protection
+
 ## 3.71.0
 * Update promise-polyfill to v8.2.0
 * Update credit-card-type to v9.1.0
