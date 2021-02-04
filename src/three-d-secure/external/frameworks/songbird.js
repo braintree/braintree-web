@@ -616,8 +616,14 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
   return BaseFramework.prototype._formatLookupData.call(this, options).then(function (data) {
     data.additionalInfo = options.additionalInformation;
 
+    if (options.accountType) {
+      data.accountType = options.accountType;
+    }
     if (options.challengeRequested) {
       data.challengeRequested = options.challengeRequested;
+    }
+    if (options.dataOnlyRequested) {
+      data.dataOnlyRequested = options.dataOnlyRequested;
     }
     if (options.exemptionRequested) {
       data.exemptionRequested = options.exemptionRequested;

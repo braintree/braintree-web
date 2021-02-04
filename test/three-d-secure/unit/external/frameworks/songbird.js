@@ -397,6 +397,37 @@ describe('SongbirdFramework', () => {
         });
       });
 
+      it('makes a request to the 3DS lookup endpoint with accountType', () => {
+        jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
+        testContext.client.request.mockResolvedValue({
+          paymentMethod: {},
+          threeDSecureInfo: {},
+          lookup: {
+            threeDSecureVersion: '2.1.0',
+            transactionId: 'txn-id'
+          }
+        });
+
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
+          accountType: 'credit',
+          amount: 100,
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
+            method: 'post',
+            data: {
+              accountType: 'credit',
+              dfReferenceId: 'df-id', // eslint-disable-line camelcase
+              amount: 100
+            }
+          });
+        });
+      });
+
       it('makes a request to the 3DS lookup endpoint with challengeRequested', () => {
         jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
         testContext.client.request.mockResolvedValue({
@@ -421,6 +452,37 @@ describe('SongbirdFramework', () => {
             method: 'post',
             data: {
               challengeRequested: true,
+              dfReferenceId: 'df-id', // eslint-disable-line camelcase
+              amount: 100
+            }
+          });
+        });
+      });
+
+      it('makes a request to the 3DS lookup endpoint with dataOnlyRequested', () => {
+        jest.spyOn(testContext.instance, 'getDfReferenceId').mockResolvedValue('df-id');
+        testContext.client.request.mockResolvedValue({
+          paymentMethod: {},
+          threeDSecureInfo: {},
+          lookup: {
+            threeDSecureVersion: '2.1.0',
+            transactionId: 'txn-id'
+          }
+        });
+
+        return testContext.instance.verifyCard({
+          nonce: testContext.tokenizedCard.nonce,
+          bin: testContext.tokenizedCard.details.bin,
+          dataOnlyRequested: true,
+          amount: 100,
+          onLookupComplete: yieldsAsync()
+        }).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            endpoint: 'payment_methods/abcdef/three_d_secure/lookup',
+            method: 'post',
+            data: {
+              dataOnlyRequested: true,
               dfReferenceId: 'df-id', // eslint-disable-line camelcase
               amount: 100
             }

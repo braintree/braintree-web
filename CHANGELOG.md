@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.72.0
+* 3D Secure
+  * Add `accountType` param to `verifyCard`
+
 ## 3.71.1
 * Update framebus to v5.1.0
 * Data Collector
