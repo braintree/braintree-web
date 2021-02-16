@@ -5,17 +5,25 @@
  * @description Errors that occur when [creating the Venmo component](/current/module-braintree-web_venmo.html#.create).
  * @property {MERCHANT} VENMO_NOT_ENABLED Occurs when Venmo is not enabled on the Braintree control panel.
  * @property {MERCHANT} VENMO_INVALID_PROFILE_ID Occurs when Venmo is intilaized with a profile id, but it is invalid.
+ * @property {UNKNOWN} VENMO_MOBILE_POLLING_SETUP_FAILED Occurs when enabling mobile polling alternative for tokenization fails.
  */
 
 /**
  * @name BraintreeError.Venmo - tokenize Error Codes
  * @description Errors that occur when using the [`tokenize` method](/current/Venmo.html#tokenize).
  * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_ACTIVE Occurs when `tokenize` is called when the flow is already in progress.
+ * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE Occurs when `cancelTokenization` is called when the flow is not in progress.
  * @property {UNKNOWN} VENMO_APP_FAILED Occurs when tokenization fails.
  * @property {CUSTOMER} VENMO_APP_CANCELED Occurs when customer cancels flow from the Venmo app.
  * @property {CUSTOMER} VENMO_CANCELED Occurs when customer cancels the flow or Venmo app is not available.
  * @property {CUSTOMER} VENMO_DESKTOP_CANCELED Occurs when customer cancels the Venmo Desktop flow by closing the modal.
+ * @property {MERCHANT} VENMO_TOKENIZATION_CANCELED_BY_MERCHANT Occurs when `cancelTokenization` is called while tokenization is in progress.
  * @property {UNKNOWN} VENMO_DESKTOP_UNKNOWN_ERROR Occurs when an unknown error causes the Venmo Desktop flow to fail.
+ * @property {UNKNOWN} VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR Occurs when an unknown network error causes the mobile polling process to fail.
+ * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED Occurs when the polling has expired and the payment cannot be completed.
+ * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED Occurs when the polling operation is canceled by the customer.
+ * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT Occurs when customer takes too long to complete payment.
+ * @property {UNKNOWN} VENMO_MOBILE_POLLING_TOKENIZATION_FAILED Occurs if there is an unknown error during the mobile polling process.
  */
 
 var BraintreeError = require('../../lib/braintree-error');
@@ -30,6 +38,11 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'VENMO_TOKENIZATION_REQUEST_ACTIVE',
     message: 'Another tokenization request is active.'
+  },
+  VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE',
+    message: 'No tokenization in progress.'
   },
   VENMO_APP_FAILED: {
     type: BraintreeError.types.UNKNOWN,
@@ -51,10 +64,45 @@ module.exports = {
     code: 'VENMO_DESKTOP_CANCELED',
     message: 'User canceled Venmo authorization by closing the Venmo Desktop modal.'
   },
+  VENMO_TOKENIZATION_CANCELED_BY_MERCHANT: {
+    type: BraintreeError.types.MERCHANT,
+    code: 'VENMO_TOKENIZATION_CANCELED_BY_MERCHANT',
+    message: 'The Venmo tokenization was canceled by the merchant.'
+  },
   VENMO_DESKTOP_UNKNOWN_ERROR: {
     type: BraintreeError.types.UNKNOWN,
     code: 'VENMO_DESKTOP_UNKNOWN_ERROR',
     message: 'Something went wrong with the Venmo Desktop flow.'
+  },
+  VENMO_MOBILE_POLLING_SETUP_FAILED: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'VENMO_MOBILE_POLLING_SETUP_FAILED',
+    message: 'Something went wrong setting up Venmo for mobile polling.'
+  },
+  VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR',
+    message: 'Something went wrong during mobile polling.'
+  },
+  VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED',
+    message: 'The Venmo authorization request is expired.'
+  },
+  VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED',
+    message: 'The Venmo authorization was canceled'
+  },
+  VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT',
+    message: 'Customer took too long to authorize Venmo payment.'
+  },
+  VENMO_MOBILE_POLLING_TOKENIZATION_FAILED: {
+    type: BraintreeError.types.UNKNOWN,
+    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_FAILED',
+    message: 'The Venmo authorization failed.'
   },
   VENMO_INVALID_PROFILE_ID: {
     type: BraintreeError.types.MERCHANT,

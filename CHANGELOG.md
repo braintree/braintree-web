@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.73.0
+* Venmo
+  * Add `cancelTokenization` for programatic cancelation of the `tokenize` flow
+  * Fix issue where venmo component may not yet be ready when beginning tokenization
+  * Fix issue where Venmo would fail when embedded in an iframe
+
 ## 3.72.0
 * 3D Secure
   * Add `accountType` param to `verifyCard`
