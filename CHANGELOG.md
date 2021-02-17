@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.73.1
+* Update framebus to v5.1.2
+  * Fix issue where components dependent on framebus (Hosted Fields, PayPal, etc) would not load in IE11 (#554)
+
 ## 3.73.0
 * Venmo
   * Add `cancelTokenization` for programatic cancelation of the `tokenize` flow
