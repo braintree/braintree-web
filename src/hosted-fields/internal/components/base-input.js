@@ -249,6 +249,20 @@ BaseInput.prototype.focus = function () {
 BaseInput.prototype.addModelEventListeners = function () {
   this.modelOnChange('isValid', this.render);
   this.modelOnChange('isPotentiallyValid', this.render);
+
+  this.model.on('autofill:' + this.type, function (value) {
+    this.element.value = '';
+    this.updateModel('value', '');
+    this.element.value = value;
+    this.updateModel('value', value);
+
+    if (this.shouldMask) {
+      this.maskValue(value);
+    }
+    this._resetPlaceholder();
+
+    this.render();
+  }.bind(this));
 };
 
 BaseInput.prototype.setPlaceholder = function (type, placeholder) {
@@ -315,6 +329,17 @@ BaseInput.prototype._createRestrictedInputOptions = function (options) {
     element: this.element,
     pattern: ' '
   };
+};
+
+BaseInput.prototype._resetPlaceholder = function () {
+  // After autofill, Safari leaves the placeholder visible in the iframe, we
+  // compensate for this by removing and re-setting the placeholder
+  var placeholder = this.element.getAttribute('placeholder');
+
+  if (placeholder) {
+    this.element.setAttribute('placeholder', '');
+    this.element.setAttribute('placeholder', placeholder);
+  }
 };
 
 module.exports = {

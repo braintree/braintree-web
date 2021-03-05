@@ -2,20 +2,20 @@
 
 /**
  * @name BraintreeError.Payment Request - Creation Error Codes
- * @description Errors that occur when [creating the Payment Request component](/current/module-braintree-web_payment-request.html#.create).
+ * @description Errors that occur when [creating the Payment Request component](./module-braintree-web_payment-request.html#.create).
  * @property {MERCHANT} PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS Occurs when there are no valid payment methods configured.
  */
 
 /**
  * @name BraintreeError.Payment Request - createSupportedPaymentMethodsConfiguration  Error Codes
- * @description Errors that occur when using the [`createSupportedPaymentMethodsConfiguration` method](/current/PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration)
+ * @description Errors that occur when using the [`createSupportedPaymentMethodsConfiguration` method](./PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration)
  * @property {MERCHANT} PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE Occurs when no type is supplied for method.
  * @property {MERCHANT} PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED Occurs when configured type is not enabled.
  */
 
 /**
  * @name BraintreeError.Payment Request - tokenize  Error Codes
- * @description Errors that occur when using the [`tokenize` method](/current/PaymentRequestComponent.html#tokenize)
+ * @description Errors that occur when using the [`tokenize` method](./PaymentRequestComponent.html#tokenize)
  * @property {CUSTOMER} PAYMENT_REQUEST_CANCELED Occurs when customer cancels the Payment Request.
  * @property {MERCHANT} PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED Occurs when the Payment Request is closed do to the options being misconfigured.
  * @property {MERCHANT} PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE Occurs when a Google Payment payment method is unable to be tokenized.
@@ -25,8 +25,8 @@
 
 /**
  * @name BraintreeError.Payment Request - canMakePayment  Error Codes
- * @description Errors that occur when using the [`canMakePayment` method](/current/PaymentRequestComponent.html#canMakePayment)
- * @property {MERCHANT} PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED Occurs when the Payment Request is intatiated with misconfigured options.
+ * @description Errors that occur when using the [`canMakePayment` method](./PaymentRequestComponent.html#canMakePayment)
+ * @property {MERCHANT} PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED Occurs when the Payment Request is instantiated with misconfigured options.
  * @property {MERCHANT} PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED Occurs when `canMakePayment` results in a `DomException` with a `NotAllowedError`. This usually occurs when `canMakePayment` is called multiple times with different supported payment options.
  * @property {MERCHANT} PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD Occurs when `canMakePayment` is called with a `supportedPaymentMethods` array that contains a payment method that is not supported by the Braintree SDK.
  * @property {UNKNOWN} PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED Occurs when `canMakePayment` fails for any reason other than a misconfigured Payment Request object.

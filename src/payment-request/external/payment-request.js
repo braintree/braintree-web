@@ -285,8 +285,8 @@ PaymentRequestComponent.prototype.initialize = function () {
  * Create an object to pass into tokenize to specify a custom configuration. If no overrides are provided, the default configuration will be provided.
  * @public
  * @param {string} type The supported payment method type. Possible values are `basicCard` and `googlePay`.
- * If no type is provided, the function will throw an error. If the type provided is not an enabled payemnt method for the merchant account , the function will throw an error.
- * @param {object} [overrides] The configuration overrides for the [data property on the supported payment methods objects](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request). If not passed in, the default configuration for the specified type will be provided. If a property is not provided, the value from the default configruation will be used.
+ * If no type is provided, the function will throw an error. If the type provided is not an enabled payment method for the merchant account , the function will throw an error.
+ * @param {object} [overrides] The configuration overrides for the [data property on the supported payment methods objects](https://developers.google.com/web/fundamentals/payments/deep-dive-into-payment-request). If not passed in, the default configuration for the specified type will be provided. If a property is not provided, the value from the default configuration will be used.
  * @example <caption>Getting the default configuration for a specified type</caption>
  * var configuration = paymentRequestInstance.createSupportedPaymentMethodsConfiguration('basicCard');
  *

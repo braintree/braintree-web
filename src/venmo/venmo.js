@@ -244,7 +244,7 @@ Venmo.prototype._isDesktop = function () {
  * Only one Venmo flow can be active at a time. One way to achieve this is to disable your Venmo button while the flow is open.
  * @public
  * @param {object} [options] Options for tokenization.
- * @param {number} [options.processResultsDelay=500] The amount of time in milliseeconds to delay processing the results. In most cases, this value should be left as the default.
+ * @param {number} [options.processResultsDelay=500] The amount of time in milliseconds to delay processing the results. In most cases, this value should be left as the default.
  * @param {callback} [callback] The second argument, <code>data</code>, is a {@link Venmo~tokenizePayload|tokenizePayload}. If no callback is provided, the method will return a Promise that resolves with a {@link Venmo~tokenizePayload|tokenizePayload}.
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example

@@ -2,14 +2,14 @@
 
 /**
  * @name BraintreeError.PayPal Checkout - Creation Error Codes
- * @description Errors that occur when [creating the PayPal Checkout component](/current/module-braintree-web_paypal-checkout.html#.create).
+ * @description Errors that occur when [creating the PayPal Checkout component](./module-braintree-web_paypal-checkout.html#.create).
  * @property {MERCHANT} PAYPAL_NOT_ENABLED Occurs when PayPal is not enabled on the Braintree control panel.
  * @property {MERCHANT} PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED Occurs only when testing in Sandbox, when a PayPal sandbox account is not linked to the merchant account in the Braintree control panel.
  */
 
 /**
  * @name BraintreeError.PayPal Checkout - createPayment Error Codes
- * @description Errors that occur when using the [`createPayment` method](/current/PayPalCheckout.html#createPayment).
+ * @description Errors that occur when using the [`createPayment` method](./PayPalCheckout.html#createPayment).
  * @property {MERCHANT} PAYPAL_FLOW_OPTION_REQUIRED Occurs when a required option is missing.
  * @property {MERCHANT} PAYPAL_INVALID_PAYMENT_OPTION Occurs when an option contains an invalid value.
  * @property {NETWORK} PAYPAL_FLOW_FAILED Occurs when something goes wrong when initializing the flow.
@@ -17,7 +17,7 @@
 
 /**
  * @name BraintreeError.PayPal Checkout - startVaultInitiatedCheckout Error Codes
- * @description Errors that occur when using the [`startVaultInitiatedCheckout` method](/current/PayPalCheckout.html#startVaultInitiatedCheckout).
+ * @description Errors that occur when using the [`startVaultInitiatedCheckout` method](./PayPalCheckout.html#startVaultInitiatedCheckout).
  * @property {MERCHANT} PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED Occurs when a required param is missing when calling the method.
  * @property {MERCHANT} PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED Occurs when PayPal window could not be opened. This often occurs because the call to start the vault initiated flow was not triggered from a click event.
  * @property {CUSTOMER} PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED Occurs when a customer closes the PayPal flow before completion.
@@ -27,7 +27,7 @@
 
 /**
  * @name BraintreeError.PayPal Checkout - tokenizePayment Error Codes
- * @description Errors that occur when using the [`tokenizePayment` method](/current/PayPalCheckout.html#tokenizePayment).
+ * @description Errors that occur when using the [`tokenizePayment` method](./PayPalCheckout.html#tokenizePayment).
  * @property {NETWORK} PAYPAL_ACCOUNT_TOKENIZATION_FAILED Occurs when PayPal account could not be tokenized.
  */
 

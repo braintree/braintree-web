@@ -41,6 +41,7 @@ describe('PayPalCheckout', () => {
         PayerID: 'payer-id',
         paymentId: 'payment-id'
       })),
+      teardown: jest.fn().mockResolvedValue(),
       redirect: jest.fn(),
       _serviceId: 'service-id'
     };
@@ -1642,7 +1643,7 @@ describe('PayPalCheckout', () => {
       });
     });
 
-    it('uses intent=authorize by default', () => {
+    it('uses intent=authorize by default for checkout flow', () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK();
@@ -1654,7 +1655,7 @@ describe('PayPalCheckout', () => {
       });
     });
 
-    it('does not pass a default intent when using the vault flow', () => {
+    it('passes a default intent when using the vault flow', () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
@@ -1664,7 +1665,7 @@ describe('PayPalCheckout', () => {
       fakeScript.onload();
 
       return promise.then(() => {
-        expect(fakeScript.src).not.toMatch('intent=');
+        expect(fakeScript.src).toMatch('intent=authorize');
       });
     });
 
@@ -1933,6 +1934,32 @@ describe('PayPalCheckout', () => {
       return instance.teardown().then(() => {
         expect(document.body.removeChild).toBeCalledTimes(0);
       });
+    });
+
+    it('tears down frameservice', () => {
+      const instance = testContext.paypalCheckout;
+
+      return instance.teardown().then(() => {
+        expect(testContext.fakeFrameService.teardown).toBeCalledTimes(1);
+      });
+    });
+
+    it('ignores frame service if frame service errored in creation', async () => {
+      // fake having the frame service time out during set up
+      frameService.create.mockImplementation();
+      jest.useFakeTimers();
+
+      const ppInstanceWithoutFrameservice = new PayPalCheckout({});
+
+      await ppInstanceWithoutFrameservice._initialize({
+        client: testContext.client
+      });
+
+      jest.runOnlyPendingTimers();
+
+      await ppInstanceWithoutFrameservice.teardown();
+
+      expect(testContext.fakeFrameService.teardown).toBeCalledTimes(0);
     });
   });
 });

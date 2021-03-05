@@ -63,10 +63,8 @@ function initialize(cardForm) {
   form.appendChild(fieldComponent.element);
 
   if (!cardForm.configuration.preventAutofill) {
-    createInputsForAutofill(fieldComponent, form);
+    createInputsForAutofill(fieldComponent, form, cardForm);
   }
-
-  window.bus.on(events.AUTOFILL_DATA_AVAILABLE, autofillHandler(fieldComponent));
 
   window.bus.on(events.REMOVE_FOCUS_INTERCEPTS, function (data) {
     focusIntercept.destroy(data && data.id);
@@ -137,7 +135,7 @@ function fix1PasswordAdjustment(form) {
   form.style.position = 'absolute';
 }
 
-function createInputsForAutofill(fieldComponent, form) {
+function createInputsForAutofill(fieldComponent, form, cardModel) {
   var name = frameName.getFrameName();
   var cachedValues = {
     cardholderName: '',
@@ -174,11 +172,20 @@ function createInputsForAutofill(fieldComponent, form) {
   });
 
   setInterval(function () {
+    var thisYear;
     var nameValue = cardholderNameInput.value;
     var numberValue = numberInput.value;
     var monthValue = expMonthInput.value;
     var yearValue = expYearInput.value;
     var cvvValue = cvvInput.value;
+
+    if (monthValue && monthValue.length === 1) {
+      monthValue = '0' + monthValue;
+    }
+    if (yearValue && yearValue.length === 2) {
+      thisYear = String((new Date()).getFullYear()); // eslint-disable-line no-extra-parens
+      yearValue = thisYear.substring(0, 2) + yearValue;
+    }
 
     if (
       (nameValue && cachedValues.cardholderName !== nameValue) ||
@@ -194,11 +201,11 @@ function createInputsForAutofill(fieldComponent, form) {
       cachedValues.cvv = cvvValue;
 
       fix1PasswordAdjustment(form);
-      window.bus.emit(events.AUTOFILL_DATA_AVAILABLE, {
+      cardModel.applyAutofillValues({
         cardholderName: nameValue,
         number: numberValue,
-        month: monthValue,
-        year: yearValue,
+        expirationMonth: monthValue,
+        expirationYear: yearValue,
         cvv: cvvValue
       });
     }
@@ -218,78 +225,6 @@ function createInputsForAutofill(fieldComponent, form) {
   }
   if (name !== 'cvv') {
     form.appendChild(cvv);
-  }
-}
-
-function autofillHandler(fieldComponent) {
-  return function (payload) {
-    var name, value, cardholderName, number, month, year, cvv, thisYear;
-
-    if (!payload) {
-      return;
-    }
-
-    if (fieldComponent.input.element.value) {
-      return;
-    }
-
-    name = frameName.getFrameName();
-    cardholderName = payload.cardholderName;
-    number = payload.number;
-    month = payload.month;
-    year = payload.year;
-    cvv = payload.cvv;
-
-    if (year && year.length === 2) {
-      thisYear = String((new Date()).getFullYear()); // eslint-disable-line no-extra-parens
-      year = thisYear.substring(0, 2) + year;
-    }
-
-    if (name === 'cardholderName' && cardholderName) {
-      value = cardholderName;
-    } else if (name === 'number' && number) {
-      value = number;
-    } else if (name === 'expirationDate' && month && year) {
-      value = month + ' / ' + year;
-    } else if (name === 'expirationMonth' && month) {
-      value = month;
-    } else if (name === 'expirationYear' && year) {
-      value = year;
-    } else if (name === 'cvv' && cvv) {
-      value = cvv;
-    }
-
-    if (value) {
-      applyAutofillValue(fieldComponent, value);
-    }
-  };
-}
-
-function applyAutofillValue(fieldComponent, value) {
-  var name = frameName.getFrameName();
-
-  fieldComponent.input.element.value = value;
-  fieldComponent.input.updateModel('value', value);
-
-  if (name === 'number') {
-    fieldComponent.input.setPattern(value);
-  }
-
-  if (fieldComponent.input.shouldMask) {
-    fieldComponent.input.maskValue(fieldComponent.input.element.value);
-  }
-
-  resetPlaceholder(fieldComponent.input.element);
-}
-
-function resetPlaceholder(element) {
-  // Safari leaves the placholder visible in the iframe, we
-  // compensate for this by removing and re-setting the placeholder
-  var placeholder = element.getAttribute('placeholder');
-
-  if (placeholder) {
-    element.setAttribute('placeholder', '');
-    element.setAttribute('placeholder', placeholder);
   }
 }
 
@@ -515,6 +450,5 @@ module.exports = {
   initialize: initialize,
   create: create,
   orchestrate: orchestrate,
-  createTokenizationHandler: createTokenizationHandler,
-  autofillHandler: autofillHandler
+  createTokenizationHandler: createTokenizationHandler
 };

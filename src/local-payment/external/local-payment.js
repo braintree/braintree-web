@@ -15,6 +15,9 @@ var wrapPromise = require('@braintree/wrap-promise');
 var constants = require('./constants');
 var errors = require('../shared/errors');
 
+var DEFAULT_WINDOW_WIDTH = 1282;
+var DEFAULT_WINDOW_HEIGHT = 720;
+
 /**
  * @class
  * @param {object} options see {@link module:braintree-web/local-payment.create|local-payment.create}
@@ -61,6 +64,9 @@ LocalPayment.prototype._initialize = function () {
  * @param {object} options.fallback Configuration for what to do when app switching back from a Bank app on a mobile device.
  * @param {string} options.fallback.buttonText The text to insert into a button to redirect back to the merchant page.
  * @param {string} options.fallback.url The url to redirect to when the redirect button is activated. Query params will be added to the url to process the data returned from the bank.
+ * @param {object} [options.windowOptions] The options for configuring the window that is opened when starting the payment.
+ * @param {number} [options.windowOptions.width=1282] The width in pixels of the window opened when starting the payment. The default width size is this large to allow various banking partner landing pages to display the QR Code to be scanned by the bank's mobile app. Many will not display the QR code when the window size is smaller than a standard desktop screen.
+ * @param {number} [options.windowOptions.height=720] The height in pixels of the window opened when starting the payment.
  * @param {string} options.amount The amount to authorize for the transaction.
  * @param {string} options.currencyCode The currency to process the payment.
  * @param {string} options.paymentType The type of local payment.
@@ -69,6 +75,7 @@ LocalPayment.prototype._initialize = function () {
  * @param {string} options.givenName First name of the customer.
  * @param {string} options.surname Last name of the customer.
  * @param {string} options.phone Phone number of the customer.
+ * @param {string} options.bic Bank Identification Code of the customer (specific to iDEAL transactions).
  * @param {boolean} options.shippingAddressRequired Indicates whether or not the payment needs to be shipped. For digital goods, this should be false. Defaults to false.
  * @param {string} options.address.streetAddress Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.
  * @param {string} options.address.extendedAddress Line 2 of the Address (eg. suite, apt #, etc.). An error will occur if this address is not valid.
@@ -114,6 +121,7 @@ LocalPayment.prototype.startPayment = function (options) {
   var address, params;
   var self = this; // eslint-disable-line no-invalid-this
   var serviceId = this._frameService._serviceId; // eslint-disable-line no-invalid-this
+  var windowOptions = options.windowOptions || {};
 
   if (hasMissingOption(options)) {
     return Promise.reject(new BraintreeError(errors.LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION));
@@ -147,7 +155,8 @@ LocalPayment.prototype.startPayment = function (options) {
     state: address.region,
     postalCode: address.postalCode,
     countryCode: address.countryCode,
-    merchantAccountId: self._merchantAccountId
+    merchantAccountId: self._merchantAccountId,
+    bic: options.bic
   };
 
   self._paymentType = options.paymentType.toLowerCase();
@@ -162,7 +171,10 @@ LocalPayment.prototype.startPayment = function (options) {
   return new Promise(function (resolve, reject) {
     self._startPaymentCallback = self._createStartPaymentCallback(resolve, reject);
 
-    self._frameService.open({}, self._startPaymentCallback);
+    self._frameService.open({
+      width: windowOptions.width || DEFAULT_WINDOW_WIDTH,
+      height: windowOptions.height || DEFAULT_WINDOW_HEIGHT
+    }, self._startPaymentCallback);
 
     self._client.request({
       method: 'post',
@@ -334,7 +346,7 @@ LocalPayment.prototype._formatTokenizePayload = function (response) {
 };
 
 /**
- * Checks if required tokenizaiton parameters are available in querystring for manual toenization requests.
+ * Checks if required tokenization parameters are available in querystring for manual tokenization requests.
  * @public
  * @function
  * @example

@@ -2,16 +2,16 @@
 
 /**
  * @name BraintreeError.Masterpass - Creation Error Codes
- * @description Errors that occur when [creating the Masterpass component](/current/module-braintree-web_masterpass#.create).
+ * @description Errors that occur when [creating the Masterpass component](./module-braintree-web_masterpass#.create).
  * @property {CUSTOMER} MASTERPASS_BROWSER_NOT_SUPPORTED Occurs when browser is not a supported browser for Masterpass.
- * @property {MERCHANT} MASTERPASS_NOT_ENABLED Occurs when Masterpass is not enabled in the Braintree contorl panel.
+ * @property {MERCHANT} MASTERPASS_NOT_ENABLED Occurs when Masterpass is not enabled in the Braintree control panel.
  */
 
 /**
  * @name BraintreeError.Masterpass - Tokenize Error Codes
- * @description Errors that occur when [tokenizing](/current/Masterpass.html#tokenize).
+ * @description Errors that occur when [tokenizing](./Masterpass.html#tokenize).
  * @property {MERCHANT} MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION Occurs when tokenize is called without a required option.
- * @property {MERCHANT} MASTERPASS_TOKENIZATION_ALREADY_IN_PROGRESS Occurs if tokenization flow is intialized while another flow is already in progress.
+ * @property {MERCHANT} MASTERPASS_TOKENIZATION_ALREADY_IN_PROGRESS Occurs if tokenization flow is initialized while another flow is already in progress.
  * @property {NETWORK} MASTERPASS_ACCOUNT_TOKENIZATION_FAILED Occurs when tokenization of Masterpass details fails.
  * @property {MERCHANT} MASTERPASS_POPUP_OPEN_FAILED Occurs when the popup fails to open.
  * @property {MERCHANT} MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS Occurs when Masterpass is missing required parameters for tokenization.

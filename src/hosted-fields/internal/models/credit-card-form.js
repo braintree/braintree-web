@@ -318,6 +318,34 @@ CreditCardForm.prototype.getCardTypes = function (value) {
   }.bind(this));
 };
 
+CreditCardForm.prototype.applyAutofillValues = function (data) {
+  this._fieldKeys.forEach(function (key) {
+    var value;
+
+    if (
+      key === 'number' ||
+      key === 'cvv' ||
+      key === 'expirationMonth' ||
+      key === 'expirationYear' ||
+      key === 'cardholderName'
+    ) {
+      value = data[key];
+    } else if (
+      key === 'expirationDate' &&
+      data.expirationMonth &&
+      data.expirationYear
+    ) {
+      value = data.expirationMonth + ' / ' + data.expirationYear;
+    }
+
+    if (!value) {
+      return;
+    }
+
+    this._emit('autofill:' + key, value);
+  }.bind(this));
+};
+
 CreditCardForm.prototype._resetCardFormHasStartedBeingFilled = function () {
   cardFormHasStartedBeingFilled = false;
 };

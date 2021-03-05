@@ -2,15 +2,15 @@
 
 /**
  * @name BraintreeError.Us Bank Account - Creation Error Codes
- * @description Errors that occur when [creating the Us Bank Account component](/current/module-braintree-web_us-bank-account.html#.create).
+ * @description Errors that occur when [creating the Us Bank Account component](./module-braintree-web_us-bank-account.html#.create).
  * @property {MERCHANT} US_BANK_ACCOUNT_NOT_ENABLED Occurs when US Bank Account is not enabled in the Braintree control panel.
  */
 
 /**
  * @name BraintreeError.Us Bank Account - tokenize Error Codes
- * @description Errors that occur when using the [`tokenize` method](/current/UsBankAccount.html#tokenize).
+ * @description Errors that occur when using the [`tokenize` method](./UsBankAccount.html#tokenize).
  * @property {MERCHANT} US_BANK_ACCOUNT_OPTION_REQUIRED Occurs when a required option is not passed.
- * @property {MERCHANT} US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS Occurs when 1 or more incompatible options are passsed.
+ * @property {MERCHANT} US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS Occurs when 1 or more incompatible options are passed.
  * @property {NETWORK} US_BANK_ACCOUNT_LOGIN_LOAD_FAILED Occurs when bank login flow fails.
  * @property {CUSTOMER} US_BANK_ACCOUNT_LOGIN_CLOSED Occurs when bank login window is closed.
  * @property {MERCHANT} US_BANK_ACCOUNT_LOGIN_REQUEST_ACTIVE Occurs when a bank login flow is already active.

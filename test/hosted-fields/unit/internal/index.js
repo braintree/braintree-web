@@ -109,7 +109,7 @@ describe('internal', () => {
         document.body.innerHTML = '';
 
         jest.useFakeTimers();
-
+        jest.spyOn(CreditCardForm.prototype, 'applyAutofillValues');
         frameName.getFrameName.mockReturnValue('number');
         internal.initialize(testContext.cardForm);
 
@@ -120,65 +120,65 @@ describe('internal', () => {
 
         jest.advanceTimersByTime(1000);
 
-        expect(window.bus.emit).not.toBeCalled();
+        expect(CreditCardForm.prototype.applyAutofillValues).not.toBeCalled();
 
         cvv.value = '123';
 
         jest.advanceTimersByTime(1000);
 
-        expect(window.bus.emit).toBeCalledTimes(1);
-        expect(window.bus.emit).toBeCalledWith('hosted-fields:AUTOFILL_DATA_AVAILABLE', {
+        expect(CreditCardForm.prototype.applyAutofillValues).toBeCalledTimes(1);
+        expect(CreditCardForm.prototype.applyAutofillValues).toBeCalledWith({
           cardholderName: '',
           number: '',
-          month: '',
-          year: '',
+          expirationMonth: '',
+          expirationYear: '',
           cvv: '123'
         });
 
-        window.bus.emit.mockClear();
+        CreditCardForm.prototype.applyAutofillValues.mockClear();
 
         jest.advanceTimersByTime(1000);
 
-        expect(window.bus.emit).not.toBeCalled();
+        expect(CreditCardForm.prototype.applyAutofillValues).not.toBeCalled();
 
         expMonth.value = '02';
         expYear.value = '31';
 
         jest.advanceTimersByTime(1000);
 
-        expect(window.bus.emit).toBeCalledTimes(1);
-        expect(window.bus.emit).toBeCalledWith('hosted-fields:AUTOFILL_DATA_AVAILABLE', {
+        expect(CreditCardForm.prototype.applyAutofillValues).toBeCalledTimes(1);
+        expect(CreditCardForm.prototype.applyAutofillValues).toBeCalledWith({
           cardholderName: '',
           number: '',
-          month: '02',
-          year: '31',
+          expirationMonth: '02',
+          expirationYear: '2031',
           cvv: '123'
         });
 
-        window.bus.emit.mockClear();
+        CreditCardForm.prototype.applyAutofillValues.mockClear();
 
         jest.advanceTimersByTime(1000);
 
-        expect(window.bus.emit).not.toBeCalled();
+        expect(CreditCardForm.prototype.applyAutofillValues).not.toBeCalled();
 
         cardholderName.value = 'Given Sur';
 
         jest.advanceTimersByTime(1000);
 
-        expect(window.bus.emit).toBeCalledTimes(1);
-        expect(window.bus.emit).toBeCalledWith('hosted-fields:AUTOFILL_DATA_AVAILABLE', {
+        expect(CreditCardForm.prototype.applyAutofillValues).toBeCalledTimes(1);
+        expect(CreditCardForm.prototype.applyAutofillValues).toBeCalledWith({
           cardholderName: 'Given Sur',
           number: '',
-          month: '02',
-          year: '31',
+          expirationMonth: '02',
+          expirationYear: '2031',
           cvv: '123'
         });
 
-        window.bus.emit.mockClear();
+        CreditCardForm.prototype.applyAutofillValues.mockClear();
 
         jest.advanceTimersByTime(1000);
 
-        expect(window.bus.emit).not.toBeCalled();
+        expect(CreditCardForm.prototype.applyAutofillValues).not.toBeCalled();
       });
 
       it('does not set tabindex for hidden autofill inputs on Chrome for iOS', () => {
@@ -1354,206 +1354,6 @@ describe('internal', () => {
 
       jest.advanceTimersByTime(100);
       jest.useRealTimers();
-    });
-  });
-
-  describe('autofillHandler', () => {
-    beforeEach(() => {
-      frameName.getFrameName.mockReturnValue('cvv');
-      testContext.fieldComponent = {
-        input: {
-          maskValue: jest.fn(),
-          updateModel: jest.fn(),
-          element: {
-            value: '',
-            getAttribute: jest.fn(),
-            setAttribute: jest.fn()
-          }
-        }
-      };
-    });
-
-    it('returns a function', () => {
-      expect(internal.autofillHandler(testContext.fieldComponent)).toBeInstanceOf(Function);
-    });
-
-    it('returns early if there is no payload', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      handler();
-      expect(frameName.getFrameName).not.toHaveBeenCalled();
-    });
-
-    it('returns early if there is already a value on the input', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      testContext.fieldComponent.input.element.value = '4111';
-
-      handler();
-      expect(frameName.getFrameName).not.toHaveBeenCalled();
-    });
-
-    it('updates input with month and year if frame is expiration date', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      frameName.getFrameName.mockReturnValue('expirationDate');
-
-      handler({
-        month: '12',
-        year: '2020'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledTimes(1);
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledWith('value', '12 / 2020');
-      expect(testContext.fieldComponent.input.element.value).toBe('12 / 2020');
-    });
-
-    it('masks input if masking is turned on', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      testContext.fieldComponent.input.shouldMask = true;
-
-      frameName.getFrameName.mockReturnValue('expirationDate');
-
-      handler({
-        month: '12',
-        year: '2020'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledTimes(1);
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledWith('value', '12 / 2020');
-      expect(testContext.fieldComponent.input.maskValue).toHaveBeenCalledWith('12 / 2020');
-    });
-
-    it('updates input with month if frame is expiration month', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      frameName.getFrameName.mockReturnValue('expirationMonth');
-
-      handler({
-        month: '12',
-        year: '2020'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledTimes(1);
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledWith('value', '12');
-      expect(testContext.fieldComponent.input.element.value).toBe('12');
-    });
-
-    it('updates input with year if frame is expiration year', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      frameName.getFrameName.mockReturnValue('expirationYear');
-
-      handler({
-        month: '12',
-        year: '2020'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledTimes(1);
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledWith('value', '2020');
-      expect(testContext.fieldComponent.input.element.value).toBe('2020');
-    });
-
-    it('formats year as 4 digit number', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      frameName.getFrameName.mockReturnValue('expirationYear');
-
-      handler({
-        month: '12',
-        year: '34'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledTimes(1);
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledWith('value', '2034');
-      expect(testContext.fieldComponent.input.element.value).toBe('2034');
-    });
-
-    it('sends cvv if it exists', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      frameName.getFrameName.mockReturnValue('cvv');
-
-      handler({
-        month: '12',
-        year: '34',
-        cvv: '123'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledTimes(1);
-      expect(testContext.fieldComponent.input.updateModel).toHaveBeenCalledWith('value', '123');
-      expect(testContext.fieldComponent.input.element.value).toBe('123');
-    });
-
-    it('resets placeholder if it exists to account for bug in Safari', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      testContext.fieldComponent.input.element.getAttribute.mockReturnValue('111');
-      frameName.getFrameName.mockReturnValue('cvv');
-
-      handler({
-        month: '12',
-        year: '34',
-        cvv: '123'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.element.setAttribute).toHaveBeenCalledTimes(2);
-      expect(testContext.fieldComponent.input.element.setAttribute).toHaveBeenCalledWith('placeholder', '');
-      expect(testContext.fieldComponent.input.element.setAttribute).toHaveBeenCalledWith('placeholder', '111');
-    });
-
-    it('ignores setting placeholder if no placeholder on element', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      testContext.fieldComponent.input.element.getAttribute.mockReturnValue(null);
-      frameName.getFrameName.mockReturnValue('cvv');
-
-      handler({
-        month: '12',
-        year: '34',
-        cvv: '123'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.element.setAttribute).not.toHaveBeenCalled();
-    });
-
-    it('ignores cvv if it is not present', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      frameName.getFrameName.mockReturnValue('cvv');
-
-      handler({
-        month: '12',
-        year: '34',
-        cvv: ''
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.updateModel).not.toHaveBeenCalled();
-    });
-
-    it('sets pattern when field is number', () => {
-      const handler = internal.autofillHandler(testContext.fieldComponent);
-
-      frameName.getFrameName.mockReturnValue('number');
-      testContext.fieldComponent.input.setPattern = jest.fn().mockImplementation();
-
-      handler({
-        number: '4111'
-      });
-
-      expect(frameName.getFrameName).toHaveBeenCalled();
-      expect(testContext.fieldComponent.input.setPattern).toBeCalledTimes(1);
-      expect(testContext.fieldComponent.input.setPattern).toBeCalledWith('4111');
     });
   });
 });

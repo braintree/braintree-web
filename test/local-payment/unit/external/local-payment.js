@@ -174,6 +174,7 @@ describe('LocalPayment', () => {
         surname: 'Last',
         email: 'email@example.com',
         phone: '1234',
+        bic: 'ABGANL6A',
         address: {
           streetAddress: '123 Address',
           extendedAddress: 'Unit 1',
@@ -267,7 +268,8 @@ describe('LocalPayment', () => {
             state: 'IL',
             postalCode: '60654',
             countryCode: 'US',
-            merchantAccountId: 'merchant-account-id'
+            merchantAccountId: 'merchant-account-id',
+            bic: 'ABGANL6A'
           }
         });
       });
@@ -280,6 +282,36 @@ describe('LocalPayment', () => {
 
       return testContext.localPayment.startPayment(testContext.options).then(() => {
         expect(frame.redirect).toHaveBeenCalledWith('https://example.com/redirect-url');
+      });
+    });
+
+    it('opens window with a default width and height', () => {
+      const frame = testContext.frameServiceInstance;
+
+      frame.open.mockImplementation(yields(null, { foo: 'bar' }));
+
+      return testContext.localPayment.startPayment(testContext.options).then(() => {
+        expect(frame.open).toHaveBeenCalledWith({
+          width: 1282,
+          height: 720
+        }, expect.any(Function));
+      });
+    });
+
+    it('can specify height and width of window', () => {
+      const frame = testContext.frameServiceInstance;
+
+      frame.open.mockImplementation(yields(null, { foo: 'bar' }));
+      testContext.options.windowOptions = {
+        width: 90,
+        height: 50
+      };
+
+      return testContext.localPayment.startPayment(testContext.options).then(() => {
+        expect(frame.open).toHaveBeenCalledWith({
+          width: 90,
+          height: 50
+        }, expect.any(Function));
       });
     });
 

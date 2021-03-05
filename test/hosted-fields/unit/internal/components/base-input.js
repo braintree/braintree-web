@@ -27,6 +27,7 @@ describe('Base Input', () => {
 
       testContext.model = {
         configuration: {},
+        on: jest.fn(),
         set: jest.fn()
       };
       testContext.type = key;
@@ -324,6 +325,134 @@ describe('Base Input', () => {
             expect(testContext.instance.element.removeAttribute).not.toHaveBeenCalled();
           });
         });
+      });
+    });
+
+    describe('model listeners', () => {
+      beforeEach(() => {
+        BaseInput.prototype.addModelEventListeners.mockRestore();
+      });
+
+      it('calls render when isValid change event fires', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+        const eventName = `change:${key}.isValid`;
+
+        instance.render.mockClear();
+        expect(instance.model.on).toBeCalledWith(eventName, expect.any(Function));
+
+        const cb = instance.model.on.mock.calls.find((args) => {
+          return args[0] === eventName;
+        })[1];
+
+        expect(instance.render).not.toBeCalled();
+
+        cb();
+
+        expect(instance.render).toBeCalledTimes(1);
+      });
+
+      it('calls render when isPotentiallyValid change event fires', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+        const eventName = `change:${key}.isPotentiallyValid`;
+
+        instance.render.mockClear();
+        expect(instance.model.on).toBeCalledWith(eventName, expect.any(Function));
+
+        const cb = instance.model.on.mock.calls.find((args) => {
+          return args[0] === eventName;
+        })[1];
+
+        expect(instance.render).not.toBeCalled();
+
+        cb();
+
+        expect(instance.render).toBeCalledTimes(1);
+      });
+
+      it('applies autofill value when autofill event fires', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+        const eventName = `autofill:${key}`;
+
+        instance.render.mockClear();
+        expect(instance.model.on).toBeCalledWith(eventName, expect.any(Function));
+
+        const cb = instance.model.on.mock.calls.find((args) => {
+          return args[0] === eventName;
+        })[1];
+
+        instance.element.value = 'old-value';
+
+        jest.spyOn(instance, 'updateModel');
+        expect(instance.render).not.toBeCalled();
+
+        cb('new-value');
+
+        expect(instance.element.value).toBe('new-value');
+        expect(instance.updateModel).toBeCalledTimes(2);
+        expect(instance.updateModel).toBeCalledWith('value', '');
+        expect(instance.updateModel).toBeCalledWith('value', 'new-value');
+        expect(instance.render).toBeCalledTimes(1);
+      });
+
+      it('masks after autofill if configured', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+        const eventName = `autofill:${key}`;
+
+        const cb = instance.model.on.mock.calls.find((args) => {
+          return args[0] === eventName;
+        })[1];
+
+        jest.spyOn(instance, 'maskValue');
+
+        cb('new-value');
+
+        expect(instance.maskValue).not.toBeCalled();
+
+        instance.shouldMask = true;
+
+        cb('even-newer-value');
+
+        expect(instance.maskValue).toBeCalledTimes(1);
+        expect(instance.maskValue).toBeCalledWith('even-newer-value');
+      });
+
+      it('resets the placeholder after applying autofill if placedholder exists', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+        const eventName = `autofill:${key}`;
+
+        const cb = instance.model.on.mock.calls.find((args) => {
+          return args[0] === eventName;
+        })[1];
+
+        jest.spyOn(instance.element, 'setAttribute');
+
+        cb('new-value');
+
+        expect(instance.element.setAttribute).not.toBeCalled();
+
+        instance.element.setAttribute('placeholder', 'foo');
+        instance.element.setAttribute.mockReset();
+
+        cb('even-newer-value');
+
+        expect(instance.element.setAttribute).toBeCalledTimes(2);
+        expect(instance.element.setAttribute).toBeCalledWith('placeholder', '');
+        expect(instance.element.setAttribute).toBeCalledWith('placeholder', 'foo');
       });
     });
   });

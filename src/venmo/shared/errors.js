@@ -2,15 +2,15 @@
 
 /**
  * @name BraintreeError.Venmo - Creation Error Codes
- * @description Errors that occur when [creating the Venmo component](/current/module-braintree-web_venmo.html#.create).
+ * @description Errors that occur when [creating the Venmo component](./module-braintree-web_venmo.html#.create).
  * @property {MERCHANT} VENMO_NOT_ENABLED Occurs when Venmo is not enabled on the Braintree control panel.
- * @property {MERCHANT} VENMO_INVALID_PROFILE_ID Occurs when Venmo is intilaized with a profile id, but it is invalid.
+ * @property {MERCHANT} VENMO_INVALID_PROFILE_ID Occurs when Venmo is initialized with a profile id, but it is invalid.
  * @property {UNKNOWN} VENMO_MOBILE_POLLING_SETUP_FAILED Occurs when enabling mobile polling alternative for tokenization fails.
  */
 
 /**
  * @name BraintreeError.Venmo - tokenize Error Codes
- * @description Errors that occur when using the [`tokenize` method](/current/Venmo.html#tokenize).
+ * @description Errors that occur when using the [`tokenize` method](./Venmo.html#tokenize).
  * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_ACTIVE Occurs when `tokenize` is called when the flow is already in progress.
  * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE Occurs when `cancelTokenization` is called when the flow is not in progress.
  * @property {UNKNOWN} VENMO_APP_FAILED Occurs when tokenization fails.

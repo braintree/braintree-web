@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+## 3.74.0
+* PayPal Checkout
+  * Default `intent` parameter to `authorize` in `loadPayPalSDK` when using `vault: true` to eliminate console error about using `tokenize` for intent (#544)
+  * Fix issue where dispatch frame would not get cleaned up when calling `teardown` (#555)
+* Local Payments
+  * Add `bic` property to `options` parameter for iDEAL transactions
+  * Update default size of window to 1282 X 720
+  * Allow height and width of the window to be specified with `windowOptions.height` and `windowOptions.width` when calling `startPayment`
+
 ## 3.73.1
 * Update framebus to v5.1.2
   * Fix issue where components dependent on framebus (Hosted Fields, PayPal, etc) would not load in IE11 (#554)

@@ -878,7 +878,7 @@ PayPalCheckout.prototype.getClientId = function () {
 };
 
 /**
- * Resolves when the PayPal SDK has been succesfully loaded onto the page.
+ * Resolves when the PayPal SDK has been successfully loaded onto the page.
  * @public
  * @param {object} [options] A configuration object to modify the query params and data-attributes on the PayPal SDK. A subset of the parameters are listed below. For a full list of query params, see the [PayPal docs](https://developer.paypal.com/docs/checkout/reference/customize-sdk/?mark=query#query-parameters).
  * @param {string} [options.client-id] By default, this will be the client id associated with the authorization used to create the Braintree component. When used in conjunction with passing `authorization` when creating the PayPal Checkout component, you can speed up the loading of the PayPal SDK.
@@ -936,8 +936,14 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
   }, options);
   delete options.dataAttributes;
 
+  // NEXT_MAJOR_VERSION if merchant passes an explicit intent,
+  // currency, amount, etc, save those for use in createPayment
+  // if no explicit param of that type is passed in when calling
+  // createPayment to reduce the number of items that need to be
+  // duplicated here and in createPayment
+  options.intent = options.intent || 'authorize';
+
   if (!options.vault) {
-    options.intent = options.intent || 'authorize';
     options.currency = options.currency || 'USD';
   }
 
@@ -1160,13 +1166,23 @@ PayPalCheckout.prototype._formatTokenizePayload = function (response) {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.teardown = function () {
+  var self = this;
+
   convertMethodsToError(this, methods(PayPalCheckout.prototype));
 
   if (this._paypalScript && this._paypalScript.parentNode) {
     this._paypalScript.parentNode.removeChild(this._paypalScript);
   }
 
-  return Promise.resolve();
+  return this._frameServicePromise.catch(function () {
+    // no need to error in teardown for an error setting up the frame service
+  }).then(function () {
+    if (!self._frameService) {
+      return Promise.resolve();
+    }
+
+    return self._frameService.teardown();
+  });
 };
 
 module.exports = wrapPromise.wrapPrototype(PayPalCheckout);

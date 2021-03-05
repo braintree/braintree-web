@@ -24,7 +24,7 @@ var Promise = require('../lib/promise');
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {callback} callback The second argument, `data`, is the {@link PayPal} instance.
  * @example
- * // We recomend creating your PayPal button with button.js
+ * // We recommend creating your PayPal button with button.js
  * // For an example, see https://codepen.io/braintree/pen/LNKJWa
  * var paypalButton = document.querySelector('.paypal-button');
  *
