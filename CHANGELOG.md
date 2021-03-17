@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.75.0
+* Hosted Fields
+  * Add support for `box-shadow` style (#559)
+* PayPal
+  * Add `offerPayLater` to PayPal `tokenize`
+* PayPal Checkout
+  * Correct default `intent` parameter to `tokenize` in `loadPayPalSDK` when using `vault: true`
+* Venmo
+  * Correct issue where incorrect return url could be constructed when merchant page url included an empty `#`
+  * Fix issue with `requireManualReturn` flow in iOS webviews
+
 ## 3.74.0
 * PayPal Checkout
   * Default `intent` parameter to `authorize` in `loadPayPalSDK` when using `vault: true` to eliminate console error about using `tokenize` for intent (#544)

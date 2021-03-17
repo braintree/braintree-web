@@ -155,6 +155,8 @@ Venmo.prototype.getUrl = function () {
       }
     };
 
+    currentUrl = currentUrl.replace(/#*$/, '');
+
     if (this._mobilePollingContextId) {
       accessToken += '|pcid:' + this._mobilePollingContextId;
     }
@@ -458,7 +460,12 @@ Venmo.prototype._tokenizeForMobileWithPolling = function () {
 
   return this.getUrl().then(function (url) {
     analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.browser');
-    window.open(url);
+
+    if (browserDetection.isIosWebview()) {
+      window.location.href = url;
+    } else {
+      window.open(url);
+    }
 
     return self._tokenizePromise;
   });
@@ -528,7 +535,7 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
 
   return this.getUrl().then(function (url) {
     if (self._deepLinkReturnUrl) {
-      if (isIosWebview()) {
+      if (isIosWebviewInDeepLinkReturnUrlFlow()) {
         analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.ios-webview');
         // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open.
         window.location.href = url;
@@ -759,7 +766,7 @@ function documentVisibilityChangeEventName() {
   return visibilityChange;
 }
 
-function isIosWebview() {
+function isIosWebviewInDeepLinkReturnUrlFlow() {
   // we know it's a webview because this flow only gets
   // used when checking the deep link flow
   // test the platform here to get around custom useragents

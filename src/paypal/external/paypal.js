@@ -114,6 +114,7 @@ PayPal.prototype._initialize = function () {
  * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed. Only available for Checkout flow.
  * * `sale` - Payment will be immediately submitted for settlement upon creating a transaction.
  * @param {boolean} [options.offerCredit=false] Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.
+ * @param {boolean} [options.offerPayLater=false] Offers PayPal Pay Later if the customer qualifies. Defaults to false. Only available with `flow: 'checkout'`.
  * @param {string} [options.useraction]
  * Changes the call-to-action in the PayPal flow. By default the final button will show the localized
  * word for "Continue" and implies that the final amount billed is not yet known.
@@ -281,6 +282,10 @@ PayPal.prototype.tokenize = function (options, callback) {
 
       if (options.offerCredit === true) {
         analytics.sendEvent(client, 'paypal.credit.offered');
+      }
+
+      if (options.offerPayLater === true) {
+        analytics.sendEvent(client, 'paypal.paylater.offered');
       }
 
       self._navigateFrameToAuth(options).catch(reject);
@@ -506,6 +511,7 @@ PayPal.prototype._formatPaymentResourceData = function (options) {
     returnUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/redirect-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
     cancelUrl: gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION + '/html/cancel-frame' + useMin(this._isDebug) + '.html?channel=' + serviceId,
     offerPaypalCredit: options.offerCredit === true,
+    offerPayLater: options.offerPayLater === true,
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
       localeCode: options.locale,

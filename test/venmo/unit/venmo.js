@@ -10,6 +10,7 @@ const { fake } = require('../../helpers');
 const querystring = require('../../../src/lib/querystring');
 const BraintreeError = require('../../../src/lib/braintree-error');
 const Venmo = require('../../../src/venmo/venmo');
+const browserDetection = require('../../../src/venmo/shared/browser-detection');
 const supportsVenmo = require('../../../src/venmo/shared/supports-venmo');
 const inIframe = require('../../../src/lib/in-iframe');
 const { version: VERSION } = require('../../../package.json');
@@ -181,6 +182,34 @@ describe('Venmo', () => {
         expect(url.indexOf('https://venmo.com/braintree/checkout')).toBe(0);
       })
     );
+
+    it('removes hash from parent page url for use with return urls', () => {
+      const pageUrlWithoutHash = window.location.href;
+
+      window.location.hash = '#bar';
+
+      return venmo.getUrl().then(url => {
+        const params = querystring.parse(url);
+
+        expect(params['x-success']).toBe(`${pageUrlWithoutHash}#venmoSuccess=1`);
+        expect(params['x-cancel']).toBe(`${pageUrlWithoutHash}#venmoCancel=1`);
+        expect(params['x-error']).toBe(`${pageUrlWithoutHash}#venmoError=1`);
+      });
+    });
+
+    it('removes hash with no value from parent page url', () => {
+      const pageUrlWithoutHash = window.location.href;
+
+      window.location.hash = '#';
+
+      return venmo.getUrl().then(url => {
+        const params = querystring.parse(url);
+
+        expect(params['x-success']).toBe(`${pageUrlWithoutHash}#venmoSuccess=1`);
+        expect(params['x-cancel']).toBe(`${pageUrlWithoutHash}#venmoCancel=1`);
+        expect(params['x-error']).toBe(`${pageUrlWithoutHash}#venmoError=1`);
+      });
+    });
 
     it.each([
       ['', window.location.href, false],
@@ -1061,6 +1090,33 @@ describe('Venmo', () => {
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.tokenize.mobile-polling.start');
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.tokenize.mobile-polling.success');
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.appswitch.start.browser');
+      });
+
+      it('uses window.location.href when in an ios webview', async () => {
+        const locationGlobal = window.location;
+
+        delete window.location;
+        window.location = {
+          href: 'old'
+        };
+        jest.spyOn(browserDetection, 'isIosWebview').mockReturnValue(true);
+
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            node: {
+              status: 'APPROVED',
+              paymentMethodId: 'fake-nonce',
+              userName: 'some-name'
+            }
+          }
+        });
+
+        await venmo.tokenize();
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).toEqual(expect.stringContaining('braintree_access_token=pwv-access-token%7Cpcid%3Acontext-id'));
+
+        window.location = locationGlobal;
       });
 
       it('rejects when a network error occurs', async () => {

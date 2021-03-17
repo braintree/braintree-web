@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.74.0",
+  "version": "3.75.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -35,15 +35,15 @@
   },
   "devDependencies": {
     "browserify": "^17.0.0",
-    "browserify-derequire": "^1.0.1",
-    "chai": "^4.2.0",
+    "browserify-derequire": "^1.1.1",
+    "chai": "^4.3.4",
     "chalk": "^4.1.0",
     "check-ecmascript-version-compatibility": "0.1.1",
     "del": "^6.0.0",
     "dotenv": "^8.1.0",
     "envify": "4.1.0",
     "es6-shim": "^0.35.6",
-    "eslint": "^7.17.0",
+    "eslint": "^7.22.0",
     "eslint-config-braintree": "^4.0.0",
     "gulp": "^4.0.2",
     "gulp-envify": "tomashanacek/gulp-envify#37d97bca9073ec4161957c69d774f1870fdb6e57",
@@ -58,16 +58,16 @@
     "loose-envify": "^1.0.0",
     "merge-stream": "^2.0.0",
     "mkdirp": "^1.0.4",
-    "mocha": "^8.2.1",
+    "mocha": "^8.3.2",
     "mock-xmlhttprequest": "^7.0.3",
     "posix-getopt": "1.2.0",
     "readline-sync": "^1.4.10",
     "requirejs": "^2.3.6",
     "table": "^6.0.7",
     "tmp": "^0.2.1",
-    "uglify-js": "^3.12.4",
+    "uglify-js": "^3.13.1",
     "unreachable-branch-transform": "0.5.1",
-    "watchify": "^3.11.1"
+    "watchify": "^4.0.0"
   },
   "browserify": {
     "transform": [

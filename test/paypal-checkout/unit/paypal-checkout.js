@@ -1665,7 +1665,7 @@ describe('PayPalCheckout', () => {
       fakeScript.onload();
 
       return promise.then(() => {
-        expect(fakeScript.src).toMatch('intent=authorize');
+        expect(fakeScript.src).toMatch('intent=tokenize');
       });
     });
 

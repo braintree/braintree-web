@@ -266,6 +266,19 @@ describe('PayPal', () => {
       });
     });
 
+    it.each([true, false])('sets offerPayLater flag to %s when offerPayLater option is set to %s', (bool) => {
+      let actual;
+
+      testContext.options.offerPayLater = bool;
+
+      actual = PayPal.prototype._formatPaymentResourceData.call({
+        _client: testContext.client,
+        _frameService: testContext.frameService
+      }, testContext.options);
+
+      expect(actual.offerPayLater).toBe(bool);
+    });
+
     it.each([true, false])('sets addressOverride to %s if shippingAddressEditable is the opposite of %s', (override) => {
       let actual;
 
@@ -771,6 +784,23 @@ describe('PayPal', () => {
         PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
 
         expect(analytics.sendEvent).not.toHaveBeenCalledWith(client, 'paypal.credit.offered');
+      });
+
+      it('calls analytics when offerPayLater is true', () => {
+        const client = testContext.client;
+
+        testContext.tokenizeOptions.offerPayLater = true;
+        PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
+
+        expect(analytics.sendEvent).toHaveBeenCalledWith(client, 'paypal.paylater.offered');
+      });
+
+      it('does not send paylater.offered event when offerPayLater is not true', () => {
+        const client = testContext.client;
+
+        PayPal.prototype.tokenize.call(testContext.context, testContext.tokenizeOptions, noop);
+
+        expect(analytics.sendEvent).not.toHaveBeenCalledWith(client, 'paypal.paylater.offered');
       });
 
       it('calls analytics when the frame is closed by merchant', () => {

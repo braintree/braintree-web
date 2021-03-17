@@ -76,6 +76,7 @@ var VERSION = process.env.npm_package_version;
  *
  * Supported CSS properties are:
  * `appearance`
+ * `box-shadow`
  * `color`
  * `direction`
  * `font-family`
@@ -109,10 +110,12 @@ var VERSION = process.env.npm_package_version;
  * `text-shadow`
  * `transition`
  * `-moz-appearance`
+ * `-moz-box-shadow`
  * `-moz-osx-font-smoothing`
  * `-moz-tap-highlight-color`
  * `-moz-transition`
  * `-webkit-appearance`
+ * `-webkit-box-shadow`
  * `-webkit-font-smoothing`
  * `-webkit-tap-highlight-color`
  * `-webkit-transition`
