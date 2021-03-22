@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.76.0
+
+* Venmo
+  * Add `useRedirectForIOS` flag as an alternate way to open Venmo flow in iOS environments
+
 ## 3.75.0
 * Hosted Fields
   * Add support for `box-shadow` style (#559)

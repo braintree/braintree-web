@@ -48,6 +48,7 @@ function Venmo(options) {
   this._allowWebviews = options.allowWebviews !== false;
   this._allowDesktop = options.allowDesktop === true;
   this._requireManualReturn = options.requireManualReturn === true;
+  this._useRedirectForIOS = options.useRedirectForIOS === true;
   this._profileId = options.profileId;
   this._deepLinkReturnUrl = options.deepLinkReturnUrl;
   this._ignoreHistoryChanges = options.ignoreHistoryChanges;
@@ -461,7 +462,7 @@ Venmo.prototype._tokenizeForMobileWithPolling = function () {
   return this.getUrl().then(function (url) {
     analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.browser');
 
-    if (browserDetection.isIosWebview()) {
+    if (browserDetection.isIosWebview() || self._shouldUseRedirectStrategy()) {
       window.location.href = url;
     } else {
       window.open(url);
@@ -469,6 +470,14 @@ Venmo.prototype._tokenizeForMobileWithPolling = function () {
 
     return self._tokenizePromise;
   });
+};
+
+Venmo.prototype._shouldUseRedirectStrategy = function () {
+  if (!browserDetection.isIos()) {
+    return false;
+  }
+
+  return this._useRedirectForIOS;
 };
 
 Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
@@ -548,7 +557,12 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
       }
     } else {
       analytics.sendEvent(self._createPromise, 'venmo.appswitch.start.browser');
-      window.open(url);
+
+      if (self._shouldUseRedirectStrategy()) {
+        window.location.href = url;
+      } else {
+        window.open(url);
+      }
     }
 
     // Add a brief delay to ignore visibility change events that occur right before app switch

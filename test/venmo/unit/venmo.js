@@ -55,7 +55,9 @@ describe('Venmo', () => {
 
     jest.spyOn(document, 'addEventListener');
     jest.spyOn(document, 'removeEventListener');
+  });
 
+  afterEach(() => {
     window.location.href = originalLocation;
   });
 
@@ -532,6 +534,8 @@ describe('Venmo', () => {
          * The window state needs to be reset after those tests.
          * */
         history.replaceState({}, '', testContext.location);
+
+        jest.runAllTimers();
       });
 
       it('errors if getUrl fails', () => {
@@ -795,6 +799,76 @@ describe('Venmo', () => {
       });
 
       describe('when hashchange listener triggers', () => {
+        it('opens the venmo flow by calling window.open', () => {
+          const promise = venmo.tokenize().then(() => {
+            expect(window.open).toBeCalledTimes(1);
+            expect(window.open).toBeCalledWith(expect.stringContaining('https://venmo.com/braintree'));
+          });
+
+          expect.assertions(2);
+          history.replaceState({}, '', `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu`);
+          triggerHashChangeHandler(venmo);
+
+          return promise;
+        });
+
+        it('opens the venmo flow with window.location.href when in ios and configured with useRedirectForIOS flag', () => {
+          const locationGlobal = window.location;
+
+          delete window.location;
+          window.location = {
+            href: 'old',
+            hash: ''
+          };
+          jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+          venmo._useRedirectForIOS = true;
+
+          const promise = venmo.tokenize().then(() => {
+            expect(window.open).not.toBeCalled();
+            expect(window.location.href).toEqual(expect.stringContaining('https://venmo.com/braintree'));
+
+            window.location = locationGlobal;
+          });
+
+          expect.assertions(2);
+          window.location.href = `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu`;
+          triggerHashChangeHandler(venmo);
+
+          return promise;
+        });
+
+        it('opens the venmo flow with window.open when not ios and configured with useRedirectForIOS flag', () => {
+          jest.spyOn(browserDetection, 'isIos').mockReturnValue(false);
+          venmo._useRedirectForIOS = true;
+
+          const promise = venmo.tokenize().then(() => {
+            expect(window.open).toBeCalledTimes(1);
+            expect(window.open).toBeCalledWith(expect.stringContaining('https://venmo.com/braintree'));
+          });
+
+          expect.assertions(2);
+          history.replaceState({}, '', `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu`);
+          triggerHashChangeHandler(venmo);
+
+          return promise;
+        });
+
+        it('opens the venmo flow with window.open when is ios and is not configured with useRedirectForIOS flag', () => {
+          jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+          venmo._useRedirectForIOS = false;
+
+          const promise = venmo.tokenize().then(() => {
+            expect(window.open).toBeCalledTimes(1);
+            expect(window.open).toBeCalledWith(expect.stringContaining('https://venmo.com/braintree'));
+          });
+
+          expect.assertions(2);
+          history.replaceState({}, '', `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu`);
+          triggerHashChangeHandler(venmo);
+
+          return promise;
+        });
+
         it('resolves with nonce payload on success', () => {
           const promise = venmo.tokenize().then(({ details, nonce, type }) => {
             expect(nonce).toBe('abc');
@@ -1097,9 +1171,41 @@ describe('Venmo', () => {
 
         delete window.location;
         window.location = {
-          href: 'old'
+          href: 'old',
+          hash: ''
         };
+        jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
         jest.spyOn(browserDetection, 'isIosWebview').mockReturnValue(true);
+
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            node: {
+              status: 'APPROVED',
+              paymentMethodId: 'fake-nonce',
+              userName: 'some-name'
+            }
+          }
+        });
+
+        await venmo.tokenize();
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).toEqual(expect.stringContaining('braintree_access_token=pwv-access-token%7Cpcid%3Acontext-id'));
+
+        window.location = locationGlobal;
+      });
+
+      it('uses window.location.href when in iOS and is configured with useRedirectForIOS flag', async () => {
+        const locationGlobal = window.location;
+
+        delete window.location;
+        window.location = {
+          href: 'old',
+          hash: ''
+        };
+        jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+        jest.spyOn(browserDetection, 'isIosWebview').mockReturnValue(false);
+        venmo._useRedirectForIOS = true;
 
         testContext.client.request.mockResolvedValueOnce({
           data: {
