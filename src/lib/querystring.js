@@ -17,12 +17,18 @@ function _isArray(value) {
 }
 /* eslint-enable no-mixed-operators */
 
+function hasQueryParams(url) {
+  url = url || window.location.href;
+
+  return /\?/.test(url);
+}
+
 function parse(url) {
   var query, params;
 
   url = url || window.location.href;
 
-  if (!/\?/.test(url)) {
+  if (!hasQueryParams(url)) {
     return {};
   }
 
@@ -86,5 +92,6 @@ function queryify(url, params) {
 module.exports = {
   parse: parse,
   stringify: stringify,
-  queryify: queryify
+  queryify: queryify,
+  hasQueryParams: hasQueryParams
 };

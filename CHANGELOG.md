@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.76.1
+
+* Local Payments
+  * Correct error code for a payment that fails on the bank side of the payment (was previously reported as the customer canceling the process)
+
 ## 3.76.0
 
 * Venmo

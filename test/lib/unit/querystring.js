@@ -4,7 +4,17 @@ const querystring = require('../../../src/lib/querystring');
 const { noop } = require('../../helpers');
 
 describe('querystring', () => {
-  describe('createURLParams', () => {
+  describe('hasQueryParams', () => {
+    it('returns true when url has query params', () => {
+      expect(querystring.hasQueryParams('https://example.com?foo=bar')).toBe(true);
+    });
+
+    it('returns false when url does not have query params', () => {
+      expect(querystring.hasQueryParams('https://example.com')).toBe(false);
+    });
+  });
+
+  describe('queryify', () => {
     it('returns an unmodified url if no params are given', () => {
       const url = 'http://httpbin.org/ip';
 

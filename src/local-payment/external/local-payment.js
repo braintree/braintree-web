@@ -295,6 +295,20 @@ LocalPayment.prototype._createStartPaymentCallback = function (resolve, reject) 
     self._authorizationInProgress = false;
     if (err) {
       if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
+        if (params && params.errorcode === 'processing_error') {
+          // something failed within the payment window (rather than when
+          // tokenizing with Braintree)
+          analytics.sendEvent(client, self._paymentType + '.local-payment.failed-in-window');
+          reject(new BraintreeError(errors.LOCAL_PAYMENT_START_PAYMENT_FAILED));
+
+          return;
+        }
+
+        // its possible to have a query param with errorcode=payment_error, which
+        // indicates that the customer cancelled the flow from within the UI,
+        // but as there's no meaningful difference to the merchant whether the
+        // customer closes via the UI or by manually closing the window, we
+        // don't differentiate these
         analytics.sendEvent(client, self._paymentType + '.local-payment.tokenization.closed.by-user');
         reject(new BraintreeError(errors.LOCAL_PAYMENT_WINDOW_CLOSED));
       } else if (err.code && err.code.indexOf('FRAME_SERVICE_FRAME_OPEN_FAILED') > -1) {

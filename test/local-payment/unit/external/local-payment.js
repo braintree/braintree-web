@@ -380,6 +380,23 @@ describe('LocalPayment', () => {
       });
     });
 
+    it('errors with payment failed error when frame service is closed and includes "processing_error" in the errocode param', () => {
+      const frameError = {
+        code: 'FRAME_SERVICE_FRAME_CLOSED'
+      };
+
+      testContext.frameServiceInstance.open.mockImplementation(yieldsAsync(frameError, {
+        errorcode: 'processing_error',
+        token: 'abc-123'
+      }));
+
+      return testContext.localPayment.startPayment(testContext.options).catch(({ code }) => {
+        expect(testContext.localPayment._authorizationInProgress).toBe(false);
+        expect(code).toBe('LOCAL_PAYMENT_START_PAYMENT_FAILED');
+        expect(analytics.sendEvent).toBeCalledWith(expect.anything(), expect.stringContaining('.local-payment.failed-in-window'));
+      });
+    });
+
     it('errors when frame service fails to open', () => {
       const frameError = {
         code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_ABC'

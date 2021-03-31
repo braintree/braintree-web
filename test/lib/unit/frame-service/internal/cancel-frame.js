@@ -5,6 +5,7 @@ jest.mock('../../../../../src/lib/frame-service/internal');
 const cancelFrame = require('../../../../../src/lib/frame-service/internal/cancel-frame');
 const frameService = require('../../../../../src/lib/frame-service/internal');
 const BraintreeError = require('../../../../../src/lib/braintree-error');
+const querystring = require('../../../../../src/lib/querystring');
 
 describe('cancel-frame', () => {
   describe('start', () => {
@@ -17,7 +18,18 @@ describe('cancel-frame', () => {
 
       cancelFrame.start();
 
-      expect(frameService.report).toHaveBeenCalledWith(expect.objectContaining(err));
+      expect(frameService.report).toHaveBeenCalledWith(expect.objectContaining(err), {});
+    });
+
+    it('includes query params', () => {
+      jest.spyOn(querystring, 'parse').mockReturnValue({
+        foo: 'bar'
+      });
+      cancelFrame.start();
+
+      expect(frameService.report).toHaveBeenCalledWith(expect.anything(), {
+        foo: 'bar'
+      });
     });
 
     it('invokes frameService\'s close method', () => {
