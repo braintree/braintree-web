@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.76.2
+* Update browser-detection to v1.11.1
+* Hosted Fields
+  * Fix issue where nested Shadow DOM elements would not allow the iframes to initialize
+* Venmo
+  * Fix issue where `venmo.isSupported({ allowNewBrowserTab: false })` was returning `true` for Firefox on iOS
+
 ## 3.76.1
 
 * Local Payments

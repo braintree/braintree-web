@@ -117,6 +117,43 @@ describe('shadow', () => {
       expect(li.querySelector('slot').name).toBe(id);
     });
 
+    // TODO JSDOM does not allow us to create shadow DOMs within a
+    // shadow DOM, so this test can't actually run. Explore switching
+    // out JSDOM in Jest for Chromium/Puppeteer to get a more reliable
+    // browser API instead of the fake JSDOM implementation
+    it.skip('supports deeply nested shadow elements', () => {
+      const topLevelElement = document.createElement('div');
+      const topLevelShadow = topLevelElement.attachShadow({ mode: 'open' });
+      const midLevelElement = document.createElement('div');
+      const midLevelShadow = topLevelElement.attachShadow({ mode: 'open' });
+      const bottomLevelElement = document.createElement('div');
+      const bottomLevelShadow = topLevelElement.attachShadow({ mode: 'open' });
+
+      const wrapper = document.createElement('div');
+
+      wrapper.innerHTML = `
+        <ul>
+          <li class="active">Active el</li>
+          <li>Not active</li>
+        </ul>
+      `;
+      const li = wrapper.querySelector('.active');
+
+      bottomLevelShadow.appendChild(wrapper);
+      midLevelShadow.appendChild(bottomLevelElement);
+      topLevelShadow.appendChild(midLevelElement);
+
+      const slotProvider = shadow.transformToSlot(li);
+      const topLevelSlotId = slotProvider.getAttribute('slot');
+
+      expect(slotProvider).toBe(topLevelElement.querySelector(`[slot="${topLevelSlotId}"]`));
+
+      const midLevelSlotId = midLevelElement.querySelector(`slot[name="${topLevelSlotId}"]`).parentNode.getAttribute('slot');
+      const bottomLevelSlotId = bottomLevelElement.querySelector(`slot[name="${midLevelSlotId}"]`).parentNode.getAttribute('slot');
+
+      expect(li.querySelector('slot').name).toBe(bottomLevelSlotId);
+    });
+
     it('can add styles to the root node of the provided element', () => {
       const el = document.createElement('div');
       const shadowEl = el.attachShadow({ mode: 'open' });

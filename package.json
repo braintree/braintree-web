@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.76.1",
+  "version": "3.76.2",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@braintree/asset-loader": "0.4.4",
-    "@braintree/browser-detection": "1.11.0",
+    "@braintree/browser-detection": "1.11.1",
     "@braintree/class-list": "0.2.0",
     "@braintree/event-emitter": "0.4.1",
     "@braintree/extended-promise": "0.4.1",

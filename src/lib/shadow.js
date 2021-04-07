@@ -44,6 +44,10 @@ function transformToSlot(element, styles) {
     styleNode.sheet.insertRule('::slotted([slot="' + slotName + '"]) { ' + styles + ' }');
   }
 
+  if (isShadowElement(shadowHost)) {
+    return transformToSlot(slotProvider, styles);
+  }
+
   return slotProvider;
 }
 
