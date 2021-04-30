@@ -64,6 +64,7 @@ function Venmo(options) {
       return createVenmoDesktop({
         url: config.assetsUrl + '/web/' + VERSION + '/html/venmo-desktop-frame.html',
         environment: config.environment === 'production' ? 'PRODUCTION' : 'SANDBOX',
+        profileId: self._profileId || config.payWithVenmo.merchantId,
         Promise: Promise,
         apiRequest: function (query, data) {
           return client.request({

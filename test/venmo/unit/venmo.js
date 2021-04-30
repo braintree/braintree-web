@@ -108,6 +108,39 @@ describe('Venmo', () => {
     expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.desktop-flow.setup-failed');
   });
 
+  it('configures venmo desktop with default merchant id', async () => {
+    createVenmoDesktop.mockResolvedValue({});
+    new Venmo({
+      allowDesktop: true,
+      createPromise: Promise.resolve(testContext.client)
+    });
+
+    await new Promise((resolve) => {
+      window.setImmediate(resolve);
+    });
+
+    expect(createVenmoDesktop).toBeCalledWith(expect.objectContaining({
+      profileId: 'pwv-merchant-id'
+    }));
+  });
+
+  it('can configure venmo desktop with a specific profile id', async () => {
+    createVenmoDesktop.mockResolvedValue({});
+    new Venmo({
+      allowDesktop: true,
+      profileId: 'profile-id',
+      createPromise: Promise.resolve(testContext.client)
+    });
+
+    await new Promise((resolve) => {
+      window.setImmediate(resolve);
+    });
+
+    expect(createVenmoDesktop).toBeCalledWith(expect.objectContaining({
+      profileId: 'profile-id'
+    }));
+  });
+
   it('sets up a payment context when mobile polling flow is used', async () => {
     testContext.client.request.mockResolvedValue({
       data: {

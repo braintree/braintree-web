@@ -26,6 +26,7 @@ var VenmoDesktop = /** @class */ (function () {
         this.isHidden = true;
         this.env = options.environment;
         this.id = uuid_1.default();
+        this.profileId = options.profileId;
         var frameUrl = options.url + "#" + this.env + "_" + this.id;
         this.bus = new framebus_1.default({
             channel: this.id,
@@ -290,18 +291,20 @@ var VenmoDesktop = /** @class */ (function () {
     };
     VenmoDesktop.prototype.createVenmoDesktopPaymentContext = function () {
         var _this = this;
+        var input = {
+            environment: this.env,
+            intent: "PAY_FROM_APP",
+        };
         return this.apiRequest(queries_1.CREATE_VENMO_DESKTOP_PAYMENT_RESOURCE_QUERY, {
-            input: {
-                environment: this.env,
-                intent: "PAY_FROM_APP",
-            },
+            input: input,
         }).then(function (response) {
             var context = response.createVenmoQRCodePaymentContext.venmoQRCodePaymentContext;
             _this.venmoContextId = context.id;
+            var merchantId = _this.profileId || context.merchantId;
             return {
                 id: context.id,
                 status: context.status,
-                merchantId: context.merchantId,
+                merchantId: merchantId,
                 createdAt: context.createdAt,
                 expiresAt: context.expiresAt,
             };

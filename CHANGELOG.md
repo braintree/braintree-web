@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## 3.76.3
+* Update @braintree/sanitize-url to v5.0.1
+* Venmo
+  * Fix issue where profile id was not being passed to Venmo Desktop flow
+
 ## 3.76.2
 * Update browser-detection to v1.11.1
 * Hosted Fields
