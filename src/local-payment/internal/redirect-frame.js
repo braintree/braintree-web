@@ -29,11 +29,19 @@ function start(cb) {
       link = document.createElement('a');
 
       container.id = 'container';
-      link.href = querystring.queryify(redirectUrl, {
-        btLpToken: params.token,
-        btLpPaymentId: params.paymentId,
-        btLpPayerId: params.PayerID
-      });
+      if (params.errorcode) {
+        link.href = querystring.queryify(redirectUrl, {
+          btLpToken: params.token,
+          errorcode: params.errorcode,
+          wasCanceled: params.c === 1
+        });
+      } else {
+        link.href = querystring.queryify(redirectUrl, {
+          btLpToken: params.token,
+          btLpPaymentId: params.paymentId,
+          btLpPayerId: params.PayerID
+        });
+      }
       link.innerText = returnText;
       link.id = 'redirect';
 

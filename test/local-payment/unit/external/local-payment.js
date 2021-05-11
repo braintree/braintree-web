@@ -248,7 +248,47 @@ describe('LocalPayment', () => {
           method: 'post',
           endpoint: 'local_payments/create',
           data: {
-            cancelUrl: `https://example.com:9292/web/${VERSION}/html/cancel-frame.min.html?channel=service-id`,
+            cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text&c=1`,
+            returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text`,
+            fundingSource: 'ideal',
+            paymentTypeCountryCode: 'NL',
+            amount: '10.00',
+            intent: 'sale',
+            experienceProfile: {
+              noShipping: false
+            },
+            currencyIsoCode: 'USD',
+            firstName: 'First',
+            lastName: 'Last',
+            payerEmail: 'email@example.com',
+            phone: '1234',
+            line1: '123 Address',
+            line2: 'Unit 1',
+            city: 'Chicago',
+            state: 'IL',
+            postalCode: '60654',
+            countryCode: 'US',
+            merchantAccountId: 'merchant-account-id',
+            bic: 'ABGANL6A'
+          }
+        });
+      });
+    });
+
+    it('uses alternate fallback options for cancel url when provided', () => {
+      const client = testContext.client;
+
+      testContext.frameServiceInstance.open.mockImplementation(yields(null, { foo: 'bar' }));
+
+      testContext.options.fallback.cancelUrl = 'https://example.com/cancel';
+      testContext.options.fallback.cancelButtonText = 'Cancel Payment';
+
+      return testContext.localPayment.startPayment(testContext.options).then(() => {
+        expect(client.request).toHaveBeenCalledWith({
+          method: 'post',
+          endpoint: 'local_payments/create',
+          data: {
+            cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Fcancel&t=Cancel%20Payment&c=1`,
             returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text`,
             fundingSource: 'ideal',
             paymentTypeCountryCode: 'NL',
@@ -471,7 +511,7 @@ describe('LocalPayment', () => {
       };
     });
 
-    it('tokenizes paypal account', () =>
+    it('tokenizes local payment method', () =>
       testContext.localPayment.tokenize(testContext.options).then(({ nonce }) => {
         expect(testContext.client.request).toHaveBeenCalledTimes(1);
         expect(testContext.client.request).toHaveBeenCalledWith(testContext.expectedRequest);
@@ -522,6 +562,44 @@ describe('LocalPayment', () => {
       });
     });
 
+    it('rejects when c is present in params', () => {
+      expect.assertions(3);
+
+      testContext.options.c = 1;
+      testContext.options.errorcode = 'payment_error';
+
+      return testContext.localPayment.tokenize(testContext.options).catch(({ code, details }) => {
+        expect(code).toBe('LOCAL_PAYMENT_CANCELED');
+        expect(details.originalError.errorcode).toBe('payment_error');
+        expect(details.originalError.token).toBe('token');
+      });
+    });
+
+    it('rejects when wasCanceled is present in params', () => {
+      expect.assertions(3);
+
+      testContext.options.wasCanceled = 'true';
+      testContext.options.errorcode = 'payment_error';
+
+      return testContext.localPayment.tokenize(testContext.options).catch(({ code, details }) => {
+        expect(code).toBe('LOCAL_PAYMENT_CANCELED');
+        expect(details.originalError.errorcode).toBe('payment_error');
+        expect(details.originalError.token).toBe('token');
+      });
+    });
+
+    it('rejects when errorcode is present in params', () => {
+      expect.assertions(3);
+
+      testContext.options.errorcode = 'payment_error';
+
+      return testContext.localPayment.tokenize(testContext.options).catch(({ code, details }) => {
+        expect(code).toBe('LOCAL_PAYMENT_START_PAYMENT_FAILED');
+        expect(details.originalError.errorcode).toBe('payment_error');
+        expect(details.originalError.token).toBe('token');
+      });
+    });
+
     it('rejects when tokenization fails', () => {
       const error = new Error('failed');
 
@@ -564,6 +642,14 @@ describe('LocalPayment', () => {
     beforeEach(() => {
       jest.spyOn(querystring, 'parse');
       testContext.localPayment = new LocalPayment({ client: testContext.client });
+    });
+
+    it('returns true if errorcode is present', () => {
+      querystring.parse.mockReturnValue({
+        errorcode: 'payment_error'
+      });
+
+      expect(testContext.localPayment.hasTokenizationParams()).toBe(true);
     });
 
     it('returns true if all necessary tokenization params are provided', () => {

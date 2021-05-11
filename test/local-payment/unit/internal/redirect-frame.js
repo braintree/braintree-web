@@ -58,6 +58,43 @@ describe('redirect-frame', () => {
       });
     });
 
+    it('can put a redirect link onto the page if parent frame cannot be found and fallback is configured', done => {
+      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
+      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
+      testContext.params.t = 'Return to Site';
+      testContext.params.errorcode = 'payment_error';
+
+      redirectFrame.start(() => {
+        const link = document.querySelector('#container a');
+
+        expect(link.href).toBe(
+          'https://example.com/fallback-url?btLpToken=token&errorcode=payment_error&wasCanceled=false'
+        );
+        expect(link.innerText).toBe('Return to Site');
+
+        done();
+      });
+    });
+
+    it('adds wasCanceled=true to link when params.c is present', done => {
+      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
+      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
+      testContext.params.t = 'Return to Site';
+      testContext.params.c = 1;
+      testContext.params.errorcode = 'payment_error';
+
+      redirectFrame.start(() => {
+        const link = document.querySelector('#container a');
+
+        expect(link.href).toBe(
+          'https://example.com/fallback-url?btLpToken=token&errorcode=payment_error&wasCanceled=true'
+        );
+        expect(link.innerText).toBe('Return to Site');
+
+        done();
+      });
+    });
+
     it('does not put a redirect link if redirect param is missing', done => {
       frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
       testContext.params.t = 'Return to Site';

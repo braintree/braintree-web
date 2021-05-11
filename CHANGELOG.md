@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.76.4
+* Update card-validator to v8.1.1
+* Local Payments
+  * Fix issue where local payment window may not open
+  * Fix issue where customer could get stranded when cancelling from a mobile banking app
+
 ## 3.76.3
 * Update @braintree/sanitize-url to v5.0.1
 * Venmo

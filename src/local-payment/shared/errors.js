@@ -14,6 +14,7 @@
  * @property {MERCHANT} LOCAL_PAYMENT_INVALID_PAYMENT_OPTION Occurs when a startPayment call has an invalid option.
  * @property {NETWORK} LOCAL_PAYMENT_START_PAYMENT_FAILED Occurs when a startPayment call fails.
  * @property {NETWORK} LOCAL_PAYMENT_TOKENIZATION_FAILED Occurs when a startPayment call fails to tokenize the result from authorization.
+ * @property {CUSTOMER} LOCAL_PAYMENT_CANCELED Occurs when the customer cancels the Local Payment.
  * @property {CUSTOMER} LOCAL_PAYMENT_WINDOW_CLOSED Occurs when the customer closes the Local Payment window.
  * @property {MERCHANT} LOCAL_PAYMENT_WINDOW_OPEN_FAILED Occurs when the Local Payment window fails to open. Usually because `startPayment` was not called as a direct result of a user action.
  */
@@ -30,6 +31,11 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: 'LOCAL_PAYMENT_ALREADY_IN_PROGRESS',
     message: 'LocalPayment payment is already in progress.'
+  },
+  LOCAL_PAYMENT_CANCELED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: 'LOCAL_PAYMENT_CANCELED',
+    message: 'Customer canceled the LocalPayment before authorizing.'
   },
   LOCAL_PAYMENT_WINDOW_CLOSED: {
     type: BraintreeError.types.CUSTOMER,
