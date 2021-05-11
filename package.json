@@ -6,7 +6,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/braintree/braintree-web.git"
+    "url": "https://github.com/braintree/braintree-web"
   },
   "scripts": {
     "jsdoc": "./scripts/npm-to-gulp jsdoc",
