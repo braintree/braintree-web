@@ -3,7 +3,7 @@
  * @module braintree-web/payment-request
  * @description A component to integrate with the Payment Request API.
  *
- * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/master/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
+ * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/main/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  * */
 
 var PaymentRequestComponent = require('./external/payment-request');
