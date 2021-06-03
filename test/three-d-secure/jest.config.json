@@ -1,4 +1,5 @@
 {
+  "testEnvironment": "jsdom",
   "clearMocks": true,
   "coverageDirectory": "<rootDir>/../../test/three-d-secure/coverage",
   "displayName": "three-d-secure",

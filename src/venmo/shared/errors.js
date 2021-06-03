@@ -5,7 +5,8 @@
  * @description Errors that occur when [creating the Venmo component](./module-braintree-web_venmo.html#.create).
  * @property {MERCHANT} VENMO_NOT_ENABLED Occurs when Venmo is not enabled on the Braintree control panel.
  * @property {MERCHANT} VENMO_INVALID_PROFILE_ID Occurs when Venmo is initialized with a profile id, but it is invalid.
- * @property {UNKNOWN} VENMO_MOBILE_POLLING_SETUP_FAILED Occurs when enabling mobile polling alternative for tokenization fails.
+ * @property {UNKNOWN} VENMO_MOBILE_POLLING_SETUP_FAILED __Deprecated__ No longer returned. Use `VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED` instead.
+ * @property {UNKNOWN} VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED Occurs when the request to set up a Venmo Payment Context object fails.
  */
 
 /**
@@ -74,10 +75,10 @@ module.exports = {
     code: 'VENMO_DESKTOP_UNKNOWN_ERROR',
     message: 'Something went wrong with the Venmo Desktop flow.'
   },
-  VENMO_MOBILE_POLLING_SETUP_FAILED: {
-    type: BraintreeError.types.UNKNOWN,
-    code: 'VENMO_MOBILE_POLLING_SETUP_FAILED',
-    message: 'Something went wrong setting up Venmo for mobile polling.'
+  VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: 'VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED',
+    message: 'Something went wrong creating the Venmo Payment Context.'
   },
   VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR: {
     type: BraintreeError.types.UNKNOWN,

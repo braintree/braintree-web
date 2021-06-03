@@ -11,8 +11,7 @@ Install
 =======
 
 ```
-npm install braintree-web
-```
+npm install braintree-web ```
 
 ```
 bower install braintree-web
@@ -166,6 +165,16 @@ Releases
 ========
 
 Subscribe to this repo to be notified when SDK releases go out.
+
+Versions
+========
+
+This SDK abides by our Client SDK Deprecation Policy. For more information on the potential statuses of an SDK check our [developer docs](http://developers.braintreepayments.com/guides/client-sdk/deprecation-policy).
+
+| Major version number | Status   | Released      | Deprecated | Unsupported |
+|----------------------|----------|---------------|------------|-------------|
+| 3.x.x                | Active   | August 2016   | TBA        | TBA         |
+| 2.x.x                | Inactive | November 2014 | TBA        | TBA         |
 
 License
 =======

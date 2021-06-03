@@ -1,4 +1,5 @@
 {
+  "testEnvironment": "jsdom",
   "clearMocks": true,
   "coverageDirectory": "<rootDir>/test/environment/coverage",
   "displayName": "environment",

@@ -1,5 +1,9 @@
 CHANGELOG
 =========
+## 3.77.0
+* Update @braintree/sanitize-url to v5.0.2
+* Venmo
+  * Add `paymentMethodUsage` parameter to create
 
 ## 3.76.4
 * Update card-validator to v8.1.1
