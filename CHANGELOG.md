@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.78.1
+* Venmo
+  * Fix issue where Chrome for iOS would leave behind a blank window, making it difficult to return to the merchant page in manual return flow
+
 ## 3.78.0
 * Update browser-detection to v1.12.0
 * Apple Pay

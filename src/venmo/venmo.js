@@ -224,7 +224,7 @@ Venmo.prototype.appSwitch = function (url) {
   } else {
     analytics.sendEvent(this._createPromise, 'venmo.appswitch.start.browser');
 
-    if (browserDetection.isIosWebview() || this._shouldUseRedirectStrategy()) {
+    if (browserDetection.doesNotSupportWindowOpenInIos() || this._shouldUseRedirectStrategy()) {
       window.location.href = url;
     } else {
       window.open(url);

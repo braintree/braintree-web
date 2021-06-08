@@ -10,11 +10,16 @@ function isAndroidWebview() {
   return isAndroid() && window.navigator.userAgent.toLowerCase().indexOf('wv') > -1;
 }
 
+function doesNotSupportWindowOpenInIos() {
+  return isIosWebview() || (isIos() && isChrome());
+}
+
 module.exports = {
   isAndroid: isAndroid,
   isAndroidWebview: isAndroidWebview,
   isChrome: isChrome,
   isIos: isIos,
   isIosSafari: isIosSafari,
-  isIosWebview: isIosWebview
+  isIosWebview: isIosWebview,
+  doesNotSupportWindowOpenInIos: doesNotSupportWindowOpenInIos
 };

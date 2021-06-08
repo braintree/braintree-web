@@ -1213,9 +1213,9 @@ describe('Venmo', () => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(expect.anything(), 'venmo.appswitch.start.browser');
       });
 
-      it('sets location.href when device is an ios webview, even when not configured to use ios redirect strategy', async () => {
+      it('sets location.href when device does not support redirects on ios, even when not configured to use ios redirect strategy', async () => {
         venmoOptions.useRedirectForIOS = false;
-        jest.spyOn(browserDetection, 'isIosWebview').mockReturnValue(true);
+        jest.spyOn(browserDetection, 'doesNotSupportWindowOpenInIos').mockReturnValue(true);
 
         const venmo = new Venmo(venmoOptions);
 
