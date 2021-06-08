@@ -21,7 +21,8 @@ var cardTypeTransforms = {
     MASTERCARD: 'mastercard',
     DISCOVER: 'discover',
     AMERICAN_EXPRESS: 'amex',
-    INTERNATIONAL_MAESTRO: 'maestro'
+    INTERNATIONAL_MAESTRO: 'maestro',
+    ELO: 'elo'
   },
   visaCheckout: {
     VISA: 'Visa',
@@ -33,7 +34,8 @@ var cardTypeTransforms = {
     VISA: 'visa',
     MASTERCARD: 'mastercard',
     DISCOVER: 'discover',
-    AMERICAN_EXPRESS: 'amex'
+    AMERICAN_EXPRESS: 'amex',
+    ELO: 'elo'
   },
   masterpass: {
     VISA: 'visa',

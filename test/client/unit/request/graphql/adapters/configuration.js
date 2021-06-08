@@ -68,14 +68,14 @@ describe('GraphQL Configuration', () => {
               countryCode: 'US',
               currencyCode: 'USD',
               merchantIdentifier: 'merchant_id',
-              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER', 'INTERNATIONAL_MAESTRO']
+              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER', 'INTERNATIONAL_MAESTRO', 'ELO']
             },
             googlePay: {
               displayName: 'merchant',
               environment: 'SANDBOX',
               googleAuthorization: 'fake_authorization',
               paypalClientId: 'client_id',
-              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER']
+              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER', 'ELO']
             },
             ideal: {
               routeId: 'route_id',
@@ -147,7 +147,7 @@ describe('GraphQL Configuration', () => {
           countryCode: 'US',
           currencyCode: 'USD',
           merchantIdentifier: 'merchant_id',
-          supportedNetworks: ['visa', 'mastercard', 'amex', 'discover', 'maestro']
+          supportedNetworks: ['visa', 'mastercard', 'amex', 'discover', 'maestro', 'elo']
         },
         kount: {
           kountMerchantId: '600000'
@@ -218,7 +218,8 @@ describe('GraphQL Configuration', () => {
             'visa',
             'mastercard',
             'amex',
-            'discover'
+            'discover',
+            'elo'
           ]
         },
         creditCards: {

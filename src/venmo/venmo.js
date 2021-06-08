@@ -50,6 +50,7 @@ function Venmo(options) {
   this._requireManualReturn = options.requireManualReturn === true;
   this._useRedirectForIOS = options.useRedirectForIOS === true;
   this._profileId = options.profileId;
+  this._displayName = options.displayName;
   this._deepLinkReturnUrl = options.deepLinkReturnUrl;
   this._ignoreHistoryChanges = options.ignoreHistoryChanges;
   this._paymentMethodUsage = (options.paymentMethodUsage || '').toUpperCase();
@@ -78,6 +79,7 @@ function Venmo(options) {
         environment: config.environment === 'production' ? 'PRODUCTION' : 'SANDBOX',
         profileId: self._profileId || config.payWithVenmo.merchantId,
         paymentMethodUsage: self._paymentMethodUsage,
+        displayName: self._displayName,
         Promise: Promise,
         apiRequest: function (query, data) {
           return client.request({
@@ -172,7 +174,8 @@ Venmo.prototype._createVenmoPaymentContext = function (client, cancelIfTokenizat
           input: {
             paymentMethodUsage: this._paymentMethodUsage,
             intent: 'CONTINUE',
-            customerClient: 'MOBILE_WEB'
+            customerClient: 'MOBILE_WEB',
+            displayName: this._displayName
           }
         }
       }

@@ -1,5 +1,16 @@
 CHANGELOG
 =========
+
+## 3.78.0
+* Update browser-detection to v1.12.0
+* Apple Pay
+  * Support Elo cards
+* Google Pay
+  * Support Elo cards
+* Venmo
+  * Add `displayName` option
+  * Fix issue where payment contexts where not cancelled correctly
+
 ## 3.77.0
 * Update @braintree/sanitize-url to v5.0.2
 * Venmo

@@ -35,8 +35,9 @@ var VERSION = process.env.npm_package_version;
  *
  * If processing the payment from a new window is not possible, use this flag in conjunction with `requireManualReturn` so that the customer may start the flow from a webview/Safari View Controller or their Safari browser and manually return to the place that originated the flow once the Venmo app has authorized the payment and instructed them to do so.
  * @param {string} [options.paymentMethodUsage] The intended usage for the Venmo payment method nonce. Possible options are:
- * * single_use - inteneded as a one time transaction
+ * * single_use - intended as a one time transaction
  * * multi_use - intended to be vaulted and used for multiple transactions
+ * @param {string} [options.displayName] The business name that will be displayed in the Venmo app payment approval screen. Only applicable when used with `paymentMethodUsage` and used by merchants onboarded as PayFast channel partners.
  * @param {callback} [callback] The second argument, `data`, is the {@link Venmo} instance. If no callback is provided, `create` returns a promise that resolves with the {@link Venmo} instance.
  * @example
  * braintree.venmo.create({

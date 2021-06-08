@@ -127,6 +127,21 @@ describe('Venmo', () => {
     }));
   });
 
+  it('configures venmo desktop with display name (if passed)', async () => {
+    createVenmoDesktop.mockResolvedValue({});
+    new Venmo({
+      allowDesktop: true,
+      createPromise: Promise.resolve(testContext.client),
+      displayName: 'name'
+    });
+
+    await flushPromises();
+
+    expect(createVenmoDesktop).toBeCalledWith(expect.objectContaining({
+      displayName: 'name'
+    }));
+  });
+
   it('configures venmo desktop with default merchant id', async () => {
     createVenmoDesktop.mockResolvedValue({});
     new Venmo({
@@ -350,6 +365,80 @@ describe('Venmo', () => {
 
     expect(venmo._venmoPaymentContextStatus).toBe('CREATED');
     expect(venmo._venmoPaymentContextId).toBe('context-id');
+  });
+
+  it('sets up a payment context with display name when configured with paymentMethodUsage', async () => {
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoPaymentContext: {
+          venmoPaymentContext: {
+            status: 'CREATED',
+            id: 'context-id',
+            createdAt: '2021-01-20T03:25:37.522000Z',
+            expiresAt: '2021-01-20T03:30:37.522000Z'
+          }
+        }
+      }
+    });
+    // eslint-disable-next-line no-unused-vars
+    const venmo = new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      paymentMethodUsage: 'single_use',
+      displayName: 'name'
+    });
+
+    await flushPromises();
+
+    expect(testContext.client.request).toBeCalledWith({
+      api: 'graphQLApi',
+      data: {
+        query: expect.stringMatching('mutation CreateVenmoPaymentContext'),
+        variables: {
+          input: {
+            paymentMethodUsage: 'SINGLE_USE',
+            displayName: 'name',
+            intent: 'CONTINUE',
+            customerClient: 'MOBILE_WEB'
+          }
+        }
+      }
+    });
+  });
+
+  it('ignores display name when not configured with paymentMethodUsage', async () => {
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoQRCodePaymentContext: {
+          venmoQRCodePaymentContext: {
+            status: 'CREATED',
+            id: 'context-id',
+            createdAt: '2021-01-20T03:25:37.522000Z',
+            expiresAt: '2021-01-20T03:30:37.522000Z'
+          }
+        }
+      }
+    });
+    // eslint-disable-next-line no-unused-vars
+    const venmo = new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      requireManualReturn: true,
+      displayName: 'name'
+    });
+
+    await flushPromises();
+
+    expect(testContext.client.request).toBeCalledWith({
+      api: 'graphQLApi',
+      data: {
+        query: expect.stringMatching('mutation CreateVenmoQRCodePaymentContext'),
+        variables: {
+          input: {
+            environment: 'SANDBOX',
+            intent: 'PAY_FROM_APP'
+          }
+        }
+      }
+    });
   });
 
   it('does not create a new payment context or venmo desktop when url hash has tokenization results', async () => {
@@ -2114,7 +2203,7 @@ describe('Venmo', () => {
         expect(testContext.client.request).toBeCalledWith({
           api: 'graphQLApi',
           data: {
-            query: expect.stringMatching('mutation UpdateVenmoPaymentContext'),
+            query: expect.stringMatching('mutation UpdateVenmoPaymentContextStatus'),
             variables: {
               input: {
                 id: 'context-id',
@@ -2264,7 +2353,7 @@ describe('Venmo', () => {
         expect(testContext.client.request).toBeCalledWith({
           api: 'graphQLApi',
           data: {
-            query: expect.stringMatching('mutation UpdateVenmoPaymentContext'),
+            query: expect.stringMatching('mutation UpdateVenmoPaymentContextStatus'),
             variables: {
               input: {
                 id: 'context-id',

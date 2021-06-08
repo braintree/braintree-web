@@ -27,6 +27,7 @@ var VenmoDesktop = /** @class */ (function () {
         this.env = options.environment;
         this.id = uuid_1.default();
         this.profileId = options.profileId;
+        this.displayName = options.displayName;
         this.paymentMethodUsage = options.paymentMethodUsage;
         this.shouldUseLegacyQRCodeMutation = !this.paymentMethodUsage;
         var frameUrl = options.url + "#" + this.env + "_" + this.id;
@@ -310,6 +311,9 @@ var VenmoDesktop = /** @class */ (function () {
         };
         if (this.profileId) {
             input.merchantProfileId = this.profileId;
+        }
+        if (this.displayName) {
+            input.displayName = this.displayName;
         }
         return this.apiRequest(queries_1.CREATE_PAYMENT_CONTEXT_QUERY, {
             input: input,
