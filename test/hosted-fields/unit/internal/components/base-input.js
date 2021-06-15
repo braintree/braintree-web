@@ -455,5 +455,42 @@ describe('Base Input', () => {
         expect(instance.element.setAttribute).toBeCalledWith('placeholder', 'foo');
       });
     });
+
+    describe('applySafariFocusFix', () => {
+      it('sets selection range to 0,0 and than reverts it back', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+
+        instance.element.value = 'foo';
+        instance.element.setSelectionRange(1, 2);
+
+        const spy = jest.spyOn(instance.element, 'setSelectionRange');
+
+        instance.applySafariFocusFix();
+
+        expect(spy).toBeCalledTimes(2);
+        expect(spy).toBeCalledWith(0, 0);
+        expect(spy).toBeCalledWith(1, 2);
+      });
+
+      it('sets selection range to 0,0 and then 1,1 when no value is in input', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+
+        instance.element.setSelectionRange(1, 2);
+
+        const spy = jest.spyOn(instance.element, 'setSelectionRange');
+
+        instance.applySafariFocusFix();
+
+        expect(spy).toBeCalledTimes(2);
+        expect(spy).toBeCalledWith(0, 0);
+        expect(spy).toBeCalledWith(1, 1);
+      });
+    });
   });
 });

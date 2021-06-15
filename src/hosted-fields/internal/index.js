@@ -62,6 +62,10 @@ function initialize(cardForm) {
 
   form.appendChild(fieldComponent.element);
 
+  window.addEventListener('focus', function () {
+    fieldComponent.input.applySafariFocusFix();
+  });
+
   if (!cardForm.configuration.preventAutofill) {
     createInputsForAutofill(fieldComponent, form, cardForm);
   }

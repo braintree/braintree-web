@@ -1,5 +1,6 @@
 'use strict';
 
+jest.mock('../../../../src/hosted-fields/shared/browser-detection');
 jest.mock('../../../../src/hosted-fields/external/get-styles-from-class');
 
 const analytics = require('../../../../src/lib/analytics');
@@ -16,6 +17,7 @@ const BraintreeError = require('../../../../src/lib/braintree-error');
 const { fake, noop, rejectIfResolves, findFirstEventCallback, yieldsAsync, yieldsByEvent } = require('../../../helpers');
 const methods = require('../../../../src/lib/methods');
 const getCardTypes = require('../../../../src/hosted-fields/shared/get-card-types');
+const browserDetection = require('../../../../src/hosted-fields/shared/browser-detection');
 
 describe('HostedFields', () => {
   let testContext;
@@ -1418,9 +1420,73 @@ describe('HostedFields', () => {
 
     it('emits TRIGGER_INPUT_FOCUS event', () => {
       testContext.instance.focus('number');
+
       expect(testContext.instance._bus.emit).toHaveBeenCalledWith(events.TRIGGER_INPUT_FOCUS, {
         field: expect.any(String)
       });
+    });
+
+    it('focuses on iframe', () => {
+      const spy = jest.spyOn(testContext.instance._fields.number.frameElement, 'focus');
+
+      testContext.instance.focus('number');
+
+      expect(spy).toBeCalledTimes(1);
+    });
+
+    it('scrolls container into view when on ios and not visible', () => {
+      jest.useFakeTimers();
+
+      browserDetection.isIos.mockReturnValue(true);
+      const spy = testContext.instance._fields.number.containerElement.scrollIntoView = jest.fn();
+
+      testContext.instance.focus('number');
+
+      jest.runAllTimers();
+
+      expect(spy).toBeCalledTimes(1);
+
+      jest.useRealTimers();
+    });
+
+    it('does not scroll container into view when on ios and aalready visible', () => {
+      jest.useFakeTimers();
+
+      browserDetection.isIos.mockReturnValue(true);
+      const container = testContext.instance._fields.number.containerElement;
+      const spy = container.scrollIntoView = jest.fn();
+
+      container.getBoundingClientRect = jest.fn().mockReturnValue({
+        height: 10,
+        width: 10,
+        bottom: 100,
+        left: 100,
+        right: 100,
+        top: 100
+      });
+
+      testContext.instance.focus('number');
+
+      jest.runAllTimers();
+
+      expect(spy).not.toBeCalled();
+
+      jest.useRealTimers();
+    });
+
+    it('does not scroll container into view when not on ios', () => {
+      jest.useFakeTimers();
+
+      browserDetection.isIos.mockReturnValue(false);
+      const spy = testContext.instance._fields.number.containerElement.scrollIntoView = jest.fn();
+
+      testContext.instance.focus('number');
+
+      jest.runAllTimers();
+
+      expect(spy).not.toBeCalled();
+
+      jest.useRealTimers();
     });
 
     it('calls callback if provided', done => {

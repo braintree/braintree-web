@@ -367,7 +367,7 @@ describe('dataCollector', () => {
         teardown: noop
       });
 
-      return dataCollector.create({
+      dataCollector.create({
         client: testContext.client,
         paypal: true,
         kount: true

@@ -17,13 +17,15 @@ const { version: VERSION } = require('../../../package.json');
 const methods = require('../../../src/lib/methods');
 const createVenmoDesktop = require('../../../src/venmo/external');
 
-function triggerVisibilityHandler(instance) {
+function triggerVisibilityHandler(instance, runAllTimers = true) {
   // TODO we should have it trigger the actual
   // visibility event if possible, rather than
   // calling the method saved on the instance
   instance._visibilityChangeListener();
 
-  jest.runAllTimers();
+  if (runAllTimers) {
+    jest.runAllTimers();
+  }
 }
 
 function triggerHashChangeHandler(instance) {
@@ -34,11 +36,10 @@ function triggerHashChangeHandler(instance) {
   jest.runAllTimers();
 }
 
-function flushPromises() {
-  // let Jest have time to let pending promises resolve
-  return new Promise((resolve) => {
-    window.setImmediate(resolve);
-  });
+async function flushPromises() {
+  await Promise.resolve();
+  await Promise.resolve().then(() => jest.advanceTimersByTime(1));
+  await Promise.resolve();
 }
 
 describe('Venmo', () => {
@@ -69,6 +70,7 @@ describe('Venmo', () => {
   afterEach(() => {
     window.location.href = originalLocationHref;
     jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('sends analytics events when venmo is not configured for desktop', async () => {
@@ -1524,12 +1526,19 @@ describe('Venmo', () => {
         });
 
         it('delays processing results by 1 second by default', () => {
+          const originalTimeout = window.setTimeout;
+
+          window.setTimeout = jest.fn().mockImplementation((fn) => {
+            fn();
+          });
+
           const promise = venmo.tokenize().then(() => {
-            expect(setTimeout).toBeCalledTimes(2);
             // document visibility change event delay
             expect(setTimeout).toBeCalledWith(expect.any(Function), 500);
             // process results
             expect(setTimeout).toBeCalledWith(expect.any(Function), 1000);
+
+            window.setTimeout = originalTimeout;
           });
 
           history.replaceState({}, '', `${testContext.location}#venmoSuccess=1`);
@@ -1539,14 +1548,21 @@ describe('Venmo', () => {
         });
 
         it('can configure processing delay', () => {
+          const originalTimeout = window.setTimeout;
+
+          window.setTimeout = jest.fn().mockImplementation((fn) => {
+            fn();
+          });
+
           const promise = venmo.tokenize({
             processResultsDelay: 3000
           }).then(() => {
-            expect(setTimeout).toBeCalledTimes(2);
             // document visibility change event delay
             expect(setTimeout).toBeCalledWith(expect.any(Function), 500);
             // process results
             expect(setTimeout).toBeCalledWith(expect.any(Function), 3000);
+
+            window.setTimeout = originalTimeout;
           });
 
           history.replaceState({}, '', `${testContext.location}#venmoSuccess=1`);

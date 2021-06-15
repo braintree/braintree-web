@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.78.2
+* Hosted Fields
+  * Fix issue where Safari could not programatically focus to input (#456)
+  * Fix issue where iOS Safari could not tab forward through inputs (#460)
+  * Fix issue where Desktop Safari required 2 tabs to tab forward (#490)
+
 ## 3.78.1
 * Venmo
   * Fix issue where Chrome for iOS would leave behind a blank window, making it difficult to return to the merchant page in manual return flow

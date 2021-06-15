@@ -56,6 +56,10 @@ describe('PayPalCheckout', () => {
     });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('_initialize', () => {
     beforeEach(() => {
       testContext.options = {
@@ -1891,7 +1895,7 @@ describe('PayPalCheckout', () => {
   });
 
   describe('teardown', () => {
-    it('replaces all methods so error is thrown when methods are invoked', done => {
+    it('replaces all methods so error is thrown when methods are invoked', () => {
       const instance = testContext.paypalCheckout;
 
       return instance.teardown().then(() => {
@@ -1905,8 +1909,6 @@ describe('PayPalCheckout', () => {
             expect(err.message).toBe(`${method} cannot be called after teardown.`);
           }
         });
-
-        done();
       });
     });
 

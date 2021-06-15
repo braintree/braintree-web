@@ -33,6 +33,10 @@ describe('internal', () => {
     jest.spyOn(frameName, 'getFrameName').mockReturnValue(null);
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('initialize', () => {
     beforeEach(() => {
       frameName.getFrameName.mockReturnValue('cvv');

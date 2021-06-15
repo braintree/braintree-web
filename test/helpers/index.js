@@ -115,10 +115,8 @@ function baseYields(async, originalFunctionArgs, callbackArgs) {
   originalFunctionArgs.some(arg => {
     if (typeof arg === 'function') {
       if (async) {
-        process.nextTick(() => {
+        Promise.resolve().then(() => {
           arg.apply(null, callbackArgs);
-
-          return true;
         });
       } else {
         arg.apply(null, callbackArgs);

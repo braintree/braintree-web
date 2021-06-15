@@ -30,6 +30,10 @@ describe('analytics.sendEvent', () => {
     };
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('correctly sends an analytics event with a callback', done => {
     analytics.sendEvent(testContext.client, 'test.event.kind', () => {
       const currentTimestamp = Date.now();
@@ -51,30 +55,31 @@ describe('analytics.sendEvent', () => {
     });
   });
 
-  it('correctly sends an analytics event with no callback (fire-and-forget)', done => {
+  it('correctly sends an analytics event with no callback (fire-and-forget)', async () => {
     testContext.client._request.mockReset();
 
     analytics.sendEvent(testContext.client, 'test.event.kind');
 
-    process.nextTick(() => {
-      const currentTimestamp = Date.now();
-      const postArgs = testContext.client._request.mock.calls[0];
-      const { timeout, url, method, data } = postArgs[0];
+    await Promise.resolve(() =>jest.runAllTimers());
 
-      expect(testContext.client._request).toHaveBeenCalled();
-      expect(url).toBe('https://example.com/analytics-url');
-      expect(method).toBe('post');
-      expect(data.analytics[0].kind).toBe('web.test.event.kind');
-      expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
-      expect(data._meta.sessionId).toBe('sessionId');
-      expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
-      expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
-      expect(postArgs[1]).toBeFalsy();
-      expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-      expect(data.analytics[0].isAsync).toBe(false);
+    const currentTimestamp = Date.now();
 
-      done();
-    });
+    expect(testContext.client._request).toBeCalledTimes(1);
+
+    const postArgs = testContext.client._request.mock.calls[0];
+    const { timeout, url, method, data } = postArgs[0];
+
+    expect(testContext.client._request).toHaveBeenCalled();
+    expect(url).toBe('https://example.com/analytics-url');
+    expect(method).toBe('post');
+    expect(data.analytics[0].kind).toBe('web.test.event.kind');
+    expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
+    expect(data._meta.sessionId).toBe('sessionId');
+    expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
+    expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
+    expect(postArgs[1]).toBeFalsy();
+    expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
+    expect(data.analytics[0].isAsync).toBe(false);
   });
 
   it('can send a deferred analytics event if client is a promise', done => {
@@ -104,9 +109,7 @@ describe('analytics.sendEvent', () => {
     const client = testContext.client;
 
     testContext.fauxDate += 1500;
-    const clientPromise = new Promise(resolve => {
-      resolve(client);
-    });
+    const clientPromise = Promise.resolve(client);
 
     analytics.sendEvent(clientPromise, 'test.event.kind', () => {
       const currentTimestamp = Date.now();
@@ -118,5 +121,7 @@ describe('analytics.sendEvent', () => {
 
       done();
     });
+
+    jest.runAllTimers();
   });
 });

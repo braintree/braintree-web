@@ -959,7 +959,7 @@ describe('Payment Request component', () => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(testContext.instance._client, 'payment-request.teardown-completed');
       }));
 
-    it('replaces all methods so error is thrown when methods are invoked', done => {
+    it('replaces all methods so error is thrown when methods are invoked', () => {
       const instance = testContext.instance;
 
       expect.assertions(32);
@@ -975,8 +975,6 @@ describe('Payment Request component', () => {
             expect(error.message).toBe(`${method} cannot be called after teardown.`);
           }
         });
-
-        done();
       });
     });
   });

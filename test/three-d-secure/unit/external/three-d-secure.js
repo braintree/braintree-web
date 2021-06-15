@@ -272,7 +272,7 @@ describe('ThreeDSecure', () => {
   });
 
   describe('teardown', () => {
-    it('replaces all methods so error is thrown when methods are invoked', done => {
+    it('replaces all methods so error is thrown when methods are invoked', () => {
       const instance = new ThreeDSecure({
         client: testContext.client,
         framework: 'legacy'
@@ -294,8 +294,6 @@ describe('ThreeDSecure', () => {
           expect(error.type).toBe(BraintreeError.types.MERCHANT);
           expect(error.code).toBe('METHOD_CALLED_AFTER_TEARDOWN');
           expect(error.message).toBe(`${method} cannot be called after teardown.`);
-
-          done();
         });
       });
     });

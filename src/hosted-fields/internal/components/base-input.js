@@ -246,6 +246,31 @@ BaseInput.prototype.focus = function () {
   this.updateModel('isFocused', true);
 };
 
+BaseInput.prototype.applySafariFocusFix = function () {
+  var start, end;
+  var inputIsEmptyInitially = this.element.value === '';
+
+  // Safari (both iOS and Desktop) has an unconvential behavior,
+  // where it won't let an iframe that includes an input get
+  // focus programatically from outisde of the input.
+  // Big props to the devs at Stripe that figured out
+  // you run this selection range hack to force the focus back
+  // onto the input.
+  if (inputIsEmptyInitially) {
+    this.element.value = ' ';
+  }
+
+  start = this.element.selectionStart;
+  end = this.element.selectionEnd;
+
+  this.element.setSelectionRange(0, 0);
+  this.element.setSelectionRange(start, end);
+
+  if (inputIsEmptyInitially) {
+    this.element.value = '';
+  }
+};
+
 BaseInput.prototype.addModelEventListeners = function () {
   this.modelOnChange('isValid', this.render);
   this.modelOnChange('isPotentiallyValid', this.render);
