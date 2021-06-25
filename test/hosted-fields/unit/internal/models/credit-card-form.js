@@ -1006,6 +1006,16 @@ describe('credit card model', () => {
       expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
     });
 
+    it('does not emit BIN_AVAILABLE event when number goes from 4 digits to 5', () => {
+      testContext.card.set('number.value', '4111');
+
+      expect(window.bus.emit).not.toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE');
+
+      testContext.card.set('number.value', '41111');
+
+      expect(window.bus.emit).not.toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE');
+    });
+
     it('emits BIN_AVAILABLE event when number goes from non-existent to 6 digits', () => {
       testContext.card.set('number.value', '411111');
 
@@ -1028,6 +1038,26 @@ describe('credit card model', () => {
 
       testContext.card.set('number.value', '123456');
       expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '123456');
+    });
+
+    it('does not emit BIN_AVAILABLE event when number starts with more than 6 digits and additional digits are added', () => {
+      testContext.card.set('number.value', '123456789');
+
+      window.bus.emit.mockReset();
+
+      testContext.card.set('number.value', '1234567890');
+
+      expect(window.bus.emit).not.toBeCalledWith('hosted-fields:BIN_AVAILABLE', '123456');
+    });
+
+    it('emits BIN_AVAILABLE event when number starts with more than 6 digits, does not dip below 6, and then receives 6 new digits', () => {
+      testContext.card.set('number.value', '123456789');
+
+      window.bus.emit.mockReset();
+
+      testContext.card.set('number.value', '411111111');
+
+      expect(window.bus.emit).toHaveBeenCalledWith('hosted-fields:BIN_AVAILABLE', '411111');
     });
 
     it('emits only the first 6 digits of the number when emitting even when more than 6 digits are set', () => {

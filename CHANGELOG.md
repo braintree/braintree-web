@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.78.3
+* Update restricted-input to v3.0.4
+* Hosted Fields
+  * Fix issued where `binAvailable` event would not fire off when pasting a new credit card number over the previous card
+  * Fix issue where some Mac OS input sources would not format correctly in Safari
+
 ## 3.78.2
 * Hosted Fields
   * Fix issue where Safari could not programatically focus to input (#456)

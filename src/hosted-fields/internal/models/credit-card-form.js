@@ -168,14 +168,18 @@ CreditCardForm.prototype._onSplitDateChange = function () {
 CreditCardForm.prototype._onNumberChange = function (number, metadata) {
   var newPossibleCardTypes = this.getCardTypes(number);
   var oldPossibleCardTypes = this.get('possibleCardTypes');
-  var oldNumber = metadata.old;
+  var newBin = getBinFromNumber(number);
+  var newNumberIsLongEnoughForBinEvent = newBin.length === 6;
+  var oldBin = getBinFromNumber(metadata.old);
+  var oldNumberIsShortEnoughForBinEvent = oldBin.length < 6;
+  var oldBinIsNotEqualToNewBin = newBin !== oldBin;
 
   if (!comparePossibleCardTypes(newPossibleCardTypes, oldPossibleCardTypes)) {
     this.set('possibleCardTypes', newPossibleCardTypes);
   }
 
-  if ((!oldNumber || oldNumber.length < 6) && (number && number.length >= 6)) {
-    window.bus.emit(events.BIN_AVAILABLE, number.substr(0, 6));
+  if ((oldNumberIsShortEnoughForBinEvent || oldBinIsNotEqualToNewBin) && newNumberIsLongEnoughForBinEvent) {
+    window.bus.emit(events.BIN_AVAILABLE, newBin);
   }
 };
 
@@ -420,6 +424,10 @@ function splitDate(date) {
   }
 
   return {month: month, year: year};
+}
+
+function getBinFromNumber(number) {
+  return (number || '').substr(0, 6);
 }
 
 module.exports = {
