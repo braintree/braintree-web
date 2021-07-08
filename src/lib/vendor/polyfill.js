@@ -1,6 +1,9 @@
 'use strict';
 
-var atobNormalized = typeof atob === 'function' ? window.atob : atobPolyfill;
+// NEXT_MAJOR_VERSION old versions of IE don't have atob, in the
+// next major version, we're dropping support for those versions
+// so we can eliminate the need to have this atob polyfill
+var atobNormalized = typeof atob === 'function' ? atob : atobPolyfill;
 
 function atobPolyfill(base64String) {
   var a, b, c, b1, b2, b3, b4, i;

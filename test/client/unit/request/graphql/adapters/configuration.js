@@ -75,7 +75,7 @@ describe('GraphQL Configuration', () => {
               environment: 'SANDBOX',
               googleAuthorization: 'fake_authorization',
               paypalClientId: 'client_id',
-              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER', 'ELO']
+              supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER', 'INTERNATIONAL_MAESTRO', 'ELO']
             },
             ideal: {
               routeId: 'route_id',
@@ -219,6 +219,7 @@ describe('GraphQL Configuration', () => {
             'mastercard',
             'amex',
             'discover',
+            'maestro',
             'elo'
           ]
         },

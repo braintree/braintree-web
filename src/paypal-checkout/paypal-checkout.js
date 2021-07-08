@@ -887,7 +887,7 @@ PayPalCheckout.prototype.getClientId = function () {
  * @param {boolean} [options.vault] Must be `true` when using `flow: vault` in {@link PayPalCheckout#createPayment|`createPayment`}.
  * @param {string} [options.components=buttons] By default, the Braintree SDK will only load the PayPal smart buttons component. If you would like to load just the [messages component](https://developer.paypal.com/docs/business/checkout/add-capabilities/credit-messaging/), pass `messages`. If you would like to load both, pass `buttons,messages`
  * @param {object} [options.dataAttributes] The data attributes to apply to the script. Any data attribute can be passed. A subset of the parameters are listed below. For a full list of data attributes, see the [PayPal docs](https://developer.paypal.com/docs/checkout/reference/customize-sdk/#script-parameters).
- * @param {string} [options.dataAttributes.data-client-token] The client token to use in the script. (usually not needed)
+ * @param {string} [options.dataAttributes.client-token] The client token to use in the script. (usually not needed)
  * @param {string} [options.dataAttributes.csp-nonce] See the [PayPal docs about content security nonces](https://developer.paypal.com/docs/checkout/reference/customize-sdk/#csp-nonce).
  * @param {callback} [callback] Called when the PayPal SDK has been loaded onto the page. The second argument is the PayPal Checkout instance. If no callback is provided, the promise resolves with the PayPal Checkout instance when the PayPal SDK has been loaded onto the page.
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
@@ -912,13 +912,12 @@ PayPalCheckout.prototype.getClientId = function () {
  * });
  */
 PayPalCheckout.prototype.loadPayPalSDK = function (options) {
-  var idPromise, src, userIdToken;
+  var idPromise, src;
   var loadPromise = new ExtendedPromise();
-  var dataAttributes = options && options.dataAttributes;
+  var dataAttributes = (options && options.dataAttributes) || {};
+  var userIdToken = dataAttributes['user-id-token'] || dataAttributes['data-user-id-token'];
 
-  if (dataAttributes && dataAttributes['user-id-token']) {
-    userIdToken = dataAttributes['user-id-token'];
-  } else {
+  if (!userIdToken) {
     userIdToken = this._authorizationInformation.fingerprint && this._authorizationInformation.fingerprint.split('?')[0];
   }
 
@@ -953,11 +952,9 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     loadPromise.resolve();
   };
 
-  if (dataAttributes) {
-    Object.keys(dataAttributes).forEach(function (attribute) {
-      this._paypalScript.setAttribute('data-' + attribute, dataAttributes[attribute]);
-    }.bind(this));
-  }
+  Object.keys(dataAttributes).forEach(function (attribute) {
+    this._paypalScript.setAttribute('data-' + attribute.replace(/^data\-/, ''), dataAttributes[attribute]);
+  }.bind(this));
 
   if (options['client-id']) {
     idPromise = Promise.resolve(options['client-id']);
@@ -975,7 +972,7 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
       this._attachPreloadPixel({
         id: id,
         userIdToken: userIdToken,
-        amount: dataAttributes && dataAttributes.amount,
+        amount: dataAttributes.amount,
         currency: options.currency,
         merchantId: options['merchant-id']
       });

@@ -631,6 +631,9 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
     if (options.bin) {
       data.bin = options.bin;
     }
+    if (options.cardAdd) {
+      data.cardAdd = options.cardAdd;
+    }
 
     return self.prepareLookup(data);
   });

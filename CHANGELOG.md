@@ -1,6 +1,17 @@
 CHANGELOG
 =========
 
+## 3.79.0
+* Fix issue where SDK could not be used with server side rendering in Node v16 (#576)
+* Hosted Fields
+  * Fix issue where integrations with `select` configuraitons for expiration month and year would throw an error (#578)
+* PayPal Checkout
+  * Fix issue in `loadPayPalSDK` where data attributes could be passed in with an extra `data-` prefix
+* 3D Secure
+  * Add `cardAdd` param to `verifyCard`
+* Google Pay
+  * Support Maestro cards
+
 ## 3.78.3
 * Update restricted-input to v3.0.4
 * Hosted Fields

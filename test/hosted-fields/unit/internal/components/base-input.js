@@ -491,6 +491,19 @@ describe('Base Input', () => {
         expect(spy).toBeCalledWith(0, 0);
         expect(spy).toBeCalledWith(1, 1);
       });
+
+      it('noops if element does not have a setSelectionRange method', () => {
+        const instance = new BaseInput({
+          model: testContext.model,
+          type: testContext.type
+        });
+
+        instance.element = document.createElement('select');
+
+        expect(() => {
+          instance.applySafariFocusFix();
+        }).not.toThrow();
+      });
     });
   });
 });

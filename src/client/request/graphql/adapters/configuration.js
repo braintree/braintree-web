@@ -35,6 +35,7 @@ var cardTypeTransforms = {
     MASTERCARD: 'mastercard',
     DISCOVER: 'discover',
     AMERICAN_EXPRESS: 'amex',
+    INTERNATIONAL_MAESTRO: 'maestro',
     ELO: 'elo'
   },
   masterpass: {

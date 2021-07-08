@@ -1769,6 +1769,49 @@ describe('PayPalCheckout', () => {
       });
     });
 
+    it('omits "data-" prefix if included', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        dataAttributes: {
+          'data-foo': 'bar',
+          'data-client-token': 'value',
+          'data-amount': '100.00'
+        }
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-foo')).toBe('bar');
+        expect(fakeScript.getAttribute('data-client-token')).toBe('value');
+        expect(fakeScript.getAttribute('data-amount')).toBe('100.00');
+        expect(fakeScript.getAttribute('data-data-foo')).toBeFalsy();
+        expect(fakeScript.getAttribute('data-data-client-token')).toBeFalsy();
+        expect(fakeScript.getAttribute('data-data-amount')).toBeFalsy();
+      });
+    });
+
+    it('does not omit "data-" when used elsewhere in the properites', () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({
+        dataAttributes: {
+          'foo-data-bar': 'baz',
+          'dataclient-token': 'value',
+          'amountdata-': '100.00'
+        }
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-foo-data-bar')).toBe('baz');
+        expect(fakeScript.getAttribute('data-dataclient-token')).toBe('value');
+        expect(fakeScript.getAttribute('data-amountdata-')).toBe('100.00');
+      });
+    });
+
     it('passes authorization fingerprint as data-user-id-token when a client token is used and is enabled for setting it', () => {
       const instance = testContext.paypalCheckout;
 
@@ -1873,7 +1916,7 @@ describe('PayPalCheckout', () => {
       });
     });
 
-    it('uses passed in user-id-token when both exist', () => {
+    it('uses passed in user-id-token when authorization fingerprint also exists', () => {
       const instance = testContext.paypalCheckout;
 
       instance._autoSetDataUserIdToken = true;
@@ -1882,6 +1925,47 @@ describe('PayPalCheckout', () => {
       const promise = instance.loadPayPalSDK({
         dataAttributes: {
           'user-id-token': 'custom-auth-fingerprint'
+        }
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-user-id-token')).toBe('custom-auth-fingerprint');
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('user-id-token=custom-auth-fingerprint'));
+      });
+    });
+
+    it('uses passed in data-user-id-token when authorization fingerprint also exists', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+      instance._authorizationInformation.fingerprint = 'unused-auth-fingerprint';
+
+      const promise = instance.loadPayPalSDK({
+        dataAttributes: {
+          'data-user-id-token': 'custom-auth-fingerprint'
+        }
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute('data-user-id-token')).toBe('custom-auth-fingerprint');
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith('GET', expect.stringContaining('user-id-token=custom-auth-fingerprint'));
+      });
+    });
+
+    it('uses passed in user-id-token over data-user-id-token when both data attributes are passed', () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._autoSetDataUserIdToken = true;
+      instance._authorizationInformation.fingerprint = 'unused-auth-fingerprint';
+
+      const promise = instance.loadPayPalSDK({
+        dataAttributes: {
+          'user-id-token': 'custom-auth-fingerprint',
+          'data-user-id-token': 'custom-auth-fingerprint-with-data-prefix'
         }
       });
 

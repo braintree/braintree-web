@@ -246,9 +246,18 @@ BaseInput.prototype.focus = function () {
   this.updateModel('isFocused', true);
 };
 
+// TODO this no longer works in iOS v14.5/6
+// see if we can figure out an alternate workaround
 BaseInput.prototype.applySafariFocusFix = function () {
   var start, end;
   var inputIsEmptyInitially = this.element.value === '';
+
+  // select elements do not have the setSelectionRange
+  // method, so we just noop in the case that the element
+  // does not have this method
+  if (!this.element.setSelectionRange) {
+    return;
+  }
 
   // Safari (both iOS and Desktop) has an unconvential behavior,
   // where it won't let an iframe that includes an input get
