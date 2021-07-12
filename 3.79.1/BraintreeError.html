@@ -1,0 +1,9976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+      BraintreeError - Documentation
+  </title>
+
+  <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+  <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+  
+
+  <!-- start Mixpanel -->
+  <script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+  0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+  for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+  mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script>
+  <!-- end Mixpanel -->
+</head>
+
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="linkIcon" fill="#706d77" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+  <label for="nav-trigger" class="navicon-button x">
+    <div class="navicon"></div>
+  </label>
+
+  <label for="nav-trigger" class="overlay"></label>
+
+  <div class="top-nav-wrapper">
+    <ul>
+      <li >
+        <a href="index.html">
+          
+            <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+          
+          
+        </a>
+      </li>
+
+      
+      <li>
+        <div class="search-wrapper">
+          <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            <path d="M0 0h24v24H0z" fill="none"/>
+
+          </svg>
+          <input type="text" placeholder="Search" class="search-input">
+        </div>
+      </li>
+      
+
+    </ul>
+  </div>
+
+  <nav>
+    <h3 class="reference-title">
+      Braintree SDK Client Reference
+    </h3>
+
+    <h3>Classes</h3><ul><li id="AmericanExpress-nav"><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type="method" id="AmericanExpress-getExpressCheckoutProfile-nav"><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type="method" id="AmericanExpress-getRewardsBalance-nav"><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li><li data-type="method" id="AmericanExpress-teardown-nav"><a href="AmericanExpress.html#teardown">teardown</a></li></ul></li><li id="ApplePay-nav"><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type="method" id="ApplePay-createPaymentRequest-nav"><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type="method" id="ApplePay-performValidation-nav"><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type="method" id="ApplePay-teardown-nav"><a href="ApplePay.html#teardown">teardown</a></li><li data-type="method" id="ApplePay-tokenize-nav"><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li id="BraintreeError-nav"><a href="BraintreeError.html">BraintreeError</a></li><li id="Client-nav"><a href="Client.html">Client</a><ul class='methods'><li data-type="method" id="Client-getConfiguration-nav"><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type="method" id="Client-getVersion-nav"><a href="Client.html#getVersion">getVersion</a></li><li data-type="method" id="Client-request-nav"><a href="Client.html#request">request</a></li></ul></li><li id="DataCollector-nav"><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type="method" id="DataCollector-getDeviceData-nav"><a href="DataCollector.html#getDeviceData">getDeviceData</a></li><li data-type="method" id="DataCollector-teardown-nav"><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li id="GooglePayment-nav"><a href="GooglePayment.html">GooglePayment</a><ul class='methods'><li data-type="method" id="GooglePayment-createPaymentDataRequest-nav"><a href="GooglePayment.html#createPaymentDataRequest">createPaymentDataRequest</a></li><li data-type="method" id="GooglePayment-parseResponse-nav"><a href="GooglePayment.html#parseResponse">parseResponse</a></li><li data-type="method" id="GooglePayment-teardown-nav"><a href="GooglePayment.html#teardown">teardown</a></li></ul></li><li id="HostedFields-nav"><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type="method" id="HostedFields-addClass-nav"><a href="HostedFields.html#addClass">addClass</a></li><li data-type="method" id="HostedFields-clear-nav"><a href="HostedFields.html#clear">clear</a></li><li data-type="method" id="HostedFields-focus-nav"><a href="HostedFields.html#focus">focus</a></li><li data-type="method" id="HostedFields-getChallenges-nav"><a href="HostedFields.html#getChallenges">getChallenges</a></li><li data-type="method" id="HostedFields-getState-nav"><a href="HostedFields.html#getState">getState</a></li><li data-type="method" id="HostedFields-getSupportedCardTypes-nav"><a href="HostedFields.html#getSupportedCardTypes">getSupportedCardTypes</a></li><li data-type="method" id="HostedFields-off-nav"><a href="HostedFields.html#off">off</a></li><li data-type="method" id="HostedFields-on-nav"><a href="HostedFields.html#on">on</a></li><li data-type="method" id="HostedFields-removeAttribute-nav"><a href="HostedFields.html#removeAttribute">removeAttribute</a></li><li data-type="method" id="HostedFields-removeClass-nav"><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type="method" id="HostedFields-setAttribute-nav"><a href="HostedFields.html#setAttribute">setAttribute</a></li><li data-type="method" id="HostedFields-setMessage-nav"><a href="HostedFields.html#setMessage">setMessage</a></li><li data-type="method" id="HostedFields-setMonthOptions-nav"><a href="HostedFields.html#setMonthOptions">setMonthOptions</a></li><li data-type="method" id="HostedFields-setPlaceholder-nav"><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type="method" id="HostedFields-teardown-nav"><a href="HostedFields.html#teardown">teardown</a></li><li data-type="method" id="HostedFields-tokenize-nav"><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li id="LocalPayment-nav"><a href="LocalPayment.html">LocalPayment</a><ul class='methods'><li data-type="method" id="LocalPayment-closeWindow-nav"><a href="LocalPayment.html#closeWindow">closeWindow</a></li><li data-type="method" id="LocalPayment-focusWindow-nav"><a href="LocalPayment.html#focusWindow">focusWindow</a></li><li data-type="method" id="LocalPayment-hasTokenizationParams-nav"><a href="LocalPayment.html#hasTokenizationParams">hasTokenizationParams</a></li><li data-type="method" id="LocalPayment-startPayment-nav"><a href="LocalPayment.html#startPayment">startPayment</a></li><li data-type="method" id="LocalPayment-teardown-nav"><a href="LocalPayment.html#teardown">teardown</a></li><li data-type="method" id="LocalPayment-tokenize-nav"><a href="LocalPayment.html#tokenize">tokenize</a></li></ul></li><li id="Masterpass-nav"><a href="Masterpass.html">Masterpass</a><ul class='methods'><li data-type="method" id="Masterpass-teardown-nav"><a href="Masterpass.html#teardown">teardown</a></li><li data-type="method" id="Masterpass-tokenize-nav"><a href="Masterpass.html#tokenize">tokenize</a></li></ul></li><li id="PaymentRequestComponent-nav"><a href="PaymentRequestComponent.html">PaymentRequestComponent</a><ul class='methods'><li data-type="method" id="PaymentRequestComponent-canMakePayment-nav"><a href="PaymentRequestComponent.html#canMakePayment">canMakePayment</a></li><li data-type="method" id="PaymentRequestComponent-createSupportedPaymentMethodsConfiguration-nav"><a href="PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration">createSupportedPaymentMethodsConfiguration</a></li><li data-type="method" id="PaymentRequestComponent-off-nav"><a href="PaymentRequestComponent.html#off">off</a></li><li data-type="method" id="PaymentRequestComponent-on-nav"><a href="PaymentRequestComponent.html#on">on</a></li><li data-type="method" id="PaymentRequestComponent-teardown-nav"><a href="PaymentRequestComponent.html#teardown">teardown</a></li><li data-type="method" id="PaymentRequestComponent-tokenize-nav"><a href="PaymentRequestComponent.html#tokenize">tokenize</a></li></ul></li><li id="PayPal-nav"><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type="method" id="PayPal-closeWindow-nav"><a href="PayPal.html#closeWindow">closeWindow</a></li><li data-type="method" id="PayPal-focusWindow-nav"><a href="PayPal.html#focusWindow">focusWindow</a></li><li data-type="method" id="PayPal-tokenize-nav"><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li id="PayPalCheckout-nav"><a href="PayPalCheckout.html">PayPalCheckout</a><ul class='methods'><li data-type="method" id="PayPalCheckout-createPayment-nav"><a href="PayPalCheckout.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckout-getClientId-nav"><a href="PayPalCheckout.html#getClientId">getClientId</a></li><li data-type="method" id="PayPalCheckout-loadPayPalSDK-nav"><a href="PayPalCheckout.html#loadPayPalSDK">loadPayPalSDK</a></li><li data-type="method" id="PayPalCheckout-teardown-nav"><a href="PayPalCheckout.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckout-tokenizePayment-nav"><a href="PayPalCheckout.html#tokenizePayment">tokenizePayment</a></li></ul></li><li id="ThreeDSecure-nav"><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type="method" id="ThreeDSecure-cancelVerifyCard-nav"><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type="method" id="ThreeDSecure-initializeChallengeWithLookupResponse-nav"><a href="ThreeDSecure.html#initializeChallengeWithLookupResponse">initializeChallengeWithLookupResponse</a></li><li data-type="method" id="ThreeDSecure-off-nav"><a href="ThreeDSecure.html#off">off</a></li><li data-type="method" id="ThreeDSecure-on-nav"><a href="ThreeDSecure.html#on">on</a></li><li data-type="method" id="ThreeDSecure-prepareLookup-nav"><a href="ThreeDSecure.html#prepareLookup">prepareLookup</a></li><li data-type="method" id="ThreeDSecure-teardown-nav"><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type="method" id="ThreeDSecure-verifyCard-nav"><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li id="UnionPay-nav"><a href="UnionPay.html">UnionPay</a><ul class='methods'><li data-type="method" id="UnionPay-enroll-nav"><a href="UnionPay.html#enroll">enroll</a></li><li data-type="method" id="UnionPay-fetchCapabilities-nav"><a href="UnionPay.html#fetchCapabilities">fetchCapabilities</a></li><li data-type="method" id="UnionPay-teardown-nav"><a href="UnionPay.html#teardown">teardown</a></li><li data-type="method" id="UnionPay-tokenize-nav"><a href="UnionPay.html#tokenize">tokenize</a></li></ul></li><li id="USBankAccount-nav"><a href="USBankAccount.html">USBankAccount</a><ul class='methods'><li data-type="method" id="USBankAccount-teardown-nav"><a href="USBankAccount.html#teardown">teardown</a></li><li data-type="method" id="USBankAccount-tokenize-nav"><a href="USBankAccount.html#tokenize">tokenize</a></li></ul></li><li id="VaultManager-nav"><a href="VaultManager.html">VaultManager</a><ul class='methods'><li data-type="method" id="VaultManager-fetchPaymentMethods-nav"><a href="VaultManager.html#fetchPaymentMethods">fetchPaymentMethods</a></li><li data-type="method" id="VaultManager-teardown-nav"><a href="VaultManager.html#teardown">teardown</a></li></ul></li><li id="Venmo-nav"><a href="Venmo.html">Venmo</a><ul class='methods'><li data-type="method" id="Venmo-cancelTokenization-nav"><a href="Venmo.html#cancelTokenization">cancelTokenization</a></li><li data-type="method" id="Venmo-hasTokenizationResult-nav"><a href="Venmo.html#hasTokenizationResult">hasTokenizationResult</a></li><li data-type="method" id="Venmo-isBrowserSupported-nav"><a href="Venmo.html#isBrowserSupported">isBrowserSupported</a></li><li data-type="method" id="Venmo-teardown-nav"><a href="Venmo.html#teardown">teardown</a></li><li data-type="method" id="Venmo-tokenize-nav"><a href="Venmo.html#tokenize">tokenize</a></li></ul></li><li id="VisaCheckout-nav"><a href="VisaCheckout.html">VisaCheckout</a><ul class='methods'><li data-type="method" id="VisaCheckout-createInitOptions-nav"><a href="VisaCheckout.html#createInitOptions">createInitOptions</a></li><li data-type="method" id="VisaCheckout-teardown-nav"><a href="VisaCheckout.html#teardown">teardown</a></li><li data-type="method" id="VisaCheckout-tokenize-nav"><a href="VisaCheckout.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li id="braintree-web-nav"><a href="module-braintree-web.html">braintree-web</a></li><li id="braintree-web_american-express-nav"><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type="method" id="braintree-web_american-express-create-nav"><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li id="braintree-web_apple-pay-nav"><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type="method" id="braintree-web_apple-pay-create-nav"><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li id="braintree-web_client-nav"><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type="method" id="braintree-web_client-create-nav"><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li id="braintree-web_data-collector-nav"><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type="method" id="braintree-web_data-collector-create-nav"><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li id="braintree-web_google-payment-nav"><a href="module-braintree-web_google-payment.html">braintree-web/google-payment</a><ul class='methods'><li data-type="method" id="braintree-web_google-payment-create-nav"><a href="module-braintree-web_google-payment.html#.create">create</a></li></ul></li><li id="braintree-web_hosted-fields-nav"><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type="method" id="braintree-web_hosted-fields-create-nav"><a href="module-braintree-web_hosted-fields.html#.create">create</a></li><li data-type="method" id="braintree-web_hosted-fields-supportsInputFormatting-nav"><a href="module-braintree-web_hosted-fields.html#.supportsInputFormatting">supportsInputFormatting</a></li></ul></li><li id="braintree-web_local-payment-nav"><a href="module-braintree-web_local-payment.html">braintree-web/local-payment</a><ul class='methods'><li data-type="method" id="braintree-web_local-payment-create-nav"><a href="module-braintree-web_local-payment.html#.create">create</a></li></ul></li><li id="braintree-web_masterpass-nav"><a href="module-braintree-web_masterpass.html">braintree-web/masterpass</a><ul class='methods'><li data-type="method" id="braintree-web_masterpass-create-nav"><a href="module-braintree-web_masterpass.html#.create">create</a></li><li data-type="method" id="braintree-web_masterpass-isSupported-nav"><a href="module-braintree-web_masterpass.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_payment-request-nav"><a href="module-braintree-web_payment-request.html">braintree-web/payment-request</a><ul class='methods'><li data-type="method" id="braintree-web_payment-request-create-nav"><a href="module-braintree-web_payment-request.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-nav"><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-create-nav"><a href="module-braintree-web_paypal.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-isSupported-nav"><a href="module-braintree-web_paypal.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-nav"><a href="module-braintree-web_paypal-checkout.html">braintree-web/paypal-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-create-nav"><a href="module-braintree-web_paypal-checkout.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-isSupported-nav"><a href="module-braintree-web_paypal-checkout.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_three-d-secure-nav"><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type="method" id="braintree-web_three-d-secure-create-nav"><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li id="braintree-web_unionpay-nav"><a href="module-braintree-web_unionpay.html">braintree-web/unionpay</a><ul class='methods'><li data-type="method" id="braintree-web_unionpay-create-nav"><a href="module-braintree-web_unionpay.html#.create">create</a></li></ul></li><li id="braintree-web_us-bank-account-nav"><a href="module-braintree-web_us-bank-account.html">braintree-web/us-bank-account</a><ul class='methods'><li data-type="method" id="braintree-web_us-bank-account-create-nav"><a href="module-braintree-web_us-bank-account.html#.create">create</a></li></ul></li><li id="braintree-web_vault-manager-nav"><a href="module-braintree-web_vault-manager.html">braintree-web/vault-manager</a><ul class='methods'><li data-type="method" id="braintree-web_vault-manager-create-nav"><a href="module-braintree-web_vault-manager.html#.create">create</a></li></ul></li><li id="braintree-web_venmo-nav"><a href="module-braintree-web_venmo.html">braintree-web/venmo</a><ul class='methods'><li data-type="method" id="braintree-web_venmo-create-nav"><a href="module-braintree-web_venmo.html#.create">create</a></li><li data-type="method" id="braintree-web_venmo-isBrowserSupported-nav"><a href="module-braintree-web_venmo.html#.isBrowserSupported">isBrowserSupported</a></li></ul></li><li id="braintree-web_visa-checkout-nav"><a href="module-braintree-web_visa-checkout.html">braintree-web/visa-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_visa-checkout-create-nav"><a href="module-braintree-web_visa-checkout.html#.create">create</a></li></ul></li></ul><h3 id="global-nav"><a href="global.html">Global</a></h3>
+  </nav>
+
+  <div id="main">
+    
+      <h1 class="page-title">
+        BraintreeError
+      </h1>
+    
+
+    
+
+<section>
+  <header>
+    
+      <h2>
+        
+        BraintreeError
+        
+      </h2>
+
+      
+        <div class="class-description">
+          <p>This class is used to report error conditions, frequently as the first parameter to callbacks throughout the Braintree SDK.</p>
+        </div>
+      
+    
+  </header>
+
+  <article>
+    <div class="container-overview">
+      
+        
+
+
+  
+    <h2>Constructor</h2>
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#BraintreeError">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="BraintreeError">
+      <span class="type-signature"></span>new BraintreeError<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p><strong>You cannot use this constructor directly. Interact with instances of this class through <a href="global.html#callback">callbacks</a>.</strong></p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Construction options</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_braintree-error.js.html">lib/braintree-error.js</a>, <a href="lib_braintree-error.js.html#line12">line 12</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+
+<h4 class="name" id=".AmericanExpress-getExpressCheckoutProfileErrorCodes">
+  <span class="type-signature">(static) </span>American Express - getExpressCheckoutProfile Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when creating components.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>AMEX_NONCE_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a nonce is not provided to method.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>AMEX_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when there is an error communicating with the Braintree gateway.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="american-express_errors.js.html">american-express/errors.js</a>, <a href="american-express_errors.js.html#line10">line 10</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".AmericanExpress-getRewardsBalanceErrorCodes">
+  <span class="type-signature">(static) </span>American Express - getRewardsBalance Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when creating components.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>AMEX_NONCE_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a nonce is not provided to method.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>AMEX_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when there is an error communicating with the Braintree gateway.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="american-express_errors.js.html">american-express/errors.js</a>, <a href="american-express_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".ApplePay-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Apple Pay - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_apple-pay.html#.create">creating the Apple Pay component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>APPLE_PAY_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the authorization used is not authorized to process Apple Pay.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="apple-pay_errors.js.html">apple-pay/errors.js</a>, <a href="apple-pay_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".ApplePay-performValidationErrorCodes">
+  <span class="type-signature">(static) </span>Apple Pay - performValidation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./ApplePay.html#performValidation">validating</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>APPLE_PAY_VALIDATION_URL_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the <code>validationURL</code> option is not passed in.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>APPLE_PAY_MERCHANT_VALIDATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the website domain has not been registered in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>APPLE_PAY_MERCHANT_VALIDATION_NETWORK</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an unknown network error occurs.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="apple-pay_errors.js.html">apple-pay/errors.js</a>, <a href="apple-pay_errors.js.html#line9">line 9</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".ApplePay-tokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Apple Pay - tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./ApplePay.html#tokenize">tokenizing</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>APPLE_PAY_PAYMENT_TOKEN_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the <code>token</code> option is not passed in.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>APPLE_PAY_TOKENIZATION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an unknown network error occurs.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="apple-pay_errors.js.html">apple-pay/errors.js</a>, <a href="apple-pay_errors.js.html#line17">line 17</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".Client-CreateErrorCodes">
+  <span class="type-signature">(static) </span>Client - Create Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that may occur when <a href="./module-braintree-web_client.html#.create">creating the client</a></p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_INVALID_AUTHORIZATION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when client token cannot be parsed.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="client_errors.js.html">client/errors.js</a>, <a href="client_errors.js.html#line11">line 11</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".Client-RequestErrorCodes">
+  <span class="type-signature">(static) </span>Client - Request Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that may occur when <a href="./Client.html#request">using the request method</a></p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_OPTION_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An option required in the request method was not provided. Usually <code>options.method</code> or <code>options.endpoint</code></p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_OPTION_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The request option provided is invalid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_GATEWAY_NETWORK</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The Braintree gateway could not be contacted.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_REQUEST_TIMEOUT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The request took too long to complete and timed out.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_REQUEST_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The response from a request had status 400 or greater.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_GRAPHQL_REQUEST_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The response from a request to GraphQL contained an error.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_RATE_LIMITED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The response from a request had a status of 429, indicating rate limiting.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_AUTHORIZATION_INSUFFICIENT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The user associated with the client token or tokenization key does not have permissions to make the request.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_AUTHORIZATION_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The provided authorization could not be found. Either the client token has expired and a new client token must be generated or the tokenization key used is set to be inactive or has been deleted.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="client_errors.js.html">client/errors.js</a>, <a href="client_errors.js.html#line17">line 17</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".3DSecure-cancelVerifyCardErrorCodes">
+  <span class="type-signature">(static) </span>3D Secure - cancelVerifyCard Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./ThreeDSecure.html#cancelVerifyCard"><code>cancelVerifyCard</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_NO_VERIFICATION_PAYLOAD</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the 3D Secure flow is canceled, but there is no 3D Secure information available.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="three-d-secure_shared_errors.js.html">three-d-secure/shared/errors.js</a>, <a href="three-d-secure_shared_errors.js.html#line34">line 34</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".3DSecure-CreationErrorCodes">
+  <span class="type-signature">(static) </span>3D Secure - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_three-d-secure.html#.create">creating the 3D Secure component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when 3D Secure is not enabled in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CAN_NOT_USE_TOKENIZATION_KEY</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when 3D Secure component is created without a Client Token.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_HTTPS_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when 3D Secure component is created in production over HTTPS.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_NOT_ENABLED_FOR_V2</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when 3D Secure component is created with version 2 parameter, but merchant is not enabled to use version 2.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_UNRECOGNIZED_VERSION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when unrecognized version enum is passed into the create call.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_SETUP_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Cardinal's Songbird.js library fails to setup for an unknown reason.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when using version 2 and Cardinal's Songbird.js script could not be loaded.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Cardinal's Songbird.js library takes longer than 60 seconds to set up.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Cardinal sends a response indicating a timeout on /Validate, /Confirm, or /Continue.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_BAD_CONFIG</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when there is no JWT in the request. Also when there's some other malformed aspect of config.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_BAD_JWT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a malformed config causes a either a missing response JWT or a malformed Cardinal response.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a &quot;general error&quot; or a Cardinal hosted fields error happens. Description contains more details.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_CARDINAL_SDK_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer cancels the transaction mid-flow, usually with alt-pays that have their own cancel buttons.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="three-d-secure_shared_errors.js.html">three-d-secure/shared/errors.js</a>, <a href="three-d-secure_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".3DSecure-verifyCardErrorCodes">
+  <span class="type-signature">(static) </span>3D Secure - verifyCard Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./ThreeDSecure.html#verifyCard"><code>verifyCard</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_AUTHENTICATION_IN_PROGRESS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when another verification is already in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_MISSING_VERIFY_CARD_OPTION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a required option is missing.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_JWT_AUTHENTICATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when something went wrong authenticating the JWT from the Cardinal SDK.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the supplied payment method nonce does not exist or the payment method nonce has already been consumed.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_LOOKUP_VALIDATION_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a validation error occurs during the 3D Secure lookup.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_LOOKUP_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An unknown error occurred while attempting the 3D Secure lookup.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the 3D Secure flow is canceled by the merchant using <code>cancelVerifyCard</code> (3D Secure v2 flows only).</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>THREEDS_INLINE_IFRAME_DETAILS_INCORRECT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An unknown error occurred while attempting to use the inline iframe framework.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="three-d-secure_shared_errors.js.html">three-d-secure/shared/errors.js</a>, <a href="three-d-secure_shared_errors.js.html#line21">line 21</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".DataCollector-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Data Collector - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_data-collector.html#.create">creating the Data Collector component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>DATA_COLLECTOR_KOUNT_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Kount is enabled in creation options but is not enabled on the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>DATA_COLLECTOR_KOUNT_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Kount errors while setting up.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Kount or PayPal Fraudnet could not be enabled.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="data-collector_errors.js.html">data-collector/errors.js</a>, <a href="data-collector_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".GooglePayment-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Google Payment - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_google-payment.html#.create">creating the Google Payment component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>GOOGLE_PAYMENT_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Google Pay is not enabled on the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>GOOGLE_PAYMENT_UNSUPPORTED_VERSION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a Google Pay version is used that is not supported by the Braintree SDK.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="google-payment_errors.js.html">google-payment/errors.js</a>, <a href="google-payment_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".GooglePayment-parseResponseErrorCodes">
+  <span class="type-signature">(static) </span>Google Payment - parseResponse Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./GooglePayment.html#parseResponse">parsing the response from Google</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>GOOGLE_PAYMENT_GATEWAY_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Google Pay could not be tokenized.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="google-payment_errors.js.html">google-payment/errors.js</a>, <a href="google-payment_errors.js.html#line10">line 10</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".HostedFields-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Hosted Fields - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_hosted-fields.html#.create">creating the Hosted Fields component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_TIMEOUT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Hosted Fields does not finish setting up within 60 seconds.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_INVALID_FIELD_KEY</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Hosted Fields is instantiated with an invalid Field option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_INVALID_FIELD_SELECTOR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Hosted Fields given a field selector that is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Hosted Fields given a field selector that already contains an iframe.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FIELD_PROPERTY_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a field configuration option is not valid.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_shared_errors.js.html">hosted-fields/shared/errors.js</a>, <a href="hosted-fields_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".HostedFields-FieldManipulationErrorCodes">
+  <span class="type-signature">(static) </span>Hosted Fields - Field Manipulation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when modifying fields through <a href="./HostedFields.html#addClass"><code>addClass</code></a>, <a href="./HostedFields.html#removeClass"><code>removeClass</code></a>, <a href="./HostedFields.html#setAttribute"><code>setAttribute</code></a>, <a href="./HostedFields.html#removeAttribute"><code>removeAttribute</code></a>, <a href="./HostedFields.html#clear"><code>clear</code></a>, <a href="./HostedFields.html#focus"><code>focus</code></a>, and <a href="./HostedFields.html#setMonthOptions"><code>setMonthOptions</code></a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FIELD_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when attempting to modify a field that is not a valid Hosted Fields option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FIELD_NOT_PRESENT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when attempting to modify a field that is not configured with Hosted Fields.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FIELD_PROPERTY_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a field configuration option is not valid.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_shared_errors.js.html">hosted-fields/shared/errors.js</a>, <a href="hosted-fields_shared_errors.js.html#line13">line 13</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".HostedFields-SetAttributeErrorCodes">
+  <span class="type-signature">(static) </span>Hosted Fields - Set Attribute Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./HostedFields.html#setAttribute"><code>setAttribute</code> method</a></p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when trying to set an attribute that is not supported to be set.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the type of value for an attribute is not allowed to be set.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_shared_errors.js.html">hosted-fields/shared/errors.js</a>, <a href="hosted-fields_shared_errors.js.html#line21">line 21</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".HostedFields-TokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Hosted Fields - Tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./HostedFields.html#tokenize">tokenizing the card details with Hosted Fields</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the Braintree gateway cannot be contacted.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when attempting to vault a card, but the client token being used is configured to fail if the card already exists in the vault.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when cvv verification is turned on in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FAILED_TOKENIZATION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the credit card details were sent to Braintree, but failed to tokenize.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FIELDS_EMPTY</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when all the Hosted Fields inputs are empty.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>HOSTED_FIELDS_FIELDS_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when one ore more fields are invalid.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_shared_errors.js.html">hosted-fields/shared/errors.js</a>, <a href="hosted-fields_shared_errors.js.html#line28">line 28</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".LocalPayment-CreationErrorCodes">
+  <span class="type-signature">(static) </span>LocalPayment - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_local-payment.html#.create">creating the Local Payment component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Local Payment is not enabled on the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_shared_errors.js.html">local-payment/shared/errors.js</a>, <a href="local-payment_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".LocalPayment-startPaymentErrorCodes">
+  <span class="type-signature">(static) </span>LocalPayment - startPayment Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./LocalPayment.html#startPayment"><code>startPayment</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a startPayment is missing a required option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_ALREADY_IN_PROGRESS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a startPayment call is already in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_INVALID_PAYMENT_OPTION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a startPayment call has an invalid option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_START_PAYMENT_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a startPayment call fails.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_TOKENIZATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a startPayment call fails to tokenize the result from authorization.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the customer cancels the Local Payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_WINDOW_CLOSED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the customer closes the Local Payment window.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>LOCAL_PAYMENT_WINDOW_OPEN_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the Local Payment window fails to open. Usually because <code>startPayment</code> was not called as a direct result of a user action.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_shared_errors.js.html">local-payment/shared/errors.js</a>, <a href="local-payment_shared_errors.js.html#line9">line 9</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".Masterpass-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Masterpass - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_masterpass#.create">creating the Masterpass component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_BROWSER_NOT_SUPPORTED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when browser is not a supported browser for Masterpass.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Masterpass is not enabled in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="masterpass_shared_errors.js.html">masterpass/shared/errors.js</a>, <a href="masterpass_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".Masterpass-TokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Masterpass - Tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./Masterpass.html#tokenize">tokenizing</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_TOKENIZE_MISSING_REQUIRED_OPTION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when tokenize is called without a required option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_TOKENIZATION_ALREADY_IN_PROGRESS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs if tokenization flow is initialized while another flow is already in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_ACCOUNT_TOKENIZATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when tokenization of Masterpass details fails.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_POPUP_OPEN_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the popup fails to open.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Masterpass is missing required parameters for tokenization.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_POPUP_CLOSED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the popup is closed by the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_INVALID_PAYMENT_OPTION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an invalid payment option is used to tokenize Masterpass.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MASTERPASS_FLOW_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an error is returned from request to tokenize.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="masterpass_shared_errors.js.html">masterpass/shared/errors.js</a>, <a href="masterpass_shared_errors.js.html#line10">line 10</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PaymentRequest-canMakePaymentErrorCodes">
+  <span class="type-signature">(static) </span>Payment Request - canMakePayment  Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./PaymentRequestComponent.html#canMakePayment"><code>canMakePayment</code> method</a></p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the Payment Request is instantiated with misconfigured options.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when <code>canMakePayment</code> results in a <code>DomException</code> with a <code>NotAllowedError</code>. This usually occurs when <code>canMakePayment</code> is called multiple times with different supported payment options.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when <code>canMakePayment</code> is called with a <code>supportedPaymentMethods</code> array that contains a payment method that is not supported by the Braintree SDK.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when <code>canMakePayment</code> fails for any reason other than a misconfigured Payment Request object.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="payment-request_shared_errors.js.html">payment-request/shared/errors.js</a>, <a href="payment-request_shared_errors.js.html#line26">line 26</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PaymentRequest-createSupportedPaymentMethodsConfigurationErrorCodes">
+  <span class="type-signature">(static) </span>Payment Request - createSupportedPaymentMethodsConfiguration  Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration"><code>createSupportedPaymentMethodsConfiguration</code> method</a></p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when no type is supplied for method.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when configured type is not enabled.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="payment-request_shared_errors.js.html">payment-request/shared/errors.js</a>, <a href="payment-request_shared_errors.js.html#line9">line 9</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PaymentRequest-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Payment Request - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_payment-request.html#.create">creating the Payment Request component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when there are no valid payment methods configured.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="payment-request_shared_errors.js.html">payment-request/shared/errors.js</a>, <a href="payment-request_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PaymentRequest-tokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Payment Request - tokenize  Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./PaymentRequestComponent.html#tokenize"><code>tokenize</code> method</a></p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer cancels the Payment Request.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the Payment Request is closed do to the options being misconfigured.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a Google Payment payment method is unable to be tokenized.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the result of tokenizing a Google Payment payment method could not be parsed.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYMENT_REQUEST_NOT_COMPLETED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an error prevented the Payment Request from being completed.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="payment-request_shared_errors.js.html">payment-request/shared/errors.js</a>, <a href="payment-request_shared_errors.js.html#line16">line 16</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PayPal-CreationErrorCodes">
+  <span class="type-signature">(static) </span>PayPal - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_paypal.html#.create">creating the PayPal component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when PayPal is not enabled on the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal_shared_errors.js.html">paypal/shared/errors.js</a>, <a href="paypal_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PayPal-tokenizeErrorCodes">
+  <span class="type-signature">(static) </span>PayPal - tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./PayPal.html#tokenize"><code>tokenize</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_TOKENIZATION_REQUEST_ACTIVE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a tokenization request is already in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_FLOW_OPTION_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when flow option is not provided.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_ACCOUNT_TOKENIZATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when PayPal account could not be tokenized.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_FLOW_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when PayPal flow could not be initiated.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_POPUP_OPEN_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when PayPal window could not be opened.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_POPUP_CLOSED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer closes the PayPal window before completing the flow.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_INVALID_PAYMENT_OPTION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an invalid payment option is passed.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal_shared_errors.js.html">paypal/shared/errors.js</a>, <a href="paypal_shared_errors.js.html#line9">line 9</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PayPalCheckout-createPaymentErrorCodes">
+  <span class="type-signature">(static) </span>PayPal Checkout - createPayment Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./PayPalCheckout.html#createPayment"><code>createPayment</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_FLOW_OPTION_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a required option is missing.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_INVALID_PAYMENT_OPTION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an option contains an invalid value.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_FLOW_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when something goes wrong when initializing the flow.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout_errors.js.html">paypal-checkout/errors.js</a>, <a href="paypal-checkout_errors.js.html#line10">line 10</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PayPalCheckout-CreationErrorCodes">
+  <span class="type-signature">(static) </span>PayPal Checkout - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_paypal-checkout.html#.create">creating the PayPal Checkout component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when PayPal is not enabled on the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs only when testing in Sandbox, when a PayPal sandbox account is not linked to the merchant account in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout_errors.js.html">paypal-checkout/errors.js</a>, <a href="paypal-checkout_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PayPalCheckout-startVaultInitiatedCheckoutErrorCodes">
+  <span class="type-signature">(static) </span>PayPal Checkout - startVaultInitiatedCheckout Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./PayPalCheckout.html#startVaultInitiatedCheckout"><code>startVaultInitiatedCheckout</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a required param is missing when calling the method.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when PayPal window could not be opened. This often occurs because the call to start the vault initiated flow was not triggered from a click event.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a customer closes the PayPal flow before completion.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the flow is initialized while an authorization is already in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when something went wrong setting up the flow.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout_errors.js.html">paypal-checkout/errors.js</a>, <a href="paypal-checkout_errors.js.html#line18">line 18</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".PayPalCheckout-tokenizePaymentErrorCodes">
+  <span class="type-signature">(static) </span>PayPal Checkout - tokenizePayment Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./PayPalCheckout.html#tokenizePayment"><code>tokenizePayment</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>PAYPAL_ACCOUNT_TOKENIZATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when PayPal account could not be tokenized.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout_errors.js.html">paypal-checkout/errors.js</a>, <a href="paypal-checkout_errors.js.html#line28">line 28</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".SharedErrors-ComponentCreationErrorCodes">
+  <span class="type-signature">(static) </span>Shared Errors - Component Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when creating components.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>INSTANTIATION_OPTION_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a component is created that is missing a required option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>INCOMPATIBLE_VERSIONS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a component is created with a client with a different version than the component.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>CLIENT_SCRIPT_FAILED_TO_LOAD</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a component attempts to load the Braintree client script, but the request fails.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_errors.js.html">lib/errors.js</a>, <a href="lib_errors.js.html#line10">line 10</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".SharedErrors-ComponentInstanceErrorCodes">
+  <span class="type-signature">(static) </span>Shared Errors - Component Instance Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using instances of components.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>METHOD_CALLED_AFTER_TEARDOWN</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a method is called on a component instance after it has been torn down.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_errors.js.html">lib/errors.js</a>, <a href="lib_errors.js.html#line18">line 18</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".types">
+  <span class="type-signature">(static, readonly) </span>types<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Enum for <a href="BraintreeError.html">BraintreeError</a> types.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>CUSTOMER</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An error caused by the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>MERCHANT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An error that is actionable by the merchant.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>NETWORK</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An error due to a network problem.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>INTERNAL</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An error caused by Braintree code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNKNOWN</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An error where the origin is unknown.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_braintree-error.js.html">lib/braintree-error.js</a>, <a href="lib_braintree-error.js.html#line55">line 55</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".UnionPay-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Union Pay - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_union-pay.html#.create">creating the Union Pay component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Union Pay is not enabled on the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="unionpay_shared_errors.js.html">unionpay/shared/errors.js</a>, <a href="unionpay_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".UnionPay-enrollErrorCodes">
+  <span class="type-signature">(static) </span>Union Pay - enroll Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./UnionPay.html#enroll"><code>enroll</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_MISSING_MOBILE_PHONE_DATA</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when no mobile phone data is provided.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_EXPIRATION_DATE_INCOMPLETE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when expiration date is incomplete.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer enrollment input is invalid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_ENROLLMENT_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when there is an error during enrollment.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="unionpay_shared_errors.js.html">unionpay/shared/errors.js</a>, <a href="unionpay_shared_errors.js.html#line24">line 24</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".UnionPay-fetchCapabilitiesErrorCodes">
+  <span class="type-signature">(static) </span>Union Pay - fetchCapabilities Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./UnionPay.html#fetchCapabilities"><code>fetchCapabilities</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when there is an error looking up the Union Pay capabilities.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="unionpay_shared_errors.js.html">unionpay/shared/errors.js</a>, <a href="unionpay_shared_errors.js.html#line18">line 18</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".UnionPay-SharedErrorCodes">
+  <span class="type-signature">(static) </span>Union Pay - Shared Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when starting the Union Pay Flow</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a method is used with both card details and a Hosted Fields instance.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Hosted Fields instance used is not a valid Hosted Fields instance.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when neither card details or Hosted Fields are used.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_HOSTED_FIELDS_INSTANCE_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Hosted Fields cannot be found on the page.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="unionpay_shared_errors.js.html">unionpay/shared/errors.js</a>, <a href="unionpay_shared_errors.js.html#line9">line 9</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".UnionPay-tokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Union Pay - tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./UnionPay.html#tokenize"><code>tokenize</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_FAILED_TOKENIZATION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when data cannot be tokenized.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>UNIONPAY_TOKENIZATION_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the Braintree gateway cannot be reached.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="unionpay_shared_errors.js.html">unionpay/shared/errors.js</a>, <a href="unionpay_shared_errors.js.html#line33">line 33</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".UsBankAccount-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Us Bank Account - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_us-bank-account.html#.create">creating the Us Bank Account component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when US Bank Account is not enabled in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="us-bank-account_errors.js.html">us-bank-account/errors.js</a>, <a href="us-bank-account_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".UsBankAccount-tokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Us Bank Account - tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./UsBankAccount.html#tokenize"><code>tokenize</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_OPTION_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a required option is not passed.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when 1 or more incompatible options are passed.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_LOGIN_LOAD_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when bank login flow fails.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_LOGIN_CLOSED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when bank login window is closed.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_LOGIN_REQUEST_ACTIVE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when a bank login flow is already active.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_TOKENIZATION_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when payment details could not be tokenized.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_FAILED_TOKENIZATION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when payment details failed to be tokenized.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>US_BANK_ACCOUNT_BANK_LOGIN_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when bank login flow is not enabled in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="us-bank-account_errors.js.html">us-bank-account/errors.js</a>, <a href="us-bank-account_errors.js.html#line9">line 9</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".VaultManager-deletePaymentMethodErrorCodes">
+  <span class="type-signature">(static) </span>Vault Manager - deletePaymentMethod Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./VaultManager.html#deletePaymentMethod"><code>deletePaymentMethod</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when vault manager is initialized with a tokenization key instead of a Client Token.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the specified payment method can not be found.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when there is an error attempting to delete the payment method.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="vault-manager_errors.js.html">vault-manager/errors.js</a>, <a href="vault-manager_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".Venmo-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Venmo - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_venmo.html#.create">creating the Venmo component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>VENMO_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Venmo is not enabled on the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_INVALID_PROFILE_ID</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Venmo is initialized with a profile id, but it is invalid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_MOBILE_POLLING_SETUP_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p><strong>Deprecated</strong> No longer returned. Use <code>VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED</code> instead.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the request to set up a Venmo Payment Context object fails.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="venmo_shared_errors.js.html">venmo/shared/errors.js</a>, <a href="venmo_shared_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".Venmo-tokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Venmo - tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./Venmo.html#tokenize"><code>tokenize</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>VENMO_TOKENIZATION_REQUEST_ACTIVE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when <code>tokenize</code> is called when the flow is already in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when <code>cancelTokenization</code> is called when the flow is not in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_APP_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when tokenization fails.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_APP_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer cancels flow from the Venmo app.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer cancels the flow or Venmo app is not available.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_DESKTOP_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer cancels the Venmo Desktop flow by closing the modal.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_TOKENIZATION_CANCELED_BY_MERCHANT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when <code>cancelTokenization</code> is called while tokenization is in progress.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_DESKTOP_UNKNOWN_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an unknown error causes the Venmo Desktop flow to fail.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when an unknown network error causes the mobile polling process to fail.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the polling has expired and the payment cannot be completed.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when the polling operation is canceled by the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      CUSTOMER
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when customer takes too long to complete payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VENMO_MOBILE_POLLING_TOKENIZATION_FAILED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      UNKNOWN
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs if there is an unknown error during the mobile polling process.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="venmo_shared_errors.js.html">venmo/shared/errors.js</a>, <a href="venmo_shared_errors.js.html#line12">line 12</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".VisaCheckout-createInitOptionsErrorCodes">
+  <span class="type-signature">(static) </span>Visa Checkout - createInitOptions Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./VisaCheckout.html#createInitOptions"><code>createInitOptions</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>VISA_CHECKOUT_INIT_OPTIONS_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when no options are provided to method.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="visa-checkout_errors.js.html">visa-checkout/errors.js</a>, <a href="visa-checkout_errors.js.html#line9">line 9</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".VisaCheckout-CreationErrorCodes">
+  <span class="type-signature">(static) </span>Visa Checkout - Creation Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when <a href="./module-braintree-web_venmo.html#.create">creating the Visa Checkout component</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>VISA_CHECKOUT_NOT_ENABLED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when Visa Checkout is not enabled in the Braintree control panel.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="visa-checkout_errors.js.html">visa-checkout/errors.js</a>, <a href="visa-checkout_errors.js.html#line3">line 3</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id=".VisaCheckout-tokenizeErrorCodes">
+  <span class="type-signature">(static) </span>Visa Checkout - tokenize Error Codes<span class="type-signature"></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Errors that occur when using the <a href="./VisaCheckout.html#tokenize"><code>tokenize</code> method</a>.</p>
+  </div>
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>VISA_CHECKOUT_PAYMENT_REQUIRED</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      MERCHANT
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when no payment data is not provided.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>VISA_CHECKOUT_TOKENIZATION</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      NETWORK
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Occurs when tokenization fails.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="visa-checkout_errors.js.html">visa-checkout/errors.js</a>, <a href="visa-checkout_errors.js.html#line15">line 15</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id="code">
+  <span class="type-signature"></span>code<span class="type-signature"> :string</span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>A code that corresponds to specific errors.</p>
+  </div>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_braintree-error.js.html">lib/braintree-error.js</a>, <a href="lib_braintree-error.js.html#line31">line 31</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id="details">
+  <span class="type-signature"></span>details<span class="type-signature"> :object</span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>Additional information about the error, such as an underlying network error response.</p>
+  </div>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_braintree-error.js.html">lib/braintree-error.js</a>, <a href="lib_braintree-error.js.html#line49">line 49</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id="message">
+  <span class="type-signature"></span>message<span class="type-signature"> :string</span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>A short description of the error.</p>
+  </div>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_braintree-error.js.html">lib/braintree-error.js</a>, <a href="lib_braintree-error.js.html#line37">line 37</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+            
+
+<h4 class="name" id="type">
+  <span class="type-signature"></span>type<span class="type-signature"> :<a href="BraintreeError.html#.types">BraintreeError.types</a></span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>The type of error.</p>
+  </div>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="lib_braintree-error.js.html">lib/braintree-error.js</a>, <a href="lib_braintree-error.js.html#line43">line 43</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+    
+
+    
+
+    
+
+    
+  </article>
+</section>
+
+
+
+
+  </div>
+
+  <br class="clear">
+
+  <footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a>
+  </footer>
+
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/pagelocation.js"></script>
+
+  
+  <script>
+    $(function () {
+      window.docsearch({
+        apiKey: '1097a5c904574f31dd6d5d174a658739',
+        indexName: 'braintree',
+        inputSelector: '.search-input',
+        debug: false, // Set debug to true if you want to inspect the dropdown
+        algoliaOptions: {
+          hitsPerPage: 7
+        }
+      });
+    });
+  </script>
+  
+  
+</body>
+</html>
