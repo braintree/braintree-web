@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## 3.79.1
+* Hosted Fields
+  * Fix issue where inputs could not tab forward in iOS Safari 14.5+ (tabbing backward is still broken) (#456)
+
 ## 3.79.0
 * Fix issue where SDK could not be used with server side rendering in Node v16 (#576)
 * Hosted Fields

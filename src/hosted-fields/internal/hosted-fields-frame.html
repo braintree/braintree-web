@@ -43,6 +43,19 @@
       position: absolute !important;
       top: -1px !important;
       width: 1px !important;
+      /* for some reason, ios Safari needs to
+         _think_ that the focus intercept input
+        is visible to have it actually tab forward. */
+      /* TODO Tabbing backward is still broken, we
+       did some experimentation with relative positioning
+       and absolute positioning with z-indexing, and both
+       showed some promising results, but we continued
+       to have weird issues where we couldn't prevent
+       the focus intercepts from being interacted with
+       by the customer and sometimes when tabbing backward
+       the previous arrow would dissapear even when it
+       was working before*/
+      padding: 1px !important;
     }
 
     label {
