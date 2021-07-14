@@ -10,11 +10,19 @@ For a ready-made payment UI, see [Braintree Web Drop-in](https://github.com/brai
 Install
 =======
 
+Using npm:
 ```
-npm install braintree-web ```
+npm install braintree-web 
+```
 
+Using bower:
 ```
 bower install braintree-web
+```
+
+Using yarn:
+```
+yarn add braintree-web
 ```
 
 Usage
