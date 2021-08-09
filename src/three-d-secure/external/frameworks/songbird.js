@@ -108,10 +108,14 @@ SongbirdFramework.prototype.initializeChallengeWithLookupResponse = function (lo
   }.bind(this));
 };
 
-SongbirdFramework.prototype._initiateV1Fallback = function (errorType) {
+SongbirdFramework.prototype.initiateV1Fallback = function (errorType) {
   this._useV1Fallback = true;
+  this._removeSongbirdListeners();
   analytics.sendEvent(this._createPromise, 'three-d-secure.v1-fallback.' + errorType);
-  this._songbirdPromise.resolve();
+
+  if (this._songbirdPromise) {
+    this._songbirdPromise.resolve();
+  }
 };
 
 SongbirdFramework.prototype._triggerCardinalBinProcess = function (bin) {
@@ -263,7 +267,7 @@ SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
 
     window.clearTimeout(self._songbirdSetupTimeoutReference);
     analytics.sendEvent(self._client, 'three-d-secure.cardinal-sdk.init.setup-failed');
-    self._initiateV1Fallback('cardinal-sdk-setup-failed.' + self._v2SetupFailureReason);
+    self.initiateV1Fallback('cardinal-sdk-setup-failed.' + self._v2SetupFailureReason);
   });
 
   return this._songbirdPromise;
@@ -355,7 +359,7 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
 
     self._songbirdSetupTimeoutReference = window.setTimeout(function () {
       analytics.sendEvent(self._client, 'three-d-secure.cardinal-sdk.init.setup-timeout');
-      self._initiateV1Fallback('cardinal-sdk-setup-timeout');
+      self.initiateV1Fallback('cardinal-sdk-setup-timeout');
     }, setupOptions.timeout || INTEGRATION_TIMEOUT_MS);
 
     if (isProduction) {
@@ -458,10 +462,19 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
   return function (data, validatedJwt) {
     var formattedError;
 
+    if (self._useV1Fallback) {
+      // TODO since we've removed the listeners for the payments validated callback when initiating the v1 fallback,
+      // we should never get to this point. Leave this analtyics event in for now and review if that is indeed the
+      // case before removing this block.
+      analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.cardinal-sdk.payments-validated-callback-called-in-v1-fallback-flow');
+
+      return;
+    }
+
     analytics.sendEvent(self._createPromise, 'three-d-secure.verification-flow.cardinal-sdk.action-code.' + data.ActionCode.toLowerCase());
 
     if (!self._verifyCardPromisePlus) {
-      self._initiateV1Fallback('cardinal-sdk-setup-error.number-' + data.ErrorNumber);
+      self.initiateV1Fallback('cardinal-sdk-setup-error.number-' + data.ErrorNumber);
 
       return;
     }
@@ -631,8 +644,12 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
     if (options.bin) {
       data.bin = options.bin;
     }
-    if (options.cardAdd) {
+    // NEXT_MAJOR_VERSION remove cardAdd in favor of cardAddChallengeRequested
+    if (options.cardAdd != null) {
       data.cardAdd = options.cardAdd;
+    }
+    if (options.cardAddChallengeRequested != null) {
+      data.cardAdd = options.cardAddChallengeRequested;
     }
 
     return self.prepareLookup(data);
@@ -653,11 +670,17 @@ SongbirdFramework.prototype.cancelVerifyCard = function (verifyCardError) {
   });
 };
 
+SongbirdFramework.prototype._removeSongbirdListeners = function () {
+  this._cardinalEvents.forEach(function (eventName) {
+    window.Cardinal.off(eventName);
+  });
+
+  this._cardinalEvents = [];
+};
+
 SongbirdFramework.prototype.teardown = function () {
   if (window.Cardinal) {
-    this._cardinalEvents.forEach(function (eventName) {
-      window.Cardinal.off(eventName);
-    });
+    this._removeSongbirdListeners();
   }
 
   // we intentionally do not remove the Cardinal SDK

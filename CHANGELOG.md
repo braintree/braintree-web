@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+## 3.80.0
+* 3D Secure
+  * deprecate `cardAdd` in `verifyCard` in favor of `cardAddChallengeRequested` (`cardAdd` can still be used as an alias)
+  * update `cardAddChallengeRequested` in `verifyCard` to allow passing `false`
+  * add `type` to `verifyCard` response payload
+  * fix issue where v1 fallback could result in an unrecoverable exception (#582)
+
 ## 3.79.1
 * Hosted Fields
   * Fix issue where inputs could not tab forward in iOS Safari 14.5+ (tabbing backward is still broken) (#456)

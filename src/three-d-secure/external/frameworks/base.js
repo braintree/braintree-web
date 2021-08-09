@@ -222,6 +222,7 @@ BaseFramework.prototype._onLookupComplete = function (response) {
 BaseFramework.prototype._formatAuthResponse = function (paymentMethod, threeDSecureInfo) {
   return {
     nonce: paymentMethod.nonce,
+    type: paymentMethod.type,
     binData: paymentMethod.binData,
     details: paymentMethod.details,
     description: paymentMethod.description && paymentMethod.description.replace(/\+/g, ' '),
