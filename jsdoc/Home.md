@@ -64,7 +64,7 @@ braintree.client.create({
 
 The Braintree JS SDK provides support for numerous browsers and devices. There are, however, caveats with certain integrations and browser combinations.
 
-While `braintree-web` will work in browsers other than the ones below, these represent the platforms against which we actively test. If you have problems with a specific browser or device, contact [our Support team](https://developers.braintreepayments.com/forms/contact).
+While `braintree-web` will work in browsers other than the ones below, these represent the platforms against which we actively test. If you have problems with a specific browser or device, contact [our Support team](https://developer.paypal.com/braintree/help).
 
 <a id="browser-support-desktop"></a>
 ### Desktop
@@ -85,7 +85,7 @@ Our code is ES5 compliant, but we only run automated tests in Internet Explorer 
 
 ##### Quirks Mode
 
-Quirks Mode is not supported for any version of IE. See our [general best practices](https://developers.braintreepayments.com/reference/general/best-practices#internet-explorer-quirks-mode) to learn more.
+Quirks Mode is not supported for any version of IE. See our [general best practices](https://developer.paypal.com/braintree/docs/reference/general/best-practices#internet-explorer-quirks-mode) to learn more.
 
 ##### Older TLS versions
 
@@ -187,7 +187,7 @@ If using the [3D Secure component](module-braintree-web_three-d-secure.html), in
 
 If using Kount with the [Data Collector component](DataCollector.html), adhere to the [Kount CSP guide](https://support.kount.com/hc/en-us/articles/360045746311-FAQ-How-is-Content-Security-Policy-CSP-Used-).
 
-For [Braintree Fraud Protection](https://developers.braintreepayments.com/guides/advanced-fraud-management-tools/overview), use these directives:
+For [Braintree Fraud Protection](https://developer.paypal.com/braintree/docs/guides/premium-fraud-management-tools/overview), use these directives:
 
 |            | Sandbox          | Production       |
 |------------|------------------|------------------|

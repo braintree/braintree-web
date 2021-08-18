@@ -63,6 +63,7 @@ function configuration() {
       },
       visaCheckout: {
         apikey: 'gwApikey',
+        encryptionKey: 'gwEncryptionKey',
         externalClientId: 'gwExternalClientId',
         supportedCardTypes: ['Visa', 'MasterCard', 'Discover', 'American Express']
       }

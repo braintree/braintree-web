@@ -58,6 +58,14 @@ describe('Visa Checkout', () => {
       expect(initOptions.apikey).toBe('apikey');
     });
 
+    it('sets encryptionKey', () => {
+      const initOptions = VisaCheckout.prototype.createInitOptions.call({
+        _client: testContext.client
+      }, {});
+
+      expect(initOptions.encryptionKey).toBe('gwEncryptionKey');
+    });
+
     it('sets externalClientId if undefined', () => {
       const initOptions = VisaCheckout.prototype.createInitOptions.call({
         _client: testContext.client

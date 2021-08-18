@@ -8,16 +8,18 @@ var Promise = require('../lib/promise');
 
 var cachedSessionId;
 
-function setup(environment) {
+function setup(options) {
   var fraudNet = new Fraudnet();
 
-  if (cachedSessionId) {
+  options = options || {};
+
+  if (!options.sessionId && cachedSessionId) {
     fraudNet.sessionId = cachedSessionId;
 
     return Promise.resolve(fraudNet);
   }
 
-  return fraudNet.initialize(environment);
+  return fraudNet.initialize(options);
 }
 
 function clearSessionIdCache() {
@@ -27,10 +29,14 @@ function clearSessionIdCache() {
 function Fraudnet() {
 }
 
-Fraudnet.prototype.initialize = function (environment) {
+Fraudnet.prototype.initialize = function (options) {
+  var environment = options.environment;
   var self = this;
 
-  this.sessionId = cachedSessionId = _generateSessionId();
+  this.sessionId = options.sessionId || _generateSessionId();
+  if (!options.sessionId) {
+    cachedSessionId = this.sessionId;
+  }
   this._beaconId = _generateBeaconId(this.sessionId);
   this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId, environment);
 

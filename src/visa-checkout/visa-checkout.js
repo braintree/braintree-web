@@ -114,6 +114,7 @@ VisaCheckout.prototype.createInitOptions = function (options) {
 
   initOptions = jsonClone(options);
   initOptions.apikey = initOptions.apikey || visaCheckoutConfiguration.apikey;
+  initOptions.encryptionKey = visaCheckoutConfiguration.encryptionKey;
   initOptions.externalClientId = initOptions.externalClientId || visaCheckoutConfiguration.externalClientId;
   initOptions.settings = initOptions.settings || {};
   initOptions.settings.dataLevel = 'FULL';

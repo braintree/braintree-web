@@ -176,7 +176,22 @@ describe('dataCollector', () => {
         client: testContext.client,
         paypal: true
       }).then(() => {
-        expect(fraudnet.setup).toBeCalledWith('custom-environment-value');
+        expect(fraudnet.setup).toBeCalledWith({
+          environment: 'custom-environment-value'
+        });
+      });
+    });
+
+    it('sets up custom correlation id for fraudnet', () => {
+      return dataCollector.create({
+        client: testContext.client,
+        correlationId: 'custom-correlation-id',
+        paypal: true
+      }).then(() => {
+        expect(fraudnet.setup).toBeCalledWith({
+          sessionId: 'custom-correlation-id',
+          environment: 'sandbox'
+        });
       });
     });
 

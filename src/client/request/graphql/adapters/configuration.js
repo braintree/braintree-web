@@ -165,6 +165,7 @@ function adaptConfigurationResponseBody(body, ctx) {
   if (configuration.visaCheckout) {
     response.visaCheckout = {
       apikey: configuration.visaCheckout.apiKey,
+      encryptionKey: configuration.visaCheckout.encryptionKey,
       externalClientId: configuration.visaCheckout.externalClientId,
       supportedCardTypes: mapCardTypes(configuration.visaCheckout.supportedCardBrands, cardTypeTransforms.visaCheckout)
     };

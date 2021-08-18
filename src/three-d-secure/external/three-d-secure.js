@@ -61,7 +61,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} binData.productId The product id.
  * @property {boolean} liabilityShiftPossible *Deprecated:* Use `threeDSecureInfo.liabilityShiftPossible` instead.
  * @property {boolean} liabilityShifted *Deprecated:* Use `threeDSecureInfo.liabilityShifted` instead.
- * @property {object} threeDSecureInfo 3DS information about the card. Note: This information should be verified on the server by using the [payment method nonce find method](https://developers.braintreepayments.com/reference/request/payment-method-nonce/find). The values provided here are merely for convenience. Only values looked up on the server should determine the logic about how to process a transaction.
+ * @property {object} threeDSecureInfo 3DS information about the card. Note: This information should be verified on the server by using the [payment method nonce find method](https://developer.paypal.com/braintree/docs/reference/request/payment-method-nonce/find). The values provided here are merely for convenience. Only values looked up on the server should determine the logic about how to process a transaction.
  * @property {boolean} threeDSecureInfo.liabilityShiftPossible Indicates whether the card was eligible for 3D Secure.
  * @property {boolean} threeDSecureInfo.liabilityShifted Indicates whether the liability for fraud has been shifted away from the merchant.
  * @property {string} threeDSecureInfo.cavv Cardholder authentication verification value or CAVV. The main encrypted message issuers and card networks use to verify authentication has occurred. Mastercard uses an AVV message and American Express uses an AEVV message, each of which should also be passed in the cavv parameter.
@@ -360,7 +360,7 @@ var FRAMEWORKS = require('./frameworks');
  *
  * If you use the Braintree SDK from within an iframe, you must not use the `sandbox` attribute on your iframe or the 3D Secure modal will not function correctly.
  *
- * **Note**: 3D Secure 2.0 is documented below and will become the default integration method in a future version of Braintree-web. Until then, version 1.0 will continue to be supported. To view 3D Secure 1.0 documentation, look at Braintree-web documentation from version [3.40.0](https://braintree.github.io/braintree-web/3.40.0/ThreeDSecure.html) and earlier, or upgrade your integration by referring to the [3D Secure 2.0 adoption guide](https://developers.braintreepayments.com/guides/3d-secure/migration/javascript/v3).
+ * **Note**: 3D Secure 2.0 is documented below and will become the default integration method in a future version of Braintree-web. Until then, version 1.0 will continue to be supported. To view 3D Secure 1.0 documentation, look at Braintree-web documentation from version [3.40.0](https://braintree.github.io/braintree-web/3.40.0/ThreeDSecure.html) and earlier, or upgrade your integration by referring to the [3D Secure 2.0 adoption guide](https://developer.paypal.com/braintree/docs/guides/3d-secure/migration/javascript/v3).
  */
 function ThreeDSecure(options) {
   var self = this;

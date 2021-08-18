@@ -117,6 +117,7 @@ describe('GraphQL Configuration', () => {
             },
             visaCheckout: {
               apiKey: 'visa_checkout_api_key',
+              encryptionKey: 'visa_checkout_encryption_key',
               externalClientId: 'external_client_id',
               supportedCardBrands: ['VISA', 'MASTERCARD', 'AMERICAN_EXPRESS', 'DISCOVER']
             },
@@ -186,6 +187,7 @@ describe('GraphQL Configuration', () => {
         },
         visaCheckout: {
           apikey: 'visa_checkout_api_key',
+          encryptionKey: 'visa_checkout_encryption_key',
           externalClientId: 'external_client_id',
           supportedCardTypes: [
             'Visa',

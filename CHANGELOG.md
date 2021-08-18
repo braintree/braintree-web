@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## 3.81.0
+* Data Collector
+  * Allow passing custom correlation id when initializing data collector
+* Visa Checkout
+  * Add `encryptionKey` to `createInitOptions`
+
 ## 3.80.0
 * 3D Secure
   * deprecate `cardAdd` in `verifyCard` in favor of `cardAddChallengeRequested` (`cardAdd` can still be used as an alias)

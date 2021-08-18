@@ -37,7 +37,7 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @property {string} details.shippingAddress.postalCode Postal code.
  * @property {string} details.shippingAddress.countryCode 2 character country code (e.g. US).
  * @property {?object} details.billingAddress User's billing address details.
- * Not available to all merchants; [contact PayPal](https://developers.braintreepayments.com/support/guides/paypal/setup-guide#contacting-paypal-support) for details on eligibility and enabling this feature.
+ * Not available to all merchants; [contact support](https://developer.paypal.com/braintree/help) for details on eligibility and enabling this feature.
  * Alternatively, see `shippingAddress` above as an available client option.
  * @property {string} details.billingAddress.line1 Street number and name.
  * @property {string} details.billingAddress.line2 Extended address.
