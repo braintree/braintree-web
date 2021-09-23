@@ -580,7 +580,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
 
     self._tokenizePromise.resolve({
       paymentMethodNonce: payload.paymentMethodId,
-      username: '@' + (payload.userName || '').replace('@', '')
+      username: payload.userName
     });
   }).catch(function (err) {
     analytics.sendEvent(self._createPromise, 'venmo.tokenize.manual-return.failure');
@@ -889,7 +889,7 @@ function formatTokenizePayload(payload) {
     details: {
       // NEXT_MAJOR_VERSION the web sdks have a prepended @ sign
       // but the ios and android ones do not. This should be standardized
-      username: payload.username
+      username: '@' + (payload.username || '').replace('@', '')
     }
   };
 }

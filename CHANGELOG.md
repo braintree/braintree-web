@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+# 3.81.1
+* Venmo
+  * Fix issue where `@` was sometimes not returned in username param upon successful tokenization
+
 ## 3.81.0
 * Data Collector
   * Allow passing custom correlation id when initializing data collector

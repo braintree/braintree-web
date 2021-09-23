@@ -1464,7 +1464,7 @@ describe('Venmo', () => {
           const promise = venmo.tokenize().then(({ details, nonce, type }) => {
             expect(nonce).toBe('abc');
             expect(type).toBe('VenmoAccount');
-            expect(details.username).toBe('keanu');
+            expect(details.username).toBe('@keanu');
           });
 
           expect.assertions(3);

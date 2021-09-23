@@ -1082,6 +1082,10 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
     }
   }
 
+  if (options.clientMetadataId) {
+    paymentResource.correlationId = options.clientMetadataId;
+  }
+
   return paymentResource;
 };
 

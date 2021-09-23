@@ -353,6 +353,18 @@ describe('PayPalCheckout', () => {
         });
       });
 
+      it('contains clientMetadataId when specified', () => {
+        testContext.options.clientMetadataId = 'foobar';
+
+        return testContext.paypalCheckout.createPayment(testContext.options).then(() => {
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            data: {
+              correlationId: 'foobar'
+            }
+          });
+        });
+      });
+
       it('does not contain landing page type when unspecified', () =>
         testContext.paypalCheckout.createPayment(testContext.options).then(() => {
           expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
@@ -386,6 +398,18 @@ describe('PayPalCheckout', () => {
               }
             });
           }));
+
+        it('contains clientMetadataId when specified', () => {
+          testContext.options.clientMetadataId = 'foobar';
+
+          return testContext.paypalCheckout.createPayment(testContext.options).then(() => {
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              data: {
+                correlationId: 'foobar'
+              }
+            });
+          });
+        });
 
         it('contains shippingOptions when specified', () => {
           testContext.options.shippingOptions = [

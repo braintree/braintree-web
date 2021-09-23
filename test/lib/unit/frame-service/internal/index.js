@@ -5,6 +5,9 @@ const { DISPATCH_FRAME_REPORT } = require('../../../../../src/lib/frame-service/
 const { DISPATCH_FRAME_NAME, POPUP_CLOSE_TIMEOUT } = require('../../../../../src/lib/frame-service/shared/constants');
 
 describe('frame-service', () => {
+  it('is true', () => {
+    expect(true).toBe(true);
+  });
   let testContext;
 
   beforeEach(() => {
@@ -88,7 +91,7 @@ describe('frame-service', () => {
   describe('asyncClose', () => {
     it('async call to window.close', () => {
       jest.useFakeTimers();
-      jest.spyOn(window, 'close');
+      jest.spyOn(window, 'close').mockImplementation();
       frameService.asyncClose();
 
       jest.advanceTimersByTime(POPUP_CLOSE_TIMEOUT + 10);
@@ -96,4 +99,3 @@ describe('frame-service', () => {
     });
   });
 });
-

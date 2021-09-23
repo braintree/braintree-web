@@ -60,7 +60,7 @@ var errors = require('./errors');
  * @function
  * @description Resolves with device data once it is ready.
  * @param {object} [options] Options for how device data is resolved.
- * @param {boolean} [stringify=false] Whether or not to return the device data as a JSON string.
+ * @param {boolean} [options.raw=false] When set to true, the device data will resolve as an object instead of a JSON string.
  * @param {callback} [callback] Called on completion. If no callback is provided, `getDeviceData` returns a promise.
  * @instance
  * @example
