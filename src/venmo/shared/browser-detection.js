@@ -11,7 +11,11 @@ function isAndroidWebview() {
 }
 
 function doesNotSupportWindowOpenInIos() {
-  return isIosWebview() || (isIos() && isChrome());
+  if (!isIos()) {
+    return false;
+  }
+
+  return isIosWebview() || !isIosSafari();
 }
 
 module.exports = {

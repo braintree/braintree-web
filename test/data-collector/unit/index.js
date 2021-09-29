@@ -182,7 +182,20 @@ describe('dataCollector', () => {
       });
     });
 
-    it('sets up custom correlation id for fraudnet', () => {
+    it('sets up custom clientMetadataId for fraudnet', () => {
+      return dataCollector.create({
+        client: testContext.client,
+        clientMetadataId: 'custom-correlation-id',
+        paypal: true
+      }).then(() => {
+        expect(fraudnet.setup).toBeCalledWith({
+          sessionId: 'custom-correlation-id',
+          environment: 'sandbox'
+        });
+      });
+    });
+
+    it('can use correlationId as an alias for clientMetadataId', () => {
       return dataCollector.create({
         client: testContext.client,
         correlationId: 'custom-correlation-id',
@@ -190,6 +203,20 @@ describe('dataCollector', () => {
       }).then(() => {
         expect(fraudnet.setup).toBeCalledWith({
           sessionId: 'custom-correlation-id',
+          environment: 'sandbox'
+        });
+      });
+    });
+
+    it('prefers clientMetadataId over correlationId', () => {
+      return dataCollector.create({
+        client: testContext.client,
+        clientMetadataId: 'custom-client-metadata-id',
+        correlationId: 'custom-correlation-id',
+        paypal: true
+      }).then(() => {
+        expect(fraudnet.setup).toBeCalledWith({
+          sessionId: 'custom-client-metadata-id',
           environment: 'sandbox'
         });
       });
