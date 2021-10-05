@@ -72,6 +72,7 @@ LocalPayment.prototype._initialize = function () {
  * @param {number} [options.windowOptions.height=720] The height in pixels of the window opened when starting the payment.
  * @param {string} options.amount The amount to authorize for the transaction.
  * @param {string} options.currencyCode The currency to process the payment.
+ * @param {string} options.displayName The merchant name displayed inside of the window that is opened when starting the payment.
  * @param {string} options.paymentType The type of local payment.
  * @param {string} options.paymentTypeCountryCode The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed {@link https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons|here}. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.
  * @param {string} options.email Payer email of the customer.
@@ -145,6 +146,7 @@ LocalPayment.prototype.startPayment = function (options) {
       c: 1 // indicating we went through the cancel flow
     }),
     experienceProfile: {
+      brandName: options.displayName,
       noShipping: !options.shippingAddressRequired
     },
     fundingSource: options.paymentType,
