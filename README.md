@@ -11,7 +11,8 @@ Install
 =======
 
 ```
-npm install braintree-web ```
+npm install braintree-web
+```
 
 ```
 bower install braintree-web
