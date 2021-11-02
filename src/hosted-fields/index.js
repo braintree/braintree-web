@@ -17,6 +17,7 @@ var VERSION = process.env.npm_package_version;
  * @property {(string|HTMLElement)} container A DOM node or CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
  * @property {string} [type] Will be used as the `type` attribute of the input. To mask `cvv` input, for instance, `type: "password"` can be used.
+ * @property {string} [iframeTitle] The title used for the iframe containing the credit card input. By default, this will be `Secure Credit Card Frame - <the name of the specific field>`.
  * @property {string} [internalLabel] Each Hosted Field iframe has a hidden label that is used by screen readers to identify the input. The `internalLabel` property can be used to customize the field for localization purposes. The default values are:
  * * number: Credit Card Number
  * * cvv: CVV

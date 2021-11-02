@@ -1,5 +1,19 @@
 # CHANGELOG
 
+# 3.83.0
+
+  - Data Collector
+      - Updates `clientMetadataId` to `riskCorrelationId`
+        (`clientMetadataId` is treated as an alias)
+  - Hosted Fields
+      - Allow passing `iframeTitle` in fields configuration to customize
+        iframe titles for field (\#545)
+  - Local Payments
+      - Add `options.displayName` to `startPayment`
+  - Venmo
+      - Fix issue where Facebook on Android would report as a supported
+        browser
+
 # 3.82.0
 
   - Update @braintree/browser-detection to v1.12.1

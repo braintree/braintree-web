@@ -175,6 +175,7 @@ describe('LocalPayment', () => {
         email: 'email@example.com',
         phone: '1234',
         bic: 'ABGANL6A',
+        displayName: 'My Brand!',
         address: {
           streetAddress: '123 Address',
           extendedAddress: 'Unit 1',
@@ -255,6 +256,7 @@ describe('LocalPayment', () => {
             amount: '10.00',
             intent: 'sale',
             experienceProfile: {
+              brandName: 'My Brand!',
               noShipping: false
             },
             currencyIsoCode: 'USD',
@@ -295,6 +297,7 @@ describe('LocalPayment', () => {
             amount: '10.00',
             intent: 'sale',
             experienceProfile: {
+              brandName: 'My Brand!',
               noShipping: false
             },
             currencyIsoCode: 'USD',

@@ -353,8 +353,8 @@ describe('PayPalCheckout', () => {
         });
       });
 
-      it('contains clientMetadataId when specified', () => {
-        testContext.options.clientMetadataId = 'foobar';
+      it('contains riskCorrelationId when specified', () => {
+        testContext.options.riskCorrelationId = 'foobar';
 
         return testContext.paypalCheckout.createPayment(testContext.options).then(() => {
           expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
@@ -399,8 +399,8 @@ describe('PayPalCheckout', () => {
             });
           }));
 
-        it('contains clientMetadataId when specified', () => {
-          testContext.options.clientMetadataId = 'foobar';
+        it('contains riskCorrelationId when specified', () => {
+          testContext.options.riskCorrelationId = 'foobar';
 
           return testContext.paypalCheckout.createPayment(testContext.options).then(() => {
             expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
@@ -1382,6 +1382,21 @@ describe('PayPalCheckout', () => {
       });
     });
 
+    it('passes the saved risk correlation id as the correlationId when present', () => {
+      testContext.paypalCheckout._riskCorrelationId = 'risk-id';
+
+      testContext.paypalCheckout.tokenizePayment({}).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+          data: {
+            paypalAccount: {
+              correlationId: 'risk-id'
+            }
+          }
+        });
+      });
+    });
+
     it('passes the BA token as the correlationId when present', () =>
       testContext.paypalCheckout.tokenizePayment({ billingToken: 'BA-1234' }).then(() => {
         expect(testContext.client.request).toHaveBeenCalledTimes(1);
@@ -1405,6 +1420,39 @@ describe('PayPalCheckout', () => {
           }
         });
       }));
+
+    it('prefers the risk correlation id over the billing token', () => {
+      testContext.paypalCheckout._riskCorrelationId = 'risk-id';
+
+      testContext.paypalCheckout.tokenizePayment({
+        billingToken: 'BA-123'
+      }).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+          data: {
+            paypalAccount: {
+              correlationId: 'risk-id'
+            }
+          }
+        });
+      });
+    });
+
+    it('prefers the billing token over ec token', () => {
+      testContext.paypalCheckout.tokenizePayment({
+        billingToken: 'BA-123',
+        ecToken: 'EC-1234'
+      }).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+          data: {
+            paypalAccount: {
+              correlationId: 'BA-123'
+            }
+          }
+        });
+      });
+    });
 
     it('validates if flow is vault and auth is not tokenization key', () => {
       testContext.configuration.authorizationType = 'CLIENT_TOKEN';

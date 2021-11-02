@@ -531,7 +531,7 @@ function HostedFields(options) {
       type: key,
       name: 'braintree-hosted-field-' + key,
       style: constants.defaultIFrameStyle,
-      title: 'Secure Credit Card Frame - ' + constants.allowedFields[key].label
+      title: field.iframeTitle || 'Secure Credit Card Frame - ' + constants.allowedFields[key].label
     });
 
     this._injectedNodes.push.apply(this._injectedNodes, injectFrame(componentId, frame, internalContainer, function () {

@@ -1835,6 +1835,31 @@ describe('Venmo', () => {
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.appswitch.start.browser');
       });
 
+      it('includes payerInfo if included in the query', async () => {
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            node: {
+              status: 'APPROVED',
+              paymentMethodId: 'fake-nonce',
+              userName: 'some-name',
+              payerInfo: {
+                userName: 'some-name',
+                email: 'email@example.com',
+                phoneNumber: '1234567890'
+              }
+            }
+          }
+        });
+
+        const payload = await venmo.tokenize();
+
+        expect(payload.details.payerInfo).toEqual({
+          userName: '@some-name',
+          email: 'email@example.com',
+          phoneNumber: '1234567890'
+        });
+      });
+
       it('creates a new payment context upon succesfull tokenization', async () => {
         testContext.client.request.mockResolvedValueOnce({
           data: {

@@ -31,7 +31,7 @@ var DEFAULT_MOBILE_EXPIRING_THRESHOLD = 300000; // 5 minutes
  * @property {string} nonce The payment method nonce.
  * @property {string} type The payment method type, always `VenmoAccount`.
  * @property {object} details Additional Venmo account details.
- * @property {string} details.username Username of the Venmo account.
+ * @property {string} details.username The username of the Venmo account.
  */
 
 /**
@@ -580,7 +580,8 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
 
     self._tokenizePromise.resolve({
       paymentMethodNonce: payload.paymentMethodId,
-      username: payload.userName
+      username: payload.userName,
+      payerInfo: payload.payerInfo
     });
   }).catch(function (err) {
     analytics.sendEvent(self._createPromise, 'venmo.tokenize.manual-return.failure');
@@ -819,7 +820,8 @@ Venmo.prototype.processResultsFromHash = function (hash) {
           }
           resolve({
             paymentMethodNonce: result.paymentMethodId,
-            username: result.userName
+            username: result.userName,
+            payerInfo: result.payerInfo
           });
         }).catch(function () {
           analytics.sendEvent(self._createPromise, 'venmo.process-results.payment-context-status-query-failed');
@@ -882,16 +884,29 @@ function getFragmentParameters(hash) {
   }, {});
 }
 
+function formatUserName(username) {
+  username = username || '';
+
+  // NEXT_MAJOR_VERSION the web sdks have a prepended @ sign
+  // but the ios and android ones do not. This should be standardized
+  return '@' + username.replace('@', '');
+}
+
 function formatTokenizePayload(payload) {
-  return {
+  var formattedPayload = {
     nonce: payload.paymentMethodNonce,
     type: 'VenmoAccount',
     details: {
-      // NEXT_MAJOR_VERSION the web sdks have a prepended @ sign
-      // but the ios and android ones do not. This should be standardized
-      username: '@' + (payload.username || '').replace('@', '')
+      username: formatUserName(payload.username)
     }
   };
+
+  if (payload.payerInfo) {
+    formattedPayload.details.payerInfo = payload.payerInfo;
+    formattedPayload.details.payerInfo.userName = formatUserName(payload.payerInfo.userName);
+  }
+
+  return formattedPayload;
 }
 
 // From https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API

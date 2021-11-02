@@ -182,7 +182,20 @@ describe('dataCollector', () => {
       });
     });
 
-    it('sets up custom clientMetadataId for fraudnet', () => {
+    it('sets up custom riskCorrelationId for fraudnet', () => {
+      return dataCollector.create({
+        client: testContext.client,
+        riskCorrelationId: 'custom-risk-correlation-id',
+        paypal: true
+      }).then(() => {
+        expect(fraudnet.setup).toBeCalledWith({
+          sessionId: 'custom-risk-correlation-id',
+          environment: 'sandbox'
+        });
+      });
+    });
+
+    it('can use clientMetadataId as an alias for riskCorrelationId', () => {
       return dataCollector.create({
         client: testContext.client,
         clientMetadataId: 'custom-correlation-id',
@@ -195,7 +208,7 @@ describe('dataCollector', () => {
       });
     });
 
-    it('can use correlationId as an alias for clientMetadataId', () => {
+    it('can use correlationId as an alias for riskCorrelationId', () => {
       return dataCollector.create({
         client: testContext.client,
         correlationId: 'custom-correlation-id',
@@ -203,6 +216,20 @@ describe('dataCollector', () => {
       }).then(() => {
         expect(fraudnet.setup).toBeCalledWith({
           sessionId: 'custom-correlation-id',
+          environment: 'sandbox'
+        });
+      });
+    });
+
+    it('prefers riskCorrelationId over clientMetadataId', () => {
+      return dataCollector.create({
+        client: testContext.client,
+        clientMetadataId: 'custom-client-metadata-id',
+        riskCorrelationId: 'custom-risk-correlation-id',
+        paypal: true
+      }).then(() => {
+        expect(fraudnet.setup).toBeCalledWith({
+          sessionId: 'custom-risk-correlation-id',
           environment: 'sandbox'
         });
       });

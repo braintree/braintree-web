@@ -33,6 +33,10 @@ function isBrowserSupported(options) {
     return merchantAllowsDesktopBrowsers && !isMobileDevice;
   }
 
+  if (browserDetection.isFacebookOwnedBrowserOnAndroid()) {
+    return false;
+  }
+
   if (!merchantAllowsDesktopBrowsers) {
     return isMobileDevice;
   }

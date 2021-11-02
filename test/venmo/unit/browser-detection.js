@@ -54,6 +54,59 @@ describe('browser detection', () => {
     });
   });
 
+  describe('isFacebookOwnedBrowserOnAndroid', () => {
+    let userAgentSpy;
+
+    beforeEach(() => {
+      userAgentSpy = jest.spyOn(window.navigator, 'userAgent', 'get');
+    });
+
+    it('returns false when not android', () => {
+      userAgentSpy.mockReturnValue('Instagram');
+
+      isAndroid.mockReturnValue(false);
+
+      expect(browserDetection.isFacebookOwnedBrowserOnAndroid()).toBe(false);
+    });
+
+    it('returns false when it is android, but userAgent does not contain FB_IAB or Instagram', () => {
+      userAgentSpy.mockReturnValue('foo bar');
+
+      isAndroid.mockReturnValue(true);
+
+      expect(browserDetection.isFacebookOwnedBrowserOnAndroid()).toBe(false);
+    });
+
+    it('returns true when it is android and userAgent contains FB_IAB', () => {
+      userAgentSpy.mockReturnValue('foo FB_IAB bar');
+
+      isAndroid.mockReturnValue(true);
+
+      expect(browserDetection.isFacebookOwnedBrowserOnAndroid()).toBe(true);
+    });
+
+    it('returns true when it is not Android, but userAgent contains HUAWEI and FBAN', () => {
+      isAndroid.mockReturnValue(false);
+
+      userAgentSpy.mockReturnValue('HUAWEI foo');
+      expect(browserDetection.isFacebookOwnedBrowserOnAndroid()).toBe(false);
+
+      userAgentSpy.mockReturnValue('FBAN foo');
+      expect(browserDetection.isFacebookOwnedBrowserOnAndroid()).toBe(false);
+
+      userAgentSpy.mockReturnValue('HUAWEI foo FBAN bar');
+      expect(browserDetection.isFacebookOwnedBrowserOnAndroid()).toBe(true);
+    });
+
+    it('returns true when it is android and userAgent contains Instagram', () => {
+      userAgentSpy.mockReturnValue('foo Instagram bar');
+
+      isAndroid.mockReturnValue(true);
+
+      expect(browserDetection.isFacebookOwnedBrowserOnAndroid()).toBe(true);
+    });
+  });
+
   describe('doesNotSupportWindowOpenInIos', () => {
     it('returns false when it is not iOS', () => {
       isIos.mockReturnValue(false);

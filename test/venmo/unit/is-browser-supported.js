@@ -14,6 +14,7 @@ describe('isBrowserSupported', () => {
     browserDetection.isIosSafari.mockReturnValue(false);
     browserDetection.isIosWebview.mockReturnValue(false);
     browserDetection.isAndroidWebview.mockReturnValue(false);
+    browserDetection.isFacebookOwnedBrowserOnAndroid.mockReturnValue(false);
   });
 
   describe('defaults', () => {
@@ -52,6 +53,13 @@ describe('isBrowserSupported', () => {
       browserDetection.isAndroidWebview.mockReturnValue(true);
 
       expect(isBrowserSupported()).toBe(true);
+    });
+
+    it('returns false for Facebook on Android', () => {
+      browserDetection.isAndroid.mockReturnValue(true);
+      browserDetection.isFacebookOwnedBrowserOnAndroid.mockReturnValue(true);
+
+      expect(isBrowserSupported()).toBe(false);
     });
 
     it('returns false for other browsers', () => {

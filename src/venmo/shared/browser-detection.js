@@ -18,6 +18,21 @@ function doesNotSupportWindowOpenInIos() {
   return isIosWebview() || !isIosSafari();
 }
 
+function isFacebookOwnedBrowserOnAndroid() {
+  var ua = window.navigator.userAgent.toLowerCase();
+
+  // Huawei's Facebook useragent does not include Android
+  if (ua.indexOf('huawei') > -1 && ua.indexOf('fban') > -1) {
+    return true;
+  }
+
+  if (!isAndroid()) {
+    return false;
+  }
+
+  return ua.indexOf('fb_iab') > -1 || ua.indexOf('instagram') > -1;
+}
+
 module.exports = {
   isAndroid: isAndroid,
   isAndroidWebview: isAndroidWebview,
@@ -25,5 +40,6 @@ module.exports = {
   isIos: isIos,
   isIosSafari: isIosSafari,
   isIosWebview: isIosWebview,
+  isFacebookOwnedBrowserOnAndroid: isFacebookOwnedBrowserOnAndroid,
   doesNotSupportWindowOpenInIos: doesNotSupportWindowOpenInIos
 };

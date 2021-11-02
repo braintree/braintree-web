@@ -232,6 +232,86 @@ describe('HostedFields', () => {
       frameReadyHandler({ field: 'expirationDate' }, replyStub);
     });
 
+    it('creates an iframe for each field', done => {
+      let frameReadyHandler;
+      const configuration = testContext.defaultConfiguration;
+      const replyStub = jest.fn();
+      const cvvNode = document.createElement('div');
+      const expirationDateNode = document.createElement('div');
+
+      cvvNode.id = 'cvv';
+      expirationDateNode.id = 'expirationDate';
+
+      document.body.appendChild(cvvNode);
+      document.body.appendChild(expirationDateNode);
+
+      configuration.fields = {
+        number: { container: '#number', placeholder: '4111' },
+        cvv: { container: '#cvv' },
+        expirationDate: { container: '#expirationDate' }
+      };
+      configuration.orderedFields = ['number', 'cvv', 'expirationDate'];
+
+      testContext.instance = new HostedFields(configuration);
+
+      frameReadyHandler = findFirstEventCallback(events.FRAME_READY, testContext.instance._bus.on.mock.calls);
+
+      testContext.instance.on('ready', () => {
+        const iframes = document.querySelectorAll('iframe');
+
+        expect(iframes.length).toBe(3);
+        expect(iframes[0].getAttribute('title')).toBe('Secure Credit Card Frame - Credit Card Number');
+        expect(iframes[1].getAttribute('title')).toBe('Secure Credit Card Frame - CVV');
+        expect(iframes[2].getAttribute('title')).toBe('Secure Credit Card Frame - Expiration Date');
+
+        done();
+      });
+
+      frameReadyHandler({ field: 'number' }, replyStub);
+      frameReadyHandler({ field: 'cvv' }, replyStub);
+      frameReadyHandler({ field: 'expirationDate' }, replyStub);
+    });
+
+    it('can pass custom titles for iframes', done => {
+      let frameReadyHandler;
+      const configuration = testContext.defaultConfiguration;
+      const replyStub = jest.fn();
+      const cvvNode = document.createElement('div');
+      const expirationDateNode = document.createElement('div');
+
+      cvvNode.id = 'cvv';
+      expirationDateNode.id = 'expirationDate';
+
+      document.body.appendChild(cvvNode);
+      document.body.appendChild(expirationDateNode);
+
+      configuration.fields = {
+        number: { container: '#number', iframeTitle: 'Number' },
+        cvv: { container: '#cvv', iframeTitle: 'CVV' },
+        expirationDate: { container: '#expirationDate', iframeTitle: 'Expiration Date' }
+      };
+      configuration.orderedFields = ['number', 'cvv', 'expirationDate'];
+
+      testContext.instance = new HostedFields(configuration);
+
+      frameReadyHandler = findFirstEventCallback(events.FRAME_READY, testContext.instance._bus.on.mock.calls);
+
+      testContext.instance.on('ready', () => {
+        const iframes = document.querySelectorAll('iframe');
+
+        expect(iframes.length).toBe(3);
+        expect(iframes[0].getAttribute('title')).toBe('Number');
+        expect(iframes[1].getAttribute('title')).toBe('CVV');
+        expect(iframes[2].getAttribute('title')).toBe('Expiration Date');
+
+        done();
+      });
+
+      frameReadyHandler({ field: 'number' }, replyStub);
+      frameReadyHandler({ field: 'cvv' }, replyStub);
+      frameReadyHandler({ field: 'expirationDate' }, replyStub);
+    });
+
     it('can pass DOM node directly as container', done => {
       let frameReadyHandler;
       const configuration = testContext.defaultConfiguration;
