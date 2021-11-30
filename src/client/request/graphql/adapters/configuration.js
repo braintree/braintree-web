@@ -14,7 +14,10 @@ var cardTypeTransforms = {
     SOLO: 'Solo',
     UK_MAESTRO: 'UK Maestro',
     UNION_PAY: 'UnionPay',
-    VISA: 'Visa'
+    VISA: 'Visa',
+    ELO: 'Elo',
+    HIPER: 'Hiper',
+    HIPERCARD: 'Hipercard'
   },
   applePayWeb: {
     VISA: 'visa',

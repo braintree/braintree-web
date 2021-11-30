@@ -28,6 +28,7 @@ module.exports = function start() {
     });
     bus.on(events_1.VENMO_DESKTOP_DISPLAY_QR_CODE, function (payload) {
         var url = "https://venmo.com/go/purchase?facilitator=BT&intent=Continue&resource_id=" + payload.id + "&merchant_id=" + payload.merchantId + "&environment=" + env;
+        modal.show();
         modal.displayQRCode(url);
     });
     bus.on(events_1.VENMO_DESKTOP_AUTHORIZING, function () {

@@ -26,6 +26,16 @@ function sendAnalyticsEvent(clientInstanceOrPromise, kind, callback) {
       data: addMetadata(configuration, data),
       timeout: constants.ANALYTICS_REQUEST_TIMEOUT_MS
     }, callback);
+  }).catch(function (err) {
+    // for all non-test cases, we don't provide a callback,
+    // so this error will always be swallowed. In this case,
+    // that's fine, it should only error when the deferred
+    // client fails to set up, in which case we don't want
+    // that error to report over and over again via these
+    // deferred analytics events
+    if (callback) {
+      callback(err);
+    }
   });
 }
 

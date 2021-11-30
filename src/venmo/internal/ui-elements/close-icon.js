@@ -32,7 +32,7 @@ var CloseIcon = /** @class */ (function (_super) {
         return container;
     };
     CloseIcon.prototype.getStyleConfig = function () {
-        return "\n      #close-icon {\n        cursor: pointer;\n        position: absolute;\n        top: 20px;\n        right: 20px;\n        z-index: 9999;\n      }\n    ";
+        return "\n      #close-icon {\n        cursor: pointer;\n        position: absolute;\n        top: 20px;\n        right: 20px;\n        z-index: 9999;\n        background: #2F3033;\n        box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.4);\n        border-radius: 100%;\n        padding: 10px;\n      }\n\n      #close-icon svg {\n        top: 1px;\n        position: relative;\n      }\n    ";
     };
     return CloseIcon;
 }(base_1.default));

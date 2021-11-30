@@ -1,5 +1,14 @@
 # CHANGELOG
 
+# 3.84.0
+
+  - Client
+      - Add Elo, Hiper, and Hipercard to `supportedCardTypes`
+      - Fix issue where analytics event would report redundant errors
+        when client fails to set up (\#606)
+  - Venmo
+      - Adjust UI for better navigation
+
 # 3.83.0
 
   - Data Collector

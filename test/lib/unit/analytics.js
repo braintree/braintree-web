@@ -105,6 +105,29 @@ describe('analytics.sendEvent', () => {
     });
   });
 
+  it('passes client creation rejection to callback', done => {
+    const clientPromise = Promise.reject(new Error('failed to set up'));
+
+    analytics.sendEvent(clientPromise, 'test.event.kind', (err) => {
+      expect(err.message).toBe('failed to set up');
+
+      done();
+    });
+  });
+
+  it('ignores errors when client promise rejects and no callback is passed', async () => {
+    let err;
+    const clientPromise = Promise.reject(new Error('failed to set up'));
+
+    try {
+      await analytics.sendEvent(clientPromise, 'test.event.kind');
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeFalsy();
+  });
+
   it('sets timestamp to the time when the event was initialized, not when it was sent', done => {
     const client = testContext.client;
 
