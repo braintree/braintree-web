@@ -208,6 +208,7 @@ var VenmoDesktop = /** @class */ (function () {
                 paymentMethodNonce: result.paymentMethodId,
                 username: username,
                 payerInfo: result.payerInfo,
+                id: _this.venmoContextId || "",
             });
         })
             .catch(function (err) {

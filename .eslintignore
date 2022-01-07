@@ -7,3 +7,4 @@ src/venmo/shared/events.js
 src/venmo/shared/types.js
 src/venmo/internal
 src/venmo/external
+**/coverage/

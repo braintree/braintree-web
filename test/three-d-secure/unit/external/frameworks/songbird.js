@@ -1363,21 +1363,6 @@ describe('SongbirdFramework', () => {
       });
     });
 
-    it('uses v1 fallback if configuration includes mpiProvider information and it is not cardinal', () => {
-      testContext.configuration.gatewayConfiguration.threeDSecure.versionTwo = null;
-
-      const framework = createFramework();
-
-      jest.spyOn(framework, 'initiateV1Fallback');
-
-      return framework.setupSongbird().then(() => {
-        return wait();
-      }).then(() => {
-        expect(framework.initiateV1Fallback).toBeCalledTimes(1);
-        expect(framework.initiateV1Fallback).toBeCalledWith('cardinal-sdk-setup-failed.cardinal-api-not-available-or-configured');
-      });
-    });
-
     it('sets up Cardinal if mpiProvider information is available and it is cardinal', () => {
       testContext.configuration.gatewayConfiguration.threeDSecure.versionTwo = 'cardinal';
 

@@ -1004,6 +1004,7 @@ describe('Venmo', () => {
 
       expect(payload.paymentMethodNonce).toBe('fake-nonce-from-context');
       expect(payload.username).toBe('name-from-context');
+      expect(payload.id).toBe('context-id-from-hash');
       expect(testContext.client.request).toBeCalledTimes(1);
       expect(testContext.client.request).toBeCalledWith({
         api: 'graphQLApi',
@@ -1421,6 +1422,18 @@ describe('Venmo', () => {
         jest.runAllTimers();
       });
 
+      it('includes paymentContextId for mobile flow with hash change listeners', () => {
+        const expectedContextId = 'muh-context-id-666';
+        const promise = venmo.tokenize().then((resp) => {
+          expect(resp.details.paymentContextId).toBe(expectedContextId);
+        });
+
+        expect.assertions(1);
+        history.replaceState({}, '', `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu&id=${expectedContextId}`);
+        triggerHashChangeHandler(venmo);
+
+        return promise;
+      });
       it('errors if getUrl fails', () => {
         jest.spyOn(venmo, 'getUrl').mockRejectedValue(new Error('client error'));
 
@@ -1829,6 +1842,7 @@ describe('Venmo', () => {
         expect(payload.nonce).toBe('fake-nonce');
         expect(payload.type).toBe('VenmoAccount');
         expect(payload.details.username).toBe('@some-name');
+        expect(payload.details.paymentContextId).toBe('context-id');
 
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.tokenize.manual-return.start');
         expect(analytics.sendEvent).toBeCalledWith(expect.anything(), 'venmo.tokenize.manual-return.success');

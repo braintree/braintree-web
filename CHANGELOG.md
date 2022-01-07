@@ -1,5 +1,18 @@
 # CHANGELOG
 
+# 3.85.0 
+
+ - Client
+      - Add Elo, Hiper, and Hipercard graphQL adapters to card
+        tokenization responses
+  - Hosted Fields
+      - Add support for Elo, Hiper, and Hipercard in tokenization payload
+      - Fix issue where Hosted Fields won't lose focus if scrolled out of view on iOS
+  - Payment Request
+      - Add support for Elo, Hiper, and Hipercard in tokenization payload
+  - Venmo
+      - Expose `paymentContextId` when available
+
 # 3.84.0
 
   - Client

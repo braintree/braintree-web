@@ -32,6 +32,7 @@ var DEFAULT_MOBILE_EXPIRING_THRESHOLD = 300000; // 5 minutes
  * @property {string} type The payment method type, always `VenmoAccount`.
  * @property {object} details Additional Venmo account details.
  * @property {string} details.username The username of the Venmo account.
+ * @property {string} details.paymentContextId The context ID of the Venmo payment. Only available when used with {@link https://braintree.github.io/braintree-web/current/module-braintree-web_venmo.html#.create|`paymentMethodUsage`}.
  */
 
 /**
@@ -581,7 +582,8 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
     self._tokenizePromise.resolve({
       paymentMethodNonce: payload.paymentMethodId,
       username: payload.userName,
-      payerInfo: payload.payerInfo
+      payerInfo: payload.payerInfo,
+      id: self._venmoPaymentContextId
     });
   }).catch(function (err) {
     analytics.sendEvent(self._createPromise, 'venmo.tokenize.manual-return.failure');
@@ -821,7 +823,8 @@ Venmo.prototype.processResultsFromHash = function (hash) {
           resolve({
             paymentMethodNonce: result.paymentMethodId,
             username: result.userName,
-            payerInfo: result.payerInfo
+            payerInfo: result.payerInfo,
+            id: params.resource_id
           });
         }).catch(function () {
           analytics.sendEvent(self._createPromise, 'venmo.process-results.payment-context-status-query-failed');
@@ -897,7 +900,8 @@ function formatTokenizePayload(payload) {
     nonce: payload.paymentMethodNonce,
     type: 'VenmoAccount',
     details: {
-      username: formatUserName(payload.username)
+      username: formatUserName(payload.username),
+      paymentContextId: payload.id
     }
   };
 

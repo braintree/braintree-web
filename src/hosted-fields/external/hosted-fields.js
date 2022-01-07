@@ -321,10 +321,6 @@ function createInputEventHandler(fields) {
 
     field = merchantPayload.fields[emittedBy];
 
-    if (eventData.type === 'blur') {
-      performBlurFixForIos(container);
-    }
-
     classList.toggle(container, constants.externalClasses.FOCUSED, field.isFocused);
     classList.toggle(container, constants.externalClasses.VALID, field.isValid);
     classList.toggle(container, constants.externalClasses.INVALID, !field.isPotentiallyValid);
@@ -336,41 +332,6 @@ function createInputEventHandler(fields) {
 
     this._emit(eventData.type, merchantPayload); // eslint-disable-line no-invalid-this
   };
-}
-
-// iOS Safari has a bug where inputs in iframes
-// will not dismiss the keyboard when they lose
-// focus. We create a hidden button input that we
-// can focus on and blur to force the keyboard to
-// dismiss. See #229
-function performBlurFixForIos(container) {
-  var hiddenInput;
-
-  if (!browserDetection.isIos()) {
-    return;
-  }
-
-  if (document.activeElement === document.body) {
-    hiddenInput = container.querySelector('input');
-
-    if (!hiddenInput) {
-      hiddenInput = document.createElement('input');
-
-      hiddenInput.type = 'button';
-      hiddenInput.style.height = '0px';
-      hiddenInput.style.width = '0px';
-      hiddenInput.style.opacity = '0';
-      hiddenInput.style.padding = '0';
-      hiddenInput.style.position = 'absolute';
-      hiddenInput.style.left = '-200%';
-      hiddenInput.style.top = '0px';
-
-      container.insertBefore(hiddenInput, container.firstChild);
-    }
-
-    hiddenInput.focus();
-    hiddenInput.blur();
-  }
 }
 
 function isVisibleEnough(node) {

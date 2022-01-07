@@ -279,10 +279,6 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
   return this._waitForClient().then(function () {
     var threeDSConfig = self._client.getConfiguration().gatewayConfiguration.threeDSecure;
 
-    if (threeDSConfig.hasOwnProperty('versionTwo') && threeDSConfig.versionTwo !== 'cardinal') {
-      return Promise.reject(new Error('cardinal-api-not-available-or-configured'));
-    }
-
     return threeDSConfig;
   }).then(function (threeDSConfig) {
     var jwt = threeDSConfig.cardinalAuthenticationJWT;
@@ -309,11 +305,7 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
 
     self.setCardinalListener('payments.validated', self._createPaymentsValidatedCallback());
   }).catch(function (err) {
-    if (err.message === 'cardinal-api-not-available-or-configured') {
-      self._v2SetupFailureReason = 'cardinal-api-not-available-or-configured';
-    } else {
-      self._v2SetupFailureReason = 'cardinal-configuration-threw-error';
-    }
+    self._v2SetupFailureReason = 'cardinal-configuration-threw-error';
 
     return Promise.reject(err);
   });
