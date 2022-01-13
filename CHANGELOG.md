@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.85.1
+
+  - Venmo
+    - Fix issue where iOS Chrome was reporting as a supported browser
+
 # 3.85.0 
 
  - Client

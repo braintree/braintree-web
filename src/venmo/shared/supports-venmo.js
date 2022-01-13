@@ -5,7 +5,8 @@ var browserDetection = require('./browser-detection');
 function isBrowserSupported(options) {
   var merchantAllowsReturningToNewBrowserTab, merchantAllowsWebviews, merchantAllowsDesktopBrowsers;
   var isAndroid = browserDetection.isAndroid();
-  var isMobileDevice = isAndroid || browserDetection.isIos();
+  var isSupportedMobileDevice = isAndroid ||
+    (browserDetection.isIos() && !browserDetection.isIosChrome());
   var isAndroidChrome = isAndroid && browserDetection.isChrome();
   var isMobileDeviceThatSupportsReturnToSameTab = browserDetection.isIosSafari() || isAndroidChrome;
 
@@ -30,7 +31,7 @@ function isBrowserSupported(options) {
       return true;
     }
 
-    return merchantAllowsDesktopBrowsers && !isMobileDevice;
+    return merchantAllowsDesktopBrowsers && !isSupportedMobileDevice;
   }
 
   if (browserDetection.isFacebookOwnedBrowserOnAndroid()) {
@@ -38,7 +39,7 @@ function isBrowserSupported(options) {
   }
 
   if (!merchantAllowsDesktopBrowsers) {
-    return isMobileDevice;
+    return isSupportedMobileDevice;
   }
 
   return true;

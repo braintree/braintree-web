@@ -54,6 +54,27 @@ describe('browser detection', () => {
     });
   });
 
+  describe('isIosChrome', () => {
+    it('returns true when isIos and isChrome return true', () => {
+      isChrome.mockReturnValue(true);
+      isIos.mockReturnValue(true);
+
+      expect(browserDetection.isIosChrome()).toBe(true);
+    });
+
+    it('returns false when either isIos or isChrome do not return true', () => {
+      isChrome.mockReturnValue(false);
+      isIos.mockReturnValue(true);
+
+      expect(browserDetection.isIosChrome()).toBe(false);
+
+      isChrome.mockReturnValue(true);
+      isIos.mockReturnValue(false);
+
+      expect(browserDetection.isIosChrome()).toBe(false);
+    });
+  });
+
   describe('isFacebookOwnedBrowserOnAndroid', () => {
     let userAgentSpy;
 

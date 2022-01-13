@@ -11,6 +11,7 @@ describe('isBrowserSupported', () => {
     browserDetection.isIos.mockReturnValue(false);
 
     browserDetection.isChrome.mockReturnValue(false);
+    browserDetection.isIosChrome.mockReturnValue(false);
     browserDetection.isIosSafari.mockReturnValue(false);
     browserDetection.isIosWebview.mockReturnValue(false);
     browserDetection.isAndroidWebview.mockReturnValue(false);
@@ -33,11 +34,12 @@ describe('isBrowserSupported', () => {
       expect(isBrowserSupported()).toBe(true);
     });
 
-    it('returns true for iOS Chrome', () => {
+    it('returns false for iOS Chrome', () => {
+      // so that it would normally pass for being iOS
       browserDetection.isIos.mockReturnValue(true);
-      browserDetection.isChrome.mockReturnValue(true);
+      browserDetection.isIosChrome.mockReturnValue(true);
 
-      expect(isBrowserSupported()).toBe(true);
+      expect(isBrowserSupported()).toBe(false);
     });
 
     it('returns true for Android Chrome', () => {
