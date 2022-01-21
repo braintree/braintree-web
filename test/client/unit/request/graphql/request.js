@@ -1536,7 +1536,7 @@ describe('GraphQL', () => {
       expect(graphQLRequest.adaptResponseBody(makeResponse('INTERNATIONAL_MAESTRO')).creditCards[0].details.cardType).toBe('Maestro');
       expect(graphQLRequest.adaptResponseBody(makeResponse('UK_MAESTRO')).creditCards[0].details.cardType).toBe('Maestro');
       expect(graphQLRequest.adaptResponseBody(makeResponse('JCB')).creditCards[0].details.cardType).toBe('JCB');
-      expect(graphQLRequest.adaptResponseBody(makeResponse('UNION_PAY')).creditCards[0].details.cardType).toBe('Union Pay');
+      expect(graphQLRequest.adaptResponseBody(makeResponse('UNION_PAY')).creditCards[0].details.cardType).toBe('UnionPay');
       expect(graphQLRequest.adaptResponseBody(makeResponse('VISA')).creditCards[0].details.cardType).toBe('Visa');
       expect(graphQLRequest.adaptResponseBody(makeResponse('ELO')).creditCards[0].details.cardType).toBe('Elo');
       expect(graphQLRequest.adaptResponseBody(makeResponse('HIPER')).creditCards[0].details.cardType).toBe('Hiper');

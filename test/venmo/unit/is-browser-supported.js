@@ -35,8 +35,6 @@ describe('isBrowserSupported', () => {
     });
 
     it('returns false for iOS Chrome', () => {
-      // so that it would normally pass for being iOS
-      browserDetection.isIos.mockReturnValue(true);
       browserDetection.isIosChrome.mockReturnValue(true);
 
       expect(isBrowserSupported()).toBe(false);
@@ -125,6 +123,7 @@ describe('isBrowserSupported', () => {
     });
 
     it('returns true for iOS Safari when configured to only return to same tab', () => {
+      browserDetection.isIos.mockReturnValue(true);
       browserDetection.isIosSafari.mockReturnValue(true);
 
       expect(isBrowserSupported({

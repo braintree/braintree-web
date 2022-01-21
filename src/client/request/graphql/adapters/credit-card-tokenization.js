@@ -14,7 +14,7 @@ var CARD_BRAND_MAP = {
   JCB: 'JCB',
   MASTERCARD: 'MasterCard',
   UK_MAESTRO: 'Maestro',
-  UNION_PAY: 'Union Pay',
+  UNION_PAY: 'UnionPay',
   VISA: 'Visa'
   /* eslint-enable camelcase */
 };

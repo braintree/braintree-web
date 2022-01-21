@@ -9,6 +9,6 @@
   },
   "plugins": ["version-interpolator-plugin", "plugins/markdown"],
   "source": {
-    "excludePattern": "(beta-component-here|preferred-payment-methods)"
+    "excludePattern": "(beta-component-here|preferred-payment-methods|unionpay)"
   }
 }

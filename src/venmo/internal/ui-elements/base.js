@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var add_styles_1 = __importDefault(require("./add-styles"));
 var UIElement = /** @class */ (function () {
     function UIElement(options) {
+        var _this = this;
         add_styles_1.default(this.getStyleConfig());
         this.element = this.constructElement();
         if (options.onClick) {
@@ -13,6 +14,11 @@ var UIElement = /** @class */ (function () {
         }
         if (options.onClose) {
             this.onClose = options.onClose;
+        }
+        if (options.children) {
+            options.children.forEach(function (child) {
+                _this.element.appendChild(child);
+            });
         }
         options.container.appendChild(this.element);
     }

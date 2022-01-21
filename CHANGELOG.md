@@ -1,5 +1,13 @@
 # CHANGELOG
 
+# 3.85.2
+
+  - Venmo
+    - Fix issue where iOS Chrome was reporting as a supported browser when Venmo was configured for desktop
+    - Improve Venmo modal UX in desktop flow
+  - UnionPay
+    - Fix typo in our GraphQL Tokenization CREDIT_CARD_BRAND_MAP
+
 # 3.85.1
 
   - Venmo

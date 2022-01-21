@@ -22,7 +22,6 @@ var base_1 = __importDefault(require("./base"));
 var modal_backdrop_1 = __importDefault(require("./modal-backdrop"));
 var front_view_1 = __importDefault(require("./front-view"));
 var back_view_1 = __importDefault(require("./back-view"));
-var close_icon_1 = __importDefault(require("./close-icon"));
 var Modal = /** @class */ (function (_super) {
     __extends(Modal, _super);
     function Modal(options) {
@@ -36,10 +35,6 @@ var Modal = /** @class */ (function (_super) {
         });
         _this.backView = back_view_1.default.create({
             container: viewBoxesContainerElement,
-        });
-        _this.closeIconContainerElement = _this.$("#close-icon-container");
-        close_icon_1.default.create({
-            container: _this.$("#close-icon-container"),
         });
         return _this;
     }
@@ -74,7 +69,6 @@ var Modal = /** @class */ (function (_super) {
     };
     Modal.prototype.authorize = function () {
         this.authorized = true;
-        this.closeIconContainerElement.classList.add("hidden");
         this.showBackFace();
         this.backView.authorize();
     };
@@ -86,7 +80,6 @@ var Modal = /** @class */ (function (_super) {
         this.authorized = false;
         this.hide();
         this.showFrontFace();
-        this.closeIconContainerElement.classList.remove("hidden");
     };
     Modal.prototype.show = function () {
         this.$("#outer-container").classList.remove("hidden");
