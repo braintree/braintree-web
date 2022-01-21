@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+      braintree-web/hosted-fields - Documentation
+  </title>
+
+  <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+  <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+  
+
+  <!-- start Mixpanel -->
+  <script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+  0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+  for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+  mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script>
+  <!-- end Mixpanel -->
+</head>
+
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="linkIcon" fill="#706d77" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+  <label for="nav-trigger" class="navicon-button x">
+    <div class="navicon"></div>
+  </label>
+
+  <label for="nav-trigger" class="overlay"></label>
+
+  <div class="top-nav-wrapper">
+    <ul>
+      <li >
+        <a href="index.html">
+          
+            <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+          
+          
+        </a>
+      </li>
+
+      
+      <li>
+        <div class="search-wrapper">
+          <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            <path d="M0 0h24v24H0z" fill="none"/>
+
+          </svg>
+          <input type="text" placeholder="Search" class="search-input">
+        </div>
+      </li>
+      
+
+    </ul>
+  </div>
+
+  <nav>
+    <h3 class="reference-title">
+      Braintree SDK Client Reference
+    </h3>
+
+    <h3>Classes</h3><ul><li id="AmericanExpress-nav"><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type="method" id="AmericanExpress-getExpressCheckoutProfile-nav"><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type="method" id="AmericanExpress-getRewardsBalance-nav"><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li><li data-type="method" id="AmericanExpress-teardown-nav"><a href="AmericanExpress.html#teardown">teardown</a></li></ul></li><li id="ApplePay-nav"><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type="method" id="ApplePay-createPaymentRequest-nav"><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type="method" id="ApplePay-performValidation-nav"><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type="method" id="ApplePay-teardown-nav"><a href="ApplePay.html#teardown">teardown</a></li><li data-type="method" id="ApplePay-tokenize-nav"><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li id="BraintreeError-nav"><a href="BraintreeError.html">BraintreeError</a></li><li id="Client-nav"><a href="Client.html">Client</a><ul class='methods'><li data-type="method" id="Client-getConfiguration-nav"><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type="method" id="Client-getVersion-nav"><a href="Client.html#getVersion">getVersion</a></li><li data-type="method" id="Client-request-nav"><a href="Client.html#request">request</a></li></ul></li><li id="DataCollector-nav"><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type="method" id="DataCollector-getDeviceData-nav"><a href="DataCollector.html#getDeviceData">getDeviceData</a></li><li data-type="method" id="DataCollector-teardown-nav"><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li id="GooglePayment-nav"><a href="GooglePayment.html">GooglePayment</a><ul class='methods'><li data-type="method" id="GooglePayment-createPaymentDataRequest-nav"><a href="GooglePayment.html#createPaymentDataRequest">createPaymentDataRequest</a></li><li data-type="method" id="GooglePayment-parseResponse-nav"><a href="GooglePayment.html#parseResponse">parseResponse</a></li><li data-type="method" id="GooglePayment-teardown-nav"><a href="GooglePayment.html#teardown">teardown</a></li></ul></li><li id="HostedFields-nav"><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type="method" id="HostedFields-addClass-nav"><a href="HostedFields.html#addClass">addClass</a></li><li data-type="method" id="HostedFields-clear-nav"><a href="HostedFields.html#clear">clear</a></li><li data-type="method" id="HostedFields-focus-nav"><a href="HostedFields.html#focus">focus</a></li><li data-type="method" id="HostedFields-getChallenges-nav"><a href="HostedFields.html#getChallenges">getChallenges</a></li><li data-type="method" id="HostedFields-getState-nav"><a href="HostedFields.html#getState">getState</a></li><li data-type="method" id="HostedFields-getSupportedCardTypes-nav"><a href="HostedFields.html#getSupportedCardTypes">getSupportedCardTypes</a></li><li data-type="method" id="HostedFields-off-nav"><a href="HostedFields.html#off">off</a></li><li data-type="method" id="HostedFields-on-nav"><a href="HostedFields.html#on">on</a></li><li data-type="method" id="HostedFields-removeAttribute-nav"><a href="HostedFields.html#removeAttribute">removeAttribute</a></li><li data-type="method" id="HostedFields-removeClass-nav"><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type="method" id="HostedFields-setAttribute-nav"><a href="HostedFields.html#setAttribute">setAttribute</a></li><li data-type="method" id="HostedFields-setMessage-nav"><a href="HostedFields.html#setMessage">setMessage</a></li><li data-type="method" id="HostedFields-setMonthOptions-nav"><a href="HostedFields.html#setMonthOptions">setMonthOptions</a></li><li data-type="method" id="HostedFields-setPlaceholder-nav"><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type="method" id="HostedFields-teardown-nav"><a href="HostedFields.html#teardown">teardown</a></li><li data-type="method" id="HostedFields-tokenize-nav"><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li id="LocalPayment-nav"><a href="LocalPayment.html">LocalPayment</a><ul class='methods'><li data-type="method" id="LocalPayment-closeWindow-nav"><a href="LocalPayment.html#closeWindow">closeWindow</a></li><li data-type="method" id="LocalPayment-focusWindow-nav"><a href="LocalPayment.html#focusWindow">focusWindow</a></li><li data-type="method" id="LocalPayment-hasTokenizationParams-nav"><a href="LocalPayment.html#hasTokenizationParams">hasTokenizationParams</a></li><li data-type="method" id="LocalPayment-startPayment-nav"><a href="LocalPayment.html#startPayment">startPayment</a></li><li data-type="method" id="LocalPayment-teardown-nav"><a href="LocalPayment.html#teardown">teardown</a></li><li data-type="method" id="LocalPayment-tokenize-nav"><a href="LocalPayment.html#tokenize">tokenize</a></li></ul></li><li id="Masterpass-nav"><a href="Masterpass.html">Masterpass</a><ul class='methods'><li data-type="method" id="Masterpass-teardown-nav"><a href="Masterpass.html#teardown">teardown</a></li><li data-type="method" id="Masterpass-tokenize-nav"><a href="Masterpass.html#tokenize">tokenize</a></li></ul></li><li id="PaymentRequestComponent-nav"><a href="PaymentRequestComponent.html">PaymentRequestComponent</a><ul class='methods'><li data-type="method" id="PaymentRequestComponent-canMakePayment-nav"><a href="PaymentRequestComponent.html#canMakePayment">canMakePayment</a></li><li data-type="method" id="PaymentRequestComponent-createSupportedPaymentMethodsConfiguration-nav"><a href="PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration">createSupportedPaymentMethodsConfiguration</a></li><li data-type="method" id="PaymentRequestComponent-off-nav"><a href="PaymentRequestComponent.html#off">off</a></li><li data-type="method" id="PaymentRequestComponent-on-nav"><a href="PaymentRequestComponent.html#on">on</a></li><li data-type="method" id="PaymentRequestComponent-teardown-nav"><a href="PaymentRequestComponent.html#teardown">teardown</a></li><li data-type="method" id="PaymentRequestComponent-tokenize-nav"><a href="PaymentRequestComponent.html#tokenize">tokenize</a></li></ul></li><li id="PayPal-nav"><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type="method" id="PayPal-closeWindow-nav"><a href="PayPal.html#closeWindow">closeWindow</a></li><li data-type="method" id="PayPal-focusWindow-nav"><a href="PayPal.html#focusWindow">focusWindow</a></li><li data-type="method" id="PayPal-tokenize-nav"><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li id="PayPalCheckout-nav"><a href="PayPalCheckout.html">PayPalCheckout</a><ul class='methods'><li data-type="method" id="PayPalCheckout-createPayment-nav"><a href="PayPalCheckout.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckout-getClientId-nav"><a href="PayPalCheckout.html#getClientId">getClientId</a></li><li data-type="method" id="PayPalCheckout-loadPayPalSDK-nav"><a href="PayPalCheckout.html#loadPayPalSDK">loadPayPalSDK</a></li><li data-type="method" id="PayPalCheckout-teardown-nav"><a href="PayPalCheckout.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckout-tokenizePayment-nav"><a href="PayPalCheckout.html#tokenizePayment">tokenizePayment</a></li></ul></li><li id="ThreeDSecure-nav"><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type="method" id="ThreeDSecure-cancelVerifyCard-nav"><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type="method" id="ThreeDSecure-initializeChallengeWithLookupResponse-nav"><a href="ThreeDSecure.html#initializeChallengeWithLookupResponse">initializeChallengeWithLookupResponse</a></li><li data-type="method" id="ThreeDSecure-off-nav"><a href="ThreeDSecure.html#off">off</a></li><li data-type="method" id="ThreeDSecure-on-nav"><a href="ThreeDSecure.html#on">on</a></li><li data-type="method" id="ThreeDSecure-prepareLookup-nav"><a href="ThreeDSecure.html#prepareLookup">prepareLookup</a></li><li data-type="method" id="ThreeDSecure-teardown-nav"><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type="method" id="ThreeDSecure-verifyCard-nav"><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li id="USBankAccount-nav"><a href="USBankAccount.html">USBankAccount</a><ul class='methods'><li data-type="method" id="USBankAccount-teardown-nav"><a href="USBankAccount.html#teardown">teardown</a></li><li data-type="method" id="USBankAccount-tokenize-nav"><a href="USBankAccount.html#tokenize">tokenize</a></li></ul></li><li id="VaultManager-nav"><a href="VaultManager.html">VaultManager</a><ul class='methods'><li data-type="method" id="VaultManager-fetchPaymentMethods-nav"><a href="VaultManager.html#fetchPaymentMethods">fetchPaymentMethods</a></li><li data-type="method" id="VaultManager-teardown-nav"><a href="VaultManager.html#teardown">teardown</a></li></ul></li><li id="Venmo-nav"><a href="Venmo.html">Venmo</a><ul class='methods'><li data-type="method" id="Venmo-cancelTokenization-nav"><a href="Venmo.html#cancelTokenization">cancelTokenization</a></li><li data-type="method" id="Venmo-hasTokenizationResult-nav"><a href="Venmo.html#hasTokenizationResult">hasTokenizationResult</a></li><li data-type="method" id="Venmo-isBrowserSupported-nav"><a href="Venmo.html#isBrowserSupported">isBrowserSupported</a></li><li data-type="method" id="Venmo-teardown-nav"><a href="Venmo.html#teardown">teardown</a></li><li data-type="method" id="Venmo-tokenize-nav"><a href="Venmo.html#tokenize">tokenize</a></li></ul></li><li id="VisaCheckout-nav"><a href="VisaCheckout.html">VisaCheckout</a><ul class='methods'><li data-type="method" id="VisaCheckout-createInitOptions-nav"><a href="VisaCheckout.html#createInitOptions">createInitOptions</a></li><li data-type="method" id="VisaCheckout-teardown-nav"><a href="VisaCheckout.html#teardown">teardown</a></li><li data-type="method" id="VisaCheckout-tokenize-nav"><a href="VisaCheckout.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li id="braintree-web-nav"><a href="module-braintree-web.html">braintree-web</a></li><li id="braintree-web_american-express-nav"><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type="method" id="braintree-web_american-express-create-nav"><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li id="braintree-web_apple-pay-nav"><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type="method" id="braintree-web_apple-pay-create-nav"><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li id="braintree-web_client-nav"><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type="method" id="braintree-web_client-create-nav"><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li id="braintree-web_data-collector-nav"><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type="method" id="braintree-web_data-collector-create-nav"><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li id="braintree-web_google-payment-nav"><a href="module-braintree-web_google-payment.html">braintree-web/google-payment</a><ul class='methods'><li data-type="method" id="braintree-web_google-payment-create-nav"><a href="module-braintree-web_google-payment.html#.create">create</a></li></ul></li><li id="braintree-web_hosted-fields-nav"><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type="method" id="braintree-web_hosted-fields-create-nav"><a href="module-braintree-web_hosted-fields.html#.create">create</a></li><li data-type="method" id="braintree-web_hosted-fields-supportsInputFormatting-nav"><a href="module-braintree-web_hosted-fields.html#.supportsInputFormatting">supportsInputFormatting</a></li></ul></li><li id="braintree-web_local-payment-nav"><a href="module-braintree-web_local-payment.html">braintree-web/local-payment</a><ul class='methods'><li data-type="method" id="braintree-web_local-payment-create-nav"><a href="module-braintree-web_local-payment.html#.create">create</a></li></ul></li><li id="braintree-web_masterpass-nav"><a href="module-braintree-web_masterpass.html">braintree-web/masterpass</a><ul class='methods'><li data-type="method" id="braintree-web_masterpass-create-nav"><a href="module-braintree-web_masterpass.html#.create">create</a></li><li data-type="method" id="braintree-web_masterpass-isSupported-nav"><a href="module-braintree-web_masterpass.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_payment-request-nav"><a href="module-braintree-web_payment-request.html">braintree-web/payment-request</a><ul class='methods'><li data-type="method" id="braintree-web_payment-request-create-nav"><a href="module-braintree-web_payment-request.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-nav"><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-create-nav"><a href="module-braintree-web_paypal.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-isSupported-nav"><a href="module-braintree-web_paypal.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-nav"><a href="module-braintree-web_paypal-checkout.html">braintree-web/paypal-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-create-nav"><a href="module-braintree-web_paypal-checkout.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-isSupported-nav"><a href="module-braintree-web_paypal-checkout.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_three-d-secure-nav"><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type="method" id="braintree-web_three-d-secure-create-nav"><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li id="braintree-web_us-bank-account-nav"><a href="module-braintree-web_us-bank-account.html">braintree-web/us-bank-account</a><ul class='methods'><li data-type="method" id="braintree-web_us-bank-account-create-nav"><a href="module-braintree-web_us-bank-account.html#.create">create</a></li></ul></li><li id="braintree-web_vault-manager-nav"><a href="module-braintree-web_vault-manager.html">braintree-web/vault-manager</a><ul class='methods'><li data-type="method" id="braintree-web_vault-manager-create-nav"><a href="module-braintree-web_vault-manager.html#.create">create</a></li></ul></li><li id="braintree-web_venmo-nav"><a href="module-braintree-web_venmo.html">braintree-web/venmo</a><ul class='methods'><li data-type="method" id="braintree-web_venmo-create-nav"><a href="module-braintree-web_venmo.html#.create">create</a></li><li data-type="method" id="braintree-web_venmo-isBrowserSupported-nav"><a href="module-braintree-web_venmo.html#.isBrowserSupported">isBrowserSupported</a></li></ul></li><li id="braintree-web_visa-checkout-nav"><a href="module-braintree-web_visa-checkout.html">braintree-web/visa-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_visa-checkout-create-nav"><a href="module-braintree-web_visa-checkout.html#.create">create</a></li></ul></li></ul><h3 id="global-nav"><a href="global.html">Global</a></h3>
+  </nav>
+
+  <div id="main">
+    
+      <h1 class="page-title">
+        braintree-web/hosted-fields
+      </h1>
+    
+
+    
+
+<section>
+  <header>
+    
+      
+  </header>
+
+  <article>
+    <div class="container-overview">
+      
+        
+
+        
+      
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+
+<h4 class="name" id=".VERSION">
+  <span class="type-signature">(static) </span>VERSION<span class="type-signature"> :string</span>
+</h4>
+
+
+
+
+  <div class="description">
+    <p>The current version of the SDK, i.e. <code>3.85.2</code>.</p>
+  </div>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line361">line 361</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+          
+        
+    
+
+    
+      <h3 class="subsection-title">Methods</h3>
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.create">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".create">
+      <span class="type-signature">(static) </span>create<span class="signature">(options, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {void}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Creation options:</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>client</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="Client.html">Client</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>A <a href="Client.html">Client</a> instance.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>authorization</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>A tokenizationKey or clientToken. Can be used in place of <code>options.client</code>.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>fields</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      fieldOptions
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>A <a href="module-braintree-web_hosted-fields.html#~fieldOptions">set of options for each field</a>.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>styles</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      styleOptions
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p><a href="module-braintree-web_hosted-fields.html#~styleOptions">Styles</a> applied to each field.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>preventAutofill</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              false
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>When true, browsers will not try to prompt the customer to autofill their credit card information.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>callback</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#callback">callback</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The second argument, <code>data</code>, is the <a href="HostedFields.html">HostedFields</a> instance. If no callback is provided, <code>create</code> returns a promise that resolves with the <a href="HostedFields.html">HostedFields</a> instance.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line126">line 126</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#create-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="create-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>braintree.hostedFields.create({
+  client: clientInstance,
+  styles: {
+    'input': {
+      'font-size': '16pt',
+      'color': '#3A3A3A'
+    },
+    '.number': {
+      'font-family': 'monospace'
+    },
+    '.valid': {
+      'color': 'green'
+    }
+  },
+  fields: {
+    number: {
+      container: '#card-number'
+    },
+    cvv: {
+      container: '#cvv',
+      placeholder: '•••'
+    },
+    expirationDate: {
+      container: '#expiration-date'
+    }
+  }
+}, callback);</code></pre>
+
+  <p class="code-caption">
+    With cardholder name
+  </p>
+
+
+  <pre class="prettyprint"><code>braintree.hostedFields.create({
+  client: clientInstance,
+  fields: {
+    number: {
+      container: '#card-number'
+    },
+    cardholderName: {
+      container: '#cardholder-name'
+    },
+    cvv: {
+      container: '#cvv',
+    },
+    expirationDate: {
+      container: '#expiration-date'
+    }
+  }
+}, callback);</code></pre>
+
+  <p class="code-caption">
+    Applying styles with a class name
+  </p>
+
+
+  <pre class="prettyprint"><code>// in document head
+&lt;style>
+  .braintree-input-class {
+    color: black;
+  }
+  .braintree-valid-class {
+    color: green;
+  }
+  .braintree-invalid-class {
+    color: red;
+  }
+&lt;/style>
+// in a script tag
+braintree.hostedFields.create({
+  client: clientInstance,
+  styles: {
+    'input': 'braintree-input-class',
+    '.invalid': 'braintree-invalid-class',
+    '.valid': {
+      // you can also use the object syntax alongside
+      // the class name syntax
+      color: green;
+    }
+  },
+  fields: {
+    number: {
+      container: '#card-number'
+    },
+    // etc...
+  }
+}, callback);</code></pre>
+
+  <p class="code-caption">
+    Right to Left Language Support
+  </p>
+
+
+  <pre class="prettyprint"><code>braintree.hostedFields.create({
+  client: clientInstance,
+  styles: {
+    'input': {
+      // other styles
+      direction: 'rtl'
+    },
+  },
+  fields: {
+    number: {
+      container: '#card-number',
+      // Credit card formatting is not currently supported
+      // with RTL languages, so we need to turn it off for the number input
+      formatInput: false
+    },
+    cvv: {
+      container: '#cvv',
+      placeholder: '•••'
+    },
+    expirationDate: {
+      container: '#expiration-date',
+      type: 'month'
+    }
+  }
+}, callback);</code></pre>
+
+  <p class="code-caption">
+    Setting up Hosted Fields to tokenize CVV only
+  </p>
+
+
+  <pre class="prettyprint"><code>braintree.hostedFields.create({
+  client: clientInstance,
+  fields: {
+    // Only add the `cvv` option.
+    cvv: {
+      container: '#cvv',
+      placeholder: '•••'
+    }
+  }
+}, callback);</code></pre>
+
+  <p class="code-caption">
+    Creating an expiration date update form with prefilled data
+  </p>
+
+
+  <pre class="prettyprint"><code>var storedCreditCardInformation = {
+  // get this info from your server
+  // with a payment method lookup
+  month: '09',
+  year: '2017'
+};
+
+braintree.hostedFields.create({
+  client: clientInstance,
+  fields: {
+    expirationMonth: {
+      container: '#expiration-month',
+      prefill: storedCreditCardInformation.month
+    },
+    expirationYear: {
+      container: '#expiration-year',
+      prefill: storedCreditCardInformation.year
+    }
+  }
+}, callback);</code></pre>
+
+  <p class="code-caption">
+    Validate the card form for supported card types
+  </p>
+
+
+  <pre class="prettyprint"><code>braintree.hostedFields.create({
+  client: clientInstance,
+  fields: {
+    number: {
+      container: '#card-number',
+      supportedCardBrands: {
+        visa: false, // prevents Visas from showing up as valid even when the Braintree control panel is configured to allow them
+        'diners-club': true // allow Diners Club cards to be valid (processed as Discover cards on the Braintree backend)
+      }
+    },
+    cvv: {
+      container: '#cvv',
+      placeholder: '•••'
+    },
+    expirationDate: {
+      container: '#expiration-date',
+      type: 'month'
+    }
+  },
+}, callback);</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.supportsInputFormatting">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".supportsInputFormatting">
+      <span class="type-signature">(static) </span>supportsInputFormatting<span class="signature">()</span><span class="type-signature"> &rarr; {Boolean}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Returns false if input formatting will be automatically disabled due to browser incompatibility. Otherwise, returns true. For a list of unsupported browsers, <a href="https://github.com/braintree/restricted-input/blob/main/README.md#browsers-where-formatting-is-turned-off-automatically">go here</a>.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line315">line 315</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#supportsInputFormatting-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="supportsInputFormatting-examples">Example</h5>
+    
+  <p class="code-caption">
+    Conditionally choosing split expiration date inputs if formatting is unavailable
+  </p>
+
+
+  <pre class="prettyprint"><code>var canFormat = braintree.hostedFields.supportsInputFormatting();
+var fields = {
+  number: {
+    container: '#card-number'
+  },
+  cvv: {
+    container: '#cvv'
+  }
+};
+
+if (canFormat) {
+  fields.expirationDate = {
+    selection: '#expiration-date'
+  };
+  functionToCreateAndInsertExpirationDateDivToForm();
+} else {
+  fields.expirationMonth = {
+    selection: '#expiration-month'
+  };
+  fields.expirationYear = {
+    selection: '#expiration-year'
+  };
+  functionToCreateAndInsertExpirationMonthAndYearDivsToForm();
+}
+
+braintree.hostedFields.create({
+  client: clientInstance,
+  styles: {
+    // Styles
+  },
+  fields: fields
+}, callback);</code></pre>
+
+
+  </div>
+
+
+      
+    
+
+    
+      <h3 class="subsection-title">Type Definitions</h3>
+
+      
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~field">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~field">
+      <span class="type-signature"></span>field<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Fields used in <a href="module-braintree-web_hosted-fields.html#~fieldOptions">fields options</a></p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>selector</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Deprecated: Now an alias for <code>options.container</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>container</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      HTMLElement
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>A DOM node or CSS selector to find the container where the hosted field will be inserted.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>placeholder</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Will be used as the <code>placeholder</code> attribute of the input. If <code>placeholder</code> is not natively supported by the browser, it will be polyfilled.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>type</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Will be used as the <code>type</code> attribute of the input. To mask <code>cvv</code> input, for instance, <code>type: &quot;password&quot;</code> can be used.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>iframeTitle</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The title used for the iframe containing the credit card input. By default, this will be <code>Secure Credit Card Frame - &lt;the name of the specific field&gt;</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>internalLabel</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Each Hosted Field iframe has a hidden label that is used by screen readers to identify the input. The <code>internalLabel</code> property can be used to customize the field for localization purposes. The default values are:</p>
+<ul>
+<li>number: Credit Card Number</li>
+<li>cvv: CVV</li>
+<li>expirationDate: Expiration Date</li>
+<li>expirationMonth: Expiration Month</li>
+<li>expirationYear: Expiration Year</li>
+<li>postalCode: Postal Code</li>
+<li>cardholderName: Cardholder Name</li>
+</ul>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>formatInput</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              true
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Enable or disable automatic formatting on this field.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>maskInput</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    |
+
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              false
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Enable or disable input masking when input is not focused. If set to <code>true</code> instead of an object, the defaults for the <code>maskInput</code> parameters will be used.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>character</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              •
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The character to use when masking the input. The default character ('•') uses a unicode symbol, so the webpage must support UTF-8 characters when using the default.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>showLastFour</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      Boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              false
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Only applicable for the credit card field. Whether or not to show the last 4 digits of the card when masking.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>select</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    |
+
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>If truthy, this field becomes a <code>&lt;select&gt;</code> dropdown list. This can only be used for <code>expirationMonth</code> and <code>expirationYear</code> fields. If you do not use a <code>placeholder</code> property for the field, the current month/year will be the default selected value.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>options</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      Array.&lt;string>
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>An array of 12 strings, one per month. This can only be used for the <code>expirationMonth</code> field. For example, the array can look like <code>['01 - January', '02 - February', ...]</code>.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>maxCardLength</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>This option applies only to the number field. Allows a limit to the length of the card number, even if the card brand may support numbers of a greater length. If the value passed is greater than the max length for a card brand, the smaller number of the 2 values will be used. For example, is <code>maxCardLength</code> is set to 16, but an American Express card is entered (which has a max card length of 15), a max card length of 15 will be used.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>maxlength</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>This option applies only to the CVV and postal code fields. Will be used as the <code>maxlength</code> attribute of the input. The primary use cases for the <code>maxlength</code> option are: limiting the length of the CVV input for CVV-only verifications when the card type is known and setting the length of the postal code input when cards are coming from a known region. The default <code>maxlength</code> for the postal code input is <code>10</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>minlength</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              3
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>This option applies only to the cvv and postal code fields. Will be used as the <code>minlength</code> attribute of the input.
+For postal code fields, the default value is 3, representing the Icelandic postal code length. This option's primary use case is to increase the <code>minlength</code>, e.g. for US customers, the postal code <code>minlength</code> can be set to 5.
+For cvv fields, the default value is 3. The <code>minlength</code> attribute only applies to integrations capturing a cvv without a number field.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>prefill</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>A value to prefill the field with. For example, when creating an update card form, you can prefill the expiration date fields with the old expiration date data.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>rejectUnsupportedCards</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              false
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Deprecated since version 3.46.0, use <code>supportedCardBrands</code> instead. Only allow card types that your merchant account is able to process. Unsupported card types will invalidate the card form. e.g. if you only process Visa cards, a customer entering a American Express card would get an invalid card field. This can only be used for the <code>number</code> field.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>supportedCardBrands</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Override card brands that are supported by the card form. Pass <code>'card-brand-id': true</code> to override the default in the merchant configuration and enable a card brand. Pass <code>'card-brand-id': false</code> to disable a card brand. Unsupported card types will invalidate the card form. e.g. if you only process Visa cards, a customer entering an American Express card would get an invalid card field. This can only be used for the  <code>number</code> field. (Note: only allow card types that your merchant account is actually able to process.)</p>
+<p>Valid card brand ids are:</p>
+<ul>
+<li>visa</li>
+<li>mastercard</li>
+<li>american-express</li>
+<li>diners-club</li>
+<li>discover</li>
+<li>jcb</li>
+<li>union-pay</li>
+<li>maestro</li>
+<li>elo</li>
+<li>mir</li>
+<li>hiper</li>
+<li>hipercard</li>
+</ul>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line13">line 13</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~fieldOptions">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~fieldOptions">
+      <span class="type-signature"></span>fieldOptions<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>An object that has <a href="module-braintree-web_hosted-fields.html#~field">field objects</a> for each field. Used in create.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>number</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      field
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A field for card number.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>expirationDate</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      field
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A field for expiration date in <code>MM/YYYY</code> or <code>MM/YY</code> format. This should not be used with the <code>expirationMonth</code> and <code>expirationYear</code> properties.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>expirationMonth</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      field
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A field for expiration month in <code>MM</code> format. This should be used with the <code>expirationYear</code> property.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>expirationYear</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      field
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A field for expiration year in <code>YYYY</code> or <code>YY</code> format. This should be used with the <code>expirationMonth</code> property.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>cvv</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      field
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A field for 3 or 4 digit card verification code (like CVV or CID). If you wish to create a CVV-only payment method nonce to verify a card already stored in your Vault, omit all other fields to only collect CVV.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>postalCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      field
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A field for postal or region code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>cardholderName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      field
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A field for the cardholder name on the customer's credit card.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line59">line 59</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~styleOptions">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~styleOptions">
+      <span class="type-signature"></span>styleOptions<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>An object that represents CSS that will be applied in each hosted field. This object looks similar to CSS. Typically, these styles involve fonts (such as <code>font-family</code> or <code>color</code>).</p>
+<p>You may also pass the name of a class on your site that contains the styles you would like to apply. The style properties will be automatically pulled off the class and applied to the Hosted Fields inputs. Note: this is recommended for <code>input</code> elements only. If using a <code>select</code> for the expiration date, unexpected styling may occur.</p>
+<p>These are the CSS properties that Hosted Fields supports. Any other CSS should be specified on your page and outside of any Braintree configuration. Trying to set unsupported properties will fail and put a warning in the console.</p>
+<p>Supported CSS properties are:
+<code>appearance</code>
+<code>box-shadow</code>
+<code>color</code>
+<code>direction</code>
+<code>font-family</code>
+<code>font-size-adjust</code>
+<code>font-size</code>
+<code>font-stretch</code>
+<code>font-style</code>
+<code>font-variant-alternates</code>
+<code>font-variant-caps</code>
+<code>font-variant-east-asian</code>
+<code>font-variant-ligatures</code>
+<code>font-variant-numeric</code>
+<code>font-variant</code>
+<code>font-weight</code>
+<code>font</code>
+<code>letter-spacing</code>
+<code>line-height</code>
+<code>opacity</code>
+<code>outline</code>
+<code>margin</code>
+<code>margin-top</code>
+<code>margin-right</code>
+<code>margin-bottom</code>
+<code>margin-left</code>
+<code>padding</code>
+<code>padding-top</code>
+<code>padding-right</code>
+<code>padding-bottom</code>
+<code>padding-left</code>
+<code>text-align</code>
+<code>text-shadow</code>
+<code>transition</code>
+<code>-moz-appearance</code>
+<code>-moz-box-shadow</code>
+<code>-moz-osx-font-smoothing</code>
+<code>-moz-tap-highlight-color</code>
+<code>-moz-transition</code>
+<code>-webkit-appearance</code>
+<code>-webkit-box-shadow</code>
+<code>-webkit-font-smoothing</code>
+<code>-webkit-tap-highlight-color</code>
+<code>-webkit-transition</code></p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="hosted-fields_index.js.html">hosted-fields/index.js</a>, <a href="hosted-fields_index.js.html#line71">line 71</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+    
+  </article>
+</section>
+
+
+
+
+  </div>
+
+  <br class="clear">
+
+  <footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.7</a>
+  </footer>
+
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/pagelocation.js"></script>
+
+  
+  <script>
+    $(function () {
+      window.docsearch({
+        apiKey: '1097a5c904574f31dd6d5d174a658739',
+        indexName: 'braintree',
+        inputSelector: '.search-input',
+        debug: false, // Set debug to true if you want to inspect the dropdown
+        algoliaOptions: {
+          hitsPerPage: 7
+        }
+      });
+    });
+  </script>
+  
+  
+</body>
+</html>
