@@ -23,7 +23,7 @@
     "@braintree/event-emitter": "0.4.1",
     "@braintree/extended-promise": "0.4.1",
     "@braintree/iframer": "1.1.0",
-    "@braintree/sanitize-url": "5.0.2",
+    "@braintree/sanitize-url": "6.0.0",
     "@braintree/uuid": "0.1.0",
     "@braintree/wrap-promise": "2.1.0",
     "card-validator": "8.1.1",
