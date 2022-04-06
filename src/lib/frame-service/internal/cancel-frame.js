@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('../../braintree-error');
-var frameService = require('./');
-var frameServiceErrors = require('../shared/errors');
-var querystring = require('../../querystring');
+var BraintreeError = require("../../braintree-error");
+var frameService = require("./");
+var frameServiceErrors = require("../shared/errors");
+var querystring = require("../../querystring");
 
 function start() {
   frameService.report(
@@ -15,5 +15,5 @@ function start() {
 }
 
 module.exports = {
-  start: start
+  start: start,
 };

@@ -1,12 +1,10 @@
-Acknowledgements
-================
+# Acknowledgements
 
 The Braintree SDK uses code from the following external dependencies:
 
 [Promise Polyfill by Taylor Hakes](https://github.com/taylorhakes/promise-polyfill)
 
-Stanford JavaScript Crypto Library (SJCL)
------------------------------------------
+## Stanford JavaScript Crypto Library (SJCL)
 
 Copyright (c) 2009-2015, Emily Stark, Mike Hamburg and Dan Boneh at Stanford University. All rights reserved.
 

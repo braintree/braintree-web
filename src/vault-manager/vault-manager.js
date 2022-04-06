@@ -1,18 +1,19 @@
-'use strict';
+"use strict";
 
-var analytics = require('../lib/analytics');
-var BraintreeError = require('../lib/braintree-error');
-var errors = require('./errors');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var methods = require('../lib/methods');
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var analytics = require("../lib/analytics");
+var BraintreeError = require("../lib/braintree-error");
+var errors = require("./errors");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var methods = require("../lib/methods");
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 
-var DELETE_PAYMENT_METHOD_MUTATION = 'mutation DeletePaymentMethodFromSingleUseToken($input: DeletePaymentMethodFromSingleUseTokenInput!) {' +
-'  deletePaymentMethodFromSingleUseToken(input: $input) {' +
-'    clientMutationId' +
-'  }' +
-'}';
+var DELETE_PAYMENT_METHOD_MUTATION =
+  "mutation DeletePaymentMethodFromSingleUseToken($input: DeletePaymentMethodFromSingleUseTokenInput!) {" +
+  "  deletePaymentMethodFromSingleUseToken(input: $input) {" +
+  "    clientMutationId" +
+  "  }" +
+  "}";
 
 /**
  * @typedef {array} VaultManager~fetchPaymentMethodsPayload The customer's payment methods.
@@ -40,7 +41,7 @@ function VaultManager(options) {
  * Fetches payment methods owned by the customer whose id was used to generate the client token used to create the {@link module:braintree-web/client|client}.
  * @public
  * @param {object} [options] Options for fetching payment methods.
- * @param {boolean} [options.defaultFirst = false] If `true`, the payment methods will be returned with the default payment method for the customer first. Otherwise, the payment methods will be returned with the most recently used payment method first.
+ * @param {boolean} [options.defaultFirst = false] If `true`, the payment methods will be returned with the default payment method for the customer first. Otherwise, order is not guaranteed.
  * @param {callback} [callback] The second argument is a {@link VaultManager~fetchPaymentMethodsPayload|fetchPaymentMethodsPayload}. This is also what is resolved by the promise if no callback is provided.
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
@@ -60,19 +61,28 @@ VaultManager.prototype.fetchPaymentMethods = function (options) {
 
   defaultFirst = options.defaultFirst === true ? 1 : 0;
 
-  return this._createPromise.then(function (client) {
-    return client.request({
-      endpoint: 'payment_methods',
-      method: 'get',
-      data: {
-        defaultFirst: defaultFirst
-      }
-    });
-  }).then(function (paymentMethodsPayload) {
-    analytics.sendEvent(this._createPromise, 'vault-manager.fetch-payment-methods.succeeded');
+  return this._createPromise
+    .then(function (client) {
+      return client.request({
+        endpoint: "payment_methods",
+        method: "get",
+        data: {
+          defaultFirst: defaultFirst,
+        },
+      });
+    })
+    .then(
+      function (paymentMethodsPayload) {
+        analytics.sendEvent(
+          this._createPromise,
+          "vault-manager.fetch-payment-methods.succeeded"
+        );
 
-    return paymentMethodsPayload.paymentMethods.map(formatPaymentMethodPayload);
-  }.bind(this));
+        return paymentMethodsPayload.paymentMethods.map(
+          formatPaymentMethodPayload
+        );
+      }.bind(this)
+    );
 };
 
 // TODO hide from jsdoc for now until the GraphQL API is on for all merchants by default
@@ -90,67 +100,90 @@ VaultManager.prototype.fetchPaymentMethods = function (options) {
  */
 VaultManager.prototype.deletePaymentMethod = function (paymentMethodNonce) {
   return this._createPromise.then(function (client) {
-    var usesClientToken = client.getConfiguration().authorizationType === 'CLIENT_TOKEN';
+    var usesClientToken =
+      client.getConfiguration().authorizationType === "CLIENT_TOKEN";
 
     if (!usesClientToken) {
-      return Promise.reject(new BraintreeError(errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN));
+      return Promise.reject(
+        new BraintreeError(
+          errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN
+        )
+      );
     }
 
-    return client.request({
-      api: 'graphQLApi',
-      data: {
-        query: DELETE_PAYMENT_METHOD_MUTATION,
-        variables: {
-          input: {
-            singleUseTokenId: paymentMethodNonce
-          }
+    return client
+      .request({
+        api: "graphQLApi",
+        data: {
+          query: DELETE_PAYMENT_METHOD_MUTATION,
+          variables: {
+            input: {
+              singleUseTokenId: paymentMethodNonce,
+            },
+          },
+          operationName: "DeletePaymentMethodFromSingleUseToken",
         },
-        operationName: 'DeletePaymentMethodFromSingleUseToken'
-      }
-    }).then(function () {
-      analytics.sendEvent(client, 'vault-manager.delete-payment-method.succeeded');
+      })
+      .then(function () {
+        analytics.sendEvent(
+          client,
+          "vault-manager.delete-payment-method.succeeded"
+        );
 
-      // noop to prevent sending back the raw graphql data
-    }).catch(function (error) {
-      var originalError = error.details.originalError;
-      var formattedError;
+        // noop to prevent sending back the raw graphql data
+      })
+      .catch(function (error) {
+        var originalError = error.details.originalError;
+        var formattedError;
 
-      analytics.sendEvent(client, 'vault-manager.delete-payment-method.failed');
+        analytics.sendEvent(
+          client,
+          "vault-manager.delete-payment-method.failed"
+        );
 
-      if (originalError[0] && originalError[0].extensions.errorClass === 'NOT_FOUND') {
-        formattedError = new BraintreeError({
-          type: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.type,
-          code: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.code,
-          message: 'A payment method for payment method nonce `' + paymentMethodNonce + '` could not be found.',
-          details: {
-            originalError: originalError
-          }
-        });
-      }
+        if (
+          originalError[0] &&
+          originalError[0].extensions.errorClass === "NOT_FOUND"
+        ) {
+          formattedError = new BraintreeError({
+            type: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.type,
+            code: errors.VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND.code,
+            message:
+              "A payment method for payment method nonce `" +
+              paymentMethodNonce +
+              "` could not be found.",
+            details: {
+              originalError: originalError,
+            },
+          });
+        }
 
-      if (!formattedError) {
-        formattedError = new BraintreeError({
-          type: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.type,
-          code: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.code,
-          message: 'An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `' + paymentMethodNonce + '`.',
-          details: {
-            originalError: originalError
-          }
-        });
-      }
+        if (!formattedError) {
+          formattedError = new BraintreeError({
+            type: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.type,
+            code: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.code,
+            message:
+              "An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `" +
+              paymentMethodNonce +
+              "`.",
+            details: {
+              originalError: originalError,
+            },
+          });
+        }
 
-      return Promise.reject(formattedError);
-    });
+        return Promise.reject(formattedError);
+      });
   });
 };
 
 function formatPaymentMethodPayload(paymentMethod) {
   var formattedPaymentMethod = {
     nonce: paymentMethod.nonce,
-    'default': paymentMethod.default,
+    default: paymentMethod.default,
     details: paymentMethod.details,
     hasSubscription: paymentMethod.hasSubscription,
-    type: paymentMethod.type
+    type: paymentMethod.type,
   };
 
   if (paymentMethod.description) {

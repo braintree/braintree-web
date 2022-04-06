@@ -1,16 +1,17 @@
----
-  env:
-    jest: true
-    es6: true
-
-  parserOptions:
-    ecmaVersion: 2018
-
-  globals:
-    expect: false
-    fake: false
-
-  rules:
-    no-new: 0
-    no-invalid-this: 0
-    no-unused-expressions: 0
+{
+  "env": {
+    "jest": true,
+    "es6": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2018
+  },
+  "globals": {
+    "__dirname": true
+  },
+  "rules": {
+    "no-new": 0,
+    "no-invalid-this": 0,
+    "no-unused-expressions": 0
+  }
+}

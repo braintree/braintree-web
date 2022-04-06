@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('../lib/braintree-error');
-var errors = require('./errors');
-var assign = require('../lib/assign').assign;
-var Promise = require('../lib/promise');
-var methods = require('../lib/methods');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var wrapPromise = require('@braintree/wrap-promise');
+var BraintreeError = require("../lib/braintree-error");
+var errors = require("./errors");
+var assign = require("../lib/assign").assign;
+var Promise = require("../lib/promise");
+var methods = require("../lib/methods");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @class
@@ -45,34 +45,44 @@ AmericanExpress.prototype.getRewardsBalance = function (options) {
   var data;
 
   if (!nonce) {
-    return Promise.reject(new BraintreeError({
-      type: errors.AMEX_NONCE_REQUIRED.type,
-      code: errors.AMEX_NONCE_REQUIRED.code,
-      message: 'getRewardsBalance must be called with a nonce.'
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.AMEX_NONCE_REQUIRED.type,
+        code: errors.AMEX_NONCE_REQUIRED.code,
+        message: "getRewardsBalance must be called with a nonce.",
+      })
+    );
   }
 
-  data = assign({
-    _meta: {source: 'american-express'},
-    paymentMethodNonce: nonce
-  }, options);
+  data = assign(
+    {
+      _meta: { source: "american-express" },
+      paymentMethodNonce: nonce,
+    },
+    options
+  );
 
   delete data.nonce;
 
-  return this._client.request({
-    method: 'get',
-    endpoint: 'payment_methods/amex_rewards_balance',
-    data: data
-  }).catch(function (err) {
-    return Promise.reject(new BraintreeError({
-      type: errors.AMEX_NETWORK_ERROR.type,
-      code: errors.AMEX_NETWORK_ERROR.code,
-      message: 'A network error occurred when getting the American Express rewards balance.',
-      details: {
-        originalError: err
-      }
-    }));
-  });
+  return this._client
+    .request({
+      method: "get",
+      endpoint: "payment_methods/amex_rewards_balance",
+      data: data,
+    })
+    .catch(function (err) {
+      return Promise.reject(
+        new BraintreeError({
+          type: errors.AMEX_NETWORK_ERROR.type,
+          code: errors.AMEX_NETWORK_ERROR.code,
+          message:
+            "A network error occurred when getting the American Express rewards balance.",
+          details: {
+            originalError: err,
+          },
+        })
+      );
+    });
 };
 
 /**
@@ -99,30 +109,37 @@ AmericanExpress.prototype.getRewardsBalance = function (options) {
  */
 AmericanExpress.prototype.getExpressCheckoutProfile = function (options) {
   if (!options.nonce) {
-    return Promise.reject(new BraintreeError({
-      type: errors.AMEX_NONCE_REQUIRED.type,
-      code: errors.AMEX_NONCE_REQUIRED.code,
-      message: 'getExpressCheckoutProfile must be called with a nonce.'
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.AMEX_NONCE_REQUIRED.type,
+        code: errors.AMEX_NONCE_REQUIRED.code,
+        message: "getExpressCheckoutProfile must be called with a nonce.",
+      })
+    );
   }
 
-  return this._client.request({
-    method: 'get',
-    endpoint: 'payment_methods/amex_express_checkout_cards/' + options.nonce,
-    data: {
-      _meta: {source: 'american-express'},
-      paymentMethodNonce: options.nonce
-    }
-  }).catch(function (err) {
-    return Promise.reject(new BraintreeError({
-      type: errors.AMEX_NETWORK_ERROR.type,
-      code: errors.AMEX_NETWORK_ERROR.code,
-      message: 'A network error occurred when getting the American Express Checkout nonce profile.',
-      details: {
-        originalError: err
-      }
-    }));
-  });
+  return this._client
+    .request({
+      method: "get",
+      endpoint: "payment_methods/amex_express_checkout_cards/" + options.nonce,
+      data: {
+        _meta: { source: "american-express" },
+        paymentMethodNonce: options.nonce,
+      },
+    })
+    .catch(function (err) {
+      return Promise.reject(
+        new BraintreeError({
+          type: errors.AMEX_NETWORK_ERROR.type,
+          code: errors.AMEX_NETWORK_ERROR.code,
+          message:
+            "A network error occurred when getting the American Express Checkout nonce profile.",
+          details: {
+            originalError: err,
+          },
+        })
+      );
+    });
 };
 
 /**

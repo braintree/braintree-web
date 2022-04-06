@@ -1,106 +1,124 @@
-'use strict';
+"use strict";
 
-jest.mock('../../../../src/lib/frame-service/internal');
+jest.mock("../../../../src/lib/frame-service/internal");
 
-const redirectFrame = require('../../../../src/local-payment/internal/redirect-frame');
-const querystring = require('../../../../src/lib/querystring');
-const frameService = require('../../../../src/lib/frame-service/internal');
-const { yields, yieldsAsync } = require('../../../helpers');
+const redirectFrame = require("../../../../src/local-payment/internal/redirect-frame");
+const querystring = require("../../../../src/lib/querystring");
+const frameService = require("../../../../src/lib/frame-service/internal");
+const { yields, yieldsAsync } = require("../../../helpers");
 
-describe('redirect-frame', () => {
+describe("redirect-frame", () => {
   let testContext;
 
   beforeEach(() => {
     testContext = {};
   });
 
-  describe('start', () => {
+  describe("start", () => {
     beforeEach(() => {
       testContext.body = document.body.innerHTML;
       testContext.params = {
-        token: 'token',
-        paymentId: 'payment-id',
-        PayerID: 'payer-id',
-        channel: '123'
+        token: "token",
+        paymentId: "payment-id",
+        PayerID: "payer-id",
+        channel: "123",
       };
-      jest.spyOn(frameService, 'report').mockImplementation(yields());
-      jest.spyOn(querystring, 'parse').mockReturnValue(testContext.params);
+      jest.spyOn(frameService, "report").mockImplementation(yields());
+      jest.spyOn(querystring, "parse").mockReturnValue(testContext.params);
     });
 
     afterEach(() => {
       document.body.innerHTML = testContext.body;
     });
 
-    it('reports to frame service the params from the querystring', done => {
+    it("reports to frame service the params from the querystring", (done) => {
       frameService.report.mockImplementation(yields());
 
       redirectFrame.start(() => {
-        expect(frameService.report).toHaveBeenCalledWith(null, testContext.params, expect.any(Function));
+        expect(frameService.report).toHaveBeenCalledWith(
+          null,
+          testContext.params,
+          expect.any(Function)
+        );
 
         done();
       });
     });
 
-    it('can put a redirect link onto the page if parent frame cannot be found and fallback is configured', done => {
-      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
-      testContext.params.t = 'Return to Site';
+    it("can put a redirect link onto the page if parent frame cannot be found and fallback is configured", (done) => {
+      frameService.report.mockImplementation(
+        yieldsAsync(new Error("no frame"))
+      );
+      testContext.params.r = window.encodeURIComponent(
+        "https://example.com/fallback-url"
+      );
+      testContext.params.t = "Return to Site";
 
       redirectFrame.start(() => {
-        const link = document.querySelector('#container a');
+        const link = document.querySelector("#container a");
 
         expect(link.href).toBe(
-          'https://example.com/fallback-url?btLpToken=token&btLpPaymentId=payment-id&btLpPayerId=payer-id'
+          "https://example.com/fallback-url?btLpToken=token&btLpPaymentId=payment-id&btLpPayerId=payer-id"
         );
-        expect(link.innerText).toBe('Return to Site');
+        expect(link.innerText).toBe("Return to Site");
 
         done();
       });
     });
 
-    it('can put a redirect link onto the page if parent frame cannot be found and fallback is configured', done => {
-      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
-      testContext.params.t = 'Return to Site';
-      testContext.params.errorcode = 'payment_error';
+    it("can put a redirect link onto the page if parent frame cannot be found and fallback is configured", (done) => {
+      frameService.report.mockImplementation(
+        yieldsAsync(new Error("no frame"))
+      );
+      testContext.params.r = window.encodeURIComponent(
+        "https://example.com/fallback-url"
+      );
+      testContext.params.t = "Return to Site";
+      testContext.params.errorcode = "payment_error";
 
       redirectFrame.start(() => {
-        const link = document.querySelector('#container a');
+        const link = document.querySelector("#container a");
 
         expect(link.href).toBe(
-          'https://example.com/fallback-url?btLpToken=token&errorcode=payment_error&wasCanceled=false'
+          "https://example.com/fallback-url?btLpToken=token&errorcode=payment_error&wasCanceled=false"
         );
-        expect(link.innerText).toBe('Return to Site');
+        expect(link.innerText).toBe("Return to Site");
 
         done();
       });
     });
 
-    it('adds wasCanceled=true to link when params.c is present', done => {
-      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
-      testContext.params.t = 'Return to Site';
+    it("adds wasCanceled=true to link when params.c is present", (done) => {
+      frameService.report.mockImplementation(
+        yieldsAsync(new Error("no frame"))
+      );
+      testContext.params.r = window.encodeURIComponent(
+        "https://example.com/fallback-url"
+      );
+      testContext.params.t = "Return to Site";
       testContext.params.c = 1;
-      testContext.params.errorcode = 'payment_error';
+      testContext.params.errorcode = "payment_error";
 
       redirectFrame.start(() => {
-        const link = document.querySelector('#container a');
+        const link = document.querySelector("#container a");
 
         expect(link.href).toBe(
-          'https://example.com/fallback-url?btLpToken=token&errorcode=payment_error&wasCanceled=true'
+          "https://example.com/fallback-url?btLpToken=token&errorcode=payment_error&wasCanceled=true"
         );
-        expect(link.innerText).toBe('Return to Site');
+        expect(link.innerText).toBe("Return to Site");
 
         done();
       });
     });
 
-    it('does not put a redirect link if redirect param is missing', done => {
-      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.t = 'Return to Site';
+    it("does not put a redirect link if redirect param is missing", (done) => {
+      frameService.report.mockImplementation(
+        yieldsAsync(new Error("no frame"))
+      );
+      testContext.params.t = "Return to Site";
 
       redirectFrame.start(() => {
-        const link = document.querySelector('#container a');
+        const link = document.querySelector("#container a");
 
         expect(link).toBeNull();
 
@@ -108,12 +126,16 @@ describe('redirect-frame', () => {
       });
     });
 
-    it('does not put a redirect link if text param is missing', done => {
-      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = window.encodeURIComponent('https://example.com/fallback-url');
+    it("does not put a redirect link if text param is missing", (done) => {
+      frameService.report.mockImplementation(
+        yieldsAsync(new Error("no frame"))
+      );
+      testContext.params.r = window.encodeURIComponent(
+        "https://example.com/fallback-url"
+      );
 
       redirectFrame.start(() => {
-        const link = document.querySelector('#container a');
+        const link = document.querySelector("#container a");
 
         expect(link).toBeNull();
 
@@ -121,18 +143,23 @@ describe('redirect-frame', () => {
       });
     });
 
-    it('sanitizes fallback url', done => {
-      frameService.report.mockImplementation(yieldsAsync(new Error('no frame')));
-      testContext.params.r = window.encodeURIComponent('javascript:alert("hey")'); // eslint-disable-line no-script-url
-      testContext.params.t = 'Return to Site';
+    it("sanitizes fallback url", (done) => {
+      frameService.report.mockImplementation(
+        yieldsAsync(new Error("no frame"))
+      );
+      testContext.params.r = window.encodeURIComponent(
+        // eslint-disable-next-line no-script-url
+        'javascript:alert("hey")'
+      );
+      testContext.params.t = "Return to Site";
 
       redirectFrame.start(() => {
-        const link = document.querySelector('#container a');
+        const link = document.querySelector("#container a");
 
         expect(link.href).toBe(
-          'about:blank?btLpToken=token&btLpPaymentId=payment-id&btLpPayerId=payer-id'
+          "about:blank?btLpToken=token&btLpPaymentId=payment-id&btLpPayerId=payer-id"
         );
-        expect(link.innerText).toBe('Return to Site');
+        expect(link.innerText).toBe("Return to Site");
 
         done();
       });

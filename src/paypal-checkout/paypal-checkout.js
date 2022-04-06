@@ -1,32 +1,33 @@
-'use strict';
+"use strict";
 
-var analytics = require('../lib/analytics');
-var assign = require('../lib/assign').assign;
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var Promise = require('../lib/promise');
-var ExtendedPromise = require('@braintree/extended-promise');
-var wrapPromise = require('@braintree/wrap-promise');
-var BraintreeError = require('../lib/braintree-error');
-var convertToBraintreeError = require('../lib/convert-to-braintree-error');
-var errors = require('./errors');
-var constants = require('../paypal/shared/constants');
-var frameService = require('../lib/frame-service/external');
-var createAuthorizationData = require('../lib/create-authorization-data');
-var methods = require('../lib/methods');
-var useMin = require('../lib/use-min');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var querystring = require('../lib/querystring');
+var analytics = require("../lib/analytics");
+var assign = require("../lib/assign").assign;
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var Promise = require("../lib/promise");
+var ExtendedPromise = require("@braintree/extended-promise");
+var wrapPromise = require("@braintree/wrap-promise");
+var BraintreeError = require("../lib/braintree-error");
+var convertToBraintreeError = require("../lib/convert-to-braintree-error");
+var errors = require("./errors");
+var constants = require("../paypal/shared/constants");
+var frameService = require("../lib/frame-service/external");
+var createAuthorizationData = require("../lib/create-authorization-data");
+var methods = require("../lib/methods");
+var useMin = require("../lib/use-min");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var querystring = require("../lib/querystring");
 var VERSION = process.env.npm_package_version;
-var INTEGRATION_TIMEOUT_MS = require('../lib/constants').INTEGRATION_TIMEOUT_MS;
+var INTEGRATION_TIMEOUT_MS = require("../lib/constants").INTEGRATION_TIMEOUT_MS;
 
 var REQUIRED_PARAMS_FOR_START_VAULT_INITIATED_CHECKOUT = [
-  'amount',
-  'currency',
-  'vaultInitiatedCheckoutPaymentMethodToken'
+  "amount",
+  "currency",
+  "vaultInitiatedCheckoutPaymentMethodToken",
 ];
 
-var PAYPAL_SDK_PRELOAD_URL = 'https://www.{ENV}paypal.com/smart/buttons/preload';
+var PAYPAL_SDK_PRELOAD_URL =
+  "https://www.{ENV}paypal.com/smart/buttons/preload";
 
 /**
  * PayPal Checkout tokenized payload. Returned in {@link PayPalCheckout#tokenizePayment}'s callback as the second argument, `data`.
@@ -232,52 +233,63 @@ PayPalCheckout.prototype._initialize = function (options) {
     config = options.client.getConfiguration();
     this._authorizationInformation = {
       fingerprint: config.authorizationFingerprint,
-      environment: config.gatewayConfiguration.environment
+      environment: config.gatewayConfiguration.environment,
     };
   } else {
     config = createAuthorizationData(options.authorization);
     this._authorizationInformation = {
       fingerprint: config.attrs.authorizationFingerprint,
-      environment: config.environment
+      environment: config.environment,
     };
   }
 
-  this._clientPromise = createDeferredClient.create({
-    authorization: options.authorization,
-    client: options.client,
-    debug: options.debug,
-    assetsUrl: createAssetsUrl.create(options.authorization),
-    name: 'PayPal Checkout'
-  }).then(function (client) {
-    this._configuration = client.getConfiguration();
+  this._clientPromise = createDeferredClient
+    .create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: "PayPal Checkout",
+    })
+    .then(
+      function (client) {
+        this._configuration = client.getConfiguration();
 
-    // we skip these checks if a merchant account id is
-    // passed in, because the default merchant account
-    // may not have paypal enabled
-    if (!this._merchantAccountId) {
-      if (!this._configuration.gatewayConfiguration.paypalEnabled) {
-        this._setupError = new BraintreeError(errors.PAYPAL_NOT_ENABLED);
-      } else if (this._configuration.gatewayConfiguration.paypal.environmentNoNetwork === true) {
-        this._setupError = new BraintreeError(errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED);
-      }
-    }
+        // we skip these checks if a merchant account id is
+        // passed in, because the default merchant account
+        // may not have paypal enabled
+        if (!this._merchantAccountId) {
+          if (!this._configuration.gatewayConfiguration.paypalEnabled) {
+            this._setupError = new BraintreeError(errors.PAYPAL_NOT_ENABLED);
+          } else if (
+            this._configuration.gatewayConfiguration.paypal
+              .environmentNoNetwork === true
+          ) {
+            this._setupError = new BraintreeError(
+              errors.PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED
+            );
+          }
+        }
 
-    if (this._setupError) {
-      return Promise.reject(this._setupError);
-    }
+        if (this._setupError) {
+          return Promise.reject(this._setupError);
+        }
 
-    analytics.sendEvent(client, 'paypal-checkout.initialized');
-    this._frameServicePromise = this._setupFrameService(client);
+        analytics.sendEvent(client, "paypal-checkout.initialized");
+        this._frameServicePromise = this._setupFrameService(client);
 
-    return client;
-  }.bind(this));
+        return client;
+      }.bind(this)
+    );
 
   // if client was passed in, let config checks happen before
   // resolving the instance. Otherwise, just resolve the instance
   if (options.client) {
-    return this._clientPromise.then(function () {
-      return this;
-    }.bind(this));
+    return this._clientPromise.then(
+      function () {
+        return this;
+      }.bind(this)
+    );
   }
 
   return Promise.resolve(this);
@@ -287,25 +299,41 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
   var frameServicePromise = new ExtendedPromise();
   var config = client.getConfiguration();
   var timeoutRef = setTimeout(function () {
-    analytics.sendEvent(client, 'paypal-checkout.frame-service.timed-out');
-    frameServicePromise.reject(new BraintreeError(errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED));
+    analytics.sendEvent(client, "paypal-checkout.frame-service.timed-out");
+    frameServicePromise.reject(
+      new BraintreeError(
+        errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED
+      )
+    );
   }, INTEGRATION_TIMEOUT_MS);
 
-  this._assetsUrl = config.gatewayConfiguration.paypal.assetsUrl + '/web/' + VERSION;
+  this._assetsUrl =
+    config.gatewayConfiguration.paypal.assetsUrl + "/web/" + VERSION;
   this._isDebug = config.isDebug;
   // Note: this is using the static landing frame that the deprecated PayPal component builds and uses
-  this._loadingFrameUrl = this._assetsUrl + '/html/paypal-landing-frame' + useMin(this._isDebug) + '.html';
+  this._loadingFrameUrl =
+    this._assetsUrl +
+    "/html/paypal-landing-frame" +
+    useMin(this._isDebug) +
+    ".html";
 
-  frameService.create({
-    name: 'braintreepaypallanding',
-    dispatchFrameUrl: this._assetsUrl + '/html/dispatch-frame' + useMin(this._isDebug) + '.html',
-    openFrameUrl: this._loadingFrameUrl
-  }, function (service) {
-    this._frameService = service;
-    clearTimeout(timeoutRef);
+  frameService.create(
+    {
+      name: "braintreepaypallanding",
+      dispatchFrameUrl:
+        this._assetsUrl +
+        "/html/dispatch-frame" +
+        useMin(this._isDebug) +
+        ".html",
+      openFrameUrl: this._loadingFrameUrl,
+    },
+    function (service) {
+      this._frameService = service;
+      clearTimeout(timeoutRef);
 
-    frameServicePromise.resolve();
-  }.bind(this));
+      frameServicePromise.resolve();
+    }.bind(this)
+  );
 
   return frameServicePromise;
 };
@@ -455,15 +483,17 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  */
 PayPalCheckout.prototype.createPayment = function (options) {
   if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
-    return Promise.reject(new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED));
+    return Promise.reject(
+      new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED)
+    );
   }
 
-  analytics.sendEvent(this._clientPromise, 'paypal-checkout.createPayment');
+  analytics.sendEvent(this._clientPromise, "paypal-checkout.createPayment");
 
   return this._createPaymentResource(options).then(function (response) {
     var flowToken;
 
-    if (options.flow === 'checkout') {
+    if (options.flow === "checkout") {
       flowToken = response.paymentResource.redirectUrl.match(/EC-\w+/)[0];
     } else {
       flowToken = response.agreementSetup.tokenId;
@@ -475,52 +505,60 @@ PayPalCheckout.prototype.createPayment = function (options) {
 
 PayPalCheckout.prototype._createPaymentResource = function (options, config) {
   var self = this;
-  var endpoint = 'paypal_hermes/' + constants.FLOW_ENDPOINTS[options.flow];
+  var endpoint = "paypal_hermes/" + constants.FLOW_ENDPOINTS[options.flow];
 
   delete this.intentFromCreatePayment;
 
   config = config || {};
 
   if (options.offerCredit === true) {
-    analytics.sendEvent(this._clientPromise, 'paypal-checkout.credit.offered');
+    analytics.sendEvent(this._clientPromise, "paypal-checkout.credit.offered");
   }
 
-  return this._clientPromise.then(function (client) {
-    return client.request({
-      endpoint: endpoint,
-      method: 'post',
-      data: self._formatPaymentResourceData(options, config)
-    }).then(function (data) {
-      self.intentFromCreatePayment = options.intent;
+  return this._clientPromise
+    .then(function (client) {
+      return client
+        .request({
+          endpoint: endpoint,
+          method: "post",
+          data: self._formatPaymentResourceData(options, config),
+        })
+        .then(function (data) {
+          self.intentFromCreatePayment = options.intent;
 
-      return data;
+          return data;
+        });
+    })
+    .catch(function (err) {
+      var status;
+
+      if (self._setupError) {
+        return Promise.reject(self._setupError);
+      }
+
+      status = err.details && err.details.httpStatus;
+
+      if (status === 422) {
+        return Promise.reject(
+          new BraintreeError({
+            type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+            code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+            message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+            details: {
+              originalError: err,
+            },
+          })
+        );
+      }
+
+      return Promise.reject(
+        convertToBraintreeError(err, {
+          type: errors.PAYPAL_FLOW_FAILED.type,
+          code: errors.PAYPAL_FLOW_FAILED.code,
+          message: errors.PAYPAL_FLOW_FAILED.message,
+        })
+      );
     });
-  }).catch(function (err) {
-    var status;
-
-    if (self._setupError) {
-      return Promise.reject(self._setupError);
-    }
-
-    status = err.details && err.details.httpStatus;
-
-    if (status === 422) {
-      return Promise.reject(new BraintreeError({
-        type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
-        code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
-        message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
-        details: {
-          originalError: err
-        }
-      }));
-    }
-
-    return Promise.reject(convertToBraintreeError(err, {
-      type: errors.PAYPAL_FLOW_FAILED.type,
-      code: errors.PAYPAL_FLOW_FAILED.code,
-      message: errors.PAYPAL_FLOW_FAILED.message
-    }));
-  });
 };
 
 /**
@@ -557,9 +595,16 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
   var self = this;
 
   if (this._vaultInitiatedCheckoutInProgress) {
-    analytics.sendEvent(this._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress');
+    analytics.sendEvent(
+      this._clientPromise,
+      "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress"
+    );
 
-    return Promise.reject(new BraintreeError(errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS));
+    return Promise.reject(
+      new BraintreeError(
+        errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS
+      )
+    );
   }
 
   REQUIRED_PARAMS_FOR_START_VAULT_INITIATED_CHECKOUT.forEach(function (param) {
@@ -569,74 +614,109 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
   });
 
   if (missingRequiredParam) {
-    return Promise.reject(new BraintreeError({
-      type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED.type,
-      code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED.code,
-      message: 'Required param ' + missingRequiredParam + ' is missing.'
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED.type,
+        code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED.code,
+        message: "Required param " + missingRequiredParam + " is missing.",
+      })
+    );
   }
 
   this._vaultInitiatedCheckoutInProgress = true;
   this._addModalBackdrop(options);
 
   options = assign({}, options, {
-    flow: 'checkout'
+    flow: "checkout",
   });
 
-  analytics.sendEvent(this._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.started');
+  analytics.sendEvent(
+    this._clientPromise,
+    "paypal-checkout.startVaultInitiatedCheckout.started"
+  );
 
-  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
-    var frameCommunicationPromise = new ExtendedPromise();
-    var startVaultInitiatedCheckoutPromise = self._createPaymentResource(options, {
-      returnUrl: self._constructVaultCheckutUrl('redirect-frame'),
-      cancelUrl: self._constructVaultCheckutUrl('cancel-frame')
-    }).then(function (response) {
-      var redirectUrl = response.paymentResource.redirectUrl;
+  return this._waitForVaultInitiatedCheckoutDependencies()
+    .then(function () {
+      var frameCommunicationPromise = new ExtendedPromise();
+      var startVaultInitiatedCheckoutPromise = self
+        ._createPaymentResource(options, {
+          returnUrl: self._constructVaultCheckutUrl("redirect-frame"),
+          cancelUrl: self._constructVaultCheckutUrl("cancel-frame"),
+        })
+        .then(function (response) {
+          var redirectUrl = response.paymentResource.redirectUrl;
 
-      self._frameService.redirect(redirectUrl);
+          self._frameService.redirect(redirectUrl);
 
-      return frameCommunicationPromise;
-    });
+          return frameCommunicationPromise;
+        });
 
-    self._frameService.open({}, self._createFrameServiceCallback(frameCommunicationPromise));
+      self._frameService.open(
+        {},
+        self._createFrameServiceCallback(frameCommunicationPromise)
+      );
 
-    return startVaultInitiatedCheckoutPromise;
-  }).catch(function (err) {
-    self._vaultInitiatedCheckoutInProgress = false;
-    self._removeModalBackdrop();
+      return startVaultInitiatedCheckoutPromise;
+    })
+    .catch(function (err) {
+      self._vaultInitiatedCheckoutInProgress = false;
+      self._removeModalBackdrop();
 
-    if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
-      analytics.sendEvent(self._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer');
+      if (err.code === "FRAME_SERVICE_FRAME_CLOSED") {
+        analytics.sendEvent(
+          self._clientPromise,
+          "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer"
+        );
 
-      return Promise.reject(new BraintreeError(errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED));
-    }
+        return Promise.reject(
+          new BraintreeError(
+            errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED
+          )
+        );
+      }
 
-    if (self._frameService) {
+      if (self._frameService) {
+        self._frameService.close();
+      }
+
+      if (
+        err.code &&
+        err.code.indexOf("FRAME_SERVICE_FRAME_OPEN_FAILED") > -1
+      ) {
+        analytics.sendEvent(
+          self._clientPromise,
+          "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened"
+        );
+
+        return Promise.reject(
+          new BraintreeError({
+            code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
+              .code,
+            type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
+              .type,
+            message:
+              errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
+                .message,
+            details: {
+              originalError: err,
+            },
+          })
+        );
+      }
+
+      return Promise.reject(err);
+    })
+    .then(function (response) {
       self._frameService.close();
-    }
+      self._vaultInitiatedCheckoutInProgress = false;
+      self._removeModalBackdrop();
+      analytics.sendEvent(
+        self._clientPromise,
+        "paypal-checkout.startVaultInitiatedCheckout.succeeded"
+      );
 
-    if (err.code && err.code.indexOf('FRAME_SERVICE_FRAME_OPEN_FAILED') > -1) {
-      analytics.sendEvent(self._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened');
-
-      return Promise.reject(new BraintreeError({
-        code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED.code,
-        type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED.type,
-        message: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED.message,
-        details: {
-          originalError: err
-        }
-      }));
-    }
-
-    return Promise.reject(err);
-  }).then(function (response) {
-    self._frameService.close();
-    self._vaultInitiatedCheckoutInProgress = false;
-    self._removeModalBackdrop();
-    analytics.sendEvent(self._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.succeeded');
-
-    return Promise.resolve(response);
-  });
+      return Promise.resolve(response);
+    });
 };
 
 PayPalCheckout.prototype._addModalBackdrop = function (options) {
@@ -645,19 +725,25 @@ PayPalCheckout.prototype._addModalBackdrop = function (options) {
   }
 
   if (!this._modalBackdrop) {
-    this._modalBackdrop = document.createElement('div');
-    this._modalBackdrop.setAttribute('data-braintree-paypal-vault-initiated-checkout-modal', true);
-    this._modalBackdrop.style.position = 'fixed';
+    this._modalBackdrop = document.createElement("div");
+    this._modalBackdrop.setAttribute(
+      "data-braintree-paypal-vault-initiated-checkout-modal",
+      true
+    );
+    this._modalBackdrop.style.position = "fixed";
     this._modalBackdrop.style.top = 0;
     this._modalBackdrop.style.bottom = 0;
     this._modalBackdrop.style.left = 0;
     this._modalBackdrop.style.right = 0;
     this._modalBackdrop.style.zIndex = 9999;
-    this._modalBackdrop.style.background = 'black';
-    this._modalBackdrop.style.opacity = '0.7';
-    this._modalBackdrop.addEventListener('click', function () {
-      this.focusVaultInitiatedCheckoutWindow();
-    }.bind(this));
+    this._modalBackdrop.style.background = "black";
+    this._modalBackdrop.style.opacity = "0.7";
+    this._modalBackdrop.addEventListener(
+      "click",
+      function () {
+        this.focusVaultInitiatedCheckoutWindow();
+      }.bind(this)
+    );
   }
 
   document.body.appendChild(this._modalBackdrop);
@@ -682,12 +768,17 @@ PayPalCheckout.prototype._removeModalBackdrop = function () {
  */
 PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
   if (this._vaultInitiatedCheckoutInProgress) {
-    analytics.sendEvent(this._clientPromise, 'paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant');
+    analytics.sendEvent(
+      this._clientPromise,
+      "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant"
+    );
   }
 
-  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
-    this._frameService.close();
-  }.bind(this));
+  return this._waitForVaultInitiatedCheckoutDependencies().then(
+    function () {
+      this._frameService.close();
+    }.bind(this)
+  );
 };
 
 /**
@@ -700,12 +791,16 @@ PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.focusVaultInitiatedCheckoutWindow = function () {
-  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
-    this._frameService.focus();
-  }.bind(this));
+  return this._waitForVaultInitiatedCheckoutDependencies().then(
+    function () {
+      this._frameService.focus();
+    }.bind(this)
+  );
 };
 
-PayPalCheckout.prototype._createFrameServiceCallback = function (frameCommunicationPromise) {
+PayPalCheckout.prototype._createFrameServiceCallback = function (
+  frameCommunicationPromise
+) {
   var self = this;
 
   // TODO when a merchant integrates an iOS or Android integration
@@ -716,31 +811,42 @@ PayPalCheckout.prototype._createFrameServiceCallback = function (frameCommunicat
       frameCommunicationPromise.reject(err);
     } else if (payload) {
       self._frameService.redirect(self._loadingFrameUrl);
-      self.tokenizePayment({
-        paymentToken: payload.token,
-        payerID: payload.PayerID,
-        paymentID: payload.paymentId
-      }).then(function (res) {
-        frameCommunicationPromise.resolve(res);
-      }).catch(function (tokenizationError) {
-        frameCommunicationPromise.reject(tokenizationError);
-      });
+      self
+        .tokenizePayment({
+          paymentToken: payload.token,
+          payerID: payload.PayerID,
+          paymentID: payload.paymentId,
+        })
+        .then(function (res) {
+          frameCommunicationPromise.resolve(res);
+        })
+        .catch(function (tokenizationError) {
+          frameCommunicationPromise.reject(tokenizationError);
+        });
     }
   };
 };
 
-PayPalCheckout.prototype._waitForVaultInitiatedCheckoutDependencies = function () {
-  var self = this;
+PayPalCheckout.prototype._waitForVaultInitiatedCheckoutDependencies =
+  function () {
+    var self = this;
 
-  return this._clientPromise.then(function () {
-    return self._frameServicePromise;
-  });
-};
+    return this._clientPromise.then(function () {
+      return self._frameServicePromise;
+    });
+  };
 
 PayPalCheckout.prototype._constructVaultCheckutUrl = function (frameName) {
   var serviceId = this._frameService._serviceId;
 
-  return this._assetsUrl + '/html/' + frameName + useMin(this._isDebug) + '.html?channel=' + serviceId;
+  return (
+    this._assetsUrl +
+    "/html/" +
+    frameName +
+    useMin(this._isDebug) +
+    ".html?channel=" +
+    serviceId
+  );
 };
 
 /**
@@ -777,8 +883,11 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
   var shouldVault = true;
   var payload;
   var options = {
-    flow: tokenizeOptions.billingToken && !tokenizeOptions.paymentID ? 'vault' : 'checkout',
-    intent: tokenizeOptions.intent || this.intentFromCreatePayment
+    flow:
+      tokenizeOptions.billingToken && !tokenizeOptions.paymentID
+        ? "vault"
+        : "checkout",
+    intent: tokenizeOptions.intent || this.intentFromCreatePayment,
   };
   var params = {
     // The paymentToken provided by the PayPal JS SDK is the EC Token
@@ -786,45 +895,62 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     billingToken: tokenizeOptions.billingToken,
     payerId: tokenizeOptions.payerID,
     paymentId: tokenizeOptions.paymentID,
-    shippingOptionsId: tokenizeOptions.shippingOptionsId
+    shippingOptionsId: tokenizeOptions.shippingOptionsId,
   };
 
-  if (tokenizeOptions.hasOwnProperty('vault')) {
+  if (tokenizeOptions.hasOwnProperty("vault")) {
     shouldVault = tokenizeOptions.vault;
   }
 
   options.vault = shouldVault;
 
-  analytics.sendEvent(this._clientPromise, 'paypal-checkout.tokenization.started');
+  analytics.sendEvent(
+    this._clientPromise,
+    "paypal-checkout.tokenization.started"
+  );
 
-  return this._clientPromise.then(function (client) {
-    return client.request({
-      endpoint: 'payment_methods/paypal_accounts',
-      method: 'post',
-      data: self._formatTokenizeData(options, params)
+  return this._clientPromise
+    .then(function (client) {
+      return client.request({
+        endpoint: "payment_methods/paypal_accounts",
+        method: "post",
+        data: self._formatTokenizeData(options, params),
+      });
+    })
+    .then(function (response) {
+      payload = self._formatTokenizePayload(response);
+
+      analytics.sendEvent(
+        self._clientPromise,
+        "paypal-checkout.tokenization.success"
+      );
+      if (payload.creditFinancingOffered) {
+        analytics.sendEvent(
+          self._clientPromise,
+          "paypal-checkout.credit.accepted"
+        );
+      }
+
+      return payload;
+    })
+    .catch(function (err) {
+      if (self._setupError) {
+        return Promise.reject(self._setupError);
+      }
+
+      analytics.sendEvent(
+        self._clientPromise,
+        "paypal-checkout.tokenization.failed"
+      );
+
+      return Promise.reject(
+        convertToBraintreeError(err, {
+          type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
+          code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
+          message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message,
+        })
+      );
     });
-  }).then(function (response) {
-    payload = self._formatTokenizePayload(response);
-
-    analytics.sendEvent(self._clientPromise, 'paypal-checkout.tokenization.success');
-    if (payload.creditFinancingOffered) {
-      analytics.sendEvent(self._clientPromise, 'paypal-checkout.credit.accepted');
-    }
-
-    return payload;
-  }).catch(function (err) {
-    if (self._setupError) {
-      return Promise.reject(self._setupError);
-    }
-
-    analytics.sendEvent(self._clientPromise, 'paypal-checkout.tokenization.failed');
-
-    return Promise.reject(convertToBraintreeError(err, {
-      type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
-      code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
-      message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message
-    }));
-  });
 };
 
 /**
@@ -915,13 +1041,16 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
   var idPromise, src;
   var loadPromise = new ExtendedPromise();
   var dataAttributes = (options && options.dataAttributes) || {};
-  var userIdToken = dataAttributes['user-id-token'] || dataAttributes['data-user-id-token'];
+  var userIdToken =
+    dataAttributes["user-id-token"] || dataAttributes["data-user-id-token"];
 
   if (!userIdToken) {
-    userIdToken = this._authorizationInformation.fingerprint && this._authorizationInformation.fingerprint.split('?')[0];
+    userIdToken =
+      this._authorizationInformation.fingerprint &&
+      this._authorizationInformation.fingerprint.split("?")[0];
   }
 
-  this._paypalScript = document.createElement('script');
+  this._paypalScript = document.createElement("script");
 
   // NEXT_MAJOR_VERSION
   // this options object should have 2 properties:
@@ -930,9 +1059,13 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
   // should make organizing this better than squashing
   // all the query params at the top level and extracting
   // the data attributes
-  options = assign({}, {
-    components: 'buttons'
-  }, options);
+  options = assign(
+    {},
+    {
+      components: "buttons",
+    },
+    options
+  );
   delete options.dataAttributes;
 
   // NEXT_MAJOR_VERSION if merchant passes an explicit intent,
@@ -941,50 +1074,62 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
   // createPayment to reduce the number of items that need to be
   // duplicated here and in createPayment
   if (options.vault) {
-    options.intent = options.intent || 'tokenize';
+    options.intent = options.intent || "tokenize";
   } else {
-    options.intent = options.intent || 'authorize';
-    options.currency = options.currency || 'USD';
+    options.intent = options.intent || "authorize";
+    options.currency = options.currency || "USD";
   }
 
-  src = 'https://www.paypal.com/sdk/js?';
+  src = "https://www.paypal.com/sdk/js?";
   this._paypalScript.onload = function () {
     loadPromise.resolve();
   };
 
-  Object.keys(dataAttributes).forEach(function (attribute) {
-    this._paypalScript.setAttribute('data-' + attribute.replace(/^data\-/, ''), dataAttributes[attribute]);
-  }.bind(this));
+  Object.keys(dataAttributes).forEach(
+    function (attribute) {
+      this._paypalScript.setAttribute(
+        "data-" + attribute.replace(/^data\-/, ""),
+        dataAttributes[attribute]
+      );
+    }.bind(this)
+  );
 
-  if (options['client-id']) {
-    idPromise = Promise.resolve(options['client-id']);
+  if (options["client-id"]) {
+    idPromise = Promise.resolve(options["client-id"]);
   } else {
     idPromise = this.getClientId();
   }
 
-  idPromise.then(function (id) {
-    options['client-id'] = id;
+  idPromise.then(
+    function (id) {
+      options["client-id"] = id;
 
-    if (this._autoSetDataUserIdToken && userIdToken) {
-      this._paypalScript.setAttribute('data-user-id-token', userIdToken);
+      if (this._autoSetDataUserIdToken && userIdToken) {
+        this._paypalScript.setAttribute("data-user-id-token", userIdToken);
 
-      // preloading improves the rendering time of the PayPal button
-      this._attachPreloadPixel({
-        id: id,
-        userIdToken: userIdToken,
-        amount: dataAttributes.amount,
-        currency: options.currency,
-        merchantId: options['merchant-id']
-      });
-    }
+        // preloading improves the rendering time of the PayPal button
+        this._attachPreloadPixel({
+          id: id,
+          userIdToken: userIdToken,
+          amount: dataAttributes.amount,
+          currency: options.currency,
+          merchantId: options["merchant-id"],
+        });
+      }
 
-    this._paypalScript.src = querystring.queryify(src, options);
-    document.head.insertBefore(this._paypalScript, document.head.firstElementChild);
-  }.bind(this));
+      this._paypalScript.src = querystring.queryify(src, options);
+      document.head.insertBefore(
+        this._paypalScript,
+        document.head.firstElementChild
+      );
+    }.bind(this)
+  );
 
-  return loadPromise.then(function () {
-    return this;
-  }.bind(this));
+  return loadPromise.then(
+    function () {
+      return this;
+    }.bind(this)
+  );
 };
 
 PayPalCheckout.prototype._attachPreloadPixel = function (options) {
@@ -992,11 +1137,11 @@ PayPalCheckout.prototype._attachPreloadPixel = function (options) {
   var id = options.id;
   var userIdToken = options.userIdToken;
   var env = this._authorizationInformation.environment;
-  var subdomain = env === 'production' ? '' : 'sandbox.';
-  var url = PAYPAL_SDK_PRELOAD_URL.replace('{ENV}', subdomain);
+  var subdomain = env === "production" ? "" : "sandbox.";
+  var url = PAYPAL_SDK_PRELOAD_URL.replace("{ENV}", subdomain);
   var preloadOptions = {
-    'client-id': id,
-    'user-id-token': userIdToken
+    "client-id": id,
+    "user-id-token": userIdToken,
   };
 
   if (options.amount) {
@@ -1006,15 +1151,18 @@ PayPalCheckout.prototype._attachPreloadPixel = function (options) {
     preloadOptions.currency = options.currency;
   }
   if (options.merchantId) {
-    preloadOptions['merchant-id'] = options.merchantId;
+    preloadOptions["merchant-id"] = options.merchantId;
   }
 
   request = new XMLHttpRequest();
-  request.open('GET', querystring.queryify(url, preloadOptions));
+  request.open("GET", querystring.queryify(url, preloadOptions));
   request.send();
 };
 
-PayPalCheckout.prototype._formatPaymentResourceData = function (options, config) {
+PayPalCheckout.prototype._formatPaymentResourceData = function (
+  options,
+  config
+) {
   var key;
   var gatewayConfiguration = this._configuration.gatewayConfiguration;
   // NEXT_MAJOR_VERSION default value for intent in PayPal SDK is capture
@@ -1024,8 +1172,8 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
   var paymentResource = {
     // returnUrl and cancelUrl are required in hermes create_payment_resource route
     // but are not used by the PayPal sdk, except to redirect to an error page
-    returnUrl: config.returnUrl || 'https://www.paypal.com/checkoutnow/error',
-    cancelUrl: config.cancelUrl || 'https://www.paypal.com/checkoutnow/error',
+    returnUrl: config.returnUrl || "https://www.paypal.com/checkoutnow/error",
+    cancelUrl: config.cancelUrl || "https://www.paypal.com/checkoutnow/error",
     offerPaypalCredit: options.offerCredit === true,
     merchantAccountId: this._merchantAccountId,
     experienceProfile: {
@@ -1033,12 +1181,12 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
       localeCode: options.locale,
       noShipping: (!options.enableShippingAddress).toString(),
       addressOverride: options.shippingAddressEditable === false,
-      landingPageType: options.landingPageType
+      landingPageType: options.landingPageType,
     },
-    shippingOptions: options.shippingOptions
+    shippingOptions: options.shippingOptions,
   };
 
-  if (options.flow === 'checkout') {
+  if (options.flow === "checkout") {
     paymentResource.amount = options.amount;
     paymentResource.currencyIsoCode = options.currency;
     paymentResource.requestBillingAgreement = options.requestBillingAgreement;
@@ -1047,21 +1195,22 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
       // 'sale' has been changed to 'capture' in PayPal's backend, but
       // we use an old version with 'sale'. We provide capture as an alias
       // to match the PayPal SDK
-      if (intent === 'capture') {
-        intent = 'sale';
+      if (intent === "capture") {
+        intent = "sale";
       }
       paymentResource.intent = intent;
     }
 
-    if (options.hasOwnProperty('lineItems')) {
+    if (options.hasOwnProperty("lineItems")) {
       paymentResource.lineItems = options.lineItems;
     }
 
-    if (options.hasOwnProperty('vaultInitiatedCheckoutPaymentMethodToken')) {
-      paymentResource.vaultInitiatedCheckoutPaymentMethodToken = options.vaultInitiatedCheckoutPaymentMethodToken;
+    if (options.hasOwnProperty("vaultInitiatedCheckoutPaymentMethodToken")) {
+      paymentResource.vaultInitiatedCheckoutPaymentMethodToken =
+        options.vaultInitiatedCheckoutPaymentMethodToken;
     }
 
-    if (options.hasOwnProperty('shippingOptions')) {
+    if (options.hasOwnProperty("shippingOptions")) {
       paymentResource.shippingOptions = options.shippingOptions;
     }
 
@@ -1071,7 +1220,7 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
       }
     }
 
-    if (options.hasOwnProperty('billingAgreementDetails')) {
+    if (options.hasOwnProperty("billingAgreementDetails")) {
       paymentResource.billingAgreementDetails = options.billingAgreementDetails;
     }
   } else {
@@ -1098,16 +1247,18 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (options, config)
 PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
   var clientConfiguration = this._configuration;
   var gatewayConfiguration = clientConfiguration.gatewayConfiguration;
-  var isTokenizationKey = clientConfiguration.authorizationType === 'TOKENIZATION_KEY';
-  var isVaultFlow = options.flow === 'vault';
-  var correlationId = this._riskCorrelationId || params.billingToken || params.ecToken;
+  var isTokenizationKey =
+    clientConfiguration.authorizationType === "TOKENIZATION_KEY";
+  var isVaultFlow = options.flow === "vault";
+  var correlationId =
+    this._riskCorrelationId || params.billingToken || params.ecToken;
   var data = {
     paypalAccount: {
       correlationId: correlationId,
       options: {
-        validate: isVaultFlow && !isTokenizationKey && options.vault
-      }
-    }
+        validate: isVaultFlow && !isTokenizationKey && options.vault,
+      },
+    },
   };
 
   if (isVaultFlow) {
@@ -1115,7 +1266,8 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
   } else {
     data.paypalAccount.paymentToken = params.paymentId;
     data.paypalAccount.payerId = params.payerId;
-    data.paypalAccount.unilateral = gatewayConfiguration.paypal.unvettedMerchant;
+    data.paypalAccount.unilateral =
+      gatewayConfiguration.paypal.unvettedMerchant;
 
     if (options.intent) {
       data.paypalAccount.intent = options.intent;
@@ -1140,7 +1292,7 @@ PayPalCheckout.prototype._formatTokenizePayload = function (response) {
   payload = {
     nonce: account.nonce,
     details: {},
-    type: account.type
+    type: account.type,
   };
 
   if (account.details && account.details.payerInfo) {
@@ -1183,15 +1335,17 @@ PayPalCheckout.prototype.teardown = function () {
     this._paypalScript.parentNode.removeChild(this._paypalScript);
   }
 
-  return this._frameServicePromise.catch(function () {
-    // no need to error in teardown for an error setting up the frame service
-  }).then(function () {
-    if (!self._frameService) {
-      return Promise.resolve();
-    }
+  return this._frameServicePromise
+    .catch(function () {
+      // no need to error in teardown for an error setting up the frame service
+    })
+    .then(function () {
+      if (!self._frameService) {
+        return Promise.resolve();
+      }
 
-    return self._frameService.teardown();
-  });
+      return self._frameService.teardown();
+    });
 };
 
 module.exports = wrapPromise.wrapPrototype(PayPalCheckout);

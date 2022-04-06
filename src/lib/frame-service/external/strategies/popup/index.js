@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-var composeOptions = require('./compose-options');
+var composeOptions = require("./compose-options");
 
 function noop() {}
 

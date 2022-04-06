@@ -6,15 +6,7 @@
   "restoreMocks": true,
   "//": "In the future, tests should live in the same directory as the files they are testing",
   "rootDir": "../../src/unionpay",
-  "roots": [
-    "<rootDir>",
-    "<rootDir>/../../test/unionpay"
-  ],
-  "setupFilesAfterEnv": [
-    "<rootDir>/../../test/unionpay/unit/global.js"
-  ],
-  "testMatch": [
-    "**/unit/**/*.js",
-    "!**/global.js"
-  ]
+  "roots": ["<rootDir>", "<rootDir>/../../test/unionpay"],
+  "setupFilesAfterEnv": ["<rootDir>/../../test/unionpay/unit/global.js"],
+  "testMatch": ["**/unit/**/*.js", "!**/global.js"]
 }

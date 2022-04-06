@@ -1,13 +1,13 @@
-'use strict';
+"use strict";
 /** @module braintree-web/hosted-fields */
 
-var HostedFields = require('./external/hosted-fields');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var errors = require('./shared/errors');
-var supportsInputFormatting = require('restricted-input/supports-input-formatting');
-var wrapPromise = require('@braintree/wrap-promise');
-var BraintreeError = require('../lib/braintree-error');
-var Promise = require('../lib/promise');
+var HostedFields = require("./external/hosted-fields");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var errors = require("./shared/errors");
+var supportsInputFormatting = require("restricted-input/supports-input-formatting");
+var wrapPromise = require("@braintree/wrap-promise");
+var BraintreeError = require("../lib/braintree-error");
+var Promise = require("../lib/promise");
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -293,22 +293,24 @@ var VERSION = process.env.npm_package_version;
  * }, callback);
  */
 function create(options) {
-  return basicComponentVerification.verify({
-    name: 'Hosted Fields',
-    authorization: options.authorization,
-    client: options.client
-  }).then(function () {
-    var integration = new HostedFields(options);
+  return basicComponentVerification
+    .verify({
+      name: "Hosted Fields",
+      authorization: options.authorization,
+      client: options.client,
+    })
+    .then(function () {
+      var integration = new HostedFields(options);
 
-    return new Promise(function (resolve, reject) {
-      integration.on('ready', function () {
-        resolve(integration);
-      });
-      integration.on('timeout', function () {
-        reject(new BraintreeError(errors.HOSTED_FIELDS_TIMEOUT));
+      return new Promise(function (resolve, reject) {
+        integration.on("ready", function () {
+          resolve(integration);
+        });
+        integration.on("timeout", function () {
+          reject(new BraintreeError(errors.HOSTED_FIELDS_TIMEOUT));
+        });
       });
     });
-  });
 }
 
 module.exports = {
@@ -358,5 +360,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

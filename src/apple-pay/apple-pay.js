@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('../lib/braintree-error');
-var analytics = require('../lib/analytics');
-var errors = require('./errors');
-var Promise = require('../lib/promise');
-var methods = require('../lib/methods');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var wrapPromise = require('@braintree/wrap-promise');
+var BraintreeError = require("../lib/braintree-error");
+var analytics = require("../lib/analytics");
+var errors = require("./errors");
+var Promise = require("../lib/promise");
+var methods = require("../lib/methods");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @typedef {object} ApplePay~tokenizePayload
@@ -64,15 +64,18 @@ ApplePay.prototype._waitForClient = function () {
     return Promise.resolve();
   }
 
-  return this._createPromise.then(function (client) {
-    this._client = client;
+  return this._createPromise.then(
+    function (client) {
+      this._client = client;
 
-    this._setMerchantIdentifier();
-  }.bind(this));
+      this._setMerchantIdentifier();
+    }.bind(this)
+  );
 };
 
 ApplePay.prototype._setMerchantIdentifier = function () {
-  var applePayConfig = this._client.getConfiguration().gatewayConfiguration.applePayWeb;
+  var applePayConfig =
+    this._client.getConfiguration().gatewayConfiguration.applePayWeb;
 
   if (!applePayConfig) {
     return;
@@ -88,10 +91,10 @@ ApplePay.prototype._setMerchantIdentifier = function () {
    *   }
    * });
    */
-  Object.defineProperty(this, 'merchantIdentifier', {
+  Object.defineProperty(this, "merchantIdentifier", {
     value: applePayConfig.merchantIdentifier,
     configurable: false,
-    writable: false
+    writable: false,
   });
 };
 
@@ -153,20 +156,25 @@ ApplePay.prototype.createPaymentRequest = function (paymentRequest) {
     return this._createPaymentRequestSynchronously(paymentRequest);
   }
 
-  return this._waitForClient().then(function () {
-    return this._createPaymentRequestSynchronously(paymentRequest);
-  }.bind(this));
+  return this._waitForClient().then(
+    function () {
+      return this._createPaymentRequestSynchronously(paymentRequest);
+    }.bind(this)
+  );
 };
 
-ApplePay.prototype._createPaymentRequestSynchronously = function (paymentRequest) {
-  var applePay = this._client.getConfiguration().gatewayConfiguration.applePayWeb;
+ApplePay.prototype._createPaymentRequestSynchronously = function (
+  paymentRequest
+) {
+  var applePay =
+    this._client.getConfiguration().gatewayConfiguration.applePayWeb;
   var defaults = {
     countryCode: applePay.countryCode,
     currencyCode: applePay.currencyCode,
-    merchantCapabilities: applePay.merchantCapabilities || ['supports3DS'],
+    merchantCapabilities: applePay.merchantCapabilities || ["supports3DS"],
     supportedNetworks: applePay.supportedNetworks.map(function (network) {
-      return network === 'mastercard' ? 'masterCard' : network;
-    })
+      return network === "mastercard" ? "masterCard" : network;
+    }),
   };
 
   return Object.assign({}, defaults, paymentRequest);
@@ -218,55 +226,65 @@ ApplePay.prototype.performValidation = function (options) {
   var self = this;
 
   if (!options || !options.validationURL) {
-    return Promise.reject(new BraintreeError(errors.APPLE_PAY_VALIDATION_URL_REQUIRED));
+    return Promise.reject(
+      new BraintreeError(errors.APPLE_PAY_VALIDATION_URL_REQUIRED)
+    );
   }
 
-  return this._waitForClient().then(function () {
-    var applePayWebSession = {
-      validationUrl: options.validationURL,
-      domainName: options.domainName || window.location.hostname,
-      merchantIdentifier: options.merchantIdentifier || self.merchantIdentifier
-    };
+  return this._waitForClient()
+    .then(function () {
+      var applePayWebSession = {
+        validationUrl: options.validationURL,
+        domainName: options.domainName || window.location.hostname,
+        merchantIdentifier:
+          options.merchantIdentifier || self.merchantIdentifier,
+      };
 
-    if (options.displayName != null) {
-      applePayWebSession.displayName = options.displayName;
-    }
-
-    return self._client.request({
-      method: 'post',
-      endpoint: 'apple_pay_web/sessions',
-      data: {
-        _meta: {source: 'apple-pay'},
-        applePayWebSession: applePayWebSession
+      if (options.displayName != null) {
+        applePayWebSession.displayName = options.displayName;
       }
+
+      return self._client.request({
+        method: "post",
+        endpoint: "apple_pay_web/sessions",
+        data: {
+          _meta: { source: "apple-pay" },
+          applePayWebSession: applePayWebSession,
+        },
+      });
+    })
+    .then(function (response) {
+      analytics.sendEvent(self._client, "applepay.performValidation.succeeded");
+
+      return Promise.resolve(response);
+    })
+    .catch(function (err) {
+      analytics.sendEvent(self._client, "applepay.performValidation.failed");
+
+      if (err.code === "CLIENT_REQUEST_ERROR") {
+        return Promise.reject(
+          new BraintreeError({
+            type: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.type,
+            code: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.code,
+            message: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.message,
+            details: {
+              originalError: err.details.originalError,
+            },
+          })
+        );
+      }
+
+      return Promise.reject(
+        new BraintreeError({
+          type: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.type,
+          code: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.code,
+          message: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.message,
+          details: {
+            originalError: err,
+          },
+        })
+      );
     });
-  }).then(function (response) {
-    analytics.sendEvent(self._client, 'applepay.performValidation.succeeded');
-
-    return Promise.resolve(response);
-  }).catch(function (err) {
-    analytics.sendEvent(self._client, 'applepay.performValidation.failed');
-
-    if (err.code === 'CLIENT_REQUEST_ERROR') {
-      return Promise.reject(new BraintreeError({
-        type: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.type,
-        code: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.code,
-        message: errors.APPLE_PAY_MERCHANT_VALIDATION_FAILED.message,
-        details: {
-          originalError: err.details.originalError
-        }
-      }));
-    }
-
-    return Promise.reject(new BraintreeError({
-      type: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.type,
-      code: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.code,
-      message: errors.APPLE_PAY_MERCHANT_VALIDATION_NETWORK.message,
-      details: {
-        originalError: err
-      }
-    }));
-  });
 };
 
 /**
@@ -316,39 +334,46 @@ ApplePay.prototype.tokenize = function (options) {
   var self = this;
 
   if (!options.token) {
-    return Promise.reject(new BraintreeError(errors.APPLE_PAY_PAYMENT_TOKEN_REQUIRED));
+    return Promise.reject(
+      new BraintreeError(errors.APPLE_PAY_PAYMENT_TOKEN_REQUIRED)
+    );
   }
 
-  return this._waitForClient().then(function () {
-    return self._client.request({
-      method: 'post',
-      endpoint: 'payment_methods/apple_payment_tokens',
-      data: {
-        _meta: {
-          source: 'apple-pay'
+  return this._waitForClient()
+    .then(function () {
+      return self._client.request({
+        method: "post",
+        endpoint: "payment_methods/apple_payment_tokens",
+        data: {
+          _meta: {
+            source: "apple-pay",
+          },
+          applePaymentToken: Object.assign({}, options.token, {
+            // The gateway requires this key to be base64-encoded.
+            paymentData: btoa(JSON.stringify(options.token.paymentData)),
+          }),
         },
-        applePaymentToken: Object.assign({}, options.token, {
-          // The gateway requires this key to be base64-encoded.
-          paymentData: btoa(JSON.stringify(options.token.paymentData))
+      });
+    })
+    .then(function (response) {
+      analytics.sendEvent(self._client, "applepay.tokenize.succeeded");
+
+      return Promise.resolve(response.applePayCards[0]);
+    })
+    .catch(function (err) {
+      analytics.sendEvent(self._client, "applepay.tokenize.failed");
+
+      return Promise.reject(
+        new BraintreeError({
+          type: errors.APPLE_PAY_TOKENIZATION.type,
+          code: errors.APPLE_PAY_TOKENIZATION.code,
+          message: errors.APPLE_PAY_TOKENIZATION.message,
+          details: {
+            originalError: err,
+          },
         })
-      }
+      );
     });
-  }).then(function (response) {
-    analytics.sendEvent(self._client, 'applepay.tokenize.succeeded');
-
-    return Promise.resolve(response.applePayCards[0]);
-  }).catch(function (err) {
-    analytics.sendEvent(self._client, 'applepay.tokenize.failed');
-
-    return Promise.reject(new BraintreeError({
-      type: errors.APPLE_PAY_TOKENIZATION.type,
-      code: errors.APPLE_PAY_TOKENIZATION.code,
-      message: errors.APPLE_PAY_TOKENIZATION.message,
-      details: {
-        originalError: err
-      }
-    }));
-  });
 };
 
 /**

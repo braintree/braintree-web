@@ -1,35 +1,45 @@
-'use strict';
+"use strict";
 
 function errorResponseAdapter(responseBody) {
   var response;
-  var errorClass = responseBody.errors &&
+  var errorClass =
+    responseBody.errors &&
     responseBody.errors[0] &&
     responseBody.errors[0].extensions &&
     responseBody.errors[0].extensions.errorClass;
 
-  if (errorClass === 'VALIDATION') {
+  if (errorClass === "VALIDATION") {
     response = userErrorResponseAdapter(responseBody);
   } else if (errorClass) {
     response = errorWithClassResponseAdapter(responseBody);
   } else {
-    response = {error: {message: 'There was a problem serving your request'}, fieldErrors: []};
+    response = {
+      error: { message: "There was a problem serving your request" },
+      fieldErrors: [],
+    };
   }
 
   return response;
 }
 
 function errorWithClassResponseAdapter(responseBody) {
-  return {error: {message: responseBody.errors[0].message}, fieldErrors: []};
+  return {
+    error: { message: responseBody.errors[0].message },
+    fieldErrors: [],
+  };
 }
 
 function userErrorResponseAdapter(responseBody) {
   var fieldErrors = buildFieldErrors(responseBody.errors);
 
   if (fieldErrors.length === 0) {
-    return {error: {message: responseBody.errors[0].message}};
+    return { error: { message: responseBody.errors[0].message } };
   }
 
-  return {error: {message: getLegacyMessage(fieldErrors)}, fieldErrors: fieldErrors};
+  return {
+    error: { message: getLegacyMessage(fieldErrors) },
+    fieldErrors: fieldErrors,
+  };
 }
 
 function buildFieldErrors(errors) {
@@ -54,7 +64,7 @@ function addFieldError(inputPath, errorDetail, fieldErrors) {
     fieldErrors.push({
       code: legacyCode,
       field: inputField,
-      message: errorDetail.message
+      message: errorDetail.message,
     });
 
     return;
@@ -67,7 +77,7 @@ function addFieldError(inputPath, errorDetail, fieldErrors) {
   });
 
   if (!fieldError) {
-    fieldError = {field: inputField, fieldErrors: []};
+    fieldError = { field: inputField, fieldErrors: [] };
     fieldErrors.push(fieldError);
   }
 
@@ -76,7 +86,7 @@ function addFieldError(inputPath, errorDetail, fieldErrors) {
 
 function getLegacyMessage(errors) {
   var legacyMessages = {
-    creditCard: 'Credit card is invalid'
+    creditCard: "Credit card is invalid",
   };
 
   var field = errors[0].field;

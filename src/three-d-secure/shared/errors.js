@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.3D Secure - Creation Error Codes
@@ -16,7 +16,7 @@
  * @property {MERCHANT} THREEDS_CARDINAL_SDK_BAD_JWT Occurs when a malformed config causes a either a missing response JWT or a malformed Cardinal response.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_ERROR Occurs when a "general error" or a Cardinal hosted fields error happens. Description contains more details.
  * @property {CUSTOMER} THREEDS_CARDINAL_SDK_CANCELED Occurs when customer cancels the transaction mid-flow, usually with alt-pays that have their own cancel buttons.
-*/
+ */
 
 /**
  * @name BraintreeError.3D Secure - verifyCard Error Codes
@@ -45,125 +45,133 @@
  * @property {INTERNAL} THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED Occurs when a 3D Secure framework method is not implemented.
  */
 
-var BraintreeError = require('../../lib/braintree-error');
+var BraintreeError = require("../../lib/braintree-error");
 
 module.exports = {
   THREEDS_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_NOT_ENABLED',
-    message: '3D Secure is not enabled for this merchant.'
+    code: "THREEDS_NOT_ENABLED",
+    message: "3D Secure is not enabled for this merchant.",
   },
   THREEDS_CAN_NOT_USE_TOKENIZATION_KEY: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_CAN_NOT_USE_TOKENIZATION_KEY',
-    message: '3D Secure can not use a tokenization key for authorization.'
+    code: "THREEDS_CAN_NOT_USE_TOKENIZATION_KEY",
+    message: "3D Secure can not use a tokenization key for authorization.",
   },
   THREEDS_HTTPS_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_HTTPS_REQUIRED',
-    message: '3D Secure requires HTTPS.'
+    code: "THREEDS_HTTPS_REQUIRED",
+    message: "3D Secure requires HTTPS.",
   },
   THREEDS_NOT_ENABLED_FOR_V2: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_NOT_ENABLED_FOR_V2',
-    message: '3D Secure version 2 is not enabled for this merchant. Contact Braintree Support for assistance at https://help.braintreepayments.com/'
+    code: "THREEDS_NOT_ENABLED_FOR_V2",
+    message:
+      "3D Secure version 2 is not enabled for this merchant. Contact Braintree Support for assistance at https://help.braintreepayments.com/",
   },
   THREEDS_UNRECOGNIZED_VERSION: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_UNRECOGNIZED_VERSION'
+    code: "THREEDS_UNRECOGNIZED_VERSION",
   },
   THREEDS_CARDINAL_SDK_SETUP_FAILED: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'THREEDS_CARDINAL_SDK_SETUP_FAILED',
-    message: 'Something went wrong setting up Cardinal\'s Songbird.js library.'
+    code: "THREEDS_CARDINAL_SDK_SETUP_FAILED",
+    message: "Something went wrong setting up Cardinal's Songbird.js library.",
   },
   THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED: {
     type: BraintreeError.types.NETWORK,
-    code: 'THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED',
-    message: 'Cardinal\'s Songbird.js library could not be loaded.'
+    code: "THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED",
+    message: "Cardinal's Songbird.js library could not be loaded.",
   },
   THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT',
-    message: 'Cardinal\'s Songbird.js took too long to setup.'
+    code: "THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT",
+    message: "Cardinal's Songbird.js took too long to setup.",
   },
   THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT',
-    message: 'Cardinal\'s API took too long to respond.'
+    code: "THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT",
+    message: "Cardinal's API took too long to respond.",
   },
   THREEDS_CARDINAL_SDK_BAD_CONFIG: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_CARDINAL_SDK_BAD_CONFIG',
-    message: 'JWT or other required field missing. Please check your setup configuration.'
+    code: "THREEDS_CARDINAL_SDK_BAD_CONFIG",
+    message:
+      "JWT or other required field missing. Please check your setup configuration.",
   },
   THREEDS_CARDINAL_SDK_BAD_JWT: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_CARDINAL_SDK_BAD_JWT',
-    message: 'Cardinal JWT missing or malformed. Please check your setup configuration.'
+    code: "THREEDS_CARDINAL_SDK_BAD_JWT",
+    message:
+      "Cardinal JWT missing or malformed. Please check your setup configuration.",
   },
   THREEDS_CARDINAL_SDK_ERROR: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'THREEDS_CARDINAL_SDK_ERROR',
-    message: 'A general error has occurred with Cardinal. See description for more information.'
+    code: "THREEDS_CARDINAL_SDK_ERROR",
+    message:
+      "A general error has occurred with Cardinal. See description for more information.",
   },
   THREEDS_CARDINAL_SDK_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'THREEDS_CARDINAL_SDK_CANCELED',
-    message: 'Canceled by user.'
+    code: "THREEDS_CARDINAL_SDK_CANCELED",
+    message: "Canceled by user.",
   },
   THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT',
-    message: '3D Secure verfication canceled by merchant.'
+    code: "THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT",
+    message: "3D Secure verfication canceled by merchant.",
   },
   THREEDS_AUTHENTICATION_IN_PROGRESS: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_AUTHENTICATION_IN_PROGRESS',
-    message: 'Cannot call verifyCard while existing authentication is in progress.'
+    code: "THREEDS_AUTHENTICATION_IN_PROGRESS",
+    message:
+      "Cannot call verifyCard while existing authentication is in progress.",
   },
   THREEDS_MISSING_VERIFY_CARD_OPTION: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_MISSING_VERIFY_CARD_OPTION'
+    code: "THREEDS_MISSING_VERIFY_CARD_OPTION",
   },
   THREEDS_JWT_AUTHENTICATION_FAILED: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'THREEDS_JWT_AUTHENTICATION_FAILED',
-    message: 'Something went wrong authenticating the JWT from Cardinal'
+    code: "THREEDS_JWT_AUTHENTICATION_FAILED",
+    message: "Something went wrong authenticating the JWT from Cardinal",
   },
   THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR',
-    message: 'Either the payment method nonce passed to `verifyCard` does not exist, or it was already consumed'
+    code: "THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR",
+    message:
+      "Either the payment method nonce passed to `verifyCard` does not exist, or it was already consumed",
   },
   THREEDS_LOOKUP_VALIDATION_ERROR: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'THREEDS_LOOKUP_VALIDATION_ERROR',
-    message: 'The data passed in `verifyCard` did not pass validation checks. See details for more info'
+    code: "THREEDS_LOOKUP_VALIDATION_ERROR",
+    message:
+      "The data passed in `verifyCard` did not pass validation checks. See details for more info",
   },
   THREEDS_LOOKUP_ERROR: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'THREEDS_LOOKUP_ERROR',
-    message: 'Something went wrong during the 3D Secure lookup'
+    code: "THREEDS_LOOKUP_ERROR",
+    message: "Something went wrong during the 3D Secure lookup",
   },
   THREEDS_INLINE_IFRAME_DETAILS_INCORRECT: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'THREEDS_INLINE_IFRAME_DETAILS_INCORRECT',
-    message: 'Something went wrong when attempting to add the authentication iframe to the page.'
+    code: "THREEDS_INLINE_IFRAME_DETAILS_INCORRECT",
+    message:
+      "Something went wrong when attempting to add the authentication iframe to the page.",
   },
   THREEDS_NO_VERIFICATION_PAYLOAD: {
     type: BraintreeError.types.MERCHANT,
-    code: 'THREEDS_NO_VERIFICATION_PAYLOAD',
-    message: 'No verification payload available.'
+    code: "THREEDS_NO_VERIFICATION_PAYLOAD",
+    message: "No verification payload available.",
   },
   THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN: {
     type: BraintreeError.types.INTERNAL,
-    code: 'THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN',
-    message: 'Term Url must be on a Braintree domain.'
+    code: "THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN",
+    message: "Term Url must be on a Braintree domain.",
   },
   THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED: {
     type: BraintreeError.types.INTERNAL,
-    code: 'THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED',
-    message: 'Method not implemented for this framework.'
-  }
+    code: "THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED",
+    message: "Method not implemented for this framework.",
+  },
 };

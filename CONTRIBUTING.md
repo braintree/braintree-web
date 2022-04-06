@@ -1,10 +1,9 @@
-Contributing
-============
+# Contributing
 
 Thanks for considering contributing to this project. Ways you can help:
 
-* [Create a pull request](https://help.github.com/articles/creating-a-pull-request)
-* [Add an issue](https://github.com/braintree/braintree-web/issues)
+- [Create a pull request](https://help.github.com/articles/creating-a-pull-request)
+- [Add an issue](https://github.com/braintree/braintree-web/issues)
 
 ## Development
 

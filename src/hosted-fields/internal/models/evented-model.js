@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-var EventEmitter = require('@braintree/event-emitter');
+var EventEmitter = require("@braintree/event-emitter");
 
 function EventedModel() {
   EventEmitter.call(this);
@@ -14,9 +14,11 @@ EventedModel.prototype.get = function get(compoundKey) {
   var i, key, keys;
   var traversal = this._attributes;
 
-  if (compoundKey == null) { return traversal; }
+  if (compoundKey == null) {
+    return traversal;
+  }
 
-  keys = compoundKey.split('.');
+  keys = compoundKey.split(".");
 
   for (i = 0; i < keys.length; i++) {
     key = keys[i];
@@ -35,7 +37,7 @@ EventedModel.prototype.set = function set(compoundKey, value) {
   var i, key, keys, oldValue;
   var traversal = this._attributes;
 
-  keys = compoundKey.split('.');
+  keys = compoundKey.split(".");
 
   for (i = 0; i < keys.length - 1; i++) {
     key = keys[i];
@@ -51,11 +53,11 @@ EventedModel.prototype.set = function set(compoundKey, value) {
   if (traversal[key] !== value) {
     oldValue = traversal[key];
     traversal[key] = value;
-    this._emit('change');
+    this._emit("change");
     for (i = 1; i <= keys.length; i++) {
-      key = keys.slice(0, i).join('.');
-      this._emit('change:' + key, this.get(key), {
-        old: oldValue
+      key = keys.slice(0, i).join(".");
+      this._emit("change:" + key, this.get(key), {
+        old: oldValue,
       });
     }
   }

@@ -1,3 +1,3 @@
-'use strict';
+"use strict";
 
-jest.mock('framebus');
+jest.mock("framebus");

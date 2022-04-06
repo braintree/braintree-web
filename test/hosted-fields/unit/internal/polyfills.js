@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-require('../../../../src/hosted-fields/internal/polyfills/ie9');
+require("../../../../src/hosted-fields/internal/polyfills/ie9");
 
-describe('placeholder shim', () => {
-  it('calls inputEl.parentNode.appendChild', done => {
+describe("placeholder shim", () => {
+  it("calls inputEl.parentNode.appendChild", (done) => {
     const inputEl = {
       style: [],
       getAttribute: () => null,
@@ -11,11 +11,11 @@ describe('placeholder shim', () => {
       parentNode: {
         appendChild: () => {
           done();
-        }
-      }
+        },
+      },
     };
 
-    jest.spyOn(document, 'createElement').mockImplementation(() => {
+    jest.spyOn(document, "createElement").mockImplementation(() => {
       document.createElement.mockRestore();
 
       return {};

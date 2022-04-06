@@ -1,15 +1,15 @@
-'use strict';
+"use strict";
 
-var sjcl = require('./vendor/sjcl');
-var camelCaseToSnakeCase = require('../lib/camel-case-to-snake-case');
+var sjcl = require("./vendor/sjcl");
+var camelCaseToSnakeCase = require("../lib/camel-case-to-snake-case");
 
-var QA_URL = 'https://assets.qa.braintreepayments.com/data';
-var IFRAME_ID_PREFIX = 'braintreeDataFrame-';
+var QA_URL = "https://assets.qa.braintreepayments.com/data";
+var IFRAME_ID_PREFIX = "braintreeDataFrame-";
 var environmentUrls = {
   development: QA_URL,
   qa: QA_URL,
-  sandbox: 'https://assets.braintreegateway.com/sandbox/data',
-  production: 'https://assets.braintreegateway.com/data'
+  sandbox: "https://assets.braintreegateway.com/sandbox/data",
+  production: "https://assets.braintreegateway.com/data",
 };
 var cachedDeviceData = {};
 
@@ -20,7 +20,9 @@ function setup(o) {
 }
 
 function Kount(options) {
-  var previouslyInitializedDeviceData = Kount.getCachedDeviceData(options.merchantId);
+  var previouslyInitializedDeviceData = Kount.getCachedDeviceData(
+    options.merchantId
+  );
 
   if (previouslyInitializedDeviceData) {
     this.deviceData = previouslyInitializedDeviceData;
@@ -64,7 +66,7 @@ Kount.prototype._removeIframe = function () {
 Kount.prototype._getDeviceData = function () {
   return camelCaseToSnakeCase({
     deviceSessionId: this._deviceSessionId,
-    fraudMerchantId: this._currentEnvironment.id
+    fraudMerchantId: this._currentEnvironment.id,
   });
 };
 
@@ -81,24 +83,29 @@ Kount.prototype._setupIFrame = function () {
   var params, iframe;
   var self = this;
 
-  params = '?m=' + this._currentEnvironment.id + '&s=' + this._deviceSessionId;
+  params = "?m=" + this._currentEnvironment.id + "&s=" + this._deviceSessionId;
 
-  iframe = document.createElement('iframe');
+  iframe = document.createElement("iframe");
   iframe.width = 1;
   iframe.id = IFRAME_ID_PREFIX + this._deviceSessionId;
   iframe.height = 1;
   iframe.frameBorder = 0;
-  iframe.scrolling = 'no';
-  iframe.style.position = 'fixed';
-  iframe.style.left = '-999999px';
-  iframe.style.top = '-999999px';
-  iframe.title = 'Braintree-Kount-iframe';
-  iframe.setAttribute('aria-hidden', 'true');
+  iframe.scrolling = "no";
+  iframe.style.position = "fixed";
+  iframe.style.left = "-999999px";
+  iframe.style.top = "-999999px";
+  iframe.title = "Braintree-Kount-iframe";
+  iframe.setAttribute("aria-hidden", "true");
 
   document.body.appendChild(iframe);
   setTimeout(function () {
-    iframe.src = self._currentEnvironment.url + '/logo.htm' + params;
-    iframe.innerHTML = '<img src="' + self._currentEnvironment.url + '/logo.gif' + params + '" alt="" />';
+    iframe.src = self._currentEnvironment.url + "/logo.htm" + params;
+    iframe.innerHTML =
+      '<img src="' +
+      self._currentEnvironment.url +
+      "/logo.gif" +
+      params +
+      '" alt="" />';
   }, 10);
 
   return iframe;
@@ -108,18 +115,20 @@ Kount.prototype._initializeEnvironment = function (options) {
   var url = environmentUrls[options.environment];
 
   if (url == null) {
-    throw new Error(options.environment + ' is not a valid environment for kount.environment');
+    throw new Error(
+      options.environment + " is not a valid environment for kount.environment"
+    );
   }
 
   return {
     url: url,
     name: options.environment,
-    id: options.merchantId
+    id: options.merchantId,
   };
 };
 
 module.exports = {
   setup: setup,
   Kount: Kount,
-  environmentUrls: environmentUrls
+  environmentUrls: environmentUrls,
 };

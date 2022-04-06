@@ -1,14 +1,19 @@
----
-  extends: braintree/client
-
-  globals:
-    process: false
-
-  rules:
-    valid-jsdoc:
-      - 2
-      - prefer:
-          return: returns
-        requireReturn: true
-        requireParamDescription: true
-        requireReturnDescription: true
+{
+  "extends": ["braintree/client", "prettier"],
+  "globals": {
+    "process": false
+  },
+  "rules": {
+    "valid-jsdoc": [
+      2,
+      {
+        "prefer": {
+          "return": "returns"
+        },
+        "requireReturn": true,
+        "requireParamDescription": true,
+        "requireReturnDescription": true
+      }
+    ]
+  }
+}

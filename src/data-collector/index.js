@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 /** @module braintree-web/data-collector */
 
-var kount = require('./kount');
-var fraudnet = require('./fraudnet');
-var BraintreeError = require('../lib/braintree-error');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var methods = require('../lib/methods');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
+var kount = require("./kount");
+var fraudnet = require("./fraudnet");
+var BraintreeError = require("../lib/braintree-error");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var methods = require("../lib/methods");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
 var VERSION = process.env.npm_package_version;
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
-var errors = require('./errors');
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
+var errors = require("./errors");
 
 /**
  * @class
@@ -99,85 +99,101 @@ var errors = require('./errors');
  * @returns {(Promise|void)} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
  */
 function create(options) {
-  var name = 'Data Collector';
+  var name = "Data Collector";
   var result = {
-    _instances: []
+    _instances: [],
   };
   var data;
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    result._instantiatedWithAClient = !options.useDeferredClient;
-    result._createPromise = createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
-    }).then(function (client) {
-      var kountInstance;
-      var config = client.getConfiguration();
+      authorization: options.authorization,
+    })
+    .then(function () {
+      result._instantiatedWithAClient = !options.useDeferredClient;
+      result._createPromise = createDeferredClient
+        .create({
+          authorization: options.authorization,
+          client: options.client,
+          debug: options.debug,
+          assetsUrl: createAssetsUrl.create(options.authorization),
+          name: name,
+        })
+        .then(function (client) {
+          var kountInstance;
+          var config = client.getConfiguration();
 
-      if (options.kount === true && config.gatewayConfiguration.kount) {
-        try {
-          kountInstance = kount.setup({
-            environment: config.gatewayConfiguration.environment,
-            merchantId: config.gatewayConfiguration.kount.kountMerchantId
-          });
-        } catch (err) {
-          return Promise.reject(new BraintreeError({
-            type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
-            code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
-            message: err.message
-          }));
-        }
+          if (options.kount === true && config.gatewayConfiguration.kount) {
+            try {
+              kountInstance = kount.setup({
+                environment: config.gatewayConfiguration.environment,
+                merchantId: config.gatewayConfiguration.kount.kountMerchantId,
+              });
+            } catch (err) {
+              return Promise.reject(
+                new BraintreeError({
+                  type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
+                  code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
+                  message: err.message,
+                })
+              );
+            }
 
-        data = kountInstance.deviceData;
-        result._instances.push(kountInstance);
-      } else {
-        data = {};
+            data = kountInstance.deviceData;
+            result._instances.push(kountInstance);
+          } else {
+            data = {};
+          }
+
+          return Promise.resolve(client);
+        })
+        .then(function (client) {
+          return fraudnet
+            .setup({
+              sessionId:
+                options.riskCorrelationId ||
+                options.clientMetadataId ||
+                options.correlationId,
+              environment:
+                client.getConfiguration().gatewayConfiguration.environment,
+            })
+            .then(function (fraudnetInstance) {
+              if (fraudnetInstance) {
+                data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
+                result._instances.push(fraudnetInstance);
+              }
+            });
+        })
+        .then(function () {
+          if (result._instances.length === 0) {
+            // NEXT_MAJOR_VERSION either this should error with a specific error that
+            // no data collector instances could be set up, or we should just swallow
+            // the error and document that no device data will be returned if
+            // data collector cannot be instantiated. We can't change the error code here
+            // without possibly breaking merchant integrations relying on this inccorrect
+            // behavior.
+            return Promise.reject(
+              new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS)
+            );
+          }
+
+          result.deviceData = JSON.stringify(data);
+          result.rawDeviceData = data;
+
+          return result;
+        });
+
+      result.teardown = createTeardownMethod(result);
+      result.getDeviceData = createGetDeviceDataMethod(result);
+
+      if (result._instantiatedWithAClient) {
+        return result._createPromise;
       }
-
-      return Promise.resolve(client);
-    }).then(function (client) {
-      return fraudnet.setup({
-        sessionId: options.riskCorrelationId || options.clientMetadataId || options.correlationId,
-        environment: client.getConfiguration().gatewayConfiguration.environment
-      }).then(function (fraudnetInstance) {
-        if (fraudnetInstance) {
-          data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase
-          result._instances.push(fraudnetInstance);
-        }
-      });
-    }).then(function () {
-      if (result._instances.length === 0) {
-        // NEXT_MAJOR_VERSION either this should error with a specific error that
-        // no data collector instances could be set up, or we should just swallow
-        // the error and document that no device data will be returned if
-        // data collector cannot be instantiated. We can't change the error code here
-        // without possibly breaking merchant integrations relying on this inccorrect
-        // behavior.
-        return Promise.reject(new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS));
-      }
-
-      result.deviceData = JSON.stringify(data);
-      result.rawDeviceData = data;
 
       return result;
     });
-
-    result.teardown = createTeardownMethod(result);
-    result.getDeviceData = createGetDeviceDataMethod(result);
-
-    if (result._instantiatedWithAClient) {
-      return result._createPromise;
-    }
-
-    return result;
-  });
 }
 
 function createTeardownMethod(result) {
@@ -214,5 +230,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

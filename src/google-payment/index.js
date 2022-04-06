@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web/google-payment
  * @description A component to integrate with Google Pay. The majority of the integration uses [Google's pay.js JavaScript file](https://pay.google.com/gp/p/js/pay.js). The Braintree component generates the configuration object necessary for Google Pay to initiate the Payment Request and parse the returned data to retrieve the payment method nonce which is used to process the transaction on the server.
  */
 
-var GooglePayment = require('./google-payment');
-var BraintreeError = require('../lib/braintree-error');
-var Promise = require('../lib/promise');
-var createAssetsUrl = require('../lib/create-assets-url');
-var createDeferredClient = require('../lib/create-deferred-client');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var wrapPromise = require('@braintree/wrap-promise');
+var GooglePayment = require("./google-payment");
+var BraintreeError = require("../lib/braintree-error");
+var Promise = require("../lib/promise");
+var createAssetsUrl = require("../lib/create-assets-url");
+var createDeferredClient = require("../lib/create-deferred-client");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var wrapPromise = require("@braintree/wrap-promise");
 var VERSION = process.env.npm_package_version;
-var errors = require('./errors');
+var errors = require("./errors");
 
 /**
  * @static
@@ -38,8 +38,8 @@ var errors = require('./errors');
  * }).then(function (clientInstance) {
  *   return braintree.googlePayment.create({
  *     client: clientInstance,
-*      googlePayVersion: 2,
-*      googleMerchantId: 'your-merchant-id-from-google'
+ *      googlePayVersion: 2,
+ *      googleMerchantId: 'your-merchant-id-from-google'
  *   });
  * }).then(function (googlePaymentInstance) {
  *   paymentButton.addEventListener('click', function (event) {
@@ -89,7 +89,7 @@ var errors = require('./errors');
  *
  *     paymentsClient.loadPaymentData(paymentDataRequest).then(function (paymentData) {
  *       return googlePaymentInstance.parseResponse(paymentData);
-*       }).then(function (result) {
+ *       }).then(function (result) {
  *       // send result.nonce to your server
  *     }).catch(function (err) {
  *       // handle errors
@@ -127,45 +127,51 @@ var errors = require('./errors');
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var name = 'Google Pay';
+  var name = "Google Pay";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    var createPromise, instance;
-
-    createPromise = createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
-    }).then(function (client) {
-      var configuration = client.getConfiguration();
+      authorization: options.authorization,
+    })
+    .then(function () {
+      var createPromise, instance;
 
-      options.client = client;
-      if (!configuration.gatewayConfiguration.androidPay) {
-        return Promise.reject(new BraintreeError(errors.GOOGLE_PAYMENT_NOT_ENABLED));
+      createPromise = createDeferredClient
+        .create({
+          authorization: options.authorization,
+          client: options.client,
+          debug: options.debug,
+          assetsUrl: createAssetsUrl.create(options.authorization),
+          name: name,
+        })
+        .then(function (client) {
+          var configuration = client.getConfiguration();
+
+          options.client = client;
+          if (!configuration.gatewayConfiguration.androidPay) {
+            return Promise.reject(
+              new BraintreeError(errors.GOOGLE_PAYMENT_NOT_ENABLED)
+            );
+          }
+
+          return client;
+        });
+
+      options.createPromise = createPromise;
+      instance = new GooglePayment(options);
+
+      if (!options.useDeferredClient) {
+        return createPromise.then(function (client) {
+          instance._client = client;
+
+          return instance;
+        });
       }
 
-      return client;
+      return instance;
     });
-
-    options.createPromise = createPromise;
-    instance = new GooglePayment(options);
-
-    if (!options.useDeferredClient) {
-      return createPromise.then(function (client) {
-        instance._client = client;
-
-        return instance;
-      });
-    }
-
-    return instance;
-  });
 }
 
 module.exports = {
@@ -174,5 +180,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

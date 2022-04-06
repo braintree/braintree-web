@@ -1,61 +1,58 @@
-'use strict';
+"use strict";
 
-var Popup = require('./strategies/popup');
-var PopupBridge = require('./strategies/popup-bridge');
-var Modal = require('./strategies/modal');
-var Bus = require('framebus');
-var events = require('../shared/events');
-var errors = require('../shared/errors');
-var constants = require('../shared/constants');
-var uuid = require('@braintree/uuid');
-var iFramer = require('@braintree/iframer');
-var BraintreeError = require('../../braintree-error');
-var browserDetection = require('../shared/browser-detection');
-var isHTTPS = require('../../is-https');
-var assign = require('./../../assign').assign;
-var BUS_CONFIGURATION_REQUEST_EVENT = require('../../constants').BUS_CONFIGURATION_REQUEST_EVENT;
+var Popup = require("./strategies/popup");
+var PopupBridge = require("./strategies/popup-bridge");
+var Modal = require("./strategies/modal");
+var Bus = require("framebus");
+var events = require("../shared/events");
+var errors = require("../shared/errors");
+var constants = require("../shared/constants");
+var uuid = require("@braintree/uuid");
+var iFramer = require("@braintree/iframer");
+var BraintreeError = require("../../braintree-error");
+var browserDetection = require("../shared/browser-detection");
+var isHTTPS = require("../../is-https");
+var assign = require("./../../assign").assign;
+var BUS_CONFIGURATION_REQUEST_EVENT =
+  require("../../constants").BUS_CONFIGURATION_REQUEST_EVENT;
 
-var REQUIRED_CONFIG_KEYS = [
-  'name',
-  'dispatchFrameUrl',
-  'openFrameUrl'
-];
+var REQUIRED_CONFIG_KEYS = ["name", "dispatchFrameUrl", "openFrameUrl"];
 
 function noop() {}
 
 function _validateFrameConfiguration(options) {
   if (!options) {
-    throw new Error('Valid configuration is required');
+    throw new Error("Valid configuration is required");
   }
 
   REQUIRED_CONFIG_KEYS.forEach(function (key) {
     if (!options.hasOwnProperty(key)) {
-      throw new Error('A valid frame ' + key + ' must be provided');
+      throw new Error("A valid frame " + key + " must be provided");
     }
   });
 
   if (!/^[\w_]+$/.test(options.name)) {
-    throw new Error('A valid frame name must be provided');
+    throw new Error("A valid frame name must be provided");
   }
 }
 
 function FrameService(options) {
   _validateFrameConfiguration(options);
 
-  this._serviceId = uuid().replace(/-/g, '');
+  this._serviceId = uuid().replace(/-/g, "");
 
   this._options = {
-    name: options.name + '_' + this._serviceId,
+    name: options.name + "_" + this._serviceId,
     dispatchFrameUrl: options.dispatchFrameUrl,
     openFrameUrl: options.openFrameUrl,
     height: options.height,
     width: options.width,
     top: options.top,
-    left: options.left
+    left: options.left,
   };
   this.state = options.state || {};
 
-  this._bus = new Bus({channel: this._serviceId});
+  this._bus = new Bus({ channel: this._serviceId });
   this._setBusEvents();
 }
 
@@ -70,43 +67,49 @@ FrameService.prototype.initialize = function (callback) {
 };
 
 FrameService.prototype._writeDispatchFrame = function () {
-  var frameName = constants.DISPATCH_FRAME_NAME + '_' + this._serviceId;
+  var frameName = constants.DISPATCH_FRAME_NAME + "_" + this._serviceId;
   var frameSrc = this._options.dispatchFrameUrl;
 
   this._dispatchFrame = iFramer({
-    'aria-hidden': true,
+    "aria-hidden": true,
     name: frameName,
     title: frameName,
     src: frameSrc,
-    'class': constants.DISPATCH_FRAME_CLASS,
+    class: constants.DISPATCH_FRAME_CLASS,
     height: 0,
     width: 0,
     style: {
-      position: 'absolute',
-      left: '-9999px'
-    }
+      position: "absolute",
+      left: "-9999px",
+    },
   });
 
   document.body.appendChild(this._dispatchFrame);
 };
 
 FrameService.prototype._setBusEvents = function () {
-  this._bus.on(events.DISPATCH_FRAME_REPORT, function (res, reply) {
-    if (this._onCompleteCallback) {
-      this._onCompleteCallback.call(null, res.err, res.payload);
-    }
-    this._frame.close();
+  this._bus.on(
+    events.DISPATCH_FRAME_REPORT,
+    function (res, reply) {
+      if (this._onCompleteCallback) {
+        this._onCompleteCallback.call(null, res.err, res.payload);
+      }
+      this._frame.close();
 
-    this._onCompleteCallback = null;
+      this._onCompleteCallback = null;
 
-    if (reply) {
-      reply();
-    }
-  }.bind(this));
+      if (reply) {
+        reply();
+      }
+    }.bind(this)
+  );
 
-  this._bus.on(BUS_CONFIGURATION_REQUEST_EVENT, function (reply) {
-    reply(this.state);
-  }.bind(this));
+  this._bus.on(
+    BUS_CONFIGURATION_REQUEST_EVENT,
+    function (reply) {
+      reply(this.state);
+    }.bind(this)
+  );
 };
 
 FrameService.prototype.open = function (options, callback) {
@@ -130,7 +133,9 @@ FrameService.prototype.open = function (options, callback) {
     this._cleanupFrame();
     if (callback) {
       if (browserDetection.isIE() && !isHTTPS.isHTTPS()) {
-        error = new BraintreeError(errors.FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG);
+        error = new BraintreeError(
+          errors.FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG
+        );
       } else {
         error = new BraintreeError(errors.FRAME_SERVICE_FRAME_OPEN_FAILED);
       }
@@ -177,14 +182,14 @@ FrameService.prototype.createHandler = function (options) {
       }
 
       this.focus();
-    }.bind(this)
+    }.bind(this),
   };
 };
 
 FrameService.prototype.createNoopHandler = function () {
   return {
     close: noop,
-    focus: noop
+    focus: noop,
   };
 };
 
@@ -206,14 +211,19 @@ FrameService.prototype._cleanupFrame = function () {
 };
 
 FrameService.prototype._pollForPopupClose = function () {
-  this._popupInterval = setInterval(function () {
-    if (this.isFrameClosed()) {
-      this._cleanupFrame();
-      if (this._onCompleteCallback) {
-        this._onCompleteCallback(new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED));
+  this._popupInterval = setInterval(
+    function () {
+      if (this.isFrameClosed()) {
+        this._cleanupFrame();
+        if (this._onCompleteCallback) {
+          this._onCompleteCallback(
+            new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED)
+          );
+        }
       }
-    }
-  }.bind(this), constants.POPUP_POLL_INTERVAL);
+    }.bind(this),
+    constants.POPUP_POLL_INTERVAL
+  );
 
   return this._popupInterval;
 };

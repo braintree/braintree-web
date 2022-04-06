@@ -1,13 +1,13 @@
-'use strict';
+"use strict";
 
-var querystring = require('../../lib/querystring');
-var assign = require('../../lib/assign').assign;
-var prepBody = require('./prep-body');
-var parseBody = require('./parse-body');
-var xhr = require('./xhr');
+var querystring = require("../../lib/querystring");
+var assign = require("../../lib/assign").assign;
+var prepBody = require("./prep-body");
+var parseBody = require("./parse-body");
+var xhr = require("./xhr");
 var isXHRAvailable = xhr.isAvailable;
-var GraphQLRequest = require('./graphql/request');
-var DefaultRequest = require('./default-request');
+var GraphQLRequest = require("./graphql/request");
+var DefaultRequest = require("./default-request");
 
 var MAX_TCP_RETRYCOUNT = 1;
 var TCP_PRECONNECT_BUG_STATUS_CODE = 408;
@@ -17,12 +17,14 @@ function requestShouldRetry(status) {
 }
 
 function graphQLRequestShouldRetryWithClientApi(body) {
-  var errorClass = !body.data && body.errors &&
-      body.errors[0] &&
-      body.errors[0].extensions &&
-      body.errors[0].extensions.errorClass;
+  var errorClass =
+    !body.data &&
+    body.errors &&
+    body.errors[0] &&
+    body.errors[0].extensions &&
+    body.errors[0].extensions.errorClass;
 
-  return errorClass === 'UNKNOWN' || errorClass === 'INTERNAL';
+  return errorClass === "UNKNOWN" || errorClass === "INTERNAL";
 }
 
 function _requestWithRetry(options, tcpRetryCount, cb) {
@@ -32,9 +34,14 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
   var timeout = options.timeout;
   var req = xhr.getRequestObject();
   var callback = cb;
-  var isGraphQLRequest = Boolean(graphQL && graphQL.isGraphQLRequest(url, options.data));
+  var isGraphQLRequest = Boolean(
+    graphQL && graphQL.isGraphQLRequest(url, options.data)
+  );
 
-  options.headers = assign({'Content-Type': 'application/json'}, options.headers);
+  options.headers = assign(
+    { "Content-Type": "application/json" },
+    options.headers
+  );
 
   if (isGraphQLRequest) {
     ajaxRequest = new GraphQLRequest(options);
@@ -47,14 +54,16 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
   method = ajaxRequest.getMethod();
   headers = ajaxRequest.getHeaders();
 
-  if (method === 'GET') {
+  if (method === "GET") {
     url = querystring.queryify(url, body);
     body = null;
   }
 
   if (isXHRAvailable) {
     req.onreadystatechange = function () {
-      if (req.readyState !== 4) { return; }
+      if (req.readyState !== 4) {
+        return;
+      }
 
       if (req.status === 0 && isGraphQLRequest) {
         // If a merchant experiences a connection
@@ -72,7 +81,10 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
       status = ajaxRequest.determineStatus(req.status, parsedBody);
 
       if (status >= 400 || status < 200) {
-        if (isGraphQLRequest && graphQLRequestShouldRetryWithClientApi(parsedBody)) {
+        if (
+          isGraphQLRequest &&
+          graphQLRequestShouldRetryWithClientApi(parsedBody)
+        ) {
           delete options.graphQL;
           _requestWithRetry(options, tcpRetryCount, cb);
 
@@ -85,7 +97,7 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
 
           return;
         }
-        callback(resBody || 'error', null, status || 500);
+        callback(resBody || "error", null, status || 500);
       } else {
         callback(null, resBody, status);
       }
@@ -102,14 +114,14 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
     req.onerror = function () {
       // XDomainRequest does not report a body or status for errors, so
       // hardcode to 'error' and 500, respectively
-      callback('error', null, 500);
+      callback("error", null, 500);
     };
 
     // This must remain for IE9 to work
     req.onprogress = function () {};
 
     req.ontimeout = function () {
-      callback('timeout', null, -1);
+      callback("timeout", null, -1);
     };
   }
 
@@ -143,7 +155,9 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
 
   try {
     req.send(prepBody(method, body));
-  } catch (e) { /* ignored */ }
+  } catch (e) {
+    /* ignored */
+  }
 }
 
 function request(options, cb) {
@@ -151,5 +165,5 @@ function request(options, cb) {
 }
 
 module.exports = {
-  request: request
+  request: request,
 };

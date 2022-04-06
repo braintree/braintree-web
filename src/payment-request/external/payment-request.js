@@ -1,22 +1,22 @@
-'use strict';
+"use strict";
 
-var analytics = require('../../lib/analytics');
-var assign = require('../../lib/assign').assign;
-var Bus = require('framebus');
-var convertMethodsToError = require('../../lib/convert-methods-to-error');
-var generateGooglePayConfiguration = require('../../lib/generate-google-pay-configuration');
-var iFramer = require('@braintree/iframer');
-var uuid = require('@braintree/uuid');
-var useMin = require('../../lib/use-min');
-var methods = require('../../lib/methods');
-var Promise = require('../../lib/promise');
-var EventEmitter = require('@braintree/event-emitter');
-var BraintreeError = require('../../lib/braintree-error');
+var analytics = require("../../lib/analytics");
+var assign = require("../../lib/assign").assign;
+var Bus = require("framebus");
+var convertMethodsToError = require("../../lib/convert-methods-to-error");
+var generateGooglePayConfiguration = require("../../lib/generate-google-pay-configuration");
+var iFramer = require("@braintree/iframer");
+var uuid = require("@braintree/uuid");
+var useMin = require("../../lib/use-min");
+var methods = require("../../lib/methods");
+var Promise = require("../../lib/promise");
+var EventEmitter = require("@braintree/event-emitter");
+var BraintreeError = require("../../lib/braintree-error");
 var VERSION = process.env.npm_package_version;
-var constants = require('../shared/constants');
+var constants = require("../shared/constants");
 var events = constants.events;
 var errors = constants.errors;
-var wrapPromise = require('@braintree/wrap-promise');
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @typedef {object} PaymentRequestComponent~tokenizePayload
@@ -126,31 +126,39 @@ var wrapPromise = require('@braintree/wrap-promise');
  */
 
 var CARD_TYPE_MAPPINGS = {
-  Visa: 'visa',
-  MasterCard: 'mastercard',
-  'American Express': 'amex',
-  'Diners Club': 'diners',
-  Discover: 'discover',
-  JCB: 'jcb',
-  UnionPay: 'unionpay',
-  Maestro: 'maestro'
+  Visa: "visa",
+  MasterCard: "mastercard",
+  "American Express": "amex",
+  "Diners Club": "diners",
+  Discover: "discover",
+  JCB: "jcb",
+  UnionPay: "unionpay",
+  Maestro: "maestro",
 };
 
-var BRAINTREE_GOOGLE_PAY_MERCHANT_ID = '18278000977346790994';
+var BRAINTREE_GOOGLE_PAY_MERCHANT_ID = "18278000977346790994";
 
 function composeUrl(assetsUrl, componentId, isDebug) {
   var baseUrl = assetsUrl;
 
   // removeIf(production)
-  if (process.env.BRAINTREE_JS_ENV === 'development') {
+  if (process.env.BRAINTREE_JS_ENV === "development") {
     // Pay with Google cannot tokenize in our dev environment
     // so in development, we have to use a sandbox merchant
     // but set the iFrame url to the development url
-    baseUrl = 'https://' + process.env.BT_DEV_HOST + ':9000';
+    baseUrl = "https://" + process.env.BT_DEV_HOST + ":9000";
   }
   // endRemoveIf(production)
 
-  return baseUrl + '/web/' + VERSION + '/html/payment-request-frame' + useMin(isDebug) + '.html#' + componentId;
+  return (
+    baseUrl +
+    "/web/" +
+    VERSION +
+    "/html/payment-request-frame" +
+    useMin(isDebug) +
+    ".html#" +
+    componentId
+  );
 }
 
 /**
@@ -171,51 +179,70 @@ function PaymentRequestComponent(options) {
   this._client = options.client;
   this._enabledPaymentMethods = {
     basicCard: enabledPaymentMethods.basicCard !== false,
-    googlePay: enabledPaymentMethods.googlePay !== false
+    googlePay: enabledPaymentMethods.googlePay !== false,
   };
   this._googlePayVersion = options.googlePayVersion === 2 ? 2 : 1;
   this._googleMerchantId = BRAINTREE_GOOGLE_PAY_MERCHANT_ID;
-  this._supportedPaymentMethods = this._constructDefaultSupportedPaymentMethods();
-  this._defaultSupportedPaymentMethods = Object.keys(this._supportedPaymentMethods).map(function (key) {
-    return this._supportedPaymentMethods[key];
-  }.bind(this));
-  this._bus = new Bus({channel: this._componentId});
+  this._supportedPaymentMethods =
+    this._constructDefaultSupportedPaymentMethods();
+  this._defaultSupportedPaymentMethods = Object.keys(
+    this._supportedPaymentMethods
+  ).map(
+    function (key) {
+      return this._supportedPaymentMethods[key];
+    }.bind(this)
+  );
+  this._bus = new Bus({ channel: this._componentId });
 }
 
 EventEmitter.createChild(PaymentRequestComponent);
 
-PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods = function () {
-  var configuration = this._client.getConfiguration();
-  var androidPayConfiguration = configuration.gatewayConfiguration.androidPay;
-  var cardConfiguration = configuration.gatewayConfiguration.creditCards;
-  var supportedPaymentMethods = {};
+PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods =
+  function () {
+    var configuration = this._client.getConfiguration();
+    var androidPayConfiguration = configuration.gatewayConfiguration.androidPay;
+    var cardConfiguration = configuration.gatewayConfiguration.creditCards;
+    var supportedPaymentMethods = {};
 
-  if (this._enabledPaymentMethods.basicCard && cardConfiguration && cardConfiguration.supportedCardTypes.length > 0) {
-    supportedPaymentMethods.basicCard = {
-      supportedMethods: 'basic-card',
-      data: {
-        supportedNetworks: cardConfiguration.supportedCardTypes.reduce(function (types, cardType) {
-          if (cardType in CARD_TYPE_MAPPINGS) {
-            types.push(CARD_TYPE_MAPPINGS[cardType]);
-          }
+    if (
+      this._enabledPaymentMethods.basicCard &&
+      cardConfiguration &&
+      cardConfiguration.supportedCardTypes.length > 0
+    ) {
+      supportedPaymentMethods.basicCard = {
+        supportedMethods: "basic-card",
+        data: {
+          supportedNetworks: cardConfiguration.supportedCardTypes.reduce(
+            function (types, cardType) {
+              if (cardType in CARD_TYPE_MAPPINGS) {
+                types.push(CARD_TYPE_MAPPINGS[cardType]);
+              }
 
-          return types;
-        }, [])
-      }
-    };
-  }
+              return types;
+            },
+            []
+          ),
+        },
+      };
+    }
 
-  if (this._enabledPaymentMethods.googlePay && androidPayConfiguration && androidPayConfiguration.enabled) {
-    supportedPaymentMethods.googlePay = {
-      supportedMethods: 'https://google.com/pay',
-      data: generateGooglePayConfiguration(
-        configuration, this._googlePayVersion, this._googleMerchantId
-      )
-    };
-  }
+    if (
+      this._enabledPaymentMethods.googlePay &&
+      androidPayConfiguration &&
+      androidPayConfiguration.enabled
+    ) {
+      supportedPaymentMethods.googlePay = {
+        supportedMethods: "https://google.com/pay",
+        data: generateGooglePayConfiguration(
+          configuration,
+          this._googlePayVersion,
+          this._googleMerchantId
+        ),
+      };
+    }
 
-  return supportedPaymentMethods;
-};
+    return supportedPaymentMethods;
+  };
 
 PaymentRequestComponent.prototype.initialize = function () {
   var clientConfiguration = this._client.getConfiguration();
@@ -223,19 +250,23 @@ PaymentRequestComponent.prototype.initialize = function () {
 
   this._frame = iFramer({
     allowPaymentRequest: true,
-    name: 'braintree-payment-request-frame',
-    'class': 'braintree-payment-request-frame',
+    name: "braintree-payment-request-frame",
+    class: "braintree-payment-request-frame",
     height: 0,
     width: 0,
     style: {
-      position: 'absolute',
-      left: '-9999px'
+      position: "absolute",
+      left: "-9999px",
     },
-    title: 'Secure Payment Frame'
+    title: "Secure Payment Frame",
   });
 
   if (this._defaultSupportedPaymentMethods.length === 0) {
-    return Promise.reject(new BraintreeError(errors.PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS));
+    return Promise.reject(
+      new BraintreeError(
+        errors.PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS
+      )
+    );
   }
 
   return new Promise(function (resolve) {
@@ -243,32 +274,32 @@ PaymentRequestComponent.prototype.initialize = function () {
       reply(self._client);
     });
     self._bus.on(events.FRAME_CAN_MAKE_REQUESTS, function () {
-      analytics.sendEvent(self._client, 'payment-request.initialized');
+      analytics.sendEvent(self._client, "payment-request.initialized");
       self._bus.on(events.SHIPPING_ADDRESS_CHANGE, function (shippingAddress) {
         var shippingAddressChangeEvent = {
           target: {
-            shippingAddress: shippingAddress
+            shippingAddress: shippingAddress,
           },
           updateWith: function (paymentDetails) {
             self._bus.emit(events.UPDATE_SHIPPING_ADDRESS, paymentDetails);
-          }
+          },
         };
 
-        self._emit('shippingAddressChange', shippingAddressChangeEvent);
-        self._emit('shippingaddresschange', shippingAddressChangeEvent);
+        self._emit("shippingAddressChange", shippingAddressChangeEvent);
+        self._emit("shippingaddresschange", shippingAddressChangeEvent);
       });
       self._bus.on(events.SHIPPING_OPTION_CHANGE, function (shippingOption) {
         var shippingOptionChangeEvent = {
           target: {
-            shippingOption: shippingOption
+            shippingOption: shippingOption,
           },
           updateWith: function (paymentDetails) {
             self._bus.emit(events.UPDATE_SHIPPING_OPTION, paymentDetails);
-          }
+          },
         };
 
-        self._emit('shippingOptionChange', shippingOptionChangeEvent);
-        self._emit('shippingoptionchange', shippingOptionChangeEvent);
+        self._emit("shippingOptionChange", shippingOptionChangeEvent);
+        self._emit("shippingoptionchange", shippingOptionChangeEvent);
       });
       resolve(self);
     });
@@ -276,7 +307,11 @@ PaymentRequestComponent.prototype.initialize = function () {
     // TODO - We may need to apply the same setTimeout hack that Hosted Fields
     // uses for iframes to load correctly in Edge. See:
     // https://github.com/braintree/braintree-web/blob/0c951e5f9859c606652485de14188b6bd6656677/src/hosted-fields/external/hosted-fields.js#L449-L469
-    self._frame.src = composeUrl(clientConfiguration.gatewayConfiguration.assetsUrl, self._componentId, clientConfiguration.isDebug);
+    self._frame.src = composeUrl(
+      clientConfiguration.gatewayConfiguration.assetsUrl,
+      self._componentId,
+      clientConfiguration.isDebug
+    );
     document.body.appendChild(self._frame);
   });
 };
@@ -303,22 +338,27 @@ PaymentRequestComponent.prototype.initialize = function () {
  * configuration.data.supportedTypes; // ['credit', 'debit']
  * @returns {object} Returns a configuration object for use in the tokenize function.
  */
-PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration = function (type, overrides) {
-  var configuration;
+PaymentRequestComponent.prototype.createSupportedPaymentMethodsConfiguration =
+  function (type, overrides) {
+    var configuration;
 
-  if (!type) {
-    throw new BraintreeError(errors.PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE);
-  }
+    if (!type) {
+      throw new BraintreeError(
+        errors.PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE
+      );
+    }
 
-  if (!this._enabledPaymentMethods[type]) {
-    throw new BraintreeError(errors.PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED);
-  }
+    if (!this._enabledPaymentMethods[type]) {
+      throw new BraintreeError(
+        errors.PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED
+      );
+    }
 
-  configuration = assign({}, this._supportedPaymentMethods[type]);
-  configuration.data = assign({}, configuration.data, overrides);
+    configuration = assign({}, this._supportedPaymentMethods[type]);
+    configuration.data = assign({}, configuration.data, overrides);
 
-  return configuration;
-};
+    return configuration;
+  };
 
 /**
  * Tokenizes a Payment Request
@@ -457,34 +497,40 @@ PaymentRequestComponent.prototype.tokenize = function (configuration) {
   // NEXT_MAJOR_VERSION fail early if a payment method is passed in
   // that the component does not support
   return new Promise(function (resolve, reject) {
-    self._bus.emit(events.PAYMENT_REQUEST_INITIALIZED, {
-      supportedPaymentMethods: configuration.supportedPaymentMethods || self._defaultSupportedPaymentMethods,
-      details: configuration.details,
-      options: configuration.options
-    }, function (response) {
-      var rawError = response[0];
-      var payload = response[1];
+    self._bus.emit(
+      events.PAYMENT_REQUEST_INITIALIZED,
+      {
+        supportedPaymentMethods:
+          configuration.supportedPaymentMethods ||
+          self._defaultSupportedPaymentMethods,
+        details: configuration.details,
+        options: configuration.options,
+      },
+      function (response) {
+        var rawError = response[0];
+        var payload = response[1];
 
-      if (rawError) {
-        reject(self._formatTokenizationError(rawError));
+        if (rawError) {
+          reject(self._formatTokenizationError(rawError));
 
-        return;
+          return;
+        }
+
+        analytics.sendEvent(self._client, "payment-request.tokenize.succeeded");
+        resolve({
+          nonce: payload.nonce,
+          type: payload.type,
+          description: payload.description,
+          details: {
+            rawPaymentResponse: payload.details.rawPaymentResponse,
+            cardType: payload.details.cardType,
+            lastFour: payload.details.lastFour,
+            lastTwo: payload.details.lastTwo,
+          },
+          binData: payload.binData,
+        });
       }
-
-      analytics.sendEvent(self._client, 'payment-request.tokenize.succeeded');
-      resolve({
-        nonce: payload.nonce,
-        type: payload.type,
-        description: payload.description,
-        details: {
-          rawPaymentResponse: payload.details.rawPaymentResponse,
-          cardType: payload.details.cardType,
-          lastFour: payload.details.lastFour,
-          lastTwo: payload.details.lastTwo
-        },
-        binData: payload.binData
-      });
-    });
+    );
   });
 };
 
@@ -519,7 +565,10 @@ PaymentRequestComponent.prototype.canMakePayment = function (configuration) {
 
   // NEXT_MAJOR_VERSION Move this check to component creation
   if (!window.PaymentRequest) {
-    analytics.sendEvent(self._client, 'payment-request.can-make-payment.not-available');
+    analytics.sendEvent(
+      self._client,
+      "payment-request.can-make-payment.not-available"
+    );
 
     return Promise.resolve(false);
   }
@@ -534,33 +583,45 @@ PaymentRequestComponent.prototype.canMakePayment = function (configuration) {
     });
 
     if (unsupportedPaymentMethod) {
-      return Promise.reject(new BraintreeError({
-        type: errors.PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD.type,
-        code: errors.PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD.code,
-        message: unsupportedPaymentMethod + ' is not a supported payment method.'
-      }));
+      return Promise.reject(
+        new BraintreeError({
+          type: errors.PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD.type,
+          code: errors.PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD.code,
+          message:
+            unsupportedPaymentMethod + " is not a supported payment method.",
+        })
+      );
     }
   }
 
   return new Promise(function (resolve, reject) {
-    self._bus.emit(events.CAN_MAKE_PAYMENT, {
-      supportedPaymentMethods: configuration.supportedPaymentMethods || self._defaultSupportedPaymentMethods,
-      details: configuration.details,
-      options: configuration.options
-    }, function (response) {
-      var error = response[0];
-      var payload = response[1];
+    self._bus.emit(
+      events.CAN_MAKE_PAYMENT,
+      {
+        supportedPaymentMethods:
+          configuration.supportedPaymentMethods ||
+          self._defaultSupportedPaymentMethods,
+        details: configuration.details,
+        options: configuration.options,
+      },
+      function (response) {
+        var error = response[0];
+        var payload = response[1];
 
-      if (error) {
-        reject(self._formatCanMakePaymentError(error));
+        if (error) {
+          reject(self._formatCanMakePaymentError(error));
 
-        return;
+          return;
+        }
+
+        analytics.sendEvent(
+          self._client,
+          "payment-request.can-make-payment." + payload
+        );
+
+        resolve(payload);
       }
-
-      analytics.sendEvent(self._client, 'payment-request.can-make-payment.' + payload);
-
-      resolve(payload);
-    });
+    );
   });
 };
 
@@ -582,7 +643,7 @@ PaymentRequestComponent.prototype.teardown = function () {
 
   convertMethodsToError(this, methods(PaymentRequestComponent.prototype));
 
-  analytics.sendEvent(this._client, 'payment-request.teardown-completed');
+  analytics.sendEvent(this._client, "payment-request.teardown-completed");
 
   return Promise.resolve();
 };
@@ -591,47 +652,48 @@ PaymentRequestComponent.prototype._formatTokenizationError = function (error) {
   var formattedError;
 
   switch (error.name) {
-    case 'AbortError':
+    case "AbortError":
       formattedError = new BraintreeError({
         type: errors.PAYMENT_REQUEST_CANCELED.type,
         code: errors.PAYMENT_REQUEST_CANCELED.code,
         message: errors.PAYMENT_REQUEST_CANCELED.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
 
-      analytics.sendEvent(this._client, 'payment-request.tokenize.canceled');
+      analytics.sendEvent(this._client, "payment-request.tokenize.canceled");
 
       return formattedError;
-    case 'PAYMENT_REQUEST_INITIALIZATION_FAILED':
+    case "PAYMENT_REQUEST_INITIALIZATION_FAILED":
       formattedError = new BraintreeError({
         type: errors.PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED.type,
         code: errors.PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED.code,
         message: errors.PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
       break;
-    case 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR':
+    case "BRAINTREE_GATEWAY_GOOGLE_PAYMENT_TOKENIZATION_ERROR":
       formattedError = new BraintreeError({
         type: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE.type,
         code: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE.code,
-        message: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE.message,
+        message:
+          errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
       break;
-    case 'BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR':
+    case "BRAINTREE_GATEWAY_GOOGLE_PAYMENT_PARSING_ERROR":
       formattedError = new BraintreeError({
         type: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR.type,
         code: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR.code,
         message: errors.PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
       break;
     default:
@@ -640,38 +702,40 @@ PaymentRequestComponent.prototype._formatTokenizationError = function (error) {
         type: error.type || BraintreeError.types.CUSTOMER,
         message: errors.PAYMENT_REQUEST_NOT_COMPLETED.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
   }
 
-  analytics.sendEvent(this._client, 'payment-request.tokenize.failed');
+  analytics.sendEvent(this._client, "payment-request.tokenize.failed");
 
   return formattedError;
 };
 
-PaymentRequestComponent.prototype._formatCanMakePaymentError = function (error) {
+PaymentRequestComponent.prototype._formatCanMakePaymentError = function (
+  error
+) {
   var formattedError;
 
   switch (error.name) {
-    case 'PAYMENT_REQUEST_INITIALIZATION_FAILED':
+    case "PAYMENT_REQUEST_INITIALIZATION_FAILED":
       formattedError = new BraintreeError({
         type: errors.PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED.type,
         code: errors.PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED.code,
         message: errors.PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
       break;
-    case 'NotAllowedError':
+    case "NotAllowedError":
       formattedError = new BraintreeError({
         type: errors.PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED.type,
         code: errors.PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED.code,
         message: errors.PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
       break;
     default:
@@ -680,12 +744,12 @@ PaymentRequestComponent.prototype._formatCanMakePaymentError = function (error) 
         type: errors.PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED.type,
         message: errors.PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED.message,
         details: {
-          originalError: error
-        }
+          originalError: error,
+        },
       });
   }
 
-  analytics.sendEvent(this._client, 'payment-request.can-make-payment.failed');
+  analytics.sendEvent(this._client, "payment-request.can-make-payment.failed");
 
   return formattedError;
 };

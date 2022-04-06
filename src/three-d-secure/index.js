@@ -1,17 +1,17 @@
-'use strict';
+"use strict";
 /** @module braintree-web/three-d-secure */
 
-var ThreeDSecure = require('./external/three-d-secure');
-var isHTTPS = require('../lib/is-https').isHTTPS;
-var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var BraintreeError = require('../lib/braintree-error');
-var analytics = require('../lib/analytics');
-var errors = require('./shared/errors');
+var ThreeDSecure = require("./external/three-d-secure");
+var isHTTPS = require("../lib/is-https").isHTTPS;
+var basicComponentVerification = require("../lib/basic-component-verification");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var BraintreeError = require("../lib/braintree-error");
+var analytics = require("../lib/analytics");
+var errors = require("./shared/errors");
 var VERSION = process.env.npm_package_version;
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @static
@@ -115,94 +115,110 @@ var wrapPromise = require('@braintree/wrap-promise');
  * });
  */
 function create(options) {
-  var name = '3D Secure';
+  var name = "3D Secure";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    var assetsUrl = createAssetsUrl.create(options.authorization);
-    var framework = getFramework(options);
-    var createPromise = createDeferredClient.create({
+  return basicComponentVerification
+    .verify({
+      name: name,
+      client: options.client,
       authorization: options.authorization,
-      client: options.client,
-      debug: options.debug,
-      assetsUrl: assetsUrl,
-      name: name
-    }).then(function (client) {
-      var error, isProduction;
-      var config = client.getConfiguration();
-      var gwConfig = config.gatewayConfiguration;
+    })
+    .then(function () {
+      var assetsUrl = createAssetsUrl.create(options.authorization);
+      var framework = getFramework(options);
+      var createPromise = createDeferredClient
+        .create({
+          authorization: options.authorization,
+          client: options.client,
+          debug: options.debug,
+          assetsUrl: assetsUrl,
+          name: name,
+        })
+        .then(function (client) {
+          var error, isProduction;
+          var config = client.getConfiguration();
+          var gwConfig = config.gatewayConfiguration;
 
-      options.client = client;
+          options.client = client;
 
-      if (!gwConfig.threeDSecureEnabled) {
-        error = errors.THREEDS_NOT_ENABLED;
-      }
+          if (!gwConfig.threeDSecureEnabled) {
+            error = errors.THREEDS_NOT_ENABLED;
+          }
 
-      if (config.authorizationType === 'TOKENIZATION_KEY') {
-        error = errors.THREEDS_CAN_NOT_USE_TOKENIZATION_KEY;
-      }
+          if (config.authorizationType === "TOKENIZATION_KEY") {
+            error = errors.THREEDS_CAN_NOT_USE_TOKENIZATION_KEY;
+          }
 
-      isProduction = gwConfig.environment === 'production';
+          isProduction = gwConfig.environment === "production";
 
-      if (isProduction && !isHTTPS()) {
-        error = errors.THREEDS_HTTPS_REQUIRED;
-      }
+          if (isProduction && !isHTTPS()) {
+            error = errors.THREEDS_HTTPS_REQUIRED;
+          }
 
-      if (framework !== 'legacy' && !(gwConfig.threeDSecure && gwConfig.threeDSecure.cardinalAuthenticationJWT)) {
-        analytics.sendEvent(options.client, 'three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT');
-        error = errors.THREEDS_NOT_ENABLED_FOR_V2;
-      }
+          if (
+            framework !== "legacy" &&
+            !(
+              gwConfig.threeDSecure &&
+              gwConfig.threeDSecure.cardinalAuthenticationJWT
+            )
+          ) {
+            analytics.sendEvent(
+              options.client,
+              "three-d-secure.initialization.failed.missing-cardinalAuthenticationJWT"
+            );
+            error = errors.THREEDS_NOT_ENABLED_FOR_V2;
+          }
 
-      if (error) {
-        return Promise.reject(new BraintreeError(error));
-      }
+          if (error) {
+            return Promise.reject(new BraintreeError(error));
+          }
 
-      analytics.sendEvent(options.client, 'three-d-secure.initialized');
+          analytics.sendEvent(options.client, "three-d-secure.initialized");
 
-      return client;
-    });
-    var instance = new ThreeDSecure({
-      client: options.client,
-      assetsUrl: assetsUrl,
-      createPromise: createPromise,
-      loggingEnabled: options.loggingEnabled,
-      cardinalSDKConfig: options.cardinalSDKConfig,
-      framework: framework
-    });
-
-    if (options.client) {
-      return createPromise.then(function () {
-        return instance;
+          return client;
+        });
+      var instance = new ThreeDSecure({
+        client: options.client,
+        assetsUrl: assetsUrl,
+        createPromise: createPromise,
+        loggingEnabled: options.loggingEnabled,
+        cardinalSDKConfig: options.cardinalSDKConfig,
+        framework: framework,
       });
-    }
 
-    return instance;
-  });
+      if (options.client) {
+        return createPromise.then(function () {
+          return instance;
+        });
+      }
+
+      return instance;
+    });
 }
 
 function getFramework(options) {
-  var version = String(options.version || '');
+  var version = String(options.version || "");
 
-  if (!version || version === '1') {
-    return 'legacy';
+  if (!version || version === "1") {
+    return "legacy";
   }
 
   switch (version) {
-    case '2':
-    case '2-cardinal-modal':
-      return 'cardinal-modal';
-    case '2-bootstrap3-modal':
-      return 'bootstrap3-modal';
-    case '2-inline-iframe':
-      return 'inline-iframe';
+    case "2":
+    case "2-cardinal-modal":
+      return "cardinal-modal";
+    case "2-bootstrap3-modal":
+      return "bootstrap3-modal";
+    case "2-inline-iframe":
+      return "inline-iframe";
     default:
       throw new BraintreeError({
         code: errors.THREEDS_UNRECOGNIZED_VERSION.code,
         type: errors.THREEDS_UNRECOGNIZED_VERSION.type,
-        message: 'Version `' + options.version + '` is not a recognized version. You may need to update the version of your Braintree SDK to support this version.'
+        message:
+          "Version `" +
+          options.version +
+          "` is not a recognized version. You may need to update the version of your Braintree SDK to support this version.",
       });
   }
 }
@@ -213,5 +229,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

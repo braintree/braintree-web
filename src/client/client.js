@@ -1,30 +1,30 @@
-'use strict';
+"use strict";
 
-var BRAINTREE_VERSION = require('./constants').BRAINTREE_VERSION;
+var BRAINTREE_VERSION = require("./constants").BRAINTREE_VERSION;
 
-var GraphQL = require('./request/graphql');
-var request = require('./request');
-var isVerifiedDomain = require('../lib/is-verified-domain');
-var BraintreeError = require('../lib/braintree-error');
-var convertToBraintreeError = require('../lib/convert-to-braintree-error');
-var getGatewayConfiguration = require('./get-configuration').getConfiguration;
-var createAuthorizationData = require('../lib/create-authorization-data');
-var addMetadata = require('../lib/add-metadata');
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
-var once = require('../lib/once');
-var deferred = require('../lib/deferred');
-var assign = require('../lib/assign').assign;
-var analytics = require('../lib/analytics');
-var errors = require('./errors');
-var VERSION = require('../lib/constants').VERSION;
-var GRAPHQL_URLS = require('../lib/constants').GRAPHQL_URLS;
-var methods = require('../lib/methods');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var assets = require('../lib/assets');
-var FRAUDNET_FNCLS = require('../lib/constants').FRAUDNET_FNCLS;
-var FRAUDNET_SOURCE = require('../lib/constants').FRAUDNET_SOURCE;
-var FRAUDNET_URL = require('../lib/constants').FRAUDNET_URL;
+var GraphQL = require("./request/graphql");
+var request = require("./request");
+var isVerifiedDomain = require("../lib/is-verified-domain");
+var BraintreeError = require("../lib/braintree-error");
+var convertToBraintreeError = require("../lib/convert-to-braintree-error");
+var getGatewayConfiguration = require("./get-configuration").getConfiguration;
+var createAuthorizationData = require("../lib/create-authorization-data");
+var addMetadata = require("../lib/add-metadata");
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
+var once = require("../lib/once");
+var deferred = require("../lib/deferred");
+var assign = require("../lib/assign").assign;
+var analytics = require("../lib/analytics");
+var errors = require("./errors");
+var VERSION = require("../lib/constants").VERSION;
+var GRAPHQL_URLS = require("../lib/constants").GRAPHQL_URLS;
+var methods = require("../lib/methods");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var assets = require("../lib/assets");
+var FRAUDNET_FNCLS = require("../lib/constants").FRAUDNET_FNCLS;
+var FRAUDNET_SOURCE = require("../lib/constants").FRAUDNET_SOURCE;
+var FRAUDNET_URL = require("../lib/constants").FRAUDNET_URL;
 
 var cachedClients = {};
 
@@ -58,16 +58,15 @@ function Client(configuration) {
     throw new BraintreeError(errors.CLIENT_MISSING_GATEWAY_CONFIGURATION);
   }
 
-  [
-    'assetsUrl',
-    'clientApiUrl',
-    'configUrl'
-  ].forEach(function (property) {
-    if (property in gatewayConfiguration && !isVerifiedDomain(gatewayConfiguration[property])) {
+  ["assetsUrl", "clientApiUrl", "configUrl"].forEach(function (property) {
+    if (
+      property in gatewayConfiguration &&
+      !isVerifiedDomain(gatewayConfiguration[property])
+    ) {
       throw new BraintreeError({
         type: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
         code: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
-        message: property + ' property is on an invalid domain.'
+        message: property + " property is on an invalid domain.",
       });
     }
   });
@@ -84,11 +83,11 @@ function Client(configuration) {
   this._request = request;
   this._configuration = this.getConfiguration();
 
-  this._clientApiBaseUrl = gatewayConfiguration.clientApiUrl + '/v1/';
+  this._clientApiBaseUrl = gatewayConfiguration.clientApiUrl + "/v1/";
 
   if (gatewayConfiguration.graphQL) {
     this._graphQL = new GraphQL({
-      graphQL: gatewayConfiguration.graphQL
+      graphQL: gatewayConfiguration.graphQL,
     });
   }
 }
@@ -98,7 +97,7 @@ Client.initialize = function (options) {
   var promise = cachedClients[options.authorization];
 
   if (promise) {
-    analytics.sendEvent(promise, 'custom.client.load.cached');
+    analytics.sendEvent(promise, "custom.client.load.cached");
 
     return promise;
   }
@@ -106,7 +105,9 @@ Client.initialize = function (options) {
   try {
     authData = createAuthorizationData(options.authorization);
   } catch (err) {
-    return Promise.reject(new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION));
+    return Promise.reject(
+      new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION)
+    );
   }
 
   promise = getGatewayConfiguration(authData).then(function (configuration) {
@@ -123,17 +124,19 @@ Client.initialize = function (options) {
 
   cachedClients[options.authorization] = promise;
 
-  analytics.sendEvent(promise, 'custom.client.load.initialized');
+  analytics.sendEvent(promise, "custom.client.load.initialized");
 
-  return promise.then(function (client) {
-    analytics.sendEvent(clientInstance, 'custom.client.load.succeeded');
+  return promise
+    .then(function (client) {
+      analytics.sendEvent(clientInstance, "custom.client.load.succeeded");
 
-    return client;
-  }).catch(function (err) {
-    delete cachedClients[options.authorization];
+      return client;
+    })
+    .catch(function (err) {
+      delete cachedClients[options.authorization];
 
-    return Promise.reject(err);
-  });
+      return Promise.reject(err);
+    });
 };
 
 // Primarily used for testing the client initalization call
@@ -146,23 +149,23 @@ Client.prototype._findOrCreateFraudnetJSON = function (clientMetadataId) {
   var config, additionalData, authorizationFingerprint, parameters;
 
   if (!el) {
-    el = document.body.appendChild(document.createElement('script'));
-    el.type = 'application/json';
-    el.setAttribute('fncls', FRAUDNET_FNCLS);
+    el = document.body.appendChild(document.createElement("script"));
+    el.type = "application/json";
+    el.setAttribute("fncls", FRAUDNET_FNCLS);
   }
 
   config = this.getConfiguration();
   additionalData = {
-    rda_tenant: 'bt_card', // eslint-disable-line camelcase
-    mid: config.gatewayConfiguration.merchantId
+    rda_tenant: "bt_card", // eslint-disable-line camelcase
+    mid: config.gatewayConfiguration.merchantId,
   };
   authorizationFingerprint = config.authorizationFingerprint;
 
   if (authorizationFingerprint) {
-    authorizationFingerprint.split('&').forEach(function (pieces) {
-      var component = pieces.split('=');
+    authorizationFingerprint.split("&").forEach(function (pieces) {
+      var component = pieces.split("=");
 
-      if (component[0] === 'customer_id' && component.length > 1) {
+      if (component[0] === "customer_id" && component.length > 1) {
         additionalData.cid = component[1];
       }
     });
@@ -172,7 +175,7 @@ Client.prototype._findOrCreateFraudnetJSON = function (clientMetadataId) {
     f: clientMetadataId.substr(0, 32),
     fp: additionalData,
     bu: false,
-    s: FRAUDNET_SOURCE
+    s: FRAUDNET_SOURCE,
   };
   el.text = JSON.stringify(parameters);
 };
@@ -271,13 +274,17 @@ Client.prototype.request = function (options, callback) {
   var self = this; // eslint-disable-line no-invalid-this
   var requestPromise = new Promise(function (resolve, reject) {
     var optionName, api, baseUrl, requestOptions;
-    var shouldCollectData = Boolean(options.endpoint === 'payment_methods/credit_cards' && self.getConfiguration().gatewayConfiguration.creditCards.collectDeviceData);
+    var shouldCollectData = Boolean(
+      options.endpoint === "payment_methods/credit_cards" &&
+        self.getConfiguration().gatewayConfiguration.creditCards
+          .collectDeviceData
+    );
 
-    if (options.api !== 'graphQLApi') {
+    if (options.api !== "graphQLApi") {
       if (!options.method) {
-        optionName = 'options.method';
+        optionName = "options.method";
       } else if (!options.endpoint) {
-        optionName = 'options.endpoint';
+        optionName = "options.endpoint";
       }
     }
 
@@ -285,47 +292,53 @@ Client.prototype.request = function (options, callback) {
       throw new BraintreeError({
         type: errors.CLIENT_OPTION_REQUIRED.type,
         code: errors.CLIENT_OPTION_REQUIRED.code,
-        message: optionName + ' is required when making a request.'
+        message: optionName + " is required when making a request.",
       });
     }
 
-    if ('api' in options) {
+    if ("api" in options) {
       api = options.api;
     } else {
-      api = 'clientApi';
+      api = "clientApi";
     }
 
     requestOptions = {
       method: options.method,
       graphQL: self._graphQL,
       timeout: options.timeout,
-      metadata: self._configuration.analyticsMetadata
+      metadata: self._configuration.analyticsMetadata,
     };
 
-    if (api === 'clientApi') {
+    if (api === "clientApi") {
       baseUrl = self._clientApiBaseUrl;
 
       requestOptions.data = addMetadata(self._configuration, options.data);
-    } else if (api === 'graphQLApi') {
-      baseUrl = GRAPHQL_URLS[self._configuration.gatewayConfiguration.environment];
-      options.endpoint = '';
-      requestOptions.method = 'post';
-      requestOptions.data = assign({
-        clientSdkMetadata: {
-          platform: self._configuration.analyticsMetadata.platform,
-          source: self._configuration.analyticsMetadata.source,
-          integration: self._configuration.analyticsMetadata.integration,
-          sessionId: self._configuration.analyticsMetadata.sessionId,
-          version: VERSION
-        }
-      }, options.data);
+    } else if (api === "graphQLApi") {
+      baseUrl =
+        GRAPHQL_URLS[self._configuration.gatewayConfiguration.environment];
+      options.endpoint = "";
+      requestOptions.method = "post";
+      requestOptions.data = assign(
+        {
+          clientSdkMetadata: {
+            platform: self._configuration.analyticsMetadata.platform,
+            source: self._configuration.analyticsMetadata.source,
+            integration: self._configuration.analyticsMetadata.integration,
+            sessionId: self._configuration.analyticsMetadata.sessionId,
+            version: VERSION,
+          },
+        },
+        options.data
+      );
 
-      requestOptions.headers = getAuthorizationHeadersForGraphQL(self._configuration);
+      requestOptions.headers = getAuthorizationHeadersForGraphQL(
+        self._configuration
+      );
     } else {
       throw new BraintreeError({
         type: errors.CLIENT_OPTION_INVALID.type,
         code: errors.CLIENT_OPTION_INVALID.code,
-        message: 'options.api is invalid.'
+        message: "options.api is invalid.",
       });
     }
 
@@ -345,40 +358,48 @@ Client.prototype.request = function (options, callback) {
         return;
       }
 
-      if (api === 'graphQLApi' && data.errors) {
-        reject(convertToBraintreeError(data.errors, {
-          type: errors.CLIENT_GRAPHQL_REQUEST_ERROR.type,
-          code: errors.CLIENT_GRAPHQL_REQUEST_ERROR.code,
-          message: errors.CLIENT_GRAPHQL_REQUEST_ERROR.message
-        }));
+      if (api === "graphQLApi" && data.errors) {
+        reject(
+          convertToBraintreeError(data.errors, {
+            type: errors.CLIENT_GRAPHQL_REQUEST_ERROR.type,
+            code: errors.CLIENT_GRAPHQL_REQUEST_ERROR.code,
+            message: errors.CLIENT_GRAPHQL_REQUEST_ERROR.message,
+          })
+        );
 
         return;
       }
 
-      resolvedData = assign({_httpStatus: status}, data);
+      resolvedData = assign({ _httpStatus: status }, data);
 
-      if (shouldCollectData && resolvedData.creditCards && resolvedData.creditCards.length > 0) {
+      if (
+        shouldCollectData &&
+        resolvedData.creditCards &&
+        resolvedData.creditCards.length > 0
+      ) {
         self._findOrCreateFraudnetJSON(resolvedData.creditCards[0].nonce);
 
         assets.loadScript({
           src: FRAUDNET_URL,
-          forceScriptReload: true
+          forceScriptReload: true,
         });
       }
       resolve(resolvedData);
     });
   });
 
-  if (typeof callback === 'function') {
+  if (typeof callback === "function") {
     callback = once(deferred(callback));
 
-    requestPromise.then(function (response) {
-      callback(null, response, response._httpStatus);
-    }).catch(function (err) {
-      var status = err && err.details && err.details.httpStatus;
+    requestPromise
+      .then(function (response) {
+        callback(null, response, response._httpStatus);
+      })
+      .catch(function (err) {
+        var status = err && err.details && err.details.httpStatus;
 
-      callback(err, null, status);
-    });
+        callback(err, null, status);
+      });
 
     return;
   }
@@ -386,7 +407,8 @@ Client.prototype.request = function (options, callback) {
   return requestPromise; // eslint-disable-line consistent-return
 };
 
-function formatRequestError(status, err) { // eslint-disable-line consistent-return
+// eslint-disable-next-line consistent-return
+function formatRequestError(status, err) {
   var requestError;
 
   if (status === -1) {
@@ -403,7 +425,7 @@ function formatRequestError(status, err) { // eslint-disable-line consistent-ret
     requestError = convertToBraintreeError(err, {
       type: errors.CLIENT_REQUEST_ERROR.type,
       code: errors.CLIENT_REQUEST_ERROR.code,
-      message: errors.CLIENT_REQUEST_ERROR.message
+      message: errors.CLIENT_REQUEST_ERROR.message,
     });
   }
 
@@ -459,11 +481,12 @@ Client.prototype.teardown = wrapPromise(function () {
 });
 
 function getAuthorizationHeadersForGraphQL(configuration) {
-  var token = configuration.authorizationFingerprint || configuration.authorization;
+  var token =
+    configuration.authorizationFingerprint || configuration.authorization;
 
   return {
-    Authorization: 'Bearer ' + token,
-    'Braintree-Version': BRAINTREE_VERSION
+    Authorization: "Bearer " + token,
+    "Braintree-Version": BRAINTREE_VERSION,
   };
 }
 

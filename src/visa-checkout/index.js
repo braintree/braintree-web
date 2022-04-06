@@ -1,20 +1,20 @@
-'use strict';
+"use strict";
 
 /**
  * @module braintree-web/visa-checkout
  * @description Processes Visa Checkout. *This component is currently in beta and is subject to change.*
  */
 
-var basicComponentVerification = require('../lib/basic-component-verification');
-var BraintreeError = require('../lib/braintree-error');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var VisaCheckout = require('./visa-checkout');
-var analytics = require('../lib/analytics');
-var errors = require('./errors');
+var basicComponentVerification = require("../lib/basic-component-verification");
+var BraintreeError = require("../lib/braintree-error");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var VisaCheckout = require("./visa-checkout");
+var analytics = require("../lib/analytics");
+var errors = require("./errors");
 var VERSION = process.env.npm_package_version;
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @static
@@ -26,31 +26,38 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var name = 'Visa Checkout';
+  var name = "Visa Checkout";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
+      authorization: options.authorization,
+    })
+    .then(function () {
+      return createDeferredClient.create({
+        authorization: options.authorization,
+        client: options.client,
+        debug: options.debug,
+        assetsUrl: createAssetsUrl.create(options.authorization),
+        name: name,
+      });
+    })
+    .then(function (client) {
+      options.client = client;
+
+      if (
+        !options.client.getConfiguration().gatewayConfiguration.visaCheckout
+      ) {
+        return Promise.reject(
+          new BraintreeError(errors.VISA_CHECKOUT_NOT_ENABLED)
+        );
+      }
+
+      analytics.sendEvent(options.client, "visacheckout.initialized");
+
+      return new VisaCheckout(options);
     });
-  }).then(function (client) {
-    options.client = client;
-
-    if (!options.client.getConfiguration().gatewayConfiguration.visaCheckout) {
-      return Promise.reject(new BraintreeError(errors.VISA_CHECKOUT_NOT_ENABLED));
-    }
-
-    analytics.sendEvent(options.client, 'visacheckout.initialized');
-
-    return new VisaCheckout(options);
-  });
 }
 
 module.exports = {
@@ -59,5 +66,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

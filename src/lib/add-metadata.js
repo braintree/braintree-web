@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-var createAuthorizationData = require('./create-authorization-data');
-var jsonClone = require('./json-clone');
-var constants = require('./constants');
+var createAuthorizationData = require("./create-authorization-data");
+var jsonClone = require("./json-clone");
+var constants = require("./constants");
 
 function addMetadata(configuration, data) {
   var key;

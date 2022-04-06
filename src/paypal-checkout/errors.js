@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.PayPal Checkout - Creation Error Codes
@@ -31,61 +31,63 @@
  * @property {NETWORK} PAYPAL_ACCOUNT_TOKENIZATION_FAILED Occurs when PayPal account could not be tokenized.
  */
 
-var BraintreeError = require('../lib/braintree-error');
+var BraintreeError = require("../lib/braintree-error");
 
 module.exports = {
   PAYPAL_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_NOT_ENABLED',
-    message: 'PayPal is not enabled for this merchant.'
+    code: "PAYPAL_NOT_ENABLED",
+    message: "PayPal is not enabled for this merchant.",
   },
   PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED',
-    message: 'A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developer.paypal.com/braintree/docs/guides/paypal/testing-go-live#linked-paypal-testing for details on linking your PayPal sandbox with Braintree.'
+    code: "PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED",
+    message:
+      "A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developer.paypal.com/braintree/docs/guides/paypal/testing-go-live#linked-paypal-testing for details on linking your PayPal sandbox with Braintree.",
   },
   PAYPAL_ACCOUNT_TOKENIZATION_FAILED: {
     type: BraintreeError.types.NETWORK,
-    code: 'PAYPAL_ACCOUNT_TOKENIZATION_FAILED',
-    message: 'Could not tokenize user\'s PayPal account.'
+    code: "PAYPAL_ACCOUNT_TOKENIZATION_FAILED",
+    message: "Could not tokenize user's PayPal account.",
   },
   PAYPAL_FLOW_FAILED: {
     type: BraintreeError.types.NETWORK,
-    code: 'PAYPAL_FLOW_FAILED',
-    message: 'Could not initialize PayPal flow.'
+    code: "PAYPAL_FLOW_FAILED",
+    message: "Could not initialize PayPal flow.",
   },
   PAYPAL_FLOW_OPTION_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_FLOW_OPTION_REQUIRED',
-    message: 'PayPal flow property is invalid or missing.'
+    code: "PAYPAL_FLOW_OPTION_REQUIRED",
+    message: "PayPal flow property is invalid or missing.",
   },
   PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED'
+    code: "PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED",
   },
   PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED: {
     type: BraintreeError.types.NETWORK,
-    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED',
-    message: 'Something went wrong when setting up the checkout workflow.'
+    code: "PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED",
+    message: "Something went wrong when setting up the checkout workflow.",
   },
   PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED',
-    message: 'PayPal popup failed to open, make sure to initiate the vault checkout in response to a user action.'
+    code: "PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED",
+    message:
+      "PayPal popup failed to open, make sure to initiate the vault checkout in response to a user action.",
   },
   PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED',
-    message: 'Customer closed PayPal popup before authorizing.'
+    code: "PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED",
+    message: "Customer closed PayPal popup before authorizing.",
   },
   PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS',
-    message: 'Vault initiated checkout already in progress.'
+    code: "PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS",
+    message: "Vault initiated checkout already in progress.",
   },
   PAYPAL_INVALID_PAYMENT_OPTION: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYPAL_INVALID_PAYMENT_OPTION',
-    message: 'PayPal payment options are invalid.'
-  }
+    code: "PAYPAL_INVALID_PAYMENT_OPTION",
+    message: "PayPal payment options are invalid.",
+  },
 };

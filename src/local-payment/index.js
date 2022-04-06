@@ -1,19 +1,19 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web/local-payment
  * @description A component to integrate with local payment methods. *This component is currently in beta and is subject to change.*
  */
 
-var analytics = require('../lib/analytics');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var LocalPayment = require('./external/local-payment');
+var analytics = require("../lib/analytics");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var LocalPayment = require("./external/local-payment");
 var VERSION = process.env.npm_package_version;
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
-var BraintreeError = require('../lib/braintree-error');
-var errors = require('./shared/errors');
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
+var BraintreeError = require("../lib/braintree-error");
+var errors = require("./shared/errors");
 
 /**
  * @static
@@ -85,36 +85,41 @@ var errors = require('./shared/errors');
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var name = 'Local Payment';
+  var name = "Local Payment";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
+      authorization: options.authorization,
+    })
+    .then(function () {
+      return createDeferredClient.create({
+        authorization: options.authorization,
+        client: options.client,
+        debug: options.debug,
+        assetsUrl: createAssetsUrl.create(options.authorization),
+        name: name,
+      });
+    })
+    .then(function (client) {
+      var localPaymentInstance;
+      var config = client.getConfiguration();
+
+      options.client = client;
+
+      if (config.gatewayConfiguration.paypalEnabled !== true) {
+        return Promise.reject(
+          new BraintreeError(errors.LOCAL_PAYMENT_NOT_ENABLED)
+        );
+      }
+
+      analytics.sendEvent(client, "local-payment.initialized");
+
+      localPaymentInstance = new LocalPayment(options);
+
+      return localPaymentInstance._initialize();
     });
-  }).then(function (client) {
-    var localPaymentInstance;
-    var config = client.getConfiguration();
-
-    options.client = client;
-
-    if (config.gatewayConfiguration.paypalEnabled !== true) {
-      return Promise.reject(new BraintreeError(errors.LOCAL_PAYMENT_NOT_ENABLED));
-    }
-
-    analytics.sendEvent(client, 'local-payment.initialized');
-
-    localPaymentInstance = new LocalPayment(options);
-
-    return localPaymentInstance._initialize();
-  });
 }
 
 module.exports = {
@@ -123,5 +128,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

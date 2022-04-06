@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-var FrameService = require('./frame-service');
+var FrameService = require("./frame-service");
 
 module.exports = {
   create: function createFrameService(options, callback) {
@@ -9,5 +9,5 @@ module.exports = {
     frameService.initialize(function () {
       callback(frameService);
     });
-  }
+  },
 };

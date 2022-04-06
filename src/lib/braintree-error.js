@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-var enumerate = require('./enumerate');
+var enumerate = require("./enumerate");
 
 /**
  * @class
@@ -11,18 +11,18 @@ var enumerate = require('./enumerate');
  */
 function BraintreeError(options) {
   if (!BraintreeError.types.hasOwnProperty(options.type)) {
-    throw new Error(options.type + ' is not a valid type.');
+    throw new Error(options.type + " is not a valid type.");
   }
 
   if (!options.code) {
-    throw new Error('Error code required.');
+    throw new Error("Error code required.");
   }
 
   if (!options.message) {
-    throw new Error('Error message required.');
+    throw new Error("Error message required.");
   }
 
-  this.name = 'BraintreeError';
+  this.name = "BraintreeError";
 
   /**
    * @type {string}
@@ -65,15 +65,19 @@ BraintreeError.prototype.constructor = BraintreeError;
  * @property {string} UNKNOWN An error where the origin is unknown.
  */
 BraintreeError.types = enumerate([
-  'CUSTOMER',
-  'MERCHANT',
-  'NETWORK',
-  'INTERNAL',
-  'UNKNOWN'
+  "CUSTOMER",
+  "MERCHANT",
+  "NETWORK",
+  "INTERNAL",
+  "UNKNOWN",
 ]);
 
 BraintreeError.findRootError = function (err) {
-  if (err instanceof BraintreeError && err.details && err.details.originalError) {
+  if (
+    err instanceof BraintreeError &&
+    err.details &&
+    err.details.originalError
+  ) {
     return BraintreeError.findRootError(err.details.originalError);
   }
 

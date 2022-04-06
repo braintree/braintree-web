@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
 var head;
-var uuid = require('@braintree/uuid');
-var querystring = require('../../lib/querystring');
+var uuid = require("@braintree/uuid");
+var querystring = require("../../lib/querystring");
 var timeouts = {};
 
 function _removeScript(script) {
@@ -12,19 +12,25 @@ function _removeScript(script) {
 }
 
 function _createScriptTag(url, callbackName) {
-  var script = document.createElement('script');
+  var script = document.createElement("script");
   var done = false;
 
   script.src = url;
   script.async = true;
   script.onerror = function () {
-    window[callbackName]({message: 'error', status: 500});
+    window[callbackName]({ message: "error", status: 500 });
   };
 
   script.onload = script.onreadystatechange = function () {
-    if (done) { return; }
+    if (done) {
+      return;
+    }
 
-    if (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete') {
+    if (
+      !this.readyState ||
+      this.readyState === "loaded" ||
+      this.readyState === "complete"
+    ) {
       done = true;
       script.onload = script.onreadystatechange = null;
     }
@@ -46,8 +52,8 @@ function _setupTimeout(timeout, callbackName) {
     timeouts[callbackName] = null;
 
     window[callbackName]({
-      error: 'timeout',
-      status: -1
+      error: "timeout",
+      status: -1,
     });
 
     window[callbackName] = function () {
@@ -80,7 +86,7 @@ function _setupGlobalCallback(script, callback, callbackName) {
 
 function request(options, callback) {
   var script;
-  var callbackName = 'callback_json_' + uuid().replace(/-/g, '');
+  var callbackName = "callback_json_" + uuid().replace(/-/g, "");
   var url = options.url;
   var attrs = options.data;
   var method = options.method;
@@ -89,7 +95,7 @@ function request(options, callback) {
   url = querystring.queryify(url, attrs);
   url = querystring.queryify(url, {
     _method: method,
-    callback: callbackName
+    callback: callbackName,
   });
 
   script = _createScriptTag(url, callbackName);
@@ -97,12 +103,12 @@ function request(options, callback) {
   _setupTimeout(timeout, callbackName);
 
   if (!head) {
-    head = document.getElementsByTagName('head')[0];
+    head = document.getElementsByTagName("head")[0];
   }
 
   head.appendChild(script);
 }
 
 module.exports = {
-  request: request
+  request: request,
 };

@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.Client - Internal Error Codes
@@ -28,64 +28,66 @@
  * @property {MERCHANT} CLIENT_AUTHORIZATION_INVALID The provided authorization could not be found. Either the client token has expired and a new client token must be generated or the tokenization key used is set to be inactive or has been deleted.
  */
 
-var BraintreeError = require('../lib/braintree-error');
+var BraintreeError = require("../lib/braintree-error");
 
 module.exports = {
   CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN: {
     type: BraintreeError.types.MERCHANT,
-    code: 'CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN'
+    code: "CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN",
   },
   CLIENT_OPTION_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'CLIENT_OPTION_REQUIRED'
+    code: "CLIENT_OPTION_REQUIRED",
   },
   CLIENT_OPTION_INVALID: {
     type: BraintreeError.types.MERCHANT,
-    code: 'CLIENT_OPTION_INVALID'
+    code: "CLIENT_OPTION_INVALID",
   },
   CLIENT_MISSING_GATEWAY_CONFIGURATION: {
     type: BraintreeError.types.INTERNAL,
-    code: 'CLIENT_MISSING_GATEWAY_CONFIGURATION',
-    message: 'Missing gatewayConfiguration.'
+    code: "CLIENT_MISSING_GATEWAY_CONFIGURATION",
+    message: "Missing gatewayConfiguration.",
   },
   CLIENT_INVALID_AUTHORIZATION: {
     type: BraintreeError.types.MERCHANT,
-    code: 'CLIENT_INVALID_AUTHORIZATION',
-    message: 'Authorization is invalid. Make sure your client token or tokenization key is valid.'
+    code: "CLIENT_INVALID_AUTHORIZATION",
+    message:
+      "Authorization is invalid. Make sure your client token or tokenization key is valid.",
   },
   CLIENT_GATEWAY_NETWORK: {
     type: BraintreeError.types.NETWORK,
-    code: 'CLIENT_GATEWAY_NETWORK',
-    message: 'Cannot contact the gateway at this time.'
+    code: "CLIENT_GATEWAY_NETWORK",
+    message: "Cannot contact the gateway at this time.",
   },
   CLIENT_REQUEST_TIMEOUT: {
     type: BraintreeError.types.NETWORK,
-    code: 'CLIENT_REQUEST_TIMEOUT',
-    message: 'Request timed out waiting for a reply.'
+    code: "CLIENT_REQUEST_TIMEOUT",
+    message: "Request timed out waiting for a reply.",
   },
   CLIENT_REQUEST_ERROR: {
     type: BraintreeError.types.NETWORK,
-    code: 'CLIENT_REQUEST_ERROR',
-    message: 'There was a problem with your request.'
+    code: "CLIENT_REQUEST_ERROR",
+    message: "There was a problem with your request.",
   },
   CLIENT_GRAPHQL_REQUEST_ERROR: {
     type: BraintreeError.types.NETWORK,
-    code: 'CLIENT_GRAPHQL_REQUEST_ERROR',
-    message: 'There was a problem with your request.'
+    code: "CLIENT_GRAPHQL_REQUEST_ERROR",
+    message: "There was a problem with your request.",
   },
   CLIENT_RATE_LIMITED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'CLIENT_RATE_LIMITED',
-    message: 'You are being rate-limited; please try again in a few minutes.'
+    code: "CLIENT_RATE_LIMITED",
+    message: "You are being rate-limited; please try again in a few minutes.",
   },
   CLIENT_AUTHORIZATION_INSUFFICIENT: {
     type: BraintreeError.types.MERCHANT,
-    code: 'CLIENT_AUTHORIZATION_INSUFFICIENT',
-    message: 'The authorization used has insufficient privileges.'
+    code: "CLIENT_AUTHORIZATION_INSUFFICIENT",
+    message: "The authorization used has insufficient privileges.",
   },
   CLIENT_AUTHORIZATION_INVALID: {
     type: BraintreeError.types.MERCHANT,
-    code: 'CLIENT_AUTHORIZATION_INVALID',
-    message: 'Either the client token has expired and a new one should be generated or the tokenization key has been deactivated or deleted.'
-  }
+    code: "CLIENT_AUTHORIZATION_INVALID",
+    message:
+      "Either the client token has expired and a new one should be generated or the tokenization key has been deactivated or deleted.",
+  },
 };

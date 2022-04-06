@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 module.exports = function (array, key, value) {
   var i;

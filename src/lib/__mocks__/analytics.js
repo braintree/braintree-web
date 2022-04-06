@@ -1,5 +1,5 @@
-'use strict';
+"use strict";
 
 module.exports = {
-  sendEvent: jest.fn()
+  sendEvent: jest.fn(),
 };

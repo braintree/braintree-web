@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web/us-bank-account
  * @description This module is for accepting payments of US bank accounts.
  */
 
-var basicComponentVerification = require('../lib/basic-component-verification');
-var BraintreeError = require('../lib/braintree-error');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var errors = require('./errors');
-var USBankAccount = require('./us-bank-account');
+var basicComponentVerification = require("../lib/basic-component-verification");
+var BraintreeError = require("../lib/braintree-error");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var errors = require("./errors");
+var USBankAccount = require("./us-bank-account");
 var VERSION = process.env.npm_package_version;
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @static
@@ -24,32 +24,38 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var name = 'US Bank Account';
+  var name = "US Bank Account";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
+      authorization: options.authorization,
+    })
+    .then(function () {
+      return createDeferredClient.create({
+        authorization: options.authorization,
+        client: options.client,
+        debug: options.debug,
+        assetsUrl: createAssetsUrl.create(options.authorization),
+        name: name,
+      });
+    })
+    .then(function (client) {
+      var usBankAccount;
+
+      options.client = client;
+
+      usBankAccount =
+        options.client.getConfiguration().gatewayConfiguration.usBankAccount;
+      if (!usBankAccount) {
+        return Promise.reject(
+          new BraintreeError(errors.US_BANK_ACCOUNT_NOT_ENABLED)
+        );
+      }
+
+      return new USBankAccount(options);
     });
-  }).then(function (client) {
-    var usBankAccount;
-
-    options.client = client;
-
-    usBankAccount = options.client.getConfiguration().gatewayConfiguration.usBankAccount;
-    if (!usBankAccount) {
-      return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_NOT_ENABLED));
-    }
-
-    return new USBankAccount(options);
-  });
 }
 
 module.exports = {
@@ -58,5 +64,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

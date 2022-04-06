@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('../lib/braintree-error');
-var analytics = require('../lib/analytics');
-var errors = require('./errors');
-var jsonClone = require('../lib/json-clone');
-var methods = require('../lib/methods');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var BraintreeError = require("../lib/braintree-error");
+var analytics = require("../lib/analytics");
+var errors = require("./errors");
+var jsonClone = require("../lib/json-clone");
+var methods = require("../lib/methods");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 var cardTypeTransformMap = {
-  Visa: 'VISA',
-  MasterCard: 'MASTERCARD',
-  Discover: 'DISCOVER',
-  'American Express': 'AMEX'
+  Visa: "VISA",
+  MasterCard: "MASTERCARD",
+  Discover: "DISCOVER",
+  "American Express": "AMEX",
 };
 
 /**
@@ -105,7 +105,8 @@ function transformCardTypes(cardTypes) {
  */
 VisaCheckout.prototype.createInitOptions = function (options) {
   var initOptions;
-  var gatewayConfiguration = this._client.getConfiguration().gatewayConfiguration;
+  var gatewayConfiguration =
+    this._client.getConfiguration().gatewayConfiguration;
   var visaCheckoutConfiguration = gatewayConfiguration.visaCheckout;
 
   if (!options) {
@@ -115,13 +116,16 @@ VisaCheckout.prototype.createInitOptions = function (options) {
   initOptions = jsonClone(options);
   initOptions.apikey = initOptions.apikey || visaCheckoutConfiguration.apikey;
   initOptions.encryptionKey = visaCheckoutConfiguration.encryptionKey;
-  initOptions.externalClientId = initOptions.externalClientId || visaCheckoutConfiguration.externalClientId;
+  initOptions.externalClientId =
+    initOptions.externalClientId || visaCheckoutConfiguration.externalClientId;
   initOptions.settings = initOptions.settings || {};
-  initOptions.settings.dataLevel = 'FULL';
+  initOptions.settings.dataLevel = "FULL";
   initOptions.settings.payment = initOptions.settings.payment || {};
 
   if (!initOptions.settings.payment.cardBrands) {
-    initOptions.settings.payment.cardBrands = transformCardTypes(gatewayConfiguration.visaCheckout.supportedCardTypes);
+    initOptions.settings.payment.cardBrands = transformCardTypes(
+      gatewayConfiguration.visaCheckout.supportedCardTypes
+    );
   }
 
   return initOptions;
@@ -141,38 +145,45 @@ VisaCheckout.prototype.tokenize = function (payment) {
   var self = this;
 
   if (!payment.callid || !payment.encKey || !payment.encPaymentData) {
-    return Promise.reject(new BraintreeError(errors.VISA_CHECKOUT_PAYMENT_REQUIRED));
+    return Promise.reject(
+      new BraintreeError(errors.VISA_CHECKOUT_PAYMENT_REQUIRED)
+    );
   }
 
-  return this._client.request({
-    method: 'post',
-    endpoint: 'payment_methods/visa_checkout_cards',
-    data: {
-      _meta: {
-        source: 'visa-checkout'
+  return this._client
+    .request({
+      method: "post",
+      endpoint: "payment_methods/visa_checkout_cards",
+      data: {
+        _meta: {
+          source: "visa-checkout",
+        },
+        visaCheckoutCard: {
+          callId: payment.callid,
+          encryptedPaymentData: payment.encPaymentData,
+          encryptedKey: payment.encKey,
+        },
       },
-      visaCheckoutCard: {
-        callId: payment.callid,
-        encryptedPaymentData: payment.encPaymentData,
-        encryptedKey: payment.encKey
-      }
-    }
-  }).then(function (response) {
-    analytics.sendEvent(self._client, 'visacheckout.tokenize.succeeded');
+    })
+    .then(function (response) {
+      analytics.sendEvent(self._client, "visacheckout.tokenize.succeeded");
 
-    return response.visaCheckoutCards[0];
-  }).catch(function (err) {
-    analytics.sendEvent(self._client, 'visacheckout.tokenize.failed');
+      return response.visaCheckoutCards[0];
+    })
+    .catch(function (err) {
+      analytics.sendEvent(self._client, "visacheckout.tokenize.failed");
 
-    return Promise.reject(new BraintreeError({
-      type: errors.VISA_CHECKOUT_TOKENIZATION.type,
-      code: errors.VISA_CHECKOUT_TOKENIZATION.code,
-      message: errors.VISA_CHECKOUT_TOKENIZATION.message,
-      details: {
-        originalError: err
-      }
-    }));
-  });
+      return Promise.reject(
+        new BraintreeError({
+          type: errors.VISA_CHECKOUT_TOKENIZATION.type,
+          code: errors.VISA_CHECKOUT_TOKENIZATION.code,
+          message: errors.VISA_CHECKOUT_TOKENIZATION.message,
+          details: {
+            originalError: err,
+          },
+        })
+      );
+    });
 };
 
 /**

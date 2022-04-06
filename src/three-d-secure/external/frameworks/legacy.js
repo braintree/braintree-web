@@ -1,26 +1,29 @@
-'use strict';
+"use strict";
 
-var BaseFramework = require('./base');
-var deferred = require('../../../lib/deferred');
+var BaseFramework = require("./base");
+var deferred = require("../../../lib/deferred");
 
 function LegacyFramework(options) {
   BaseFramework.call(this, options);
 }
 
 LegacyFramework.prototype = Object.create(BaseFramework.prototype, {
-  constructor: LegacyFramework
+  constructor: LegacyFramework,
 });
 
 LegacyFramework.prototype.setUpEventListeners = function () {
   // noop
 };
 
-LegacyFramework.prototype.transformV1CustomerBillingAddress = function (customer) {
+LegacyFramework.prototype.transformV1CustomerBillingAddress = function (
+  customer
+) {
   customer.billingAddress.line1 = customer.billingAddress.streetAddress;
   customer.billingAddress.line2 = customer.billingAddress.extendedAddress;
   customer.billingAddress.city = customer.billingAddress.locality;
   customer.billingAddress.state = customer.billingAddress.region;
-  customer.billingAddress.countryCode = customer.billingAddress.countryCodeAlpha2;
+  customer.billingAddress.countryCode =
+    customer.billingAddress.countryCodeAlpha2;
   delete customer.billingAddress.streetAddress;
   delete customer.billingAddress.extendedAddress;
   delete customer.billingAddress.locality;
@@ -38,7 +41,7 @@ LegacyFramework.prototype._createIframe = function (options) {
     showLoader: options.showLoader,
     handleAuthResponse: function (data) {
       self._handleAuthResponse(data, options);
-    }
+    },
   });
 
   return this._v1Iframe;
@@ -50,25 +53,31 @@ LegacyFramework.prototype._handleAuthResponse = function (data, options) {
   options.removeFrame();
 
   // This also has to be in a setTimeout so it executes after the `removeFrame`.
-  deferred(function () {
-    this._handleV1AuthResponse(data);
-  }.bind(this))();
+  deferred(
+    function () {
+      this._handleV1AuthResponse(data);
+    }.bind(this)
+  )();
 };
 
-LegacyFramework.prototype._checkForFrameworkSpecificVerifyCardErrors = function (options) {
-  var errorOption;
+LegacyFramework.prototype._checkForFrameworkSpecificVerifyCardErrors =
+  function (options) {
+    var errorOption;
 
-  if (typeof options.addFrame !== 'function') {
-    errorOption = 'an addFrame function';
-  } else if (typeof options.removeFrame !== 'function') {
-    errorOption = 'a removeFrame function';
-  }
+    if (typeof options.addFrame !== "function") {
+      errorOption = "an addFrame function";
+    } else if (typeof options.removeFrame !== "function") {
+      errorOption = "a removeFrame function";
+    }
 
-  return errorOption;
-};
+    return errorOption;
+  };
 
 LegacyFramework.prototype._formatVerifyCardOptions = function (options) {
-  var modifiedOptions = BaseFramework.prototype._formatVerifyCardOptions.call(this, options);
+  var modifiedOptions = BaseFramework.prototype._formatVerifyCardOptions.call(
+    this,
+    options
+  );
 
   modifiedOptions.addFrame = deferred(options.addFrame);
   modifiedOptions.removeFrame = deferred(options.removeFrame);
@@ -80,21 +89,31 @@ LegacyFramework.prototype._formatVerifyCardOptions = function (options) {
 LegacyFramework.prototype._formatLookupData = function (options) {
   var self = this;
 
-  return BaseFramework.prototype._formatLookupData.call(this, options).then(function (data) {
-    if (options.customer && options.customer.billingAddress) {
-      data.customer = self.transformV1CustomerBillingAddress(options.customer);
-    }
+  return BaseFramework.prototype._formatLookupData
+    .call(this, options)
+    .then(function (data) {
+      if (options.customer && options.customer.billingAddress) {
+        data.customer = self.transformV1CustomerBillingAddress(
+          options.customer
+        );
+      }
 
-    return data;
-  });
+      return data;
+    });
 };
 
-LegacyFramework.prototype._presentChallenge = function (lookupResponse, options) {
-  options.addFrame(null, this._createIframe({
-    showLoader: options.showLoader,
-    lookupResponse: lookupResponse.lookup,
-    removeFrame: options.removeFrame
-  }));
+LegacyFramework.prototype._presentChallenge = function (
+  lookupResponse,
+  options
+) {
+  options.addFrame(
+    null,
+    this._createIframe({
+      showLoader: options.showLoader,
+      lookupResponse: lookupResponse.lookup,
+      removeFrame: options.removeFrame,
+    })
+  );
 };
 
 module.exports = LegacyFramework;

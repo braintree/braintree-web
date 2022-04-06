@@ -1,21 +1,22 @@
-'use strict';
+"use strict";
 
-var analytics = require('../../lib/analytics');
-var BraintreeError = require('../../lib/braintree-error');
-var Bus = require('framebus');
-var constants = require('./constants');
-var isVerifiedDomain = require('../../lib/is-verified-domain');
-var useMin = require('../../lib/use-min');
-var convertMethodsToError = require('../../lib/convert-methods-to-error');
-var errors = require('./errors');
+var analytics = require("../../lib/analytics");
+var BraintreeError = require("../../lib/braintree-error");
+var Bus = require("framebus");
+var constants = require("./constants");
+var isVerifiedDomain = require("../../lib/is-verified-domain");
+var useMin = require("../../lib/use-min");
+var convertMethodsToError = require("../../lib/convert-methods-to-error");
+var errors = require("./errors");
 var events = constants.events;
-var iFramer = require('@braintree/iframer');
-var methods = require('../../lib/methods');
+var iFramer = require("@braintree/iframer");
+var methods = require("../../lib/methods");
 var VERSION = process.env.npm_package_version;
-var uuid = require('@braintree/uuid');
-var Promise = require('../../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
-var BUS_CONFIGURATION_REQUEST_EVENT = require('../../lib/constants').BUS_CONFIGURATION_REQUEST_EVENT;
+var uuid = require("@braintree/uuid");
+var Promise = require("../../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
+var BUS_CONFIGURATION_REQUEST_EVENT =
+  require("../../lib/constants").BUS_CONFIGURATION_REQUEST_EVENT;
 
 /**
  * @class
@@ -53,60 +54,75 @@ UnionPay.prototype.fetchCapabilities = function (options) {
   var hostedFields = options.hostedFields;
 
   if (cardNumber && hostedFields) {
-    return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
+    return Promise.reject(
+      new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES)
+    );
   } else if (cardNumber) {
-    return client.request({
-      method: 'get',
-      endpoint: 'payment_methods/credit_cards/capabilities',
-      data: {
-        _meta: {source: 'unionpay'},
-        creditCard: {
-          number: cardNumber
+    return client
+      .request({
+        method: "get",
+        endpoint: "payment_methods/credit_cards/capabilities",
+        data: {
+          _meta: { source: "unionpay" },
+          creditCard: {
+            number: cardNumber,
+          },
+        },
+      })
+      .then(function (response) {
+        analytics.sendEvent(client, "unionpay.capabilities-received");
+
+        return response;
+      })
+      .catch(function (err) {
+        var status = err.details && err.details.httpStatus;
+
+        analytics.sendEvent(client, "unionpay.capabilities-failed");
+
+        if (status === 403) {
+          return Promise.reject(err);
         }
-      }
-    }).then(function (response) {
-      analytics.sendEvent(client, 'unionpay.capabilities-received');
 
-      return response;
-    }).catch(function (err) {
-      var status = err.details && err.details.httpStatus;
-
-      analytics.sendEvent(client, 'unionpay.capabilities-failed');
-
-      if (status === 403) {
-        return Promise.reject(err);
-      }
-
-      return Promise.reject(new BraintreeError({
-        type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
-        code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
-        message: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.message,
-        details: {
-          originalError: err
-        }
-      }));
-    });
+        return Promise.reject(
+          new BraintreeError({
+            type: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.type,
+            code: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.code,
+            message: errors.UNIONPAY_FETCH_CAPABILITIES_NETWORK_ERROR.message,
+            details: {
+              originalError: err,
+            },
+          })
+        );
+      });
   } else if (hostedFields) {
     if (!hostedFields._bus) {
-      return Promise.reject(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
+      return Promise.reject(
+        new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID)
+      );
     }
 
     return self._initializeHostedFields().then(function () {
       return new Promise(function (resolve, reject) {
-        self._bus.emit(events.HOSTED_FIELDS_FETCH_CAPABILITIES, {hostedFields: hostedFields}, function (response) {
-          if (response.err) {
-            reject(new BraintreeError(response.err));
+        self._bus.emit(
+          events.HOSTED_FIELDS_FETCH_CAPABILITIES,
+          { hostedFields: hostedFields },
+          function (response) {
+            if (response.err) {
+              reject(new BraintreeError(response.err));
 
-            return;
+              return;
+            }
+
+            resolve(response.payload);
           }
-
-          resolve(response.payload);
-        });
+        );
       });
     });
   }
 
-  return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
+  return Promise.reject(
+    new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED)
+  );
 };
 
 /**
@@ -142,37 +158,47 @@ UnionPay.prototype.enroll = function (options) {
   var data;
 
   if (!mobile) {
-    return Promise.reject(new BraintreeError(errors.UNIONPAY_MISSING_MOBILE_PHONE_DATA));
+    return Promise.reject(
+      new BraintreeError(errors.UNIONPAY_MISSING_MOBILE_PHONE_DATA)
+    );
   }
 
   if (hostedFields) {
     if (!hostedFields._bus) {
-      return Promise.reject(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
+      return Promise.reject(
+        new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID)
+      );
     } else if (card) {
-      return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
+      return Promise.reject(
+        new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES)
+      );
     }
 
     return new Promise(function (resolve, reject) {
       self._initializeHostedFields().then(function () {
-        self._bus.emit(events.HOSTED_FIELDS_ENROLL, {hostedFields: hostedFields, mobile: mobile}, function (response) {
-          if (response.err) {
-            reject(new BraintreeError(response.err));
+        self._bus.emit(
+          events.HOSTED_FIELDS_ENROLL,
+          { hostedFields: hostedFields, mobile: mobile },
+          function (response) {
+            if (response.err) {
+              reject(new BraintreeError(response.err));
 
-            return;
+              return;
+            }
+
+            resolve(response.payload);
           }
-
-          resolve(response.payload);
-        });
+        );
       });
     });
   } else if (card && card.number) {
     data = {
-      _meta: {source: 'unionpay'},
+      _meta: { source: "unionpay" },
       unionPayEnrollment: {
         number: card.number,
         mobileCountryCode: mobile.countryCode,
-        mobileNumber: mobile.number
-      }
+        mobileNumber: mobile.number,
+      },
     };
 
     if (card.expirationDate) {
@@ -182,42 +208,51 @@ UnionPay.prototype.enroll = function (options) {
         data.unionPayEnrollment.expirationYear = card.expirationYear;
         data.unionPayEnrollment.expirationMonth = card.expirationMonth;
       } else {
-        return Promise.reject(new BraintreeError(errors.UNIONPAY_EXPIRATION_DATE_INCOMPLETE));
+        return Promise.reject(
+          new BraintreeError(errors.UNIONPAY_EXPIRATION_DATE_INCOMPLETE)
+        );
       }
     }
 
-    return client.request({
-      method: 'post',
-      endpoint: 'union_pay_enrollments',
-      data: data
-    }).then(function (response) {
-      analytics.sendEvent(client, 'unionpay.enrollment-succeeded');
+    return client
+      .request({
+        method: "post",
+        endpoint: "union_pay_enrollments",
+        data: data,
+      })
+      .then(function (response) {
+        analytics.sendEvent(client, "unionpay.enrollment-succeeded");
 
-      return {
-        enrollmentId: response.unionPayEnrollmentId,
-        smsCodeRequired: response.smsCodeRequired
-      };
-    }).catch(function (err) {
-      var error;
-      var status = err.details && err.details.httpStatus;
+        return {
+          enrollmentId: response.unionPayEnrollmentId,
+          smsCodeRequired: response.smsCodeRequired,
+        };
+      })
+      .catch(function (err) {
+        var error;
+        var status = err.details && err.details.httpStatus;
 
-      if (status === 403) {
-        error = err;
-      } else if (status < 500) {
-        error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID);
-        error.details = {originalError: err};
-      } else {
-        error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_NETWORK_ERROR);
-        error.details = {originalError: err};
-      }
+        if (status === 403) {
+          error = err;
+        } else if (status < 500) {
+          error = new BraintreeError(
+            errors.UNIONPAY_ENROLLMENT_CUSTOMER_INPUT_INVALID
+          );
+          error.details = { originalError: err };
+        } else {
+          error = new BraintreeError(errors.UNIONPAY_ENROLLMENT_NETWORK_ERROR);
+          error.details = { originalError: err };
+        }
 
-      analytics.sendEvent(client, 'unionpay.enrollment-failed');
+        analytics.sendEvent(client, "unionpay.enrollment-failed");
 
-      return Promise.reject(error);
-    });
+        return Promise.reject(error);
+      });
   }
 
-  return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
+  return Promise.reject(
+    new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED)
+  );
 };
 
 /**
@@ -255,18 +290,20 @@ UnionPay.prototype.tokenize = function (options) {
   var hostedFields = options.hostedFields;
 
   if (card && hostedFields) {
-    return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES));
+    return Promise.reject(
+      new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES)
+    );
   } else if (card) {
     data = {
-      _meta: {source: 'unionpay'},
+      _meta: { source: "unionpay" },
       creditCard: {
         number: options.card.number,
         options: {
           unionPayEnrollment: {
-            id: options.enrollmentId
-          }
-        }
-      }
+            id: options.enrollmentId,
+          },
+        },
+      },
     };
 
     if (options.smsCode) {
@@ -284,58 +321,71 @@ UnionPay.prototype.tokenize = function (options) {
       data.creditCard.cvv = options.card.cvv;
     }
 
-    return client.request({
-      method: 'post',
-      endpoint: 'payment_methods/credit_cards',
-      data: data
-    }).then(function (response) {
-      var tokenizedCard = response.creditCards[0];
+    return client
+      .request({
+        method: "post",
+        endpoint: "payment_methods/credit_cards",
+        data: data,
+      })
+      .then(function (response) {
+        var tokenizedCard = response.creditCards[0];
 
-      delete tokenizedCard.consumed;
-      delete tokenizedCard.threeDSecureInfo;
+        delete tokenizedCard.consumed;
+        delete tokenizedCard.threeDSecureInfo;
 
-      analytics.sendEvent(client, 'unionpay.nonce-received');
+        analytics.sendEvent(client, "unionpay.nonce-received");
 
-      return tokenizedCard;
-    }).catch(function (err) {
-      var error;
-      var status = err.details && err.details.httpStatus;
+        return tokenizedCard;
+      })
+      .catch(function (err) {
+        var error;
+        var status = err.details && err.details.httpStatus;
 
-      analytics.sendEvent(client, 'unionpay.nonce-failed');
+        analytics.sendEvent(client, "unionpay.nonce-failed");
 
-      if (status === 403) {
-        error = err;
-      } else if (status < 500) {
-        error = new BraintreeError(errors.UNIONPAY_FAILED_TOKENIZATION);
-        error.details = {originalError: err};
-      } else {
-        error = new BraintreeError(errors.UNIONPAY_TOKENIZATION_NETWORK_ERROR);
-        error.details = {originalError: err};
-      }
+        if (status === 403) {
+          error = err;
+        } else if (status < 500) {
+          error = new BraintreeError(errors.UNIONPAY_FAILED_TOKENIZATION);
+          error.details = { originalError: err };
+        } else {
+          error = new BraintreeError(
+            errors.UNIONPAY_TOKENIZATION_NETWORK_ERROR
+          );
+          error.details = { originalError: err };
+        }
 
-      return Promise.reject(error);
-    });
+        return Promise.reject(error);
+      });
   } else if (hostedFields) {
     if (!hostedFields._bus) {
-      return Promise.reject(new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID));
+      return Promise.reject(
+        new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID)
+      );
     }
 
     return new Promise(function (resolve, reject) {
       self._initializeHostedFields().then(function () {
-        self._bus.emit(events.HOSTED_FIELDS_TOKENIZE, options, function (response) {
-          if (response.err) {
-            reject(new BraintreeError(response.err));
+        self._bus.emit(
+          events.HOSTED_FIELDS_TOKENIZE,
+          options,
+          function (response) {
+            if (response.err) {
+              reject(new BraintreeError(response.err));
 
-            return;
+              return;
+            }
+
+            resolve(response.payload);
           }
-
-          resolve(response.payload);
-        });
+        );
       });
     });
   }
 
-  return Promise.reject(new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED));
+  return Promise.reject(
+    new BraintreeError(errors.UNIONPAY_CARD_OR_HOSTED_FIELDS_INSTANCE_REQUIRED)
+  );
 };
 
 /**
@@ -367,18 +417,25 @@ UnionPay.prototype._initializeHostedFields = function () {
   }
 
   this._hostedFieldsInitializePromise = new Promise(function (resolve) {
-    assetsUrl = self._options.client.getConfiguration().gatewayConfiguration.assetsUrl;
+    assetsUrl =
+      self._options.client.getConfiguration().gatewayConfiguration.assetsUrl;
     isDebug = self._options.client.getConfiguration().isDebug;
 
     self._bus = new Bus({
       channel: componentId,
-      verifyDomain: isVerifiedDomain
+      verifyDomain: isVerifiedDomain,
     });
     self._hostedFieldsFrame = iFramer({
-      name: constants.HOSTED_FIELDS_FRAME_NAME + '_' + componentId,
-      src: assetsUrl + '/web/' + VERSION + '/html/unionpay-hosted-fields-frame' + useMin(isDebug) + '.html',
+      name: constants.HOSTED_FIELDS_FRAME_NAME + "_" + componentId,
+      src:
+        assetsUrl +
+        "/web/" +
+        VERSION +
+        "/html/unionpay-hosted-fields-frame" +
+        useMin(isDebug) +
+        ".html",
       height: 0,
-      width: 0
+      width: 0,
     });
 
     self._bus.on(BUS_CONFIGURATION_REQUEST_EVENT, function (reply) {

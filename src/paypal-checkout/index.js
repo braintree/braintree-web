@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web/paypal-checkout
  * @description A component to integrate with the [PayPal JS SDK](https://github.com/paypal/paypal-checkout-components).
  */
 
-var basicComponentVerification = require('../lib/basic-component-verification');
-var wrapPromise = require('@braintree/wrap-promise');
-var PayPalCheckout = require('./paypal-checkout');
+var basicComponentVerification = require("../lib/basic-component-verification");
+var wrapPromise = require("@braintree/wrap-promise");
+var PayPalCheckout = require("./paypal-checkout");
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -35,17 +35,19 @@ var VERSION = process.env.npm_package_version;
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var name = 'PayPal Checkout';
+  var name = "PayPal Checkout";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    var instance = new PayPalCheckout(options);
+  return basicComponentVerification
+    .verify({
+      name: name,
+      client: options.client,
+      authorization: options.authorization,
+    })
+    .then(function () {
+      var instance = new PayPalCheckout(options);
 
-    return instance._initialize(options);
-  });
+      return instance._initialize(options);
+    });
 }
 
 /**
@@ -66,5 +68,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

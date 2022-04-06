@@ -1,16 +1,16 @@
-'use strict';
+"use strict";
 
-const findRootNode = require('../../../src/lib/find-root-node');
+const findRootNode = require("../../../src/lib/find-root-node");
 
-describe('findRootNode', () => {
-  it('returns the element when it is the root node', () => {
-    const el = document.createElement('div');
+describe("findRootNode", () => {
+  it("returns the element when it is the root node", () => {
+    const el = document.createElement("div");
 
     expect(findRootNode(el)).toBe(el);
   });
 
-  it('returns the container element when it is the root node', () => {
-    const el = document.createElement('div');
+  it("returns the container element when it is the root node", () => {
+    const el = document.createElement("div");
 
     el.innerHTML = `
       <div>
@@ -20,11 +20,11 @@ describe('findRootNode', () => {
       </div>
     `;
 
-    expect(findRootNode(el.querySelector('.target-node'))).toBe(el);
+    expect(findRootNode(el.querySelector(".target-node"))).toBe(el);
   });
 
-  it('returns the document when it is the root node', () => {
-    const el = document.createElement('div');
+  it("returns the document when it is the root node", () => {
+    const el = document.createElement("div");
 
     el.innerHTML = `
       <div>
@@ -36,7 +36,7 @@ describe('findRootNode', () => {
 
     document.body.appendChild(el);
 
-    const rootNode = findRootNode(el.querySelector('.target-node'));
+    const rootNode = findRootNode(el.querySelector(".target-node"));
 
     expect(rootNode).toBe(document);
   });

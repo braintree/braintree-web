@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
-var wrapPromise = require('@braintree/wrap-promise');
-var methods = require('../../lib/methods');
-var convertMethodsToError = require('../../lib/convert-methods-to-error');
-var EventEmitter = require('@braintree/event-emitter');
-var FRAMEWORKS = require('./frameworks');
+var wrapPromise = require("@braintree/wrap-promise");
+var methods = require("../../lib/methods");
+var convertMethodsToError = require("../../lib/convert-methods-to-error");
+var EventEmitter = require("@braintree/event-emitter");
+var FRAMEWORKS = require("./frameworks");
 
 /**
  * @deprecated
@@ -86,7 +86,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {object} paymentMethod A {@link ThreeDSecure~verifyPayload|verifyPayload} object.
  * @property {object} lookup Details about the 3D Secure lookup.
  * @property {string} lookup.threeDSecureVersion The version of 3D Secure that will be used for the 3D Secure challenge.
-*/
+ */
 
 /**
  * @typedef {object} ThreeDSecure~billingAddress
@@ -100,7 +100,7 @@ var FRAMEWORKS = require('./frameworks');
  * @property {string} [region] The 2 letter code for US states or an ISO-3166-2 country subdivision code of up to three letters.
  * @property {string} [postalCode] The zip code or equivalent for countries that have them.
  * @property {string} [countryCodeAlpha2] The 2 character country code.
-*/
+ */
 
 /**
  * @typedef {object} ThreeDSecure~additionalInformation
@@ -593,9 +593,9 @@ EventEmitter.createChild(ThreeDSecure);
 ThreeDSecure.prototype.verifyCard = function (options) {
   var privateOptions;
 
-  if (this.hasListener('lookup-complete')) {
+  if (this.hasListener("lookup-complete")) {
     privateOptions = {
-      ignoreOnLookupCompleteRequirement: true
+      ignoreOnLookupCompleteRequirement: true,
     };
   }
 
@@ -625,8 +625,10 @@ ThreeDSecure.prototype.verifyCard = function (options) {
  *   }
  * });
  */
-ThreeDSecure.prototype.initializeChallengeWithLookupResponse = function (lookupResponse) {
-  if (typeof lookupResponse === 'string') {
+ThreeDSecure.prototype.initializeChallengeWithLookupResponse = function (
+  lookupResponse
+) {
+  if (typeof lookupResponse === "string") {
     lookupResponse = JSON.parse(lookupResponse);
   }
 
@@ -761,7 +763,9 @@ ThreeDSecure.prototype.cancelVerifyCard = function () {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 ThreeDSecure.prototype.teardown = function () {
-  var methodNames = methods(ThreeDSecure.prototype).concat(methods(EventEmitter.prototype));
+  var methodNames = methods(ThreeDSecure.prototype).concat(
+    methods(EventEmitter.prototype)
+  );
 
   convertMethodsToError(this, methodNames);
 

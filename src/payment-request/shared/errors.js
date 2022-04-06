@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.Payment Request - Creation Error Codes
@@ -32,60 +32,66 @@
  * @property {UNKNOWN} PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED Occurs when `canMakePayment` fails for any reason other than a misconfigured Payment Request object.
  */
 
-var BraintreeError = require('../../lib/braintree-error');
+var BraintreeError = require("../../lib/braintree-error");
 
 module.exports = {
   PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS',
-    message: 'There are no supported payment methods associated with this account.'
+    code: "PAYMENT_REQUEST_NO_VALID_SUPPORTED_PAYMENT_METHODS",
+    message:
+      "There are no supported payment methods associated with this account.",
   },
   PAYMENT_REQUEST_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'PAYMENT_REQUEST_CANCELED',
-    message: 'Payment request was canceled.'
+    code: "PAYMENT_REQUEST_CANCELED",
+    message: "Payment request was canceled.",
   },
   PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED',
-    message: 'Something went wrong when configuring the payment request.'
+    code: "PAYMENT_REQUEST_INITIALIZATION_MISCONFIGURED",
+    message: "Something went wrong when configuring the payment request.",
   },
   PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED',
-    message: 'Something went wrong when calling `canMakePayment`'
+    code: "PAYMENT_REQUEST_CAN_MAKE_PAYMENT_FAILED",
+    message: "Something went wrong when calling `canMakePayment`",
   },
   PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED',
-    message: 'Something went wrong when calling `canMakePayment`. Most likely, `canMakePayment` was called multiple times with different supportedMethods configurations.'
+    code: "PAYMENT_REQUEST_CAN_MAKE_PAYMENT_NOT_ALLOWED",
+    message:
+      "Something went wrong when calling `canMakePayment`. Most likely, `canMakePayment` was called multiple times with different supportedMethods configurations.",
   },
   PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD'
+    code: "PAYMENT_REQUEST_UNSUPPORTED_PAYMENT_METHOD",
   },
   PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE: {
     type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE',
-    message: 'Something went wrong when tokenizing the Google Pay card.'
+    code: "PAYMENT_REQUEST_GOOGLE_PAYMENT_FAILED_TO_TOKENIZE",
+    message: "Something went wrong when tokenizing the Google Pay card.",
   },
   PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR',
-    message: 'Something went wrong when tokenizing the Google Pay card.'
+    code: "PAYMENT_REQUEST_GOOGLE_PAYMENT_PARSING_ERROR",
+    message: "Something went wrong when tokenizing the Google Pay card.",
   },
   PAYMENT_REQUEST_NOT_COMPLETED: {
-    code: 'PAYMENT_REQUEST_NOT_COMPLETED',
-    message: 'Payment request could not be completed.'
+    code: "PAYMENT_REQUEST_NOT_COMPLETED",
+    message: "Payment request could not be completed.",
   },
-  PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE',
-    message: 'createSupportedPaymentMethodsConfiguration must include a type parameter.'
-  },
-  PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED: {
-    type: BraintreeError.types.MERCHANT,
-    code: 'PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED',
-    message: 'createSupportedPaymentMethodsConfiguration type parameter must be valid or enabled.'
-  }
+  PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE:
+    {
+      type: BraintreeError.types.MERCHANT,
+      code: "PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_MUST_INCLUDE_TYPE",
+      message:
+        "createSupportedPaymentMethodsConfiguration must include a type parameter.",
+    },
+  PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED:
+    {
+      type: BraintreeError.types.MERCHANT,
+      code: "PAYMENT_REQUEST_CREATE_SUPPORTED_PAYMENT_METHODS_CONFIGURATION_TYPE_NOT_ENABLED",
+      message:
+        "createSupportedPaymentMethodsConfiguration type parameter must be valid or enabled.",
+    },
 };

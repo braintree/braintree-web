@@ -1,14 +1,14 @@
-'use strict';
+"use strict";
 
-const threeDSecure = require('../../../src/three-d-secure');
-const { version: packageVersion } = require('../../../package.json');
+const threeDSecure = require("../../../src/three-d-secure");
+const { version: packageVersion } = require("../../../package.json");
 
-describe('export', () => {
-  it('contains create', () => {
+describe("export", () => {
+  it("contains create", () => {
     expect(threeDSecure.create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', () => {
+  it("sets the version", () => {
     expect(threeDSecure.VERSION).toBe(packageVersion);
   });
 });

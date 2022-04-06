@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('./braintree-error');
-var sharedErrors = require('./errors');
+var BraintreeError = require("./braintree-error");
+var sharedErrors = require("./errors");
 
 module.exports = function (instance, methodNames) {
   methodNames.forEach(function (methodName) {
@@ -9,7 +9,7 @@ module.exports = function (instance, methodNames) {
       throw new BraintreeError({
         type: sharedErrors.METHOD_CALLED_AFTER_TEARDOWN.type,
         code: sharedErrors.METHOD_CALLED_AFTER_TEARDOWN.code,
-        message: methodName + ' cannot be called after teardown.'
+        message: methodName + " cannot be called after teardown.",
       });
     };
   });

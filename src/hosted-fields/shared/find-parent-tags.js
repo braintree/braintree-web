@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 function findParentTags(element, tag) {
   var parent = element.parentNode;

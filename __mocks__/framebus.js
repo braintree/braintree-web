@@ -1,5 +1,5 @@
 /* eslint-env jest */
-'use strict';
+"use strict";
 
 function Framebus(options) {
   this.channel = options.channel;

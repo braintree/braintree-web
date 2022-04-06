@@ -1,13 +1,16 @@
-'use strict';
+"use strict";
 
-var isAndroid = require('@braintree/browser-detection/is-android');
-var isChrome = require('@braintree/browser-detection/is-chrome');
-var isIos = require('@braintree/browser-detection/is-ios');
-var isIosSafari = require('@braintree/browser-detection/is-ios-safari');
-var isIosWebview = require('@braintree/browser-detection/is-ios-webview');
+var isAndroid = require("@braintree/browser-detection/is-android");
+var isChrome = require("@braintree/browser-detection/is-chrome");
+var isIos = require("@braintree/browser-detection/is-ios");
+var isIosSafari = require("@braintree/browser-detection/is-ios-safari");
+var isIosWebview = require("@braintree/browser-detection/is-ios-webview");
+var isSamsung = require("@braintree/browser-detection/is-samsung");
 
 function isAndroidWebview() {
-  return isAndroid() && window.navigator.userAgent.toLowerCase().indexOf('wv') > -1;
+  return (
+    isAndroid() && window.navigator.userAgent.toLowerCase().indexOf("wv") > -1
+  );
 }
 
 function doesNotSupportWindowOpenInIos() {
@@ -22,7 +25,7 @@ function isFacebookOwnedBrowserOnAndroid() {
   var ua = window.navigator.userAgent.toLowerCase();
 
   // Huawei's Facebook useragent does not include Android
-  if (ua.indexOf('huawei') > -1 && ua.indexOf('fban') > -1) {
+  if (ua.indexOf("huawei") > -1 && ua.indexOf("fban") > -1) {
     return true;
   }
 
@@ -30,7 +33,7 @@ function isFacebookOwnedBrowserOnAndroid() {
     return false;
   }
 
-  return ua.indexOf('fb_iab') > -1 || ua.indexOf('instagram') > -1;
+  return ua.indexOf("fb_iab") > -1 || ua.indexOf("instagram") > -1;
 }
 
 // iOS chrome used to work with Venmo, but now it does not
@@ -49,8 +52,9 @@ module.exports = {
   isChrome: isChrome,
   isIos: isIos,
   isIosChrome: isIosChrome,
+  isSamsung: isSamsung,
   isIosSafari: isIosSafari,
   isIosWebview: isIosWebview,
   isFacebookOwnedBrowserOnAndroid: isFacebookOwnedBrowserOnAndroid,
-  doesNotSupportWindowOpenInIos: doesNotSupportWindowOpenInIos
+  doesNotSupportWindowOpenInIos: doesNotSupportWindowOpenInIos,
 };

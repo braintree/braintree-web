@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.Data Collector - Creation Error Codes
@@ -8,21 +8,21 @@
  * @property {MERCHANT} DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS Occurs when Kount or PayPal Fraudnet could not be enabled.
  */
 
-var BraintreeError = require('../lib/braintree-error');
+var BraintreeError = require("../lib/braintree-error");
 
 module.exports = {
   DATA_COLLECTOR_KOUNT_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'DATA_COLLECTOR_KOUNT_NOT_ENABLED',
-    message: 'Kount is not enabled for this merchant.'
+    code: "DATA_COLLECTOR_KOUNT_NOT_ENABLED",
+    message: "Kount is not enabled for this merchant.",
   },
   DATA_COLLECTOR_KOUNT_ERROR: {
     type: BraintreeError.types.MERCHANT,
-    code: 'DATA_COLLECTOR_KOUNT_ERROR'
+    code: "DATA_COLLECTOR_KOUNT_ERROR",
   },
   DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS: {
     type: BraintreeError.types.MERCHANT,
-    code: 'DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS',
-    message: 'Data Collector must be created with Kount and/or PayPal.'
-  }
+    code: "DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS",
+    message: "Data Collector must be created with Kount and/or PayPal.",
+  },
 };

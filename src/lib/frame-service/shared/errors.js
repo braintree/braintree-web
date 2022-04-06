@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.Popup Related Error Codes
@@ -9,22 +9,23 @@
  * @property {INTERNAL} FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG - Occurs when the frame could not be opened because of a specific bug in Internet Explorer - https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11324352/.
  */
 
-var BraintreeError = require('../../braintree-error');
+var BraintreeError = require("../../braintree-error");
 
 module.exports = {
   FRAME_SERVICE_FRAME_CLOSED: {
     type: BraintreeError.types.INTERNAL,
-    code: 'FRAME_SERVICE_FRAME_CLOSED',
-    message: 'Frame closed before tokenization could occur.'
+    code: "FRAME_SERVICE_FRAME_CLOSED",
+    message: "Frame closed before tokenization could occur.",
   },
   FRAME_SERVICE_FRAME_OPEN_FAILED: {
     type: BraintreeError.types.INTERNAL,
-    code: 'FRAME_SERVICE_FRAME_OPEN_FAILED',
-    message: 'Frame failed to open.'
+    code: "FRAME_SERVICE_FRAME_OPEN_FAILED",
+    message: "Frame failed to open.",
   },
   FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG: {
     type: BraintreeError.types.INTERNAL,
-    code: 'FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG',
-    message: 'Could not open frame. This may be due to a bug in IE browsers when attempting to open an HTTPS page from a HTTP page. https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11324352/'
-  }
+    code: "FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG",
+    message:
+      "Could not open frame. This may be due to a bug in IE browsers when attempting to open an HTTPS page from a HTTP page. https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11324352/",
+  },
 };

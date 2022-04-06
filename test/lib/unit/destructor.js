@@ -1,17 +1,17 @@
-'use strict';
+"use strict";
 
-const Destructor = require('../../../src/lib/destructor');
-const { noop } = require('../../helpers');
+const Destructor = require("../../../src/lib/destructor");
+const { noop } = require("../../helpers");
 
-describe('Destructor', () => {
-  describe('constructor', () => {
-    it('creates an empty collection', () => {
+describe("Destructor", () => {
+  describe("constructor", () => {
+    it("creates an empty collection", () => {
       expect(new Destructor()._teardownRegistry).toEqual([]);
     });
   });
 
-  describe('registerFunctionForTeardown', () => {
-    it('adds passed in function to instance collection', () => {
+  describe("registerFunctionForTeardown", () => {
+    it("adds passed in function to instance collection", () => {
       const destructor = new Destructor();
       const fn = noop;
 
@@ -20,22 +20,22 @@ describe('Destructor', () => {
       expect(destructor._teardownRegistry).toEqual([fn]);
     });
 
-    it('does not add non-functions to collection', () => {
+    it("does not add non-functions to collection", () => {
       const destructor = new Destructor();
 
-      destructor.registerFunctionForTeardown('str');
+      destructor.registerFunctionForTeardown("str");
       destructor.registerFunctionForTeardown(true);
       destructor.registerFunctionForTeardown(1);
       destructor.registerFunctionForTeardown(null);
       destructor.registerFunctionForTeardown();
-      destructor.registerFunctionForTeardown({ foo: 'bar' });
+      destructor.registerFunctionForTeardown({ foo: "bar" });
 
       expect(destructor._teardownRegistry).toEqual([]);
     });
   });
 
-  describe('teardown', () => {
-    it('empties collection of teardown functions', done => {
+  describe("teardown", () => {
+    it("empties collection of teardown functions", (done) => {
       const destructor = new Destructor();
 
       destructor.registerFunctionForTeardown(noop);
@@ -48,52 +48,60 @@ describe('Destructor', () => {
       });
     });
 
-    it('calls supplied callback', done => {
+    it("calls supplied callback", (done) => {
       const destructor = new Destructor();
 
-      destructor.teardown(err => {
+      destructor.teardown((err) => {
         expect(err).toBeFalsy();
 
         done();
       });
     });
 
-    it('calls supplied callback with an error if given a synchronous function', () => {
+    it("calls supplied callback with an error if given a synchronous function", () => {
       const destructor = new Destructor();
 
-      destructor._teardownRegistry = [() => { throw new Error(); }];
+      destructor._teardownRegistry = [
+        () => {
+          throw new Error();
+        },
+      ];
 
       expect(() => {
         destructor.teardown();
       }).toThrowError(Error);
     });
 
-    it('calls supplied callback with an error if given an asynchronous function', () => {
+    it("calls supplied callback with an error if given an asynchronous function", () => {
       const destructor = new Destructor();
 
-      destructor._teardownRegistry = [(next) => { next(new Error()); }];
+      destructor._teardownRegistry = [
+        (next) => {
+          next(new Error());
+        },
+      ];
 
-      destructor.teardown(err => {
+      destructor.teardown((err) => {
         expect(err).toBeInstanceOf(Error);
       });
     });
 
-    it('calls supplied callback with an error when calling teardown twice if already in progress', done => {
+    it("calls supplied callback with an error when calling teardown twice if already in progress", (done) => {
       const destructor = new Destructor();
       let firstWasCalled = false;
 
-      destructor.registerFunctionForTeardown(cb => {
+      destructor.registerFunctionForTeardown((cb) => {
         setTimeout(cb, 10);
       });
 
       setTimeout(() => {
-        destructor.teardown(err => {
+        destructor.teardown((err) => {
           expect(err).toBeNull();
           firstWasCalled = true;
         });
       }, 0);
       setTimeout(() => {
-        destructor.teardown(err => {
+        destructor.teardown((err) => {
           expect(err).toBeInstanceOf(Error);
 
           setTimeout(() => {

@@ -5,14 +5,8 @@
   "displayName": "publishing",
   "restoreMocks": true,
   "rootDir": "../../",
-  "roots": [
-    "<rootDir>/test/publishing"
-  ],
+  "roots": ["<rootDir>/test/publishing"],
   "globalSetup": "<rootDir>/test/publishing/setup.js",
-  "testPathIgnorePatterns": [
-    "setup.js"
-  ],
-  "testMatch": [
-    "**/*.js"
-  ]
+  "testPathIgnorePatterns": ["setup.js"],
+  "testMatch": ["**/*.js"]
 }

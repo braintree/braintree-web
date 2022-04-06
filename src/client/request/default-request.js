@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 function DefaultRequest(options) {
   this._url = options.url;

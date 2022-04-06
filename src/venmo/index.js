@@ -1,16 +1,16 @@
-'use strict';
+"use strict";
 /** @module braintree-web/venmo */
 
-var analytics = require('../lib/analytics');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var errors = require('./shared/errors');
-var wrapPromise = require('@braintree/wrap-promise');
-var BraintreeError = require('../lib/braintree-error');
-var Venmo = require('./venmo');
-var Promise = require('../lib/promise');
-var supportsVenmo = require('./shared/supports-venmo');
+var analytics = require("../lib/analytics");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var errors = require("./shared/errors");
+var wrapPromise = require("@braintree/wrap-promise");
+var BraintreeError = require("../lib/braintree-error");
+var Venmo = require("./venmo");
+var Promise = require("../lib/promise");
+var supportsVenmo = require("./shared/supports-venmo");
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -58,50 +58,61 @@ var VERSION = process.env.npm_package_version;
  * @returns {(Promise|void)} Returns the Venmo instance.
  */
 function create(options) {
-  var name = 'Venmo';
+  var name = "Venmo";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    var createPromise, instance;
-
-    if (options.profileId && typeof options.profileId !== 'string') {
-      return Promise.reject(new BraintreeError(errors.VENMO_INVALID_PROFILE_ID));
-    }
-
-    if (options.deepLinkReturnUrl && typeof options.deepLinkReturnUrl !== 'string') {
-      return Promise.reject(new BraintreeError(errors.VENMO_INVALID_DEEP_LINK_RETURN_URL));
-    }
-
-    createPromise = createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
-    }).then(function (client) {
-      var configuration = client.getConfiguration();
+      authorization: options.authorization,
+    })
+    .then(function () {
+      var createPromise, instance;
 
-      options.client = client;
-
-      if (!configuration.gatewayConfiguration.payWithVenmo) {
-        return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
+      if (options.profileId && typeof options.profileId !== "string") {
+        return Promise.reject(
+          new BraintreeError(errors.VENMO_INVALID_PROFILE_ID)
+        );
       }
 
-      return client;
+      if (
+        options.deepLinkReturnUrl &&
+        typeof options.deepLinkReturnUrl !== "string"
+      ) {
+        return Promise.reject(
+          new BraintreeError(errors.VENMO_INVALID_DEEP_LINK_RETURN_URL)
+        );
+      }
+
+      createPromise = createDeferredClient
+        .create({
+          authorization: options.authorization,
+          client: options.client,
+          debug: options.debug,
+          assetsUrl: createAssetsUrl.create(options.authorization),
+          name: name,
+        })
+        .then(function (client) {
+          var configuration = client.getConfiguration();
+
+          options.client = client;
+
+          if (!configuration.gatewayConfiguration.payWithVenmo) {
+            return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
+          }
+
+          return client;
+        });
+
+      options.createPromise = createPromise;
+      instance = new Venmo(options);
+
+      analytics.sendEvent(createPromise, "venmo.initialized");
+
+      return createPromise.then(function () {
+        return instance;
+      });
     });
-
-    options.createPromise = createPromise;
-    instance = new Venmo(options);
-
-    analytics.sendEvent(createPromise, 'venmo.initialized');
-
-    return createPromise.then(function () {
-      return instance;
-    });
-  });
 }
 
 /**
@@ -139,5 +150,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

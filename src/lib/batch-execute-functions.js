@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-var once = require('./once');
+var once = require("./once");
 
 function call(fn, callback) {
   var isSync = fn.length === 0;

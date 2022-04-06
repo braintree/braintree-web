@@ -1,34 +1,38 @@
-'use strict';
+"use strict";
 
-var wrapPromise = require('@braintree/wrap-promise');
-var analytics = require('../lib/analytics');
-var createAssetsUrl = require('../lib/create-assets-url');
-var createDeferredClient = require('../lib/create-deferred-client');
-var Promise = require('../lib/promise');
+var wrapPromise = require("@braintree/wrap-promise");
+var analytics = require("../lib/analytics");
+var createAssetsUrl = require("../lib/create-assets-url");
+var createDeferredClient = require("../lib/create-deferred-client");
+var Promise = require("../lib/promise");
 
 /**
  * @class
  * @param {object} options See {@link module:braintree-web/preferred-payment-methods.create|preferred-payment-methods.create}
  */
-function PreferredPaymentMethods() {
-}
+function PreferredPaymentMethods() {}
 
 PreferredPaymentMethods.prototype.initialize = function (options) {
   var self = this;
 
-  this._clientPromise = createDeferredClient.create({
-    authorization: options.authorization,
-    client: options.client,
-    debug: options.debug,
-    assetsUrl: createAssetsUrl.create(options.authorization),
-    name: 'PreferredPaymentMethods'
-  }).catch(function (err) {
-    self._setupError = err;
+  this._clientPromise = createDeferredClient
+    .create({
+      authorization: options.authorization,
+      client: options.client,
+      debug: options.debug,
+      assetsUrl: createAssetsUrl.create(options.authorization),
+      name: "PreferredPaymentMethods",
+    })
+    .catch(function (err) {
+      self._setupError = err;
 
-    return Promise.reject(err);
-  });
+      return Promise.reject(err);
+    });
 
-  analytics.sendEvent(this._clientPromise, 'preferred-payment-methods.initialized');
+  analytics.sendEvent(
+    this._clientPromise,
+    "preferred-payment-methods.initialized"
+  );
 
   return Promise.resolve(this);
 };
@@ -61,43 +65,53 @@ PreferredPaymentMethods.prototype.fetchPreferredPaymentMethods = function () {
   var client;
   var self = this;
 
-  return this._clientPromise.then(function (clientInstance) {
-    client = clientInstance;
+  return this._clientPromise
+    .then(function (clientInstance) {
+      client = clientInstance;
 
-    return client.request({
-      api: 'graphQLApi',
-      data: {
-        query: 'query PreferredPaymentMethods { ' +
-          'preferredPaymentMethods { ' +
-            'paypalPreferred ' +
-            'venmoPreferred ' +
-          '} ' +
-        '}'
+      return client.request({
+        api: "graphQLApi",
+        data: {
+          query:
+            "query PreferredPaymentMethods { " +
+            "preferredPaymentMethods { " +
+            "paypalPreferred " +
+            "venmoPreferred " +
+            "} " +
+            "}",
+        },
+      });
+    })
+    .then(function (result) {
+      var paypalPreferred = result.data.preferredPaymentMethods.paypalPreferred;
+      var venmoPreferred = result.data.preferredPaymentMethods.venmoPreferred;
+
+      analytics.sendEvent(
+        client,
+        "preferred-payment-methods.paypal.api-detected." + paypalPreferred
+      );
+      analytics.sendEvent(
+        client,
+        "preferred-payment-methods.venmo.api-detected." + venmoPreferred
+      );
+
+      return {
+        paypalPreferred: paypalPreferred,
+        venmoPreferred: venmoPreferred,
+      };
+    })
+    .catch(function () {
+      if (self._setupError) {
+        return Promise.reject(self._setupError);
       }
+
+      analytics.sendEvent(client, "preferred-payment-methods.api-error");
+
+      return {
+        paypalPreferred: false,
+        venmoPreferred: false,
+      };
     });
-  }).then(function (result) {
-    var paypalPreferred = result.data.preferredPaymentMethods.paypalPreferred;
-    var venmoPreferred = result.data.preferredPaymentMethods.venmoPreferred;
-
-    analytics.sendEvent(client, 'preferred-payment-methods.paypal.api-detected.' + paypalPreferred);
-    analytics.sendEvent(client, 'preferred-payment-methods.venmo.api-detected.' + venmoPreferred);
-
-    return {
-      paypalPreferred: paypalPreferred,
-      venmoPreferred: venmoPreferred
-    };
-  }).catch(function () {
-    if (self._setupError) {
-      return Promise.reject(self._setupError);
-    }
-
-    analytics.sendEvent(client, 'preferred-payment-methods.api-error');
-
-    return {
-      paypalPreferred: false,
-      venmoPreferred: false
-    };
-  });
 };
 
 module.exports = wrapPromise.wrapPrototype(PreferredPaymentMethods);

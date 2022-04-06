@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 function once(fn) {
   var called = false;

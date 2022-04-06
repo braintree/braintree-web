@@ -1,55 +1,55 @@
-'use strict';
+"use strict";
 
-var errorResponseAdapter = require('./error');
-var assign = require('../../../../lib/assign').assign;
+var errorResponseAdapter = require("./error");
+var assign = require("../../../../lib/assign").assign;
 
 /* eslint-disable camelcase */
 var cardTypeTransforms = {
   creditCard: {
-    AMERICAN_EXPRESS: 'American Express',
-    DISCOVER: 'Discover',
-    INTERNATIONAL_MAESTRO: 'Maestro',
-    JCB: 'JCB',
-    MASTERCARD: 'MasterCard',
-    SOLO: 'Solo',
-    UK_MAESTRO: 'UK Maestro',
-    UNION_PAY: 'UnionPay',
-    VISA: 'Visa',
-    ELO: 'Elo',
-    HIPER: 'Hiper',
-    HIPERCARD: 'Hipercard'
+    AMERICAN_EXPRESS: "American Express",
+    DISCOVER: "Discover",
+    INTERNATIONAL_MAESTRO: "Maestro",
+    JCB: "JCB",
+    MASTERCARD: "MasterCard",
+    SOLO: "Solo",
+    UK_MAESTRO: "UK Maestro",
+    UNION_PAY: "UnionPay",
+    VISA: "Visa",
+    ELO: "Elo",
+    HIPER: "Hiper",
+    HIPERCARD: "Hipercard",
   },
   applePayWeb: {
-    VISA: 'visa',
-    MASTERCARD: 'mastercard',
-    DISCOVER: 'discover',
-    AMERICAN_EXPRESS: 'amex',
-    INTERNATIONAL_MAESTRO: 'maestro',
-    ELO: 'elo'
+    VISA: "visa",
+    MASTERCARD: "mastercard",
+    DISCOVER: "discover",
+    AMERICAN_EXPRESS: "amex",
+    INTERNATIONAL_MAESTRO: "maestro",
+    ELO: "elo",
   },
   visaCheckout: {
-    VISA: 'Visa',
-    MASTERCARD: 'MasterCard',
-    DISCOVER: 'Discover',
-    AMERICAN_EXPRESS: 'American Express'
+    VISA: "Visa",
+    MASTERCARD: "MasterCard",
+    DISCOVER: "Discover",
+    AMERICAN_EXPRESS: "American Express",
   },
   googlePay: {
-    VISA: 'visa',
-    MASTERCARD: 'mastercard',
-    DISCOVER: 'discover',
-    AMERICAN_EXPRESS: 'amex',
-    INTERNATIONAL_MAESTRO: 'maestro',
-    ELO: 'elo'
+    VISA: "visa",
+    MASTERCARD: "mastercard",
+    DISCOVER: "discover",
+    AMERICAN_EXPRESS: "amex",
+    INTERNATIONAL_MAESTRO: "maestro",
+    ELO: "elo",
   },
   masterpass: {
-    VISA: 'visa',
-    MASTERCARD: 'master',
-    DISCOVER: 'discover',
-    AMERICAN_EXPRESS: 'amex',
-    DINERS: 'diners',
-    INTERNATIONAL_MAESTRO: 'maestro',
-    JCB: 'jcb'
-  }
+    VISA: "visa",
+    MASTERCARD: "master",
+    DISCOVER: "discover",
+    AMERICAN_EXPRESS: "amex",
+    DINERS: "diners",
+    INTERNATIONAL_MAESTRO: "maestro",
+    JCB: "jcb",
+  },
 };
 /* eslint-enable camelcase */
 
@@ -74,10 +74,10 @@ function adaptConfigurationResponseBody(body, ctx) {
     clientApiUrl: configuration.clientApiUrl,
     assetsUrl: configuration.assetsUrl,
     analytics: {
-      url: configuration.analyticsUrl
+      url: configuration.analyticsUrl,
     },
     merchantId: configuration.merchantId,
-    venmo: 'off'
+    venmo: "off",
   };
 
   if (configuration.supportedFeatures) {
@@ -85,7 +85,7 @@ function adaptConfigurationResponseBody(body, ctx) {
       url: ctx._graphQL._config.url,
       features: configuration.supportedFeatures.map(function (feature) {
         return feature.toLowerCase();
-      })
+      }),
     };
   }
 
@@ -95,7 +95,10 @@ function adaptConfigurationResponseBody(body, ctx) {
 
   if (configuration.applePayWeb) {
     response.applePayWeb = configuration.applePayWeb;
-    response.applePayWeb.supportedNetworks = mapCardTypes(configuration.applePayWeb.supportedCardBrands, cardTypeTransforms.applePayWeb);
+    response.applePayWeb.supportedNetworks = mapCardTypes(
+      configuration.applePayWeb.supportedCardBrands,
+      cardTypeTransforms.applePayWeb
+    );
 
     delete response.applePayWeb.supportedCardBrands;
   }
@@ -106,24 +109,29 @@ function adaptConfigurationResponseBody(body, ctx) {
 
   if (configuration.kount) {
     response.kount = {
-      kountMerchantId: configuration.kount.merchantId
+      kountMerchantId: configuration.kount.merchantId,
     };
   }
 
   if (configuration.creditCard) {
-    response.challenges = configuration.creditCard.challenges.map(function (challenge) {
+    response.challenges = configuration.creditCard.challenges.map(function (
+      challenge
+    ) {
       return challenge.toLowerCase();
     });
 
     response.creditCards = {
-      supportedCardTypes: mapCardTypes(configuration.creditCard.supportedCardBrands, cardTypeTransforms.creditCard)
+      supportedCardTypes: mapCardTypes(
+        configuration.creditCard.supportedCardBrands,
+        cardTypeTransforms.creditCard
+      ),
     };
     response.threeDSecureEnabled = configuration.creditCard.threeDSecureEnabled;
     response.threeDSecure = configuration.creditCard.threeDSecure;
   } else {
     response.challenges = [];
     response.creditCards = {
-      supportedCardTypes: []
+      supportedCardTypes: [],
     };
     response.threeDSecureEnabled = false;
   }
@@ -133,9 +141,13 @@ function adaptConfigurationResponseBody(body, ctx) {
       displayName: configuration.googlePay.displayName,
       enabled: true,
       environment: configuration.googlePay.environment.toLowerCase(),
-      googleAuthorizationFingerprint: configuration.googlePay.googleAuthorization,
+      googleAuthorizationFingerprint:
+        configuration.googlePay.googleAuthorization,
       paypalClientId: configuration.googlePay.paypalClientId,
-      supportedNetworks: mapCardTypes(configuration.googlePay.supportedCardBrands, cardTypeTransforms.googlePay)
+      supportedNetworks: mapCardTypes(
+        configuration.googlePay.supportedCardBrands,
+        cardTypeTransforms.googlePay
+      ),
     };
   }
 
@@ -143,7 +155,7 @@ function adaptConfigurationResponseBody(body, ctx) {
     response.payWithVenmo = {
       merchantId: configuration.venmo.merchantId,
       accessToken: configuration.venmo.accessToken,
-      environment: configuration.venmo.environment.toLowerCase()
+      environment: configuration.venmo.environment.toLowerCase(),
     };
   }
 
@@ -161,7 +173,7 @@ function adaptConfigurationResponseBody(body, ctx) {
   if (configuration.unionPay) {
     response.unionPay = {
       enabled: true,
-      merchantAccountId: configuration.unionPay.merchantAccountId
+      merchantAccountId: configuration.unionPay.merchantAccountId,
     };
   }
 
@@ -170,14 +182,20 @@ function adaptConfigurationResponseBody(body, ctx) {
       apikey: configuration.visaCheckout.apiKey,
       encryptionKey: configuration.visaCheckout.encryptionKey,
       externalClientId: configuration.visaCheckout.externalClientId,
-      supportedCardTypes: mapCardTypes(configuration.visaCheckout.supportedCardBrands, cardTypeTransforms.visaCheckout)
+      supportedCardTypes: mapCardTypes(
+        configuration.visaCheckout.supportedCardBrands,
+        cardTypeTransforms.visaCheckout
+      ),
     };
   }
 
   if (configuration.masterpass) {
     response.masterpass = {
       merchantCheckoutId: configuration.masterpass.merchantCheckoutId,
-      supportedNetworks: mapCardTypes(configuration.masterpass.supportedCardBrands, cardTypeTransforms.masterpass)
+      supportedNetworks: mapCardTypes(
+        configuration.masterpass.supportedCardBrands,
+        cardTypeTransforms.masterpass
+      ),
     };
   }
 
@@ -185,8 +203,8 @@ function adaptConfigurationResponseBody(body, ctx) {
     response.usBankAccount = {
       routeId: configuration.usBankAccount.routeId,
       plaid: {
-        publicKey: configuration.usBankAccount.plaidPublicKey
-      }
+        publicKey: configuration.usBankAccount.plaidPublicKey,
+      },
     };
   }
 

@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-var Promise = require('../../src/lib/promise');
+var Promise = require("../../src/lib/promise");
 
 function rejectIfResolves() {
-  throw new Error('should not resolve');
+  throw new Error("should not resolve");
 }
 
 function wait(time) {
@@ -16,5 +16,5 @@ function wait(time) {
 
 module.exports = {
   rejectIfResolves: rejectIfResolves,
-  wait: wait
+  wait: wait,
 };

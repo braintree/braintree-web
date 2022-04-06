@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-var BaseInput = require('./base-input').BaseInput;
-var constants = require('../../shared/constants');
+var BaseInput = require("./base-input").BaseInput;
+var constants = require("../../shared/constants");
 var allowedFields = constants.allowedFields;
-var sanitizeHtml = require('../../../lib/sanitize-html');
+var sanitizeHtml = require("../../../lib/sanitize-html");
 
 function ExpirationSplitInput() {
   BaseInput.apply(this, arguments);
@@ -21,14 +21,14 @@ ExpirationSplitInput.prototype.constructElement = function () {
     return BaseInput.prototype.constructElement.apply(this, arguments);
   }
 
-  element = document.createElement('select');
+  element = document.createElement("select");
   field = allowedFields[type];
 
   attributes = {
-    'class': type,
-    'data-braintree-name': type,
+    class: type,
+    "data-braintree-name": type,
     name: field.name,
-    id: field.name
+    id: field.name,
   };
   Object.keys(attributes).forEach(function (attr) {
     element.setAttribute(attr, attributes[attr]);
@@ -44,15 +44,17 @@ ExpirationSplitInput.prototype.constructElement = function () {
   return element;
 };
 
-ExpirationSplitInput.prototype.createPlaceholderOption = function (placeholder) {
-  var firstOption = document.createElement('option');
+ExpirationSplitInput.prototype.createPlaceholderOption = function (
+  placeholder
+) {
+  var firstOption = document.createElement("option");
 
   this._hasPlacecholder = true;
 
-  firstOption.value = '';
+  firstOption.value = "";
   firstOption.innerHTML = sanitizeHtml(placeholder);
-  firstOption.setAttribute('selected', 'selected');
-  firstOption.setAttribute('disabled', 'disabled');
+  firstOption.setAttribute("selected", "selected");
+  firstOption.setAttribute("disabled", "disabled");
 
   return firstOption;
 };
@@ -60,7 +62,9 @@ ExpirationSplitInput.prototype.createPlaceholderOption = function (placeholder) 
 ExpirationSplitInput.prototype.setPlaceholder = function (type, placeholder) {
   var configuration, firstOption;
 
-  if (type !== this.type) { return; }
+  if (type !== this.type) {
+    return;
+  }
 
   configuration = this.getConfiguration();
 
@@ -70,7 +74,7 @@ ExpirationSplitInput.prototype.setPlaceholder = function (type, placeholder) {
     return;
   }
 
-  if (this.element.firstChild.value === '') {
+  if (this.element.firstChild.value === "") {
     this.element.firstChild.innerHTML = sanitizeHtml(placeholder);
   } else {
     firstOption = this.createPlaceholderOption(placeholder);
@@ -80,12 +84,12 @@ ExpirationSplitInput.prototype.setPlaceholder = function (type, placeholder) {
 
 ExpirationSplitInput.prototype._getDOMChangeEvent = function () {
   if (this.getConfiguration().select) {
-    return 'change';
+    return "change";
   }
 
   return BaseInput.prototype._getDOMChangeEvent.call(this);
 };
 
 module.exports = {
-  ExpirationSplitInput: ExpirationSplitInput
+  ExpirationSplitInput: ExpirationSplitInput,
 };

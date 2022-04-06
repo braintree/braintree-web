@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 function assembleIFrames(win) {
   var i, frame;
@@ -11,12 +11,14 @@ function assembleIFrames(win) {
       if (frame.location.href === window.location.href) {
         frames.push(frame);
       }
-    } catch (e) { /* ignored */ }
+    } catch (e) {
+      /* ignored */
+    }
   }
 
   return frames;
 }
 
 module.exports = {
-  assembleIFrames: assembleIFrames
+  assembleIFrames: assembleIFrames,
 };

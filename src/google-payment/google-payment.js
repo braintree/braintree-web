@@ -1,19 +1,19 @@
-'use strict';
+"use strict";
 
-var analytics = require('../lib/analytics');
-var assign = require('../lib/assign').assign;
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var find = require('../lib/find');
-var generateGooglePayConfiguration = require('../lib/generate-google-pay-configuration');
-var BraintreeError = require('../lib/braintree-error');
-var errors = require('./errors');
-var methods = require('../lib/methods');
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var analytics = require("../lib/analytics");
+var assign = require("../lib/assign").assign;
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var find = require("../lib/find");
+var generateGooglePayConfiguration = require("../lib/generate-google-pay-configuration");
+var BraintreeError = require("../lib/braintree-error");
+var errors = require("./errors");
+var methods = require("../lib/methods");
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 
 var CREATE_PAYMENT_DATA_REQUEST_METHODS = {
-  1: '_createV1PaymentDataRequest',
-  2: '_createV2PaymentDataRequest'
+  1: "_createV1PaymentDataRequest",
+  2: "_createV2PaymentDataRequest",
 };
 
 /**
@@ -56,8 +56,11 @@ function GooglePayment(options) {
   if (this._isUnsupportedGooglePayAPIVersion()) {
     throw new BraintreeError({
       code: errors.GOOGLE_PAYMENT_UNSUPPORTED_VERSION.code,
-      message: 'The Braintree SDK does not support Google Pay version ' + this._googlePayVersion + '. Please upgrade the version of your Braintree SDK and contact support if this error persists.',
-      type: errors.GOOGLE_PAYMENT_UNSUPPORTED_VERSION.type
+      message:
+        "The Braintree SDK does not support Google Pay version " +
+        this._googlePayVersion +
+        ". Please upgrade the version of your Braintree SDK and contact support if this error persists.",
+      type: errors.GOOGLE_PAYMENT_UNSUPPORTED_VERSION.type,
     });
   }
 }
@@ -67,9 +70,11 @@ GooglePayment.prototype._waitForClient = function () {
     return Promise.resolve();
   }
 
-  return this._createPromise.then(function (client) {
-    this._client = client;
-  }.bind(this));
+  return this._createPromise.then(
+    function (client) {
+      this._client = client;
+    }.bind(this)
+  );
 };
 
 GooglePayment.prototype._isUnsupportedGooglePayAPIVersion = function () {
@@ -80,16 +85,25 @@ GooglePayment.prototype._isUnsupportedGooglePayAPIVersion = function () {
 
 GooglePayment.prototype._getDefaultConfig = function () {
   if (!this._defaultConfig) {
-    this._defaultConfig = generateGooglePayConfiguration(this._client.getConfiguration(), this._googlePayVersion, this._googleMerchantId);
+    this._defaultConfig = generateGooglePayConfiguration(
+      this._client.getConfiguration(),
+      this._googlePayVersion,
+      this._googleMerchantId
+    );
   }
 
   return this._defaultConfig;
 };
 
-GooglePayment.prototype._createV1PaymentDataRequest = function (paymentDataRequest) {
+GooglePayment.prototype._createV1PaymentDataRequest = function (
+  paymentDataRequest
+) {
   var defaultConfig = this._getDefaultConfig();
-  var overrideCardNetworks = paymentDataRequest.cardRequirements && paymentDataRequest.cardRequirements.allowedCardNetworks;
-  var defaultConfigCardNetworks = defaultConfig.cardRequirements.allowedCardNetworks;
+  var overrideCardNetworks =
+    paymentDataRequest.cardRequirements &&
+    paymentDataRequest.cardRequirements.allowedCardNetworks;
+  var defaultConfigCardNetworks =
+    defaultConfig.cardRequirements.allowedCardNetworks;
   var allowedCardNetworks = overrideCardNetworks || defaultConfigCardNetworks;
 
   paymentDataRequest = assign({}, defaultConfig, paymentDataRequest);
@@ -101,15 +115,24 @@ GooglePayment.prototype._createV1PaymentDataRequest = function (paymentDataReque
   return paymentDataRequest;
 };
 
-GooglePayment.prototype._createV2PaymentDataRequest = function (paymentDataRequest) {
+GooglePayment.prototype._createV2PaymentDataRequest = function (
+  paymentDataRequest
+) {
   var defaultConfig = this._getDefaultConfig();
 
   if (paymentDataRequest.allowedPaymentMethods) {
     paymentDataRequest.allowedPaymentMethods.forEach(function (paymentMethod) {
-      var defaultPaymentMethod = find(defaultConfig.allowedPaymentMethods, 'type', paymentMethod.type);
+      var defaultPaymentMethod = find(
+        defaultConfig.allowedPaymentMethods,
+        "type",
+        paymentMethod.type
+      );
 
       if (defaultPaymentMethod) {
-        applyDefaultsToPaymentMethodConfiguration(paymentMethod, defaultPaymentMethod);
+        applyDefaultsToPaymentMethodConfiguration(
+          paymentMethod,
+          defaultPaymentMethod
+        );
       }
     });
   }
@@ -193,17 +216,25 @@ GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
     return this._createPaymentDataRequestSyncronously(overrides);
   }
 
-  return this._waitForClient().then(function () {
-    return this._createPaymentDataRequestSyncronously(overrides);
-  }.bind(this));
+  return this._waitForClient().then(
+    function () {
+      return this._createPaymentDataRequestSyncronously(overrides);
+    }.bind(this)
+  );
 };
 
-GooglePayment.prototype._createPaymentDataRequestSyncronously = function (overrides) {
+GooglePayment.prototype._createPaymentDataRequestSyncronously = function (
+  overrides
+) {
   var paymentDataRequest = assign({}, overrides);
   var version = this._googlePayVersion;
-  var createPaymentDataRequestMethod = CREATE_PAYMENT_DATA_REQUEST_METHODS[version];
+  var createPaymentDataRequestMethod =
+    CREATE_PAYMENT_DATA_REQUEST_METHODS[version];
 
-  analytics.sendEvent(this._createPromise, 'google-payment.v' + version + '.createPaymentDataRequest');
+  analytics.sendEvent(
+    this._createPromise,
+    "google-payment.v" + version + ".createPaymentDataRequest"
+  );
 
   return this[createPaymentDataRequestMethod](paymentDataRequest);
 };
@@ -243,58 +274,75 @@ GooglePayment.prototype._createPaymentDataRequestSyncronously = function (overri
 GooglePayment.prototype.parseResponse = function (response) {
   var self = this;
 
-  return Promise.resolve().then(function () {
-    var payload;
-    var rawResponse = response.apiVersion === 2 ?
-      response.paymentMethodData.tokenizationData.token :
-      response.paymentMethodToken.token;
-    var parsedResponse = JSON.parse(rawResponse);
-    var error = parsedResponse.error;
+  return Promise.resolve()
+    .then(function () {
+      var payload;
+      var rawResponse =
+        response.apiVersion === 2
+          ? response.paymentMethodData.tokenizationData.token
+          : response.paymentMethodToken.token;
+      var parsedResponse = JSON.parse(rawResponse);
+      var error = parsedResponse.error;
 
-    if (error) {
-      return Promise.reject(error);
-    }
+      if (error) {
+        return Promise.reject(error);
+      }
 
-    analytics.sendEvent(self._createPromise, 'google-payment.parseResponse.succeeded');
+      analytics.sendEvent(
+        self._createPromise,
+        "google-payment.parseResponse.succeeded"
+      );
 
-    if (parsedResponse.paypalAccounts) {
-      payload = parsedResponse.paypalAccounts[0];
-      analytics.sendEvent(self._createPromise, 'google-payment.parseResponse.succeeded.paypal');
+      if (parsedResponse.paypalAccounts) {
+        payload = parsedResponse.paypalAccounts[0];
+        analytics.sendEvent(
+          self._createPromise,
+          "google-payment.parseResponse.succeeded.paypal"
+        );
+
+        return Promise.resolve({
+          nonce: payload.nonce,
+          type: payload.type,
+          description: payload.description,
+        });
+      }
+      payload = parsedResponse.androidPayCards[0];
+      analytics.sendEvent(
+        self._createPromise,
+        "google-payment.parseResponse.succeeded.google-payment"
+      );
 
       return Promise.resolve({
         nonce: payload.nonce,
         type: payload.type,
-        description: payload.description
+        description: payload.description,
+        details: {
+          cardType: payload.details.cardType,
+          lastFour: payload.details.lastFour,
+          lastTwo: payload.details.lastTwo,
+          isNetworkTokenized: payload.details.isNetworkTokenized,
+          bin: payload.details.bin,
+        },
+        binData: payload.binData,
       });
-    }
-    payload = parsedResponse.androidPayCards[0];
-    analytics.sendEvent(self._createPromise, 'google-payment.parseResponse.succeeded.google-payment');
+    })
+    .catch(function (error) {
+      analytics.sendEvent(
+        self._createPromise,
+        "google-payment.parseResponse.failed"
+      );
 
-    return Promise.resolve({
-      nonce: payload.nonce,
-      type: payload.type,
-      description: payload.description,
-      details: {
-        cardType: payload.details.cardType,
-        lastFour: payload.details.lastFour,
-        lastTwo: payload.details.lastTwo,
-        isNetworkTokenized: payload.details.isNetworkTokenized,
-        bin: payload.details.bin
-      },
-      binData: payload.binData
+      return Promise.reject(
+        new BraintreeError({
+          code: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.code,
+          message: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.message,
+          type: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.type,
+          details: {
+            originalError: error,
+          },
+        })
+      );
     });
-  }).catch(function (error) {
-    analytics.sendEvent(self._createPromise, 'google-payment.parseResponse.failed');
-
-    return Promise.reject(new BraintreeError({
-      code: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.code,
-      message: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.message,
-      type: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.type,
-      details: {
-        originalError: error
-      }
-    }));
-  });
 };
 
 /**
@@ -315,16 +363,21 @@ GooglePayment.prototype.teardown = function () {
   return Promise.resolve();
 };
 
-function applyDefaultsToPaymentMethodConfiguration(merchantSubmittedPaymentMethod, defaultPaymentMethod) {
+function applyDefaultsToPaymentMethodConfiguration(
+  merchantSubmittedPaymentMethod,
+  defaultPaymentMethod
+) {
   Object.keys(defaultPaymentMethod).forEach(function (parameter) {
-    if (typeof defaultPaymentMethod[parameter] === 'object') {
+    if (typeof defaultPaymentMethod[parameter] === "object") {
       merchantSubmittedPaymentMethod[parameter] = assign(
         {},
         defaultPaymentMethod[parameter],
         merchantSubmittedPaymentMethod[parameter]
       );
     } else {
-      merchantSubmittedPaymentMethod[parameter] = merchantSubmittedPaymentMethod[parameter] || defaultPaymentMethod[parameter];
+      merchantSubmittedPaymentMethod[parameter] =
+        merchantSubmittedPaymentMethod[parameter] ||
+        defaultPaymentMethod[parameter];
     }
   });
 }

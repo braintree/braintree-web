@@ -6,11 +6,6 @@
   "restoreMocks": true,
   "//": "In the future, tests should live in the same directory as the files they are testing",
   "rootDir": "../../src/visa-checkout",
-  "roots": [
-    "<rootDir>",
-    "<rootDir>/../../test/visa-checkout"
-  ],
-  "testMatch": [
-    "**/unit/**/*.js"
-  ]
+  "roots": ["<rootDir>", "<rootDir>/../../test/visa-checkout"],
+  "testMatch": ["**/unit/**/*.js"]
 }

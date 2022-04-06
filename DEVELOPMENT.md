@@ -1,17 +1,16 @@
-Development Notes
-=================
+# Development Notes
 
 Throughout this page, replace `<component>` with the name of any SDK component (`client`, `paypal`, etc).
 
 ## Table of Contents
 
-* [Project Structure](#project-structure)
-* [Project Environment](#project-environment)
-* [Building](#building)
-* [Linting](#linting)
-* [Testing](#testing)
-* [Generating Documentation](#generating-documentation)
-* [Releasing](#releasing)
+- [Project Structure](#project-structure)
+- [Project Environment](#project-environment)
+- [Building](#building)
+- [Linting](#linting)
+- [Testing](#testing)
+- [Generating Documentation](#generating-documentation)
+- [Releasing](#releasing)
 
 ## Project Structure
 
@@ -38,6 +37,7 @@ This section only applies to internal braintree development and deployments.
 This library makes use of environment variables specified in a `.env` file. This file is not committed and is ignored via `.gitignore`. You will need to create this file and set some variables within it.
 
 Here's an example `.env` file:
+
 ```
 BRAINTREE_JS_API_HOST=development.gateway.hostname
 BRAINTREE_JS_API_PORT=443
@@ -47,12 +47,12 @@ BRAINTREE_JS_BOWER_DEST=/absolute/path/to/braintree-web-bower/repository
 BRAINTREE_JS_SOURCE_DEST=/absolute/path/to/braintree-web/repository
 ```
 
-* __BRAINTREE_JS_API_HOST__ identifies the host where a development gateway is running.
-* __BRAINTREE_JS_API_PORT__ identifies the port where a development gateway is running.
-* __BRAINTREE_JS_API_PROTOCOL__ identifies the protocol where a development gateway is running.
-* __BRAINTREE_JS_HOSTED_DEST__ identifies where to copy `dist/hosted` assets for release.
-* __BRAINTREE_JS_BOWER_DEST__ identifies where to copy `dist/bower` assets for bower release.
-* __BRAINTREE_JS_SOURCE_DEST__ identifies where to patch code deltas as a source release.
+- **BRAINTREE_JS_API_HOST** identifies the host where a development gateway is running.
+- **BRAINTREE_JS_API_PORT** identifies the port where a development gateway is running.
+- **BRAINTREE_JS_API_PROTOCOL** identifies the protocol where a development gateway is running.
+- **BRAINTREE_JS_HOSTED_DEST** identifies where to copy `dist/hosted` assets for release.
+- **BRAINTREE_JS_BOWER_DEST** identifies where to copy `dist/bower` assets for bower release.
+- **BRAINTREE_JS_SOURCE_DEST** identifies where to patch code deltas as a source release.
 
 ## Building
 

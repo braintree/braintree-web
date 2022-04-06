@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.Shared Internal Error Codes
@@ -21,28 +21,28 @@
  * @property {MERCHANT} METHOD_CALLED_AFTER_TEARDOWN Occurs when a method is called on a component instance after it has been torn down.
  */
 
-var BraintreeError = require('./braintree-error');
+var BraintreeError = require("./braintree-error");
 
 module.exports = {
   INVALID_USE_OF_INTERNAL_FUNCTION: {
     type: BraintreeError.types.INTERNAL,
-    code: 'INVALID_USE_OF_INTERNAL_FUNCTION'
+    code: "INVALID_USE_OF_INTERNAL_FUNCTION",
   },
   INSTANTIATION_OPTION_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'INSTANTIATION_OPTION_REQUIRED'
+    code: "INSTANTIATION_OPTION_REQUIRED",
   },
   INCOMPATIBLE_VERSIONS: {
     type: BraintreeError.types.MERCHANT,
-    code: 'INCOMPATIBLE_VERSIONS'
+    code: "INCOMPATIBLE_VERSIONS",
   },
   CLIENT_SCRIPT_FAILED_TO_LOAD: {
     type: BraintreeError.types.NETWORK,
-    code: 'CLIENT_SCRIPT_FAILED_TO_LOAD',
-    message: 'Braintree client script could not be loaded.'
+    code: "CLIENT_SCRIPT_FAILED_TO_LOAD",
+    message: "Braintree client script could not be loaded.",
   },
   METHOD_CALLED_AFTER_TEARDOWN: {
     type: BraintreeError.types.MERCHANT,
-    code: 'METHOD_CALLED_AFTER_TEARDOWN'
-  }
+    code: "METHOD_CALLED_AFTER_TEARDOWN",
+  },
 };

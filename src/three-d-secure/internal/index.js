@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
 module.exports = {
-  initializeBankFrame: require('./bank-frame'),
-  initializeAuthenticationCompleteFrame: require('./authentication-complete-frame')
+  initializeBankFrame: require("./bank-frame"),
+  initializeAuthenticationCompleteFrame: require("./authentication-complete-frame"),
 };

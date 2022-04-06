@@ -1,135 +1,160 @@
-'use strict';
+"use strict";
 
-const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
-const { ExpirationDateInput } = require('../../../../../src/hosted-fields/internal/components/expiration-date-input');
-const { createInput } = require('../../helpers');
-const RestrictedInput = require('restricted-input');
+const {
+  BaseInput,
+} = require("../../../../../src/hosted-fields/internal/components/base-input");
+const {
+  ExpirationDateInput,
+} = require("../../../../../src/hosted-fields/internal/components/expiration-date-input");
+const { createInput } = require("../../helpers");
+const RestrictedInput = require("restricted-input");
 
-describe('Expiration Date Input', () => {
+describe("Expiration Date Input", () => {
   let testContext;
 
   beforeEach(() => {
     testContext = {};
-    testContext.input = createInput('expirationDate');
+    testContext.input = createInput("expirationDate");
   });
 
-  describe('inheritance', () => {
-    it('extends BaseInput', () => {
+  describe("inheritance", () => {
+    it("extends BaseInput", () => {
       expect(testContext.input).toBeInstanceOf(BaseInput);
     });
 
     it('sets element type to "text" when browser does not support formatting', () => {
-      const inputWithFormatting = createInput('expirationDate');
+      const inputWithFormatting = createInput("expirationDate");
 
-      expect(inputWithFormatting.element.type).toBe('tel');
+      expect(inputWithFormatting.element.type).toBe("tel");
 
-      jest.spyOn(RestrictedInput, 'supportsFormatting').mockReturnValue(false);
+      jest.spyOn(RestrictedInput, "supportsFormatting").mockReturnValue(false);
 
-      const inputWithoutFormatting = createInput('expirationDate');
+      const inputWithoutFormatting = createInput("expirationDate");
 
-      expect(inputWithoutFormatting.element.type).toBe('text');
+      expect(inputWithoutFormatting.element.type).toBe("text");
     });
   });
 
-  describe('getUnformattedValue', () => {
-    it('returns monthyear format for month input type', () => {
+  describe("getUnformattedValue", () => {
+    it("returns monthyear format for month input type", () => {
       const context = {
-        element: { type: 'month' },
+        element: { type: "month" },
         formatter: {
           getUnformattedValue() {
-            return '2020-01';
-          }
-        }
+            return "2020-01";
+          },
+        },
       };
-      const value = ExpirationDateInput.prototype.getUnformattedValue.call(context);
+      const value =
+        ExpirationDateInput.prototype.getUnformattedValue.call(context);
 
-      expect(value).toBe('012020');
+      expect(value).toBe("012020");
     });
 
-    it('returns empty value for empty month input type', () => {
+    it("returns empty value for empty month input type", () => {
       const context = {
-        element: { type: 'month' },
+        element: { type: "month" },
         formatter: {
           getUnformattedValue() {
-            return '';
-          }
-        }
+            return "";
+          },
+        },
       };
-      const value = ExpirationDateInput.prototype.getUnformattedValue.call(context);
+      const value =
+        ExpirationDateInput.prototype.getUnformattedValue.call(context);
 
-      expect(value).toBe('');
+      expect(value).toBe("");
     });
   });
 
-  describe('element', () => {
+  describe("element", () => {
     it('has type="tel"', () => {
-      expect(testContext.input.element.getAttribute('type')).toBe('tel');
+      expect(testContext.input.element.getAttribute("type")).toBe("tel");
     });
 
-    it('has autocomplete cc-exp', () => {
-      expect(testContext.input.element.getAttribute('autocomplete')).toBe('cc-exp');
+    it("has autocomplete cc-exp", () => {
+      expect(testContext.input.element.getAttribute("autocomplete")).toBe(
+        "cc-exp"
+      );
     });
 
-    it('sets the maxLength to 9', () => {
-      expect(testContext.input.element.getAttribute('maxlength')).toBe('9');
+    it("sets the maxLength to 9", () => {
+      expect(testContext.input.element.getAttribute("maxlength")).toBe("9");
     });
   });
 
-  describe('formatting', () => {
+  describe("formatting", () => {
     beforeEach(() => {
-      jest.spyOn(testContext.input.formatter, 'setPattern');
+      jest.spyOn(testContext.input.formatter, "setPattern");
     });
 
     describe.each([
-      ['zero', ['01', '0122', '01222']],
-      ['one', ['1', '122', '1222']]
-    ])('uses a 2 digit month when the date starts with %s', (startingDigit, sampleDate) => {
-      it.each(sampleDate)('for date %s', date => {
-        testContext.input.model.set('expirationDate.value', date);
-        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith('{{99}} / {{9999}}');
+      ["zero", ["01", "0122", "01222"]],
+      ["one", ["1", "122", "1222"]],
+    ])(
+      "uses a 2 digit month when the date starts with %s",
+      (startingDigit, sampleDate) => {
+        it.each(sampleDate)("for date %s", (date) => {
+          testContext.input.model.set("expirationDate.value", date);
+          expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith(
+            "{{99}} / {{9999}}"
+          );
+        });
+      }
+    );
+
+    describe("uses a 1 digit month when the date is greater than one", () => {
+      const expDates = ["2", "3", "4", "5", "6", "7", "8", "9"];
+
+      it.each(expDates)("for date %s", (date) => {
+        testContext.input.model.set("expirationDate.value", date);
+        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith(
+          "0{{9}} / {{9999}}"
+        );
       });
     });
 
-    describe('uses a 1 digit month when the date is greater than one', () => {
-      const expDates = ['2', '3', '4', '5', '6', '7', '8', '9'];
+    describe("uses a 2 digit month for valid 3 digit dates starting with 1", () => {
+      const expDates = ["121", "122"];
 
-      it.each(expDates)('for date %s', date => {
-        testContext.input.model.set('expirationDate.value', date);
-        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith('0{{9}} / {{9999}}');
+      it.each(expDates)("for date %s", (date) => {
+        testContext.input.model.set("expirationDate.value", date);
+        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith(
+          "{{99}} / {{9999}}"
+        );
       });
     });
 
-    describe('uses a 2 digit month for valid 3 digit dates starting with 1', () => {
-      const expDates = ['121', '122'];
+    describe("uses a 2 digit month for 3 digit dates that are potentially valid but not valid yet", () => {
+      const expDates = ["011", "020", "021", "022", "101", "102", "111", "112"];
 
-      it.each(expDates)('for date %s', date => {
-        testContext.input.model.set('expirationDate.value', date);
-        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith('{{99}} / {{9999}}');
+      it.each(expDates)("for date %s", (date) => {
+        testContext.input.model.set("expirationDate.value", date);
+        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith(
+          "{{99}} / {{9999}}"
+        );
       });
     });
 
-    describe('uses a 2 digit month for 3 digit dates that are potentially valid but not valid yet', () => {
-      const expDates = ['011', '020', '021', '022', '101', '102', '111', '112'];
-
-      it.each(expDates)('for date %s', date => {
-        testContext.input.model.set('expirationDate.value', date);
-        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith('{{99}} / {{9999}}');
-      });
+    it("handles changes in ambiguous dates, for date 122", () => {
+      testContext.input.model.set("expirationDate.value", "22");
+      expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith(
+        "0{{9}} / {{9999}}"
+      );
+      testContext.input.model.set("expirationDate.value", "122");
+      expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith(
+        "{{99}} / {{9999}}"
+      );
     });
 
-    it('handles changes in ambiguous dates, for date 122', () => {
-      testContext.input.model.set('expirationDate.value', '22');
-      expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith('0{{9}} / {{9999}}');
-      testContext.input.model.set('expirationDate.value', '122');
-      expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith('{{99}} / {{9999}}');
-    });
+    describe("handles changes in ambiguous dates", () => {
+      const expDates = ["1220", "12202", "122020"];
 
-    describe('handles changes in ambiguous dates', () => {
-      const expDates = ['1220', '12202', '122020'];
-
-      it.each(expDates)('for date %s', date => {
-        testContext.input.model.set('expirationDate.value', date);
-        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith('{{99}} / {{9999}}');
+      it.each(expDates)("for date %s", (date) => {
+        testContext.input.model.set("expirationDate.value", date);
+        expect(testContext.input.formatter.setPattern).toHaveBeenCalledWith(
+          "{{99}} / {{9999}}"
+        );
       });
     });
   });

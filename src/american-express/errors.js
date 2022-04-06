@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.American Express - getRewardsBalance Error Codes
@@ -14,15 +14,15 @@
  * @property {NETWORK} AMEX_NETWORK_ERROR Occurs when there is an error communicating with the Braintree gateway.
  */
 
-var BraintreeError = require('../lib/braintree-error');
+var BraintreeError = require("../lib/braintree-error");
 
 module.exports = {
   AMEX_NONCE_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'AMEX_NONCE_REQUIRED'
+    code: "AMEX_NONCE_REQUIRED",
   },
   AMEX_NETWORK_ERROR: {
     type: BraintreeError.types.NETWORK,
-    code: 'AMEX_NETWORK_ERROR'
-  }
+    code: "AMEX_NETWORK_ERROR",
+  },
 };

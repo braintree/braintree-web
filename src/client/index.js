@@ -1,11 +1,11 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('../lib/braintree-error');
-var Client = require('./client');
+var BraintreeError = require("../lib/braintree-error");
+var Client = require("./client");
 var VERSION = process.env.npm_package_version;
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
-var sharedErrors = require('../lib/errors');
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
+var sharedErrors = require("../lib/errors");
 
 /** @module braintree-web/client */
 
@@ -38,11 +38,14 @@ var sharedErrors = require('../lib/errors');
  */
 function create(options) {
   if (!options.authorization) {
-    return Promise.reject(new BraintreeError({
-      type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
-      code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
-      message: 'options.authorization is required when instantiating a client.'
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: sharedErrors.INSTANTIATION_OPTION_REQUIRED.type,
+        code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
+        message:
+          "options.authorization is required when instantiating a client.",
+      })
+    );
   }
 
   return Client.initialize(options);
@@ -54,5 +57,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

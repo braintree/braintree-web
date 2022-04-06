@@ -1,15 +1,13 @@
-'use strict';
+"use strict";
 
-var browserDetection = require('../../browser-detection');
+var browserDetection = require("../../browser-detection");
 
 var features = {
-  tokenize_credit_cards: 'payment_methods/credit_cards', // eslint-disable-line camelcase
-  configuration: 'configuration'
+  tokenize_credit_cards: "payment_methods/credit_cards", // eslint-disable-line camelcase
+  configuration: "configuration",
 };
 
-var disallowedInputPaths = [
-  'creditCard.options.unionPayEnrollment'
-];
+var disallowedInputPaths = ["creditCard.options.unionPayEnrollment"];
 
 function GraphQL(config) {
   this._config = config.graphQL;
@@ -40,11 +38,11 @@ GraphQL.prototype.isGraphQLRequest = function (url, body) {
 
 GraphQL.prototype.getClientApiPath = function (url) {
   var path;
-  var clientApiPrefix = '/client_api/v1/';
+  var clientApiPrefix = "/client_api/v1/";
   var pathParts = url.split(clientApiPrefix);
 
   if (pathParts.length > 1) {
-    path = pathParts[1].split('?')[0];
+    path = pathParts[1].split("?")[0];
   }
 
   return path;
@@ -56,7 +54,7 @@ GraphQL.prototype._isGraphQLEnabled = function () {
 
 function containsDisallowedlistedKeys(body) {
   return disallowedInputPaths.some(function (keys) {
-    var value = keys.split('.').reduce(function (accumulator, key) {
+    var value = keys.split(".").reduce(function (accumulator, key) {
       return accumulator && accumulator[key];
     }, body);
 

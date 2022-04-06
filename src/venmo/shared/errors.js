@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /**
  * @name BraintreeError.Venmo - Creation Error Codes
@@ -27,92 +27,94 @@
  * @property {UNKNOWN} VENMO_MOBILE_POLLING_TOKENIZATION_FAILED Occurs if there is an unknown error during the mobile polling process.
  */
 
-var BraintreeError = require('../../lib/braintree-error');
+var BraintreeError = require("../../lib/braintree-error");
 
 module.exports = {
   VENMO_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
-    code: 'VENMO_NOT_ENABLED',
-    message: 'Venmo is not enabled for this merchant.'
+    code: "VENMO_NOT_ENABLED",
+    message: "Venmo is not enabled for this merchant.",
   },
   VENMO_TOKENIZATION_REQUEST_ACTIVE: {
     type: BraintreeError.types.MERCHANT,
-    code: 'VENMO_TOKENIZATION_REQUEST_ACTIVE',
-    message: 'Another tokenization request is active.'
+    code: "VENMO_TOKENIZATION_REQUEST_ACTIVE",
+    message: "Another tokenization request is active.",
   },
   VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE: {
     type: BraintreeError.types.MERCHANT,
-    code: 'VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE',
-    message: 'No tokenization in progress.'
+    code: "VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE",
+    message: "No tokenization in progress.",
   },
   VENMO_APP_FAILED: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'VENMO_APP_FAILED',
-    message: 'Venmo app encountered a problem.'
+    code: "VENMO_APP_FAILED",
+    message: "Venmo app encountered a problem.",
   },
   VENMO_APP_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'VENMO_APP_CANCELED',
-    message: 'Venmo app authorization was canceled.'
+    code: "VENMO_APP_CANCELED",
+    message: "Venmo app authorization was canceled.",
   },
   VENMO_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'VENMO_CANCELED',
-    message: 'User canceled Venmo authorization, or Venmo app is not available.'
+    code: "VENMO_CANCELED",
+    message:
+      "User canceled Venmo authorization, or Venmo app is not available.",
   },
   VENMO_DESKTOP_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'VENMO_DESKTOP_CANCELED',
-    message: 'User canceled Venmo authorization by closing the Venmo Desktop modal.'
+    code: "VENMO_DESKTOP_CANCELED",
+    message:
+      "User canceled Venmo authorization by closing the Venmo Desktop modal.",
   },
   VENMO_TOKENIZATION_CANCELED_BY_MERCHANT: {
     type: BraintreeError.types.MERCHANT,
-    code: 'VENMO_TOKENIZATION_CANCELED_BY_MERCHANT',
-    message: 'The Venmo tokenization was canceled by the merchant.'
+    code: "VENMO_TOKENIZATION_CANCELED_BY_MERCHANT",
+    message: "The Venmo tokenization was canceled by the merchant.",
   },
   VENMO_DESKTOP_UNKNOWN_ERROR: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'VENMO_DESKTOP_UNKNOWN_ERROR',
-    message: 'Something went wrong with the Venmo Desktop flow.'
+    code: "VENMO_DESKTOP_UNKNOWN_ERROR",
+    message: "Something went wrong with the Venmo Desktop flow.",
   },
   VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED: {
     type: BraintreeError.types.NETWORK,
-    code: 'VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED',
-    message: 'Something went wrong creating the Venmo Payment Context.'
+    code: "VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED",
+    message: "Something went wrong creating the Venmo Payment Context.",
   },
   VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR',
-    message: 'Something went wrong during mobile polling.'
+    code: "VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR",
+    message: "Something went wrong during mobile polling.",
   },
   VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED',
-    message: 'The Venmo authorization request is expired.'
+    code: "VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED",
+    message: "The Venmo authorization request is expired.",
   },
   VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED',
-    message: 'The Venmo authorization was canceled'
+    code: "VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED",
+    message: "The Venmo authorization was canceled",
   },
   VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT: {
     type: BraintreeError.types.CUSTOMER,
-    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT',
-    message: 'Customer took too long to authorize Venmo payment.'
+    code: "VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT",
+    message: "Customer took too long to authorize Venmo payment.",
   },
   VENMO_MOBILE_POLLING_TOKENIZATION_FAILED: {
     type: BraintreeError.types.UNKNOWN,
-    code: 'VENMO_MOBILE_POLLING_TOKENIZATION_FAILED',
-    message: 'The Venmo authorization failed.'
+    code: "VENMO_MOBILE_POLLING_TOKENIZATION_FAILED",
+    message: "The Venmo authorization failed.",
   },
   VENMO_INVALID_PROFILE_ID: {
     type: BraintreeError.types.MERCHANT,
-    code: 'VENMO_INVALID_PROFILE_ID',
-    message: 'Venmo profile ID is invalid.'
+    code: "VENMO_INVALID_PROFILE_ID",
+    message: "Venmo profile ID is invalid.",
   },
   VENMO_INVALID_DEEP_LINK_RETURN_URL: {
     type: BraintreeError.types.MERCHANT,
-    code: 'VENMO_INVALID_DEEP_LINK_RETURN_URL',
-    message: 'Venmo deep link return URL is invalid.'
-  }
+    code: "VENMO_INVALID_DEEP_LINK_RETURN_URL",
+    message: "Venmo deep link return URL is invalid.",
+  },
 };

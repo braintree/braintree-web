@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-const deferred = require('../../../src/lib/deferred');
+const deferred = require("../../../src/lib/deferred");
 
-describe('deferred', () => {
-  it('delays the call to the function', done => {
+describe("deferred", () => {
+  it("delays the call to the function", (done) => {
     expect.assertions(2);
 
     const demo = {
@@ -11,7 +11,7 @@ describe('deferred', () => {
         expect(rest.length).toBe(0);
 
         done();
-      })
+      }),
     };
 
     const def = deferred(demo.fn);
@@ -21,7 +21,7 @@ describe('deferred', () => {
     expect(demo.fn).not.toHaveBeenCalled();
   });
 
-  it('can pass arguments to the delayed function', done => {
+  it("can pass arguments to the delayed function", (done) => {
     expect.assertions(4);
 
     const demo = {
@@ -31,7 +31,7 @@ describe('deferred', () => {
         expect(rest[1]).toBe(2);
 
         done();
-      })
+      }),
     };
 
     const def = deferred(demo.fn);

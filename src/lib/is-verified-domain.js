@@ -1,15 +1,15 @@
-'use strict';
+"use strict";
 
 var parser;
 var legalHosts = {
-  'paypal.com': 1,
-  'braintreepayments.com': 1,
-  'braintreegateway.com': 1,
-  'braintree-api.com': 1
+  "paypal.com": 1,
+  "braintreepayments.com": 1,
+  "braintreegateway.com": 1,
+  "braintree-api.com": 1,
 };
 
 // removeIf(production)
-if (process.env.BRAINTREE_JS_ENV === 'development') {
+if (process.env.BRAINTREE_JS_ENV === "development") {
   legalHosts.localhost = 1;
 
   if (process.env.BRAINTREE_JS_API_HOST) {
@@ -22,7 +22,7 @@ if (process.env.BRAINTREE_JS_ENV === 'development') {
 // endRemoveIf(production)
 
 function stripSubdomains(domain) {
-  return domain.split('.').slice(-2).join('.');
+  return domain.split(".").slice(-2).join(".");
 }
 
 function isVerifiedDomain(url) {
@@ -34,7 +34,7 @@ function isVerifiedDomain(url) {
     return false;
   }
 
-  parser = parser || document.createElement('a');
+  parser = parser || document.createElement("a");
   parser.href = url;
   mainDomain = stripSubdomains(parser.hostname);
 

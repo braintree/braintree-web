@@ -5,10 +5,6 @@
   "displayName": "environment",
   "restoreMocks": true,
   "rootDir": "../../",
-  "roots": [
-    "<rootDir>/test/environment"
-  ],
-  "testMatch": [
-    "**/*.js"
-  ]
+  "roots": ["<rootDir>/test/environment"],
+  "testMatch": ["**/*.js"]
 }

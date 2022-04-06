@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-var sanitizeUrl = require('@braintree/sanitize-url').sanitizeUrl;
-var frameService = require('../../lib/frame-service/internal');
-var querystring = require('../../lib/querystring');
+var sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
+var frameService = require("../../lib/frame-service/internal");
+var querystring = require("../../lib/querystring");
 
 function start(cb) {
   // In rare cases (i.e. in IE11 Metro), the parent frame cannot close the popup frame until it has
@@ -25,25 +25,25 @@ function start(cb) {
     clearTimeout(closeTimer);
 
     if (err && redirectUrl && returnText) {
-      container = document.createElement('div');
-      link = document.createElement('a');
+      container = document.createElement("div");
+      link = document.createElement("a");
 
-      container.id = 'container';
+      container.id = "container";
       if (params.errorcode) {
         link.href = querystring.queryify(redirectUrl, {
           btLpToken: params.token,
           errorcode: params.errorcode,
-          wasCanceled: params.c === 1
+          wasCanceled: params.c === 1,
         });
       } else {
         link.href = querystring.queryify(redirectUrl, {
           btLpToken: params.token,
           btLpPaymentId: params.paymentId,
-          btLpPayerId: params.PayerID
+          btLpPayerId: params.PayerID,
         });
       }
       link.innerText = returnText;
-      link.id = 'redirect';
+      link.id = "redirect";
 
       container.appendChild(link);
       document.body.appendChild(container);
@@ -56,5 +56,5 @@ function start(cb) {
 }
 
 module.exports = {
-  start: start
+  start: start,
 };

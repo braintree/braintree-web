@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
-var FRAUDNET_FNCLS = require('../lib/constants').FRAUDNET_FNCLS;
-var FRAUDNET_SOURCE = require('../lib/constants').FRAUDNET_SOURCE;
-var FRAUDNET_URL = require('../lib/constants').FRAUDNET_URL;
-var loadScript = require('../lib/assets').loadScript;
-var Promise = require('../lib/promise');
+var FRAUDNET_FNCLS = require("../lib/constants").FRAUDNET_FNCLS;
+var FRAUDNET_SOURCE = require("../lib/constants").FRAUDNET_SOURCE;
+var FRAUDNET_URL = require("../lib/constants").FRAUDNET_URL;
+var loadScript = require("../lib/assets").loadScript;
+var Promise = require("../lib/promise");
 
 var cachedSessionId;
 
@@ -26,8 +26,7 @@ function clearSessionIdCache() {
   cachedSessionId = null;
 }
 
-function Fraudnet() {
-}
+function Fraudnet() {}
 
 Fraudnet.prototype.initialize = function (options) {
   var environment = options.environment;
@@ -38,20 +37,26 @@ Fraudnet.prototype.initialize = function (options) {
     cachedSessionId = this.sessionId;
   }
   this._beaconId = _generateBeaconId(this.sessionId);
-  this._parameterBlock = _createParameterBlock(this.sessionId, this._beaconId, environment);
+  this._parameterBlock = _createParameterBlock(
+    this.sessionId,
+    this._beaconId,
+    environment
+  );
 
   return loadScript({
-    src: FRAUDNET_URL
-  }).then(function (block) {
-    self._thirdPartyBlock = block;
+    src: FRAUDNET_URL,
+  })
+    .then(function (block) {
+      self._thirdPartyBlock = block;
 
-    return self;
-  }).catch(function () {
-    // if the fraudnet script fails to load
-    // we just resolve with nothing
-    // and data collector ignores it
-    return null;
-  });
+      return self;
+    })
+    .catch(function () {
+      // if the fraudnet script fails to load
+      // we just resolve with nothing
+      // and data collector ignores it
+      return null;
+    });
 };
 
 Fraudnet.prototype.teardown = function () {
@@ -70,7 +75,7 @@ function removeElementIfOnPage(element) {
 
 function _generateSessionId() {
   var i;
-  var id = '';
+  var id = "";
 
   for (i = 0; i < 32; i++) {
     id += Math.floor(Math.random() * 16).toString(16);
@@ -82,19 +87,23 @@ function _generateSessionId() {
 function _generateBeaconId(sessionId) {
   var timestamp = new Date().getTime() / 1000;
 
-  return 'https://b.stats.paypal.com/counter.cgi' +
-    '?i=127.0.0.1' +
-    '&p=' + sessionId +
-    '&t=' + timestamp +
-    '&a=14';
+  return (
+    "https://b.stats.paypal.com/counter.cgi" +
+    "?i=127.0.0.1" +
+    "&p=" +
+    sessionId +
+    "&t=" +
+    timestamp +
+    "&a=14"
+  );
 }
 
 function _createParameterBlock(sessionId, beaconId, environment) {
-  var el = document.body.appendChild(document.createElement('script'));
+  var el = document.body.appendChild(document.createElement("script"));
   var config = {
     f: sessionId,
     s: FRAUDNET_SOURCE,
-    b: beaconId
+    b: beaconId,
   };
 
   // for some reason, the presence of the sandbox
@@ -102,12 +111,12 @@ function _createParameterBlock(sessionId, beaconId, environment) {
   // some weird behavior with what url paths are
   // hit, so instead, we only apply this attribute
   // when it is not a production environment
-  if (environment !== 'production') {
+  if (environment !== "production") {
     config.sandbox = true;
   }
 
-  el.type = 'application/json';
-  el.setAttribute('fncls', FRAUDNET_FNCLS);
+  el.type = "application/json";
+  el.setAttribute("fncls", FRAUDNET_FNCLS);
   el.text = JSON.stringify(config);
 
   return el;
@@ -115,5 +124,5 @@ function _createParameterBlock(sessionId, beaconId, environment) {
 
 module.exports = {
   setup: setup,
-  clearSessionIdCache: clearSessionIdCache
+  clearSessionIdCache: clearSessionIdCache,
 };

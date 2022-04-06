@@ -1,20 +1,21 @@
-'use strict';
+"use strict";
 
-var frameService = require('../../lib/frame-service/external');
-var BraintreeError = require('../../lib/braintree-error');
-var useMin = require('../../lib/use-min');
+var frameService = require("../../lib/frame-service/external");
+var BraintreeError = require("../../lib/braintree-error");
+var useMin = require("../../lib/use-min");
 var VERSION = process.env.npm_package_version;
-var INTEGRATION_TIMEOUT_MS = require('../../lib/constants').INTEGRATION_TIMEOUT_MS;
-var analytics = require('../../lib/analytics');
-var methods = require('../../lib/methods');
-var convertMethodsToError = require('../../lib/convert-methods-to-error');
-var convertToBraintreeError = require('../../lib/convert-to-braintree-error');
-var Promise = require('../../lib/promise');
-var ExtendedPromise = require('@braintree/extended-promise');
-var querystring = require('../../lib/querystring');
-var wrapPromise = require('@braintree/wrap-promise');
-var constants = require('./constants');
-var errors = require('../shared/errors');
+var INTEGRATION_TIMEOUT_MS =
+  require("../../lib/constants").INTEGRATION_TIMEOUT_MS;
+var analytics = require("../../lib/analytics");
+var methods = require("../../lib/methods");
+var convertMethodsToError = require("../../lib/convert-methods-to-error");
+var convertToBraintreeError = require("../../lib/convert-to-braintree-error");
+var Promise = require("../../lib/promise");
+var ExtendedPromise = require("@braintree/extended-promise");
+var querystring = require("../../lib/querystring");
+var wrapPromise = require("@braintree/wrap-promise");
+var constants = require("./constants");
+var errors = require("../shared/errors");
 
 var DEFAULT_WINDOW_WIDTH = 1282;
 var DEFAULT_WINDOW_HEIGHT = 720;
@@ -28,11 +29,18 @@ var DEFAULT_WINDOW_HEIGHT = 720;
  */
 function LocalPayment(options) {
   this._client = options.client;
-  this._assetsUrl = options.client.getConfiguration().gatewayConfiguration.assetsUrl + '/web/' + VERSION;
+  this._assetsUrl =
+    options.client.getConfiguration().gatewayConfiguration.assetsUrl +
+    "/web/" +
+    VERSION;
   this._isDebug = options.client.getConfiguration().isDebug;
-  this._loadingFrameUrl = this._assetsUrl + '/html/local-payment-landing-frame' + useMin(this._isDebug) + '.html';
+  this._loadingFrameUrl =
+    this._assetsUrl +
+    "/html/local-payment-landing-frame" +
+    useMin(this._isDebug) +
+    ".html";
   this._authorizationInProgress = false;
-  this._paymentType = 'unknown';
+  this._paymentType = "unknown";
   this._merchantAccountId = options.merchantAccountId;
 }
 
@@ -40,20 +48,27 @@ LocalPayment.prototype._initialize = function () {
   var self = this;
   var client = this._client;
   var failureTimeout = setTimeout(function () {
-    analytics.sendEvent(client, 'local-payment.load.timed-out');
+    analytics.sendEvent(client, "local-payment.load.timed-out");
   }, INTEGRATION_TIMEOUT_MS);
 
   return new Promise(function (resolve) {
-    frameService.create({
-      name: 'localpaymentlandingpage',
-      dispatchFrameUrl: self._assetsUrl + '/html/dispatch-frame' + useMin(self._isDebug) + '.html',
-      openFrameUrl: self._loadingFrameUrl
-    }, function (service) {
-      self._frameService = service;
-      clearTimeout(failureTimeout);
-      analytics.sendEvent(client, 'local-payment.load.succeeded');
-      resolve(self);
-    });
+    frameService.create(
+      {
+        name: "localpaymentlandingpage",
+        dispatchFrameUrl:
+          self._assetsUrl +
+          "/html/dispatch-frame" +
+          useMin(self._isDebug) +
+          ".html",
+        openFrameUrl: self._loadingFrameUrl,
+      },
+      function (service) {
+        self._frameService = service;
+        clearTimeout(failureTimeout);
+        analytics.sendEvent(client, "local-payment.load.succeeded");
+        resolve(self);
+      }
+    );
   });
 };
 
@@ -128,26 +143,42 @@ LocalPayment.prototype.startPayment = function (options) {
   var windowOptions = options.windowOptions || {};
 
   if (hasMissingOption(options)) {
-    return Promise.reject(new BraintreeError(errors.LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION));
+    return Promise.reject(
+      new BraintreeError(
+        errors.LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION
+      )
+    );
   }
 
   address = options.address || {};
   params = {
-    intent: 'sale',
-    returnUrl: querystring.queryify(self._assetsUrl + '/html/local-payment-redirect-frame' + useMin(self._isDebug) + '.html', {
-      channel: serviceId,
-      r: options.fallback.url,
-      t: options.fallback.buttonText
-    }),
-    cancelUrl: querystring.queryify(self._assetsUrl + '/html/local-payment-redirect-frame' + useMin(self._isDebug) + '.html', {
-      channel: serviceId,
-      r: options.fallback.cancelUrl || options.fallback.url,
-      t: options.fallback.cancelButtonText || options.fallback.buttonText,
-      c: 1 // indicating we went through the cancel flow
-    }),
+    intent: "sale",
+    returnUrl: querystring.queryify(
+      self._assetsUrl +
+        "/html/local-payment-redirect-frame" +
+        useMin(self._isDebug) +
+        ".html",
+      {
+        channel: serviceId,
+        r: options.fallback.url,
+        t: options.fallback.buttonText,
+      }
+    ),
+    cancelUrl: querystring.queryify(
+      self._assetsUrl +
+        "/html/local-payment-redirect-frame" +
+        useMin(self._isDebug) +
+        ".html",
+      {
+        channel: serviceId,
+        r: options.fallback.cancelUrl || options.fallback.url,
+        t: options.fallback.cancelButtonText || options.fallback.buttonText,
+        c: 1, // indicating we went through the cancel flow
+      }
+    ),
     experienceProfile: {
       brandName: options.displayName,
-      noShipping: !options.shippingAddressRequired
+      noShipping: !options.shippingAddressRequired,
     },
     fundingSource: options.paymentType,
     paymentTypeCountryCode: options.paymentTypeCountryCode,
@@ -164,65 +195,89 @@ LocalPayment.prototype.startPayment = function (options) {
     postalCode: address.postalCode,
     countryCode: address.countryCode,
     merchantAccountId: self._merchantAccountId,
-    bic: options.bic
+    bic: options.bic,
   };
 
   self._paymentType = options.paymentType.toLowerCase();
   if (self._authorizationInProgress) {
-    analytics.sendEvent(self._client, self._paymentType + '.local-payment.start-payment.error.already-opened');
+    analytics.sendEvent(
+      self._client,
+      self._paymentType + ".local-payment.start-payment.error.already-opened"
+    );
 
-    return Promise.reject(new BraintreeError(errors.LOCAL_PAYMENT_ALREADY_IN_PROGRESS));
+    return Promise.reject(
+      new BraintreeError(errors.LOCAL_PAYMENT_ALREADY_IN_PROGRESS)
+    );
   }
 
   self._authorizationInProgress = true;
 
   promise = new ExtendedPromise();
 
-  self._startPaymentCallback = self._createStartPaymentCallback(function (val) {
-    promise.resolve(val);
-  }, function (err) {
-    promise.reject(err);
-  });
-  self._frameService.open({
-    width: windowOptions.width || DEFAULT_WINDOW_WIDTH,
-    height: windowOptions.height || DEFAULT_WINDOW_HEIGHT
-  }, self._startPaymentCallback);
-
-  self._client.request({
-    method: 'post',
-    endpoint: 'local_payments/create',
-    data: params
-  }).then(function (response) {
-    analytics.sendEvent(self._client, self._paymentType + '.local-payment.start-payment.opened');
-    self._startPaymentOptions = options;
-    options.onPaymentStart({paymentId: response.paymentResource.paymentToken}, function () {
-      self._frameService.redirect(response.paymentResource.redirectUrl);
-    });
-  }).catch(function (err) {
-    var status = err.details && err.details.httpStatus;
-
-    self._frameService.close();
-    self._authorizationInProgress = false;
-
-    if (status === 422) {
-      promise.reject(new BraintreeError({
-        type: errors.LOCAL_PAYMENT_INVALID_PAYMENT_OPTION.type,
-        code: errors.LOCAL_PAYMENT_INVALID_PAYMENT_OPTION.code,
-        message: errors.LOCAL_PAYMENT_INVALID_PAYMENT_OPTION.message,
-        details: {
-          originalError: err
-        }
-      }));
-
-      return;
+  self._startPaymentCallback = self._createStartPaymentCallback(
+    function (val) {
+      promise.resolve(val);
+    },
+    function (err) {
+      promise.reject(err);
     }
+  );
+  self._frameService.open(
+    {
+      width: windowOptions.width || DEFAULT_WINDOW_WIDTH,
+      height: windowOptions.height || DEFAULT_WINDOW_HEIGHT,
+    },
+    self._startPaymentCallback
+  );
 
-    promise.reject(convertToBraintreeError(err, {
-      type: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.type,
-      code: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.code,
-      message: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.message
-    }));
-  });
+  self._client
+    .request({
+      method: "post",
+      endpoint: "local_payments/create",
+      data: params,
+    })
+    .then(function (response) {
+      analytics.sendEvent(
+        self._client,
+        self._paymentType + ".local-payment.start-payment.opened"
+      );
+      self._startPaymentOptions = options;
+      options.onPaymentStart(
+        { paymentId: response.paymentResource.paymentToken },
+        function () {
+          self._frameService.redirect(response.paymentResource.redirectUrl);
+        }
+      );
+    })
+    .catch(function (err) {
+      var status = err.details && err.details.httpStatus;
+
+      self._frameService.close();
+      self._authorizationInProgress = false;
+
+      if (status === 422) {
+        promise.reject(
+          new BraintreeError({
+            type: errors.LOCAL_PAYMENT_INVALID_PAYMENT_OPTION.type,
+            code: errors.LOCAL_PAYMENT_INVALID_PAYMENT_OPTION.code,
+            message: errors.LOCAL_PAYMENT_INVALID_PAYMENT_OPTION.message,
+            details: {
+              originalError: err,
+            },
+          })
+        );
+
+        return;
+      }
+
+      promise.reject(
+        convertToBraintreeError(err, {
+          type: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.type,
+          code: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.code,
+          message: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.message,
+        })
+      );
+    });
 
   return promise;
 };
@@ -251,54 +306,72 @@ LocalPayment.prototype.tokenize = function (params) {
   params = params || querystring.parse();
 
   if (params.c || params.wasCanceled) {
-    return Promise.reject(new BraintreeError({
-      type: errors.LOCAL_PAYMENT_CANCELED.type,
-      code: errors.LOCAL_PAYMENT_CANCELED.code,
-      message: errors.LOCAL_PAYMENT_CANCELED.message,
-      details: {
-        originalError: {
-          errorcode: params.errorcode,
-          token: params.btLpToken
-        }
-      }
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.LOCAL_PAYMENT_CANCELED.type,
+        code: errors.LOCAL_PAYMENT_CANCELED.code,
+        message: errors.LOCAL_PAYMENT_CANCELED.message,
+        details: {
+          originalError: {
+            errorcode: params.errorcode,
+            token: params.btLpToken,
+          },
+        },
+      })
+    );
   } else if (params.errorcode) {
-    return Promise.reject(new BraintreeError({
-      type: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.type,
-      code: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.code,
-      message: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.message,
-      details: {
-        originalError: {
-          errorcode: params.errorcode,
-          token: params.btLpToken
-        }
-      }
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.type,
+        code: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.code,
+        message: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.message,
+        details: {
+          originalError: {
+            errorcode: params.errorcode,
+            token: params.btLpToken,
+          },
+        },
+      })
+    );
   }
 
-  return client.request({
-    endpoint: 'payment_methods/paypal_accounts',
-    method: 'post',
-    data: this._formatTokenizeData(params)
-  }).then(function (response) {
-    var payload = self._formatTokenizePayload(response);
+  return client
+    .request({
+      endpoint: "payment_methods/paypal_accounts",
+      method: "post",
+      data: this._formatTokenizeData(params),
+    })
+    .then(function (response) {
+      var payload = self._formatTokenizePayload(response);
 
-    if (window.popupBridge) {
-      analytics.sendEvent(client, self._paymentType + '.local-payment.tokenization.success-popupbridge');
-    } else {
-      analytics.sendEvent(client, self._paymentType + '.local-payment.tokenization.success');
-    }
+      if (window.popupBridge) {
+        analytics.sendEvent(
+          client,
+          self._paymentType + ".local-payment.tokenization.success-popupbridge"
+        );
+      } else {
+        analytics.sendEvent(
+          client,
+          self._paymentType + ".local-payment.tokenization.success"
+        );
+      }
 
-    return payload;
-  }).catch(function (err) {
-    analytics.sendEvent(client, self._paymentType + '.local-payment.tokenization.failed');
+      return payload;
+    })
+    .catch(function (err) {
+      analytics.sendEvent(
+        client,
+        self._paymentType + ".local-payment.tokenization.failed"
+      );
 
-    return Promise.reject(convertToBraintreeError(err, {
-      type: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.type,
-      code: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.code,
-      message: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.message
-    }));
-  });
+      return Promise.reject(
+        convertToBraintreeError(err, {
+          type: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.type,
+          code: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.code,
+          message: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.message,
+        })
+      );
+    });
 };
 
 /**
@@ -310,7 +383,10 @@ LocalPayment.prototype.tokenize = function (params) {
  */
 LocalPayment.prototype.closeWindow = function () {
   if (this._authoriztionInProgress) {
-    analytics.sendEvent(this._client, this._paymentType + '.local-payment.start-payment.closed.by-merchant');
+    analytics.sendEvent(
+      this._client,
+      this._paymentType + ".local-payment.start-payment.closed.by-merchant"
+    );
   }
   this._frameService.close();
 };
@@ -326,18 +402,24 @@ LocalPayment.prototype.focusWindow = function () {
   this._frameService.focus();
 };
 
-LocalPayment.prototype._createStartPaymentCallback = function (resolve, reject) {
+LocalPayment.prototype._createStartPaymentCallback = function (
+  resolve,
+  reject
+) {
   var self = this;
   var client = this._client;
 
   return function (err, params) {
     self._authorizationInProgress = false;
     if (err) {
-      if (err.code === 'FRAME_SERVICE_FRAME_CLOSED') {
-        if (params && params.errorcode === 'processing_error') {
+      if (err.code === "FRAME_SERVICE_FRAME_CLOSED") {
+        if (params && params.errorcode === "processing_error") {
           // something failed within the payment window (rather than when
           // tokenizing with Braintree)
-          analytics.sendEvent(client, self._paymentType + '.local-payment.failed-in-window');
+          analytics.sendEvent(
+            client,
+            self._paymentType + ".local-payment.failed-in-window"
+          );
           reject(new BraintreeError(errors.LOCAL_PAYMENT_START_PAYMENT_FAILED));
 
           return;
@@ -348,26 +430,38 @@ LocalPayment.prototype._createStartPaymentCallback = function (resolve, reject) 
         // but as there's no meaningful difference to the merchant whether the
         // customer closes via the UI or by manually closing the window, we
         // don't differentiate these
-        analytics.sendEvent(client, self._paymentType + '.local-payment.tokenization.closed.by-user');
+        analytics.sendEvent(
+          client,
+          self._paymentType + ".local-payment.tokenization.closed.by-user"
+        );
         reject(new BraintreeError(errors.LOCAL_PAYMENT_WINDOW_CLOSED));
-      } else if (err.code && err.code.indexOf('FRAME_SERVICE_FRAME_OPEN_FAILED') > -1) {
-        reject(new BraintreeError({
-          code: errors.LOCAL_PAYMENT_WINDOW_OPEN_FAILED.code,
-          type: errors.LOCAL_PAYMENT_WINDOW_OPEN_FAILED.type,
-          message: errors.LOCAL_PAYMENT_WINDOW_OPEN_FAILED.message,
-          details: {
-            originalError: err
-          }
-        }));
+      } else if (
+        err.code &&
+        err.code.indexOf("FRAME_SERVICE_FRAME_OPEN_FAILED") > -1
+      ) {
+        reject(
+          new BraintreeError({
+            code: errors.LOCAL_PAYMENT_WINDOW_OPEN_FAILED.code,
+            type: errors.LOCAL_PAYMENT_WINDOW_OPEN_FAILED.type,
+            message: errors.LOCAL_PAYMENT_WINDOW_OPEN_FAILED.message,
+            details: {
+              originalError: err,
+            },
+          })
+        );
       }
     } else if (params) {
       if (!window.popupBridge) {
         self._frameService.redirect(self._loadingFrameUrl);
       }
 
-      self.tokenize(params).then(resolve).catch(reject).then(function () {
-        self._frameService.close();
-      });
+      self
+        .tokenize(params)
+        .then(resolve)
+        .catch(reject)
+        .then(function () {
+          self._frameService.close();
+        });
     }
   };
 };
@@ -383,7 +477,7 @@ LocalPayment.prototype._formatTokenizePayload = function (response) {
   payload = {
     nonce: account.nonce,
     details: {},
-    type: account.type
+    type: account.type,
   };
 
   if (account.details) {
@@ -422,7 +516,9 @@ LocalPayment.prototype.hasTokenizationParams = function () {
     return true;
   }
 
-  return Boolean(params.btLpToken && params.btLpPaymentId && params.btLpPayerId);
+  return Boolean(
+    params.btLpToken && params.btLpPaymentId && params.btLpPayerId
+  );
 };
 
 LocalPayment.prototype._formatTokenizeData = function (params) {
@@ -435,8 +531,8 @@ LocalPayment.prototype._formatTokenizeData = function (params) {
       paymentToken: params.btLpPaymentId || params.paymentId,
       payerId: params.btLpPayerId || params.PayerID,
       unilateral: gatewayConfiguration.paypal.unvettedMerchant,
-      intent: 'sale'
-    }
+      intent: "sale",
+    },
   };
 
   return data;
@@ -483,7 +579,7 @@ LocalPayment.prototype.teardown = function () {
 
   convertMethodsToError(self, methods(LocalPayment.prototype));
 
-  analytics.sendEvent(self._client, 'local-payment.teardown-completed');
+  analytics.sendEvent(self._client, "local-payment.teardown-completed");
 
   return Promise.resolve();
 };

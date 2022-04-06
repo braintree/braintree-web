@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 /** @module braintree-web/masterpass
  * @description Processes Masterpass. *This component is currently in beta and is subject to change.*
  */
 
-var BraintreeError = require('../lib/braintree-error');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var browserDetection = require('./shared/browser-detection');
-var Masterpass = require('./external/masterpass');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
+var BraintreeError = require("../lib/braintree-error");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var browserDetection = require("./shared/browser-detection");
+var Masterpass = require("./external/masterpass");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
 var VERSION = process.env.npm_package_version;
-var errors = require('./shared/errors');
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var errors = require("./shared/errors");
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @static
@@ -37,40 +37,48 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var name = 'Masterpass';
+  var name = "Masterpass";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    if (!isSupported()) {
-      return Promise.reject(new BraintreeError(errors.MASTERPASS_BROWSER_NOT_SUPPORTED));
-    }
-
-    return Promise.resolve();
-  }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
+      authorization: options.authorization,
+    })
+    .then(function () {
+      if (!isSupported()) {
+        return Promise.reject(
+          new BraintreeError(errors.MASTERPASS_BROWSER_NOT_SUPPORTED)
+        );
+      }
+
+      return Promise.resolve();
+    })
+    .then(function () {
+      return createDeferredClient.create({
+        authorization: options.authorization,
+        client: options.client,
+        debug: options.debug,
+        assetsUrl: createAssetsUrl.create(options.authorization),
+        name: name,
+      });
+    })
+    .then(function (client) {
+      var masterpassInstance, configuration;
+
+      options.client = client;
+      configuration = options.client.getConfiguration().gatewayConfiguration;
+
+      if (!configuration.masterpass) {
+        return Promise.reject(
+          new BraintreeError(errors.MASTERPASS_NOT_ENABLED)
+        );
+      }
+
+      masterpassInstance = new Masterpass(options);
+
+      return masterpassInstance._initialize();
     });
-  }).then(function (client) {
-    var masterpassInstance, configuration;
-
-    options.client = client;
-    configuration = options.client.getConfiguration().gatewayConfiguration;
-
-    if (!configuration.masterpass) {
-      return Promise.reject(new BraintreeError(errors.MASTERPASS_NOT_ENABLED));
-    }
-
-    masterpassInstance = new Masterpass(options);
-
-    return masterpassInstance._initialize();
-  });
 }
 
 /**
@@ -96,5 +104,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

@@ -1,13 +1,19 @@
-'use strict';
+"use strict";
 
-const RestrictedInput = require('restricted-input');
-const { CreditCardForm } = require('../../../../../src/hosted-fields/internal/models/credit-card-form');
-const { BaseInput } = require('../../../../../src/hosted-fields/internal/components/base-input');
-const browserDetection = require('../../../../../src/hosted-fields/shared/browser-detection');
-const { PostalCodeInput } = require('../../../../../src/hosted-fields/internal/components/postal-code-input');
-const { createInput, getModelConfig } = require('../../helpers');
+const RestrictedInput = require("restricted-input");
+const {
+  CreditCardForm,
+} = require("../../../../../src/hosted-fields/internal/models/credit-card-form");
+const {
+  BaseInput,
+} = require("../../../../../src/hosted-fields/internal/components/base-input");
+const browserDetection = require("../../../../../src/hosted-fields/shared/browser-detection");
+const {
+  PostalCodeInput,
+} = require("../../../../../src/hosted-fields/internal/components/postal-code-input");
+const { createInput, getModelConfig } = require("../../helpers");
 
-describe('Postal Code Input', () => {
+describe("Postal Code Input", () => {
   let testContext;
 
   beforeEach(() => {
@@ -15,85 +21,95 @@ describe('Postal Code Input', () => {
   });
 
   beforeEach(() => {
-    testContext.input = createInput('postalCode');
+    testContext.input = createInput("postalCode");
   });
 
-  describe('inheritance', () => {
-    it('extends BaseInput', () => {
+  describe("inheritance", () => {
+    it("extends BaseInput", () => {
       expect(testContext.input).toBeInstanceOf(BaseInput);
     });
   });
 
-  describe('element', () => {
+  describe("element", () => {
     it('has type="text"', () => {
-      expect(testContext.input.element.getAttribute('type')).toBe('text');
+      expect(testContext.input.element.getAttribute("type")).toBe("text");
     });
 
-    it('has autocomplete postal-code', () => {
-      expect(testContext.input.element.getAttribute('autocomplete')).toBe('billing postal-code');
+    it("has autocomplete postal-code", () => {
+      expect(testContext.input.element.getAttribute("autocomplete")).toBe(
+        "billing postal-code"
+      );
     });
 
-    it('sets the maxLength to 10 when no custom maxlength is provided', () => {
-      expect(testContext.input.element.getAttribute('maxlength')).toBe('10');
+    it("sets the maxLength to 10 when no custom maxlength is provided", () => {
+      expect(testContext.input.element.getAttribute("maxlength")).toBe("10");
     });
 
-    it('sets the maxLength to custom maxlength if one is provided', () => {
-      jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ maxlength: 5 });
+    it("sets the maxLength to custom maxlength if one is provided", () => {
+      jest
+        .spyOn(BaseInput.prototype, "getConfiguration")
+        .mockReturnValue({ maxlength: 5 });
 
-      let input = createInput('postalCode');
+      let input = createInput("postalCode");
 
-      expect(input.element.getAttribute('maxlength')).toBe('5');
+      expect(input.element.getAttribute("maxlength")).toBe("5");
 
       BaseInput.prototype.getConfiguration.mockReturnValue({ maxlength: 11 });
-      input = createInput('postalCode');
+      input = createInput("postalCode");
 
-      expect(input.element.getAttribute('maxlength')).toBe('11');
+      expect(input.element.getAttribute("maxlength")).toBe("11");
     });
 
-    it('handles a specific type being set', () => {
-      const config = getModelConfig('postalCode');
+    it("handles a specific type being set", () => {
+      const config = getModelConfig("postalCode");
 
-      config.fields.postalCode = { type: 'tel' };
+      config.fields.postalCode = { type: "tel" };
 
       testContext.input = new PostalCodeInput({
         model: new CreditCardForm(config),
-        type: 'postalCode'
+        type: "postalCode",
       });
-      expect(testContext.input.element.getAttribute('type')).toBe('tel');
+      expect(testContext.input.element.getAttribute("type")).toBe("tel");
     });
 
-    it('removes pattern attribute', () => {
+    it("removes pattern attribute", () => {
       let config, input;
 
       // causes base input to set the pattern property
-      jest.spyOn(browserDetection, 'isIos').mockReturnValue(true);
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
-      config = getModelConfig('postalCode');
+      config = getModelConfig("postalCode");
       input = new PostalCodeInput({
         model: new CreditCardForm(config),
-        type: 'postalCode'
+        type: "postalCode",
       });
 
-      expect(input.element.getAttribute('pattern')).toBeNull();
+      expect(input.element.getAttribute("pattern")).toBeNull();
     });
   });
 
-  describe('formatter', () => {
-    it('sets the pattern to a 10-character pattern with default maxLength', () => {
-      jest.spyOn(RestrictedInput.prototype, 'setPattern');
+  describe("formatter", () => {
+    it("sets the pattern to a 10-character pattern with default maxLength", () => {
+      jest.spyOn(RestrictedInput.prototype, "setPattern");
 
-      createInput('postalCode');
+      createInput("postalCode");
 
-      expect(RestrictedInput.prototype.setPattern).toHaveBeenCalledWith('{{**********}}');
+      expect(RestrictedInput.prototype.setPattern).toHaveBeenCalledWith(
+        "{{**********}}"
+      );
     });
 
-    it('sets the pattern to custom maxLength when provided', () => {
-      jest.spyOn(RestrictedInput.prototype, 'setPattern');
-      jest.spyOn(BaseInput.prototype, 'getConfiguration').mockReturnValue({ maxlength: 5 });
+    it("sets the pattern to custom maxLength when provided", () => {
+      jest.spyOn(RestrictedInput.prototype, "setPattern");
+      jest
+        .spyOn(BaseInput.prototype, "getConfiguration")
+        .mockReturnValue({ maxlength: 5 });
 
-      createInput('postalCode');
+      createInput("postalCode");
 
-      expect(RestrictedInput.prototype.setPattern).toHaveBeenCalledWith('{{*****}}');
+      expect(RestrictedInput.prototype.setPattern).toHaveBeenCalledWith(
+        "{{*****}}"
+      );
     });
   });
 });

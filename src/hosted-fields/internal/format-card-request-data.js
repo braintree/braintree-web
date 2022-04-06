@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 
-'use strict';
+"use strict";
 
 function constructBillingAddress(data) {
   var billingAddress = {
@@ -15,7 +15,7 @@ function constructBillingAddress(data) {
     first_name: data.firstName,
     last_name: data.lastName,
     postal_code: data.postalCode,
-    street_address: data.streetAddress
+    street_address: data.streetAddress,
   };
 
   Object.keys(billingAddress).forEach(function (key) {
@@ -32,21 +32,21 @@ module.exports = function (data) {
   var billingAddress = constructBillingAddress(data);
   var hasBillingAddress = Object.keys(billingAddress).length > 0;
 
-  if ('number' in data) {
-    result.number = data.number.replace(/[-\s]/g, '');
+  if ("number" in data) {
+    result.number = data.number.replace(/[-\s]/g, "");
   }
 
-  if ('cvv' in data) {
+  if ("cvv" in data) {
     result.cvv = data.cvv;
   }
 
-  if ('expirationMonth' in data) {
+  if ("expirationMonth" in data) {
     result.expiration_month = data.expirationMonth;
   }
 
-  if ('expirationYear' in data) {
+  if ("expirationYear" in data) {
     if (data.expirationYear.length === 2) {
-      result.expiration_year = '20' + data.expirationYear;
+      result.expiration_year = "20" + data.expirationYear;
     } else {
       result.expiration_year = data.expirationYear;
     }
@@ -56,7 +56,7 @@ module.exports = function (data) {
     result.billing_address = billingAddress;
   }
 
-  if ('cardholderName' in data) {
+  if ("cardholderName" in data) {
     result.cardholderName = data.cardholderName;
   }
 

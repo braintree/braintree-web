@@ -1,5 +1,5 @@
-'use strict';
+"use strict";
 
 module.exports = {
-  verify: jest.fn().mockResolvedValue(null)
+  verify: jest.fn().mockResolvedValue(null),
 };

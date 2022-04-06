@@ -1,5 +1,5 @@
-'use strict';
+"use strict";
 
 module.exports = {
-  create: jest.fn().mockReturnValue('https://example.com/assets')
+  create: jest.fn().mockReturnValue("https://example.com/assets"),
 };

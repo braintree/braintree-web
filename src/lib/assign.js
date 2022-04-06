@@ -1,6 +1,7 @@
-'use strict';
+"use strict";
 
-var assignNormalized = typeof Object.assign === 'function' ? Object.assign : assignPolyfill;
+var assignNormalized =
+  typeof Object.assign === "function" ? Object.assign : assignPolyfill;
 
 function assignPolyfill(destination) {
   var i, source, key;
@@ -19,5 +20,5 @@ function assignPolyfill(destination) {
 
 module.exports = {
   assign: assignNormalized,
-  _assign: assignPolyfill
+  _assign: assignPolyfill,
 };

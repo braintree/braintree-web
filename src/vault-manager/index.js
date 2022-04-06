@@ -1,15 +1,15 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web/vault-manager
  * @description Manages customer's payment methods.
  */
 
-var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var VaultManager = require('./vault-manager');
+var basicComponentVerification = require("../lib/basic-component-verification");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var VaultManager = require("./vault-manager");
 var VERSION = process.env.npm_package_version;
-var wrapPromise = require('@braintree/wrap-promise');
+var wrapPromise = require("@braintree/wrap-promise");
 
 /**
  * @static
@@ -21,23 +21,25 @@ var wrapPromise = require('@braintree/wrap-promise');
  * @returns {void}
  */
 function create(options) {
-  var name = 'Vault Manager';
+  var name = "Vault Manager";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    return new VaultManager({
-      createPromise: createDeferredClient.create({
-        authorization: options.authorization,
-        client: options.client,
-        debug: options.debug,
-        assetsUrl: createAssetsUrl.create(options.authorization),
-        name: name
-      })
+  return basicComponentVerification
+    .verify({
+      name: name,
+      client: options.client,
+      authorization: options.authorization,
+    })
+    .then(function () {
+      return new VaultManager({
+        createPromise: createDeferredClient.create({
+          authorization: options.authorization,
+          client: options.client,
+          debug: options.debug,
+          assetsUrl: createAssetsUrl.create(options.authorization),
+          name: name,
+        }),
+      });
     });
-  });
 }
 
 module.exports = {
@@ -46,5 +48,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

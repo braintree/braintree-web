@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
-var frameService = require('./');
-var querystring = require('../../querystring');
+var frameService = require("./");
+var querystring = require("../../querystring");
 
 function start() {
   // In rare cases (i.e. in IE11 Metro), the parent frame cannot close the popup frame until it has
@@ -18,5 +18,5 @@ function start() {
 }
 
 module.exports = {
-  start: start
+  start: start,
 };

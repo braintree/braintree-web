@@ -6,11 +6,6 @@
   "restoreMocks": true,
   "//": "In the future, tests should live in the same directory as the files they are testing",
   "rootDir": "../../src/data-collector",
-  "roots": [
-    "<rootDir>",
-    "<rootDir>/../../test/data-collector"
-  ],
-  "testMatch": [
-    "**/unit/**/*.js"
-  ]
+  "roots": ["<rootDir>", "<rootDir>/../../test/data-collector"],
+  "testMatch": ["**/unit/**/*.js"]
 }

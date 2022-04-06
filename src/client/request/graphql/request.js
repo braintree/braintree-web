@@ -1,22 +1,22 @@
-'use strict';
+"use strict";
 
-var BRAINTREE_VERSION = require('../../constants').BRAINTREE_VERSION;
+var BRAINTREE_VERSION = require("../../constants").BRAINTREE_VERSION;
 
-var assign = require('../../../lib/assign').assign;
+var assign = require("../../../lib/assign").assign;
 
-var creditCardTokenizationBodyGenerator = require('./generators/credit-card-tokenization');
-var creditCardTokenizationResponseAdapter = require('./adapters/credit-card-tokenization');
+var creditCardTokenizationBodyGenerator = require("./generators/credit-card-tokenization");
+var creditCardTokenizationResponseAdapter = require("./adapters/credit-card-tokenization");
 
-var configurationBodyGenerator = require('./generators/configuration');
-var configurationResponseAdapter = require('./adapters/configuration');
+var configurationBodyGenerator = require("./generators/configuration");
+var configurationResponseAdapter = require("./adapters/configuration");
 
 var generators = {
-  'payment_methods/credit_cards': creditCardTokenizationBodyGenerator,
-  configuration: configurationBodyGenerator
+  "payment_methods/credit_cards": creditCardTokenizationBodyGenerator,
+  configuration: configurationBodyGenerator,
 };
 var adapters = {
-  'payment_methods/credit_cards': creditCardTokenizationResponseAdapter,
-  configuration: configurationResponseAdapter
+  "payment_methods/credit_cards": creditCardTokenizationResponseAdapter,
+  configuration: configurationResponseAdapter,
 };
 
 function GraphQLRequest(options) {
@@ -29,14 +29,14 @@ function GraphQLRequest(options) {
   this._clientSdkMetadata = {
     source: options.metadata.source,
     integration: options.metadata.integration,
-    sessionId: options.metadata.sessionId
+    sessionId: options.metadata.sessionId,
   };
   this._sendAnalyticsEvent = options.sendAnalyticsEvent || Function.prototype;
 
   this._generator = generators[clientApiPath];
   this._adapter = adapters[clientApiPath];
 
-  this._sendAnalyticsEvent('graphql.init');
+  this._sendAnalyticsEvent("graphql.init");
 }
 
 GraphQLRequest.prototype.getUrl = function () {
@@ -46,29 +46,32 @@ GraphQLRequest.prototype.getUrl = function () {
 GraphQLRequest.prototype.getBody = function () {
   var formattedBody = formatBodyKeys(this._data);
   var generatedBody = this._generator(formattedBody);
-  var body = assign({clientSdkMetadata: this._clientSdkMetadata}, generatedBody);
+  var body = assign(
+    { clientSdkMetadata: this._clientSdkMetadata },
+    generatedBody
+  );
 
   return JSON.stringify(body);
 };
 
 GraphQLRequest.prototype.getMethod = function () {
-  return 'POST';
+  return "POST";
 };
 
 GraphQLRequest.prototype.getHeaders = function () {
   var authorization, headers;
 
   if (this._data.authorizationFingerprint) {
-    this._sendAnalyticsEvent('graphql.authorization-fingerprint');
+    this._sendAnalyticsEvent("graphql.authorization-fingerprint");
     authorization = this._data.authorizationFingerprint;
   } else {
-    this._sendAnalyticsEvent('graphql.tokenization-key');
+    this._sendAnalyticsEvent("graphql.tokenization-key");
     authorization = this._data.tokenizationKey;
   }
 
   headers = {
-    Authorization: 'Bearer ' + authorization,
-    'Braintree-Version': BRAINTREE_VERSION
+    Authorization: "Bearer " + authorization,
+    "Braintree-Version": BRAINTREE_VERSION,
   };
 
   return assign({}, this._headers, headers);
@@ -78,22 +81,26 @@ GraphQLRequest.prototype.adaptResponseBody = function (parsedBody) {
   return this._adapter(parsedBody, this);
 };
 
-GraphQLRequest.prototype.determineStatus = function (httpStatus, parsedResponse) {
+GraphQLRequest.prototype.determineStatus = function (
+  httpStatus,
+  parsedResponse
+) {
   var status, errorClass;
 
   if (httpStatus === 200) {
-    errorClass = parsedResponse.errors &&
+    errorClass =
+      parsedResponse.errors &&
       parsedResponse.errors[0] &&
       parsedResponse.errors[0].extensions &&
       parsedResponse.errors[0].extensions.errorClass;
 
     if (parsedResponse.data && !parsedResponse.errors) {
       status = 200;
-    } else if (errorClass === 'VALIDATION') {
+    } else if (errorClass === "VALIDATION") {
       status = 422;
-    } else if (errorClass === 'AUTHORIZATION') {
+    } else if (errorClass === "AUTHORIZATION") {
       status = 403;
-    } else if (errorClass === 'AUTHENTICATION') {
+    } else if (errorClass === "AUTHENTICATION") {
       status = 401;
     } else if (isGraphQLError(errorClass, parsedResponse)) {
       status = 403;
@@ -106,8 +113,8 @@ GraphQLRequest.prototype.determineStatus = function (httpStatus, parsedResponse)
     status = httpStatus;
   }
 
-  this._sendAnalyticsEvent('graphql.status.' + httpStatus);
-  this._sendAnalyticsEvent('graphql.determinedStatus.' + status);
+  this._sendAnalyticsEvent("graphql.status." + httpStatus);
+  this._sendAnalyticsEvent("graphql.determinedStatus." + status);
 
   return status;
 };
@@ -117,7 +124,7 @@ function isGraphQLError(errorClass, parsedResponse) {
 }
 
 function snakeCaseToCamelCase(snakeString) {
-  if (snakeString.indexOf('_') === -1) {
+  if (snakeString.indexOf("_") === -1) {
     return snakeString;
   }
 
@@ -132,9 +139,9 @@ function formatBodyKeys(originalBody) {
   Object.keys(originalBody).forEach(function (key) {
     var camelCaseKey = snakeCaseToCamelCase(key);
 
-    if (typeof originalBody[key] === 'object') {
+    if (typeof originalBody[key] === "object") {
       body[camelCaseKey] = formatBodyKeys(originalBody[key]);
-    } else if (typeof originalBody[key] === 'number') {
+    } else if (typeof originalBody[key] === "number") {
       body[camelCaseKey] = String(originalBody[key]);
     } else {
       body[camelCaseKey] = originalBody[key];

@@ -1,108 +1,116 @@
-'use strict';
+"use strict";
 
-jest.mock('../../../../../src/client/browser-detection');
+jest.mock("../../../../../src/client/browser-detection");
 
-const browserDetection = require('../../../../../src/client/browser-detection');
-const GraphQL = require('../../../../../src/client/request/graphql');
+const browserDetection = require("../../../../../src/client/browser-detection");
+const GraphQL = require("../../../../../src/client/request/graphql");
 
-describe('GraphQL', () => {
+describe("GraphQL", () => {
   let testContext;
 
   beforeEach(() => {
     testContext = {};
-    testContext.tokenizeUrl = 'https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312';
-    testContext.tokenizePayPalUrl = 'https://localhost/merchant_id/client_api/v1/payment_methods/paypal?12312';
+    testContext.tokenizeUrl =
+      "https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312";
+    testContext.tokenizePayPalUrl =
+      "https://localhost/merchant_id/client_api/v1/payment_methods/paypal?12312";
     testContext.config = {
       graphQL: {
-        url: 'http://localhost/graphql',
-        features: [
-          'tokenize_credit_cards'
-        ]
-      }
+        url: "http://localhost/graphql",
+        features: ["tokenize_credit_cards"],
+      },
     };
   });
 
-  describe('getGraphQLEndpoint', () => {
-    it('provides a GraphQL endpoint', () => {
+  describe("getGraphQLEndpoint", () => {
+    it("provides a GraphQL endpoint", () => {
       const gql = new GraphQL(testContext.config);
 
       expect(gql.getGraphQLEndpoint()).toBe(testContext.config.graphQL.url);
     });
   });
 
-  describe('isGraphQLRequest', () => {
-    it('returns true if url is a GraphQL url', () => {
+  describe("isGraphQLRequest", () => {
+    it("returns true if url is a GraphQL url", () => {
       const gql = new GraphQL(testContext.config);
 
       expect(gql.isGraphQLRequest(testContext.tokenizeUrl, {})).toBe(true);
     });
 
-    it('returns false if url is a non-GraphQL client api url', () => {
+    it("returns false if url is a non-GraphQL client api url", () => {
       const gql = new GraphQL(testContext.config);
 
-      expect(gql.isGraphQLRequest(testContext.tokenizePayPalUrl, {})).toBe(false);
+      expect(gql.isGraphQLRequest(testContext.tokenizePayPalUrl, {})).toBe(
+        false
+      );
     });
 
-    it('returns false if url is not a GraphQL url', () => {
+    it("returns false if url is not a GraphQL url", () => {
       const gql = new GraphQL(testContext.config);
 
-      expect(gql.isGraphQLRequest('https://localhost/other', {})).toBe(false);
+      expect(gql.isGraphQLRequest("https://localhost/other", {})).toBe(false);
     });
 
-    it('returns false if GraphQL configuration is not present', () => {
+    it("returns false if GraphQL configuration is not present", () => {
       const gql = new GraphQL({});
 
-      expect(gql.isGraphQLRequest('https://localhost/other', {})).toBe(false);
+      expect(gql.isGraphQLRequest("https://localhost/other", {})).toBe(false);
     });
 
-    it('returns false if browser is IE9', () => {
+    it("returns false if browser is IE9", () => {
       const gql = new GraphQL(testContext.config);
 
-      jest.spyOn(browserDetection, 'isIe9').mockReturnValue(true);
+      jest.spyOn(browserDetection, "isIe9").mockReturnValue(true);
 
       expect(gql.isGraphQLRequest(testContext.tokenizeUrl, {})).toBe(false);
     });
 
-    it('returns false if body contains disallowed key', () => {
+    it("returns false if body contains disallowed key", () => {
       const gql = new GraphQL(testContext.config);
       const body = {
         creditCard: {
           options: {
             unionPayEnrollment: {
-              id: 'id',
-              smsCode: 'smsCode'
-            }
-          }
-        }
+              id: "id",
+              smsCode: "smsCode",
+            },
+          },
+        },
       };
 
       expect(gql.isGraphQLRequest(testContext.tokenizeUrl, body)).toBe(false);
     });
 
-    it('returns false if body contains disallowed key with falsy, but not undefined value', () => {
+    it("returns false if body contains disallowed key with falsy, but not undefined value", () => {
       const gql = new GraphQL(testContext.config);
 
-      expect(gql.isGraphQLRequest(testContext.tokenizeUrl, {
-        creditCard: {
-          options: {
-            unionPayEnrollment: null
-          }
-        }
-      })).toBe(false);
-      expect(gql.isGraphQLRequest(testContext.tokenizeUrl, {
-        creditCard: {
-          options: {
-            unionPayEnrollment: false
-          }
-        }
-      })).toBe(false);
-      expect(gql.isGraphQLRequest(testContext.tokenizeUrl, {
-        creditCard: {
-          options: {
-            unionPayEnrollment: 0
-          }
-        }
-      })).toBe(false);
+      expect(
+        gql.isGraphQLRequest(testContext.tokenizeUrl, {
+          creditCard: {
+            options: {
+              unionPayEnrollment: null,
+            },
+          },
+        })
+      ).toBe(false);
+      expect(
+        gql.isGraphQLRequest(testContext.tokenizeUrl, {
+          creditCard: {
+            options: {
+              unionPayEnrollment: false,
+            },
+          },
+        })
+      ).toBe(false);
+      expect(
+        gql.isGraphQLRequest(testContext.tokenizeUrl, {
+          creditCard: {
+            options: {
+              unionPayEnrollment: 0,
+            },
+          },
+        })
+      ).toBe(false);
     });
   });
 });

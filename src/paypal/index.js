@@ -1,20 +1,20 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web/paypal
  * @description A component to integrate with PayPal.
  * @deprecated Use the {@link PayPalCheckout|PayPal Checkout component} instead.
  */
 
-var analytics = require('../lib/analytics');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var BraintreeError = require('../lib/braintree-error');
-var errors = require('./shared/errors');
-var PayPal = require('./external/paypal');
+var analytics = require("../lib/analytics");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var BraintreeError = require("../lib/braintree-error");
+var errors = require("./shared/errors");
+var PayPal = require("./external/paypal");
 var VERSION = process.env.npm_package_version;
-var wrapPromise = require('@braintree/wrap-promise');
-var Promise = require('../lib/promise');
+var wrapPromise = require("@braintree/wrap-promise");
+var Promise = require("../lib/promise");
 
 /**
  * @static
@@ -73,36 +73,39 @@ var Promise = require('../lib/promise');
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 function create(options) {
-  var name = 'PayPal';
+  var name = "PayPal";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
+      authorization: options.authorization,
+    })
+    .then(function () {
+      return createDeferredClient.create({
+        authorization: options.authorization,
+        client: options.client,
+        debug: options.debug,
+        assetsUrl: createAssetsUrl.create(options.authorization),
+        name: name,
+      });
+    })
+    .then(function (client) {
+      var pp;
+      var config = client.getConfiguration();
+
+      options.client = client;
+
+      if (config.gatewayConfiguration.paypalEnabled !== true) {
+        return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
+      }
+
+      analytics.sendEvent(options.client, "paypal.initialized");
+
+      pp = new PayPal(options);
+
+      return pp._initialize();
     });
-  }).then(function (client) {
-    var pp;
-    var config = client.getConfiguration();
-
-    options.client = client;
-
-    if (config.gatewayConfiguration.paypalEnabled !== true) {
-      return Promise.reject(new BraintreeError(errors.PAYPAL_NOT_ENABLED));
-    }
-
-    analytics.sendEvent(options.client, 'paypal.initialized');
-
-    pp = new PayPal(options);
-
-    return pp._initialize();
-  });
 }
 
 /**
@@ -128,5 +131,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

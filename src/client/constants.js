@@ -1,5 +1,5 @@
-'use strict';
+"use strict";
 
 module.exports = {
-  BRAINTREE_VERSION: '2018-05-10'
+  BRAINTREE_VERSION: "2018-05-10",
 };

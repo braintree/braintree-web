@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 /** @module braintree-web/preferred-payment-methods */
 
-var wrapPromise = require('@braintree/wrap-promise');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var PreferredPaymentMethods = require('./preferred-payment-methods');
+var wrapPromise = require("@braintree/wrap-promise");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var PreferredPaymentMethods = require("./preferred-payment-methods");
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -24,17 +24,19 @@ var VERSION = process.env.npm_package_version;
  * @returns {Promise|void} Returns a Promise with resolves with the PreferredPaymentMethods instance.
  */
 function create(options) {
-  var name = 'PreferredPaymentMethods';
+  var name = "PreferredPaymentMethods";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    var instance = new PreferredPaymentMethods();
+  return basicComponentVerification
+    .verify({
+      name: name,
+      client: options.client,
+      authorization: options.authorization,
+    })
+    .then(function () {
+      var instance = new PreferredPaymentMethods();
 
-    return instance.initialize(options);
-  });
+      return instance.initialize(options);
+    });
 }
 
 module.exports = {
@@ -43,6 +45,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };
-

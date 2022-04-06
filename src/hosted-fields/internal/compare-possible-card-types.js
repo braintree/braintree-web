@@ -1,9 +1,11 @@
-'use strict';
+"use strict";
 
 function comparePossibleCardTypes(a, b) {
   var aHash;
 
-  if (a.length !== b.length) { return false; }
+  if (a.length !== b.length) {
+    return false;
+  }
 
   aHash = a.reduce(function (accum, type) {
     accum[type.type] = true;

@@ -1,20 +1,20 @@
-'use strict';
+"use strict";
 
-var iFramer = require('@braintree/iframer');
-var assign = require('../../../assign').assign;
-var browserDetection = require('../../shared/browser-detection');
+var iFramer = require("@braintree/iframer");
+var assign = require("../../../assign").assign;
+var browserDetection = require("../../shared/browser-detection");
 
 var ELEMENT_STYLES = {
-  position: 'fixed',
+  position: "fixed",
   top: 0,
   left: 0,
   bottom: 0,
   padding: 0,
   margin: 0,
   border: 0,
-  outline: 'none',
+  outline: "none",
   zIndex: 20001,
-  background: '#FFFFFF'
+  background: "#FFFFFF",
 };
 
 function noop() {}
@@ -32,11 +32,11 @@ Modal.prototype.open = function () {
   var iframerConfig = {
     src: this._options.openFrameUrl,
     name: this._options.name,
-    scrolling: 'yes',
-    height: '100%',
-    width: '100%',
+    scrolling: "yes",
+    height: "100%",
+    width: "100%",
     style: assign({}, ELEMENT_STYLES),
-    title: 'Lightbox Frame'
+    title: "Lightbox Frame",
   };
 
   if (browserDetection.isIos()) {
@@ -48,13 +48,13 @@ Modal.prototype.open = function () {
       iframerConfig.style = {};
     }
 
-    this._el = document.createElement('div');
+    this._el = document.createElement("div");
 
     assign(this._el.style, ELEMENT_STYLES, {
-      height: '100%',
-      width: '100%',
-      overflow: 'auto',
-      '-webkit-overflow-scrolling': 'touch'
+      height: "100%",
+      width: "100%",
+      overflow: "auto",
+      "-webkit-overflow-scrolling": "touch",
     });
 
     this._frame = iFramer(iframerConfig);
@@ -89,7 +89,10 @@ Modal.prototype.redirect = function (redirectUrl) {
 Modal.prototype._unlockScrolling = function () {
   document.body.style.overflow = this._savedBodyProperties.overflowStyle;
   document.body.style.position = this._savedBodyProperties.positionStyle;
-  window.scrollTo(this._savedBodyProperties.left, this._savedBodyProperties.top);
+  window.scrollTo(
+    this._savedBodyProperties.left,
+    this._savedBodyProperties.top
+  );
   delete this._savedBodyProperties;
 };
 
@@ -101,10 +104,10 @@ Modal.prototype._lockScrolling = function () {
     left: (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0),
     top: (window.pageYOffset || doc.scrollTop) - (doc.clientTop || 0),
     overflowStyle: document.body.style.overflow,
-    positionStyle: document.body.style.position
+    positionStyle: document.body.style.position,
   };
-  document.body.style.overflow = 'hidden';
-  document.body.style.position = 'fixed';
+  document.body.style.overflow = "hidden";
+  document.body.style.position = "fixed";
   window.scrollTo(0, 0);
 };
 

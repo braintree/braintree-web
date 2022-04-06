@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 function FakeRestrictedInput(options) {
   this.inputElement = options.element;

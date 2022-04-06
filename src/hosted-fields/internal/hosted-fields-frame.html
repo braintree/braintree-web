@@ -1,52 +1,54 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
+    <meta charset="UTF-8" />
 
-  <meta charset="UTF-8">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        border: none;
+        background-color: transparent;
+      }
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      -webkit-box-sizing: border-box;
-      -moz-box-sizing: border-box;
-      box-sizing: border-box;
-      border: none;
-      background-color: transparent;
-    }
+      body,
+      form,
+      input,
+      select {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+      }
 
-    body, form, input, select {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 100%;
-    }
-
-    input.autofill-field {
-      /* Safari needs a width of at least 2px */
-      width: 2px;
-      z-index: -1;
-      /* Dashline password manager needs the inputs to be on the page
+      input.autofill-field {
+        /* Safari needs a width of at least 2px */
+        width: 2px;
+        z-index: -1;
+        /* Dashline password manager needs the inputs to be on the page
          So we can't set left to -9999px
       */
-      left: -2px;
-      opacity: 0;
-    }
+        left: -2px;
+        opacity: 0;
+      }
 
-    input.focus-intercept {
-      border: none !important;
-      display: block !important;
-      height: 1px !important;
-      left: -1px !important;
-      opacity: 0 !important;
-      position: absolute !important;
-      top: -1px !important;
-      width: 1px !important;
-      /* for some reason, ios Safari needs to
+      input.focus-intercept {
+        border: none !important;
+        display: block !important;
+        height: 1px !important;
+        left: -1px !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        top: -1px !important;
+        width: 1px !important;
+        /* for some reason, ios Safari needs to
          _think_ that the focus intercept input
         is visible to have it actually tab forward. */
-      /* TODO Tabbing backward is still broken, we
+        /* TODO Tabbing backward is still broken, we
        did some experimentation with relative positioning
        and absolute positioning with z-indexing, and both
        showed some promising results, but we continued
@@ -55,27 +57,29 @@
        by the customer and sometimes when tabbing backward
        the previous arrow would dissapear even when it
        was working before*/
-      padding: 1px !important;
-    }
+        padding: 1px !important;
+      }
 
-    label {
-      position: absolute;
-      left: -9999px;
-    }
+      label {
+        position: absolute;
+        left: -9999px;
+      }
 
-    :focus {
-      outline: 0;
-    }
-  </style>
+      :focus {
+        outline: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!--[if IE 9
+      ]><script src="../js/hosted-fields-internal-polyfills-ie9.min.js"></script
+    ><![endif]-->
 
-</head>
-<body>
-
-<!--[if IE 9]><script src="../js/hosted-fields-internal-polyfills-ie9.min.js"></script><![endif]-->
-
-<script>
-@BUILT_FILE
-</script>
-<script>braintree.hostedFields.create();</script>
-</body>
+    <script>
+      @BUILT_FILE
+    </script>
+    <script>
+      braintree.hostedFields.create();
+    </script>
+  </body>
 </html>

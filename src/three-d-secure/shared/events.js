@@ -1,7 +1,5 @@
-'use strict';
+"use strict";
 
-var enumerate = require('../../lib/enumerate');
+var enumerate = require("../../lib/enumerate");
 
-module.exports = enumerate([
-  'AUTHENTICATION_COMPLETE'
-], 'threedsecure:');
+module.exports = enumerate(["AUTHENTICATION_COMPLETE"], "threedsecure:");

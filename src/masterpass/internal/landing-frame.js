@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
 function start() {}
 
 module.exports = {
-  start: start
+  start: start,
 };

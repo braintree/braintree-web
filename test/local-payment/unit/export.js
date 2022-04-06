@@ -1,14 +1,14 @@
-'use strict';
+"use strict";
 
-const { VERSION, create } = require('../../../src/local-payment');
-const { version: packageVersion } = require('../../../package.json');
+const { VERSION, create } = require("../../../src/local-payment");
+const { version: packageVersion } = require("../../../package.json");
 
-describe('export', () => {
-  it('contains create', () => {
+describe("export", () => {
+  it("contains create", () => {
     expect(create).toBeInstanceOf(Function);
   });
 
-  it('sets the version', () => {
+  it("sets the version", () => {
     expect(VERSION).toBe(packageVersion);
   });
 });

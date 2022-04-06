@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 
 module.exports = function () {
-  return exec('npm run build');
+  return exec("npm run build");
 };

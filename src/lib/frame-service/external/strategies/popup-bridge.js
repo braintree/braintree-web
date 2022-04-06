@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('../../../braintree-error');
-var errors = require('../../shared/errors');
+var BraintreeError = require("../../../braintree-error");
+var errors = require("../../shared/errors");
 
 function noop() {}
 
@@ -48,7 +48,7 @@ PopupBridge.prototype.isClosed = function () {
 };
 
 PopupBridge.prototype.redirect = function (redirectUrl) {
-  this.open({openFrameUrl: redirectUrl});
+  this.open({ openFrameUrl: redirectUrl });
 };
 
 module.exports = PopupBridge;

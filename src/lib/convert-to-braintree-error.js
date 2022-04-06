@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('./braintree-error');
+var BraintreeError = require("./braintree-error");
 
 function convertToBraintreeError(originalErr, btErrorObject) {
   if (originalErr instanceof BraintreeError) {
@@ -12,8 +12,8 @@ function convertToBraintreeError(originalErr, btErrorObject) {
     code: btErrorObject.code,
     message: btErrorObject.message,
     details: {
-      originalError: originalErr
-    }
+      originalError: originalErr,
+    },
   });
 }
 

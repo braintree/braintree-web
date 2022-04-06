@@ -1,13 +1,13 @@
-'use strict';
+"use strict";
 
-const useMin = require('../../../src/lib/use-min');
+const useMin = require("../../../src/lib/use-min");
 
-describe('useMin', () => {
+describe("useMin", () => {
   it('returns "" when isDebug is true', () => {
-    expect(useMin(true)).toBe('');
+    expect(useMin(true)).toBe("");
   });
 
   it('returns ".min" when isDebug is false', () => {
-    expect(useMin(false)).toBe('.min');
+    expect(useMin(false)).toBe(".min");
   });
 });

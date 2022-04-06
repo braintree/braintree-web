@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web/payment-request
  * @description A component to integrate with the Payment Request API.
@@ -6,11 +6,11 @@
  * **Note:** This component is currently in beta and the API may include breaking changes when upgrading. Please review the [Changelog](https://github.com/braintree/braintree-web/blob/main/CHANGELOG.md) for upgrade steps whenever you upgrade the version of braintree-web.
  * */
 
-var PaymentRequestComponent = require('./external/payment-request');
-var basicComponentVerification = require('../lib/basic-component-verification');
-var createDeferredClient = require('../lib/create-deferred-client');
-var createAssetsUrl = require('../lib/create-assets-url');
-var wrapPromise = require('@braintree/wrap-promise');
+var PaymentRequestComponent = require("./external/payment-request");
+var basicComponentVerification = require("../lib/basic-component-verification");
+var createDeferredClient = require("../lib/create-deferred-client");
+var createAssetsUrl = require("../lib/create-assets-url");
+var wrapPromise = require("@braintree/wrap-promise");
 var VERSION = process.env.npm_package_version;
 
 /**
@@ -54,28 +54,31 @@ var VERSION = process.env.npm_package_version;
  *
  */
 function create(options) {
-  var name = 'Payment Request';
+  var name = "Payment Request";
 
-  return basicComponentVerification.verify({
-    name: name,
-    client: options.client,
-    authorization: options.authorization
-  }).then(function () {
-    return createDeferredClient.create({
-      authorization: options.authorization,
+  return basicComponentVerification
+    .verify({
+      name: name,
       client: options.client,
-      debug: options.debug,
-      assetsUrl: createAssetsUrl.create(options.authorization),
-      name: name
+      authorization: options.authorization,
+    })
+    .then(function () {
+      return createDeferredClient.create({
+        authorization: options.authorization,
+        client: options.client,
+        debug: options.debug,
+        assetsUrl: createAssetsUrl.create(options.authorization),
+        name: name,
+      });
+    })
+    .then(function (client) {
+      var paymentRequestInstance;
+
+      options.client = client;
+      paymentRequestInstance = new PaymentRequestComponent(options);
+
+      return paymentRequestInstance.initialize();
     });
-  }).then(function (client) {
-    var paymentRequestInstance;
-
-    options.client = client;
-    paymentRequestInstance = new PaymentRequestComponent(options);
-
-    return paymentRequestInstance.initialize();
-  });
 }
 
 module.exports = {
@@ -84,5 +87,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

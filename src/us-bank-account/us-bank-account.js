@@ -1,18 +1,18 @@
-'use strict';
+"use strict";
 
-var BraintreeError = require('../lib/braintree-error');
-var constants = require('./constants');
-var errors = require('./errors');
-var sharedErrors = require('../lib/errors');
-var analytics = require('../lib/analytics');
-var once = require('../lib/once');
-var convertMethodsToError = require('../lib/convert-methods-to-error');
-var methods = require('../lib/methods');
-var Promise = require('../lib/promise');
-var wrapPromise = require('@braintree/wrap-promise');
+var BraintreeError = require("../lib/braintree-error");
+var constants = require("./constants");
+var errors = require("./errors");
+var sharedErrors = require("../lib/errors");
+var analytics = require("../lib/analytics");
+var once = require("../lib/once");
+var convertMethodsToError = require("../lib/convert-methods-to-error");
+var methods = require("../lib/methods");
+var Promise = require("../lib/promise");
+var wrapPromise = require("@braintree/wrap-promise");
 
-var TOKENIZE_BANK_DETAILS_MUTATION = createGraphQLMutation('UsBankAccount');
-var TOKENIZE_BANK_LOGIN_MUTATION = createGraphQLMutation('UsBankLogin');
+var TOKENIZE_BANK_DETAILS_MUTATION = createGraphQLMutation("UsBankAccount");
+var TOKENIZE_BANK_LOGIN_MUTATION = createGraphQLMutation("UsBankLogin");
 
 /**
  * @typedef {object} USBankAccount~tokenizePayload
@@ -31,7 +31,7 @@ function USBankAccount(options) {
 
   this._isTokenizingBankLogin = false;
 
-  analytics.sendEvent(this._client, 'usbankaccount.initialized');
+  analytics.sendEvent(this._client, "usbankaccount.initialized");
 }
 
 /**
@@ -168,30 +168,37 @@ USBankAccount.prototype.tokenize = function (options) {
   options = options || {};
 
   if (!options.mandateText) {
-    return Promise.reject(new BraintreeError({
-      type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
-      code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
-      message: 'mandateText property is required.'
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
+        code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
+        message: "mandateText property is required.",
+      })
+    );
   }
 
   if (options.bankDetails && options.bankLogin) {
-    return Promise.reject(new BraintreeError({
-      type: errors.US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS.type,
-      code: errors.US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS.code,
-      message: 'tokenize must be called with bankDetails or bankLogin, not both.'
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS.type,
+        code: errors.US_BANK_ACCOUNT_MUTUALLY_EXCLUSIVE_OPTIONS.code,
+        message:
+          "tokenize must be called with bankDetails or bankLogin, not both.",
+      })
+    );
   } else if (options.bankDetails) {
     return this._tokenizeBankDetails(options);
   } else if (options.bankLogin) {
     return this._tokenizeBankLogin(options);
   }
 
-  return Promise.reject(new BraintreeError({
-    type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
-    code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
-    message: 'tokenize must be called with bankDetails or bankLogin.'
-  }));
+  return Promise.reject(
+    new BraintreeError({
+      type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
+      code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
+      message: "tokenize must be called with bankDetails or bankLogin.",
+    })
+  );
 };
 
 USBankAccount.prototype._tokenizeBankDetails = function (options) {
@@ -202,55 +209,74 @@ USBankAccount.prototype._tokenizeBankDetails = function (options) {
     routingNumber: bankDetails.routingNumber,
     accountNumber: bankDetails.accountNumber,
     accountType: bankDetails.accountType.toUpperCase(),
-    billingAddress: formatBillingAddressForGraphQL(bankDetails.billingAddress || {})
+    billingAddress: formatBillingAddressForGraphQL(
+      bankDetails.billingAddress || {}
+    ),
   };
 
   formatDataForOwnershipType(data, bankDetails);
 
-  return client.request({
-    api: 'graphQLApi',
-    data: {
-      query: TOKENIZE_BANK_DETAILS_MUTATION,
-      variables: {
-        input: {
-          usBankAccount: data
-        }
-      }
-    }
-  }).then(function (response) {
-    analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.succeeded');
+  return client
+    .request({
+      api: "graphQLApi",
+      data: {
+        query: TOKENIZE_BANK_DETAILS_MUTATION,
+        variables: {
+          input: {
+            usBankAccount: data,
+          },
+        },
+      },
+    })
+    .then(function (response) {
+      analytics.sendEvent(
+        client,
+        "usbankaccount.bankdetails.tokenization.succeeded"
+      );
 
-    return Promise.resolve(formatTokenizeResponseFromGraphQL(response, 'tokenizeUsBankAccount'));
-  }).catch(function (err) {
-    var error = errorFrom(err);
+      return Promise.resolve(
+        formatTokenizeResponseFromGraphQL(response, "tokenizeUsBankAccount")
+      );
+    })
+    .catch(function (err) {
+      var error = errorFrom(err);
 
-    analytics.sendEvent(client, 'usbankaccount.bankdetails.tokenization.failed');
+      analytics.sendEvent(
+        client,
+        "usbankaccount.bankdetails.tokenization.failed"
+      );
 
-    return Promise.reject(error);
-  });
+      return Promise.reject(error);
+    });
 };
 
 USBankAccount.prototype._tokenizeBankLogin = function (options) {
   var self = this;
   var client = this._client;
   var gatewayConfiguration = client.getConfiguration().gatewayConfiguration;
-  var isProduction = gatewayConfiguration.environment === 'production';
+  var isProduction = gatewayConfiguration.environment === "production";
   var plaidConfig = gatewayConfiguration.usBankAccount.plaid;
 
   if (!options.bankLogin.displayName) {
-    return Promise.reject(new BraintreeError({
-      type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
-      code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
-      message: 'displayName property is required when using bankLogin.'
-    }));
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.type,
+        code: errors.US_BANK_ACCOUNT_OPTION_REQUIRED.code,
+        message: "displayName property is required when using bankLogin.",
+      })
+    );
   }
 
   if (!plaidConfig) {
-    return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_BANK_LOGIN_NOT_ENABLED));
+    return Promise.reject(
+      new BraintreeError(errors.US_BANK_ACCOUNT_BANK_LOGIN_NOT_ENABLED)
+    );
   }
 
   if (this._isTokenizingBankLogin) {
-    return Promise.reject(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_REQUEST_ACTIVE));
+    return Promise.reject(
+      new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_REQUEST_ACTIVE)
+    );
   }
   this._isTokenizingBankLogin = true;
 
@@ -262,62 +288,88 @@ USBankAccount.prototype._tokenizeBankLogin = function (options) {
         return;
       }
 
-      plaid.create({
-        clientName: options.bankLogin.displayName,
-        apiVersion: 'v2',
-        env: isProduction ? 'production' : 'sandbox',
-        key: plaidConfig.publicKey,
-        product: 'auth',
-        selectAccount: true,
-        onExit: function () {
-          self._isTokenizingBankLogin = false;
-
-          analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.closed.by-user');
-
-          reject(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_CLOSED));
-        },
-        onSuccess: function (publicToken, metadata) {
-          var bankLogin = options.bankLogin;
-          var data = {
-            publicToken: publicToken,
-            accountId: isProduction ? metadata.account_id : 'plaid_account_id',
-            accountType: metadata.account.subtype.toUpperCase(),
-            achMandate: options.mandateText,
-            billingAddress: formatBillingAddressForGraphQL(bankLogin.billingAddress || {})
-          };
-
-          formatDataForOwnershipType(data, bankLogin);
-
-          client.request({
-            api: 'graphQLApi',
-            data: {
-              query: TOKENIZE_BANK_LOGIN_MUTATION,
-              variables: {
-                input: {
-                  usBankLogin: data
-                }
-              }
-            }
-          }).then(function (response) {
+      plaid
+        .create({
+          clientName: options.bankLogin.displayName,
+          apiVersion: "v2",
+          env: isProduction ? "production" : "sandbox",
+          key: plaidConfig.publicKey,
+          product: "auth",
+          selectAccount: true,
+          onExit: function () {
             self._isTokenizingBankLogin = false;
 
-            analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.succeeded');
+            analytics.sendEvent(
+              client,
+              "usbankaccount.banklogin.tokenization.closed.by-user"
+            );
 
-            resolve(formatTokenizeResponseFromGraphQL(response, 'tokenizeUsBankLogin'));
-          }).catch(function (tokenizeErr) {
-            var error;
+            reject(new BraintreeError(errors.US_BANK_ACCOUNT_LOGIN_CLOSED));
+          },
+          onSuccess: function (publicToken, metadata) {
+            var bankLogin = options.bankLogin;
+            var data = {
+              publicToken: publicToken,
+              accountId: isProduction
+                ? metadata.account_id
+                : "plaid_account_id",
+              accountType: metadata.account.subtype.toUpperCase(),
+              achMandate: options.mandateText,
+              billingAddress: formatBillingAddressForGraphQL(
+                bankLogin.billingAddress || {}
+              ),
+            };
 
-            self._isTokenizingBankLogin = false;
-            error = errorFrom(tokenizeErr);
+            formatDataForOwnershipType(data, bankLogin);
 
-            analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.failed');
+            client
+              .request({
+                api: "graphQLApi",
+                data: {
+                  query: TOKENIZE_BANK_LOGIN_MUTATION,
+                  variables: {
+                    input: {
+                      usBankLogin: data,
+                    },
+                  },
+                },
+              })
+              .then(function (response) {
+                self._isTokenizingBankLogin = false;
 
-            reject(error);
-          });
-        }
-      }).open();
+                analytics.sendEvent(
+                  client,
+                  "usbankaccount.banklogin.tokenization.succeeded"
+                );
 
-      analytics.sendEvent(client, 'usbankaccount.banklogin.tokenization.started');
+                resolve(
+                  formatTokenizeResponseFromGraphQL(
+                    response,
+                    "tokenizeUsBankLogin"
+                  )
+                );
+              })
+              .catch(function (tokenizeErr) {
+                var error;
+
+                self._isTokenizingBankLogin = false;
+                error = errorFrom(tokenizeErr);
+
+                analytics.sendEvent(
+                  client,
+                  "usbankaccount.banklogin.tokenization.failed"
+                );
+
+                reject(error);
+              });
+          },
+        })
+        .open();
+
+      analytics.sendEvent(
+        client,
+        "usbankaccount.banklogin.tokenization.started"
+      );
     });
   });
 };
@@ -331,9 +383,11 @@ function errorFrom(err) {
   } else if (status < 500) {
     error = new BraintreeError(errors.US_BANK_ACCOUNT_FAILED_TOKENIZATION);
   } else {
-    error = new BraintreeError(errors.US_BANK_ACCOUNT_TOKENIZATION_NETWORK_ERROR);
+    error = new BraintreeError(
+      errors.US_BANK_ACCOUNT_TOKENIZATION_NETWORK_ERROR
+    );
   }
-  error.details = {originalError: err};
+  error.details = { originalError: err };
 
   return error;
 }
@@ -341,13 +395,13 @@ function errorFrom(err) {
 function formatTokenizeResponseFromGraphQL(response, type) {
   var data = response.data[type].paymentMethod;
   var last4 = data.details.last4;
-  var description = 'US bank account ending in - ' + last4;
+  var description = "US bank account ending in - " + last4;
 
   return {
     nonce: data.id,
     details: {},
     description: description,
-    type: 'us_bank_account'
+    type: "us_bank_account",
   };
 }
 
@@ -362,12 +416,14 @@ USBankAccount.prototype._loadPlaid = function (callback) {
     return;
   }
 
-  existingScript = document.querySelector('script[src="' + constants.PLAID_LINK_JS + '"]');
+  existingScript = document.querySelector(
+    'script[src="' + constants.PLAID_LINK_JS + '"]'
+  );
 
   if (existingScript) {
     addLoadListeners(existingScript, callback);
   } else {
-    script = document.createElement('script');
+    script = document.createElement("script");
 
     script.src = constants.PLAID_LINK_JS;
     script.async = true;
@@ -384,7 +440,7 @@ function addLoadListeners(script, callback) {
   function loadHandler() {
     var readyState = this.readyState; // eslint-disable-line no-invalid-this
 
-    if (!readyState || readyState === 'loaded' || readyState === 'complete') {
+    if (!readyState || readyState === "loaded" || readyState === "complete") {
       removeLoadListeners();
       callback(null, window.Plaid);
     }
@@ -397,14 +453,14 @@ function addLoadListeners(script, callback) {
   }
 
   function removeLoadListeners() {
-    script.removeEventListener('error', errorHandler);
-    script.removeEventListener('load', loadHandler);
-    script.removeEventListener('readystatechange', loadHandler);
+    script.removeEventListener("error", errorHandler);
+    script.removeEventListener("load", loadHandler);
+    script.removeEventListener("readystatechange", loadHandler);
   }
 
-  script.addEventListener('error', errorHandler);
-  script.addEventListener('load', loadHandler);
-  script.addEventListener('readystatechange', loadHandler);
+  script.addEventListener("error", errorHandler);
+  script.addEventListener("load", loadHandler);
+  script.addEventListener("readystatechange", loadHandler);
 }
 
 function formatBillingAddressForGraphQL(address) {
@@ -413,37 +469,45 @@ function formatBillingAddressForGraphQL(address) {
     extendedAddress: address.extendedAddress,
     city: address.locality,
     state: address.region,
-    zipCode: address.postalCode
+    zipCode: address.postalCode,
   };
 }
 
 function formatDataForOwnershipType(data, details) {
-  if (details.ownershipType === 'personal') {
+  if (details.ownershipType === "personal") {
     data.individualOwner = {
       firstName: details.firstName,
-      lastName: details.lastName
+      lastName: details.lastName,
     };
-  } else if (details.ownershipType === 'business') {
+  } else if (details.ownershipType === "business") {
     data.businessOwner = {
-      businessName: details.businessName
+      businessName: details.businessName,
     };
   }
 }
 
 function createGraphQLMutation(type) {
-  return '' +
-    'mutation Tokenize' + type + '($input: Tokenize' + type + 'Input!) {' +
-    '  tokenize' + type + '(input: $input) {' +
-    '    paymentMethod {' +
-    '      id' +
-    '      details {' +
-    '        ... on UsBankAccountDetails {' +
-    '          last4' +
-    '        }' +
-    '      }' +
-    '    }' +
-    '  }' +
-    '}';
+  return (
+    "" +
+    "mutation Tokenize" +
+    type +
+    "($input: Tokenize" +
+    type +
+    "Input!) {" +
+    "  tokenize" +
+    type +
+    "(input: $input) {" +
+    "    paymentMethod {" +
+    "      id" +
+    "      details {" +
+    "        ... on UsBankAccountDetails {" +
+    "          last4" +
+    "        }" +
+    "      }" +
+    "    }" +
+    "  }" +
+    "}"
+  );
 }
 
 /**

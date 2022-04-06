@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 /**
  * @module braintree-web
  * @description This is the top-level module exported by the Braintree JavaScript SDK. In a browser environment, this will be the global <code>braintree</code> object. In a CommonJS environment (like Browserify or Webpack), it will be the default export of the <code>braintree-web</code> package. In AMD environments (like RequireJS), it can be `require`d like other modules.
@@ -36,24 +36,24 @@
  * @returns {void}
  */
 
-var americanExpress = require('./american-express');
-var applePay = require('./apple-pay');
-var client = require('./client');
-var dataCollector = require('./data-collector');
-var hostedFields = require('./hosted-fields');
-var localPayment = require('./local-payment');
-var masterpass = require('./masterpass');
-var paymentRequest = require('./payment-request');
-var paypal = require('./paypal');
-var paypalCheckout = require('./paypal-checkout');
-var googlePayment = require('./google-payment');
-var threeDSecure = require('./three-d-secure');
-var unionpay = require('./unionpay');
-var usBankAccount = require('./us-bank-account');
-var vaultManager = require('./vault-manager');
-var venmo = require('./venmo');
-var visaCheckout = require('./visa-checkout');
-var preferredPaymentMethods = require('./preferred-payment-methods');
+var americanExpress = require("./american-express");
+var applePay = require("./apple-pay");
+var client = require("./client");
+var dataCollector = require("./data-collector");
+var hostedFields = require("./hosted-fields");
+var localPayment = require("./local-payment");
+var masterpass = require("./masterpass");
+var paymentRequest = require("./payment-request");
+var paypal = require("./paypal");
+var paypalCheckout = require("./paypal-checkout");
+var googlePayment = require("./google-payment");
+var threeDSecure = require("./three-d-secure");
+var unionpay = require("./unionpay");
+var usBankAccount = require("./us-bank-account");
+var vaultManager = require("./vault-manager");
+var venmo = require("./venmo");
+var visaCheckout = require("./visa-checkout");
+var preferredPaymentMethods = require("./preferred-payment-methods");
 var VERSION = process.env.npm_package_version;
 
 module.exports = {
@@ -97,5 +97,5 @@ module.exports = {
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION
+  VERSION: VERSION,
 };

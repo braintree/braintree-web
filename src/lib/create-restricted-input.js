@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-var RestrictedInput = require('restricted-input');
-var FakeRestrictedInput = require('./fake-restricted-input');
-var SUPPORTED_INPUT_TYPES = ['text', 'tel', 'url', 'search', 'password'];
+var RestrictedInput = require("restricted-input");
+var FakeRestrictedInput = require("./fake-restricted-input");
+var SUPPORTED_INPUT_TYPES = ["text", "tel", "url", "search", "password"];
 
 module.exports = function (options) {
   var shouldFormat = options.shouldFormat;
@@ -11,5 +11,7 @@ module.exports = function (options) {
     shouldFormat = false;
   }
 
-  return shouldFormat ? new RestrictedInput(options) : new FakeRestrictedInput(options);
+  return shouldFormat
+    ? new RestrictedInput(options)
+    : new FakeRestrictedInput(options);
 };

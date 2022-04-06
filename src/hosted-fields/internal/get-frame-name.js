@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
 module.exports = {
   getFrameName: function getFrameName() {
-    return window.name.replace('braintree-hosted-field-', '');
-  }
+    return window.name.replace("braintree-hosted-field-", "");
+  },
 };

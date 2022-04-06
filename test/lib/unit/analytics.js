@@ -1,10 +1,10 @@
-'use strict';
+"use strict";
 
-const analytics = require('../../../src/lib/analytics');
-const constants = require('../../../src/lib/constants');
-const { yieldsAsync } = require('../../helpers');
+const analytics = require("../../../src/lib/analytics");
+const constants = require("../../../src/lib/constants");
+const { yieldsAsync } = require("../../helpers");
 
-describe('analytics.sendEvent', () => {
+describe("analytics.sendEvent", () => {
   let testContext;
 
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('analytics.sendEvent', () => {
 
     jest.useFakeTimers();
 
-    jest.spyOn(Date, 'now').mockImplementation(() => {
+    jest.spyOn(Date, "now").mockImplementation(() => {
       testContext.fauxDate += 400;
 
       return testContext.fauxDate;
@@ -21,12 +21,12 @@ describe('analytics.sendEvent', () => {
     testContext.client = {
       _request: jest.fn(yieldsAsync()),
       getConfiguration: () => ({
-        authorization: 'development_testing_merchant_id',
-        analyticsMetadata: { sessionId: 'sessionId' },
+        authorization: "development_testing_merchant_id",
+        analyticsMetadata: { sessionId: "sessionId" },
         gatewayConfiguration: {
-          analytics: { url: 'https://example.com/analytics-url' }
-        }
-      })
+          analytics: { url: "https://example.com/analytics-url" },
+        },
+      }),
     };
   });
 
@@ -34,18 +34,21 @@ describe('analytics.sendEvent', () => {
     jest.useRealTimers();
   });
 
-  it('correctly sends an analytics event with a callback', done => {
-    analytics.sendEvent(testContext.client, 'test.event.kind', () => {
+  it("correctly sends an analytics event with a callback", (done) => {
+    analytics.sendEvent(testContext.client, "test.event.kind", () => {
       const currentTimestamp = Date.now();
-      const { timeout, url, method, data } = testContext.client._request.mock.calls[0][0];
+      const { timeout, url, method, data } =
+        testContext.client._request.mock.calls[0][0];
 
       expect(testContext.client._request).toHaveBeenCalled();
 
-      expect(url).toBe('https://example.com/analytics-url');
-      expect(method).toBe('post');
-      expect(data.analytics[0].kind).toBe('web.test.event.kind');
-      expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
-      expect(data._meta.sessionId).toBe('sessionId');
+      expect(url).toBe("https://example.com/analytics-url");
+      expect(method).toBe("post");
+      expect(data.analytics[0].kind).toBe("web.test.event.kind");
+      expect(data.braintreeLibraryVersion).toBe(
+        constants.BRAINTREE_LIBRARY_VERSION
+      );
+      expect(data._meta.sessionId).toBe("sessionId");
       expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
       expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
       expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
@@ -55,12 +58,12 @@ describe('analytics.sendEvent', () => {
     });
   });
 
-  it('correctly sends an analytics event with no callback (fire-and-forget)', async () => {
+  it("correctly sends an analytics event with no callback (fire-and-forget)", async () => {
     testContext.client._request.mockReset();
 
-    analytics.sendEvent(testContext.client, 'test.event.kind');
+    analytics.sendEvent(testContext.client, "test.event.kind");
 
-    await Promise.resolve(() =>jest.runAllTimers());
+    await Promise.resolve(() => jest.runAllTimers());
 
     const currentTimestamp = Date.now();
 
@@ -70,11 +73,13 @@ describe('analytics.sendEvent', () => {
     const { timeout, url, method, data } = postArgs[0];
 
     expect(testContext.client._request).toHaveBeenCalled();
-    expect(url).toBe('https://example.com/analytics-url');
-    expect(method).toBe('post');
-    expect(data.analytics[0].kind).toBe('web.test.event.kind');
-    expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
-    expect(data._meta.sessionId).toBe('sessionId');
+    expect(url).toBe("https://example.com/analytics-url");
+    expect(method).toBe("post");
+    expect(data.analytics[0].kind).toBe("web.test.event.kind");
+    expect(data.braintreeLibraryVersion).toBe(
+      constants.BRAINTREE_LIBRARY_VERSION
+    );
+    expect(data._meta.sessionId).toBe("sessionId");
     expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
     expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
     expect(postArgs[1]).toBeFalsy();
@@ -82,20 +87,23 @@ describe('analytics.sendEvent', () => {
     expect(data.analytics[0].isAsync).toBe(false);
   });
 
-  it('can send a deferred analytics event if client is a promise', done => {
+  it("can send a deferred analytics event if client is a promise", (done) => {
     const clientPromise = Promise.resolve(testContext.client);
 
-    analytics.sendEvent(clientPromise, 'test.event.kind', () => {
+    analytics.sendEvent(clientPromise, "test.event.kind", () => {
       const currentTimestamp = Date.now();
-      const { timeout, url, method, data } = testContext.client._request.mock.calls[0][0];
+      const { timeout, url, method, data } =
+        testContext.client._request.mock.calls[0][0];
 
       expect(testContext.client._request).toHaveBeenCalled();
 
-      expect(url).toBe('https://example.com/analytics-url');
-      expect(method).toBe('post');
-      expect(data.analytics[0].kind).toBe('web.test.event.kind');
-      expect(data.braintreeLibraryVersion).toBe(constants.BRAINTREE_LIBRARY_VERSION);
-      expect(data._meta.sessionId).toBe('sessionId');
+      expect(url).toBe("https://example.com/analytics-url");
+      expect(method).toBe("post");
+      expect(data.analytics[0].kind).toBe("web.test.event.kind");
+      expect(data.braintreeLibraryVersion).toBe(
+        constants.BRAINTREE_LIBRARY_VERSION
+      );
+      expect(data._meta.sessionId).toBe("sessionId");
       expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
       expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
       expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
@@ -105,22 +113,22 @@ describe('analytics.sendEvent', () => {
     });
   });
 
-  it('passes client creation rejection to callback', done => {
-    const clientPromise = Promise.reject(new Error('failed to set up'));
+  it("passes client creation rejection to callback", (done) => {
+    const clientPromise = Promise.reject(new Error("failed to set up"));
 
-    analytics.sendEvent(clientPromise, 'test.event.kind', (err) => {
-      expect(err.message).toBe('failed to set up');
+    analytics.sendEvent(clientPromise, "test.event.kind", (err) => {
+      expect(err.message).toBe("failed to set up");
 
       done();
     });
   });
 
-  it('ignores errors when client promise rejects and no callback is passed', async () => {
+  it("ignores errors when client promise rejects and no callback is passed", async () => {
     let err;
-    const clientPromise = Promise.reject(new Error('failed to set up'));
+    const clientPromise = Promise.reject(new Error("failed to set up"));
 
     try {
-      await analytics.sendEvent(clientPromise, 'test.event.kind');
+      await analytics.sendEvent(clientPromise, "test.event.kind");
     } catch (e) {
       err = e;
     }
@@ -128,15 +136,16 @@ describe('analytics.sendEvent', () => {
     expect(err).toBeFalsy();
   });
 
-  it('sets timestamp to the time when the event was initialized, not when it was sent', done => {
+  it("sets timestamp to the time when the event was initialized, not when it was sent", (done) => {
     const client = testContext.client;
 
     testContext.fauxDate += 1500;
     const clientPromise = Promise.resolve(client);
 
-    analytics.sendEvent(clientPromise, 'test.event.kind', () => {
+    analytics.sendEvent(clientPromise, "test.event.kind", () => {
       const currentTimestamp = Date.now();
-      const { timestamp, isAsync } = client._request.mock.calls[0][0].data.analytics[0];
+      const { timestamp, isAsync } =
+        client._request.mock.calls[0][0].data.analytics[0];
 
       expect(currentTimestamp - timestamp).toBeLessThan(2000);
       expect(currentTimestamp - timestamp).toBeGreaterThan(0);
