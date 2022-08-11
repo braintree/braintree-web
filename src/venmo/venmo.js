@@ -14,6 +14,9 @@ var BraintreeError = require("../lib/braintree-error");
 var inIframe = require("../lib/in-iframe");
 var Promise = require("../lib/promise");
 var ExtendedPromise = require("@braintree/extended-promise");
+var getVenmoUrl = require("./shared/get-venmo-url");
+var runWebLogin = require("./shared/web-login-backdrop").runWebLogin;
+
 // NEXT_MAJOR_VERSION the source code for this is actually in a
 // typescript repo called venmo-desktop, once the SDK is migrated
 // to typescript, we can move the TS files out of that separate
@@ -44,11 +47,12 @@ var DEFAULT_MOBILE_EXPIRING_THRESHOLD = 300000; // 5 minutes
 function Venmo(options) {
   var self = this;
 
+  this._allowDesktopWebLogin = options.allowDesktopWebLogin || false;
+  this._mobileWebFallBack = options.mobileWebFallBack || false;
   this._createPromise = options.createPromise;
   this._allowNewBrowserTab = options.allowNewBrowserTab !== false;
   this._allowWebviews = options.allowWebviews !== false;
   this._allowDesktop = options.allowDesktop === true;
-  this._requireManualReturn = options.requireManualReturn === true;
   this._useRedirectForIOS = options.useRedirectForIOS === true;
   this._profileId = options.profileId;
   this._displayName = options.displayName;
@@ -56,8 +60,14 @@ function Venmo(options) {
   this._ignoreHistoryChanges = options.ignoreHistoryChanges;
   this._paymentMethodUsage = (options.paymentMethodUsage || "").toUpperCase();
   this._shouldUseLegacyFlow = !this._paymentMethodUsage;
-  this._useDesktopFlow = this._allowDesktop && this._isDesktop();
+  this._requireManualReturn = options.requireManualReturn === true;
+  this._useDesktopQRFlow =
+    this._allowDesktop && this._isDesktop() && !this._allowDesktopWebLogin;
+  this._useAllowDesktopWebLogin =
+    this._allowDesktopWebLogin && this._isDesktop();
   this._cannotHaveReturnUrls = inIframe() || this._requireManualReturn;
+  this._maxRetryCount = 3;
+
   this._shouldCreateVenmoPaymentContext =
     this._cannotHaveReturnUrls || !this._shouldUseLegacyFlow;
 
@@ -78,7 +88,7 @@ function Venmo(options) {
       this._createPromise,
       "venmo.appswitch.return-in-new-tab"
     );
-  } else if (this._useDesktopFlow) {
+  } else if (this._useDesktopQRFlow) {
     this._createPromise = this._createPromise.then(function (client) {
       var config = client.getConfiguration().gatewayConfiguration;
 
@@ -126,7 +136,7 @@ function Venmo(options) {
             self._createPromise,
             "venmo.desktop-flow.setup-failed"
           );
-          self._useDesktopFlow = false;
+          self._useDesktopQRFlow = false;
 
           return client;
         });
@@ -307,6 +317,9 @@ Venmo.prototype.getUrl = function () {
         },
       };
 
+      this._isDebug = configuration.isDebug;
+      this._assetsUrl = configuration.gatewayConfiguration.assetsUrl;
+
       currentUrl = currentUrl.replace(/#*$/, "");
 
       /* eslint-disable camelcase */
@@ -323,6 +336,11 @@ Venmo.prototype.getUrl = function () {
       }
 
       if (this._shouldIncludeReturnUrls()) {
+        if (this._useAllowDesktopWebLogin) {
+          currentUrl =
+            this._assetsUrl + "/web/" + VERSION + "/html/redirect-frame.html";
+        }
+
         params["x-success"] = currentUrl + "#venmoSuccess=1";
         params["x-cancel"] = currentUrl + "#venmoCancel=1";
         params["x-error"] = currentUrl + "#venmoError=1";
@@ -337,9 +355,15 @@ Venmo.prototype.getUrl = function () {
       params.braintree_access_token = accessToken;
       params.braintree_environment = venmoConfiguration.environment;
       params.braintree_sdk_data = btoa(JSON.stringify(braintreeData));
-      /* eslint-enable camelcase */
 
-      return constants.VENMO_OPEN_URL + "?" + querystring.stringify(params);
+      return (
+        getVenmoUrl({
+          useAllowDesktopWebLogin: this._useAllowDesktopWebLogin,
+          mobileWebFallBack: this._mobileWebFallBack,
+        }) +
+        "?" +
+        querystring.stringify(params)
+      );
     }.bind(this)
   );
 };
@@ -454,8 +478,7 @@ Venmo.prototype.tokenize = function (options) {
   }
 
   this._tokenizationInProgress = true;
-
-  if (this._useDesktopFlow) {
+  if (this._useDesktopQRFlow) {
     // for the desktop flow, we create a venmo payment
     // context and then present a qr code modal to the
     // customer and they will open up their venmo app
@@ -464,7 +487,19 @@ Venmo.prototype.tokenize = function (options) {
     // in order to determine when the status of the
     // payment context has updated and then pass the
     // resulting nonce back to the merchant.
-    tokenizationPromise = this._tokenizeForDesktop(options);
+    tokenizationPromise = this._tokenizeForDesktopQRFlow(options);
+  } else if (this._useAllowDesktopWebLogin) {
+    /**
+     * For Desktop Web Login, we open a browser popup to allow for authorization. Once authorized, the redirect urls are used by Venmo, and we query the API for a payment context status update.
+     *
+     * - Payment context is created on initialization
+     * - Popup is opened to Venmo login url.
+     *  - The payment is authorized or canceled, and the popup is closed
+     * - Once the popup is closed, we query the API for a payment context status update
+     *
+     * This is an alternate, opt-in flow to be used the Desktop QR Flow is not desired for Pay with Venmo desktop experiences.
+     */
+    tokenizationPromise = this._tokenizeWebLoginWithRedirect();
   } else if (this._cannotHaveReturnUrls) {
     // in the manual return strategy, we create the payment
     // context on initialization, then continually poll once
@@ -524,6 +559,7 @@ Venmo.prototype.tokenize = function (options) {
  * Cancels the venmo tokenization process
  *
  * @public
+ * @function Venmo~cancelTokenization
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
  * venmoTokenizeButton.addEventListener('click', function () {
@@ -572,6 +608,47 @@ Venmo.prototype.cancelTokenization = function () {
   ]);
 };
 
+Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
+  var self = this;
+
+  analytics.sendEvent(self._createPromise, "venmo.tokenize.web-login.start");
+  this._tokenizePromise = new ExtendedPromise();
+
+  return this.getUrl().then(function (url) {
+    runWebLogin({
+      checkForStatusChange:
+        self._checkPaymentContextStatusAndProcessResult.bind(self),
+      cancelTokenization: self.cancelTokenization.bind(self),
+      venmoUrl: url,
+      assetsUrl: self._assetsUrl,
+      debug: self._isDebug,
+    })
+      .then(function (payload) {
+        analytics.sendEvent(
+          self._createPromise,
+          "venmo.tokenize.web-login.success"
+        );
+
+        return self._tokenizePromise.resolve({
+          paymentMethodNonce: payload.paymentMethodId,
+          username: payload.userName,
+          payerInfo: payload.payerInfo,
+          id: self._venmoPaymentContextId,
+        });
+      })
+      .catch(function (err) {
+        analytics.sendEvent(
+          self._createPromise,
+          "venmo.tokenize.web-login.failure"
+        );
+
+        return self._tokenizePromise.reject(err);
+      });
+
+    return self._tokenizePromise;
+  });
+};
+
 Venmo.prototype._queryPaymentContextStatus = function (id) {
   var self = this;
 
@@ -593,6 +670,71 @@ Venmo.prototype._queryPaymentContextStatus = function (id) {
     })
     .then(function (response) {
       return response.data.node;
+    });
+};
+
+/**
+ * Queries the GraphQL API to get the payment context and process the status. Retries until there is an update to the payment context status.
+ * @name Venmo~checkPaymentContextStatusAndProcessResult
+ * @ignore
+ * @param {number} retryCount The counter for tracking number of retries made against the API.
+ * @returns {Promise} Returns a promise
+ */
+Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
+  retryCount
+) {
+  var self = this;
+
+  return self
+    ._queryPaymentContextStatus(self._venmoPaymentContextId)
+    .catch(function (networkError) {
+      return Promise.reject(
+        new BraintreeError({
+          type: errors.VENMO_NETWORK_ERROR.type,
+          code: errors.VENMO_NETWORK_ERROR.code,
+          message: errors.VENMO_NETWORK_ERROR.message,
+          details: networkError,
+        })
+      );
+    })
+    .then(function (node) {
+      var resultStatus = node.status;
+
+      if (resultStatus !== self._venmoPaymentContextStatus) {
+        self._venmoPaymentContextStatus = resultStatus;
+
+        analytics.sendEvent(
+          self._createPromise,
+          "venmo.tokenize.web-login.status-change"
+        );
+
+        switch (resultStatus) {
+          case "APPROVED":
+            return Promise.resolve(node);
+          case "CANCELED":
+            return Promise.reject(
+              new BraintreeError(errors.VENMO_CUSTOMER_CANCELED)
+            );
+          case "FAILED":
+            return Promise.reject(
+              new BraintreeError(errors.VENMO_TOKENIZATION_FAILED)
+            );
+          default:
+        }
+      }
+
+      return new Promise(function (resolve, reject) {
+        if (retryCount < self._maxRetryCount) {
+          retryCount++;
+
+          return self
+            ._checkPaymentContextStatusAndProcessResult(retryCount)
+            .then(resolve)
+            .catch(reject);
+        }
+
+        return reject(new BraintreeError(errors.VENMO_TOKENIZATION_FAILED));
+      });
     });
 };
 
@@ -792,7 +934,7 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
   });
 };
 
-Venmo.prototype._tokenizeForDesktop = function () {
+Venmo.prototype._tokenizeForDesktopQRFlow = function () {
   var self = this;
 
   analytics.sendEvent(this._createPromise, "venmo.tokenize.desktop.start");
@@ -844,14 +986,6 @@ Venmo.prototype._tokenizeForDesktop = function () {
     });
 
   return this._tokenizePromise;
-};
-
-// TODO remove this once initial testing is done
-Venmo.prototype._updateVenmoDesktopPaymentContext = function (status, options) {
-  return this._venmoDesktopInstance.updateVenmoDesktopPaymentContext(
-    status,
-    options
-  );
 };
 
 Venmo.prototype._cancelMobilePaymentContext = function () {

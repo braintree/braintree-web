@@ -79,6 +79,7 @@ function configuration() {
       integrationType: constants.INTEGRATION,
     },
     authorization: tokenizationKey,
+    isDebug: false,
   };
 }
 

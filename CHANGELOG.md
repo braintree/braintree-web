@@ -1,8 +1,14 @@
 # CHANGELOG
 
+# 3.86.0
+
+- Add support for Desktop Web Login flow
+- Add support for Mobile Web Fallback
+
 # 3.85.5
 
 - Fix internal build issue
+
 # 3.85.4
 
 - Update @braintree/browser-detection to v1.14.0

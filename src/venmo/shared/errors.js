@@ -12,19 +12,22 @@
 /**
  * @name BraintreeError.Venmo - tokenize Error Codes
  * @description Errors that occur when using the [`tokenize` method](./Venmo.html#tokenize).
- * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_ACTIVE Occurs when `tokenize` is called when the flow is already in progress.
- * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE Occurs when `cancelTokenization` is called when the flow is not in progress.
- * @property {UNKNOWN} VENMO_APP_FAILED Occurs when tokenization fails.
  * @property {CUSTOMER} VENMO_APP_CANCELED Occurs when customer cancels flow from the Venmo app.
+ * @property {UNKNOWN} VENMO_APP_FAILED Occurs when tokenization fails.
  * @property {CUSTOMER} VENMO_CANCELED Occurs when customer cancels the flow or Venmo app is not available.
+ * @property {CUSTOMER} VENMO_CUSTOMER_CANCELED Occurs when customer cancels the flow.
  * @property {CUSTOMER} VENMO_DESKTOP_CANCELED Occurs when customer cancels the Venmo Desktop flow by closing the modal.
- * @property {MERCHANT} VENMO_TOKENIZATION_CANCELED_BY_MERCHANT Occurs when `cancelTokenization` is called while tokenization is in progress.
  * @property {UNKNOWN} VENMO_DESKTOP_UNKNOWN_ERROR Occurs when an unknown error causes the Venmo Desktop flow to fail.
  * @property {UNKNOWN} VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR Occurs when an unknown network error causes the mobile polling process to fail.
  * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED Occurs when the polling has expired and the payment cannot be completed.
  * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED Occurs when the polling operation is canceled by the customer.
  * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT Occurs when customer takes too long to complete payment.
  * @property {UNKNOWN} VENMO_MOBILE_POLLING_TOKENIZATION_FAILED Occurs if there is an unknown error during the mobile polling process.
+ * @property {NETWORK} VENMO_NETWORK_ERROR Occurs when a network error causes a request to fail.
+ * @property {MERCHANT} VENMO_TOKENIZATION_CANCELED_BY_MERCHANT Occurs when `cancelTokenization` is called while tokenization is in progress.
+ * @property {UNKNOWN} VENMO_TOKENIZATION_FAILED Occurs when there is an unknown error during the web login experience.
+ * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_ACTIVE Occurs when `tokenize` is called when the flow is already in progress.
+ * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE Occurs when `cancelTokenization` is called when the flow is not in progress.
  */
 
 var BraintreeError = require("../../lib/braintree-error");
@@ -60,6 +63,16 @@ module.exports = {
     code: "VENMO_CANCELED",
     message:
       "User canceled Venmo authorization, or Venmo app is not available.",
+  },
+  VENMO_CUSTOMER_CANCELED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: "VENMO_CUSTOMER_CANCELED",
+    message: "User canceled Venmo authorization.",
+  },
+  VENMO_NETWORK_ERROR: {
+    type: BraintreeError.types.NETWORK,
+    code: "VENMO_NETWORK_ERROR",
+    message: "Something went wrong making the request",
   },
   VENMO_DESKTOP_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
@@ -116,5 +129,10 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: "VENMO_INVALID_DEEP_LINK_RETURN_URL",
     message: "Venmo deep link return URL is invalid.",
+  },
+  VENMO_TOKENIZATION_FAILED: {
+    type: BraintreeError.types.UNKNOWN,
+    code: "VENMO_TOKENIZATION_FAILED",
+    message: "Venmo encountered a problem",
   },
 };

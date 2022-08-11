@@ -4,6 +4,7 @@ var fs = require("fs");
 var path = require("path");
 var gulp = require("gulp");
 var minifyHTML = require("./minify").minifyHTML;
+var rename = require("gulp-rename");
 var del = require("del");
 var replace = require("gulp-replace");
 var browserify = require("./browserify");
@@ -20,6 +21,14 @@ var BUILT_QR_CODE_PATH = path.resolve(
   "vendor",
   "node-qrcode.js"
 );
+
+gulp.task("build:venmo:landing-frame", function () {
+  var stream = gulp
+    .src("src/venmo/internal/landing-frame.html")
+    .pipe(rename("venmo-landing-frame.html"));
+
+  return minifyHTML(stream, DIST_PATH + "/html");
+});
 
 gulp.task("build:venmo:desktop-frame:html", function () {
   var jsFile = fs.readFileSync(
@@ -78,5 +87,9 @@ gulp.task("build:venmo:js", function (done) {
 
 gulp.task(
   "build:venmo",
-  gulp.parallel("build:venmo:js", "build:venmo:desktop-frame")
+  gulp.parallel(
+    "build:venmo:js",
+    "build:venmo:desktop-frame",
+    "build:venmo:landing-frame"
+  )
 );

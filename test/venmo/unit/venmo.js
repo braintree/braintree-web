@@ -4,6 +4,7 @@ jest.mock("../../../src/lib/analytics");
 jest.mock("../../../src/venmo/shared/supports-venmo");
 jest.mock("../../../src/venmo/external");
 jest.mock("../../../src/lib/in-iframe");
+jest.mock("../../../src/venmo/shared/web-login-backdrop");
 
 const analytics = require("../../../src/lib/analytics");
 const { fake } = require("../../helpers");
@@ -16,6 +17,9 @@ const inIframe = require("../../../src/lib/in-iframe");
 const { version: VERSION } = require("../../../package.json");
 const methods = require("../../../src/lib/methods");
 const createVenmoDesktop = require("../../../src/venmo/external");
+const venmoErrors = require("../../../src/venmo/shared/errors");
+const { runWebLogin } = require("../../../src/venmo/shared/web-login-backdrop");
+const venmoConstants = require("../../../src/venmo/shared/constants");
 
 function triggerVisibilityHandler(instance, runAllTimers = true) {
   // TODO we should have it trigger the actual
@@ -744,16 +748,61 @@ describe("Venmo", () => {
 
     beforeEach(() => {
       venmo = new Venmo({ createPromise: Promise.resolve(testContext.client) });
+      testContext.client.request.mockResolvedValue({
+        data: {
+          createVenmoQRCodePaymentContext: {
+            venmoQRCodePaymentContext: {
+              status: "CREATED",
+              id: "context-id",
+              createdAt: "2021-01-20T03:25:37.522000Z",
+              expiresAt: "2021-01-20T03:30:37.522000Z",
+            },
+          },
+        },
+      });
     });
 
     afterEach(() => {
       history.replaceState({}, "", testContext.location);
     });
 
-    it("is set to correct base URL", () =>
+    it("defaults to correct base URL", () =>
       venmo.getUrl().then((url) => {
-        expect(url.indexOf("https://venmo.com/braintree/checkout")).toBe(0);
+        expect(url.indexOf(venmoConstants.VENMO_MOBILE_APP_AUTH_ONLY_URL)).toBe(
+          0
+        );
       }));
+
+    it("uses braintree redirect-frame url for desktop web login", () => {
+      const allowDesktopWebLogin = true;
+      const expectedUrl = `${testContext.configuration.gatewayConfiguration.assetsUrl}/web/${VERSION}/html/redirect-frame.html`;
+
+      venmo = new Venmo({
+        allowDesktopWebLogin,
+        createPromise: Promise.resolve(testContext.client),
+      });
+
+      return venmo.getUrl().then((url) => {
+        const params = querystring.parse(url);
+
+        expect(params["x-success"]).toBe(`${expectedUrl}#venmoSuccess=1`);
+        expect(params["x-cancel"]).toBe(`${expectedUrl}#venmoCancel=1`);
+        expect(params["x-error"]).toBe(`${expectedUrl}#venmoError=1`);
+      });
+    });
+
+    it("uses web fallback url when mobileWebFallBack supplied as true", () => {
+      const venmoConfig = {
+        mobileWebFallBack: true,
+        createPromise: Promise.resolve(testContext.client),
+      };
+
+      venmo = new Venmo(venmoConfig);
+
+      return venmo.getUrl().then((url) => {
+        expect(url.indexOf(venmoConstants.VENMO_APP_CHECKOUT_URL)).toBe(0);
+      });
+    });
 
     it("removes hash from parent page url for use with return urls", () => {
       const pageUrlWithoutHash = window.location.href;
@@ -809,6 +858,7 @@ describe("Venmo", () => {
 
       if (deepLinked) {
         venmo = new Venmo({
+          allowDesktopWebLogin: false,
           createPromise: Promise.resolve(testContext.client),
           deepLinkReturnUrl: location,
         });
@@ -2335,7 +2385,7 @@ describe("Venmo", () => {
       });
     });
 
-    describe("desktop flow", () => {
+    describe("Desktop QR Code Flow", () => {
       let venmo, fakeVenmoDesktop;
 
       beforeEach(() => {
@@ -2435,6 +2485,424 @@ describe("Venmo", () => {
             "venmo.tokenize.desktop.failure"
           );
         }
+      });
+    });
+
+    describe("Desktop Web Login Flow", () => {
+      const flowSpecificConfig = {
+        allowDesktopWebLogin: true,
+        paymentMethodUsage: "single",
+      };
+      const mockNonce = "fake-nonce";
+      const mockPaymentContextId = "some-context-id";
+      const mockVenmoUserName = "the-user";
+      const mockPayload = {
+        paymentMethodId: mockNonce,
+        userName: mockVenmoUserName,
+      };
+      const mockGatewayApprovedPayload = {
+        status: "APPROVED",
+        paymentMethodId: mockNonce,
+        userName: mockVenmoUserName,
+      };
+
+      runWebLogin.mockResolvedValue(mockPayload);
+
+      beforeEach(() => {
+        jest.spyOn(browserDetection, "isIos").mockReturnValue(false);
+
+        jest.clearAllMocks();
+        jest.useFakeTimers();
+        inIframe.mockReturnValue(true);
+        window.open = jest.fn();
+        testContext.client.request.mockImplementation((options) => {
+          if (options.data.query.includes("mutation CreateVenmo")) {
+            return Promise.resolve({
+              data: {
+                createVenmoPaymentContext: {
+                  venmoPaymentContext: {
+                    status: "CREATED",
+                    id: mockPaymentContextId,
+                    createdAt: new Date().toString(),
+                    expiresAt: new Date(Date.now() + 30000000).toString(),
+                  },
+                },
+              },
+            });
+          }
+
+          return Promise.resolve({
+            data: {
+              node: mockGatewayApprovedPayload,
+            },
+          });
+        });
+      });
+
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
+      it("launches the desktop web login flow with approval", async () => {
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        const expectedCreateVenmoPaymentContextArgs = {
+          api: "graphQLApi",
+          data: expect.objectContaining({
+            query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+          }),
+        };
+        const result = await venmo.tokenize();
+
+        expect(testContext.client.request).toBeCalledWith(
+          expectedCreateVenmoPaymentContextArgs
+        );
+        expect(result.nonce).toBe(mockNonce);
+        expect(result.type).toBe("VenmoAccount");
+        expect(result.details.username).toBe(`@${mockVenmoUserName}`);
+        expect(result.details.paymentContextId).toBe(mockPaymentContextId);
+      });
+
+      it("use the correct url for web login", async () => {
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        await venmo.tokenize();
+        expect(runWebLogin).toHaveBeenCalledWith({
+          cancelTokenization: expect.any(Function),
+          checkForStatusChange: expect.any(Function),
+          venmoUrl: expect.stringContaining(venmoConstants.VENMO_WEB_LOGIN_URL),
+          assetsUrl: expect.stringContaining(
+            testContext.configuration.gatewayConfiguration.assetsUrl
+          ),
+          debug: testContext.configuration.isDebug,
+        });
+      });
+
+      it("processes the payment context status on approval", async () => {
+        const expectedStatus = "APPROVED";
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        const result = await venmo._checkPaymentContextStatusAndProcessResult();
+
+        expect(result).toEqual(mockGatewayApprovedPayload);
+        expect(venmo._venmoPaymentContextStatus).toEqual(expectedStatus);
+      });
+
+      it("handles a canceled gateway status", async () => {
+        expect.assertions(5);
+        const expectedStatus = "CANCELED";
+        const mockGatewayCanceledPayload = {
+          status: expectedStatus,
+        };
+
+        testContext.client.request.mockImplementation((options) => {
+          if (options.data.query.includes("mutation CreateVenmo")) {
+            return Promise.resolve({
+              data: {
+                createVenmoPaymentContext: {
+                  venmoPaymentContext: {
+                    status: "CREATED",
+                    id: mockPaymentContextId,
+                    createdAt: new Date().toString(),
+                    expiresAt: new Date(Date.now() + 30000000).toString(),
+                  },
+                },
+              },
+            });
+          }
+
+          return Promise.resolve({
+            data: {
+              node: mockGatewayCanceledPayload,
+            },
+          });
+        });
+
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        await venmo
+          ._checkPaymentContextStatusAndProcessResult()
+          .catch((errResult) => {
+            expect(errResult).toBeInstanceOf(BraintreeError);
+            expect(errResult.type).toEqual(
+              venmoErrors.VENMO_CUSTOMER_CANCELED.type
+            );
+            expect(errResult.code).toEqual(
+              venmoErrors.VENMO_CUSTOMER_CANCELED.code
+            );
+            expect(errResult.message).toEqual(
+              venmoErrors.VENMO_CUSTOMER_CANCELED.message
+            );
+            expect(venmo._venmoPaymentContextStatus).toEqual(expectedStatus);
+          });
+      });
+
+      it("handles the failed gateway status", async () => {
+        expect.assertions(5);
+        const expectedStatus = "FAILED";
+        const mockGatewayFailedPayload = {
+          status: expectedStatus,
+        };
+
+        testContext.client.request.mockImplementation((options) => {
+          if (options.data.query.includes("mutation CreateVenmo")) {
+            return Promise.resolve({
+              data: {
+                createVenmoPaymentContext: {
+                  venmoPaymentContext: {
+                    status: "CREATED",
+                    id: mockPaymentContextId,
+                    createdAt: new Date().toString(),
+                    expiresAt: new Date(Date.now() + 30000000).toString(),
+                  },
+                },
+              },
+            });
+          }
+
+          return Promise.resolve({
+            data: {
+              node: mockGatewayFailedPayload,
+            },
+          });
+        });
+
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        await venmo
+          ._checkPaymentContextStatusAndProcessResult()
+          .catch((errResult) => {
+            expect(errResult).toBeInstanceOf(BraintreeError);
+            expect(errResult.type).toEqual(
+              venmoErrors.VENMO_TOKENIZATION_FAILED.type
+            );
+            expect(errResult.code).toEqual(
+              venmoErrors.VENMO_TOKENIZATION_FAILED.code
+            );
+            expect(errResult.message).toEqual(
+              venmoErrors.VENMO_TOKENIZATION_FAILED.message
+            );
+            expect(venmo._venmoPaymentContextStatus).toEqual(expectedStatus);
+          });
+      });
+
+      it("rejects on network issues", async () => {
+        expect.assertions(5);
+        const expectedError = "This is a network error";
+
+        testContext.client.request.mockImplementation((options) => {
+          if (options.data.query.includes("mutation CreateVenmo")) {
+            return Promise.resolve({
+              data: {
+                createVenmoPaymentContext: {
+                  venmoPaymentContext: {
+                    status: "CREATED",
+                    id: mockPaymentContextId,
+                    createdAt: new Date().toString(),
+                    expiresAt: new Date(Date.now() + 30000000).toString(),
+                  },
+                },
+              },
+            });
+          }
+
+          return Promise.reject(expectedError);
+        });
+
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        await venmo
+          ._checkPaymentContextStatusAndProcessResult()
+          .catch((errResult) => {
+            expect(errResult).toBeInstanceOf(BraintreeError);
+            expect(errResult.type).toEqual(
+              venmoErrors.VENMO_NETWORK_ERROR.type
+            );
+            expect(errResult.code).toEqual(
+              venmoErrors.VENMO_NETWORK_ERROR.code
+            );
+            expect(errResult.message).toEqual(
+              venmoErrors.VENMO_NETWORK_ERROR.message
+            );
+            expect(errResult.details).toEqual(expectedError);
+          });
+      });
+
+      it("retries the status check after redirect when status hasn't changed", async () => {
+        const retryStatus = "CREATED";
+        const mockGatewayRetryPayload = {
+          status: retryStatus,
+        };
+        const maxRetries = 3;
+        let retryCount = 1;
+
+        testContext.client.request.mockImplementation((options) => {
+          if (options.data.query.includes("mutation CreateVenmo")) {
+            return Promise.resolve({
+              data: {
+                createVenmoPaymentContext: {
+                  venmoPaymentContext: {
+                    status: "CREATED",
+                    id: mockPaymentContextId,
+                    createdAt: new Date().toString(),
+                    expiresAt: new Date(Date.now() + 30000000).toString(),
+                  },
+                },
+              },
+            });
+          }
+          if (retryCount < maxRetries) {
+            retryCount++;
+
+            return Promise.resolve({
+              data: {
+                node: mockGatewayRetryPayload,
+              },
+            });
+          }
+
+          return Promise.resolve({
+            data: {
+              node: mockGatewayApprovedPayload,
+            },
+          });
+        });
+
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        await venmo._checkPaymentContextStatusAndProcessResult(retryCount);
+        expect(testContext.client.request).toBeCalledTimes(4); // once for creating the context, 3 for retries to status checks
+      });
+
+      it("rejects if retries limited hit and no status change occurred", async () => {
+        expect.assertions(5);
+        const retryStatus = "CREATED";
+        const mockGatewayRetryPayload = {
+          status: retryStatus,
+        };
+        let retryCount = 1;
+
+        testContext.client.request.mockImplementation((options) => {
+          if (options.data.query.includes("mutation CreateVenmo")) {
+            return Promise.resolve({
+              data: {
+                createVenmoPaymentContext: {
+                  venmoPaymentContext: {
+                    status: "CREATED",
+                    id: mockPaymentContextId,
+                    createdAt: new Date().toString(),
+                    expiresAt: new Date(Date.now() + 30000000).toString(),
+                  },
+                },
+              },
+            });
+          }
+
+          return Promise.resolve({
+            data: {
+              node: mockGatewayRetryPayload,
+            },
+          });
+        });
+
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+        });
+
+        await venmo
+          ._checkPaymentContextStatusAndProcessResult(retryCount)
+          .catch((errResult) => {
+            expect(testContext.client.request).toBeCalledTimes(4); // once for creating the context, 3 for retries to status checks
+            expect(errResult).toBeInstanceOf(BraintreeError);
+            expect(errResult.type).toEqual(
+              venmoErrors.VENMO_TOKENIZATION_FAILED.type
+            );
+            expect(errResult.code).toEqual(
+              venmoErrors.VENMO_TOKENIZATION_FAILED.code
+            );
+            expect(errResult.message).toEqual(
+              venmoErrors.VENMO_TOKENIZATION_FAILED.message
+            );
+          });
+      });
+
+      describe("Analytics Events", () => {
+        let venmo;
+
+        beforeEach(() => {
+          venmo = new Venmo({
+            createPromise: Promise.resolve(testContext.client),
+            ...flowSpecificConfig,
+          });
+        });
+
+        it("sends analytics events on start and approval", async () => {
+          const expectedStartEvent = "venmo.tokenize.web-login.start";
+          const expectedApprovedEvent = "venmo.tokenize.web-login.success";
+
+          await venmo._tokenizeWebLoginWithRedirect();
+
+          expect(analytics.sendEvent).toHaveBeenNthCalledWith(
+            3,
+            expect.anything(),
+            expectedStartEvent
+          );
+          expect(analytics.sendEvent).toHaveBeenNthCalledWith(
+            4,
+            expect.anything(),
+            expectedApprovedEvent
+          );
+        });
+
+        it("sends analytics events on rejection", async () => {
+          expect.assertions(1);
+          runWebLogin.mockRejectedValueOnce(new Error("some error!"));
+
+          const expectedApprovedEvent = "venmo.tokenize.web-login.failure";
+
+          await venmo._tokenizeWebLoginWithRedirect().catch(() => {
+            expect(analytics.sendEvent).toHaveBeenNthCalledWith(
+              4,
+              expect.anything(),
+              expectedApprovedEvent
+            );
+          });
+        });
+
+        it("sends analytics on gateway status change", async () => {
+          const expectedApprovedEvent =
+            "venmo.tokenize.web-login.status-change";
+
+          await venmo._checkPaymentContextStatusAndProcessResult();
+
+          expect(analytics.sendEvent).toHaveBeenNthCalledWith(
+            3,
+            expect.anything(),
+            expectedApprovedEvent
+          );
+        });
       });
     });
   });
