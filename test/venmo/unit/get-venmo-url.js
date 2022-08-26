@@ -3,7 +3,7 @@
 const {
   VENMO_MOBILE_APP_AUTH_ONLY_URL,
   VENMO_WEB_LOGIN_URL,
-  VENMO_APP_CHECKOUT_URL,
+  VENMO_APP_OR_MOBILE_AUTH_URL,
 } = require("../../../src/venmo/shared/constants");
 const getVenmoUrl = require("../../../src/venmo/shared/get-venmo-url");
 
@@ -30,7 +30,7 @@ describe("utils", () => {
       const config = { mobileWebFallBack: true };
       const url = getVenmoUrl(config);
 
-      expect(url).toBe(VENMO_APP_CHECKOUT_URL);
+      expect(url).toBe(VENMO_APP_OR_MOBILE_AUTH_URL);
     });
   });
 });

@@ -1,0 +1,11 @@
+{
+  "testEnvironment": "jsdom",
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/sepa/coverage",
+  "displayName": "sepa",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/sepa",
+  "roots": ["<rootDir>", "<rootDir>/../../test/sepa"],
+  "testMatch": ["**/unit/**/*.js"]
+}

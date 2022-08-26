@@ -22,7 +22,8 @@
     "<rootDir>/../test/us-bank-account/jest.config.json",
     "<rootDir>/../test/vault-manager/jest.config.json",
     "<rootDir>/../test/venmo/jest.config.json",
-    "<rootDir>/../test/visa-checkout/jest.config.json"
+    "<rootDir>/../test/visa-checkout/jest.config.json",
+    "<rootDir>/../test/sepa/jest.config.json"
   ],
   "setupFilesAfterEnv": ["<rootDir>/../test/global.js"]
 }

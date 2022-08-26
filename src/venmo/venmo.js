@@ -847,6 +847,10 @@ Venmo.prototype._shouldUseRedirectStrategy = function () {
     return false;
   }
 
+  if (this._mobileWebFallBack === true) { 
+    return true;
+  }
+
   return this._useRedirectForIOS;
 };
 

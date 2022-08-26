@@ -800,7 +800,9 @@ describe("Venmo", () => {
       venmo = new Venmo(venmoConfig);
 
       return venmo.getUrl().then((url) => {
-        expect(url.indexOf(venmoConstants.VENMO_APP_CHECKOUT_URL)).toBe(0);
+        expect(url.indexOf(venmoConstants.VENMO_APP_OR_MOBILE_AUTH_URL)).toBe(
+          0
+        );
       });
     });
 
@@ -2138,6 +2140,52 @@ describe("Venmo", () => {
           expect.stringContaining(
             "braintree_access_token=pwv-access-token%7Cpcid%3Acontext-id"
           )
+        );
+      });
+
+      it("app switches to the Venmo app on mobile web fallback", async () => {
+        testContext.client.request.mockImplementation((options) => {
+          if (options.data.query.includes("mutation CreateVenmo")) {
+            return Promise.resolve({
+              data: {
+                createVenmoPaymentContext: {
+                  venmoPaymentContext: {
+                    status: "CREATED",
+                    id: "mockPaymentContextId",
+                    createdAt: new Date().toString(),
+                    expiresAt: new Date(Date.now() + 30000000).toString(),
+                  },
+                },
+              },
+            });
+          }
+
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "some-name",
+              },
+            },
+          });
+        });
+
+        venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          mobileWebFallBack: true,
+          paymentMethodUsage: "single_use",
+        });
+
+        jest.spyOn(venmo, "appSwitch");
+
+        await venmo.tokenize();
+
+        expect(venmo.appSwitch).toBeCalledWith(
+          expect.stringContaining(venmoConstants.VENMO_APP_OR_MOBILE_AUTH_URL)
+        );
+        expect(window.open).toBeCalledWith(
+          expect.stringContaining(venmoConstants.VENMO_APP_OR_MOBILE_AUTH_URL)
         );
       });
 

@@ -47,6 +47,7 @@ var paymentRequest = require("./payment-request");
 var paypal = require("./paypal");
 var paypalCheckout = require("./paypal-checkout");
 var googlePayment = require("./google-payment");
+var sepa = require("./sepa");
 var threeDSecure = require("./three-d-secure");
 var unionpay = require("./unionpay");
 var usBankAccount = require("./us-bank-account");
@@ -91,6 +92,8 @@ module.exports = {
   venmo: venmo,
   /** @type {module:braintree-web/visa-checkout} */
   visaCheckout: visaCheckout,
+  /** @type {module:braintree-web/sepa} */
+  sepa: sepa,
   /** @type {module:braintree-web/preferred-payment-methods} */
   preferredPaymentMethods: preferredPaymentMethods,
   /**

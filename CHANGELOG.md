@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.87.0
+
+- Venmo fix mobileWebFallback url reference
+- Add support for SEPA Direct Debit
+
 # 3.86.0
 
 - Add support for Desktop Web Login flow
