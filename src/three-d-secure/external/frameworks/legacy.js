@@ -37,6 +37,7 @@ LegacyFramework.prototype._createIframe = function (options) {
   var self = this;
 
   this._setupV1Elements({
+    nonce: options.nonce,
     lookupResponse: options.lookupResponse,
     showLoader: options.showLoader,
     handleAuthResponse: function (data) {
@@ -111,6 +112,7 @@ LegacyFramework.prototype._presentChallenge = function (
     this._createIframe({
       showLoader: options.showLoader,
       lookupResponse: lookupResponse.lookup,
+      nonce: lookupResponse.paymentMethod.nonce,
       removeFrame: options.removeFrame,
     })
   );

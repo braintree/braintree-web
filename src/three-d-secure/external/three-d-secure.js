@@ -107,7 +107,7 @@ var FRAMEWORKS = require("./frameworks");
  * @property {string} [extendedAddress] Line 2 of the billing address (eg. suite, apt #, etc.). (maximum length 50)
  * @property {string} [line3] Line 3 of the billing address if needed (eg. suite, apt #, etc). (maximum length 50)
  * @property {string} [locality] The locality (city) name associated with the billing address.
- * @property {string} [region] The 2 letter code for US states or an ISO-3166-2 country subdivision code of up to three letters.
+ * @property {string} [region] This field expects an ISO3166-2 subdivision code. The subdivision code is what follows the hyphen separator in the full ISO 3166-2 code. For example, the state of Ohio in the United States we expect "OH" as opposed to the full ISO 3166-2 code "US-OH".
  * @property {string} [postalCode] The zip code or equivalent for countries that have them.
  * @property {string} [countryCodeAlpha2] The 2 character country code.
  */
@@ -122,7 +122,7 @@ var FRAMEWORKS = require("./frameworks");
  * @property {string} [shippingAddress.extendedAddress] Line 2 of the shipping address (eg. suite, apt #, etc.). (maximum length 50)
  * @property {string} [shippingAddress.line3] Line 3 of the shipping address if needed (eg. suite, apt #, etc). (maximum length 50)
  * @property {string} [shippingAddress.locality] The locality (city) name associated with the shipping address. (maximum length 50)
- * @property {string} [shippingAddress.region] The 2 letter code for US states or an ISO-3166-2 country subdivision code of up to three letters. (maximum length 50)
+ * @property {string} [shippingAddress.region] This field expects an ISO3166-2 subdivision code. The subdivision code is what follows the hyphen separator in the full ISO 3166-2 code. For example, the state of Ohio in the United States we expect "OH" as opposed to the full ISO 3166-2 code "US-OH".
  * @property {string} [shippingAddress.postalCode] The zip code or equivalent for countries that have them. (maximum length 10)
  * @property {string} [shippingAddress.countryCodeAlpha2] The 2 character country code. (maximum length 2)
  * @property {string} [shippingPhone] The phone number associated with the shipping address. Only numbers; remove dashes, parenthesis and other characters. (maximum length 20)

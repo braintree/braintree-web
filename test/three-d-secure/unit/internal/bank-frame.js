@@ -4,6 +4,10 @@ const initializeBankFrame = require("../../../../src/three-d-secure/internal/ban
 const Bus = require("framebus");
 const BraintreeError = require("../../../../src/lib/braintree-error");
 const queryString = require("../../../../src/lib/querystring");
+const {
+  fake: { configuration },
+} = require("../../../helpers");
+const Client = require("../../../../src/client/client");
 
 describe("initializeBankFrame", () => {
   let testContext;
@@ -11,6 +15,13 @@ describe("initializeBankFrame", () => {
   beforeEach(() => {
     testContext = {};
     testContext.oldWindowName = window.name;
+    jest.spyOn(Client.prototype, "request").mockImplementation(() =>
+      Promise.resolve({
+        threeDSecureInfo: {
+          acsUrl: "https://something.cardinalcommerce.com/dostuff",
+        },
+      })
+    );
     window.name = "abc_123";
 
     testContext.svg = document.createElement("svg");
@@ -81,6 +92,7 @@ describe("initializeBankFrame", () => {
 
     try {
       handleConfiguration({
+        clientConfiguration: configuration(),
         acsUrl: "http://example.com/acs",
         pareq: "the pareq",
         md: "the md",
@@ -93,6 +105,133 @@ describe("initializeBankFrame", () => {
       expect(err.message).toBe("Term Url must be on a Braintree domain.");
 
       done();
+    }
+  });
+
+  it("retrieves the acsUrl if not a cardinalcommerce domain", (done) => {
+    let handleConfiguration;
+
+    jest.spyOn(Client.prototype, "request").mockImplementation(() =>
+      Promise.resolve({
+        threeDSecureInfo: {
+          acsUrl: "https://something.bankdomain.com/auth",
+        },
+      })
+    );
+
+    initializeBankFrame();
+
+    handleConfiguration = Bus.prototype.emit.mock.calls[0][1];
+
+    jest
+      .spyOn(HTMLFormElement.prototype, "submit")
+      .mockImplementation((...args) => {
+        let input;
+        const form = document.body.querySelector("form");
+
+        expect(args).toHaveLength(0);
+
+        expect(form.getAttribute("action")).toBe(
+          "https://something.bankdomain.com/auth"
+        );
+        expect(form.getAttribute("method")).toBe("POST");
+        expect(form.querySelectorAll("input")).toHaveLength(3);
+
+        input = form.querySelector('input[name="PaReq"]');
+        expect(input.type).toBe("hidden");
+        expect(input.value).toBe("the pareq");
+
+        input = form.querySelector('input[name="MD"]');
+        expect(input.type).toBe("hidden");
+        expect(input.value).toBe("the md");
+
+        input = form.querySelector('input[name="TermUrl"]');
+        expect(input.type).toBe("hidden");
+        expect(input.value).toBe("https://braintreepayments.com/some/url");
+
+        done();
+      });
+
+    handleConfiguration({
+      clientConfiguration: configuration(),
+      acsUrl: "https://something.bankdomain.com/auth",
+      pareq: "the pareq",
+      md: "the md",
+      termUrl: "https://braintreepayments.com/some/url",
+    });
+  });
+
+  it("verify the acsUrl if non-cardinalcommerce domain and return the correct one", (done) => {
+    let handleConfiguration;
+
+    initializeBankFrame();
+
+    handleConfiguration = Bus.prototype.emit.mock.calls[0][1];
+
+    jest
+      .spyOn(HTMLFormElement.prototype, "submit")
+      .mockImplementation((...args) => {
+        let input;
+        const form = document.body.querySelector("form");
+
+        expect(args).toHaveLength(0);
+
+        expect(form.getAttribute("action")).toBe(
+          "https://something.cardinalcommerce.com/dostuff"
+        );
+        expect(form.getAttribute("method")).toBe("POST");
+        expect(form.querySelectorAll("input")).toHaveLength(3);
+
+        input = form.querySelector('input[name="PaReq"]');
+        expect(input.type).toBe("hidden");
+        expect(input.value).toBe("the pareq");
+
+        input = form.querySelector('input[name="MD"]');
+        expect(input.type).toBe("hidden");
+        expect(input.value).toBe("the md");
+
+        input = form.querySelector('input[name="TermUrl"]');
+        expect(input.type).toBe("hidden");
+        expect(input.value).toBe("https://braintreepayments.com/some/url");
+
+        done();
+      });
+
+    handleConfiguration({
+      clientConfiguration: configuration(),
+      acsUrl: "http://totes-not-cardinal.com/acs",
+      pareq: "the pareq",
+      md: "the md",
+      termUrl: "https://braintreepayments.com/some/url",
+    });
+  });
+
+  it("payment_method_nonce API call failed", async () => {
+    let handleConfiguration;
+
+    initializeBankFrame();
+
+    jest
+      .spyOn(Client.prototype, "request")
+      .mockImplementation(() => Promise.reject("Error"));
+
+    handleConfiguration = Bus.prototype.emit.mock.calls[0][1];
+
+    try {
+      await handleConfiguration({
+        clientConfiguration: configuration(),
+        acsUrl: "http://example.com/acs",
+        pareq: "the pareq",
+        md: "the md",
+        termUrl: "https://braintreepayments.com/some/url",
+      });
+    } catch (err) {
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe(BraintreeError.types.UNKNOWN);
+      expect(err.code).toBe("THREEDS_LOOKUP_ERROR");
+      expect(err.message).toBe(
+        "Something went wrong during the 3D Secure lookup"
+      );
     }
   });
 
@@ -113,7 +252,9 @@ describe("initializeBankFrame", () => {
 
         expect(args).toHaveLength(0);
 
-        expect(form.getAttribute("action")).toBe("http://example.com/acs");
+        expect(form.getAttribute("action")).toBe(
+          "https://something.cardinalcommerce.com/acs"
+        );
         expect(form.getAttribute("method")).toBe("POST");
         expect(form.querySelectorAll("input")).toHaveLength(3);
 
@@ -133,7 +274,8 @@ describe("initializeBankFrame", () => {
       });
 
     handleConfiguration({
-      acsUrl: "http://example.com/acs",
+      clientConfiguration: configuration(),
+      acsUrl: "https://something.cardinalcommerce.com/acs",
       pareq: "the pareq",
       md: "the md",
       termUrl: "https://braintreepayments.com/some/url",
@@ -150,12 +292,15 @@ describe("initializeBankFrame", () => {
     jest.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(() => {
       const form = document.body.querySelector("form");
 
-      expect(form.getAttribute("action")).toBe("about:blank");
+      expect(form.getAttribute("action")).toBe(
+        "https://something.cardinalcommerce.com/dostuff"
+      );
 
       done();
     });
 
     handleConfiguration({
+      clientConfiguration: configuration(),
       acsUrl: decodeURIComponent("jaVa%0ascript:alert(document.domain)"), // eslint-disable-line no-script-url
       pareq: "the pareq",
       md: "the md",

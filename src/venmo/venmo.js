@@ -66,6 +66,7 @@ function Venmo(options) {
   this._useAllowDesktopWebLogin =
     this._allowDesktopWebLogin && this._isDesktop();
   this._cannotHaveReturnUrls = inIframe() || this._requireManualReturn;
+  this._allowAndroidRecreation = options.allowAndroidRecreation !== false;
   this._maxRetryCount = 3;
 
   this._shouldCreateVenmoPaymentContext =
@@ -349,6 +350,13 @@ Venmo.prototype.getUrl = function () {
         params["x-cancel"] = "NOOP";
         params["x-error"] = "NOOP";
       }
+
+      if (!this._allowAndroidRecreation) {
+        params.allowAndroidRecreation = 0;
+      } else {
+        params.allowAndroidRecreation = 1;
+      }
+
       params.ua = window.navigator.userAgent;
       params.braintree_merchant_id =
         this._profileId || venmoConfiguration.merchantId;
@@ -847,7 +855,7 @@ Venmo.prototype._shouldUseRedirectStrategy = function () {
     return false;
   }
 
-  if (this._mobileWebFallBack === true) { 
+  if (this._mobileWebFallBack === true) {
     return true;
   }
 

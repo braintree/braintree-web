@@ -24,7 +24,7 @@ var ELEMENT_IDS = {
 };
 
 function openPopup(options) {
-  var popupName = "venmoforceWebLogin";
+  var popupName = "venmoDesktopWebLogin";
   var checkForStatusChange = options.checkForStatusChange;
   var cancelTokenization = options.cancelTokenization;
   var venmoUrl = options.venmoUrl;

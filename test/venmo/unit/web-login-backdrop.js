@@ -226,7 +226,7 @@ describe("web-login-backdrop", () => {
       const expectedDispatchFrameUrl = `${mockAssetUrl}/web/${VERSION}/html/dispatch-frame.min.html`;
       const expectedOpenFrameUrl = `${mockAssetUrl}/web/${VERSION}/html/venmo-landing-frame.min.html`;
       const expectedCreateArgs = {
-        name: "venmoforceWebLogin",
+        name: "venmoDesktopWebLogin",
         dispatchFrameUrl: expectedDispatchFrameUrl,
         openFrameUrl: expectedOpenFrameUrl,
         top: expectedTop,

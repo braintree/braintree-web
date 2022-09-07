@@ -1086,6 +1086,22 @@ describe("Venmo", () => {
           createPromise: Promise.reject(new Error("client error")),
         }).getUrl()
       ).rejects.toThrow("client error"));
+
+    it("includes allowAndroidRecreation flag if merchant configures it to do so", async () => {
+      let venmoRecreating = new Venmo({
+        allowAndroidRecreation: false,
+        createPromise: Promise.resolve(testContext.client),
+      });
+      const url = await venmoRecreating.getUrl();
+
+      expect(url).toEqual(expect.stringContaining("allowAndroidRecreation=0"));
+    });
+
+    it("defaults allowAndroidRecreation flag to true if merchant does not specify", async () => {
+      const url = await venmo.getUrl();
+
+      expect(url).toEqual(expect.stringContaining("allowAndroidRecreation=1"));
+    });
   });
 
   describe("processResultsFromHash", () => {

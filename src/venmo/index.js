@@ -40,7 +40,10 @@ var VERSION = process.env.npm_package_version;
  * @param {string} [options.displayName] The business name that will be displayed in the Venmo app payment approval screen. Only applicable when used with `paymentMethodUsage` and used by merchants onboarded as PayFast channel partners.
  * @param {boolean} [options.allowDesktop] Used to support desktop users. When enabled, the default mode is to render a scannable QR-code customers scan with their phone's to approve via the mobile app.
  * @param {boolean} [options.allowDesktopWebLogin=false] When `true`, the customer will authorize payment via a window popup that allows them to sign in to their Venmo account. This is used explicitly for customers operating from desktop browsers wanting to avoid the QR Code flow.
- * @param {boolean} [options.mobileWebFallBack] Use this option when you want to force a web-login experience, such as if on mobile and the Venmo app isn't installed.
+ * @param {boolean} [options.mobileWebFallBack] Use this option when you want to use a web-login experience, such as if on mobile and the Venmo app isn't installed.
+ * @param {boolean} [options.allowAndroidRecreation=true] This flag is for when your integration uses the [Android PopupBridge](https://github.com/braintree/popup-bridge-android). Setting this flag to false will avoid a page refresh when returning to your page after payment authorization. If not specified, it defaults to true and the Android activity will be recreated, resulting in a page refresh.
+ *
+ * Note: This flow currently requires a full page redirect, which means to utilize this flow your page will need to be able to handle the checkout session across different pages.
  * @param {callback} [callback] The second argument, `data`, is the {@link Venmo} instance. If no callback is provided, `create` returns a promise that resolves with the {@link Venmo} instance.
  * @example
  * braintree.venmo.create({

@@ -1,5 +1,13 @@
 # CHANGELOG
 
+# 3.88.0
+
+- Venmo
+  - add `allowAndroidRecreation` for addressing Android PopupBridge use cases
+  - Update terminology around desktop web login
+- 3D Secure
+  - Add check to verify acsUrl if not a cardinal commerce domain
+
 # 3.87.0
 
 - Venmo fix mobileWebFallback url reference

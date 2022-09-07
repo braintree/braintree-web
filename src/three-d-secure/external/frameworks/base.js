@@ -366,6 +366,7 @@ BaseFramework.prototype.cancelVerifyCard = function () {
 };
 
 BaseFramework.prototype._setupV1Bus = function (options) {
+  var clientConfiguration = this._client.getConfiguration();
   var parentURL = window.location.href.split("#")[0];
   var lookupResponse = options.lookupResponse;
   var channel = uuid();
@@ -381,6 +382,8 @@ BaseFramework.prototype._setupV1Bus = function (options) {
 
   bus.on(BUS_CONFIGURATION_REQUEST_EVENT, function (reply) {
     reply({
+      clientConfiguration: clientConfiguration,
+      nonce: options.nonce,
       acsUrl: lookupResponse.acsUrl,
       pareq: lookupResponse.pareq,
       termUrl:
