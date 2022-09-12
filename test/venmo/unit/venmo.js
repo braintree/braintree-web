@@ -1104,7 +1104,7 @@ describe("Venmo", () => {
     });
   });
 
-  describe("processResultsFromHash", () => {
+  describe("processHashChangeFlowResults", () => {
     let createOptions;
 
     beforeEach(() => {
@@ -1133,8 +1133,8 @@ describe("Venmo", () => {
         `${testContext.location}#venmoSuccess=1&paymentMethodNonce=nonce-from-url&username=username-from-url`
       );
 
-      const resultFromUrl = await venmo.processResultsFromHash();
-      const result = await venmo.processResultsFromHash(
+      const resultFromUrl = await venmo.processHashChangeFlowResults();
+      const result = await venmo.processHashChangeFlowResults(
         "venmoSuccess=1&paymentMethodNonce=nonce-from-argument&username=username-from-argument"
       );
 
@@ -1153,18 +1153,36 @@ describe("Venmo", () => {
         `${testContext.location}#/venmoSuccess=1&paym!entMethodNonce/=abc&userna@#me=keanu`
       );
 
-      const result = await venmo.processResultsFromHash();
+      const result = await venmo.processHashChangeFlowResults();
 
       expect(result.paymentMethodNonce).toBe("abc");
       expect(result.username).toBe("keanu");
     });
 
     it("resolves with nonce payload on successful result", () => {
+      const name = "keanu";
+      const nonce = "abc";
+      const resourceId = "123";
       const venmo = new Venmo(createOptions);
 
       return venmo
-        .processResultsFromHash(
-          "venmoSuccess=1&paymentMethodNonce=abc&username=keanu"
+        .processHashChangeFlowResults(
+          `venmoSuccess=1&paymentMethodNonce=${nonce}&username=${name}&resource_id=${resourceId}`
+        )
+        .then((payload) => {
+          expect(payload.paymentMethodNonce).toBe(nonce);
+          expect(payload.username).toBe(name);
+          expect(payload.id).toBe(resourceId);
+        });
+    });
+
+    it("successfully returns a nonce payload when nonce hash value is snake case", () => {
+      const snakeCaseNonceParam = "payment_method_nonce";
+      const venmo = new Venmo(createOptions);
+
+      return venmo
+        .processHashChangeFlowResults(
+          `venmoSuccess=1&${snakeCaseNonceParam}=abc&username=keanu`
         )
         .then((payload) => {
           expect(payload.paymentMethodNonce).toBe("abc");
@@ -1172,7 +1190,9 @@ describe("Venmo", () => {
         });
     });
 
-    it("pings for payment context status when hash params include resource id and is not using the legacy flow", async () => {
+    it("polls for status change when using the legacy flow instead of relying on hashes", async () => {
+      const mockPaymentContextId = "some-context-id";
+
       testContext.client.request.mockResolvedValueOnce({
         data: {
           node: {
@@ -1186,49 +1206,52 @@ describe("Venmo", () => {
 
       const venmo = new Venmo(createOptions);
 
-      const payload = await venmo.processResultsFromHash(
-        "venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=context-id-from-hash"
-      );
+      venmo._venmoPaymentContextId = mockPaymentContextId;
+
+      const payload = await venmo.processHashChangeFlowResults();
 
       expect(payload.paymentMethodNonce).toBe("fake-nonce-from-context");
       expect(payload.username).toBe("name-from-context");
-      expect(payload.id).toBe("context-id-from-hash");
+      expect(payload.id).toBe(mockPaymentContextId);
       expect(testContext.client.request).toBeCalledTimes(1);
       expect(testContext.client.request).toBeCalledWith({
         api: "graphQLApi",
         data: {
           query: expect.stringMatching("on VenmoPaymentContext"),
           variables: {
-            id: "context-id-from-hash",
+            id: mockPaymentContextId,
           },
         },
       });
     });
 
-    it("falls back to hash value when call to ping payment context status fails", async () => {
+    it("resolves with hash params when payment context status polling fails", async () => {
+      const mockNonce = "nonce-from-hash";
+      const mockUsername = "bill-bobbo";
+      const mockResourceId = "context-id-from-hash";
+
       testContext.client.request.mockRejectedValue(new Error("network error"));
       createOptions.paymentMethodUsage = "single_use";
 
       const venmo = new Venmo(createOptions);
 
-      const payload = await venmo.processResultsFromHash(
-        "venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=context-id-from-hash"
+      const results = await venmo.processHashChangeFlowResults(
+        `venmoSuccess=1&paymentMethodNonce=${mockNonce}&username=${mockUsername}&resource_id=${mockResourceId}`
       );
 
-      expect(payload.paymentMethodNonce).toBe("nonce-from-hash");
-      expect(payload.username).toBe("name-from-hash");
-      expect(analytics.sendEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        "venmo.process-results.payment-context-status-query-failed"
-      );
+      expect(results.venmoSuccess).toBe("1");
+      expect(results.paymentMethodNonce).toBe(mockNonce);
+      expect(results.username).toBe(mockUsername);
+      expect(results.id).toBe(mockResourceId);
       expect(testContext.client.request).toBeCalledTimes(1);
     });
 
-    it("falls back to hash value when call to ping payment context status is not approved", async () => {
+    it("fails if polling rejects due to canceled status", async () => {
+      expect.assertions(3);
       testContext.client.request.mockResolvedValueOnce({
         data: {
           node: {
-            status: "CREATED",
+            status: "CANCELED",
           },
         },
       });
@@ -1236,24 +1259,22 @@ describe("Venmo", () => {
 
       const venmo = new Venmo(createOptions);
 
-      const payload = await venmo.processResultsFromHash(
-        "venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=context-id-from-hash"
-      );
-
-      expect(payload.paymentMethodNonce).toBe("nonce-from-hash");
-      expect(payload.username).toBe("name-from-hash");
-      expect(analytics.sendEvent).toHaveBeenCalledWith(
-        expect.anything(),
-        "venmo.process-results.unexpected-payment-context-status.created"
-      );
-      expect(testContext.client.request).toBeCalledTimes(1);
+      return venmo
+        .processHashChangeFlowResults(
+          "venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=context-id-from-hash"
+        )
+        .catch((error) => {
+          expect(error).toBeInstanceOf(BraintreeError);
+          expect(error.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED");
+          expect(testContext.client.request).toBeCalledTimes(1);
+        });
     });
 
     it("resolves with nonce payload on successful result when params include a resource id but sdk is initialized to use legacy flow", () => {
       const venmo = new Venmo(createOptions);
 
       return venmo
-        .processResultsFromHash(
+        .processHashChangeFlowResults(
           "venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=context-id-from-hash"
         )
         .then((payload) => {
@@ -1266,7 +1287,7 @@ describe("Venmo", () => {
       const venmo = new Venmo(createOptions);
 
       return venmo
-        .processResultsFromHash(
+        .processHashChangeFlowResults(
           "venmoError=1&errorMessage=This%20is%20an%20error%20message.&errorCode=42"
         )
         .catch((err) => {
@@ -1284,18 +1305,20 @@ describe("Venmo", () => {
     it("rejects with cancellation error on Venmo app cancel", () => {
       const venmo = new Venmo(createOptions);
 
-      return venmo.processResultsFromHash("venmoCancel=1").catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("CUSTOMER");
-        expect(err.code).toBe("VENMO_APP_CANCELED");
-        expect(err.message).toBe("Venmo app authorization was canceled.");
-      });
+      return venmo
+        .processHashChangeFlowResults("venmoCancel=1")
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("CUSTOMER");
+          expect(err.code).toBe("VENMO_APP_CANCELED");
+          expect(err.message).toBe("Venmo app authorization was canceled.");
+        });
     });
 
     it("rejects with cancellation error when app switch result not found", () => {
       const venmo = new Venmo(createOptions);
 
-      return venmo.processResultsFromHash().catch((err) => {
+      return venmo.processHashChangeFlowResults().catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
         expect(err.type).toBe("CUSTOMER");
         expect(err.code).toBe("VENMO_CANCELED");
@@ -1310,7 +1333,7 @@ describe("Venmo", () => {
 
       history.replaceState({}, "", `${testContext.location}#venmoSuccess=1`);
 
-      await venmo.processResultsFromHash();
+      await venmo.processHashChangeFlowResults();
 
       expect(window.location.href.indexOf("#")).toBe(-1);
     });
@@ -1326,7 +1349,7 @@ describe("Venmo", () => {
           `${testContext.location}#venmo${result}=1`
         );
 
-        await expect(venmo.processResultsFromHash()).rejects.toThrow();
+        await expect(venmo.processHashChangeFlowResults()).rejects.toThrow();
 
         expect(window.location.href.indexOf("#")).toBe(-1);
       }
@@ -1339,7 +1362,7 @@ describe("Venmo", () => {
 
       history.replaceState({}, "", `${testContext.location}#venmoSuccess=1`);
 
-      await venmo.processResultsFromHash();
+      await venmo.processHashChangeFlowResults();
 
       expect(window.location.hash).toBe("#venmoSuccess=1");
     });
@@ -1357,7 +1380,7 @@ describe("Venmo", () => {
           `${testContext.location}#venmo${result}=1`
         );
 
-        await expect(venmo.processResultsFromHash()).rejects.toThrow();
+        await expect(venmo.processHashChangeFlowResults()).rejects.toThrow();
 
         expect(window.location.hash).toBe(`#venmo${result}=1`);
       }
@@ -1706,6 +1729,7 @@ describe("Venmo", () => {
 
         return promise;
       });
+
       it("errors if getUrl fails", () => {
         jest
           .spyOn(venmo, "getUrl")
@@ -1715,7 +1739,7 @@ describe("Venmo", () => {
       });
 
       it("processes results instead of doing app switch when url has venmo results", () => {
-        jest.spyOn(venmo, "processResultsFromHash");
+        jest.spyOn(venmo, "processHashChangeFlowResults");
         jest.spyOn(venmo, "appSwitch");
 
         history.replaceState(
@@ -1725,7 +1749,7 @@ describe("Venmo", () => {
         );
 
         return venmo.tokenize().then(() => {
-          expect(venmo.processResultsFromHash).toBeCalledTimes(1);
+          expect(venmo.processHashChangeFlowResults).toBeCalledTimes(1);
           expect(venmo.appSwitch).not.toBeCalled();
         });
       });
@@ -1753,7 +1777,7 @@ describe("Venmo", () => {
 
       describe("when visibility listener triggers", () => {
         it("resolves with nonce payload on success", () => {
-          jest.spyOn(venmo, "processResultsFromHash").mockResolvedValue({
+          jest.spyOn(venmo, "processHashChangeFlowResults").mockResolvedValue({
             paymentMethodNonce: "abc",
             username: "keanu",
           });
@@ -1773,7 +1797,9 @@ describe("Venmo", () => {
         it("rejects with error on Venmo app error", () => {
           const err = new Error("fail");
 
-          jest.spyOn(venmo, "processResultsFromHash").mockRejectedValue(err);
+          jest
+            .spyOn(venmo, "processHashChangeFlowResults")
+            .mockRejectedValue(err);
 
           const promise = venmo.tokenize().catch((tokenizeError) => {
             expect(tokenizeError).toBe(err);

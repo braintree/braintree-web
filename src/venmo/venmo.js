@@ -16,6 +16,7 @@ var Promise = require("../lib/promise");
 var ExtendedPromise = require("@braintree/extended-promise");
 var getVenmoUrl = require("./shared/get-venmo-url");
 var runWebLogin = require("./shared/web-login-backdrop").runWebLogin;
+var snakeCaseToCamelCase = require("../lib/snake-case-to-camel-case");
 
 // NEXT_MAJOR_VERSION the source code for this is actually in a
 // typescript repo called venmo-desktop, once the SDK is migrated
@@ -867,7 +868,7 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
   var resultProcessingInProgress, visibilityChangeListenerTimeout;
 
   if (this.hasTokenizationResult()) {
-    return this.processResultsFromHash();
+    return this.processHashChangeFlowResults();
   }
 
   analytics.sendEvent(this._createPromise, "venmo.tokenize.mobile.start");
@@ -879,7 +880,7 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
     var error;
 
     self
-      .processResultsFromHash(hash)
+      .processHashChangeFlowResults(hash)
       .catch(function (err) {
         error = err;
       })
@@ -1083,48 +1084,64 @@ Venmo.prototype._removeVisibilityEventListener = function () {
   delete this._onHashChangeListener;
 };
 
-Venmo.prototype.processResultsFromHash = function (hash) {
+/**
+ * The hash parameter in this function is optional. If no hash parameter is passed, the `getFragmentParameters` function will default to the hash present in the website's URL instead.
+ *
+ * There are two scenarios where this method is called:
+ *
+ * 1. When called within a browser that is capable of returning to the same tab that started the Venmo flow, we set up a listener to detect hash changes in the url. Part of the return to the merchant's website from the Venmo app includes encoding the details of the purchase in the hash of the url. The callback is invoked and the hash is pulled off from the event payload. The reason we pull the hash off of the event payload instead of pulling it directly from the URL is because sometimes a single page app will use the hash parameter for it's routing system, and it's possible to hit a race condition where the routing code has already removed the Venmo specific attributes from the hash before we are able to pull it off the url. Grabbing the hash from the event handler instead ensures we get the Venmo details, no matter what the url is converted to.
+ * 2. The other scenario is for browsers that cannot return to the same tab, and instead the Venmo app must open a new tab. Since there is no hash listener to pull the hash from, we pull the hash details directly from the url using the `getFragmentParameters` method.
+ *
+ * @ignore
+ * @param {string} [hash] Optionally provided browser url hash.
+ * @returns {Promise} Returns a promise
+ */
+Venmo.prototype.processHashChangeFlowResults = function (hash) {
   var self = this;
   var params = getFragmentParameters(hash);
 
+  // NEXT_MAJOR_VERSION only rely on payment context status call and stop relying on the
+  // content of the hash
+
   return new Promise(function (resolve, reject) {
-    if (params.venmoSuccess) {
+    if (!self._shouldUseLegacyFlow) {
+      self
+        ._pollForStatusChange()
+        .then(function (payload) {
+          analytics.sendEvent(
+            self._createPromise,
+            "venmo.appswitch.handle.payment-context-status-query.success"
+          );
+
+          return resolve({
+            paymentMethodNonce: payload.paymentMethodId,
+            username: payload.userName,
+            payerInfo: payload.payerInfo,
+            id: self._venmoPaymentContextId,
+          });
+        })
+        .catch(function (err) {
+          if (
+            err.type === errors.VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED.type
+          ) {
+            // We want to reject in this case because if it the process was canceled, we don't want to take the happy path
+            reject(err);
+          }
+
+          analytics.sendEvent(
+            self._createPromise,
+            "venmo.process-results.payment-context-status-query-failed"
+          );
+          // If the polling request fails, but not because of cancelization, we will rely on the params provided from the hash
+          resolve(params);
+        });
+    } else if (params.venmoSuccess) {
       analytics.sendEvent(
         self._createPromise,
         "venmo.appswitch.handle.success"
       );
 
-      if (params.resource_id && !self._shouldUseLegacyFlow) {
-        self
-          ._queryPaymentContextStatus(params.resource_id)
-          .then(function (result) {
-            if (result.status !== "APPROVED") {
-              analytics.sendEvent(
-                self._createPromise,
-                "venmo.process-results.unexpected-payment-context-status." +
-                  result.status.toLowerCase()
-              );
-              resolve(params);
-
-              return;
-            }
-            resolve({
-              paymentMethodNonce: result.paymentMethodId,
-              username: result.userName,
-              payerInfo: result.payerInfo,
-              id: params.resource_id,
-            });
-          })
-          .catch(function () {
-            analytics.sendEvent(
-              self._createPromise,
-              "venmo.process-results.payment-context-status-query-failed"
-            );
-            resolve(params);
-          });
-      } else {
-        resolve(params);
-      }
+      resolve(params);
     } else if (params.venmoError) {
       analytics.sendEvent(self._createPromise, "venmo.appswitch.handle.error");
       reject(
@@ -1176,19 +1193,26 @@ Venmo.prototype._clearFragmentParameters = function () {
 function getFragmentParameters(hash) {
   var keyValuesArray = (hash || window.location.hash.substring(1)).split("&");
 
-  return keyValuesArray.reduce(function (toReturn, keyValue) {
+  var parsedParams = keyValuesArray.reduce(function (toReturn, keyValue) {
     var parts = keyValue.split("=");
     // some Single Page Apps may pre-pend a / to the first value
     // in the hash, assuming it's a route in their app
     // instead of information from Venmo, this removes all
     // non-alphanumeric characters from the keys in the params
-    var key = decodeURIComponent(parts[0]).replace(/\W/g, "");
+    var decodedKey = decodeURIComponent(parts[0]).replace(/\W/g, "");
+    var key = snakeCaseToCamelCase(decodedKey);
     var value = decodeURIComponent(parts[1]);
 
     toReturn[key] = value;
 
     return toReturn;
   }, {});
+
+  if (parsedParams.resourceId) {
+    parsedParams.id = parsedParams.resourceId;
+  }
+
+  return parsedParams;
 }
 
 function formatUserName(username) {

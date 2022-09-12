@@ -3,6 +3,7 @@
 var BRAINTREE_VERSION = require("../../constants").BRAINTREE_VERSION;
 
 var assign = require("../../../lib/assign").assign;
+var snakeCaseToCamelCase = require("../../../lib/snake-case-to-camel-case");
 
 var creditCardTokenizationBodyGenerator = require("./generators/credit-card-tokenization");
 var creditCardTokenizationResponseAdapter = require("./adapters/credit-card-tokenization");
@@ -121,16 +122,6 @@ GraphQLRequest.prototype.determineStatus = function (
 
 function isGraphQLError(errorClass, parsedResponse) {
   return !errorClass && parsedResponse.errors[0].message;
-}
-
-function snakeCaseToCamelCase(snakeString) {
-  if (snakeString.indexOf("_") === -1) {
-    return snakeString;
-  }
-
-  return snakeString.toLowerCase().replace(/(\_\w)/g, function (match) {
-    return match[1].toUpperCase();
-  });
 }
 
 function formatBodyKeys(originalBody) {

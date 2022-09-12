@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.88.1
+
+- Venmo:
+  - fix cases where nonce payload data was missing after tokenization
+
 # 3.88.0
 
 - Venmo
