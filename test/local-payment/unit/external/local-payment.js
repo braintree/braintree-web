@@ -647,6 +647,43 @@ describe("LocalPayment", () => {
         });
     });
 
+    it("uses queryItems as params when available (for iOS): CANCELED Payment", () => {
+      const options = {
+        queryItems: {
+          btLpToken: "token",
+          errorcode: "payment_error",
+          wasCanceled: true,
+        },
+      };
+
+      return testContext.localPayment
+        .tokenize(options)
+        .catch(({ code, details }) => {
+          expect(code).toBe("LOCAL_PAYMENT_CANCELED");
+          expect(details.originalError.errorcode).toBe("payment_error");
+          expect(details.originalError.token).toBe("token");
+        });
+    });
+
+    it("uses queryItems as params when available (for iOS): Successful Payment", () => {
+      const options = {
+        queryItems: {
+          btLpToken: "token",
+          btLpPaymentId: "payment-token",
+          btLpPayerId: "payer-id",
+        },
+      };
+
+      return testContext.localPayment.tokenize(options).then(({ nonce }) => {
+        expect(testContext.client.request).toHaveBeenCalledTimes(1);
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          testContext.expectedRequest
+        );
+
+        expect(nonce).toBe("a-nonce");
+      });
+    });
+
     it("uses query params when no params are sent in", () => {
       jest.spyOn(querystring, "parse").mockReturnValue({
         btLpToken: "token",

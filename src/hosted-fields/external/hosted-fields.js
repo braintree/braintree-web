@@ -158,7 +158,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * * {@link HostedFields#event:inputSubmitRequest|inputSubmitRequest}
  *
  * **Other Events**
- * * {@link HostedFields#event:binAvailable|binAvailable} - emits a {@link HostedFields~binPayload|bin payload}
+ * * {@link HostedFields#event:binAvailable|binAvailable} - emits a {@link HostedFields~binPayload|bin payload}. Note: If you are using a [Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header that prevents the origin from being sent, this event will not fire.
  * @example
  * <caption>Listening to a Hosted Field event, in this case 'focus'</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {

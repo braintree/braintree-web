@@ -1092,8 +1092,17 @@ describe("credit card model", () => {
     });
   });
 
-  describe("bin available", () => {
-    it("emits BIN_AVAILABLE event when number goes from 5 digits to 6", () => {
+  describe.only("bin available", () => {
+    beforeEach(() => {
+      // TODO SVM-3806
+      // remove this when document.referrer hack has been removed from src/hosted-fields/internal/models/credit-card-form.js
+      Object.defineProperty(document, "referrer", {
+        value: "https://example.com/",
+        configurable: true,
+      });
+    });
+
+    it("emits a targetted BIN_AVAILABLE event when number goes from 5 digits to 6", () => {
       testContext.card.set("number.value", "41111");
 
       expect(window.bus.emit).not.toHaveBeenCalledWith(
@@ -1102,9 +1111,29 @@ describe("credit card model", () => {
 
       testContext.card.set("number.value", "411111");
 
+      expect(window.bus.target).toHaveBeenCalledWith({
+        channel: window.bus.channel,
+        origin: "https://example.com",
+      });
       expect(window.bus.emit).toHaveBeenCalledWith(
         "hosted-fields:BIN_AVAILABLE",
         "411111"
+      );
+    });
+
+    // TODO SVM-3806
+    // remove this when document.referrer hack has been removed from src/hosted-fields/internal/models/credit-card-form.js
+    it("does not emit BIN_AVAILABLE event when document.referrer is not available", () => {
+      Object.defineProperty(document, "referrer", {
+        value: "",
+        configurable: true,
+      });
+
+      testContext.card.set("number.value", "411111");
+
+      expect(window.bus.target).not.toHaveBeenCalled();
+      expect(window.bus.emit).not.toHaveBeenCalledWith(
+        "hosted-fields:BIN_AVAILABLE"
       );
     });
 

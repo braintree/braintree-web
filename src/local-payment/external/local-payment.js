@@ -305,6 +305,11 @@ LocalPayment.prototype.tokenize = function (params) {
 
   params = params || querystring.parse();
 
+  // iOS Safari parses query params by adding the params inside an object called: queryItems
+  if (params.queryItems) {
+    params = params.queryItems;
+  }
+
   if (params.c || params.wasCanceled) {
     return Promise.reject(
       new BraintreeError({

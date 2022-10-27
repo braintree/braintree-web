@@ -39,9 +39,7 @@ function SEPA(options) {
  */
 
 /**
- * @static
  * @public
- * @function tokenize
  * @param {object} options All options for intiating the SEPA payment flow.
  * @param {string} [options.accountHolderName] The account holder name.
  * @param {string} [options.customerId] The customer's id.
@@ -69,7 +67,6 @@ function SEPA(options) {
  *   })
  * })
  */
-
 SEPA.prototype.tokenize = function (options) {
   var self = this;
 

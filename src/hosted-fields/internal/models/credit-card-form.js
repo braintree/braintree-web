@@ -214,7 +214,18 @@ CreditCardForm.prototype._onNumberChange = function (number, metadata) {
     (oldNumberIsShortEnoughForBinEvent || oldBinIsNotEqualToNewBin) &&
     newNumberIsLongEnoughForBinEvent
   ) {
-    window.bus.emit(events.BIN_AVAILABLE, newBin);
+    // TODO SVM-3806
+    // Temporary fix for SVM-3806
+    // Once a more comprehensive solution for targetting
+    // only specific frames is introduced, remove this
+    if (document.referrer) {
+      window.bus
+        .target({
+          channel: window.bus.channel,
+          origin: document.referrer.replace(/(^\/|\/$)/g, ""),
+        })
+        .emit(events.BIN_AVAILABLE, newBin);
+    }
   }
 };
 

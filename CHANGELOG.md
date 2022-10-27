@@ -1,5 +1,16 @@
 # CHANGELOG
 
+# 3.88.2
+
+- Sepa: fix jsdoc entry for `tokenize`
+- 3D Secure: update jsdoc entry for `teardown`
+- Client
+  - Validate graphQL url when instantiating in an iframe/popup
+- Hosted Fields
+  - Patch `binAvailable` to only send bind detals to parent page
+- Local payments
+  - Fix canceled or failed flow for PopupBridge use cases
+
 # 3.88.1
 
 - Venmo:

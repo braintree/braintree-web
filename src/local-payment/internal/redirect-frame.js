@@ -33,7 +33,7 @@ function start(cb) {
         link.href = querystring.queryify(redirectUrl, {
           btLpToken: params.token,
           errorcode: params.errorcode,
-          wasCanceled: params.c === 1,
+          wasCanceled: params.c === "1",
         });
       } else {
         link.href = querystring.queryify(redirectUrl, {

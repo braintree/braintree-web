@@ -86,6 +86,14 @@ function Client(configuration) {
   this._clientApiBaseUrl = gatewayConfiguration.clientApiUrl + "/v1/";
 
   if (gatewayConfiguration.graphQL) {
+    if (!isVerifiedDomain(gatewayConfiguration.graphQL.url)) {
+      throw new BraintreeError({
+        type: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.type,
+        code: errors.CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN.code,
+        message: "graphQL.url property is on an invalid domain.",
+      });
+    }
+
     this._graphQL = new GraphQL({
       graphQL: gatewayConfiguration.graphQL,
     });

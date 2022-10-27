@@ -95,6 +95,27 @@ describe("Client", () => {
         done();
       }
     });
+
+    it("throws an error when instantiated with invalid graphqlUrl", () => {
+      expect.assertions(4);
+
+      try {
+        new Client({
+          gatewayConfiguration: {
+            graphQL: {
+              url: "http://example.com",
+            },
+          },
+        });
+      } catch (err) {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe("CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN");
+        expect(err.message).toBe(
+          "graphQL.url property is on an invalid domain."
+        );
+      }
+    });
   });
 
   describe("initialize", () => {

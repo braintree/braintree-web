@@ -96,7 +96,7 @@ describe("redirect-frame", () => {
         "https://example.com/fallback-url"
       );
       testContext.params.t = "Return to Site";
-      testContext.params.c = 1;
+      testContext.params.c = "1";
       testContext.params.errorcode = "payment_error";
 
       redirectFrame.start(() => {

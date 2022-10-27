@@ -12,6 +12,7 @@ beforeEach(() => {
   window.bus = {
     on: jest.fn(),
     emit: jest.fn(),
+    target: jest.fn().mockReturnThis(),
   };
 });
 
