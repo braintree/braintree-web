@@ -343,7 +343,10 @@ describe("internal", () => {
 
       location.hash = "#test-uuid";
       internal.create();
-      expect(Framebus).toBeCalledWith({ channel: "test-uuid" });
+      expect(Framebus).toBeCalledWith({
+        channel: "test-uuid",
+        targetFrames: [window.parent],
+      });
       expect(window.bus).toBeInstanceOf(Framebus);
 
       location.hash = originalLocationHash;

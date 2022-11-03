@@ -1,5 +1,11 @@
 # CHANGELOG
 
+# 3.88.3
+
+- Update framebus to v5.2.0
+- Hosted Fields
+  - Improve iframe communication with parent page
+
 # 3.88.2
 
 - Sepa: fix jsdoc entry for `tokenize`

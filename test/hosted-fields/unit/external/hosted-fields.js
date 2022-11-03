@@ -2,6 +2,7 @@
 
 jest.mock("../../../../src/hosted-fields/shared/browser-detection");
 jest.mock("../../../../src/hosted-fields/external/get-styles-from-class");
+jest.mock("framebus");
 
 const analytics = require("../../../../src/lib/analytics");
 const Bus = require("framebus");
@@ -86,6 +87,11 @@ describe("HostedFields", () => {
     it("creates a bus instance", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
+      expect(Bus).toBeCalledWith({
+        channel: expect.stringContaining("-"),
+        targetFrames: [],
+        verifyDomain: expect.any(Function),
+      });
       expect(testContext.instance._bus).toBeInstanceOf(Bus);
     });
 
@@ -304,6 +310,11 @@ describe("HostedFields", () => {
         expect(iframes[2].getAttribute("title")).toBe(
           "Secure Credit Card Frame - Expiration Date"
         );
+
+        expect(Bus.prototype.addTargetFrame).toBeCalledTimes(3);
+        expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[0]);
+        expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[1]);
+        expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[2]);
 
         done();
       });

@@ -248,7 +248,10 @@ function create() {
   var componentId = location.hash.slice(1, location.hash.length);
   var name = frameName.getFrameName();
 
-  window.bus = new Bus({ channel: componentId });
+  window.bus = new Bus({
+    channel: componentId,
+    targetFrames: [window.parent],
+  });
 
   window.bus.emit(
     events.FRAME_READY,

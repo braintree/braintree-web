@@ -417,6 +417,7 @@ function HostedFields(options) {
   this._bus = new Bus({
     channel: componentId,
     verifyDomain: isVerifiedDomain,
+    targetFrames: [],
   });
 
   this._destructor.registerFunctionForTeardown(function () {
@@ -522,6 +523,7 @@ function HostedFields(options) {
           field.iframeTitle ||
           "Secure Credit Card Frame - " + constants.allowedFields[key].label,
       });
+      this._bus.addTargetFrame(frame);
 
       this._injectedNodes.push.apply(
         this._injectedNodes,
