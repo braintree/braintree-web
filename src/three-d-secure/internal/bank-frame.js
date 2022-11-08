@@ -24,13 +24,20 @@ module.exports = function () {
   bus.emit(BUS_CONFIGURATION_REQUEST_EVENT, handleConfiguration);
 };
 
+// Validates cardinalcommerce domains and subdomains
+// @returns Boolean
+function isValidCardinalUrl(url) {
+  return /^https:\/\/([a-z0-9]+[.])*cardinalcommerce[.]com$/.test(
+    url.protocol + "//" + url.hostname
+  );
+}
+
 function isCardinalCommerce(client, configuration) {
   return new Promise(function (resolve, reject) {
-    if (
-      /^https:\/\/([a-z0-9]+[.])*cardinalcommerce[.]com/.test(
-        configuration.acsUrl
-      )
-    ) {
+    var parser = document.createElement("a");
+
+    parser.href = configuration.acsUrl;
+    if (isValidCardinalUrl(parser)) {
       return resolve(configuration.acsUrl);
     }
 

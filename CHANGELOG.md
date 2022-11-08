@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# 3.88.4
+
+- 3D Secure
+  - Update the regex to validate cardinal commerce domain
+- Venmo Desktop
+  - Use latest framebus for more secure messaging
+
 # 3.88.3
 
 - Update framebus to v5.2.0

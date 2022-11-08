@@ -15,6 +15,7 @@ module.exports = function start() {
     id = _a[1];
   var bus = new framebus_1.default({
     channel: id,
+    targetFrames: [window.parent],
   });
   setup_iframe_base_1.default();
   var modal = modal_1.default.create({

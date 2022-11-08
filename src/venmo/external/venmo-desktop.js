@@ -40,6 +40,7 @@ var VenmoDesktop = /** @class */ (function () {
     this.bus = new framebus_1.default({
       channel: this.id,
       verifyDomain: options.verifyDomain,
+      targetFrames: [],
     });
     this.apiRequest = options.apiRequest;
     this.sendEvent = options.sendEvent;
@@ -69,6 +70,7 @@ var VenmoDesktop = /** @class */ (function () {
       },
       title: "Venmo Desktop",
     });
+    this.bus.addTargetFrame(this.iframe);
   }
   VenmoDesktop.prototype.initialize = function () {
     var _this = this;
@@ -96,10 +98,6 @@ var VenmoDesktop = /** @class */ (function () {
           customerCancelledHandler
         );
         _this.bus.off(
-          events_1.VENMO_DESKTOP_AUTHORIZATION_COMPLETED,
-          completedHandler
-        );
-        _this.bus.off(
           events_1.VENMO_DESKTOP_UNKNOWN_ERROR,
           unknownErrorHandler
         );
@@ -125,17 +123,13 @@ var VenmoDesktop = /** @class */ (function () {
           reason: "CUSTOMER_CANCELED",
         });
       };
-      var completedHandler = function (payload) {
+      _this.completedHandler = function (payload) {
         removeListeners();
         resolve(payload);
       };
       _this.bus.on(
         events_1.VENMO_DESKTOP_CUSTOMER_CANCELED,
         customerCancelledHandler
-      );
-      _this.bus.on(
-        events_1.VENMO_DESKTOP_AUTHORIZATION_COMPLETED,
-        completedHandler
       );
       _this.bus.on(events_1.VENMO_DESKTOP_UNKNOWN_ERROR, unknownErrorHandler);
     });
@@ -161,7 +155,10 @@ var VenmoDesktop = /** @class */ (function () {
       return;
     }
     setTimeout(function () {
-      _this.bus.emit(events_1.VENMO_DESKTOP_AUTHORIZATION_COMPLETED, result);
+      if (_this.completedHandler) {
+        _this.completedHandler(result);
+      }
+      delete _this.completedHandler;
     }, VISUAL_DELAY_BEFORE_SIGNALLING_COMPLETION);
   };
   VenmoDesktop.prototype.triggerRejected = function (err) {

@@ -161,50 +161,61 @@ describe("initializeBankFrame", () => {
     });
   });
 
-  it("verify the acsUrl if non-cardinalcommerce domain and return the correct one", (done) => {
-    let handleConfiguration;
+  const mockURLs = [
+    "https://something.cardinalcommerce.com.test-this-domain.com/dostuff/something.html",
+    "http://totes-not-cardinal.com/acs",
+    "https://something.cardinalcommerce.com.test-this-domain.com/dostuff/something.html/r/?id=hc43f43t4a,afd67070,affc7349&p1=knowbe4.com/r/?id=159593f159593159593,hde43e13b13, ecdfafef, ee5cfa06",
+  ];
 
-    initializeBankFrame();
+  it.each(mockURLs)(
+    "verify the acsUrl if non-cardinalcommerce domain and return the correct one %#",
+    (url, done) => {
+      let handleConfiguration;
 
-    handleConfiguration = Bus.prototype.emit.mock.calls[0][1];
+      // Append test urls here
+      initializeBankFrame();
 
-    jest
-      .spyOn(HTMLFormElement.prototype, "submit")
-      .mockImplementation((...args) => {
-        let input;
-        const form = document.body.querySelector("form");
+      handleConfiguration = Bus.prototype.emit.mock.calls[0][1];
 
-        expect(args).toHaveLength(0);
+      jest
+        .spyOn(HTMLFormElement.prototype, "submit")
+        .mockImplementation((...args) => {
+          let input;
 
-        expect(form.getAttribute("action")).toBe(
-          "https://something.cardinalcommerce.com/dostuff"
-        );
-        expect(form.getAttribute("method")).toBe("POST");
-        expect(form.querySelectorAll("input")).toHaveLength(3);
+          const form = document.body.querySelector("form");
 
-        input = form.querySelector('input[name="PaReq"]');
-        expect(input.type).toBe("hidden");
-        expect(input.value).toBe("the pareq");
+          expect(args).toHaveLength(0);
 
-        input = form.querySelector('input[name="MD"]');
-        expect(input.type).toBe("hidden");
-        expect(input.value).toBe("the md");
+          expect(form.getAttribute("action")).toBe(
+            "https://something.cardinalcommerce.com/dostuff"
+          );
 
-        input = form.querySelector('input[name="TermUrl"]');
-        expect(input.type).toBe("hidden");
-        expect(input.value).toBe("https://braintreepayments.com/some/url");
+          expect(form.getAttribute("method")).toBe("POST");
+          expect(form.querySelectorAll("input")).toHaveLength(3);
 
-        done();
+          input = form.querySelector('input[name="PaReq"]');
+          expect(input.type).toBe("hidden");
+          expect(input.value).toBe("the pareq");
+
+          input = form.querySelector('input[name="MD"]');
+          expect(input.type).toBe("hidden");
+          expect(input.value).toBe("the md");
+
+          input = form.querySelector('input[name="TermUrl"]');
+          expect(input.type).toBe("hidden");
+          expect(input.value).toBe("https://braintreepayments.com/some/url");
+          done();
+        });
+
+      handleConfiguration({
+        clientConfiguration: configuration(),
+        acsUrl: url,
+        pareq: "the pareq",
+        md: "the md",
+        termUrl: "https://braintreepayments.com/some/url",
       });
-
-    handleConfiguration({
-      clientConfiguration: configuration(),
-      acsUrl: "http://totes-not-cardinal.com/acs",
-      pareq: "the pareq",
-      md: "the md",
-      termUrl: "https://braintreepayments.com/some/url",
-    });
-  });
+    }
+  );
 
   it("payment_method_nonce API call failed", async () => {
     let handleConfiguration;
