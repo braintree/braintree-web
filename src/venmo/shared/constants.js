@@ -11,7 +11,7 @@
 module.exports = {
   DOCUMENT_VISIBILITY_CHANGE_EVENT_DELAY: 500,
   DEFAULT_PROCESS_RESULTS_DELAY: 1000,
-  VENMO_APP_OR_MOBILE_AUTH_URL: "https://account.venmo.com/go/checkout",
+  VENMO_APP_OR_MOBILE_AUTH_URL: "https://venmo.com/go/checkout",
   VENMO_MOBILE_APP_AUTH_ONLY_URL: "https://venmo.com/braintree/checkout",
   VENMO_WEB_LOGIN_URL: "https://account.venmo.com/go/web",
 };

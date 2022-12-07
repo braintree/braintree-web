@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.88.5
+
+- Venmo
+  - Update constants to use correct deeplinking url for Venmo
+
 # 3.88.4
 
 - 3D Secure
