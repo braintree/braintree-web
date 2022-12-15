@@ -337,12 +337,11 @@ Venmo.prototype.getUrl = function () {
         }
       }
 
-      if (this._shouldIncludeReturnUrls()) {
+      if (this._shouldIncludeReturnUrls() || this._useAllowDesktopWebLogin) {
         if (this._useAllowDesktopWebLogin) {
           currentUrl =
             this._assetsUrl + "/web/" + VERSION + "/html/redirect-frame.html";
         }
-
         params["x-success"] = currentUrl + "#venmoSuccess=1";
         params["x-cancel"] = currentUrl + "#venmoCancel=1";
         params["x-error"] = currentUrl + "#venmoError=1";

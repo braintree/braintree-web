@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.88.6
+
+- Venmo
+  - Fix Desktop Web Login flow running from an iframe
+
 # 3.88.5
 
 - Venmo
