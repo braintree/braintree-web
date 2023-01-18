@@ -6,4 +6,5 @@ module.exports = {
     checkout: "create_payment_resource",
     vault: "setup_billing_agreement",
   },
+  REQUIRED_OPTIONS: ["paymentId", "currency"],
 };

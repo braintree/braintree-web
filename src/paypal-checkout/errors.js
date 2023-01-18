@@ -31,6 +31,13 @@
  * @property {NETWORK} PAYPAL_ACCOUNT_TOKENIZATION_FAILED Occurs when PayPal account could not be tokenized.
  */
 
+/**
+ * @name BraintreeError.Paypal Checkout - updatePayment Error Codes
+ * @description Errors that occur when using the [`updatePayment` method](./PayPalCheckout.html#updatePayment).
+ * @property {MERCHANT} PAYPAL_INVALID_PAYMENT_OPTION Occurs when an option contains an invalid value.
+ * @property {MERCHANT} PAYPAL_MISSING_REQUIRED_OPTION Occurs when a required option is missing. 
+ * @property {NETWORK} PAYPAL_FLOW_FAILED Occurs when something goes wrong when initializing the flow or communicating with the server.
+ */
 var BraintreeError = require("../lib/braintree-error");
 
 module.exports = {
@@ -89,5 +96,10 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_INVALID_PAYMENT_OPTION",
     message: "PayPal payment options are invalid.",
+  },
+  PAYPAL_MISSING_REQUIRED_OPTION: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_MISSING_REQUIRED_OPTION",
+    message: "Missing required option.",
   },
 };

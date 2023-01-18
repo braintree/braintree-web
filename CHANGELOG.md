@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.90.0
+
+- Paypal
+  - Add support for `updatePayment`
+
 # 3.88.6
 
 - Venmo

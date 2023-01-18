@@ -11,6 +11,7 @@ const BraintreeError = require("../../../src/lib/braintree-error");
 const frameService = require("../../../src/lib/frame-service/external");
 const { fake, yieldsAsync } = require("../../helpers");
 const methods = require("../../../src/lib/methods");
+const errors = require("../../../src/paypal-checkout/errors");
 
 describe("PayPalCheckout", () => {
   let testContext;
@@ -973,6 +974,592 @@ describe("PayPalCheckout", () => {
 
           expect(arg.data).not.toHaveProperty("description");
         });
+    });
+  });
+
+  describe("updatePayment", () => {
+    beforeEach(() => {
+      testContext.options = {
+        amount: 1,
+        currency: "USD",
+        paymentId: "pay-token-123-abc",
+      };
+    });
+
+    it("sends analytics event when udpatePayment is called", () => {
+      analytics.sendEvent.mockClear();
+
+      testContext.paypalCheckout.updatePayment(testContext.options);
+
+      expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.paypalCheckout._clientPromise,
+        "paypal-checkout.updatePayment"
+      );
+    });
+
+    it("handles gateway error (HTTP status 422)", () => {
+      const unprocessableError = new BraintreeError({
+        type: BraintreeError.types.NETWORK,
+        code: "CLIENT_REQUEST_ERROR",
+        message: "There was a problem with your request.",
+        details: { httpStatus: 422 },
+      });
+
+      analytics.sendEvent.mockClear();
+
+      testContext.client.request.mockRejectedValue(unprocessableError);
+
+      return testContext.paypalCheckout
+        .updatePayment(testContext.options)
+        .catch(({ code, details, message, type }) => {
+          expect(type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
+          expect(code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
+          expect(message).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.message);
+          expect(details).toEqual({
+            originalError: unprocessableError,
+          });
+          expect(analytics.sendEvent).toHaveBeenCalledTimes(2);
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.paypalCheckout._clientPromise,
+            "paypal-checkout.updatePayment.invalid"
+          );
+        });
+    });
+
+    it("handles network error (HTTP status 404)", () => {
+      analytics.sendEvent.mockClear();
+
+      const originalError = new Error("Something bad happened");
+
+      originalError.details = { httpStatus: 404 };
+
+      testContext.client.request.mockRejectedValue(originalError);
+
+      return testContext.paypalCheckout
+        .updatePayment(testContext.options)
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(errors.PAYPAL_FLOW_FAILED.type);
+          expect(err.code).toBe(errors.PAYPAL_FLOW_FAILED.code);
+          expect(err.message).toBe(errors.PAYPAL_FLOW_FAILED.message);
+          expect(err.details).toHaveProperty("originalError");
+          expect(err.details.originalError).toBe(originalError);
+        });
+    });
+
+    it("uses the correct endpoint", () => {
+      testContext.paypalCheckout.updatePayment(testContext.options).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            endpoint: "paypal_hermes/patch_payment_resource",
+            method: "post",
+          })
+        );
+      });
+    });
+
+    it("resolves with 'success' response", () => {
+      const expected = {
+        agreementSetup: {
+          tokenId: "id",
+        },
+        paymentResource: {
+          paymentToken: "token",
+          redirectUrl: "https://example.com?foo=bar&EC-token&foo2=bar2",
+        },
+      };
+
+      return testContext.paypalCheckout
+        .updatePayment(testContext.options)
+        .then((payload) => {
+          expect(payload).toEqual(expected);
+        });
+    });
+
+    it("calculates `amount` when absent and `lineItems` present", async () => {
+      delete testContext.options.amount;
+
+      testContext.options.lineItems = [
+        {
+          quantity: "1",
+          unitAmount: "16",
+          unitTaxAmount: "1.5",
+          name: "tutu",
+          description: "nylon",
+          kind: "debit",
+          productCode: "4m5n6o",
+          url: "example.com",
+        },
+      ];
+
+      testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+
+      const formattedData = testContext.paypalCheckout._formatUpdatePaymentData(
+        testContext.options
+      );
+
+      expect(formattedData).toMatchObject({
+        merchantAccountId: "abcdefg123456",
+        paymentId: "pay-token-123-abc",
+        currencyIsoCode: "USD",
+        lineItems: [
+          {
+            quantity: "1",
+            unitAmount: "16",
+            unitTaxAmount: "1.5",
+            name: "tutu",
+            description: "nylon",
+            kind: "debit",
+            productCode: "4m5n6o",
+            url: "example.com",
+          },
+        ],
+        amount: 17.5,
+      });
+      expect(formattedData).toHaveProperty("amount");
+      expect(formattedData.amount).toBe(17.5);
+    });
+
+    it("fails if `amount` and `lineItems` are missing", async () => {
+      testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+
+      const pp = await testContext.paypalCheckout._initialize({
+        client: testContext.client,
+      });
+
+      return pp.updatePayment(testContext.options).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.type);
+        expect(err.message).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.message);
+        expect(err.code).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.code);
+      });
+    });
+
+    it("fails if `currency` and single `shippingOption` currency are not the same", async () => {
+      const pp = await testContext.paypalCheckout._initialize({
+        client: testContext.client,
+      });
+      const expectedOriginalErr = new Error(
+        "One or more shipping option currencies differ from checkout currency."
+      );
+
+      expect.assertions(5);
+
+      return pp
+        .updatePayment({
+          merchantAccountId: "abcdefg123456",
+          paymentId: "pay-token-123-abc",
+          currency: "USD",
+          lineItems: [
+            {
+              quantity: "1",
+              unitAmount: "16",
+              unitTaxAmount: "1.5",
+              name: "tutu",
+              description: "nylon",
+              kind: "debit",
+              productCode: "4m5n6o",
+              url: "example.com",
+            },
+          ],
+          shippingOptions: [
+            {
+              id: "shipping-eventually",
+              type: "SHIPPING",
+              label: "Eventual Shipping",
+              selected: true,
+              amount: {
+                value: "7.00",
+                currency: "XYZ",
+              },
+            },
+          ],
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
+          expect(err.message).toBe(
+            errors.PAYPAL_INVALID_PAYMENT_OPTION.message
+          );
+          expect(err.code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
+          expect(err.details.originalError.message).toBe(
+            expectedOriginalErr.message
+          );
+        });
+    });
+
+    it("fails if `currency` and any `shippingOption` currency are not the same", async () => {
+      const pp = await testContext.paypalCheckout._initialize({
+        client: testContext.client,
+      });
+      const expectedOriginalErr = new Error(
+        "One or more shipping option currencies differ from checkout currency."
+      );
+
+      expect.assertions(5);
+
+      return pp
+        .updatePayment({
+          merchantAccountId: "abcdefg123456",
+          paymentId: "pay-token-123-abc",
+          currency: "USD",
+          lineItems: [
+            {
+              quantity: "1",
+              unitAmount: "16",
+              unitTaxAmount: "1.5",
+              name: "tutu",
+              description: "nylon",
+              kind: "debit",
+              productCode: "4m5n6o",
+              url: "example.com",
+            },
+          ],
+          shippingOptions: [
+            {
+              id: "shipping-speed-fast",
+              type: "SHIPPING",
+              label: "Fast Shipping",
+              selected: false,
+              amount: {
+                value: "11.00",
+                currency: "USD",
+              },
+            },
+            {
+              id: "shipping-eventually",
+              type: "SHIPPING",
+              label: "Eventual Shipping",
+              selected: true,
+              amount: {
+                value: "7.00",
+                currency: "XYZ",
+              },
+            },
+          ],
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
+          expect(err.message).toBe(
+            errors.PAYPAL_INVALID_PAYMENT_OPTION.message
+          );
+          expect(err.code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
+          expect(err.details.originalError.message).toBe(
+            expectedOriginalErr.message
+          );
+        });
+    });
+
+    const inputs = [["paymentId"], ["currency"]];
+
+    it.each(inputs)(
+      "fails if a required option is missing param %s",
+      async (param1) => {
+        delete testContext.options[param1];
+
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+
+        const pp = await testContext.paypalCheckout._initialize({
+          client: testContext.client,
+        });
+
+        return pp.updatePayment(testContext.options).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.message).toBe("Missing required option.");
+          expect(err.code).toBe("PAYPAL_MISSING_REQUIRED_OPTION");
+        });
+      }
+    );
+
+    describe("_formatUpdatePaymentData - when formatting payload", () => {
+      beforeEach(() => {
+        testContext.options = {
+          currency: "USD",
+          paymentId: "pay-token-123-abc",
+        };
+      });
+
+      it("includes `selected` shipping option in calculated `amount` when `shippingOptions` present", () => {
+        testContext.options.lineItems = [
+          {
+            quantity: "1",
+            unitAmount: "16",
+            unitTaxAmount: "1.5",
+            name: "tutu",
+            description: "nylon",
+            kind: "debit",
+            productCode: "4m5n6o",
+            url: "example.com",
+          },
+        ];
+        testContext.options.shippingOptions = [
+          {
+            id: "shipping-eventually",
+            type: "SHIPPING",
+            label: "Eventual Shipping",
+            selected: true,
+            amount: {
+              value: "7.00",
+              currency: "USD",
+            },
+          },
+        ];
+
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+
+        const expected = {
+          amount: 24.5,
+          currencyIsoCode: testContext.options.currency,
+          lineItems: testContext.options.lineItems,
+          merchantAccountId: "abcdefg123456",
+          paymentId: testContext.options.paymentId,
+          shippingOptions: testContext.options.shippingOptions,
+        };
+
+        const formattedData =
+          testContext.paypalCheckout._formatUpdatePaymentData(
+            testContext.options
+          );
+
+        expect(formattedData).toMatchObject(expected);
+      });
+
+      it("does not calculate `amount` when present", () => {
+        testContext.options.lineItems = [
+          {
+            quantity: "1",
+            unitAmount: "16",
+            unitTaxAmount: "1.5",
+            name: "tutu",
+            description: "nylon",
+            kind: "debit",
+            productCode: "4m5n6o",
+            url: "example.com",
+          },
+        ];
+        testContext.options.amount = "10";
+
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+
+        const expectedRequestBody = {
+          amount: testContext.options.amount,
+          currencyIsoCode: testContext.options.currency,
+          lineItems: testContext.options.lineItems,
+          merchantAccountId: "abcdefg123456",
+          paymentId: testContext.options.paymentId,
+        };
+
+        const formattedData =
+          testContext.paypalCheckout._formatUpdatePaymentData(
+            testContext.options
+          );
+
+        expect(formattedData).toMatchObject(expectedRequestBody);
+      });
+
+      it("includes `line2` of `shippingAddress` when present", () => {
+        testContext.options.amount = 1;
+        testContext.options.shippingAddress = {
+          line1: "line1",
+          line2: "line2",
+          city: "city",
+          state: "state",
+          countryCode: "countryCode",
+          postalCode: "postal",
+        };
+
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+        testContext.paypalCheckout._clientPromise = jest.fn();
+        testContext.paypalCheckout._clientPromise.mockResolvedValue({});
+
+        const expectedRequestBody = {
+          amount: testContext.options.amount,
+          currencyIsoCode: testContext.options.currency,
+          merchantAccountId: "abcdefg123456",
+          paymentId: testContext.options.paymentId,
+          line1: testContext.options.shippingAddress.line1,
+          line2: testContext.options.shippingAddress.line2,
+          city: testContext.options.shippingAddress.city,
+          state: testContext.options.shippingAddress.state,
+          countryCode: testContext.options.shippingAddress.countryCode,
+          postalCode: testContext.options.shippingAddress.postalCode,
+        };
+
+        const formattedData =
+          testContext.paypalCheckout._formatUpdatePaymentData(
+            testContext.options
+          );
+
+        expect(formattedData).toMatchObject(expectedRequestBody);
+        expect(formattedData).not.toHaveProperty("lineItems");
+        expect(formattedData).not.toHaveProperty("phone");
+        expect(formattedData).not.toHaveProperty("recipientName");
+        expect(formattedData).not.toHaveProperty("shippingOptions");
+      });
+
+      it("includes `recipientName` and `phone` when provided", () => {
+        testContext.options.amount = 1;
+        testContext.options.shippingAddress = {
+          line1: "line1",
+          city: "city",
+          state: "state",
+          countryCode: "countryCode",
+          postalCode: "postal",
+          phone: "1239870000",
+          recipientName: "jane h. private",
+        };
+
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+        testContext.paypalCheckout._clientPromise = jest.fn();
+        testContext.paypalCheckout._clientPromise.mockResolvedValue({});
+
+        const expectedRequestBody = {
+          amount: testContext.options.amount,
+          currencyIsoCode: testContext.options.currency,
+          merchantAccountId: "abcdefg123456",
+          paymentId: testContext.options.paymentId,
+          line1: testContext.options.shippingAddress.line1,
+          city: testContext.options.shippingAddress.city,
+          state: testContext.options.shippingAddress.state,
+          countryCode: testContext.options.shippingAddress.countryCode,
+          postalCode: testContext.options.shippingAddress.postalCode,
+          phone: testContext.options.shippingAddress.phone,
+          recipientName: testContext.options.shippingAddress.recipientName,
+        };
+
+        const formattedData =
+          testContext.paypalCheckout._formatUpdatePaymentData(
+            testContext.options
+          );
+
+        expect(formattedData).toMatchObject(expectedRequestBody);
+        expect(formattedData).not.toHaveProperty("line2");
+      });
+
+      it("includes shipping options when provided", () => {
+        testContext.options.amount = 1;
+        testContext.options.shippingOptions = [
+          {
+            id: "shipping-speed-fast",
+            type: "SHIPPING",
+            label: "Fast Shipping",
+            selected: false,
+            amount: {
+              value: "5.00",
+              currency: "USD",
+            },
+          },
+          {
+            id: "shipping-speed-slow",
+            type: "SHIPPING",
+            label: "Slow Shipping",
+            selected: false,
+            amount: {
+              value: "1.00",
+              currency: "USD",
+            },
+          },
+        ];
+
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+
+        const expectedRequestBody = {
+          amount: testContext.options.amount,
+          currencyIsoCode: testContext.options.currency,
+          merchantAccountId: "abcdefg123456",
+          paymentId: testContext.options.paymentId,
+          shippingOptions: testContext.options.shippingOptions,
+        };
+
+        const formattedData =
+          testContext.paypalCheckout._formatUpdatePaymentData(
+            testContext.options
+          );
+
+        expect(formattedData).toMatchObject(expectedRequestBody);
+        expect(formattedData).not.toHaveProperty("lineItems");
+        expect(formattedData).not.toHaveProperty("city");
+        expect(formattedData).not.toHaveProperty("countryCode");
+        expect(formattedData).not.toHaveProperty("line1");
+        expect(formattedData).not.toHaveProperty("line2");
+        expect(formattedData).not.toHaveProperty("postalCode");
+        expect(formattedData).not.toHaveProperty("state");
+        expect(formattedData).not.toHaveProperty("phone");
+        expect(formattedData).not.toHaveProperty("recipientName");
+      });
+
+      it("sends analytics event when includes shipping address", () => {
+        analytics.sendEvent.mockClear();
+
+        testContext.options.amount = 1;
+        testContext.options.shippingAddress = {
+          line1: "line1",
+          city: "city",
+          state: "state",
+          countryCode: "countryCode",
+          postalCode: "postal",
+          phone: "1239870000",
+          recipientName: "jane h. private",
+        };
+
+        testContext.paypalCheckout._clientPromise = jest.fn();
+        testContext.paypalCheckout._clientPromise.mockResolvedValue({});
+
+        testContext.paypalCheckout._formatUpdatePaymentData(
+          testContext.options
+        );
+
+        expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.paypalCheckout._clientPromise,
+          "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant"
+        );
+      });
+
+      it("includes order line items when provided", () => {
+        testContext.options.amount = 1;
+        testContext.options.lineItems = [
+          {
+            quantity: "1",
+            unitAmount: "9",
+            unitTaxAmount: "1.5",
+            name: "sports jersey",
+            description: "polyester",
+            kind: "debit",
+            productCode: "123xyz",
+            url: "example.com",
+          },
+        ];
+
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+
+        const expectedRequestBody = {
+          amount: testContext.options.amount,
+          currencyIsoCode: testContext.options.currency,
+          lineItems: testContext.options.lineItems,
+          merchantAccountId: "abcdefg123456",
+          paymentId: testContext.options.paymentId,
+        };
+
+        const formattedData =
+          testContext.paypalCheckout._formatUpdatePaymentData(
+            testContext.options
+          );
+
+        expect(formattedData).toMatchObject(expectedRequestBody);
+        expect(formattedData).not.toHaveProperty("shippingOptions");
+        expect(formattedData).not.toHaveProperty("city");
+        expect(formattedData).not.toHaveProperty("countryCode");
+        expect(formattedData).not.toHaveProperty("line1");
+        expect(formattedData).not.toHaveProperty("line2");
+        expect(formattedData).not.toHaveProperty("postalCode");
+        expect(formattedData).not.toHaveProperty("state");
+        expect(formattedData).not.toHaveProperty("phone");
+        expect(formattedData).not.toHaveProperty("recipientName");
+      });
     });
   });
 

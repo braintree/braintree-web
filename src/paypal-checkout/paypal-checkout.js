@@ -374,14 +374,14 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed. Only available for Checkout flow.
  * * `capture` - Payment will be immediately submitted for settlement upon creating a transaction. `sale` can be used as an alias for this value.
  * @param {boolean} [options.offerCredit=false] Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.
- * @param {(string|number)} [options.amount] The amount of the transaction. Required when using the Checkout flow.
+ * @param {(string|number)} [options.amount] The amount of the transaction. Required when using the Checkout flow. Should not include shipping cost.
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
  * @param {boolean} [options.requestBillingAgreement] If `true` and `flow = checkout`, the customer will be prompted to consent to a billing agreement during the checkout flow. This value is ignored when `flow = vault`.
  * @param {object} [options.billingAgreementDetails] When `requestBillingAgreement = true`, allows for details to be set for the billing agreement portion of the flow.
  * @param {string} [options.billingAgreementDetails.description] Description of the billing agreement to display to the customer.
  * @param {string} [options.vaultInitiatedCheckoutPaymentMethodToken] Use the payment method nonce representing a PayPal account with a Billing Agreement ID to create the payment and redirect the customer to select a new financial instrument. This option is only applicable to the `checkout` flow.
- * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items. **Note:** `shippingOptions` may not be passed with `intent="order"`.
+ * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
  * @param {string} options.shippingAddressOverride.line1 Street address.
@@ -550,6 +550,146 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
           })
         );
       }
+
+      return Promise.reject(
+        convertToBraintreeError(err, {
+          type: errors.PAYPAL_FLOW_FAILED.type,
+          code: errors.PAYPAL_FLOW_FAILED.code,
+          message: errors.PAYPAL_FLOW_FAILED.message,
+        })
+      );
+    });
+};
+
+/**
+ * Use this function to update {@link PayPalCheckout~lineItem|line items} and/or {@link PayPalCheckout~shippingOption|shipping options} associated with a PayPalCheckout flow (`paymentId`).
+ * When a {@link callback} is defined, this function returns undefined and invokes the callback. The second callback argument, <code>data</code>, is the returned server data. If no callback is provided, `updatePayment` returns a promise that resolves with the server data.
+ * @public
+ * @param {object} options All options for the PayPalCheckout component.
+ * @param {string} options.paymentId This should be PayPal `paymentId`.
+ * @param {(string|number)} [options.amount] The amount of the transaction, including the amount of the selected shipping option.
+ * @param {string} options.currency The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
+ * @param {shippingOption[]} [options.shippingOptions] List of {@link PayPalCheckout~shippingOption|shipping options} offered by the payee or merchant to the payer to ship or pick up their items.
+ * @param {lineItem[]} [options.lineItems] The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
+ * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
+ * @example
+ * // this paypal object is created by the PayPal JS SDK
+ * // see https://github.com/paypal/paypal-checkout-components
+ * paypal.Buttons({
+ *   createOrder: function () {
+ *     // when createPayment resolves, it is automatically passed to the PayPal JS SDK
+ *     return paypalCheckoutInstance.createPayment({
+ *       //
+ *     });
+ *   },
+ *   onShippingChange: function (data) {
+ *     // Examine data and determine if the payment needs to be updated.
+ *     // when updatePayment resolves, it is automatically passed to the PayPal JS SDK
+ *     return paypalCheckoutInstance.updatePayment({
+ *         paymentId: data.paymentId,
+ *         amount: '15.00',
+ *         currency: 'USD',
+ *         shippingOptions: [
+ *           {
+ *             id: 'shipping-speed-fast',
+ *             type: 'SHIPPING',
+ *             label: 'Fast Shipping',
+ *             selected: true,
+ *             amount: {
+ *               value: '5.00',
+ *               currency: 'USD'
+ *             }
+ *           },
+ *           {
+ *             id: 'shipping-speed-slow',
+ *             type: 'SHIPPING',
+ *             label: 'Slow Shipping',
+ *             selected: false,
+ *             amount: {
+ *               value: '1.00',
+ *               currency: 'USD'
+ *             }
+ *           }
+ *         ]
+ *     });
+ *   }
+ *   // Add other options, e.g. onApproved, onCancel, onError
+ * }).render('#paypal-button');
+ *
+ * ```
+ *
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ */
+PayPalCheckout.prototype.updatePayment = function (options) {
+  var self = this;
+  var endpoint = "paypal_hermes/patch_payment_resource";
+
+  if (!options || this._hasMissingOption(options, constants.REQUIRED_OPTIONS)) {
+    analytics.sendEvent(
+      self._clientPromise,
+      "paypal-checkout.updatePayment.missing-options"
+    );
+
+    return Promise.reject(
+      new BraintreeError(errors.PAYPAL_MISSING_REQUIRED_OPTION)
+    );
+  }
+
+  if (!this._verifyConsistentCurrency(options)) {
+    analytics.sendEvent(
+      self._clientPromise,
+      "paypal-checkout.updatePayment.inconsistent-currencies"
+    );
+
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+        code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+        message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+        details: {
+          originalError: new Error(
+            "One or more shipping option currencies differ from checkout currency."
+          ),
+        },
+      })
+    );
+  }
+
+  analytics.sendEvent(this._clientPromise, "paypal-checkout.updatePayment");
+
+  return this._clientPromise
+    .then(function (client) {
+      return client.request({
+        endpoint: endpoint,
+        method: "post",
+        data: self._formatUpdatePaymentData(options),
+      });
+    })
+    .catch(function (err) {
+      var status = err.details && err.details.httpStatus;
+
+      if (status === 422) {
+        analytics.sendEvent(
+          self._clientPromise,
+          "paypal-checkout.updatePayment.invalid"
+        );
+
+        return Promise.reject(
+          new BraintreeError({
+            type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+            code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+            message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+            details: {
+              originalError: err,
+            },
+          })
+        );
+      }
+
+      analytics.sendEvent(
+        self._clientPromise,
+        "paypal-checkout.updatePayment." + errors.PAYPAL_FLOW_FAILED.code
+      );
 
       return Promise.reject(
         convertToBraintreeError(err, {
@@ -1239,6 +1379,160 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
   this._riskCorrelationId = options.riskCorrelationId;
   if (options.riskCorrelationId) {
     paymentResource.correlationId = this._riskCorrelationId;
+  }
+
+  return paymentResource;
+};
+
+/**
+ * @ignore
+ * @static
+ * @function _verifyConsistentCurrency
+ * Verifies that `options.currency` and the currencies for each `shippingOption` the same.
+ * @param {object} options `options` provided for `updatePayment`.
+ * @returns {boolean} true is currencies match (or no shipping options); false if currencies do not match.
+ */
+
+PayPalCheckout.prototype._verifyConsistentCurrency = function (options) {
+  if (
+    options.currency &&
+    options.hasOwnProperty("shippingOptions") &&
+    Array.isArray(options.shippingOptions)
+  ) {
+    return options.shippingOptions.every(function (item) {
+      return (
+        item.amount &&
+        item.amount.currency &&
+        options.currency.toLowerCase() === item.amount.currency.toLowerCase()
+      );
+    });
+  }
+
+  return true;
+};
+
+/**
+ * @ignore
+ * @static
+ * @function _hasMissingOption
+ * @param {object} options All options provided for intiating the PayPal flow.
+ * @param {array} required A list of required inputs that must be include as part of the options.
+ * @returns {boolean} Returns a boolean.
+ */
+
+PayPalCheckout.prototype._hasMissingOption = function (options, required) {
+  var i, option;
+
+  required = required || [];
+
+  if (
+    !options.hasOwnProperty("amount") &&
+    !options.hasOwnProperty("lineItems")
+  ) {
+    return true;
+  }
+
+  for (i = 0; i < required.length; i++) {
+    option = required[i];
+
+    if (!options.hasOwnProperty(option)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * @ignore
+ * @static
+ * @function _calculateAmount
+ * @param {array} lineItems The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
+ * @param {array} [shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
+ * @returns {number} Returns the amount of the transaction.
+ */
+PayPalCheckout.prototype._calculateAmount = function (
+  lineItems,
+  shippingOptions
+) {
+  var amount = 0;
+
+  if (Array.isArray(lineItems)) {
+    amount += lineItems.reduce(function (total, item) {
+      return (
+        total +
+        ((parseFloat(item.unitAmount) || 0) +
+          (parseFloat(item.unitTaxAmount) || 0)) *
+          (parseInt(item.quantity, 10) || 0)
+      );
+    }, 0);
+  }
+
+  if (shippingOptions && Array.isArray(shippingOptions)) {
+    amount += shippingOptions.reduce(function (total, option) {
+      if (option.selected && option.amount) {
+        return total + parseFloat(option.amount.value) || 0;
+      }
+
+      return total;
+    }, 0);
+  }
+
+  return amount;
+};
+
+PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {
+  var self = this;
+  var paymentResource = {
+    merchantAccountId: this._merchantAccountId,
+    paymentId: options.paymentId,
+    currencyIsoCode: options.currency,
+  };
+
+  if (options.hasOwnProperty("amount")) {
+    paymentResource.amount = options.amount;
+  }
+
+  if (options.hasOwnProperty("lineItems")) {
+    paymentResource.lineItems = options.lineItems;
+
+    if (!options.hasOwnProperty("amount")) {
+      paymentResource.amount = this._calculateAmount(
+        options.lineItems,
+        options.shippingOptions
+      );
+    }
+  }
+
+  if (options.hasOwnProperty("shippingOptions")) {
+    paymentResource.shippingOptions = options.shippingOptions;
+  }
+
+  /* shippingAddress not supported yet */
+  if (options.hasOwnProperty("shippingAddress")) {
+    analytics.sendEvent(
+      self._clientPromise,
+      "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant"
+    );
+
+    paymentResource.line1 = options.shippingAddress.line1;
+
+    if (options.shippingAddress.hasOwnProperty("line2")) {
+      paymentResource.line2 = options.shippingAddress.line2;
+    }
+
+    paymentResource.city = options.shippingAddress.city;
+    paymentResource.state = options.shippingAddress.state;
+    paymentResource.postalCode = options.shippingAddress.postalCode;
+    paymentResource.countryCode = options.shippingAddress.countryCode;
+
+    if (options.shippingAddress.hasOwnProperty("phone")) {
+      paymentResource.phone = options.shippingAddress.phone;
+    }
+
+    if (options.shippingAddress.hasOwnProperty("recipientName")) {
+      paymentResource.recipientName = options.shippingAddress.recipientName;
+    }
   }
 
   return paymentResource;
