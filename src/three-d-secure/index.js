@@ -116,6 +116,7 @@ var wrapPromise = require("@braintree/wrap-promise");
  */
 function create(options) {
   var name = "3D Secure";
+  var framework = getFramework(options);
 
   return basicComponentVerification
     .verify({
@@ -125,7 +126,6 @@ function create(options) {
     })
     .then(function () {
       var assetsUrl = createAssetsUrl.create(options.authorization);
-      var framework = getFramework(options);
       var createPromise = createDeferredClient
         .create({
           authorization: options.authorization,
@@ -200,7 +200,11 @@ function getFramework(options) {
   var version = String(options.version || "");
 
   if (!version || version === "1") {
-    return "legacy";
+    throw new BraintreeError({
+      code: errors.THREEDS_UNSUPPORTED_VERSION.code,
+      type: errors.THREEDS_UNSUPPORTED_VERSION.type,
+      message: errors.THREEDS_UNSUPPORTED_VERSION.message,
+    });
   }
 
   switch (version) {

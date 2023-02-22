@@ -6,6 +6,8 @@ var basicComponentVerification = require("../lib/basic-component-verification");
 var PreferredPaymentMethods = require("./preferred-payment-methods");
 var VERSION = process.env.npm_package_version;
 
+// NEXT_MAJOR_VERSION
+// Remove this integration entirely. It doesn't work, isn't documented, and otherwise isn't going to be pursued further beyond the non-operational beta it is in.
 /**
  * @static
  * @function create

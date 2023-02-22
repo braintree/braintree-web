@@ -35,7 +35,7 @@
  * @name BraintreeError.Paypal Checkout - updatePayment Error Codes
  * @description Errors that occur when using the [`updatePayment` method](./PayPalCheckout.html#updatePayment).
  * @property {MERCHANT} PAYPAL_INVALID_PAYMENT_OPTION Occurs when an option contains an invalid value.
- * @property {MERCHANT} PAYPAL_MISSING_REQUIRED_OPTION Occurs when a required option is missing. 
+ * @property {MERCHANT} PAYPAL_MISSING_REQUIRED_OPTION Occurs when a required option is missing.
  * @property {NETWORK} PAYPAL_FLOW_FAILED Occurs when something goes wrong when initializing the flow or communicating with the server.
  */
 var BraintreeError = require("../lib/braintree-error");

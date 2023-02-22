@@ -189,9 +189,9 @@ describe("Base Input", () => {
             expect(instance.element.getAttribute("type")).toBe("password");
           });
 
-          it('uses "tel" if not provided', () => {
+          it('uses "text" if not provided', () => {
             expect(testContext.instance.element.getAttribute("type")).toBe(
-              "tel"
+              "text"
             );
           });
 
@@ -227,7 +227,7 @@ describe("Base Input", () => {
         describe("defaults", () => {
           it("applies type", () => {
             expect(testContext.instance.element.getAttribute("type")).toBe(
-              "tel"
+              "text"
             );
           });
 

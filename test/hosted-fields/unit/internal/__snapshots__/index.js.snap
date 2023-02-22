@@ -17,10 +17,12 @@ exports[`internal initialize calls FieldComponent to generate the input 1`] = `
       class="cvv"
       data-braintree-name="cvv"
       id="cvv"
+      inputmode="numeric"
       maxlength="4"
       name="cvv"
+      pattern="\\d*"
       spellcheck="false"
-      type="tel"
+      type="text"
     />
     <div
       class=" field-description"

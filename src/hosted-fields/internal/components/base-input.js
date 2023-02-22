@@ -34,12 +34,9 @@ function constructAttributes(options) {
   };
 
   if (!attributes.type) {
-    if (browserDetection.isIos()) {
-      attributes.type = "text";
-      attributes.pattern = "\\d*";
-    } else {
-      attributes.type = "tel";
-    }
+    attributes.type = "text";
+    attributes.pattern = "\\d*";
+    attributes.inputmode = "numeric";
   }
 
   if (!options.shouldAutofill) {

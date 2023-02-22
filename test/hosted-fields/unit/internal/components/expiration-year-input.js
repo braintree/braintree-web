@@ -35,8 +35,8 @@ describe("Expiration Year Input", () => {
         expect(testContext.input.element).toBeInstanceOf(HTMLInputElement);
       });
 
-      it('has type="tel"', () => {
-        expect(testContext.input.element.getAttribute("type")).toBe("tel");
+      it('has type="text"', () => {
+        expect(testContext.input.element.getAttribute("type")).toBe("text");
       });
 
       it("sets the maxLength to 4", () => {

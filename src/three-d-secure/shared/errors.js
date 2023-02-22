@@ -16,6 +16,7 @@
  * @property {MERCHANT} THREEDS_CARDINAL_SDK_BAD_JWT Occurs when a malformed config causes a either a missing response JWT or a malformed Cardinal response.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_ERROR Occurs when a "general error" or a Cardinal hosted fields error happens. Description contains more details.
  * @property {CUSTOMER} THREEDS_CARDINAL_SDK_CANCELED Occurs when customer cancels the transaction mid-flow, usually with alt-pays that have their own cancel buttons.
+ * @property {MERCHANT} THREEDS_UNSUPPORTED_VERSION Occurs when 3D Secure component is created with version 1 (or default version) parameter.
  */
 
 /**
@@ -29,6 +30,7 @@
  * @property {UNKNOWN} THREEDS_LOOKUP_ERROR An unknown error occurred while attempting the 3D Secure lookup.
  * @property {MERCHANT} THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT Occurs when the 3D Secure flow is canceled by the merchant using `cancelVerifyCard` (3D Secure v2 flows only).
  * @property {UNKNOWN} THREEDS_INLINE_IFRAME_DETAILS_INCORRECT An unknown error occurred while attempting to use the inline iframe framework.
+ * @property {MERCHANT} THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID Occurs when unrecognized exemption enum value is passed into verifyCard.
  */
 
 /**
@@ -173,5 +175,16 @@ module.exports = {
     type: BraintreeError.types.INTERNAL,
     code: "THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED",
     message: "Method not implemented for this framework.",
+  },
+  THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID: {
+    type: BraintreeError.types.MERCHANT,
+    code: "THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID",
+    message: "Requested Exemption Type is invalid.",
+  },
+  THREEDS_UNSUPPORTED_VERSION: {
+    type: BraintreeError.types.MERCHANT,
+    code: "THREEDS_UNSUPPORTED_VERSION",
+    message:
+      "3D Secure `1` is deprecated and no longer supported. See available versions at https://braintree.github.io/braintree-web/current/module-braintree-web_three-d-secure.html#.create",
   },
 };

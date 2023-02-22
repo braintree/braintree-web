@@ -1,5 +1,14 @@
 # CHANGELOG
 
+# 3.91.0
+- 3D Secure
+  - Add `requestedExemptionType` option to `verifyCard`
+  - Deprecate `exemptionRequested` option in `verifyCard`
+  - Made `verifyCard` BIN param required
+  - Add error on use of v1
+- Hosted Fields
+  - Improved accessibility for screen readers
+
 # 3.90.0
 
 - Paypal

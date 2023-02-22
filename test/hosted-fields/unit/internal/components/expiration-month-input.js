@@ -89,8 +89,8 @@ describe("Expiration Month Input", () => {
         expect(testContext.input.element).toBeInstanceOf(HTMLInputElement);
       });
 
-      it('has type="tel"', () => {
-        expect(testContext.input.element.getAttribute("type")).toMatch("tel");
+      it('has type="text"', () => {
+        expect(testContext.input.element.getAttribute("type")).toMatch("text");
       });
 
       it("sets the maxLength to 2", () => {

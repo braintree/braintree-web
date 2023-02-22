@@ -626,6 +626,92 @@ describe("SongbirdFramework", () => {
           });
       });
 
+      it("makes a request to the 3DS lookup endpoint with requestedExemptionType", () => {
+        const framework = createFramework();
+
+        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        testContext.client.request.mockResolvedValue({
+          paymentMethod: {},
+          threeDSecureInfo: {},
+          lookup: {
+            threeDSecureVersion: "2.1.0",
+            transactionId: "txn-id",
+          },
+        });
+        expect.assertions(2);
+
+        return framework
+          .verifyCard({
+            nonce: testContext.tokenizedCard.nonce,
+            bin: testContext.tokenizedCard.details.bin,
+            requestedExemptionType: "low_value",
+            amount: 100,
+            onLookupComplete: yieldsAsync(),
+          })
+          .then(() => {
+            expect(testContext.client.request).toHaveBeenCalledTimes(1);
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
+              method: "post",
+              data: {
+                requestedExemptionType: "low_value",
+                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                amount: 100,
+              },
+            });
+          });
+      });
+
+      it("returns validation error for invalid requestedExemptionType", () => {
+        const framework = createFramework();
+
+        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        expect.assertions(2);
+
+        return framework
+          .verifyCard({
+            nonce: testContext.tokenizedCard.nonce,
+            bin: testContext.tokenizedCard.details.bin,
+            requestedExemptionType: "foobar",
+            amount: 100,
+            onLookupComplete: yieldsAsync(),
+          })
+          .catch((err) => {
+            expect(err.code).toEqual(
+              "THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID"
+            );
+            expect(err.message).toEqual(
+              "requestedExemptionType `foobar` is not a valid exemption. The accepted values are: `low_value`, `transaction_risk_analysis`"
+            );
+          });
+      });
+
+      it("doesnt send requestedExemptionType when blank", () => {
+        const framework = createFramework();
+
+        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        expect.assertions(1);
+
+        return framework
+          .verifyCard({
+            nonce: testContext.tokenizedCard.nonce,
+            bin: testContext.tokenizedCard.details.bin,
+            requestedExemptionType: "",
+            amount: 100,
+            onLookupComplete: yieldsAsync(),
+          })
+          .then(() => {
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
+              method: "post",
+              data: {
+                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                amount: 100,
+              },
+            });
+          });
+      });
+
       it("makes a request to the 3DS lookup endpoint with dataOnlyRequested", () => {
         const framework = createFramework();
 
@@ -706,6 +792,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "abcdef",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .then(() => {
@@ -730,6 +817,7 @@ describe("SongbirdFramework", () => {
         const options = {
           nonce: "abc123",
           amount: 100,
+          bin: 369,
           onLookupComplete: yieldsAsync(),
         };
 
@@ -856,6 +944,7 @@ describe("SongbirdFramework", () => {
               .verifyCard({
                 nonce: "nonce",
                 amount: 100,
+                bin: 369,
                 onLookupComplete: yieldsAsync(),
               })
               .then((data) => {
@@ -887,6 +976,7 @@ describe("SongbirdFramework", () => {
               .verifyCard({
                 nonce: "nonce",
                 amount: 100,
+                bin: 369,
                 onLookupComplete: yieldsAsync(),
               })
               .then((data) => {
@@ -913,6 +1003,7 @@ describe("SongbirdFramework", () => {
               framework.verifyCard({
                 nonce: "nonce",
                 amount: 100,
+                bin: 369,
                 onLookupComplete: yieldsAsync(),
               })
             ).rejects.toMatchObject({
@@ -933,6 +1024,7 @@ describe("SongbirdFramework", () => {
         return framework.verifyCard({
           nonce: "nonce",
           amount: 100,
+          bin: 369,
           onLookupComplete(data, next) {
             expect(data.requiresUserAuthentication).toBe(true);
             next();
@@ -948,6 +1040,7 @@ describe("SongbirdFramework", () => {
         return framework.verifyCard({
           nonce: "nonce",
           amount: 100,
+          bin: 369,
           onLookupComplete(data, next) {
             expect(data.requiresUserAuthentication).toBe(false);
             next();
@@ -1023,6 +1116,7 @@ describe("SongbirdFramework", () => {
             framework.verifyCard({
               nonce: "nonce",
               amount: 100,
+              bin: 369,
               onLookupComplete: yieldsAsync(),
             })
           )
@@ -1049,6 +1143,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "nonce",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .then(() => {
@@ -1076,6 +1171,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "nonce",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .then(() => {
@@ -1108,6 +1204,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "nonce",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .catch(() => {
@@ -1143,6 +1240,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "nonce",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .then(() => {
@@ -1171,6 +1269,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "nonce",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .then(() => {
@@ -1195,6 +1294,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "nonce",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .then(() => {
@@ -1222,6 +1322,7 @@ describe("SongbirdFramework", () => {
           .verifyCard({
             nonce: "nonce",
             amount: 100,
+            bin: 369,
             onLookupComplete: yieldsAsync(),
           })
           .catch((err) => {
@@ -2125,6 +2226,7 @@ describe("SongbirdFramework", () => {
         .verifyCard({
           amount: "100.00",
           nonce: "a-nonce",
+          bin: "22",
           onLookupComplete() {
             framework.cancelVerifyCard();
           },
@@ -2144,6 +2246,7 @@ describe("SongbirdFramework", () => {
         .verifyCard({
           amount: "100.00",
           nonce: "a-nonce",
+          bin: "22",
           onLookupComplete() {
             framework.cancelVerifyCard(err);
           },

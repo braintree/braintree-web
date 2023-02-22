@@ -22,8 +22,8 @@ describe("Credit Card Input", () => {
   });
 
   describe("element", () => {
-    it('has type="tel"', () => {
-      expect(testContext.input.element.getAttribute("type")).toBe("tel");
+    it('has type="text"', () => {
+      expect(testContext.input.element.getAttribute("type")).toBe("text");
     });
 
     it("has autocomplete cc-number", () => {

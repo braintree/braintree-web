@@ -30,6 +30,8 @@ var SONGBIRD_UI_EVENTS = [
   "ui.loading.render",
 ];
 
+var SCA_EXEMPTION_TYPES = ["low_value", "transaction_risk_analysis"];
+
 function SongbirdFramework(options) {
   BaseFramework.call(this, options);
 
@@ -143,11 +145,6 @@ SongbirdFramework.prototype.initiateV1Fallback = function (errorType) {
 SongbirdFramework.prototype._triggerCardinalBinProcess = function (bin) {
   var self = this;
   var issuerStartTime = Date.now();
-
-  if (!bin) {
-    // skip bin lookup because bin wasn't passed in
-    return Promise.resolve();
-  }
 
   return window.Cardinal.trigger("bin.process", bin).then(function (
     binResults
@@ -668,6 +665,14 @@ SongbirdFramework.prototype._checkForVerifyCardError = function (
   options,
   privateOptions
 ) {
+  if (!options.bin) {
+    return new BraintreeError({
+      type: errors.THREEDS_MISSING_VERIFY_CARD_OPTION.type,
+      code: errors.THREEDS_MISSING_VERIFY_CARD_OPTION.code,
+      message: "verifyCard options must include a BIN.",
+    });
+  }
+
   return BaseFramework.prototype._checkForVerifyCardError.call(
     this,
     options,
@@ -785,6 +790,21 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
       }
       if (options.challengeRequested) {
         data.challengeRequested = options.challengeRequested;
+      }
+      if (options.requestedExemptionType) {
+        if (!SCA_EXEMPTION_TYPES.includes(options.requestedExemptionType)) {
+          throw new BraintreeError({
+            code: errors.THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID.code,
+            type: errors.THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID.type,
+            message:
+              "requestedExemptionType `" +
+              options.requestedExemptionType +
+              "` is not a valid exemption. The accepted values are: `" +
+              SCA_EXEMPTION_TYPES.join("`, `") +
+              "`",
+          });
+        }
+        data.requestedExemptionType = options.requestedExemptionType;
       }
       if (options.dataOnlyRequested) {
         data.dataOnlyRequested = options.dataOnlyRequested;

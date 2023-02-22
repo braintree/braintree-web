@@ -25,7 +25,7 @@ describe("Expiration Date Input", () => {
     it('sets element type to "text" when browser does not support formatting', () => {
       const inputWithFormatting = createInput("expirationDate");
 
-      expect(inputWithFormatting.element.type).toBe("tel");
+      expect(inputWithFormatting.element.type).toBe("text");
 
       jest.spyOn(RestrictedInput, "supportsFormatting").mockReturnValue(false);
 
@@ -68,8 +68,8 @@ describe("Expiration Date Input", () => {
   });
 
   describe("element", () => {
-    it('has type="tel"', () => {
-      expect(testContext.input.element.getAttribute("type")).toBe("tel");
+    it('has type="text"', () => {
+      expect(testContext.input.element.getAttribute("type")).toBe("text");
     });
 
     it("has autocomplete cc-exp", () => {
