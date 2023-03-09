@@ -7,8 +7,6 @@ function noop() {}
 function Popup(options) {
   this._frame = null;
   this._options = options || {};
-
-  this.open();
 }
 
 Popup.prototype.initialize = noop;

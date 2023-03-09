@@ -1077,50 +1077,6 @@ describe("PayPalCheckout", () => {
         });
     });
 
-    it("calculates `amount` when absent and `lineItems` present", async () => {
-      delete testContext.options.amount;
-
-      testContext.options.lineItems = [
-        {
-          quantity: "1",
-          unitAmount: "16",
-          unitTaxAmount: "1.5",
-          name: "tutu",
-          description: "nylon",
-          kind: "debit",
-          productCode: "4m5n6o",
-          url: "example.com",
-        },
-      ];
-
-      testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
-
-      const formattedData = testContext.paypalCheckout._formatUpdatePaymentData(
-        testContext.options
-      );
-
-      expect(formattedData).toMatchObject({
-        merchantAccountId: "abcdefg123456",
-        paymentId: "pay-token-123-abc",
-        currencyIsoCode: "USD",
-        lineItems: [
-          {
-            quantity: "1",
-            unitAmount: "16",
-            unitTaxAmount: "1.5",
-            name: "tutu",
-            description: "nylon",
-            kind: "debit",
-            productCode: "4m5n6o",
-            url: "example.com",
-          },
-        ],
-        amount: 17.5,
-      });
-      expect(formattedData).toHaveProperty("amount");
-      expect(formattedData.amount).toBe(17.5);
-    });
-
     it("fails if `amount` and `lineItems` are missing", async () => {
       testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
 
@@ -1280,51 +1236,6 @@ describe("PayPalCheckout", () => {
           currency: "USD",
           paymentId: "pay-token-123-abc",
         };
-      });
-
-      it("includes `selected` shipping option in calculated `amount` when `shippingOptions` present", () => {
-        testContext.options.lineItems = [
-          {
-            quantity: "1",
-            unitAmount: "16",
-            unitTaxAmount: "1.5",
-            name: "tutu",
-            description: "nylon",
-            kind: "debit",
-            productCode: "4m5n6o",
-            url: "example.com",
-          },
-        ];
-        testContext.options.shippingOptions = [
-          {
-            id: "shipping-eventually",
-            type: "SHIPPING",
-            label: "Eventual Shipping",
-            selected: true,
-            amount: {
-              value: "7.00",
-              currency: "USD",
-            },
-          },
-        ];
-
-        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
-
-        const expected = {
-          amount: 24.5,
-          currencyIsoCode: testContext.options.currency,
-          lineItems: testContext.options.lineItems,
-          merchantAccountId: "abcdefg123456",
-          paymentId: testContext.options.paymentId,
-          shippingOptions: testContext.options.shippingOptions,
-        };
-
-        const formattedData =
-          testContext.paypalCheckout._formatUpdatePaymentData(
-            testContext.options
-          );
-
-        expect(formattedData).toMatchObject(expected);
       });
 
       it("does not calculate `amount` when present", () => {

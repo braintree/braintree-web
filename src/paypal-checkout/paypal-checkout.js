@@ -375,6 +375,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * * `capture` - Payment will be immediately submitted for settlement upon creating a transaction. `sale` can be used as an alias for this value.
  * @param {boolean} [options.offerCredit=false] Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.
  * @param {(string|number)} [options.amount] The amount of the transaction. Required when using the Checkout flow. Should not include shipping cost.
+ * * Supports up to 2 digits after the decimal point
  * @param {string} [options.currency] The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account
  * @param {boolean} [options.requestBillingAgreement] If `true` and `flow = checkout`, the customer will be prompted to consent to a billing agreement during the checkout flow. This value is ignored when `flow = vault`.
@@ -568,6 +569,7 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * @param {object} options All options for the PayPalCheckout component.
  * @param {string} options.paymentId This should be PayPal `paymentId`.
  * @param {(string|number)} [options.amount] The amount of the transaction, including the amount of the selected shipping option.
+ * * Supports up to 2 decimal digits.
  * @param {string} options.currency The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {shippingOption[]} [options.shippingOptions] List of {@link PayPalCheckout~shippingOption|shipping options} offered by the payee or merchant to the payer to ship or pick up their items.
  * @param {lineItem[]} [options.lineItems] The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
@@ -1443,44 +1445,6 @@ PayPalCheckout.prototype._hasMissingOption = function (options, required) {
   return false;
 };
 
-/**
- * @ignore
- * @static
- * @function _calculateAmount
- * @param {array} lineItems The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
- * @param {array} [shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
- * @returns {number} Returns the amount of the transaction.
- */
-PayPalCheckout.prototype._calculateAmount = function (
-  lineItems,
-  shippingOptions
-) {
-  var amount = 0;
-
-  if (Array.isArray(lineItems)) {
-    amount += lineItems.reduce(function (total, item) {
-      return (
-        total +
-        ((parseFloat(item.unitAmount) || 0) +
-          (parseFloat(item.unitTaxAmount) || 0)) *
-          (parseInt(item.quantity, 10) || 0)
-      );
-    }, 0);
-  }
-
-  if (shippingOptions && Array.isArray(shippingOptions)) {
-    amount += shippingOptions.reduce(function (total, option) {
-      if (option.selected && option.amount) {
-        return total + parseFloat(option.amount.value) || 0;
-      }
-
-      return total;
-    }, 0);
-  }
-
-  return amount;
-};
-
 PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {
   var self = this;
   var paymentResource = {
@@ -1495,13 +1459,6 @@ PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {
 
   if (options.hasOwnProperty("lineItems")) {
     paymentResource.lineItems = options.lineItems;
-
-    if (!options.hasOwnProperty("amount")) {
-      paymentResource.amount = this._calculateAmount(
-        options.lineItems,
-        options.shippingOptions
-      );
-    }
   }
 
   if (options.hasOwnProperty("shippingOptions")) {

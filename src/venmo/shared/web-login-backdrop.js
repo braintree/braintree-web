@@ -2,7 +2,7 @@
 
 var frameService = require("../../lib/frame-service/external");
 var useMin = require("../../lib/use-min");
-var Promise = require("../../lib/promise");
+var ExtendedPromise = require("@braintree/extended-promise");
 
 var VERSION = process.env.npm_package_version;
 var VENMO_LOGO_SVG =
@@ -24,58 +24,45 @@ var ELEMENT_IDS = {
 };
 
 function openPopup(options) {
-  var popupName = "venmoDesktopWebLogin";
+  var frameServiceInstance = options.frameServiceInstance;
+  var venmoUrl = options.venmoUrl;
   var checkForStatusChange = options.checkForStatusChange;
   var cancelTokenization = options.cancelTokenization;
-  var venmoUrl = options.venmoUrl;
-  var assetsUrl = options.assetsUrl;
-  var debug = options.debug || false;
-  var popupLocation = centeredPopupDimensions();
-  var assetsBaseUrl = assetsUrl + "/web/" + VERSION + "/html";
+  var extendedPromise = new ExtendedPromise();
 
-  return new Promise(function (resolve, reject) {
-    frameService.create(
-      {
-        name: popupName,
-        dispatchFrameUrl:
-          assetsBaseUrl + "/dispatch-frame" + useMin(debug) + ".html",
-        openFrameUrl:
-          assetsBaseUrl + "/venmo-landing-frame" + useMin(debug) + ".html",
-        top: popupLocation.top,
-        left: popupLocation.left,
-        height: POPUP_HEIGHT,
-        width: POPUP_WIDTH,
-      },
-      function (frameServiceInstance) {
-        document
-          .getElementById(ELEMENT_IDS.continueButton)
-          .addEventListener("click", function () {
-            frameServiceInstance.focus();
-          });
-        document
-          .getElementById(ELEMENT_IDS.cancelButton)
-          .addEventListener("click", function () {
-            frameServiceInstance.close();
-            cancelTokenization();
-            closeBackdrop();
-          });
-        frameServiceInstance.open({}, function (err) {
-          var retryStartingCount = 1;
+  document
+    .getElementById(ELEMENT_IDS.continueButton)
+    .addEventListener("click", function () {
+      frameServiceInstance.focus();
+    });
+  document
+    .getElementById(ELEMENT_IDS.cancelButton)
+    .addEventListener("click", function () {
+      frameServiceInstance.close();
+      cancelTokenization();
+      closeBackdrop();
+    });
 
-          if (err) {
-            reject(err);
-          } else {
-            checkForStatusChange(retryStartingCount)
-              .then(resolve)
-              .catch(reject);
-          }
-          frameServiceInstance.close();
-          closeBackdrop();
+  frameServiceInstance.open({}, function (frameServiceErr) {
+    var retryStartingCount = 1;
+
+    if (frameServiceErr) {
+      extendedPromise.reject(frameServiceErr);
+    } else {
+      checkForStatusChange(retryStartingCount)
+        .then(function (data) {
+          extendedPromise.resolve(data);
+        })
+        .catch(function (statusCheckError) {
+          extendedPromise.reject(statusCheckError);
         });
-        frameServiceInstance.redirect(venmoUrl);
-      }
-    );
+    }
+    frameServiceInstance.close();
+    closeBackdrop();
   });
+  frameServiceInstance.redirect(venmoUrl);
+
+  return extendedPromise;
 }
 
 function centeredPopupDimensions() {
@@ -253,11 +240,11 @@ function buildAndStyleElements() {
  * Applies a backdrop over the page, and opens a popup to the supplied url. Uses supplied status and cancel functions to handle the flow.
  * @function runWebLogin
  * @ignore
- * @param {object} [options] Options for running the web login flow.
- * @param {string} [options.venmoUrl] Venmo url that is to be used for logging in.
- * @param {string} [options.assetsUrl] Url that points to the hosted Braintree assets.
- * @param {Venmo~checkPaymentContextStatusAndProcessResult} [options.checkForStatusChange] {@link Venmo~checkPaymentContextStatusAndProcessResult} to be invoked in order to check for a payment context status update.
- * @param {Venmo~cancelTokenization} [options.cancelTokenization] {@link Venmo~cancelTokenization} to be invoked when the appropriate payment context status is retrieved.
+ * @param {object} options Options for running the web login flow.
+ * @param {string} options.venmoUrl Venmo url that is to be used for logging in.
+ * @param {Venmo~checkPaymentContextStatusAndProcessResult} options.checkForStatusChange {@link Venmo~checkPaymentContextStatusAndProcessResult} to be invoked in order to check for a payment context status update.
+ * @param {Venmo~cancelTokenization} options.cancelTokenization {@link Venmo~cancelTokenization} to be invoked when the appropriate payment context status is retrieved.
+ * @param {boolean} options.debug A flag to control whether to use minified assets or not.
  * @returns {Promise} Returns a promise
  */
 function runWebLogin(options) {
@@ -266,9 +253,51 @@ function runWebLogin(options) {
   return openPopup(options);
 }
 
+/**
+ * When using frameservice, it needs to be created separately from the action of opening. The setup process includes
+ * steps that browsers may consider async or too disconnected from the user action required to open a popup.
+ *
+ * This function enables us to do that setup at an appropriate time.
+ * @function setupDesktopWebLogin
+ * @ignore
+ * @param {object} options Options use for setting up the Desktop Web Login flow.
+ * @param {string} options.assetsUrl Url that points to the hosted Braintree assets.
+ * @param {boolean} options.debug A flag to control whether to use minified assets or not.
+
+ * @returns {Promise} Returns a promise
+ */
+function setupDesktopWebLogin(options) {
+  var extendedPromise = new ExtendedPromise();
+  var popupName = "venmoDesktopWebLogin";
+  var assetsUrl = options.assetsUrl;
+  var debug = options.debug || false;
+  var popupLocation = centeredPopupDimensions();
+  var assetsBaseUrl = assetsUrl + "/web/" + VERSION + "/html";
+
+  frameService.create(
+    {
+      name: popupName,
+      dispatchFrameUrl:
+        assetsBaseUrl + "/dispatch-frame" + useMin(debug) + ".html",
+      openFrameUrl:
+        assetsBaseUrl + "/venmo-landing-frame" + useMin(debug) + ".html",
+      top: popupLocation.top,
+      left: popupLocation.left,
+      height: POPUP_HEIGHT,
+      width: POPUP_WIDTH,
+    },
+    function (frameServiceInstance) {
+      extendedPromise.resolve(frameServiceInstance);
+    }
+  );
+
+  return extendedPromise;
+}
+
 module.exports = {
   runWebLogin: runWebLogin,
   openPopup: openPopup,
+  setupDesktopWebLogin: setupDesktopWebLogin,
   POPUP_WIDTH: POPUP_WIDTH,
   POPUP_HEIGHT: POPUP_HEIGHT,
 };

@@ -9,10 +9,10 @@ describe("Popup", () => {
   });
 
   describe("Constructor", () => {
-    it("defaults isClosed to false", () => {
+    it("defaults isClosed to true", () => {
       const popup = new Popup();
 
-      expect(popup.isClosed()).toBe(false);
+      expect(popup.isClosed()).toBe(true);
     });
   });
 

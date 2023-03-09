@@ -121,6 +121,9 @@ FrameService.prototype.open = function (options, callback) {
   this._frame.initialize(callback);
 
   if (this._frame instanceof PopupBridge) {
+    // Frameservice loads a spinner then redirects to the final destination url.
+    // For Popupbridge it doesn't have the same rules around popups since it's deferred to the mobile side
+    // therefore, skips the regular open path and instead uses `#redirect` to handle things
     return;
   }
 

@@ -2,6 +2,7 @@
 
 const {
   runWebLogin,
+  setupDesktopWebLogin,
   openPopup,
   POPUP_WIDTH,
   POPUP_HEIGHT,
@@ -22,7 +23,8 @@ describe("web-login-backdrop", () => {
     eventListenerMock,
     classListAddMock,
     classListRemoveMock,
-    testOptions;
+    setupOptions,
+    openOptions;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -49,8 +51,7 @@ describe("web-login-backdrop", () => {
       close: jest.fn(),
       focus: jest.fn(),
     };
-    testOptions = {
-      venmoUrl: mockVenmoUrl,
+    setupOptions = {
       assetsUrl: mockAssetUrl,
       cancelTokenization: mockCancelTokenization,
       checkForStatusChange: mockStatusCheck,
@@ -62,88 +63,42 @@ describe("web-login-backdrop", () => {
       addEventListener: eventListenerMock,
       classList: { add: classListAddMock, remove: classListRemoveMock },
     });
+
+    openOptions = {
+      venmoUrl: mockVenmoUrl,
+      frameServiceInstance: mockFrameService,
+      cancelTokenization: mockCancelTokenization,
+      checkForStatusChange: mockStatusCheck,
+    };
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it("opens the frameservice with the provided assetsUrl and venmo url", async () => {
-    const expectedArgs = {
-      name: expect.any(String),
-      dispatchFrameUrl: expect.stringContaining(mockAssetUrl),
-      openFrameUrl: expect.stringContaining(mockAssetUrl),
-      top: expect.any(Number),
-      left: expect.any(Number),
-      height: expect.any(Number),
-      width: expect.any(Number),
-    };
+  it("opens the popup", async () => {
+    await runWebLogin(openOptions);
 
-    await runWebLogin(testOptions);
-    expect(frameService.create).toHaveBeenCalledWith(
-      expectedArgs,
+    expect(mockFrameService.open).toHaveBeenCalledWith(
+      {},
       expect.any(Function)
     );
     expect(mockFrameService.redirect).toBeCalledWith(mockVenmoUrl);
-  });
-
-  it("doesn't minify the html when in debug is true", async () => {
-    const expectedArgs = {
-      name: expect.any(String),
-      dispatchFrameUrl: expect.stringContaining("dispatch-frame.html"),
-      openFrameUrl: expect.stringContaining("landing-frame.html"),
-      top: expect.any(Number),
-      left: expect.any(Number),
-      height: expect.any(Number),
-      width: expect.any(Number),
-    };
-    const debugTestOptions = {
-      ...testOptions,
-      debug: true,
-    };
-
-    await runWebLogin(debugTestOptions);
-    expect(frameService.create).toHaveBeenCalledWith(
-      expectedArgs,
-      expect.any(Function)
-    );
-    expect(mockFrameService.redirect).toBeCalledWith(mockVenmoUrl);
-  });
-
-  it("minifies the assets if not in debug mode", async () => {
-    const expectedMinified = ".min.html";
-    const expectedArgs = {
-      name: expect.any(String),
-      dispatchFrameUrl: expect.stringContaining(expectedMinified),
-      openFrameUrl: expect.stringContaining(expectedMinified),
-      top: expect.any(Number),
-      left: expect.any(Number),
-      height: expect.any(Number),
-      width: expect.any(Number),
-    };
-    const options = {
-      ...testOptions,
-      debug: false,
-    };
-
-    await runWebLogin(options);
-    expect(frameService.create).toHaveBeenCalledWith(
-      expectedArgs,
-      expect.any(Function)
-    );
   });
 
   it("queries gateway status once the popup is closed", async () => {
     const expectedRetryStartingCount = 1;
 
-    await runWebLogin(testOptions);
+    await runWebLogin(openOptions);
 
     expect(mockStatusCheck).toBeCalledWith(expectedRetryStartingCount);
   });
 
   it("creates the backdrop and adds styles and required child elements", async () => {
     document.getElementById.mockReturnValueOnce();
-    await runWebLogin(testOptions);
+
+    await runWebLogin(openOptions);
+
     expect(document.createElement).toHaveBeenCalledTimes(8);
     expect(document.createElement).toHaveBeenNthCalledWith(1, "style");
     expect(document.createElement).toHaveBeenNthCalledWith(2, "div");
@@ -158,7 +113,7 @@ describe("web-login-backdrop", () => {
   });
 
   it("uses existing backdrop if already rendered instead of creating it again", async () => {
-    await runWebLogin(testOptions);
+    await runWebLogin(openOptions);
 
     expect(classListRemoveMock).toBeCalledWith("hidden");
   });
@@ -173,7 +128,7 @@ describe("web-login-backdrop", () => {
       });
       const popupName = "venmo-popup-continue-button";
 
-      await openPopup(testOptions);
+      await openPopup(openOptions);
 
       expect(document.getElementById).toHaveBeenNthCalledWith(1, popupName);
       expect(eventListenerMock).toHaveBeenNthCalledWith(
@@ -197,7 +152,7 @@ describe("web-login-backdrop", () => {
         return Promise.resolve(callback(mockFrameService));
       });
 
-      await runWebLogin(testOptions);
+      await runWebLogin(openOptions);
 
       const clickCancelCallback = eventListenerMock.mock.calls[1][1];
 
@@ -209,7 +164,7 @@ describe("web-login-backdrop", () => {
     });
   });
 
-  describe("openPopup()", () => {
+  describe("setupDesktopWebLogin()", () => {
     it("opens a popup via frameservice with the correct args", async () => {
       const mockWindowOuterHeight = 1000;
       const mockWindowScreenTop = 10;
@@ -235,7 +190,7 @@ describe("web-login-backdrop", () => {
         width: POPUP_WIDTH,
       };
 
-      await openPopup(testOptions);
+      await setupDesktopWebLogin(setupOptions);
 
       expect(frameService.create).toBeCalledWith(
         expectedCreateArgs,
@@ -243,8 +198,55 @@ describe("web-login-backdrop", () => {
       );
     });
 
+    it("minifies the assets if not in debug mode", async () => {
+      const expectedMinified = ".min.html";
+      const expectedArgs = {
+        name: expect.any(String),
+        dispatchFrameUrl: expect.stringContaining(expectedMinified),
+        openFrameUrl: expect.stringContaining(expectedMinified),
+        top: expect.any(Number),
+        left: expect.any(Number),
+        height: expect.any(Number),
+        width: expect.any(Number),
+      };
+      const options = {
+        ...setupOptions,
+        debug: false,
+      };
+
+      await setupDesktopWebLogin(options);
+      expect(frameService.create).toHaveBeenCalledWith(
+        expectedArgs,
+        expect.any(Function)
+      );
+    });
+
+    it("doesn't minify the html when in debug is true", async () => {
+      const expectedArgs = {
+        name: expect.any(String),
+        dispatchFrameUrl: expect.stringContaining("dispatch-frame.html"),
+        openFrameUrl: expect.stringContaining("landing-frame.html"),
+        top: expect.any(Number),
+        left: expect.any(Number),
+        height: expect.any(Number),
+        width: expect.any(Number),
+      };
+      const debugTestOptions = {
+        ...setupOptions,
+        debug: true,
+      };
+
+      await setupDesktopWebLogin(debugTestOptions);
+      expect(frameService.create).toHaveBeenCalledWith(
+        expectedArgs,
+        expect.any(Function)
+      );
+    });
+  });
+
+  describe("openPopup()", () => {
     it("opens a popup once frameService is created and redirects it to the Venmo url", async () => {
-      await openPopup(testOptions);
+      await openPopup(openOptions);
 
       expect(mockFrameService.open).toBeCalledWith({}, expect.any(Function));
       expect(mockFrameService.redirect).toBeCalledWith(mockVenmoUrl);
@@ -258,7 +260,7 @@ describe("web-login-backdrop", () => {
         return Promise.resolve(callback(mockFrameService));
       });
 
-      await openPopup(testOptions);
+      await openPopup(openOptions);
 
       expect(document.getElementById).toBeCalledWith(
         "venmo-popup-cancel-button"
@@ -287,7 +289,7 @@ describe("web-login-backdrop", () => {
 
       mockStatusCheck.mockResolvedValueOnce(expectedData);
 
-      const result = await openPopup(testOptions);
+      const result = await openPopup(openOptions);
 
       expect(result).toBe(expectedData);
       expect(mockFrameService.close).toBeCalled();
@@ -315,7 +317,7 @@ describe("web-login-backdrop", () => {
 
       mockStatusCheck.mockRejectedValue(expectedRejectedValue);
 
-      await openPopup(testOptions).catch((err) => {
+      await openPopup(openOptions).catch((err) => {
         expect(err).toBe(expectedRejectedValue);
         expect(mockFrameService.close).toBeCalled();
         expect(mockFrameService.redirect).toBeCalledWith(mockVenmoUrl);
@@ -332,7 +334,7 @@ describe("web-login-backdrop", () => {
         return Promise.resolve(callback("some error"));
       });
 
-      await openPopup(testOptions).catch((err) => {
+      await openPopup(openOptions).catch((err) => {
         expect(err).toBe("some error");
       });
     });

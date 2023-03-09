@@ -222,6 +222,8 @@ var FRAMEWORKS = require("./frameworks");
  * @property {string} [addressMatch] The 1-character value (Y/N) indicating whether cardholder billing and shipping addresses match.
  * @property {string} [accountId] Additional cardholder account information. (maximum length 64)
  * @property {string} [ipAddress] The IP address of the consumer. IPv4 and IPv6 are supported.
+ * - only one IP address supported
+ * - only numbers, letters, period '.' chars, or colons ':' are acceptable
  * @property {string} [orderDescription] Brief description of items purchased. (maximum length 256)
  * @property {string} [taxAmount] Unformatted tax amount without any decimalization (ie. $123.67 = 12367). (maximum length 20)
  * @property {string} [userAgent] The exact content of the HTTP user agent header. (maximum length 500)

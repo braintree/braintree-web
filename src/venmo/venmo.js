@@ -15,7 +15,7 @@ var inIframe = require("../lib/in-iframe");
 var Promise = require("../lib/promise");
 var ExtendedPromise = require("@braintree/extended-promise");
 var getVenmoUrl = require("./shared/get-venmo-url");
-var runWebLogin = require("./shared/web-login-backdrop").runWebLogin;
+var desktopWebLogin = require("./shared/web-login-backdrop");
 var snakeCaseToCamelCase = require("../lib/snake-case-to-camel-case");
 
 // NEXT_MAJOR_VERSION the source code for this is actually in a
@@ -151,14 +151,28 @@ function Venmo(options) {
     this._mobilePollingExpiresThreshold = DEFAULT_MOBILE_EXPIRING_THRESHOLD;
 
     this._createPromise = this._createPromise.then(function (client) {
+      var paymentContextPromise, webLoginPromise;
       var analyticsCategory = self._cannotHaveReturnUrls
         ? "manual-return"
         : "mobile-payment-context";
-      var config = client.getConfiguration().gatewayConfiguration;
+      var config = client.getConfiguration();
 
-      self._mobilePollingContextEnvironment = config.environment.toUpperCase();
+      webLoginPromise = desktopWebLogin
+        .setupDesktopWebLogin({
+          assetsUrl: config.gatewayConfiguration.assetsUrl,
+          debug: config.isDebug,
+        })
+        .then(function (frameServiceInstance) {
+          self._frameServiceInstance = frameServiceInstance;
+        })
+        .catch(function (desktopWebErr) {
+          return desktopWebErr;
+        });
 
-      return self
+      self._mobilePollingContextEnvironment =
+        config.gatewayConfiguration.environment.toUpperCase();
+
+      paymentContextPromise = self
         ._createVenmoPaymentContext(client)
         .then(function () {
           analytics.sendEvent(
@@ -184,6 +198,17 @@ function Venmo(options) {
               },
             })
           );
+        });
+
+      return ExtendedPromise.all([webLoginPromise, paymentContextPromise])
+        .then(function (results) {
+          var paymentContextResult = results[1]; // We only care about the returned value of the paymentContextPromise
+
+          return Promise.resolve(paymentContextResult);
+        })
+        .catch(function (promiseErr) {
+          // ExtendedPromise.all returns just one error and it's either which fails first/at all.
+          return Promise.reject(promiseErr);
         });
     });
   }
@@ -623,21 +648,22 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
   this._tokenizePromise = new ExtendedPromise();
 
   return this.getUrl().then(function (url) {
-    runWebLogin({
-      checkForStatusChange:
-        self._checkPaymentContextStatusAndProcessResult.bind(self),
-      cancelTokenization: self.cancelTokenization.bind(self),
-      venmoUrl: url,
-      assetsUrl: self._assetsUrl,
-      debug: self._isDebug,
-    })
+    desktopWebLogin
+      .runWebLogin({
+        checkForStatusChange:
+          self._checkPaymentContextStatusAndProcessResult.bind(self),
+        cancelTokenization: self.cancelTokenization.bind(self),
+        frameServiceInstance: self._frameServiceInstance,
+        venmoUrl: url,
+        debug: self._isDebug,
+      })
       .then(function (payload) {
         analytics.sendEvent(
           self._createPromise,
           "venmo.tokenize.web-login.success"
         );
 
-        return self._tokenizePromise.resolve({
+        self._tokenizePromise.resolve({
           paymentMethodNonce: payload.paymentMethodId,
           username: payload.userName,
           payerInfo: payload.payerInfo,
@@ -650,7 +676,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
           "venmo.tokenize.web-login.failure"
         );
 
-        return self._tokenizePromise.reject(err);
+        self._tokenizePromise.reject(err);
       });
 
     return self._tokenizePromise;

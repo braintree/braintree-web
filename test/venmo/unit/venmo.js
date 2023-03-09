@@ -18,7 +18,10 @@ const { version: VERSION } = require("../../../package.json");
 const methods = require("../../../src/lib/methods");
 const createVenmoDesktop = require("../../../src/venmo/external");
 const venmoErrors = require("../../../src/venmo/shared/errors");
-const { runWebLogin } = require("../../../src/venmo/shared/web-login-backdrop");
+const {
+  runWebLogin,
+  setupDesktopWebLogin,
+} = require("../../../src/venmo/shared/web-login-backdrop");
 const venmoConstants = require("../../../src/venmo/shared/constants");
 
 function triggerVisibilityHandler(instance, runAllTimers = true) {
@@ -66,6 +69,8 @@ describe("Venmo", () => {
       request: jest.fn().mockResolvedValue({}),
       getConfiguration: () => testContext.configuration,
     };
+
+    setupDesktopWebLogin.mockResolvedValue({});
 
     jest.spyOn(document, "addEventListener");
     jest.spyOn(document, "removeEventListener");
@@ -740,6 +745,35 @@ describe("Venmo", () => {
         expect.anything(),
         "venmo.mobile-payment-context.setup-failed"
       );
+    });
+  });
+
+  it("sets up desktop web login", async () => {
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoPaymentContext: {
+          venmoPaymentContext: {
+            status: "CREATED",
+            id: "context-id",
+            createdAt: "2021-01-20T03:25:37.522000Z",
+            expiresAt: "2021-01-20T03:30:37.522000Z",
+          },
+        },
+      },
+    });
+
+    new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      paymentMethodUsage: "single_use",
+    });
+
+    await flushPromises();
+
+    expect(setupDesktopWebLogin).toBeCalledWith({
+      assetsUrl: expect.stringContaining(
+        testContext.configuration.gatewayConfiguration.assetsUrl
+      ),
+      debug: testContext.configuration.isDebug,
     });
   });
 
@@ -2666,10 +2700,8 @@ describe("Venmo", () => {
         expect(runWebLogin).toHaveBeenCalledWith({
           cancelTokenization: expect.any(Function),
           checkForStatusChange: expect.any(Function),
+          frameServiceInstance: expect.any(Object),
           venmoUrl: expect.stringContaining(venmoConstants.VENMO_WEB_LOGIN_URL),
-          assetsUrl: expect.stringContaining(
-            testContext.configuration.gatewayConfiguration.assetsUrl
-          ),
           debug: testContext.configuration.isDebug,
         });
       });

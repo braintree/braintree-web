@@ -189,10 +189,10 @@ Subscribe to this repo to be notified when SDK releases go out.
 
 This SDK abides by our Client SDK Deprecation Policy. For more information on the potential statuses of an SDK check our [developer docs](https://developer.paypal.com/braintree/docs/guides/client-sdk/migration/javascript/v3).
 
-| Major version number | Status   | Released      | Deprecated    | Unsupported   |
-| -------------------- | -------- | ------------- | ------------- | ------------- |
-| 3.x.x                | Active   | August 2016   | TBA           | TBA           |
-| 2.x.x                | Inactive | November 2014 | February 2022 | February 2023 |
+| Major version number | Status      | Released      | Deprecated    | Unsupported   |
+| -------------------- | --------    | ------------- | ------------- | ------------- |
+| 3.x.x                | Active      | August 2016   | TBA           | TBA           |
+| 2.x.x                | Unsupported | November 2014 | February 2022 | February 2023 |
 
 # License
 

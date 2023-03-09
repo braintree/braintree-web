@@ -22,6 +22,7 @@ function getConfiguration(authData) {
       platform: constants.PLATFORM,
       sdkVersion: constants.VERSION,
       source: constants.SOURCE,
+      // NEXT_MAJOR_VERSION remove one of these to not duplicate data. Target parity with mobile platforms approach.
       integration: constants.INTEGRATION,
       integrationType: constants.INTEGRATION,
       sessionId: sessionId,

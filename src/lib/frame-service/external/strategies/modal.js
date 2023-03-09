@@ -19,6 +19,12 @@ var ELEMENT_STYLES = {
 
 function noop() {}
 
+/**
+ *
+ * We should not ever really use the Modal. Modals are _like_  popups, but the key difference is that the customer can't actually verify it's app domain and thus secure/valid. Old PP sdk (./src/paypal) uses this
+ * to get info from webviews (e.g. facebook).
+ */
+
 function Modal(options) {
   this._closed = null;
   this._frame = null;
