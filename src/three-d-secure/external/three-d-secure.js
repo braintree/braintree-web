@@ -99,8 +99,8 @@ var FRAMEWORKS = require("./frameworks");
 
 /**
  * @typedef {object} ThreeDSecure~billingAddress
- * @property {string} [givenName] The first name associated with the billing address. (maximum length 50)
- * @property {string} [surname] The last name associated with the billing address. (maximum length 50)
+ * @property {string} [givenName] The first name associated with the billing address. (maximum length 50, ASCII characters)
+ * @property {string} [surname] The last name associated with the billing address. (maximum length 50, ASCII characters)
  * @property {string} [phoneNumber] The phone number associated with the billing address. Only numbers; remove dashes, parenthesis and other characters.
  * @property {string} [streetAddress] Line 1 of the billing address (eg. number, street, etc). (maximum length 50)
  * @property {string} [extendedAddress] Line 2 of the billing address (eg. suite, apt #, etc.). (maximum length 50)
@@ -114,8 +114,8 @@ var FRAMEWORKS = require("./frameworks");
 /**
  * @typedef {object} ThreeDSecure~additionalInformation
  * @property {string} [workPhoneNumber] The work phone number used for verification. Only numbers; remove dashes, parenthesis and other characters. (maximum length 25)
- * @property {string} [shippingGivenName] The first name associated with the shipping address. (maximum length 50)
- * @property {string} [shippingSurname] The last name associated with the shipping address. (maximum length 50)
+ * @property {string} [shippingGivenName] The first name associated with the shipping address. (maximum length 50, ASCII characters)
+ * @property {string} [shippingSurname] The last name associated with the shipping address. (maximum length 50, ASCII characters)
  * @property {object} [shippingAddress]
  * @property {string} [shippingAddress.streetAddress] Line 1 of the shipping address (eg. number, street, etc). (maximum length 50)
  * @property {string} [shippingAddress.extendedAddress] Line 2 of the shipping address (eg. suite, apt #, etc.). (maximum length 50)

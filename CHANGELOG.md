@@ -1,11 +1,24 @@
 # CHANGELOG
 
-# 3.92.0 
+# 3.92.1
+
+- Hosted Fields
+  - Fixed bug related to cardholderName having wrong inputmode
+
+- Package updates
+  - Updated @braintree/sanitize-url to 6.0.2
+  - Updated json5 to 2.2.3
+  - Updated decode-uri-component to 0.2.2
+  - Updated terser to 4.8.1
+  - Updated minimist to 1.2.8
+  - Updated cached-path-relative to 1.1.0
+
+# 3.92.0
 
 - Venmo
   - Fix issue resulting in blocked popups in desktop web login flow
 - PayPal
-  - Remove `amount` calculation in `updatePayment`; now `amount` param is required. 
+  - Remove `amount` calculation in `updatePayment`; now `amount` param is required.
 - 3D Secure
   - Clarify format of IP Address in `AdditionalInformation` object
 

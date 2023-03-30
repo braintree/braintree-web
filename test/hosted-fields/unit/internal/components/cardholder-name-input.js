@@ -65,6 +65,14 @@ describe("Cardholder Name Input", () => {
 
       expect(input.element.pattern).toBeFalsy();
     });
+
+    it("removes the inputmode attribute added for iOS keyboards", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+      const input = createInput("cardholderName");
+
+      expect(input.element.inputmode).toBeFalsy();
+    });
   });
 
   describe("formatter", () => {

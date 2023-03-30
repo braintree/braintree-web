@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.92.0",
+  "version": "3.92.1",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -26,15 +26,20 @@
     "@braintree/event-emitter": "0.4.1",
     "@braintree/extended-promise": "0.4.1",
     "@braintree/iframer": "1.1.0",
-    "@braintree/sanitize-url": "6.0.0",
+    "@braintree/sanitize-url": "6.0.2",
     "@braintree/uuid": "0.1.0",
     "@braintree/wrap-promise": "2.1.0",
+    "cached-path-relative": "1.1.0",
     "card-validator": "8.1.1",
     "credit-card-type": "9.1.0",
+    "decode-uri-component": "0.2.2",
     "framebus": "5.2.0",
     "inject-stylesheet": "5.0.0",
+    "json5": "2.2.3",
+    "minimist": "1.2.8",
     "promise-polyfill": "8.2.3",
-    "restricted-input": "3.0.5"
+    "restricted-input": "3.0.5",
+    "terser": "4.8.1"
   },
   "devDependencies": {
     "browserify": "^17.0.0",

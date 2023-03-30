@@ -578,6 +578,9 @@ Venmo.prototype.tokenize = function (options) {
     .catch(function (err) {
       return self._createPromise
         .then(function (client) {
+          // We create a new Payment Context because if the last one failed, then presumably we don't want to use it again. 
+          // On the first pass, we create the payment context at initialization, and since we used that first one we now need to create a new one
+          // for the next time someone tries to tokenize. 
           return self._createVenmoPaymentContext(client);
         })
         .then(function () {

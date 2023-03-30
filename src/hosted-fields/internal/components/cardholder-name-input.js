@@ -19,7 +19,9 @@ function CardholderNameInput() {
   // all the other fields are number based, so they have a digit
   // pattern set on iOS to ensure that the number keyboard is
   // presented, so we manually remove the pattern attribute here
+  // we also remove the inputmode so the keyboard is kept to alphanumeric
   this.element.removeAttribute("pattern");
+  this.element.removeAttribute("inputmode");
 }
 
 CardholderNameInput.prototype = Object.create(BaseInput.prototype);

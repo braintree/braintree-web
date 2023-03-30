@@ -85,11 +85,9 @@ VaultManager.prototype.fetchPaymentMethods = function (options) {
     );
 };
 
-// TODO hide from jsdoc for now until the GraphQL API is on for all merchants by default
 /**
  * Deletes a payment method owned by the customer whose id was used to generate the client token used to create the {@link module:braintree-web/client|client}.
  * @public
- * @ignore
  * @param {string} paymentMethodNonce The payment method nonce that references a vaulted payment method.
  * @param {callback} [callback] No data is returned if the operation is successful.
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
