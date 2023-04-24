@@ -8,7 +8,6 @@ var analytics = require("../lib/analytics");
 var once = require("../lib/once");
 var convertMethodsToError = require("../lib/convert-methods-to-error");
 var methods = require("../lib/methods");
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 
 var TOKENIZE_BANK_DETAILS_MUTATION = createGraphQLMutation("UsBankAccount");

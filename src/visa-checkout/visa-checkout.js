@@ -6,7 +6,6 @@ var errors = require("./errors");
 var jsonClone = require("../lib/json-clone");
 var methods = require("../lib/methods");
 var convertMethodsToError = require("../lib/convert-methods-to-error");
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 var cardTypeTransformMap = {
   Visa: "VISA",

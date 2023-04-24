@@ -4,7 +4,6 @@ var wrapPromise = require("@braintree/wrap-promise");
 var analytics = require("../lib/analytics");
 var createAssetsUrl = require("../lib/create-assets-url");
 var createDeferredClient = require("../lib/create-deferred-client");
-var Promise = require("../lib/promise");
 
 /**
  * @class

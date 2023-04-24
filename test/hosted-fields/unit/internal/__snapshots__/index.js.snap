@@ -25,7 +25,7 @@ exports[`internal initialize calls FieldComponent to generate the input 1`] = `
       type="text"
     />
     <div
-      class=" field-description"
+      class="field-description"
       id="field-description-cvv"
       style="height: 1px; width: 1px; overflow: hidden;"
     />

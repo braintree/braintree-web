@@ -4,7 +4,6 @@ var FRAUDNET_FNCLS = require("../lib/constants").FRAUDNET_FNCLS;
 var FRAUDNET_SOURCE = require("../lib/constants").FRAUDNET_SOURCE;
 var FRAUDNET_URL = require("../lib/constants").FRAUDNET_URL;
 var loadScript = require("../lib/assets").loadScript;
-var Promise = require("../lib/promise");
 
 var cachedSessionId;
 

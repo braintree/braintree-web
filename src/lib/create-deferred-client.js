@@ -1,7 +1,6 @@
 "use strict";
 
 var BraintreeError = require("./braintree-error");
-var Promise = require("./promise");
 var assets = require("./assets");
 var sharedErrors = require("./errors");
 

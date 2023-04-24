@@ -5,7 +5,6 @@ var BraintreeError = require("../lib/braintree-error");
 var errors = require("./errors");
 var convertMethodsToError = require("../lib/convert-methods-to-error");
 var methods = require("../lib/methods");
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 
 var DELETE_PAYMENT_METHOD_MUTATION =

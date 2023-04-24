@@ -1,7 +1,5 @@
 "use strict";
 
-var Promise = require("../../src/lib/promise");
-
 function rejectIfResolves() {
   throw new Error("should not resolve");
 }

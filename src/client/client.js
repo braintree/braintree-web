@@ -10,7 +10,6 @@ var convertToBraintreeError = require("../lib/convert-to-braintree-error");
 var getGatewayConfiguration = require("./get-configuration").getConfiguration;
 var createAuthorizationData = require("../lib/create-authorization-data");
 var addMetadata = require("../lib/add-metadata");
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 var once = require("../lib/once");
 var deferred = require("../lib/deferred");

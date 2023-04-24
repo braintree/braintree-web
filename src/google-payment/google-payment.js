@@ -8,7 +8,6 @@ var generateGooglePayConfiguration = require("../lib/generate-google-pay-configu
 var BraintreeError = require("../lib/braintree-error");
 var errors = require("./errors");
 var methods = require("../lib/methods");
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 
 var CREATE_PAYMENT_DATA_REQUEST_METHODS = {

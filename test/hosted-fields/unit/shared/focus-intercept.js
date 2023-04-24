@@ -35,22 +35,6 @@ describe("focusIntercept", () => {
         expect(input.nodeType).toBe(ELEMENT_NODE_TYPE);
       });
 
-      it("adds focus intercept input to page for IE", () => {
-        let input;
-
-        browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
-        browserDetection.isIE.mockReturnValue(true);
-
-        input = focusIntercept.generate(
-          "unique-id",
-          "type",
-          "direction",
-          jest.fn()
-        );
-
-        expect(input.nodeType).toBe(ELEMENT_NODE_TYPE);
-      });
-
       it("has the expected attributes", () => {
         const input = focusIntercept.generate(
           "unique-id",
@@ -61,7 +45,7 @@ describe("focusIntercept", () => {
 
         expect(input.getAttribute("aria-hidden")).toContain("true");
         expect(input.getAttribute("autocomplete")).toContain("off");
-        expect(input.getAttribute("class")).toContain(" focus-intercept");
+        expect(input.getAttribute("class")).toContain("focus-intercept");
         expect(input.getAttribute("data-braintree-direction")).toContain(
           "direction"
         );
@@ -136,7 +120,6 @@ describe("focusIntercept", () => {
       beforeEach(() => {
         browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
         browserDetection.isFirefox.mockReturnValue(false);
-        browserDetection.isIE.mockReturnValue(false);
       });
 
       it("returns an empty document fragment", () => {
@@ -349,7 +332,7 @@ describe("focusIntercept", () => {
 
         protectedElement.setAttribute("aria-hidden", "true");
         protectedElement.setAttribute("autocomplete", "off");
-        protectedElement.setAttribute("class", " focus-intercept");
+        protectedElement.setAttribute("class", "focus-intercept");
         protectedElement.setAttribute("id", "do-not-destroy-me");
 
         testContext.form.appendChild(

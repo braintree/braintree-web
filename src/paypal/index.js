@@ -14,7 +14,6 @@ var errors = require("./shared/errors");
 var PayPal = require("./external/paypal");
 var VERSION = process.env.npm_package_version;
 var wrapPromise = require("@braintree/wrap-promise");
-var Promise = require("../lib/promise");
 
 /**
  * @static

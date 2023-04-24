@@ -4,7 +4,6 @@ var assign = require("../../lib/assign").assign;
 var createAssetsUrl = require("../../lib/create-assets-url");
 var isVerifiedDomain = require("../../lib/is-verified-domain");
 var Destructor = require("../../lib/destructor");
-var classList = require("@braintree/class-list");
 var iFramer = require("@braintree/iframer");
 var Bus = require("framebus");
 var createDeferredClient = require("../../lib/create-deferred-client");
@@ -30,7 +29,6 @@ var convertMethodsToError = require("../../lib/convert-methods-to-error");
 var sharedErrors = require("../../lib/errors");
 var getCardTypes = require("../shared/get-card-types");
 var attributeValidationError = require("./attribute-validation-error");
-var Promise = require("../../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 var focusChange = require("./focus-change");
 var destroyFocusIntercept = require("../shared/focus-intercept").destroy;
@@ -322,14 +320,13 @@ function createInputEventHandler(fields) {
 
     field = merchantPayload.fields[emittedBy];
 
-    classList.toggle(
-      container,
+    container.classList.toggle(
       constants.externalClasses.FOCUSED,
       field.isFocused
     );
-    classList.toggle(container, constants.externalClasses.VALID, field.isValid);
-    classList.toggle(
-      container,
+    container.classList.toggle(constants.externalClasses.VALID, field.isValid);
+
+    container.classList.toggle(
       constants.externalClasses.INVALID,
       !field.isPotentiallyValid
     );
@@ -550,23 +547,9 @@ function HostedFields(options) {
         container: externalContainer,
       };
 
+      // prevents loading the iframe from blocking the code
       setTimeout(function () {
-        // Edge has an intermittent issue where
-        // the iframes load, but the JavaScript
-        // can't message out to the parent page.
-        // We can fix this by setting the src
-        // to about:blank first followed by
-        // the actual source. Both instances
-        // of setting the src need to be in a
-        // setTimeout to work.
-        if (browserDetection.isIE() || browserDetection.isEdge()) {
-          frame.src = "about:blank";
-          setTimeout(function () {
-            frame.src = hostedFieldsUrl;
-          }, 0);
-        } else {
-          frame.src = hostedFieldsUrl;
-        }
+        frame.src = hostedFieldsUrl;
       }, 0);
     }.bind(this)
   );
@@ -654,8 +637,7 @@ function HostedFields(options) {
 
       parent.removeChild(node);
 
-      classList.remove(
-        parent,
+      parent.classList.remove(
         constants.externalClasses.FOCUSED,
         constants.externalClasses.INVALID,
         constants.externalClasses.VALID

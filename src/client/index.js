@@ -3,7 +3,6 @@
 var BraintreeError = require("../lib/braintree-error");
 var Client = require("./client");
 var VERSION = process.env.npm_package_version;
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 var sharedErrors = require("../lib/errors");
 

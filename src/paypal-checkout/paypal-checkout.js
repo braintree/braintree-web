@@ -4,7 +4,6 @@ var analytics = require("../lib/analytics");
 var assign = require("../lib/assign").assign;
 var createDeferredClient = require("../lib/create-deferred-client");
 var createAssetsUrl = require("../lib/create-assets-url");
-var Promise = require("../lib/promise");
 var ExtendedPromise = require("@braintree/extended-promise");
 var wrapPromise = require("@braintree/wrap-promise");
 var BraintreeError = require("../lib/braintree-error");
@@ -28,6 +27,8 @@ var REQUIRED_PARAMS_FOR_START_VAULT_INITIATED_CHECKOUT = [
 
 var PAYPAL_SDK_PRELOAD_URL =
   "https://www.{ENV}paypal.com/smart/buttons/preload";
+
+ExtendedPromise.suppressUnhandledPromiseMessage = true;
 
 /**
  * PayPal Checkout tokenized payload. Returned in {@link PayPalCheckout#tokenizePayment}'s callback as the second argument, `data`.

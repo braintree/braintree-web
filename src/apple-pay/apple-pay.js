@@ -3,7 +3,6 @@
 var BraintreeError = require("../lib/braintree-error");
 var analytics = require("../lib/analytics");
 var errors = require("./errors");
-var Promise = require("../lib/promise");
 var methods = require("../lib/methods");
 var convertMethodsToError = require("../lib/convert-methods-to-error");
 var wrapPromise = require("@braintree/wrap-promise");

@@ -1,6 +1,5 @@
 "use strict";
 
-var Promise = require("./promise");
 var constants = require("./constants");
 var addMetadata = require("./add-metadata");
 

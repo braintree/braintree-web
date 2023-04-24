@@ -1,5 +1,23 @@
 # CHANGELOG
 
+# 3.92.2
+
+- Remove dependency on `promise-polyfill`
+- Drop depenency on `@braintree/class-list`
+- Drop specific behavior for Internet Explorer (IE)
+  - Drop handling extra async setting of Hosted Fields iframe src
+  - Remove special handling for IE9 keyup event in Hosted Fields
+  - Drop dependencies on code for checking for IE useragents
+  - Drop specific Frame Service IE open bug handling
+- Client/All Components
+  - Drop support for requests on Internet Explorer 9 over the http protocol
+- Package updates
+  - Moved cached-path-relative to devDependencies
+  - Moved decode-uri-component to devDependencies
+  - Moved json5 to devDependencies
+  - Moved minimist to devDependencies
+  - Moved terser to devDependencies
+
 # 3.92.1
 
 - Hosted Fields
@@ -1954,7 +1972,7 @@
     required; use `flow: 'vault'` for Vault flow.
 
 | Old                 | New                |
-| ------------------- | ------------------ |
+|---------------------|--------------------|
 | `singleUse` omitted | `flow: 'vault'`    |
 | `singleUse: false`  | `flow: 'vault'`    |
 | `singleUse: true`   | `flow: 'checkout'` |

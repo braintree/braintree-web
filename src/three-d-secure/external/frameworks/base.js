@@ -3,7 +3,6 @@
 var assign = require("../../../lib/assign").assign;
 var analytics = require("../../../lib/analytics");
 var BraintreeError = require("../../../lib/braintree-error");
-var Promise = require("../../../lib/promise");
 var isVerifiedDomain = require("../../../lib/is-verified-domain");
 var ExtendedPromise = require("@braintree/extended-promise");
 var EventEmitter = require("@braintree/event-emitter");
@@ -20,6 +19,8 @@ var BUS_CONFIGURATION_REQUEST_EVENT =
 var VERSION = process.env.npm_package_version;
 var IFRAME_HEIGHT = 400;
 var IFRAME_WIDTH = 400;
+
+ExtendedPromise.suppressUnhandledPromiseMessage = true;
 
 function BaseFramework(options) {
   EventEmitter.call(this);

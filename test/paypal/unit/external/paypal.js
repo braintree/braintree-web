@@ -1103,13 +1103,7 @@ describe("PayPal", () => {
       expect(testContext.context._authorizationInProgress).toBe(false);
     });
 
-    it.each([
-      ["", frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED],
-      [
-        "due to ie bug",
-        frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG,
-      ],
-    ])(
+    it.each([["", frameServiceErrors.FRAME_SERVICE_FRAME_OPEN_FAILED]])(
       "calls the callback with error when frame fails to open %s",
       (s, error) => {
         let err;

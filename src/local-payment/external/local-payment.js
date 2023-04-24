@@ -10,7 +10,6 @@ var analytics = require("../../lib/analytics");
 var methods = require("../../lib/methods");
 var convertMethodsToError = require("../../lib/convert-methods-to-error");
 var convertToBraintreeError = require("../../lib/convert-to-braintree-error");
-var Promise = require("../../lib/promise");
 var ExtendedPromise = require("@braintree/extended-promise");
 var querystring = require("../../lib/querystring");
 var wrapPromise = require("@braintree/wrap-promise");
@@ -19,6 +18,8 @@ var errors = require("../shared/errors");
 
 var DEFAULT_WINDOW_WIDTH = 1282;
 var DEFAULT_WINDOW_HEIGHT = 720;
+
+ExtendedPromise.suppressUnhandledPromiseMessage = true;
 
 /**
  * @class

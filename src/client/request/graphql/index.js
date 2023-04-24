@@ -1,7 +1,5 @@
 "use strict";
 
-var browserDetection = require("../../browser-detection");
-
 var features = {
   tokenize_credit_cards: "payment_methods/credit_cards", // eslint-disable-line camelcase
   configuration: "configuration",
@@ -21,7 +19,7 @@ GraphQL.prototype.isGraphQLRequest = function (url, body) {
   var featureEnabled;
   var path = this.getClientApiPath(url);
 
-  if (!this._isGraphQLEnabled() || !path || browserDetection.isIe9()) {
+  if (!this._isGraphQLEnabled() || !path) {
     return false;
   }
 

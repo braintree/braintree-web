@@ -1,7 +1,6 @@
 "use strict";
 
 var BraintreeError = require("./braintree-error");
-var Promise = require("./promise");
 var sharedErrors = require("./errors");
 var VERSION = process.env.npm_package_version;
 

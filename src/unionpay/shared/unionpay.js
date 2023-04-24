@@ -13,7 +13,6 @@ var iFramer = require("@braintree/iframer");
 var methods = require("../../lib/methods");
 var VERSION = process.env.npm_package_version;
 var uuid = require("@braintree/uuid");
-var Promise = require("../../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 var BUS_CONFIGURATION_REQUEST_EVENT =
   require("../../lib/constants").BUS_CONFIGURATION_REQUEST_EVENT;

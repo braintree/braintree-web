@@ -2,7 +2,6 @@
 
 var attributeValidationError = require("../../external/attribute-validation-error");
 var constants = require("../../shared/constants");
-var classList = require("@braintree/class-list");
 var supportsPassiveEventListener = require("../../../lib/supports-passive-event-listener");
 var browserDetection = require("../../shared/browser-detection");
 var createRestrictedInput = require("../../../lib/create-restricted-input");
@@ -197,8 +196,12 @@ BaseInput.prototype._addDOMInputListeners = function () {
   );
 };
 
+// this needs to be a function so that the
+// ExpirationSplitElement class can set it to
+// 'change' for when it is using a `select`
+// element instead of the normal `input` element
 BaseInput.prototype._getDOMChangeEvent = function () {
-  return browserDetection.isIe9() ? "keyup" : "input";
+  return "input";
 };
 
 BaseInput.prototype._addDOMFocusListeners = function () {
@@ -395,7 +398,7 @@ BaseInput.prototype.addBusEventListeners = function () {
     events.ADD_CLASS,
     function (data) {
       if (data.field === this.type) {
-        classList.add(this.element, data.classname);
+        this.element.classList.add(data.classname);
       }
     }.bind(this)
   );
@@ -404,7 +407,7 @@ BaseInput.prototype.addBusEventListeners = function () {
     events.REMOVE_CLASS,
     function (data) {
       if (data.field === this.type) {
-        classList.remove(this.element, data.classname);
+        this.element.classList.remove(data.classname);
       }
     }.bind(this)
   );
@@ -426,8 +429,8 @@ BaseInput.prototype.render = function () {
   var isValid = modelData.isValid;
   var isPotentiallyValid = modelData.isPotentiallyValid;
 
-  classList.toggle(this.element, "valid", isValid);
-  classList.toggle(this.element, "invalid", !isPotentiallyValid);
+  this.element.classList.toggle("valid", isValid);
+  this.element.classList.toggle("invalid", !isPotentiallyValid);
 
   if (this.maxLength) {
     this.element.setAttribute("maxlength", this.maxLength);

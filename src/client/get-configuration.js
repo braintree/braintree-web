@@ -1,7 +1,6 @@
 "use strict";
 
 var BraintreeError = require("../lib/braintree-error");
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 var request = require("./request");
 var uuid = require("@braintree/uuid");

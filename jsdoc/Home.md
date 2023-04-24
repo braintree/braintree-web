@@ -79,31 +79,8 @@ While `braintree-web` will work in browsers other than the ones below, these rep
 
 - Chrome latest
 - Firefox latest
-- Internet Explorer 9+ (see caveats below)
 - Microsoft Edge latest
 - Safari 8+
-
-#### Internet Explorer caveats
-
-##### Testing
-
-Our code is ES5 compliant, but we only run automated tests in Internet Explorer 11+. The next major version of the SDK will drop support for Internet Explorer 9 and 10 entirely.
-
-##### Quirks Mode
-
-Quirks Mode is not supported for any version of IE. See our [general best practices](https://developer.paypal.com/braintree/docs/reference/general/best-practices#internet-explorer-quirks-mode) to learn more.
-
-##### Older TLS versions
-
-Braintree is [ending support for server-side API requests via TLS 1.0 and 1.1 on June 30, 2017](https://www.braintreepayments.com/blog/updating-your-production-environment-to-support-tlsv1-2/), and plans to do the same for client requests in the future. The sandbox no longer accepts connections using these older TLS versions as of December 13, 2016. Internet Explorer 9 and 10 do not use TLS 1.2 by default; this SDK will only work if customers have explicitly enabled TLS 1.2 in their IE settings.
-
-##### PayPal Support
-
-The PayPal SDK supports Internet Explorer 11+.
-
-##### 3D Secure Support
-
-The SDK from our MPI provider, Cardinal Commerce, supports Internet Explorer 10+.
 
 <a id="browser-support-mobile"></a>
 
@@ -156,7 +133,7 @@ If you happen to call this method while the instance's `teardown` is in progress
 ### Basic Directives
 
 |             | Sandbox                                                                                                     | Production                                                                                  |
-| ----------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+|-------------|-------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | script-src  | js.braintreegateway.com<br/>assets.braintreegateway.com                                                     | js.braintreegateway.com<br/>assets.braintreegateway.com                                     |
 | img-src     | assets.braintreegateway.com<br/>data:                                                                       | assets.braintreegateway.com<br/>data:                                                       |
 | child-src   | assets.braintreegateway.com                                                                                 | assets.braintreegateway.com                                                                 |
@@ -168,7 +145,7 @@ If you happen to call this method while the instance's `teardown` is in progress
 If using the [PayPal Checkout component](module-braintree-web_paypal-checkout.html), include these additional directives:
 
 |            | Sandbox                                                     | Production                                                  |
-| ---------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+|------------|-------------------------------------------------------------|-------------------------------------------------------------|
 | script-src | www.paypalobjects.com<br/>\*.paypal.com<br/>'unsafe-inline' | www.paypalobjects.com<br/>\*.paypal.com<br/>'unsafe-inline' |
 | style-src  | 'unsafe-inline'                                             | 'unsafe-inline'                                             |
 | img-src    | checkout.paypal.com                                         | checkout.paypal.com                                         |
@@ -180,7 +157,7 @@ If using the [PayPal Checkout component](module-braintree-web_paypal-checkout.ht
 If using the [Google Pay component](module-braintree-web_google-payment.html), include these additional directives:
 
 |            | Sandbox        | Production     |
-| ---------- | -------------- | -------------- |
+|------------|----------------|----------------|
 | script-src | pay.google.com | pay.google.com |
 
 ### 3D Secure Specific Directives
@@ -188,7 +165,7 @@ If using the [Google Pay component](module-braintree-web_google-payment.html), i
 If using the [3D Secure component](module-braintree-web_three-d-secure.html), include these additional directives:
 
 |             | Sandbox                           | Production                    |
-| ----------- | --------------------------------- | ----------------------------- |
+|-------------|-----------------------------------|-------------------------------|
 | script-src  | songbirdstag.cardinalcommerce.com | songbird.cardinalcommerce.com |
 | frame-src   | \*                                | \*                            |
 | connect-src | \*.cardinalcommerce.com           | \*.cardinalcommerce.com       |
@@ -206,7 +183,7 @@ If using Kount with the [Data Collector component](DataCollector.html), adhere t
 For [Braintree Fraud Protection](https://developer.paypal.com/braintree/docs/guides/premium-fraud-management-tools/overview), use these directives:
 
 |            | Sandbox       | Production    |
-| ---------- | ------------- | ------------- |
+|------------|---------------|---------------|
 | script-src | \*.paypal.com | \*.paypal.com |
 | child-src  | \*.paypal.com | \*.paypal.com |
 | frame-src  | \*.paypal.com | \*.paypal.com |

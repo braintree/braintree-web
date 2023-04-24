@@ -6,7 +6,6 @@
 
 var GooglePayment = require("./google-payment");
 var BraintreeError = require("../lib/braintree-error");
-var Promise = require("../lib/promise");
 var createAssetsUrl = require("../lib/create-assets-url");
 var createDeferredClient = require("../lib/create-deferred-client");
 var basicComponentVerification = require("../lib/basic-component-verification");

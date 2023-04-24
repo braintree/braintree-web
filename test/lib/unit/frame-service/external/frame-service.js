@@ -24,7 +24,6 @@ const Modal = require("../../../../../src/lib/frame-service/external/strategies/
 const BraintreeBus = require("framebus");
 const BraintreeError = require("../../../../../src/lib/braintree-error");
 const browserDetection = require("../../../../../src/lib/frame-service/shared/browser-detection");
-const isHTTPS = require("../../../../../src/lib/is-https");
 const { noop, mockWindowOpen } = require("../../../../helpers");
 
 describe("FrameService", () => {
@@ -87,9 +86,6 @@ describe("FrameService", () => {
       dispatchFrameUrl: "fake-url",
       openFrameUrl: "fake-landing-frame-html",
     };
-
-    jest.spyOn(isHTTPS, "isHTTPS").mockReturnValue(true);
-    jest.spyOn(browserDetection, "isIE").mockReturnValue(false);
   });
 
   describe("Constructor", () => {
@@ -401,55 +397,6 @@ describe("FrameService", () => {
     it("calls the callback with error when popup fails to open", () => {
       const callback = jest.fn();
 
-      testContext.fakeFrame.isClosed.mockReturnValue(true);
-
-      testContext.frameService.open({}, callback);
-
-      expect(callback.mock.calls[0][0]).toMatchObject({
-        type: BraintreeError.types.INTERNAL,
-        code: "FRAME_SERVICE_FRAME_OPEN_FAILED",
-        message: "Frame failed to open.",
-      });
-    });
-
-    it("calls the callback with IE specific error when popup failed to open in IE over not-https", () => {
-      const callback = jest.fn();
-
-      isHTTPS.isHTTPS.mockReturnValue(false);
-      browserDetection.isIE.mockReturnValue(true);
-      testContext.fakeFrame.isClosed.mockReturnValue(true);
-
-      testContext.frameService.open({}, callback);
-
-      expect(callback.mock.calls[0][0]).toMatchObject({
-        type: BraintreeError.types.INTERNAL,
-        code: "FRAME_SERVICE_FRAME_OPEN_FAILED_IE_BUG",
-        message:
-          "Could not open frame. This may be due to a bug in IE browsers when attempting to open an HTTPS page from a HTTP page. https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11324352/",
-      });
-    });
-
-    it("calls the callback with generic error when browser is IE and site is using HTTPS", () => {
-      const callback = jest.fn();
-
-      isHTTPS.isHTTPS.mockReturnValue(true);
-      browserDetection.isIE.mockReturnValue(true);
-      testContext.fakeFrame.isClosed.mockReturnValue(true);
-
-      testContext.frameService.open({}, callback);
-
-      expect(callback.mock.calls[0][0]).toMatchObject({
-        type: BraintreeError.types.INTERNAL,
-        code: "FRAME_SERVICE_FRAME_OPEN_FAILED",
-        message: "Frame failed to open.",
-      });
-    });
-
-    it("calls the callback with generic error when browser is not IE and site is not using HTTPS", () => {
-      const callback = jest.fn();
-
-      isHTTPS.isHTTPS.mockReturnValue(false);
-      browserDetection.isIE.mockReturnValue(false);
       testContext.fakeFrame.isClosed.mockReturnValue(true);
 
       testContext.frameService.open({}, callback);

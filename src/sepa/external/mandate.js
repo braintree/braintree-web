@@ -2,7 +2,6 @@
 
 var BraintreeError = require("../../lib/braintree-error");
 var sepaErrors = require("../shared/errors");
-var Promise = require("../../lib/promise");
 var frameService = require("../../lib/frame-service/external");
 var analytics = require("../../lib/analytics");
 var useMin = require("../../lib/use-min");

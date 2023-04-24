@@ -1,8 +1,5 @@
 "use strict";
 
-jest.mock("../../../../../src/client/browser-detection");
-
-const browserDetection = require("../../../../../src/client/browser-detection");
 const GraphQL = require("../../../../../src/client/request/graphql");
 
 describe("GraphQL", () => {
@@ -55,14 +52,6 @@ describe("GraphQL", () => {
       const gql = new GraphQL({});
 
       expect(gql.isGraphQLRequest("https://localhost/other", {})).toBe(false);
-    });
-
-    it("returns false if browser is IE9", () => {
-      const gql = new GraphQL(testContext.config);
-
-      jest.spyOn(browserDetection, "isIe9").mockReturnValue(true);
-
-      expect(gql.isGraphQLRequest(testContext.tokenizeUrl, {})).toBe(false);
     });
 
     it("returns false if body contains disallowed key", () => {

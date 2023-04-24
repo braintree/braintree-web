@@ -9,7 +9,6 @@ var iFramer = require("@braintree/iframer");
 var uuid = require("@braintree/uuid");
 var useMin = require("../../lib/use-min");
 var methods = require("../../lib/methods");
-var Promise = require("../../lib/promise");
 var EventEmitter = require("@braintree/event-emitter");
 var BraintreeError = require("../../lib/braintree-error");
 var VERSION = process.env.npm_package_version;

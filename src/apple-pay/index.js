@@ -11,7 +11,6 @@ var BraintreeError = require("../lib/braintree-error");
 var basicComponentVerification = require("../lib/basic-component-verification");
 var createAssetsUrl = require("../lib/create-assets-url");
 var createDeferredClient = require("../lib/create-deferred-client");
-var Promise = require("../lib/promise");
 var errors = require("./errors");
 var VERSION = process.env.npm_package_version;
 var wrapPromise = require("@braintree/wrap-promise");

@@ -5,7 +5,6 @@ var Bus = require("framebus");
 var constants = require("../shared/constants");
 var clone = require("../../lib/json-clone");
 var Client = require("../../client/client");
-var Promise = require("../../lib/promise");
 
 function create() {
   var componentId = window.location.hash.slice(1, window.location.hash.length);

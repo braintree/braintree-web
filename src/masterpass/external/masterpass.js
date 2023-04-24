@@ -1,6 +1,5 @@
 "use strict";
 
-var Promise = require("../../lib/promise");
 var frameService = require("../../lib/frame-service/external");
 var BraintreeError = require("../../lib/braintree-error");
 var errors = require("../shared/errors");

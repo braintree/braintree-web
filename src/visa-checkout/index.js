@@ -13,7 +13,6 @@ var VisaCheckout = require("./visa-checkout");
 var analytics = require("../lib/analytics");
 var errors = require("./errors");
 var VERSION = process.env.npm_package_version;
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 
 /**

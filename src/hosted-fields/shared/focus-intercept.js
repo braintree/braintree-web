@@ -1,7 +1,6 @@
 "use strict";
 
 var browserDetection = require("./browser-detection");
-var classList = require("@braintree/class-list");
 var constants = require("./constants");
 var allowedFields = Object.keys(constants.allowedFields);
 var directions = constants.navigationDirections;
@@ -20,9 +19,7 @@ var focusIntercept = {
       width: "1px !important",
     };
     var shouldCreateFocusIntercept =
-      browserDetection.hasSoftwareKeyboard() ||
-      browserDetection.isFirefox() ||
-      browserDetection.isIE();
+      browserDetection.hasSoftwareKeyboard() || browserDetection.isFirefox();
 
     if (!shouldCreateFocusIntercept) {
       return document.createDocumentFragment();
@@ -43,7 +40,7 @@ var focusIntercept = {
         .replace(/,/g, ";")
     );
 
-    classList.add(input, "focus-intercept");
+    input.classList.add("focus-intercept");
 
     input.addEventListener("focus", function (event) {
       handler(event);

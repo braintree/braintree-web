@@ -7,7 +7,6 @@ var errors = require("./shared/errors");
 var supportsInputFormatting = require("restricted-input/supports-input-formatting");
 var wrapPromise = require("@braintree/wrap-promise");
 var BraintreeError = require("../lib/braintree-error");
-var Promise = require("../lib/promise");
 var VERSION = process.env.npm_package_version;
 
 /**

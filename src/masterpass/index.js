@@ -11,7 +11,6 @@ var createDeferredClient = require("../lib/create-deferred-client");
 var createAssetsUrl = require("../lib/create-assets-url");
 var VERSION = process.env.npm_package_version;
 var errors = require("./shared/errors");
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 
 /**

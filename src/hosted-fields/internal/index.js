@@ -2,7 +2,6 @@
 
 var assign = require("../../lib/assign").assign;
 var Bus = require("framebus");
-var Promise = require("../../lib/promise");
 var convertToBraintreeError = require("../../lib/convert-to-braintree-error");
 var frameName = require("./get-frame-name");
 var assembleIFrames = require("./assemble-iframes");

@@ -3,7 +3,6 @@
 var wrapPromise = require("@braintree/wrap-promise");
 var BraintreeError = require("../../lib/braintree-error");
 var sepaErrors = require("../shared/errors");
-var Promise = require("../../lib/promise");
 var constants = require("../shared/constants");
 var mandates = require("./mandate");
 var hasMissingOption = require("../shared/has-missing-option");

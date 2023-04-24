@@ -7,7 +7,7 @@
     "ecmaVersion": 2018
   },
   "globals": {
-    "__dirname": true
+    "__dirname": "readonly"
   },
   "rules": {
     "no-new": 0,

@@ -4,7 +4,6 @@ var InputComponents = require("./index");
 var constants = require("../../shared/constants");
 var assign = require("../../../lib/assign").assign;
 var LabelComponent = require("./label").LabelComponent;
-var classList = require("@braintree/class-list");
 var focusIntercept = require("../../shared/focus-intercept");
 var events = constants.events;
 var allowedFields = constants.allowedFields;
@@ -60,7 +59,7 @@ module.exports = {
 
     this.description = document.createElement("div");
     this.description.id = "field-description-" + type;
-    classList.add(this.description, "field-description");
+    this.description.classList.add("field-description");
     this.description.style.height = "1px";
     this.description.style.width = "1px";
     this.description.style.overflow = "hidden";

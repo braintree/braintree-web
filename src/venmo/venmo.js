@@ -12,7 +12,6 @@ var convertMethodsToError = require("../lib/convert-methods-to-error");
 var wrapPromise = require("@braintree/wrap-promise");
 var BraintreeError = require("../lib/braintree-error");
 var inIframe = require("../lib/in-iframe");
-var Promise = require("../lib/promise");
 var ExtendedPromise = require("@braintree/extended-promise");
 var getVenmoUrl = require("./shared/get-venmo-url");
 var desktopWebLogin = require("./shared/web-login-backdrop");
@@ -28,6 +27,8 @@ var graphqlQueries = require("./external/queries");
 var VERSION = process.env.npm_package_version;
 var DEFAULT_MOBILE_POLLING_INTERVAL = 250; // 1/4 second
 var DEFAULT_MOBILE_EXPIRING_THRESHOLD = 300000; // 5 minutes
+
+ExtendedPromise.suppressUnhandledPromiseMessage = true;
 
 /**
  * Venmo tokenize payload.

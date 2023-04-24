@@ -23,6 +23,8 @@ var ELEMENT_IDS = {
   venmoLogo: "venmo-full-logo",
 };
 
+ExtendedPromise.suppressUnhandledPromiseMessage = true;
+
 function openPopup(options) {
   var frameServiceInstance = options.frameServiceInstance;
   var venmoUrl = options.venmoUrl;

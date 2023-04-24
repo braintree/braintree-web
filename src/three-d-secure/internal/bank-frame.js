@@ -6,7 +6,6 @@ var queryString = require("../../lib/querystring");
 var BraintreeError = require("../../lib/braintree-error");
 var sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
 var Client = require("../../client/client");
-var Promise = require("../../lib/promise");
 var errors = require("../shared/errors");
 var BUS_CONFIGURATION_REQUEST_EVENT =
   require("../../lib/constants").BUS_CONFIGURATION_REQUEST_EVENT;

@@ -15,7 +15,6 @@ var deferred = require("../../lib/deferred");
 var errors = require("../shared/errors");
 var convertMethodsToError = require("../../lib/convert-methods-to-error");
 var querystring = require("../../lib/querystring");
-var Promise = require("../../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 
 /**

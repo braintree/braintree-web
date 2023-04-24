@@ -10,7 +10,6 @@ var assets = require("../../../lib/assets");
 var errors = require("../../shared/errors");
 var enumerate = require("../../../lib/enumerate");
 var constants = require("../../shared/constants");
-var Promise = require("../../../lib/promise");
 var ExtendedPromise = require("@braintree/extended-promise");
 
 var INTEGRATION_TIMEOUT_MS =
@@ -31,6 +30,8 @@ var SONGBIRD_UI_EVENTS = [
 ];
 
 var SCA_EXEMPTION_TYPES = ["low_value", "transaction_risk_analysis"];
+
+ExtendedPromise.suppressUnhandledPromiseMessage = true;
 
 function SongbirdFramework(options) {
   BaseFramework.call(this, options);

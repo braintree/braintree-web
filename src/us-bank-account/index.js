@@ -11,7 +11,6 @@ var createAssetsUrl = require("../lib/create-assets-url");
 var errors = require("./errors");
 var USBankAccount = require("./us-bank-account");
 var VERSION = process.env.npm_package_version;
-var Promise = require("../lib/promise");
 var wrapPromise = require("@braintree/wrap-promise");
 
 /**

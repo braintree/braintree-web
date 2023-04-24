@@ -14,10 +14,6 @@ function isChromeIos() {
 }
 
 module.exports = {
-  isIE: require("@braintree/browser-detection/is-ie"),
-  isEdge: require("@braintree/browser-detection/is-edge"),
-  isIe9: require("@braintree/browser-detection/is-ie9"),
-  isIe10: require("@braintree/browser-detection/is-ie10"),
   isAndroid: isAndroid,
   isChromeOS: isChromeOS,
   isChromeIos: isChromeIos,
