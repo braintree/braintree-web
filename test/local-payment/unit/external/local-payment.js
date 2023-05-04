@@ -1,9 +1,11 @@
+/* eslint-disable no-undefined */
 "use strict";
 
 jest.mock("../../../../src/lib/frame-service/external");
 
 const { version: VERSION } = require("../../../../package.json");
 const LocalPayment = require("../../../../src/local-payment/external/local-payment");
+const constants = require("../../../../src/local-payment/external/constants");
 const analytics = require("../../../../src/lib/analytics");
 const frameService = require("../../../../src/lib/frame-service/external");
 const methods = require("../../../../src/lib/methods");
@@ -156,7 +158,366 @@ describe("LocalPayment", () => {
     });
   });
 
-  describe("startPayment", () => {
+  describe("startPayment Pay upon invoice", () => {
+    beforeEach(() => {
+      testContext.localPayment = new LocalPayment({
+        client: testContext.client,
+        merchantAccountId: "merchant-account-id",
+      });
+      testContext.frameServiceInstance = {
+        _serviceId: "service-id",
+        close: jest.fn(),
+        open: jest.fn(
+          yieldsAsync(null, {
+            token: "token",
+            paymentId: "payment-id",
+            PayerID: "PayerId",
+          })
+        ),
+        redirect: jest.fn(),
+      };
+
+      testContext.options = {
+        onPaymentStart: jest.fn(),
+        paymentType: "pay_upon_invoice",
+        paymentTypeCountryCode: "NL",
+        amount: "10.00",
+        fallback: {
+          url: "https://example.com/fallback",
+          buttonText: "Button Text",
+        },
+        shippingAddressRequired: true,
+        currencyCode: "USD",
+        givenName: "First",
+        surname: "Last",
+        email: "email@example.com",
+        phone: "1234",
+        bic: "ABGANL6A",
+        displayName: "My Brand!",
+        address: {
+          streetAddress: "123 Address",
+          extendedAddress: "Unit 1",
+          locality: "Chicago",
+          region: "IL",
+          postalCode: "60654",
+          countryCode: "US",
+        },
+        billingAddress: {
+          streetAddress: "Prinzregentenstr 99991658",
+          locality: "Freiburg",
+          postalCode: "79111",
+          countryCode: "DE",
+        },
+        locale: "en-DE",
+        birthDate: "1990-01-01",
+        correlationId: "bt-correlationId",
+        lineItems: [
+          {
+            category: "PHYSICAL_GOODS",
+            name: "Air Jordan Shoe",
+            quantity: "1",
+            unitAmount: "81.00",
+            unitTaxAmount: "19.00",
+          },
+        ],
+        phoneCountryCode: "49",
+        shippingAmount: "2.00",
+        customerServiceInstructions: "pleasefollow",
+      };
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect-url",
+          paymentToken: "payment-token",
+        },
+      });
+
+      jest
+        .spyOn(frameService, "create")
+        .mockImplementation(yields(testContext.frameServiceInstance));
+
+      return testContext.localPayment._initialize();
+    });
+
+    it.each(
+      constants.REQUIRED_OPTIONS_FOR_DEFERRED_PAYMENT_TYPE.map((param) => [
+        param,
+      ])
+    )("errors when no %s param is provided", (requiredParam) => {
+      delete testContext.options[requiredParam];
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code }) => {
+          expect(code).toBe(
+            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+          );
+        });
+    });
+
+    it.each(constants.REQUIRED_OPTIONS_FOR_ADDRESS.map((param) => [param]))(
+      "errors when billingAddress.%s param is missing",
+      (requiredParam) => {
+        delete testContext.options.billingAddress[requiredParam];
+
+        return testContext.localPayment
+          .startPayment(testContext.options)
+          .catch(({ code }) => {
+            expect(code).toBe(
+              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+            );
+          });
+      }
+    );
+
+    it.each(constants.REQUIRED_OPTIONS_FOR_LINE_ITEMS.map((param) => [param]))(
+      "errors when lineItems.%s param is missing",
+      (requiredParam) => {
+        delete testContext.options.lineItems[requiredParam];
+
+        return testContext.localPayment
+          .startPayment(testContext.options)
+          .catch(({ code, details }) => {
+            expect(code).toBe(
+              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+            );
+            expect(details).toContain(requiredParam);
+          });
+      }
+    );
+
+    it("errors when options are missing", () => {
+      return testContext.localPayment.startPayment().catch(({ code }) => {
+        expect(code).toBe(
+          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+        );
+      });
+    });
+
+    it("creates a payment resource", () => {
+      const client = testContext.client;
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          // expect(testContext.frameServiceInstance.open).toHaveBeenCalledTimes(0)
+          expect(client.request).toHaveBeenCalledWith({
+            method: "post",
+            endpoint: "local_payments/create",
+            data: {
+              cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text&c=1`,
+              returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text`,
+              fundingSource: "pay_upon_invoice",
+              paymentTypeCountryCode: "NL",
+              amount: "10.00",
+              intent: "sale",
+              billingAddress: {
+                line1: "Prinzregentenstr 99991658",
+                line2: undefined,
+                city: "Freiburg",
+                state: undefined,
+                postalCode: "79111",
+                countryCode: "DE",
+              },
+              birthDate: "1990-01-01",
+              correlationId: "bt-correlationId",
+              discountAmount: undefined,
+              experienceProfile: {
+                brandName: "My Brand!",
+                noShipping: false,
+                customerServiceInstructions: "pleasefollow",
+                locale: "en-DE",
+              },
+              currencyIsoCode: "USD",
+              firstName: "First",
+              lastName: "Last",
+              payerEmail: "email@example.com",
+              phone: "1234",
+              line1: "123 Address",
+              line2: "Unit 1",
+              city: "Chicago",
+              state: "IL",
+              postalCode: "60654",
+              countryCode: "US",
+              lineItems: [
+                {
+                  category: "PHYSICAL_GOODS",
+                  name: "Air Jordan Shoe",
+                  quantity: "1",
+                  unitAmount: "81.00",
+                  unitTaxAmount: "19.00",
+                },
+              ],
+              phoneCountryCode: "49",
+              shippingAmount: "2.00",
+              merchantAccountId: "merchant-account-id",
+              bic: "ABGANL6A",
+            },
+          });
+        });
+    });
+
+    it("uses alternate fallback options for cancel url when provided", () => {
+      const client = testContext.client;
+
+      testContext.options.fallback.cancelUrl = "https://example.com/cancel";
+      testContext.options.fallback.cancelButtonText = "Cancel Payment";
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(client.request).toHaveBeenCalledWith({
+            method: "post",
+            endpoint: "local_payments/create",
+            data: {
+              cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Fcancel&t=Cancel%20Payment&c=1`,
+              returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text`,
+              fundingSource: "pay_upon_invoice",
+              paymentTypeCountryCode: "NL",
+              amount: "10.00",
+              intent: "sale",
+              billingAddress: {
+                line1: "Prinzregentenstr 99991658",
+                line2: undefined,
+                city: "Freiburg",
+                state: undefined,
+                postalCode: "79111",
+                countryCode: "DE",
+              },
+              birthDate: "1990-01-01",
+              correlationId: "bt-correlationId",
+              discountAmount: undefined,
+              experienceProfile: {
+                brandName: "My Brand!",
+                noShipping: false,
+                customerServiceInstructions: "pleasefollow",
+                locale: "en-DE",
+              },
+              currencyIsoCode: "USD",
+              firstName: "First",
+              lastName: "Last",
+              payerEmail: "email@example.com",
+              phone: "1234",
+              line1: "123 Address",
+              line2: "Unit 1",
+              city: "Chicago",
+              state: "IL",
+              postalCode: "60654",
+              countryCode: "US",
+              lineItems: [
+                {
+                  category: "PHYSICAL_GOODS",
+                  name: "Air Jordan Shoe",
+                  quantity: "1",
+                  unitAmount: "81.00",
+                  unitTaxAmount: "19.00",
+                },
+              ],
+              phoneCountryCode: "49",
+              shippingAmount: "2.00",
+              merchantAccountId: "merchant-account-id",
+              bic: "ABGANL6A",
+            },
+          });
+        });
+    });
+
+    it("No redirects occur for payment source creation", () => {
+      const frame = testContext.frameServiceInstance;
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(frame.redirect).toHaveBeenCalledTimes(0);
+        });
+    });
+
+    it("Does not open a window for payment processing", () => {
+      const frame = testContext.frameServiceInstance;
+
+      frame.open.mockImplementation(yields(null, { foo: "bar" }));
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(frame.open).toHaveBeenCalledTimes(0);
+        });
+    });
+
+    it("errors when payment resource call fails", () => {
+      const requestError = {
+        message: "Failed",
+        details: {
+          httpStatus: 400,
+        },
+      };
+
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockClear();
+      testContext.client.request.mockRejectedValueOnce(requestError);
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code, details }) => {
+          expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
+          expect(details.originalError.message).toBe("Failed");
+        });
+    });
+
+    it("errors with validation error when create payment resource fails with 422", () => {
+      const requestError = {
+        message: "Failed",
+        details: {
+          httpStatus: 422,
+        },
+      };
+
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockRejectedValue(requestError);
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code, details }) => {
+          expect(code).toBe("LOCAL_PAYMENT_INVALID_PAYMENT_OPTION");
+          expect(details.originalError.message).toBe("Failed");
+        });
+    });
+
+    it("cleans up state when payment resource request fails", () => {
+      const requestError = {
+        message: "Failed",
+        details: {
+          httpStatus: 400,
+        },
+      };
+
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockRejectedValue(requestError);
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(() => {
+          expect(testContext.frameServiceInstance.close).toHaveBeenCalledTimes(
+            1
+          );
+          expect(testContext.localPayment._authorizationInProgress).toBe(false);
+        });
+    });
+
+    it("authorizationProgress resets when createPayment resolves", () => {
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(testContext.localPayment._authorizationInProgress).toBe(false);
+          expect(testContext.options.onPaymentStart).toHaveBeenCalledTimes(1);
+          expect(testContext.options.onPaymentStart).toBeCalledWith({
+            paymentId: "payment-token",
+          });
+        });
+    });
+  });
+
+  describe("startPayment iDeal", () => {
     beforeEach(() => {
       testContext.localPayment = new LocalPayment({
         client: testContext.client,
@@ -295,9 +656,22 @@ describe("LocalPayment", () => {
               paymentTypeCountryCode: "NL",
               amount: "10.00",
               intent: "sale",
+              billingAddress: {
+                line1: undefined,
+                line2: undefined,
+                city: undefined,
+                state: undefined,
+                postalCode: undefined,
+                countryCode: undefined,
+              },
+              birthDate: undefined,
+              correlationId: undefined,
+              discountAmount: undefined,
               experienceProfile: {
                 brandName: "My Brand!",
                 noShipping: false,
+                customerServiceInstructions: undefined,
+                locale: undefined,
               },
               currencyIsoCode: "USD",
               firstName: "First",
@@ -310,6 +684,9 @@ describe("LocalPayment", () => {
               state: "IL",
               postalCode: "60654",
               countryCode: "US",
+              lineItems: undefined,
+              phoneCountryCode: undefined,
+              shippingAmount: undefined,
               merchantAccountId: "merchant-account-id",
               bic: "ABGANL6A",
             },
@@ -343,7 +720,23 @@ describe("LocalPayment", () => {
               experienceProfile: {
                 brandName: "My Brand!",
                 noShipping: false,
+                customerServiceInstructions: undefined,
+                locale: undefined,
               },
+              billingAddress: {
+                line1: undefined,
+                line2: undefined,
+                city: undefined,
+                state: undefined,
+                postalCode: undefined,
+                countryCode: undefined,
+              },
+              birthDate: undefined,
+              correlationId: undefined,
+              discountAmount: undefined,
+              lineItems: undefined,
+              phoneCountryCode: undefined,
+              shippingAmount: undefined,
               currencyIsoCode: "USD",
               firstName: "First",
               lastName: "Last",

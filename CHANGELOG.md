@@ -1,5 +1,11 @@
 # CHANGELOG
 
+# 3.93.0
+
+- Updated documentation in regards to 3D secure and CSP recommendations
+- Local Payment
+  - Add support for Pay Upon Invoice local payment type: `pay_upon_invoice`
+
 # 3.92.2
 
 - Remove dependency on `promise-polyfill`
