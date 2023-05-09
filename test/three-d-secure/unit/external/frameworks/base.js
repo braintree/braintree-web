@@ -399,7 +399,28 @@ describe("BaseFramework", () => {
     });
 
     describe("lookup request", () => {
-      it("makes a request to the 3DS lookup endpoint", () => {
+      it("makes a request to 3DS lookup endpoint with device data collection disabled", () => {
+        return testContext.instance
+          .verifyCard({
+            nonce: "abcdef",
+            amount: 100,
+            addFrame: noop,
+            removeFrame: noop,
+            collectDeviceData: false,
+          })
+          .then(() => {
+            expect(testContext.client.request).toHaveBeenCalledTimes(1);
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
+              method: "post",
+              data: {
+                amount: 100,
+              },
+            });
+          });
+      });
+
+      it("makes a request to 3DS lookup endpoint with device data collection implicitly disabled", () => {
         return testContext.instance
           .verifyCard({
             nonce: "abcdef",
@@ -414,6 +435,35 @@ describe("BaseFramework", () => {
               method: "post",
               data: {
                 amount: 100,
+              },
+            });
+          });
+      });
+
+      it("makes a request to the 3DS lookup endpoint", () => {
+        return testContext.instance
+          .verifyCard({
+            nonce: "abcdef",
+            amount: 100,
+            addFrame: noop,
+            removeFrame: noop,
+            collectDeviceData: true,
+          })
+          .then(() => {
+            expect(testContext.client.request).toHaveBeenCalledTimes(1);
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
+              method: "post",
+              data: {
+                amount: 100,
+                browserColorDepth: 24,
+                browserJavaEnabled: false,
+                browserJavascriptEnabled: true,
+                browserLanguage: "en-US",
+                browserScreenHeight: 0,
+                browserScreenWidth: 0,
+                browserTimeZone: new Date().getTimezoneOffset(),
+                deviceChannel: "Browser",
               },
             });
           });

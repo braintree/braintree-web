@@ -133,7 +133,7 @@ If you happen to call this method while the instance's `teardown` is in progress
 ### Basic Directives
 
 |             | Sandbox                                                                                                     | Production                                                                                  |
-|-------------|-------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ----------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | script-src  | js.braintreegateway.com<br/>assets.braintreegateway.com                                                     | js.braintreegateway.com<br/>assets.braintreegateway.com                                     |
 | img-src     | assets.braintreegateway.com<br/>data:                                                                       | assets.braintreegateway.com<br/>data:                                                       |
 | child-src   | assets.braintreegateway.com                                                                                 | assets.braintreegateway.com                                                                 |
@@ -145,7 +145,7 @@ If you happen to call this method while the instance's `teardown` is in progress
 If using the [PayPal Checkout component](module-braintree-web_paypal-checkout.html), include these additional directives:
 
 |            | Sandbox                                                     | Production                                                  |
-|------------|-------------------------------------------------------------|-------------------------------------------------------------|
+| ---------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
 | script-src | www.paypalobjects.com<br/>\*.paypal.com<br/>'unsafe-inline' | www.paypalobjects.com<br/>\*.paypal.com<br/>'unsafe-inline' |
 | style-src  | 'unsafe-inline'                                             | 'unsafe-inline'                                             |
 | img-src    | checkout.paypal.com                                         | checkout.paypal.com                                         |
@@ -157,7 +157,7 @@ If using the [PayPal Checkout component](module-braintree-web_paypal-checkout.ht
 If using the [Google Pay component](module-braintree-web_google-payment.html), include these additional directives:
 
 |            | Sandbox        | Production     |
-|------------|----------------|----------------|
+| ---------- | -------------- | -------------- |
 | script-src | pay.google.com | pay.google.com |
 
 ### 3D Secure Specific Directives
@@ -165,7 +165,7 @@ If using the [Google Pay component](module-braintree-web_google-payment.html), i
 If using the [3D Secure component](module-braintree-web_three-d-secure.html), include these additional directives:
 
 |             | Sandbox                           | Production                    |
-|-------------|-----------------------------------|-------------------------------|
+| ----------- | --------------------------------- | ----------------------------- |
 | script-src  | songbirdstag.cardinalcommerce.com | songbird.cardinalcommerce.com |
 | frame-src   | \*                                | \*                            |
 | connect-src | \*.cardinalcommerce.com           | \*.cardinalcommerce.com       |
@@ -184,7 +184,7 @@ If using Kount with the [Data Collector component](DataCollector.html), adhere t
 For [Braintree Fraud Protection](https://developer.paypal.com/braintree/docs/guides/premium-fraud-management-tools/overview), use these directives:
 
 |            | Sandbox       | Production    |
-|------------|---------------|---------------|
+| ---------- | ------------- | ------------- |
 | script-src | \*.paypal.com | \*.paypal.com |
 | child-src  | \*.paypal.com | \*.paypal.com |
 | frame-src  | \*.paypal.com | \*.paypal.com |

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.94.0
+
+- 3D Secure
+  - Adds `collectDeviceData` opt-in flag for 3DS lookups
+
 # 3.93.0
 
 - Updated documentation in regards to 3D secure and CSP recommendations
@@ -27,6 +32,7 @@
 # 3.92.1
 
 - Hosted Fields
+
   - Fixed bug related to cardholderName having wrong inputmode
 
 - Package updates
@@ -1978,7 +1984,7 @@
     required; use `flow: 'vault'` for Vault flow.
 
 | Old                 | New                |
-|---------------------|--------------------|
+| ------------------- | ------------------ |
 | `singleUse` omitted | `flow: 'vault'`    |
 | `singleUse: false`  | `flow: 'vault'`    |
 | `singleUse: true`   | `flow: 'checkout'` |

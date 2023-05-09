@@ -308,6 +308,17 @@ BaseFramework.prototype._formatLookupData = function (options) {
     amount: options.amount,
   };
 
+  if (options.collectDeviceData === true) {
+    data.browserColorDepth = window.screen.colorDepth;
+    data.browserJavaEnabled = window.navigator.javaEnabled();
+    data.browserJavascriptEnabled = true;
+    data.browserLanguage = window.navigator.language;
+    data.browserScreenHeight = window.screen.height;
+    data.browserScreenWidth = window.screen.width;
+    data.browserTimeZone = new Date().getTimezoneOffset();
+    data.deviceChannel = "Browser";
+  }
+
   return Promise.resolve(data);
 };
 
