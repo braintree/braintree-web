@@ -1,5 +1,18 @@
 # CHANGELOG
 
+# 3.95.0
+
+- 3D Secure
+  - Add `merchantName` option to `verifyCard`
+- Venmo
+
+  - Fix `isBrowserSupported` for Venmo web desktop login
+
+- Venmo
+  - Add `collectCustomerBillingAddress`, `collectCustomerShippingAddress`,
+    `totalAmount`, `subTotalAmount`, `discountAmount`, `taxAmount`, `shippingAmount`,
+    and `lineItems` params to `createVenmoPaymentContext` for rendering in Venmo paysheet
+
 # 3.94.0
 
 - 3D Secure

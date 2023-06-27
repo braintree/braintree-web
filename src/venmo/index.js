@@ -13,6 +13,18 @@ var supportsVenmo = require("./shared/supports-venmo");
 var VERSION = process.env.npm_package_version;
 
 /**
+ * @typedef {object} Venmo~lineItem
+ * @property {number} quantity Number of units of the item purchased. This value must be a whole number and can't be negative or zero.
+ * @property {string} unitAmount Per-unit price of the item. Can include up to 2 decimal places. This value can't be negative or zero.
+ * @property {string} name Item name. Maximum 127 characters.
+ * @property {string} kind Indicates whether the line item is a debit (sale) or credit (refund) to the customer. Accepted values: `debit` and `credit`.
+ * @property {?string} unitTaxAmount Per-unit tax price of the item. Can include up to 2 decimal places. This value can't be negative or zero.
+ * @property {?string} description Item description. Maximum 127 characters.
+ * @property {?string} productCode Product or UPC code for the item. Maximum 127 characters.
+ * @property {?string} url The URL to product information.
+ */
+
+/**
  * @static
  * @function create
  * @param {object} options Creation options:
@@ -41,6 +53,14 @@ var VERSION = process.env.npm_package_version;
  * @param {boolean} [options.allowDesktopWebLogin=false] When `true`, the customer will authorize payment via a window popup that allows them to sign in to their Venmo account. This is used explicitly for customers operating from desktop browsers wanting to avoid the QR Code flow.
  * @param {boolean} [options.mobileWebFallBack] Use this option when you want to use a web-login experience, such as if on mobile and the Venmo app isn't installed.
  * @param {boolean} [options.allowAndroidRecreation=true] This flag is for when your integration uses the [Android PopupBridge](https://github.com/braintree/popup-bridge-android). Setting this flag to false will avoid a page refresh when returning to your page after payment authorization. If not specified, it defaults to true and the Android activity will be recreated, resulting in a page refresh.
+ * @param {boolean} [options.collectCustomerBillingAddress] When `true`, the customer's billing address will be collected and displayed on the Venmo paysheet (provided the Enriched Customer Data checkbox is also enabled for the merchant account).
+ * @param {boolean} [options.collectCustomerShippingAddress] When `true`, the customer's shipping address will be collected and displayed on the Venmo paysheet (provided the Enriched Customer Data checkbox is also enabled for the merchant account).
+ * @param {lineItem[]} [options.lineItems] The {@link Venmo~lineItem|line items} belonging to the transaction. It can include up to 249 line items.
+ * @param {string} [options.subTotalAmount] The subtotal amount of the transaction, excluding taxes, discounts, and shipping.
+ * @param {string} [options.discountAmount] The total discount amount applied on the transaction.
+ * @param {string} [options.shippingAmount] Shipping amount to be charged for the transaction.
+ * @param {string} [options.taxAmount] The total tax amount applied to the transaction. This value can't be negative or zero.
+ * @param {string} [options.totalAmount] The grand total amount of the transaction.
  *
  * Note: This flow currently requires a full page redirect, which means to utilize this flow your page will need to be able to handle the checkout session across different pages.
  * @param {callback} [callback] The second argument, `data`, is the {@link Venmo} instance. If no callback is provided, `create` returns a promise that resolves with the {@link Venmo} instance.

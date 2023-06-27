@@ -41,6 +41,7 @@ function SongbirdFramework(options) {
     requestedThreeDSecureVersion: "2",
     sdkVersion: PLATFORM + "/" + VERSION,
   };
+  this.originalSetupOptions = options;
   this._getDfReferenceIdPromisePlus = new ExtendedPromise();
   this.setupSongbird(options);
   this._cardinalEvents = [];
@@ -406,13 +407,10 @@ SongbirdFramework.prototype._createCardinalConfigurationOptions = function (
 
 SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
   var self = this;
-  var scriptSource = constants.CARDINAL_SCRIPT_SOURCE.sandbox;
 
   return this._waitForClient()
     .then(function () {
-      var isProduction =
-        self._client.getConfiguration().gatewayConfiguration.environment ===
-        "production";
+      var scriptSource = self._getCardinalScriptSource();
 
       self._songbirdSetupTimeoutReference = window.setTimeout(function () {
         analytics.sendEvent(
@@ -421,10 +419,6 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
         );
         self.initiateV1Fallback("cardinal-sdk-setup-timeout");
       }, setupOptions.timeout || INTEGRATION_TIMEOUT_MS);
-
-      if (isProduction) {
-        scriptSource = constants.CARDINAL_SCRIPT_SOURCE.production;
-      }
 
       return assets.loadScript({ src: scriptSource });
     })
@@ -438,6 +432,16 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
         )
       );
     });
+};
+
+SongbirdFramework.prototype._getCardinalScriptSource = function () {
+  var gatewayConfig = this._client.getConfiguration().gatewayConfiguration;
+
+  if (gatewayConfig && gatewayConfig.environment === "production") {
+    return constants.CARDINAL_SCRIPT_SOURCE.production;
+  }
+
+  return constants.CARDINAL_SCRIPT_SOURCE.sandbox;
 };
 
 SongbirdFramework.prototype._createPaymentsSetupCompleteCallback = function () {
@@ -823,6 +827,9 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
       if (options.cardAddChallengeRequested != null) {
         data.cardAdd = options.cardAddChallengeRequested;
       }
+      if (options.merchantName) {
+        data.merchantName = options.merchantName;
+      }
 
       return self.prepareLookup(data);
     });
@@ -865,6 +872,18 @@ SongbirdFramework.prototype.teardown = function () {
   // the asset is already on the page
 
   return BaseFramework.prototype.teardown.call(this);
+};
+
+SongbirdFramework.prototype._reloadThreeDSecure = function () {
+  var self = this;
+  var startTime = Date.now();
+
+  return self.teardown().then(function () {
+    self._configureCardinalSdk({
+      setupOptions: self.originalSetupOptions,
+      setupStartTime: startTime,
+    });
+  });
 };
 
 function extractAddressData(source, target, prefix) {

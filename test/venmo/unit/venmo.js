@@ -287,6 +287,10 @@ describe("Venmo", () => {
             paymentMethodUsage: "SINGLE_USE",
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            paysheetDetails: {
+              collectCustomerBillingAddress: false,
+              collectCustomerShippingAddress: false,
+            },
           },
         },
       },
@@ -374,6 +378,10 @@ describe("Venmo", () => {
             paymentMethodUsage: "SINGLE_USE",
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            paysheetDetails: {
+              collectCustomerBillingAddress: false,
+              collectCustomerShippingAddress: false,
+            },
           },
         },
       },
@@ -416,6 +424,10 @@ describe("Venmo", () => {
             paymentMethodUsage: "SINGLE_USE",
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            paysheetDetails: {
+              collectCustomerBillingAddress: false,
+              collectCustomerShippingAddress: false,
+            },
           },
         },
       },
@@ -461,6 +473,10 @@ describe("Venmo", () => {
             displayName: "name",
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            paysheetDetails: {
+              collectCustomerBillingAddress: false,
+              collectCustomerShippingAddress: false,
+            },
           },
         },
       },
@@ -499,6 +515,165 @@ describe("Venmo", () => {
           input: {
             environment: "SANDBOX",
             intent: "PAY_FROM_APP",
+          },
+        },
+      },
+    });
+  });
+
+  it("sets up a payment context with default values of collect address flags when not passed", async () => {
+    const expectedDefault = false;
+
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoPaymentContext: {
+          venmoPaymentContext: {
+            status: "CREATED",
+            id: "context-id",
+            createdAt: "2021-01-20T03:25:37.522000Z",
+            expiresAt: "2021-01-20T03:30:37.522000Z",
+          },
+        },
+      },
+    });
+
+    new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      paymentMethodUsage: "single_use",
+    });
+
+    await flushPromises();
+
+    expect(testContext.client.request).toBeCalledWith({
+      api: "graphQLApi",
+      data: {
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+        variables: {
+          input: {
+            intent: "CONTINUE",
+            customerClient: "MOBILE_WEB",
+            paymentMethodUsage: "SINGLE_USE",
+            paysheetDetails: {
+              collectCustomerBillingAddress: expectedDefault,
+              collectCustomerShippingAddress: expectedDefault,
+              // transactionDetails should not be present when amounts & line items are missing
+              transactionDetails: undefined, // eslint-disable-line no-undefined
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("sets up a payment context with collect address flags when passed", async () => {
+    const inputAddressCollection = true;
+
+    testContext.configuration.gatewayConfiguration.payWithVenmo.enrichedCustomerDataEnabled = true;
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoPaymentContext: {
+          venmoPaymentContext: {
+            status: "CREATED",
+            id: "context-id",
+            createdAt: "2021-01-20T03:25:37.522000Z",
+            expiresAt: "2021-01-20T03:30:37.522000Z",
+          },
+        },
+      },
+    });
+
+    new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      paymentMethodUsage: "single_use",
+      collectCustomerBillingAddress: inputAddressCollection,
+      collectCustomerShippingAddress: inputAddressCollection,
+    });
+
+    await flushPromises();
+
+    expect(testContext.client.request).toBeCalledWith({
+      api: "graphQLApi",
+      data: {
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+        variables: {
+          input: {
+            intent: "CONTINUE",
+            customerClient: "MOBILE_WEB",
+            paymentMethodUsage: "SINGLE_USE",
+            paysheetDetails: {
+              collectCustomerBillingAddress: inputAddressCollection,
+              collectCustomerShippingAddress: inputAddressCollection,
+              transactionDetails: undefined, // eslint-disable-line no-undefined
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("sets up a payment context with amount and line item fields when passed", async () => {
+    const expectedLineItems = [
+      {
+        name: "Example item A",
+        quantity: 10,
+        unitAmount: "5.00",
+        type: "CREDIT",
+        description: "purchase item",
+      },
+    ];
+    const expectedFields = {
+      totalAmount: "70",
+      discountAmount: "4.5",
+      subTotalAmount: "55",
+      taxAmount: "5.00",
+      paymentMethodUsage: "single_use",
+    };
+
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoPaymentContext: {
+          venmoPaymentContext: {
+            status: "CREATED",
+            id: "context-id",
+            createdAt: "2021-01-20T03:25:37.522000Z",
+            expiresAt: "2021-01-20T03:30:37.522000Z",
+          },
+        },
+      },
+    });
+
+    new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      paymentMethodUsage: expectedFields.paymentMethodUsage,
+      totalAmount: expectedFields.totalAmount,
+      discountAmount: expectedFields.discountAmount,
+      subTotalAmount: expectedFields.subTotalAmount,
+      taxAmount: expectedFields.taxAmount,
+      lineItems: expectedLineItems,
+    });
+
+    await flushPromises();
+
+    expect(testContext.client.request).toBeCalledWith({
+      api: "graphQLApi",
+      data: {
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+        variables: {
+          input: {
+            intent: "CONTINUE",
+            customerClient: "MOBILE_WEB",
+            paymentMethodUsage: expectedFields.paymentMethodUsage.toUpperCase(),
+            paysheetDetails: {
+              collectCustomerBillingAddress: false,
+              collectCustomerShippingAddress: false,
+              transactionDetails: {
+                totalAmount: expectedFields.totalAmount,
+                discountAmount: expectedFields.discountAmount,
+                subTotalAmount: expectedFields.subTotalAmount,
+                taxAmount: expectedFields.taxAmount,
+                lineItems: expectedLineItems,
+              },
+            },
           },
         },
       },
@@ -719,6 +894,33 @@ describe("Venmo", () => {
         expect.anything(),
         "venmo.manual-return.setup-failed"
       );
+    });
+  });
+
+  it("shows the right error message in case of a validation error during Payment Context creation", async () => {
+    const error = {
+      details: {
+        originalError: [
+          {
+            message: "Amount must be positive",
+            extensions: {
+              errorClass: "VALIDATION",
+              errorType: "user_error",
+            },
+          },
+        ],
+      },
+    };
+
+    testContext.client.request.mockRejectedValue(error);
+    const venmo = new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      paymentMethodUsage: "single_use",
+    });
+
+    venmo.getUrl().catch((err) => {
+      expect(err.message).toBe("Amount must be positive");
+      expect(err.code).toBe("VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED");
     });
   });
 
@@ -1679,6 +1881,25 @@ describe("Venmo", () => {
         })
       );
     });
+
+    it("calls isBrowserSupported with allowDesktopWebLogin: true when venmo instance is configured to do so", () => {
+      // testing isBrowserSupported for web login flow, not desktop QR flow
+      createVenmoDesktop.mockResolvedValue({});
+      venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        allowDesktop: false,
+        allowDesktopWebLogin: true,
+      });
+
+      venmo.isBrowserSupported();
+
+      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith(
+        expect.objectContaining({
+          allowDesktop: false,
+          allowDesktopWebLogin: true,
+        })
+      );
+    });
   });
 
   describe("hasTokenizationResult", () => {
@@ -2308,6 +2529,20 @@ describe("Venmo", () => {
                 userName: "some-name",
                 email: "email@example.com",
                 phoneNumber: "1234567890",
+                billingAddress: {
+                  streetAddress: "2 XYZ St.",
+                  extendedAddress: "Unit 1",
+                  locality: "Atlanta",
+                  region: "GA",
+                  postalCode: "111",
+                },
+                shippingAddress: {
+                  streetAddress: "1 Vista Avenue",
+                  extendedAddress: "Apt. 123",
+                  locality: "San Jose",
+                  region: "CA",
+                  postalCode: "95131",
+                },
               },
             },
           },
@@ -2319,6 +2554,20 @@ describe("Venmo", () => {
           userName: "@some-name",
           email: "email@example.com",
           phoneNumber: "1234567890",
+          billingAddress: {
+            streetAddress: "2 XYZ St.",
+            extendedAddress: "Unit 1",
+            locality: "Atlanta",
+            region: "GA",
+            postalCode: "111",
+          },
+          shippingAddress: {
+            streetAddress: "1 Vista Avenue",
+            extendedAddress: "Apt. 123",
+            locality: "San Jose",
+            region: "CA",
+            postalCode: "95131",
+          },
         });
       });
 

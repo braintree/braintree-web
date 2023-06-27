@@ -66,6 +66,7 @@ var CONFIGURATION_QUERY =
   "      merchantId " +
   "      accessToken " +
   "      environment " +
+  "      enrichedCustomerDataEnabled" +
   "    } " +
   "    visaCheckout { " +
   "      apiKey " +

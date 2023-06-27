@@ -70,6 +70,16 @@ function Venmo(options) {
   this._cannotHaveReturnUrls = inIframe() || this._requireManualReturn;
   this._allowAndroidRecreation = options.allowAndroidRecreation !== false;
   this._maxRetryCount = 3;
+  this._collectCustomerBillingAddress =
+    options.collectCustomerBillingAddress || false;
+  this._collectCustomerShippingAddress =
+    options.collectCustomerShippingAddress || false;
+  this._lineItems = options.lineItems;
+  this._subTotalAmount = options.subTotalAmount;
+  this._discountAmount = options.discountAmount;
+  this._taxAmount = options.taxAmount;
+  this._shippingAmount = options.shippingAmount;
+  this._totalAmount = options.totalAmount;
 
   this._shouldCreateVenmoPaymentContext =
     this._cannotHaveReturnUrls || !this._shouldUseLegacyFlow;
@@ -193,7 +203,9 @@ function Venmo(options) {
             new BraintreeError({
               type: errors.VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED.type,
               code: errors.VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED.code,
-              message: errors.VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED.message,
+              message: isValidationError(err)
+                ? err.details.originalError[0].message
+                : errors.VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED.message,
               details: {
                 originalError: err,
               },
@@ -215,12 +227,26 @@ function Venmo(options) {
   }
 }
 
+function isValidationError(err) {
+  return (
+    err.details &&
+    err.details.originalError &&
+    err.details.originalError[0] &&
+    err.details.originalError[0].extensions &&
+    err.details.originalError[0].extensions.errorClass === "VALIDATION" &&
+    err.details.originalError[0].extensions.errorType === "user_error"
+  );
+}
+
 Venmo.prototype._createVenmoPaymentContext = function (
   client,
   cancelIfTokenizationInProgress
 ) {
   var self = this;
-  var promise;
+  var promise, transactionDetails;
+  var configuration = client.getConfiguration();
+  var venmoConfiguration = configuration.gatewayConfiguration.payWithVenmo;
+  var transactionDetailsPresent = false;
 
   if (!this._shouldCreateVenmoPaymentContext) {
     return Promise.resolve();
@@ -245,6 +271,33 @@ Venmo.prototype._createVenmoPaymentContext = function (
           .data.createVenmoQRCodePaymentContext.venmoQRCodePaymentContext;
       });
   } else {
+    // Merchants are not allowed to collect user addresses unless ECD (Enriched Customer Data) is enabled on the BT Control Panel.
+    if (
+      (this._collectCustomerBillingAddress ||
+        this._collectCustomerShippingAddress) &&
+      !venmoConfiguration.enrichedCustomerDataEnabled
+    ) {
+      return Promise.reject(new BraintreeError(errors.VENMO_ECD_DISABLED));
+    }
+
+    if (this._lineItems) {
+      this._lineItems.forEach(function (item) {
+        item.unitTaxAmount = item.unitTaxAmount || "0";
+      });
+    }
+    transactionDetails = {
+      subTotalAmount: this._subTotalAmount,
+      discountAmount: this._discountAmount,
+      taxAmount: this._taxAmount,
+      shippingAmount: this._shippingAmount,
+      totalAmount: this._totalAmount,
+      lineItems: this._lineItems,
+    };
+    transactionDetailsPresent = Object.keys(transactionDetails).some(function (
+      detail
+    ) {
+      return transactionDetails[detail] !== undefined; // eslint-disable-line no-undefined
+    });
     promise = client
       .request({
         api: "graphQLApi",
@@ -256,6 +309,15 @@ Venmo.prototype._createVenmoPaymentContext = function (
               intent: "CONTINUE",
               customerClient: "MOBILE_WEB",
               displayName: this._displayName,
+              paysheetDetails: {
+                collectCustomerBillingAddress:
+                  this._collectCustomerBillingAddress,
+                collectCustomerShippingAddress:
+                  this._collectCustomerShippingAddress,
+                transactionDetails: transactionDetailsPresent
+                  ? transactionDetails
+                  : undefined, // eslint-disable-line no-undefined
+              },
             },
           },
         },
@@ -415,6 +477,7 @@ Venmo.prototype.isBrowserSupported = function () {
     allowNewBrowserTab: this._allowNewBrowserTab,
     allowWebviews: this._allowWebviews,
     allowDesktop: this._allowDesktop,
+    allowDesktopWebLogin: this._allowDesktopWebLogin,
   });
 };
 

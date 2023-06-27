@@ -240,4 +240,18 @@ describe("isBrowserSupported", () => {
       ).toBe(false);
     });
   });
+
+  describe("allowDesktopWebLogin: true", () => {
+    it("returns true for non-mobile browsers configured to allow desktop web login", () => {
+      browserDetection.isIos.mockReturnValue(false);
+      browserDetection.isAndroid.mockReturnValue(false);
+
+      expect(
+        isBrowserSupported({
+          allowDesktop: false,
+          allowDesktopWebLogin: true,
+        })
+      ).toBe(true);
+    });
+  });
 });

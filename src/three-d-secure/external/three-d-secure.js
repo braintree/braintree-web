@@ -405,6 +405,7 @@ EventEmitter.createChild(ThreeDSecure);
  * @param {boolean} [options.challengeRequested] If set to true, an authentication challenge will be forced if possible.
  * @param {boolean} [options.dataOnlyRequested] Indicates whether to use the data only flow. In this flow, frictionless 3DS is ensured for Mastercard cardholders as the card scheme provides a risk score for the issuer to determine whether to approve. If data only is not supported by the processor, a validation error will be raised. Non-Mastercard cardholders will fallback to a normal 3DS flow.
  * @param {boolean} [options.exemptionRequested] *Deprecated:* Use `requestedExemptionType` instead.
+ * @param {string} [options.merchantName] Allows to override the merchant name that is shown in the challenge.
  * @param {string} [options.requestedExemptionType] If an exemption is requested and the exemption's conditions are satisfied, then it will be applied. The following supported exemptions are defined as per PSD2 regulation: `low_value`, `transaction_risk_analysis`
  * @param {function} [options.onLookupComplete] *Deprecated:* Use {@link ThreeDSecure#event:lookup-complete|`threeDSecureInstance.on('lookup-complete')`} instead. Function to execute when lookup completes. The first argument, `data`, is a {@link ThreeDSecure~verificationData|verificationData} object, and the second argument, `next`, is a callback. `next` must be called to continue.
  * @param {string} [options.email] The email used for verification. (maximum length 255)

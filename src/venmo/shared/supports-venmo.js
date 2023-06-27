@@ -18,7 +18,8 @@ function isBrowserSupported(options) {
 
   options = options || {};
   // NEXT_MAJOR_VERSION allowDesktop will default to true, but can be opted out
-  merchantAllowsDesktopBrowsers = options.allowDesktop === true;
+  merchantAllowsDesktopBrowsers =
+    (options.allowDesktopWebLogin || options.allowDesktop) === true;
   merchantAllowsReturningToNewBrowserTab = options.hasOwnProperty(
     "allowNewBrowserTab"
   )

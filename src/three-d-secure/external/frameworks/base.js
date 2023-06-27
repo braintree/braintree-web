@@ -136,6 +136,10 @@ BaseFramework.prototype.prepareLookup = function () {
 BaseFramework.prototype._resetVerificationState = function () {
   this._verifyCardInProgress = false;
   this._verifyCardPromisePlus = null;
+
+  if (typeof this._reloadThreeDSecure === "function") {
+    this._reloadThreeDSecure();
+  }
 };
 
 BaseFramework.prototype._performLookup = function (nonce, data) {

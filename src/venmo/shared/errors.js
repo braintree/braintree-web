@@ -28,6 +28,7 @@
  * @property {UNKNOWN} VENMO_TOKENIZATION_FAILED Occurs when there is an unknown error during the web login experience.
  * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_ACTIVE Occurs when `tokenize` is called when the flow is already in progress.
  * @property {MERCHANT} VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE Occurs when `cancelTokenization` is called when the flow is not in progress.
+ * @property {MERCHANT} VENMO_ECD_DISABLED Occurs when the merchant tries to access customer details without enabling Enriched Customer Data.
  */
 
 var BraintreeError = require("../../lib/braintree-error");
@@ -134,5 +135,11 @@ module.exports = {
     type: BraintreeError.types.UNKNOWN,
     code: "VENMO_TOKENIZATION_FAILED",
     message: "Venmo encountered a problem",
+  },
+  VENMO_ECD_DISABLED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "ECD_DISABLED",
+    message:
+      "Cannot collect customer data when ECD is disabled. Enable this feature in the Control Panel to collect this data.",
   },
 };
