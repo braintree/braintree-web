@@ -86,6 +86,16 @@ describe("Postal Code Input", () => {
 
       expect(input.element.getAttribute("pattern")).toBeNull();
     });
+
+    it("removes the inputmode attribute", () => {
+      const config = getModelConfig("postalCode");
+      const input = new PostalCodeInput({
+        model: new CreditCardForm(config),
+        type: "postalCode",
+      });
+
+      expect(input.element.getAttribute("inputmode")).toBeNull();
+    });
   });
 
   describe("formatter", () => {

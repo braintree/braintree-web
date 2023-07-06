@@ -154,6 +154,21 @@ For the lib directory
 npm test lib
 ```
 
+For one test file
+
+First install jest:
+
+```
+npm install jest --global
+```
+
+To run test:
+
+```
+jest <path to file>
+Example: jest test/apple-pay/unit/apple-pay.js
+```
+
 ## Generating Documentation
 
 ```

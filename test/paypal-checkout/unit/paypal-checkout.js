@@ -689,6 +689,33 @@ describe("PayPalCheckout", () => {
       );
     });
 
+    describe.each([["EC-token"], ["orderId"]])(
+      "for token %s in redirectUrl",
+      (token) => {
+        it("resolves appropriately", () => {
+          let redirectUrl, requestPayload;
+
+          redirectUrl = "https://example.com?foo=bar&token=" + token;
+          requestPayload = {
+            paymentResource: {
+              paymentToken: "PAY-XXXXXXXXXX",
+              redirectUrl: redirectUrl,
+            },
+          };
+
+          jest
+            .spyOn(testContext.client, "request")
+            .mockResolvedValue(requestPayload);
+
+          return testContext.paypalCheckout
+            .createPayment({ flow: "checkout" })
+            .then((payload) => {
+              expect(payload).toBe(token);
+            });
+        });
+      }
+    );
+
     describe.each([["vault"], ["checkout"]])("using %s flow", (flow) => {
       it(`resolves with a ${
         flow === "vault" ? "billingToken" : "paymentID"
@@ -706,7 +733,8 @@ describe("PayPalCheckout", () => {
           requestPayload = {
             paymentResource: {
               paymentToken: "PAY-XXXXXXXXXX",
-              redirectUrl: "https://example.com?foo=bar&EC-token&foo2=bar2",
+              redirectUrl:
+                "https://example.com?foo=bar&token=EC-token&foo2=bar2",
             },
           };
           expected = "EC-token";
@@ -1236,6 +1264,26 @@ describe("PayPalCheckout", () => {
           currency: "USD",
           paymentId: "pay-token-123-abc",
         };
+      });
+
+      it("includes `orderId` when present", () => {
+        testContext.options.paymentId = "";
+        testContext.options.orderId = "order-id";
+        testContext.options.amount = "10";
+        testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+        const expectedRequestBody = {
+          amount: testContext.options.amount,
+          currencyIsoCode: testContext.options.currency,
+          merchantAccountId: "abcdefg123456",
+          paymentId: testContext.options.orderId,
+        };
+
+        const formattedData =
+          testContext.paypalCheckout._formatUpdatePaymentData(
+            testContext.options
+          );
+
+        expect(formattedData).toMatchObject(expectedRequestBody);
       });
 
       it("does not calculate `amount` when present", () => {
@@ -2388,6 +2436,24 @@ describe("PayPalCheckout", () => {
             data: {
               paypalAccount: {
                 paymentToken: "payment id",
+                payerId: "payer id",
+              },
+            },
+          });
+        }));
+
+    it("passes along orderId as payemntToken when orderId is present and paymentID is not present", () =>
+      testContext.paypalCheckout
+        .tokenizePayment({
+          payerID: "payer id",
+          orderID: "order id",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            data: {
+              paypalAccount: {
+                paymentToken: "order id",
                 payerId: "payer id",
               },
             },

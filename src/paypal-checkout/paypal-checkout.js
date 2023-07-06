@@ -493,10 +493,11 @@ PayPalCheckout.prototype.createPayment = function (options) {
   analytics.sendEvent(this._clientPromise, "paypal-checkout.createPayment");
 
   return this._createPaymentResource(options).then(function (response) {
-    var flowToken;
+    var flowToken, urlParams;
 
     if (options.flow === "checkout") {
-      flowToken = response.paymentResource.redirectUrl.match(/EC-\w+/)[0];
+      urlParams = querystring.parse(response.paymentResource.redirectUrl);
+      flowToken = urlParams.token;
     } else {
       flowToken = response.agreementSetup.tokenId;
     }
@@ -959,6 +960,7 @@ PayPalCheckout.prototype._createFrameServiceCallback = function (
           paymentToken: payload.token,
           payerID: payload.PayerID,
           paymentID: payload.paymentId,
+          orderID: payload.orderId,
         })
         .then(function (res) {
           frameCommunicationPromise.resolve(res);
@@ -1038,6 +1040,7 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     billingToken: tokenizeOptions.billingToken,
     payerId: tokenizeOptions.payerID,
     paymentId: tokenizeOptions.paymentID,
+    orderId: tokenizeOptions.orderID,
     shippingOptionsId: tokenizeOptions.shippingOptionsId,
   };
 
@@ -1450,7 +1453,7 @@ PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {
   var self = this;
   var paymentResource = {
     merchantAccountId: this._merchantAccountId,
-    paymentId: options.paymentId,
+    paymentId: options.paymentId || options.orderId,
     currencyIsoCode: options.currency,
   };
 
@@ -1516,7 +1519,7 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
   if (isVaultFlow) {
     data.paypalAccount.billingAgreementToken = params.billingToken;
   } else {
-    data.paypalAccount.paymentToken = params.paymentId;
+    data.paypalAccount.paymentToken = params.paymentId || params.orderId;
     data.paypalAccount.payerId = params.payerId;
     data.paypalAccount.unilateral =
       gatewayConfiguration.paypal.unvettedMerchant;

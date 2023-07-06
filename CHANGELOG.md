@@ -1,13 +1,22 @@
 # CHANGELOG
 
+# 3.96.0
+
+- Update framebus to v5.2.1
+- Hosted Fields
+  - Remove `inputmode="numerical"` attribute from the postal code input so the alphanumerical keyboard is presented on iOS devices.
+- 3D Secure
+  - Add `requestVisaDAF` option to `verifyCard`
+  - Add `customFields` param to `verifyCard`
+- PayPal
+  - Add support for v2/orders
+
 # 3.95.0
 
 - 3D Secure
   - Add `merchantName` option to `verifyCard`
 - Venmo
-
   - Fix `isBrowserSupported` for Venmo web desktop login
-
 - Venmo
   - Add `collectCustomerBillingAddress`, `collectCustomerShippingAddress`,
     `totalAmount`, `subTotalAmount`, `discountAmount`, `taxAmount`, `shippingAmount`,

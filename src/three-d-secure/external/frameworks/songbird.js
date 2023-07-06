@@ -811,11 +811,17 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
         }
         data.requestedExemptionType = options.requestedExemptionType;
       }
+      if (options.customFields) {
+        data.customFields = options.customFields;
+      }
       if (options.dataOnlyRequested) {
         data.dataOnlyRequested = options.dataOnlyRequested;
       }
       if (options.exemptionRequested) {
         data.exemptionRequested = options.exemptionRequested;
+      }
+      if (options.requestVisaDAF) {
+        data.requestVisaDAF = options.requestVisaDAF;
       }
       if (options.bin) {
         data.bin = options.bin;

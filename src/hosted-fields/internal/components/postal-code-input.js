@@ -19,8 +19,9 @@ function PostalCodeInput() {
   // to get the correct keyboard to show up on iOS,
   // we set a pattern on the base input to only allow
   // digits, however, global postal code can be alpha
-  // numeric, so we remove the pattern attribute
+  // numeric, so we remove the pattern and inputmode attributes
   this.element.removeAttribute("pattern");
+  this.element.removeAttribute("inputmode");
 }
 
 PostalCodeInput.prototype = Object.create(BaseInput.prototype);
