@@ -156,6 +156,8 @@ function adaptConfigurationResponseBody(body, ctx) {
       merchantId: configuration.venmo.merchantId,
       accessToken: configuration.venmo.accessToken,
       environment: configuration.venmo.environment.toLowerCase(),
+      enrichedCustomerDataEnabled:
+        configuration.venmo.enrichedCustomerDataEnabled,
     };
   }
 

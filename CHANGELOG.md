@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.96.1
+
+- Venmo
+  - Fix bug that does not receive the right `enrichedCustomerDataEnabled` flag
+
 # 3.96.0
 
 - Update framebus to v5.2.1

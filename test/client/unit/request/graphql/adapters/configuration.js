@@ -138,6 +138,7 @@ describe("GraphQL Configuration", () => {
               merchantId: "merchant_id",
               accessToken: "access_token",
               environment: "DEVELOPMENT",
+              enrichedCustomerDataEnabled: true,
             },
             visaCheckout: {
               apiKey: "visa_checkout_api_key",
@@ -245,6 +246,7 @@ describe("GraphQL Configuration", () => {
           accessToken: "access_token",
           environment: "development",
           merchantId: "merchant_id",
+          enrichedCustomerDataEnabled: true,
         },
         androidPay: {
           displayName: "merchant",

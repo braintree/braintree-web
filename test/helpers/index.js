@@ -53,6 +53,7 @@ function configuration() {
         accessToken: "pwv-access-token",
         environment: "sandbox",
         merchantId: "pwv-merchant-id",
+        enrichedCustomerDataEnabled: true,
       },
       analytics: {
         url: "https://braintreegateway.com/analytics",
