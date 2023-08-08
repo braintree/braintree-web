@@ -43,8 +43,6 @@ var CONFIGURATION_QUERY =
   "    paypal { " +
   "      displayName " +
   "      clientId " +
-  "      privacyUrl " +
-  "      userAgreementUrl " +
   "      assetsUrl " +
   "      environment " +
   "      environmentNoNetwork " +

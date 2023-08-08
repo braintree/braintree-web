@@ -115,8 +115,6 @@ describe("GraphQL Configuration", () => {
             paypal: {
               displayName: "display_name",
               clientId: "client_id",
-              privacyUrl: "http://www.example.com/privacy_policy",
-              userAgreementUrl: "http://www.example.com/user_agreement",
               assetsUrl: "https://localhost",
               environmentNoNetwork: false,
               environment: "CUSTOM",
@@ -206,8 +204,6 @@ describe("GraphQL Configuration", () => {
         paypal: {
           displayName: "display_name",
           clientId: "client_id",
-          privacyUrl: "http://www.example.com/privacy_policy",
-          userAgreementUrl: "http://www.example.com/user_agreement",
           assetsUrl: "https://localhost",
           environment: "custom",
           environmentNoNetwork: false,

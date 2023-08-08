@@ -5,6 +5,9 @@ var sepaErrors = require("../shared/errors");
 var frameService = require("../../lib/frame-service/external");
 var analytics = require("../../lib/analytics");
 var useMin = require("../../lib/use-min");
+var billingAddressOptions =
+  require("../shared/constants").BILLING_ADDRESS_OPTIONS;
+var snakeCaseToCamelCase = require("../../lib/snake-case-to-camel-case");
 
 var POPUP_WIDTH = 400;
 var POPUP_HEIGHT = 570;
@@ -27,10 +30,17 @@ var POPUP_HEIGHT = 570;
  * @param {object} client The Braintree client.
  * @param {object} options All options for intiating the SEPA payment flow.
  * @param {string} [options.accountHolderName] The account holder name.
+ * @param {object} [options.billingAddress] The customer's billing address
+ * @param {string} [options.billingAddress.addressLine1] Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.
+ * @param {string} [options.billingAddress.addressLine2] Line 2 of the Address (eg. suite, apt #, etc.). An error will occur if this address is not valid.
+ * @param {string} [options.billingAddress.adminArea1] Customer's city.
+ * @param {string} [options.billingAddress.adminArea2] Customer's region or state.
+ * @param {string} [options.billingAddress.postalCode] Customer's postal code.
  * @param {string} [options.cancelUrl] The URL to redirect to if authorization is cancelled.
- * @param {string} [options.countryCode] The customer's country code.
+ * @param {string} [options.countryCode] The customer's country code. Also used as billing address country code.
  * @param {string} [options.customerId] The customer's id.
  * @param {string} [options.iban] The customer's International Bank Account Number.
+ * @param {string} [options.locale] The BCP 47-formatted locale. See https://developer.paypal.com/reference/locale-codes/ for a list of possible values.
  * @param {string} [options.mandateType] Specify ONE_OFF or RECURRENT payment.
  * @param {string} [options.merchantAccountId] The merchant's account id.
  * @param {string} [options.merchantId] The merchant id.
@@ -44,17 +54,28 @@ function createMandate(client, options) {
   var data = {
     sepa_debit: {
       account_holder_name: options.accountHolderName,
-      merchant_or_partner_customer_id: options.customerId,
-      iban: options.iban,
-      mandate_type: options.mandateType,
       billing_address: {
         country_code: options.countryCode,
       },
+      iban: options.iban,
+      merchant_or_partner_customer_id: options.customerId,
+      mandate_type: options.mandateType,
     },
+    locale: options.locale,
     cancel_url: options.cancelUrl,
     return_url: options.returnUrl,
     merchant_account_id: options.merchantAccountId,
   };
+
+  if (options.billingAddress) {
+    billingAddressOptions.forEach(function (option) {
+      var ccOption = snakeCaseToCamelCase(option);
+      if (ccOption in options.billingAddress) {
+        data.sepa_debit.billing_address[option] =
+          options.billingAddress[ccOption]; // camelCase equivilent of option (eg. postal_code = postalCode) ]
+      }
+    });
+  }
   /* eslint-enable */
 
   return client

@@ -1,5 +1,21 @@
 # CHANGELOG
 
+# 3.97.0
+
+3D Secure
+
+- Updated documentation for `requestVisaDAF` parameter on `verifyCard`
+
+- SEPA
+  - Add support for new mandate params, `locale` and `billingAddress`
+- PayPal
+  - Remove PayPal private url and user agreement url from PayPal configuration response as deprecated
+- Venmo
+  - Change overlay container to `position: fixed` to cover the entire viewport.
+- Package updates
+  - Updated @braintree/sanitize-url to 6.0.4
+  - Updated @braintree/browser-detection to 1.17.1
+
 # 3.96.1
 
 - Venmo

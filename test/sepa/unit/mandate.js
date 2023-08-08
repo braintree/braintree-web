@@ -92,6 +92,108 @@ describe("mandate.js", () => {
       expect(result).toEqual(expectedResult);
     });
 
+    it("includes optional params in http request, locale & billing addr", async () => {
+      input.locale = "fr-XC";
+      input.billingAddress = {
+        addressLine1: "333 w 35th ST",
+        addressLine2: "Suit 223",
+        adminArea1: "IL",
+        adminArea2: "Chicago",
+        postalCode: "60606",
+      };
+      testContext.client.request = jest.fn();
+      jest.spyOn(testContext.client, "request");
+
+      testContext.client.request.mockResolvedValue(mockMandateResponse);
+      const expectedResult = {
+        approvalUrl,
+        last4: iban.slice(-4),
+        bankReferenceToken,
+      };
+
+      const result = await createMandate(testContext.client, input);
+
+      expect(testContext.client.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // Disabling eslint because api is expecting snake_case format for the keys
+          /* eslint-disable */
+          api: "clientApi",
+          data: {
+            cancel_url: expect.anything(),
+            locale: "fr-XC",
+            sepa_debit: {
+              mandate_type: "ONE_OFF",
+              merchant_or_partner_customer_id: customerId,
+              iban: iban,
+              account_holder_name: "accountHolderName",
+              billing_address: {
+                address_line_1: "333 w 35th ST",
+                address_line_2: "Suit 223",
+                admin_area_1: "IL",
+                admin_area_2: "Chicago",
+                postal_code: "60606",
+                country_code: input.countryCode,
+              },
+            },
+            merchant_account_id: expect.anything(),
+            return_url: expect.anything(),
+            /* eslint-enable */
+          },
+          endpoint: expect.anything(),
+          method: expect.anything(),
+        })
+      );
+      expect(result).toEqual(expectedResult);
+
+      delete input.billingAddress;
+      delete input.locale;
+    });
+
+    it("includes optional params in http request, locale", async () => {
+      input.locale = "fr-XC";
+
+      testContext.client.request = jest.fn();
+      jest.spyOn(testContext.client, "request");
+
+      testContext.client.request.mockResolvedValue(mockMandateResponse);
+      const expectedResult = {
+        approvalUrl,
+        last4: iban.slice(-4),
+        bankReferenceToken,
+      };
+
+      const result = await createMandate(testContext.client, input);
+
+      expect(testContext.client.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // Disabling eslint because api is expecting snake_case format for the keys
+          /* eslint-disable */
+          api: "clientApi",
+          data: {
+            cancel_url: expect.anything(),
+            locale: "fr-XC",
+            sepa_debit: {
+              mandate_type: "ONE_OFF",
+              merchant_or_partner_customer_id: customerId,
+              iban: iban,
+              account_holder_name: "accountHolderName",
+              billing_address: {
+                country_code: input.countryCode,
+              },
+            },
+            merchant_account_id: expect.anything(),
+            return_url: expect.anything(),
+            /* eslint-enable */
+          },
+          endpoint: expect.anything(),
+          method: expect.anything(),
+        })
+      );
+      expect(result).toEqual(expectedResult);
+
+      delete input.locale;
+    });
+
     it("Client API return empty object", async () => {
       testContext.client.request = jest.fn();
 

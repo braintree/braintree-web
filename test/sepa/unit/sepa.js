@@ -186,6 +186,46 @@ describe("sepa.js", () => {
       );
     });
 
+    it("should create a mandate with locale and billing address when included", async () => {
+      const optionalInputs = {
+        locale: "fr_XC",
+        billingAddress: {
+          addressLine1: "333 w 35th ST",
+          addressLine2: "Suit 223",
+          adminArea1: "IL",
+          adminArea2: "Chicago",
+          postalCode: "60606",
+          countryCode: "US",
+        },
+      };
+      const expectedArgs = {
+        ...requiredInputs,
+        ...optionalInputs,
+        returnUrl:
+          testContext.configuration.gatewayConfiguration.assetsUrl +
+          "/web/" +
+          VERSION +
+          "/html/redirect-frame.html?success=1",
+        cancelUrl:
+          testContext.configuration.gatewayConfiguration.assetsUrl +
+          "/web/" +
+          VERSION +
+          "/html/redirect-frame.html?cancel=1",
+      };
+
+      const sepaInstance = new SEPA(sepaInputs);
+
+      await sepaInstance.tokenize({ ...requiredInputs, ...optionalInputs });
+
+      const client = testContext.client;
+
+      expect(mandates.createMandate).toBeCalledWith(client, expectedArgs);
+      expect(analytics.sendEvent).toBeCalledWith(
+        sepaInputs.client,
+        "sepa.create-mandate.success"
+      );
+    });
+
     it("opens the mandate in popup", async () => {
       const sepaInstance = new SEPA(sepaInputs);
 

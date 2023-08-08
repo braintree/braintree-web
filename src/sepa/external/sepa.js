@@ -8,6 +8,7 @@ var mandates = require("./mandate");
 var hasMissingOption = require("../shared/has-missing-option");
 var analytics = require("../../lib/analytics");
 var VERSION = process.env.npm_package_version;
+var assign = require("../../lib/assign").assign;
 
 /**
  * @class
@@ -68,6 +69,10 @@ function SEPA(options) {
  */
 SEPA.prototype.tokenize = function (options) {
   var self = this;
+  var createMandateOptions = assign(
+    { cancelUrl: self._cancelUrl, returnUrl: self._returnUrl },
+    options
+  );
 
   if (!options || hasMissingOption(options, constants.REQUIRED_OPTIONS)) {
     analytics.sendEvent(self._client, "sepa.input-validation.missing-options");
@@ -86,16 +91,7 @@ SEPA.prototype.tokenize = function (options) {
   }
 
   return mandates
-    .createMandate(self._client, {
-      accountHolderName: options.accountHolderName,
-      customerId: options.customerId,
-      iban: options.iban,
-      mandateType: options.mandateType,
-      countryCode: options.countryCode,
-      merchantAccountId: options.merchantAccountId,
-      cancelUrl: self._cancelUrl,
-      returnUrl: self._returnUrl,
-    })
+    .createMandate(self._client, createMandateOptions)
     .then(function (mandateResponse) {
       analytics.sendEvent(self._client, "sepa.create-mandate.success");
       options.last4 = mandateResponse.last4;
