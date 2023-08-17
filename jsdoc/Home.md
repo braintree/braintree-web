@@ -156,9 +156,12 @@ If using the [PayPal Checkout component](module-braintree-web_paypal-checkout.ht
 
 If using the [Google Pay component](module-braintree-web_google-payment.html), include these additional directives:
 
-|            | Sandbox        | Production     |
-| ---------- | -------------- | -------------- |
-| script-src | pay.google.com | pay.google.com |
+|             | Sandbox                                                                                                         | Production                                                                                                      |
+| ----------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| script-src  | pay.google.com                                                                                                  | pay.google.com                                                                                                  |
+| connect-src | pay.google.com<br/>https://google.com/pay<br/>https://pay.google.com<br/>https://pay.google.com/about/redirect/ | pay.google.com<br/>https://google.com/pay<br/>https://pay.google.com<br/>https://pay.google.com/about/redirect/ |
+
+If Google adds redirects or changes URLs related to the Google Pay component, the domains or URLs in these directives may change.
 
 ### 3D Secure Specific Directives
 
@@ -188,3 +191,59 @@ For [Braintree Fraud Protection](https://developer.paypal.com/braintree/docs/gui
 | script-src | \*.paypal.com | \*.paypal.com |
 | child-src  | \*.paypal.com | \*.paypal.com |
 | frame-src  | \*.paypal.com | \*.paypal.com |
+
+### Executing In-Line Scripts
+
+|                     | Sandbox                                                      | Production                                                   |
+| ------------------- | -------------------------------------- | -------------------------------------- |
+| script-src          | 'unsafe-inline'                                              | 'unsafe-inline'                                              |
+| (see documentation) | 'sha\_\_-{HASHED_INLINE_SCRIPT}'<br/>'nonce-ONE_TIME-BASE64' | 'sha\_\_-{HASHED_INLINE_SCRIPT}'<br/>'nonce-ONE_TIME-BASE64' |
+
+Allowing execution of any inline script(s) may lead to security vulnerabilities. To restrict the execution of inline scripts to known code, include a [hash-source](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html#hashes) of the inline script(s) in the `script-src` directive or generate an one-time use [nonce-source](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html#nonces) to allow specific `<script>` blocks to execute.
+
+The generation and appropriate use of these hash-source or one-time nonce-source values are specific to your HTML files and/or server setup. See documentation on "content security policy" and "script-src" directive.
+
+#### Example of hash of inline script(s):
+
+```html
+<html><head><meta http-equiv="Content-Security-Policy" content="
+    Content-Security-Policy: script-src 'unsafe-inline' 'sha256-zVu1jtS1MTItvxLN0tAAAAOAOlDFjjz/oAIlo5KIjMs='
+"/><head>
+<script>console.log("execution of inline-script")</script>
+</html>
+```
+
+ℹ Try generating a hash of the contents of the `<script>` tag [here](https://report-uri.com/home/hash).
+
+⚠️ Note that any change to the `<script>` blocks including empty-space changes will change the hash. For example: 
+
+```html
+<script>
+  console.log("execution of inline-script");
+</script>
+```
+
+Adding empty-space around the content of the `<script>` tags changes the matching hash.  As a result, attempts to load the HTML would show the following error (visible in the developer console):
+
+> Refused to execute inline script because it violates the following Content Security Policy directive: "script-src 'self' 'sha256-zVu1jtS1MTItvxLN0tAAAAOAOlDFjjz/oAIlo5KIjMs=' js.braintreegateway.com assets.braintreegateway.com pay.google.com". Either the 'unsafe-inline' keyword, a hash ('sha256-y5bhUNykMSWsqlMH7ObmFlUgQFkbMBMmFmeQ3H9wltI='), or a nonce ('nonce-...') is required to enable inline execution.
+
+ℹ️ In the example above, the correct hash, `sha256-y5bhUNykMSWsqlMH7ObmFlUgQFkbMBMmFmeQ3H9wltI=`, appears in the last sentence of the error message.
+
+#### Example of nonce-source
+
+```html
+<html><head>
+  <meta http-equiv="Content-Security-Policy" content="
+    Content-Security-Policy: script-src 'unsafe-inline' 'nonce-123a456b789c000d='
+"/>
+<head>
+<script nonce="123a456b789c000d=">console.log("execution of inline-script");</script>
+<script nonce="123a456b789c000d=">var sum = 1 + 2;</script>
+</html>
+```
+
+ℹ️️ nonce-source should be one-time use; that is, it changes for each request.
+
+ℹ️️ nonce-source should be a randomly generated, non-guessable,cryptographically strong value; the standard of whats cryptographical strong continue to evolve, but is currently at least 128 bits.
+
+ℹ️️ It is recommended that a nonce-source be used with HTML templating engine.

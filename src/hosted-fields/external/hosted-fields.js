@@ -414,7 +414,7 @@ function HostedFields(options) {
   this._bus = new Bus({
     channel: componentId,
     verifyDomain: isVerifiedDomain,
-    targetFrames: [],
+    targetFrames: [window],
   });
 
   this._destructor.registerFunctionForTeardown(function () {

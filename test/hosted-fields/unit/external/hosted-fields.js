@@ -89,7 +89,7 @@ describe("HostedFields", () => {
 
       expect(Bus).toBeCalledWith({
         channel: expect.stringContaining("-"),
-        targetFrames: [],
+        targetFrames: [window],
         verifyDomain: expect.any(Function),
       });
       expect(testContext.instance._bus).toBeInstanceOf(Bus);

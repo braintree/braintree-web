@@ -1,11 +1,16 @@
 # CHANGELOG
 
+# 3.97.1
+
+- JS docs
+  - Add more details about content security policy
+- Hosted Fields
+  - Fix bug where keyboard navigation would sometimes not work in FireFox
+
 # 3.97.0
 
-3D Secure
-
-- Updated documentation for `requestVisaDAF` parameter on `verifyCard`
-
+- 3D Secure
+  - Updated documentation for `requestVisaDAF` parameter on `verifyCard`
 - SEPA
   - Add support for new mandate params, `locale` and `billingAddress`
 - PayPal
