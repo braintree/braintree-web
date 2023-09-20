@@ -570,7 +570,7 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * @public
  * @param {object} options All options for the PayPalCheckout component.
  * @param {string} options.paymentId This should be PayPal `paymentId`.
- * @param {(string|number)} [options.amount] The amount of the transaction, including the amount of the selected shipping option.
+ * @param {(string|number)} options.amount The amount of the transaction, including the amount of the selected shipping option, and all `line_items`.
  * * Supports up to 2 decimal digits.
  * @param {string} options.currency The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {shippingOption[]} [options.shippingOptions] List of {@link PayPalCheckout~shippingOption|shipping options} offered by the payee or merchant to the payer to ship or pick up their items.

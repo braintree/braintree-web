@@ -184,7 +184,7 @@ ApplePay.prototype._createPaymentRequestSynchronously = function (
  * @public
  * @param {object} options Options
  * @param {string} options.validationURL The validationURL from an `ApplePayValidateMerchantEvent`.
- * @param {string} options.displayName The canonical name for your store. Use a non-localized name. This parameter should be a UTF-8 string that is a maximum of 128 characters. The system may display this name to the user.
+ * @param {string} options.displayName The canonical name for your store. Use a non-localized name. This parameter should be a UTF-8 string that is a maximum of 64 characters. The system may display this name to the user.
  * @param {callback} [callback] The second argument, <code>data</code>, is the Apple Pay merchant session object. If no callback is provided, `performValidation` returns a promise.
  * Pass the merchant session to your Apple Pay session's `completeMerchantValidation` method.
  * @returns {(Promise|void)} Returns a promise if no callback is provided.

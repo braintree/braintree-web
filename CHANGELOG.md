@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# 3.97.2
+- JS Docs
+  - PayPal
+    - Add clarification to `updatePayment` options
+  - Apple Pay
+    - Updated `displayName` docs for `performValidation` to indicate that maximium length is 64 characters
+
 # 3.97.1
 
 - JS docs

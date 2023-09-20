@@ -479,6 +479,7 @@ EventEmitter.createChild(ThreeDSecure);
  *     // Decide if you want to submit the nonce
  *   }
  * });
+ * @example
  * <caption>Verifying a payment method nonce with 3DS 2.0 with onLookupComplete callback</caption>
  * var my3DSContainer;
  *
