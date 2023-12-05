@@ -195,7 +195,7 @@ For [Braintree Fraud Protection](https://developer.paypal.com/braintree/docs/gui
 ### Executing In-Line Scripts
 
 |                     | Sandbox                                                      | Production                                                   |
-| ------------------- | -------------------------------------- | -------------------------------------- |
+| ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | script-src          | 'unsafe-inline'                                              | 'unsafe-inline'                                              |
 | (see documentation) | 'sha\_\_-{HASHED_INLINE_SCRIPT}'<br/>'nonce-ONE_TIME-BASE64' | 'sha\_\_-{HASHED_INLINE_SCRIPT}'<br/>'nonce-ONE_TIME-BASE64' |
 
@@ -215,7 +215,7 @@ The generation and appropriate use of these hash-source or one-time nonce-source
 
 ℹ Try generating a hash of the contents of the `<script>` tag [here](https://report-uri.com/home/hash).
 
-⚠️ Note that any change to the `<script>` blocks including empty-space changes will change the hash. For example: 
+⚠️ Note that any change to the `<script>` blocks including empty-space changes will change the hash. For example:
 
 ```html
 <script>
@@ -223,7 +223,7 @@ The generation and appropriate use of these hash-source or one-time nonce-source
 </script>
 ```
 
-Adding empty-space around the content of the `<script>` tags changes the matching hash.  As a result, attempts to load the HTML would show the following error (visible in the developer console):
+Adding empty-space around the content of the `<script>` tags changes the matching hash. As a result, attempts to load the HTML would show the following error (visible in the developer console):
 
 > Refused to execute inline script because it violates the following Content Security Policy directive: "script-src 'self' 'sha256-zVu1jtS1MTItvxLN0tAAAAOAOlDFjjz/oAIlo5KIjMs=' js.braintreegateway.com assets.braintreegateway.com pay.google.com". Either the 'unsafe-inline' keyword, a hash ('sha256-y5bhUNykMSWsqlMH7ObmFlUgQFkbMBMmFmeQ3H9wltI='), or a nonce ('nonce-...') is required to enable inline execution.
 

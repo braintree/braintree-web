@@ -465,7 +465,7 @@ Venmo.prototype.getUrl = function () {
 };
 
 /**
- * Returns a boolean indicating whether the current browser supports Venmo as a payment method.
+ * Returns a boolean indicating whether the current browser supports Venmo as a payment method. Please note that iOS Chrome is not supported.
  *
  * If `options.allowNewBrowserTab` is false when calling {@link module:braintree-web/venmo.create|venmo.create}, this method will return true only for browsers known to support returning from the Venmo app to the same browser tab. Currently, this is limited to iOS Safari and Android Chrome.
  * If `options.allowWebviews` is false when calling {@link module:braintree-web/venmo.create|venmo.create}, this method will return true only for mobile browsers that are not webviews.

@@ -89,13 +89,14 @@ function getElementStyles() {
     "display: none;",
     "}",
     "#" + ELEMENT_IDS.backdrop + " {",
+    "z-index: 3141592632;",
     "cursor: pointer;",
     "position: fixed;",
     "top: 0;",
     "left: 0;",
     "bottom: 0;",
     "width: 100%;",
-    "background: rgba(0, 0, 0, 0.4);",
+    "background: rgba(0, 0, 0, 0.8);",
     "}",
   ];
   var backdropContainerStyles = [
@@ -236,6 +237,10 @@ function buildAndStyleElements() {
   backDropContentContainer.appendChild(cancelButton);
   backdropDiv.appendChild(backDropContentContainer);
   document.body.appendChild(backdropDiv);
+
+  backdropDiv.addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
 }
 
 /**

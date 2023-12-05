@@ -1,6 +1,18 @@
 # CHANGELOG
 
+# 3.97.4
+
+- Venmo
+- Change overlay container to be on top of other page components and prevent click-through.
+
+# 3.97.3
+
+- JS Docs
+  - Venmo
+    - Add clarification to `isSupportedBrowser` for iOS Chrome.
+
 # 3.97.2
+
 - JS Docs
   - PayPal
     - Add clarification to `updatePayment` options

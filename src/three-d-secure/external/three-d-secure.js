@@ -577,40 +577,6 @@ EventEmitter.createChild(ThreeDSecure);
  *
  *   // handle success
  * });
- * @example
- * <caption>Deprecated: Verifying an existing nonce with 3DS 1.0</caption>
- * var my3DSContainer;
- *
- * threeDSecure.verifyCard({
- *   nonce: existingNonce,
- *   amount: 123.45,
- *   addFrame: function (err, iframe) {
- *     // Set up your UI and add the iframe.
- *     my3DSContainer = document.createElement('div');
- *     my3DSContainer.appendChild(iframe);
- *     document.body.appendChild(my3DSContainer);
- *   },
- *   removeFrame: function () {
- *     // Remove UI that you added in addFrame.
- *     document.body.removeChild(my3DSContainer);
- *   }
- * }, function (err, payload) {
- *   if (err) {
- *     console.error(err);
- *     return;
- *   }
- *
- *   if (payload.liabilityShifted) {
- *     // Liability has shifted
- *     submitNonceToServer(payload.nonce);
- *   } else if (payload.liabilityShiftPossible) {
- *     // Liability may still be shifted
- *     // Decide if you want to submit the nonce
- *   } else {
- *     // Liability has not shifted and will not shift
- *     // Decide if you want to submit the nonce
- *   }
- * });
  */
 ThreeDSecure.prototype.verifyCard = function (options) {
   var privateOptions;
