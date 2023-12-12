@@ -85,9 +85,9 @@ LocalPayment.prototype._initialize = function () {
  * @property {number} [windowOptions.width=1282] The width in pixels of the window opened when starting the payment. The default width size is this large to allow various banking partner landing pages to display the QR Code to be scanned by the bank's mobile app. Many will not display the QR code when the window size is smaller than a standard desktop screen.
  * @property {number} [windowOptions.height=720] The height in pixels of the window opened when starting the payment.
  * @property {string} amount The amount to authorize for the transaction.
- * @property {string} currencyCode The currency to process the payment.
+ * @property {string} currencyCode The currency to process the payment (three-character ISO-4217).
  * @property {string} [displayName] The merchant name displayed inside of the window that is opened when starting the payment.
- * @property {string} paymentType The type of local payment.
+ * @property {string} paymentType The type of local payment. See https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom
  * @property {string} paymentTypeCountryCode The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed {@link https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons|here}. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.
  * @property {string} email Payer email of the customer.
  * @property {string} givenName First name of the customer.
@@ -101,7 +101,7 @@ LocalPayment.prototype._initialize = function () {
  * @property {string} address.locality Customer's city.
  * @property {string} address.region Customer's region or state.
  * @property {string} address.postalCode Customer's postal code.
- * @property {string} address.countryCode Customer's country code.
+ * @property {string} address.countryCode Customer's country code (two-character ISO 3166-1 code).
  * @property {function} onPaymentStart A function that will be called with two parameters: an object containing the  `paymentId` and a `continueCallback` that must be called to launch the flow. You can use method to do any preprocessing on your server before the flow begins..
  */
 
@@ -109,7 +109,7 @@ LocalPayment.prototype._initialize = function () {
  * Options used for the Pay Upon Invoice local payment type.
  * @typedef {object} LocalPayment~StartPaymentPayUponInvoiceOptions
  * @property {string} amount The amount to authorize for the transaction.
- * @property {string} currencyCode The currency to process the payment.
+ * @property {string} currencyCode The currency to process the payment (three-character ISO-4217).
  * @property {string} [displayName] The merchant name displayed inside of the window that is opened when starting the payment.
  * @property {string} paymentType The type of local payment. Must be `pay_upon_invoice`.
  * @property {string} [paymentTypeCountryCode] The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed {@link https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons|here}. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.
@@ -125,7 +125,7 @@ LocalPayment.prototype._initialize = function () {
  * @property {string} address.locality Customer's city.
  * @property {string} [address.region] Customer's region or state.
  * @property {string} address.postalCode Customer's postal code.
- * @property {string} address.countryCode Customer's country code.
+ * @property {string} address.countryCode Customer's country code (two-character ISO 3166-1 code).
  * @property {string} [shippingAmount] The shipping fee for all items. This value can not be a negative number.
  * @property {string} [discountAmount] The discount for all items. This value can not be a negative number.
  * @property {object} billingAddress The billing address.
@@ -134,7 +134,7 @@ LocalPayment.prototype._initialize = function () {
  * @property {string} billingAddress.locality Customer's city.
  * @property {string} [billingAddress.region] Customer's region or state.
  * @property {string} billingAddress.postalCode Customer's postal code.
- * @property {string} billingAddress.countryCode Customer's country code.
+ * @property {string} billingAddress.countryCode Customer's country code (two-character ISO 3166-1 code).
  * @property {object[]} lineItems List of line items.
  * @property {string} lineItems.category The item category type: `'DIGITAL_GOODS'`, `'PHYSICAL_GOODS'`, or `'DONATION'`.
  * @property {string} lineItems.name Item name. Maximum 127 characters.
@@ -144,6 +144,37 @@ LocalPayment.prototype._initialize = function () {
  * @property {string} locale The BCP 47-formatted locale. PayPal supports a five-character code. For example, `en-DE`, `da-DK`, `he-IL`, `id-ID`, `ja-JP`, `no-NO`, `pt-BR`, `ru-RU`, `sv-SE`, `th-TH`, `zh-CN`, `zh-HK`, or `zh-TW`.
  * @property {string} customerServiceInstructions Instructions for how to contact the merchant's customer service. Maximum 4,000 characters.
  * @property {string} correlationId Used to correlate user sessions with server transactions.
+ * @property {function} onPaymentStart A function that will be called with an object containing the `paymentId`. The `continueCallback` is not provided as it is not needed for this use case.
+ */
+
+/**
+ * Options used for the seamless/oneclick BLIK local payment type.
+ * @typedef {object} LocalPayment~StartPaymentOptions
+ * @property {string} amount The amount to authorize for the transaction.
+ * @property {string} currencyCode The currency to process the payment (three-character ISO-4217).
+ * @property {string} [displayName] The merchant name displayed inside of the window that is opened when starting the payment.
+ * @property {string} paymentType The type of local payment. Must be `blik`.
+ * @property {string} paymentTypeCountryCode The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed {@link https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons|here}. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.
+ * @property {string} email Payer email of the customer.
+ * @property {string} givenName First name of the customer.
+ * @property {string} surname Last name of the customer.
+ * @property {string} phone Phone number of the customer.
+ * @property {boolean} shippingAddressRequired Indicates whether or not the payment needs to be shipped. For digital goods, this should be false. Defaults to false.
+ * @property {object} address The shipping address.
+ * @property {string} address.streetAddress Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.
+ * @property {string} address.extendedAddress Line 2 of the Address (eg. suite, apt #, etc.). An error will occur if this address is not valid.
+ * @property {string} address.locality Customer's city.
+ * @property {string} address.region Customer's region or state.
+ * @property {string} address.postalCode Customer's postal code.
+ * @property {string} address.countryCode Customer's country code (two-character ISO 3166-1 code).
+ * @property {object} blikOptions Blik seamless/oneclick specific options. Should contain only one object: `level_0` or `oneClick`.
+ * @property {object} blikOptions.level_0 Blik seamless specific options.
+ * @property {string} blikOptions.level_0.authCode 6-digit code used to authenticate a consumer within BLIK.
+ * @property {object} blikOptions.oneClick Blik oneclick specific options.
+ * @property {string} blikOptions.oneClick.authCode 6-digit code used to authenticate a consumer within BLIK.
+ * @property {string} blikOptions.oneClick.consumerReference The merchant generated, unique reference serving as a primary identifier for accounts connected between Blik and a merchant.
+ * @property {string} blikOptions.oneClick.aliasLabel A bank defined identifier used as a display name to allow the payer to differentiate between multiple registered bank accounts.
+ * @property {string} blikOptions.oneClick.aliasKey A Blik-defined identifier for a specific Blik-enabled bank account that is associated with a given merchant. Used only in conjunction with a Consumer Reference.
  * @property {function} onPaymentStart A function that will be called with an object containing the `paymentId`. The `continueCallback` is not provided as it is not needed for this use case.
  */
 
@@ -223,6 +254,99 @@ LocalPayment.prototype._initialize = function () {
  *   // Handle any error calling startPayment.
  *   console.error(err);
  * });
+ * @example <caption>BLIK seamless</caption>
+ * localPaymentInstance.startPayment({
+ *   paymentType: 'blik',
+ *   paymentTypeCountryCode: 'PL',
+ *   amount: '10.00',
+ *   currencyCode: 'PLN',
+ *   givenName: 'Joe',
+ *   surname: 'Doe',
+ *   phone: '1234566789',
+ *   address: {
+ *     streetAddress: 'Mokotowska 1234',
+ *     locality: 'Warsaw',
+ *     postalCode: '02-697',
+ *     countryCode: 'PL',
+ *   },
+ *   blikOptions: {
+ *     level_0: {
+ *       authCode: "123456",
+ *     },
+ *   },
+ *   onPaymentStart: function (data) {
+ *     // NOTE: It is critical here to store data.paymentId on your server
+ *     //       so it can be mapped to a webhook sent by Braintree once the
+ *     //       buyer completes their payment.
+ *     console.log('Payment ID:', data.paymentId);
+ *   },
+ * }).catch(function (err) {
+ *   // Handle any error calling startPayment.
+ *   console.error(err);
+ * });
+ * @example <caption>BLIK oneclick first payment</caption>
+ * localPaymentInstance.startPayment({
+ *   paymentType: 'blik',
+ *   paymentTypeCountryCode: 'PL',
+ *   amount: '10.00',
+ *   currencyCode: 'PLN',
+ *   givenName: 'Joe',
+ *   surname: 'Doe',
+ *   phone: '1234566789',
+ *   address: {
+ *     streetAddress: 'Mokotowska 1234',
+ *     locality: 'Warsaw',
+ *     postalCode: '02-697',
+ *     countryCode: 'PL',
+ *   },
+ *   blikOptions: {
+ *     oneClick: {
+ *       authCode: "123456",
+ *       consumerReference: "ABCde123",
+ *       aliasLabel: "my uniq alias",
+ *     },
+ *   },
+ *   onPaymentStart: function (data) {
+ *     // NOTE: It is critical here to store data.paymentId on your server
+ *     //       so it can be mapped to a webhook sent by Braintree once the
+ *     //       buyer completes their payment.
+ *     console.log('Payment ID:', data.paymentId);
+ *   },
+ * }).catch(function (err) {
+ *   // Handle any error calling startPayment.
+ *   console.error(err);
+ * });
+ * @example <caption>BLIK oneclick subsequent payment</caption>
+ * localPaymentInstance.startPayment({
+ *   paymentType: 'blik',
+ *   paymentTypeCountryCode: 'PL',
+ *   amount: '10.00',
+ *   currencyCode: 'PLN',
+ *   givenName: 'Joe',
+ *   surname: 'Doe',
+ *   phone: '1234566789',
+ *   address: {
+ *     streetAddress: 'Mokotowska 1234',
+ *     locality: 'Warsaw',
+ *     postalCode: '02-697',
+ *     countryCode: 'PL',
+ *   },
+ *   blikOptions: {
+ *     oneClick: {
+ *       consumerReference: "ABCde123",
+ *       aliasKey: "123456789",
+ *     },
+ *   },
+ *   onPaymentStart: function (data) {
+ *     // NOTE: It is critical here to store data.paymentId on your server
+ *     //       so it can be mapped to a webhook sent by Braintree once the
+ *     //       buyer completes their payment.
+ *     console.log('Payment ID:', data.paymentId);
+ *   },
+ * }).catch(function (err) {
+ *   // Handle any error calling startPayment.
+ *   console.error(err);
+ * });
  */
 LocalPayment.prototype.startPayment = function (options) {
   var missingOption,
@@ -232,7 +356,8 @@ LocalPayment.prototype.startPayment = function (options) {
     params,
     promise,
     billingAddress,
-    windowOptions;
+    windowOptions,
+    onPaymentStartPromise;
   var self = this; // eslint-disable-line no-invalid-this
   var serviceId = this._frameService._serviceId; // eslint-disable-line no-invalid-this
 
@@ -259,18 +384,18 @@ LocalPayment.prototype.startPayment = function (options) {
   fallback = options.fallback || {};
   billingAddress = options.billingAddress || {};
   params = {
-    intent: "sale",
-    returnUrl: querystring.queryify(
-      self._assetsUrl +
-        "/html/local-payment-redirect-frame" +
-        useMin(self._isDebug) +
-        ".html",
-      {
-        channel: serviceId,
-        r: fallback.url,
-        t: fallback.buttonText,
-      }
-    ),
+    amount: options.amount,
+    bic: options.bic,
+    billingAddress: {
+      line1: billingAddress.streetAddress,
+      line2: billingAddress.extendedAddress,
+      city: billingAddress.locality,
+      state: billingAddress.region,
+      postalCode: billingAddress.postalCode,
+      countryCode: billingAddress.countryCode,
+    },
+    birthDate: options.birthDate,
+    blikOptions: options.blikOptions,
     cancelUrl: querystring.queryify(
       self._assetsUrl +
         "/html/local-payment-redirect-frame" +
@@ -283,42 +408,43 @@ LocalPayment.prototype.startPayment = function (options) {
         c: 1, // indicating we went through the cancel flow
       }
     ),
+    city: address.locality,
+    correlationId: options.correlationId,
+    countryCode: address.countryCode,
+    currencyIsoCode: options.currencyCode,
+    discountAmount: options.discountAmount,
     experienceProfile: {
       brandName: options.displayName,
-      noShipping: !options.shippingAddressRequired,
-      locale: options.locale,
       customerServiceInstructions: options.customerServiceInstructions,
+      locale: options.locale,
+      noShipping: !options.shippingAddressRequired,
     },
-    fundingSource: options.paymentType,
-    paymentTypeCountryCode: options.paymentTypeCountryCode,
-    amount: options.amount,
-    currencyIsoCode: options.currencyCode,
     firstName: options.givenName,
+    fundingSource: options.paymentType,
+    intent: "sale",
     lastName: options.surname,
-    payerEmail: options.email,
-    phone: options.phone,
     line1: address.streetAddress,
     line2: address.extendedAddress,
-    city: address.locality,
-    state: address.region,
-    postalCode: address.postalCode,
-    countryCode: address.countryCode,
-    merchantAccountId: self._merchantAccountId,
-    bic: options.bic,
-    billingAddress: {
-      line1: billingAddress.streetAddress,
-      line2: billingAddress.extendedAddress,
-      city: billingAddress.locality,
-      state: billingAddress.region,
-      postalCode: billingAddress.postalCode,
-      countryCode: billingAddress.countryCode,
-    },
-    birthDate: options.birthDate,
-    correlationId: options.correlationId,
-    discountAmount: options.discountAmount,
-    phoneCountryCode: options.phoneCountryCode,
-    shippingAmount: options.shippingAmount,
     lineItems: options.lineItems,
+    merchantAccountId: self._merchantAccountId,
+    payerEmail: options.email,
+    paymentTypeCountryCode: options.paymentTypeCountryCode,
+    phone: options.phone,
+    phoneCountryCode: options.phoneCountryCode,
+    postalCode: address.postalCode,
+    returnUrl: querystring.queryify(
+      self._assetsUrl +
+        "/html/local-payment-redirect-frame" +
+        useMin(self._isDebug) +
+        ".html",
+      {
+        channel: serviceId,
+        r: fallback.url,
+        t: fallback.buttonText,
+      }
+    ),
+    shippingAmount: options.shippingAmount,
+    state: address.region,
   };
 
   self._paymentType = options.paymentType.toLowerCase();
@@ -339,7 +465,7 @@ LocalPayment.prototype.startPayment = function (options) {
 
   // For deferred payment types, the popup window should not be opened,
   // since the actual payment will be done outside of this session.
-  if (!isDeferredPaymentType(options.paymentType)) {
+  if (!isDeferredPaymentTypeOptions(options)) {
     self._startPaymentCallback = self._createStartPaymentCallback(
       function (val) {
         promise.resolve(val);
@@ -365,17 +491,36 @@ LocalPayment.prototype.startPayment = function (options) {
       data: params,
     })
     .then(function (response) {
+      var redirectUrl = response.paymentResource.redirectUrl;
+
       analytics.sendEvent(
         self._client,
         self._paymentType + ".local-payment.start-payment.opened"
       );
       self._startPaymentOptions = options;
-      if (isDeferredPaymentType(options.paymentType)) {
-        options.onPaymentStart({
-          paymentId: response.paymentResource.paymentToken,
-        });
+
+      if (isDeferredPaymentTypeOptions(options)) {
         self._authorizationInProgress = false;
-        promise.resolve();
+
+        if (typeof redirectUrl === "string" && redirectUrl.length) {
+          promise.reject(
+            new BraintreeError(
+              errors.LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED
+            )
+          );
+        } else {
+          onPaymentStartPromise = options.onPaymentStart({
+            paymentId: response.paymentResource.paymentToken,
+          });
+
+          if (onPaymentStartPromise instanceof Promise) {
+            onPaymentStartPromise.then(function () {
+              promise.resolve();
+            });
+          } else {
+            promise.resolve();
+          }
+        }
       } else {
         options.onPaymentStart(
           { paymentId: response.paymentResource.paymentToken },
@@ -683,10 +828,27 @@ LocalPayment.prototype._formatTokenizeData = function (params) {
 // occur at a later time outside of this session. For example, with
 // Pay Upon Invoice, the customer will later receive an email that will
 // be used to make the actual payment through RatePay. This function
-// will return `true` if the given `paymentType` is a deferred payment
-// type. Otherwise, it will return `false`.
-function isDeferredPaymentType(paymentType) {
-  return constants.DEFERRED_PAYMENT_TYPES.indexOf(paymentType) >= 0;
+// will return `true` if the given options contain `paymentType` of
+// a deferred payment type; and/or some payments, like blik, may have
+// specific extra options to be treated as deferred. Otherwise, it
+// will return `false`.
+function isDeferredPaymentTypeOptions(options) {
+  var blikOptions = options.blikOptions || {};
+  var paymentType =
+    typeof options.paymentType === "string"
+      ? options.paymentType.toLowerCase()
+      : options.paymentType;
+
+  if (paymentType === "pay_upon_invoice") {
+    return true;
+  } else if (paymentType === "blik") {
+    return (
+      blikOptions.hasOwnProperty("level_0") ||
+      blikOptions.hasOwnProperty("oneClick")
+    );
+  }
+
+  return false;
 }
 
 function hasMissingAddressOption(options) {
@@ -718,37 +880,107 @@ function hasMissingLineItemsOption(items) {
   return false;
 }
 
+function hasMissingBlikOptions(options) {
+  var i, option, oneClick;
+  var blikOptions = options.blikOptions || {};
+
+  for (
+    i = 0;
+    i < constants.REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE.length;
+    i++
+  ) {
+    option = constants.REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE[i];
+    if (!options.hasOwnProperty(option)) {
+      return option;
+    }
+  }
+
+  if (blikOptions.hasOwnProperty("level_0")) {
+    for (
+      i = 0;
+      i < constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_LEVEL_0.length;
+      i++
+    ) {
+      option = constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_LEVEL_0[i];
+
+      // eslint-disable-next-line camelcase
+      if (!blikOptions.level_0.hasOwnProperty(option)) {
+        return "blikOptions.level_0." + option;
+      }
+    }
+  } else if (blikOptions.hasOwnProperty("oneClick")) {
+    oneClick = blikOptions.oneClick || {};
+
+    if (oneClick.hasOwnProperty("aliasKey")) {
+      for (
+        i = 0;
+        i <
+        constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_SUBSEQUENT.length;
+        i++
+      ) {
+        option =
+          constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_SUBSEQUENT[i];
+
+        if (!oneClick.hasOwnProperty(option)) {
+          return "blikOptions.oneClick." + option;
+        }
+      }
+    } else {
+      for (
+        i = 0;
+        i < constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_FIRST.length;
+        i++
+      ) {
+        option = constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_FIRST[i];
+
+        if (!oneClick.hasOwnProperty(option)) {
+          return "blikOptions.oneClick." + option;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 // This will return the name of the first missing required option that
 // is found or `true` if `options` itself is not defined. Otherwise, it
 // will return `false`.
 function hasMissingOption(options) {
-  var i, option, missingAddressOption, missingLineItemOption;
+  var i, option, missingAddressOption, missingLineItemOption, paymentType;
 
   if (!options) {
     return true;
   }
 
-  if (isDeferredPaymentType(options.paymentType)) {
-    for (
-      i = 0;
-      i < constants.REQUIRED_OPTIONS_FOR_DEFERRED_PAYMENT_TYPE.length;
-      i++
-    ) {
-      option = constants.REQUIRED_OPTIONS_FOR_DEFERRED_PAYMENT_TYPE[i];
-      if (!options.hasOwnProperty(option)) {
-        return option;
-      }
-      if (option === "address" || option === "billingAddress") {
-        missingAddressOption = hasMissingAddressOption(options[option]);
-        if (missingAddressOption) {
-          return option + "." + missingAddressOption;
+  if (isDeferredPaymentTypeOptions(options)) {
+    paymentType = options.paymentType || "";
+
+    if (paymentType.toLowerCase() === "pay_upon_invoice") {
+      for (
+        i = 0;
+        i < constants.REQUIRED_OPTIONS_FOR_PAY_UPON_INVOICE_PAYMENT_TYPE.length;
+        i++
+      ) {
+        option =
+          constants.REQUIRED_OPTIONS_FOR_PAY_UPON_INVOICE_PAYMENT_TYPE[i];
+        if (!options.hasOwnProperty(option)) {
+          return option;
         }
-      } else if (option === "lineItems") {
-        missingLineItemOption = hasMissingLineItemsOption(options[option]);
-        if (missingLineItemOption) {
-          return option + "." + missingLineItemOption;
+        if (option === "address" || option === "billingAddress") {
+          missingAddressOption = hasMissingAddressOption(options[option]);
+          if (missingAddressOption) {
+            return option + "." + missingAddressOption;
+          }
+        } else if (option === "lineItems") {
+          missingLineItemOption = hasMissingLineItemsOption(options[option]);
+          if (missingLineItemOption) {
+            return option + "." + missingLineItemOption;
+          }
         }
       }
+    } else if (paymentType.toLowerCase() === "blik") {
+      return hasMissingBlikOptions(options);
     }
   } else {
     for (i = 0; i < constants.REQUIRED_OPTIONS_FOR_START_PAYMENT.length; i++) {

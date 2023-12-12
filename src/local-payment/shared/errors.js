@@ -58,6 +58,11 @@ module.exports = {
     code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
     message: "Missing required option for startPayment.",
   },
+  LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED: {
+    type: BraintreeError.types.UNKNOWN,
+    code: "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED",
+    message: "LocalPayment startPayment deferred payment failed.",
+  },
   LOCAL_PAYMENT_TOKENIZATION_FAILED: {
     type: BraintreeError.types.NETWORK,
     code: "LOCAL_PAYMENT_TOKENIZATION_FAILED",

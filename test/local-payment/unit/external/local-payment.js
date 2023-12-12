@@ -158,6 +158,302 @@ describe("LocalPayment", () => {
     });
   });
 
+  describe("startPayment Blik seamless", () => {
+    beforeEach(() => {
+      testContext.localPayment = new LocalPayment({
+        client: testContext.client,
+        merchantAccountId: "merchant-account-id",
+      });
+
+      testContext.frameServiceInstance = {
+        _serviceId: "service-id",
+        close: jest.fn(),
+        open: jest.fn(),
+        redirect: jest.fn(),
+      };
+
+      testContext.options = {
+        onPaymentStart: jest.fn(),
+        paymentType: "blik",
+        paymentTypeCountryCode: "PL",
+        amount: "10.00",
+        shippingAddressRequired: true,
+        currencyCode: "PLN",
+        givenName: "First",
+        surname: "Last",
+        email: "email@example.com",
+        phone: "1234",
+        displayName: "My Brand!",
+        address: {
+          streetAddress: "123 Address",
+          extendedAddress: "Unit 1",
+          locality: "Chicago",
+          region: "IL",
+          postalCode: "60654",
+          countryCode: "US",
+        },
+        blikOptions: {
+          // eslint-disable-next-line camelcase
+          level_0: {
+            authCode: "123456",
+          },
+        },
+      };
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: null,
+          paymentToken: "payment-token",
+        },
+      });
+
+      jest
+        .spyOn(frameService, "create")
+        .mockImplementation(yields(testContext.frameServiceInstance));
+
+      return testContext.localPayment._initialize();
+    });
+
+    it.each(
+      constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_LEVEL_0.map((param) => [
+        param,
+      ])
+    )(
+      "errors when no blikOptions.level_0.%s param is provided",
+      (requiredParam) => {
+        delete testContext.options.blikOptions.level_0[requiredParam];
+
+        return testContext.localPayment
+          .startPayment(testContext.options)
+          .catch(({ code }) => {
+            expect(code).toBe(
+              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+            );
+          });
+      }
+    );
+
+    describe("oneClick first payment", () => {
+      beforeEach(() => {
+        testContext.options.blikOptions = {
+          oneClick: {
+            authCode: "123456",
+            aliasLabel: "my cool alias",
+            consumerReference: "REF12345",
+          },
+        };
+      });
+
+      it.each(
+        constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_FIRST.map(
+          (param) => [param]
+        )
+      )(
+        "errors when no blikOptions.oneClick.%s param is provided",
+        (requiredParam) => {
+          delete testContext.options.blikOptions.oneClick[requiredParam];
+
+          return testContext.localPayment
+            .startPayment(testContext.options)
+            .catch(({ code }) => {
+              expect(code).toBe(
+                "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+              );
+            });
+        }
+      );
+    });
+
+    describe("oneClick subsequent payment", () => {
+      beforeEach(() => {
+        testContext.options.blikOptions = {
+          oneClick: {
+            aliasKey: "456456",
+            consumerReference: "REF12345",
+          },
+        };
+      });
+
+      it("errors when no blikOptions.oneClick.consumerReference param is provided", () => {
+        delete testContext.options.blikOptions.oneClick.consumerReference;
+
+        return testContext.localPayment
+          .startPayment(testContext.options)
+          .catch(({ code }) => {
+            expect(code).toBe(
+              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+            );
+          });
+      });
+    });
+
+    it("errors when options are missing", () => {
+      return testContext.localPayment.startPayment().catch(({ code }) => {
+        expect(code).toBe(
+          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+        );
+      });
+    });
+
+    it.each(
+      constants.REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE.map((param) => [
+        param,
+      ])
+    )("errors when no %s param is provided", (requiredParam) => {
+      delete testContext.options[requiredParam];
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code }) => {
+          expect(code).toBe(
+            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+          );
+        });
+    });
+
+    it("creates a payment resource", () => {
+      const client = testContext.client;
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(client.request).toHaveBeenCalledWith({
+            method: "post",
+            endpoint: "local_payments/create",
+            data: {
+              cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=undefined&t=undefined&c=1`,
+              returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=undefined&t=undefined`,
+              fundingSource: "blik",
+              paymentTypeCountryCode: "PL",
+              amount: "10.00",
+              intent: "sale",
+              billingAddress: {
+                line1: undefined,
+                line2: undefined,
+                city: undefined,
+                state: undefined,
+                postalCode: undefined,
+                countryCode: undefined,
+              },
+              birthDate: undefined,
+              correlationId: undefined,
+              discountAmount: undefined,
+              experienceProfile: {
+                brandName: "My Brand!",
+                noShipping: false,
+                customerServiceInstructions: undefined,
+                locale: undefined,
+              },
+              currencyIsoCode: "PLN",
+              firstName: "First",
+              lastName: "Last",
+              payerEmail: "email@example.com",
+              phone: "1234",
+              line1: "123 Address",
+              line2: "Unit 1",
+              city: "Chicago",
+              state: "IL",
+              postalCode: "60654",
+              countryCode: "US",
+              lineItems: undefined,
+              phoneCountryCode: undefined,
+              shippingAmount: undefined,
+              merchantAccountId: "merchant-account-id",
+              bic: undefined,
+              blikOptions: {
+                // eslint-disable-next-line camelcase
+                level_0: {
+                  authCode: "123456",
+                },
+              },
+            },
+          });
+        });
+    });
+
+    it("No redirects occur for payment source creation", () => {
+      const frame = testContext.frameServiceInstance;
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(frame.redirect).toHaveBeenCalledTimes(0);
+        });
+    });
+
+    it("Does not open a window for payment processing", () => {
+      const frame = testContext.frameServiceInstance;
+
+      frame.open.mockImplementation(yields(null, { foo: "bar" }));
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(frame.open).toHaveBeenCalledTimes(0);
+        });
+    });
+
+    it("errors when payment resource call fails", () => {
+      const requestError = {
+        message: "Failed",
+        details: {
+          httpStatus: 400,
+        },
+      };
+
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockClear();
+      testContext.client.request.mockRejectedValueOnce(requestError);
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code, details }) => {
+          expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
+          expect(details.originalError.message).toBe("Failed");
+        });
+    });
+
+    it("errors when payment resource returns redirectUrl for deferred payment", () => {
+      const responseWithRedirectUrl = {
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect-url",
+          paymentToken: "payment-token",
+        },
+      };
+
+      testContext.client.request.mockClear();
+      testContext.client.request.mockResolvedValue(responseWithRedirectUrl);
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code }) => {
+          expect(code).toBe(
+            "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED"
+          );
+          expect(testContext.localPayment._authorizationInProgress).toBe(false);
+        });
+    });
+
+    it("errors with validation error when create payment resource fails with 422", () => {
+      const requestError = {
+        message: "Failed",
+        details: {
+          httpStatus: 422,
+        },
+      };
+
+      testContext.frameServiceInstance.open.mockClear();
+      testContext.client.request.mockRejectedValue(requestError);
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code, details }) => {
+          expect(code).toBe("LOCAL_PAYMENT_INVALID_PAYMENT_OPTION");
+          expect(details.originalError.message).toBe("Failed");
+        });
+    });
+  });
+
   describe("startPayment Pay upon invoice", () => {
     beforeEach(() => {
       testContext.localPayment = new LocalPayment({
@@ -167,13 +463,7 @@ describe("LocalPayment", () => {
       testContext.frameServiceInstance = {
         _serviceId: "service-id",
         close: jest.fn(),
-        open: jest.fn(
-          yieldsAsync(null, {
-            token: "token",
-            paymentId: "payment-id",
-            PayerID: "PayerId",
-          })
-        ),
+        open: jest.fn(),
         redirect: jest.fn(),
       };
 
@@ -227,7 +517,7 @@ describe("LocalPayment", () => {
 
       jest.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
-          redirectUrl: "https://example.com/redirect-url",
+          redirectUrl: null,
           paymentToken: "payment-token",
         },
       });
@@ -240,9 +530,9 @@ describe("LocalPayment", () => {
     });
 
     it.each(
-      constants.REQUIRED_OPTIONS_FOR_DEFERRED_PAYMENT_TYPE.map((param) => [
-        param,
-      ])
+      constants.REQUIRED_OPTIONS_FOR_PAY_UPON_INVOICE_PAYMENT_TYPE.map(
+        (param) => [param]
+      )
     )("errors when no %s param is provided", (requiredParam) => {
       delete testContext.options[requiredParam];
 
@@ -461,6 +751,27 @@ describe("LocalPayment", () => {
         .catch(({ code, details }) => {
           expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
           expect(details.originalError.message).toBe("Failed");
+        });
+    });
+
+    it("errors when payment resource returns redirectUrl for deferred payment", () => {
+      const responseWithRedirectUrl = {
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect-url",
+          paymentToken: "payment-token",
+        },
+      };
+
+      testContext.client.request.mockClear();
+      testContext.client.request.mockResolvedValue(responseWithRedirectUrl);
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code }) => {
+          expect(code).toBe(
+            "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED"
+          );
+          expect(testContext.localPayment._authorizationInProgress).toBe(false);
         });
     });
 

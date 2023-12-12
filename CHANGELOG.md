@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.98.0
+
+- Local Payment
+  - Add support for seamless/oneclick BLIK local payment
+
 # 3.97.4
 
 - Venmo

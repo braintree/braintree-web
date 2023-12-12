@@ -10,7 +10,7 @@ module.exports = {
     "amount",
     "fallback",
   ],
-  REQUIRED_OPTIONS_FOR_DEFERRED_PAYMENT_TYPE: [
+  REQUIRED_OPTIONS_FOR_PAY_UPON_INVOICE_PAYMENT_TYPE: [
     "givenName",
     "surname",
     "currencyCode",
@@ -41,5 +41,22 @@ module.exports = {
     "unitAmount",
     "unitTaxAmount",
   ],
-  DEFERRED_PAYMENT_TYPES: ["pay_upon_invoice"],
+  REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE: [
+    "givenName",
+    "surname",
+    "currencyCode",
+    "onPaymentStart",
+    "paymentType",
+    "amount",
+  ],
+  REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_LEVEL_0: ["authCode"],
+  REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_FIRST: [
+    "authCode",
+    "consumerReference",
+    "aliasLabel",
+  ],
+  REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_SUBSEQUENT: [
+    "consumerReference",
+    "aliasKey",
+  ],
 };
