@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.99.0
+
+- Venmo
+  - Update `isBrowserSupported` to return true for iOS Chrome when `allowNewBrowserTab` is true and Venmo is not presented in an iFrame.
+
 # 3.98.0
 
 - Local Payment
@@ -8,13 +13,13 @@
 # 3.97.4
 
 - Venmo
-- Change overlay container to be on top of other page components and prevent click-through.
+  - Change overlay container to be on top of other page components and prevent click-through.
 
 # 3.97.3
 
 - JS Docs
   - Venmo
-    - Add clarification to `isSupportedBrowser` for iOS Chrome.
+    - Add clarification to `isBrowserSupported` for iOS Chrome.
 
 # 3.97.2
 

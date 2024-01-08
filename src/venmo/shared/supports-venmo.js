@@ -1,20 +1,19 @@
 "use strict";
 
 var browserDetection = require("./browser-detection");
+var inIframe = require("../../lib/in-iframe");
 
 function isBrowserSupported(options) {
-  var merchantAllowsReturningToNewBrowserTab,
-    merchantAllowsWebviews,
-    merchantAllowsDesktopBrowsers;
+  var isKnownUnsupportedMobileBrowser,
+    merchantAllowsDesktopBrowsers,
+    merchantAllowsIosChrome,
+    merchantAllowsReturningToNewBrowserTab,
+    merchantAllowsWebviews;
   var isAndroid = browserDetection.isAndroid();
   var isMobileDevice = isAndroid || browserDetection.isIos();
   var isAndroidChrome = isAndroid && browserDetection.isChrome();
   var isMobileDeviceThatSupportsReturnToSameTab =
     browserDetection.isIosSafari() || isAndroidChrome;
-  var isKnownUnsupportedMobileBrowser =
-    browserDetection.isIosChrome() ||
-    browserDetection.isFacebookOwnedBrowserOnAndroid() ||
-    browserDetection.isSamsung();
 
   options = options || {};
   // NEXT_MAJOR_VERSION allowDesktop will default to true, but can be opted out
@@ -34,6 +33,16 @@ function isBrowserSupported(options) {
   merchantAllowsWebviews = options.hasOwnProperty("allowWebviews")
     ? options.allowWebviews
     : true;
+  // Venmo only works on iOS Chrome when the
+  // button is not rendered in an iFrame and
+  // allowNewBrowserTab is set to true
+  merchantAllowsIosChrome =
+    merchantAllowsReturningToNewBrowserTab && !inIframe();
+
+  isKnownUnsupportedMobileBrowser =
+    (!merchantAllowsIosChrome && browserDetection.isIosChrome()) ||
+    browserDetection.isFacebookOwnedBrowserOnAndroid() ||
+    browserDetection.isSamsung();
 
   if (isKnownUnsupportedMobileBrowser) {
     return false;

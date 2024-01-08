@@ -1,8 +1,10 @@
 "use strict";
 
 jest.mock("../../../src/venmo/shared/browser-detection");
+jest.mock("../../../src/lib/in-iframe");
 
 const browserDetection = require("../../../src/venmo/shared/browser-detection");
+const inIframe = require("../../../src/lib/in-iframe");
 const {
   isBrowserSupported,
 } = require("../../../src/venmo/shared/supports-venmo");
@@ -19,6 +21,7 @@ describe("isBrowserSupported", () => {
     browserDetection.isIosWebview.mockReturnValue(false);
     browserDetection.isAndroidWebview.mockReturnValue(false);
     browserDetection.isFacebookOwnedBrowserOnAndroid.mockReturnValue(false);
+    inIframe.mockReturnValue(false);
   });
 
   describe("defaults", () => {
@@ -37,8 +40,17 @@ describe("isBrowserSupported", () => {
       expect(isBrowserSupported()).toBe(true);
     });
 
-    it("returns false for iOS Chrome", () => {
+    it("returns true for iOS Chrome when not in an iFrame and allowNewBrowserTab is not false.", () => {
+      browserDetection.isIos.mockReturnValue(true);
       browserDetection.isIosChrome.mockReturnValue(true);
+
+      expect(isBrowserSupported()).toBe(true);
+    });
+
+    it("returns false for iOS Chrome in an iFrame", () => {
+      browserDetection.isIos.mockReturnValue(true);
+      browserDetection.isIosChrome.mockReturnValue(true);
+      inIframe.mockReturnValue(true);
 
       expect(isBrowserSupported()).toBe(false);
     });
@@ -132,7 +144,7 @@ describe("isBrowserSupported", () => {
   describe("allowNewBrowserTab: false", () => {
     it("returns false for iOS Chrome when configured to only return to same tab", () => {
       browserDetection.isIos.mockReturnValue(true);
-      browserDetection.isChrome.mockReturnValue(true);
+      browserDetection.isIosChrome.mockReturnValue(true);
 
       expect(
         isBrowserSupported({

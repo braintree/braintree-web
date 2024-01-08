@@ -36,12 +36,6 @@ function isFacebookOwnedBrowserOnAndroid() {
   return ua.indexOf("fb_iab") > -1 || ua.indexOf("instagram") > -1;
 }
 
-// iOS chrome used to work with Venmo, but now it does not
-// we are unsure if something changed in the iOS Chrome app
-// itself, or if something about iOS webviews has changed
-// until we find out more info, we've created a helper to
-// easilly turn off iOS Chrome as a supported browser in
-// the isBrowserSupported helper function
 function isIosChrome() {
   return isIos() && isChrome();
 }
