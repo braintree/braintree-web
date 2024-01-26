@@ -319,6 +319,7 @@ describe("web-login-backdrop", () => {
       const expectedRejectedValue = "some err";
 
       mockStatusCheck.mockRejectedValue(expectedRejectedValue);
+      mockPaymentContextStatus.mockResolvedValue({ status: "FAILED" });
 
       await openPopup(openOptions).catch((err) => {
         expect(err).toBe(expectedRejectedValue);

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.99.2
+
+- Venmo
+  - Fix race condition in previous bug fix.
+
 # 3.99.1
 
 - Venmo

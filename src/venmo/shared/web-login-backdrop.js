@@ -58,25 +58,26 @@ function openPopup(options) {
           extendedPromise.resolve(data);
         })
         .catch(function (statusCheckError) {
-          extendedPromise.reject(statusCheckError);
+          // We add this check here because at this point
+          // the status should not be in CREATED status.
+          // However, there is an edge case where if a buyer
+          // cancels in the popup, the popup might close itself
+          // before it can send the graphQL mutation to update its status.
+          // In these cases, the status will be stuck in CREATED status, and
+          // tokenization would fail, incorrectly throwing a tokenization error
+          // instead of informing the merchant that the customer canceled.
+          checkPaymentContextStatus().then(function (node) {
+            if (node.status === "CREATED") {
+              extendedPromise.reject(
+                new BraintreeError(errors.VENMO_CUSTOMER_CANCELED)
+              );
+            } else {
+              extendedPromise.reject(statusCheckError);
+            }
+          });
         });
     }
 
-    // We add this check here because at this point
-    // the status should not be in CREATED status.
-    // However, there is an edge case where if a buyer
-    // cancels in the popup, the popup might close itself
-    // before it can send the graphQL mutation to update its status.
-    // In these cases, the status will be stuck in CREATED status, and
-    // tokenization would fail, incorrectly throwing a tokenization error
-    // instead of informing the merchant that the customer canceled.
-    checkPaymentContextStatus().then(function (status) {
-      if (status === "CREATED") {
-        extendedPromise.reject(
-          new BraintreeError(errors.VENMO_CUSTOMER_CANCELED)
-        );
-      }
-    });
     frameServiceInstance.close();
     closeBackdrop();
   });
