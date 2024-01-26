@@ -2952,6 +2952,7 @@ describe("Venmo", () => {
           frameServiceInstance: expect.any(Object),
           venmoUrl: expect.stringContaining(venmoConstants.VENMO_WEB_LOGIN_URL),
           debug: testContext.configuration.isDebug,
+          checkPaymentContextStatus: expect.any(Function),
         });
       });
 

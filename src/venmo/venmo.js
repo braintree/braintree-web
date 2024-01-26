@@ -723,6 +723,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
         frameServiceInstance: self._frameServiceInstance,
         venmoUrl: url,
         debug: self._isDebug,
+        checkPaymentContextStatus: self._checkPaymentContextStatus.bind(self),
       })
       .then(function (payload) {
         analytics.sendEvent(
@@ -786,6 +787,50 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
 ) {
   var self = this;
 
+  return self._checkPaymentContextStatus().then(function (node) {
+    var resultStatus = node.status;
+
+    if (resultStatus !== self._venmoPaymentContextStatus) {
+      self._venmoPaymentContextStatus = resultStatus;
+
+      analytics.sendEvent(
+        self._createPromise,
+        "venmo.tokenize.web-login.status-change"
+      );
+
+      switch (resultStatus) {
+        case "APPROVED":
+          return Promise.resolve(node);
+        case "CANCELED":
+          return Promise.reject(
+            new BraintreeError(errors.VENMO_CUSTOMER_CANCELED)
+          );
+        case "FAILED":
+          return Promise.reject(
+            new BraintreeError(errors.VENMO_TOKENIZATION_FAILED)
+          );
+        default:
+      }
+    }
+
+    return new Promise(function (resolve, reject) {
+      if (retryCount < self._maxRetryCount) {
+        retryCount++;
+
+        return self
+          ._checkPaymentContextStatusAndProcessResult(retryCount)
+          .then(resolve)
+          .catch(reject);
+      }
+
+      return reject(new BraintreeError(errors.VENMO_TOKENIZATION_FAILED));
+    });
+  });
+};
+
+Venmo.prototype._checkPaymentContextStatus = function () {
+  var self = this;
+
   return self
     ._queryPaymentContextStatus(self._venmoPaymentContextId)
     .catch(function (networkError) {
@@ -799,43 +844,7 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
       );
     })
     .then(function (node) {
-      var resultStatus = node.status;
-
-      if (resultStatus !== self._venmoPaymentContextStatus) {
-        self._venmoPaymentContextStatus = resultStatus;
-
-        analytics.sendEvent(
-          self._createPromise,
-          "venmo.tokenize.web-login.status-change"
-        );
-
-        switch (resultStatus) {
-          case "APPROVED":
-            return Promise.resolve(node);
-          case "CANCELED":
-            return Promise.reject(
-              new BraintreeError(errors.VENMO_CUSTOMER_CANCELED)
-            );
-          case "FAILED":
-            return Promise.reject(
-              new BraintreeError(errors.VENMO_TOKENIZATION_FAILED)
-            );
-          default:
-        }
-      }
-
-      return new Promise(function (resolve, reject) {
-        if (retryCount < self._maxRetryCount) {
-          retryCount++;
-
-          return self
-            ._checkPaymentContextStatusAndProcessResult(retryCount)
-            .then(resolve)
-            .catch(reject);
-        }
-
-        return reject(new BraintreeError(errors.VENMO_TOKENIZATION_FAILED));
-      });
+      return Promise.resolve(node);
     });
 };
 

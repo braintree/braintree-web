@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# 3.99.1
+
+- Venmo
+  - Fix bug where the Venmo Desktop Popup would sometimes return a tokenization error when a customer canceled within the modal.
+- Package updates
+  - Replace `tomashanacek/gulp-envify` with `ladjs/gulp-envify` due to missing dependency (`tomashanacek/loose-envify`).
+
 # 3.99.0
 
 - Venmo

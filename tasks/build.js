@@ -1,7 +1,7 @@
 "use strict";
 
 var gulp = require("gulp");
-var envify = require("gulp-envify");
+var envify = require("@ladjs/gulp-envify");
 var rename = require("gulp-rename");
 var removeCode = require("gulp-remove-code");
 var replace = require("gulp-replace");
