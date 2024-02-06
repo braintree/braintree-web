@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# 3.100.0
+
+- 3D Secure
+  - Remove call to V1 modal as 3DS v1 is unsupported
+- Local Payment
+  - Add support for recurrent local payment
+
 # 3.99.2
 
 - Venmo

@@ -36,7 +36,7 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
 function SongbirdFramework(options) {
   BaseFramework.call(this, options);
 
-  this._useV1Fallback = false;
+  this._songbirdInitFailed = false;
   this._clientMetadata = {
     requestedThreeDSecureVersion: "2",
     sdkVersion: PLATFORM + "/" + VERSION,
@@ -131,12 +131,12 @@ SongbirdFramework.prototype.initializeChallengeWithLookupResponse = function (
   );
 };
 
-SongbirdFramework.prototype.initiateV1Fallback = function (errorType) {
-  this._useV1Fallback = true;
+SongbirdFramework.prototype.handleSongbirdError = function (errorType) {
+  this._songbirdInitFailed = true;
   this._removeSongbirdListeners();
   analytics.sendEvent(
     this._createPromise,
-    "three-d-secure.v1-fallback." + errorType
+    "three-d-secure.cardinal-sdk.songbird-error." + errorType
   );
 
   if (this._songbirdPromise) {
@@ -245,30 +245,6 @@ SongbirdFramework.prototype._addV1IframeToPage = function () {
   document.body.appendChild(this._v1Modal);
 };
 
-SongbirdFramework.prototype._handleAuthResponseFromV1Fallback = function (
-  data
-) {
-  this._teardownV1Elements();
-  this._v1Modal.parentNode.removeChild(this._v1Modal);
-  this._handleV1AuthResponse(data);
-};
-
-SongbirdFramework.prototype._presentChallengeWithV1Fallback = function (
-  lookupResponse
-) {
-  var self = this;
-
-  this._setupV1Elements({
-    lookupResponse: lookupResponse,
-    showLoader: true,
-    handleAuthResponse: function (data) {
-      self._handleAuthResponseFromV1Fallback(data);
-    },
-  });
-  this._v1Modal = this._createV1IframeModal(this._v1Iframe);
-  this._addV1IframeToPage();
-};
-
 SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
   var self = this;
   var startTime = Date.now();
@@ -312,7 +288,7 @@ SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
         self._client,
         "three-d-secure.cardinal-sdk.init.setup-failed"
       );
-      self.initiateV1Fallback(
+      self.handleSongbirdError(
         "cardinal-sdk-setup-failed." + self._v2SetupFailureReason
       );
     });
@@ -417,7 +393,7 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
           self._client,
           "three-d-secure.cardinal-sdk.init.setup-timeout"
         );
-        self.initiateV1Fallback("cardinal-sdk-setup-timeout");
+        self.handleSongbirdError("cardinal-sdk-setup-timeout");
       }, setupOptions.timeout || INTEGRATION_TIMEOUT_MS);
 
       return assets.loadScript({ src: scriptSource });
@@ -559,18 +535,6 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
   return function (data, validatedJwt) {
     var formattedError;
 
-    if (self._useV1Fallback) {
-      // TODO since we've removed the listeners for the payments validated callback when initiating the v1 fallback,
-      // we should never get to this point. Leave this analtyics event in for now and review if that is indeed the
-      // case before removing this block.
-      analytics.sendEvent(
-        self._createPromise,
-        "three-d-secure.verification-flow.cardinal-sdk.payments-validated-callback-called-in-v1-fallback-flow"
-      );
-
-      return;
-    }
-
     analytics.sendEvent(
       self._createPromise,
       "three-d-secure.verification-flow.cardinal-sdk.action-code." +
@@ -578,7 +542,7 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
     );
 
     if (!self._verifyCardPromisePlus) {
-      self.initiateV1Fallback(
+      self.handleSongbirdError(
         "cardinal-sdk-setup-error.number-" + data.ErrorNumber
       );
 
@@ -762,10 +726,8 @@ SongbirdFramework.prototype._onLookupComplete = function (
 
 SongbirdFramework.prototype._presentChallenge = function (lookupResponse) {
   // transactionId is required for the Songbird flow, so if it
-  // does not exist, we fallback to the 3ds v1 flow
-  if (this._useV1Fallback || !lookupResponse.lookup.transactionId) {
-    this._presentChallengeWithV1Fallback(lookupResponse.lookup);
-
+  // does not exist, we just return
+  if (this._songbirdInitFailed || !lookupResponse.lookup.transactionId) {
     return;
   }
 

@@ -1877,11 +1877,11 @@ describe("SongbirdFramework", () => {
 
       const framework = createFramework();
 
-      jest.spyOn(framework, "initiateV1Fallback");
+      jest.spyOn(framework, "handleSongbirdError");
 
       return framework.setupSongbird().then(() => {
-        expect(framework.initiateV1Fallback).toBeCalledTimes(1);
-        expect(framework.initiateV1Fallback).toBeCalledWith(
+        expect(framework.handleSongbirdError).toBeCalledTimes(1);
+        expect(framework.handleSongbirdError).toBeCalledWith(
           "cardinal-sdk-setup-failed.songbird-js-failed-to-load"
         );
       });
@@ -1895,11 +1895,11 @@ describe("SongbirdFramework", () => {
 
       const framework = createFramework();
 
-      jest.spyOn(framework, "initiateV1Fallback");
+      jest.spyOn(framework, "handleSongbirdError");
 
       return framework.setupSongbird().then(() => {
-        expect(framework.initiateV1Fallback).toBeCalledTimes(1);
-        expect(framework.initiateV1Fallback).toBeCalledWith(
+        expect(framework.handleSongbirdError).toBeCalledTimes(1);
+        expect(framework.handleSongbirdError).toBeCalledWith(
           "cardinal-sdk-setup-failed.cardinal-global-unavailable"
         );
       });
@@ -1914,7 +1914,7 @@ describe("SongbirdFramework", () => {
 
       const framework = createFramework();
 
-      jest.spyOn(framework, "initiateV1Fallback");
+      jest.spyOn(framework, "handleSongbirdError");
 
       return framework
         .setupSongbird()
@@ -1922,8 +1922,8 @@ describe("SongbirdFramework", () => {
           return wait();
         })
         .then(() => {
-          expect(framework.initiateV1Fallback).toBeCalledTimes(1);
-          expect(framework.initiateV1Fallback).toBeCalledWith(
+          expect(framework.handleSongbirdError).toBeCalledTimes(1);
+          expect(framework.handleSongbirdError).toBeCalledWith(
             "cardinal-sdk-setup-failed.cardinal-configuration-threw-error"
           );
         });
@@ -1971,11 +1971,11 @@ describe("SongbirdFramework", () => {
       });
       const framework = createFramework();
 
-      jest.spyOn(framework, "initiateV1Fallback");
+      jest.spyOn(framework, "handleSongbirdError");
 
       return framework.setupSongbird().then(() => {
-        expect(framework.initiateV1Fallback).toBeCalledTimes(1);
-        expect(framework.initiateV1Fallback).toBeCalledWith(
+        expect(framework.handleSongbirdError).toBeCalledTimes(1);
+        expect(framework.handleSongbirdError).toBeCalledWith(
           "cardinal-sdk-setup-failed.cardinal-configuration-threw-error"
         );
       });
@@ -2042,11 +2042,11 @@ describe("SongbirdFramework", () => {
       it("uses v1 fallback if cardinal takes longer than 60 seconds to set up", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "initiateV1Fallback");
+        jest.spyOn(framework, "handleSongbirdError");
 
         return framework.setupSongbird({ timeout: 60 }).then(() => {
-          expect(framework.initiateV1Fallback).toBeCalledTimes(1);
-          expect(framework.initiateV1Fallback).toBeCalledWith(
+          expect(framework.handleSongbirdError).toBeCalledTimes(1);
+          expect(framework.handleSongbirdError).toBeCalledWith(
             "cardinal-sdk-setup-timeout"
           );
         });
@@ -2135,87 +2135,6 @@ describe("SongbirdFramework", () => {
             "three-d-secure.verification-flow.cardinal-sdk.action-code.success"
           );
         });
-    });
-
-    describe("v1 fallback", () => {
-      it("uses v1 fallback flow when cardinal script fails to load", () => {
-        SongbirdFramework.prototype.setupSongbird.mockRestore();
-
-        assets.loadScript.mockRejectedValue(new Error("some error"));
-
-        Bus.prototype.on.mockImplementation(
-          yieldsByEventAsync("threedsecure:AUTHENTICATION_COMPLETE", {
-            // eslint-disable-next-line camelcase
-            auth_response:
-              '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}',
-          })
-        );
-
-        const instance = createFramework();
-
-        return instance
-          .initializeChallengeWithLookupResponse(testContext.lookupResponse)
-          .then((result) => {
-            expect(result.nonce).toBe("nonce-from-v1-fallback-flow");
-            expect(analytics.sendEvent).toHaveBeenCalledWith(
-              expect.anything(),
-              "three-d-secure.v1-fallback.cardinal-sdk-setup-failed.songbird-js-failed-to-load"
-            );
-          });
-      });
-
-      it("uses v1 fallback flow when cardinal.on yields an error on setup", () => {
-        SongbirdFramework.prototype.setupSongbird.mockRestore();
-
-        testContext.onEventBehavior[1].args = [
-          {
-            ActionCode: "ERROR",
-            ErrorNumber: 1010,
-          },
-        ];
-
-        const instance = createFramework();
-
-        Bus.prototype.on.mockImplementation(
-          yieldsByEventAsync("threedsecure:AUTHENTICATION_COMPLETE", {
-            // eslint-disable-next-line camelcase
-            auth_response:
-              '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}',
-          })
-        );
-
-        return instance
-          .initializeChallengeWithLookupResponse(testContext.lookupResponse)
-          .then((result) => {
-            expect(result.nonce).toBe("nonce-from-v1-fallback-flow");
-            expect(analytics.sendEvent).toHaveBeenCalledWith(
-              expect.anything(),
-              "three-d-secure.v1-fallback.cardinal-sdk-setup-error.number-1010"
-            );
-          });
-      });
-
-      it("uses v1 fallback flow when lookup response does not have a transaction id", () => {
-        SongbirdFramework.prototype.setupSongbird.mockRestore();
-
-        const instance = createFramework();
-
-        Bus.prototype.on.mockImplementation(
-          yieldsByEventAsync("threedsecure:AUTHENTICATION_COMPLETE", {
-            // eslint-disable-next-line camelcase
-            auth_response:
-              '{"paymentMethod":{"type":"CreditCard","nonce":"nonce-from-v1-fallback-flow","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}',
-          })
-        );
-
-        delete testContext.lookupResponse.lookup.transactionId;
-
-        return instance
-          .initializeChallengeWithLookupResponse(testContext.lookupResponse)
-          .then((result) => {
-            expect(result.nonce).toBe("nonce-from-v1-fallback-flow");
-          });
-      });
     });
   });
 
@@ -2526,8 +2445,8 @@ describe("SongbirdFramework", () => {
     });
   });
 
-  describe("initiateV1Fallback", () => {
-    it("initializeChallengeWithLookupResponse presents the v1 challenge", () => {
+  describe("handleSongbirdError", () => {
+    it("initializeChallengeWithLookupResponse does not present the v1 challenge", () => {
       const lookupResponse = {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
@@ -2543,7 +2462,7 @@ describe("SongbirdFramework", () => {
 
       const framework = createFramework();
 
-      framework.initiateV1Fallback("foo");
+      framework.handleSongbirdError("foo");
       framework.initializeChallengeWithLookupResponse(lookupResponse, {});
 
       return wait().then(() => {
@@ -2552,11 +2471,11 @@ describe("SongbirdFramework", () => {
           document.querySelector(
             '[data-braintree-v1-fallback-iframe-container="true"] iframe'
           )
-        ).toBeTruthy();
+        ).toBeFalsy();
       });
     });
 
-    it("noops the Cardinal payments.validated callback", async () => {
+    it("doesn't stop the Cardinal payments.validated callback", async () => {
       SongbirdFramework.prototype.setupSongbird.mockRestore();
 
       const framework = createFramework();
@@ -2569,7 +2488,7 @@ describe("SongbirdFramework", () => {
         }
       )[1];
 
-      framework.initiateV1Fallback("foo");
+      framework.handleSongbirdError("foo");
 
       paymentsValidatedHandler(
         {
@@ -2578,13 +2497,17 @@ describe("SongbirdFramework", () => {
         "jwt"
       );
 
-      expect(analytics.sendEvent).not.toBeCalledWith(
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        expect.stringMatching("three-d-secure.cardinal-sdk.songbird-error.foo")
+      );
+      expect(analytics.sendEvent).toBeCalledWith(
         expect.anything(),
         expect.stringMatching("action-code.foo")
       );
       expect(analytics.sendEvent).toBeCalledWith(
         expect.anything(),
-        "three-d-secure.verification-flow.cardinal-sdk.payments-validated-callback-called-in-v1-fallback-flow"
+        "three-d-secure.cardinal-sdk.songbird-error.cardinal-sdk-setup-error.number-undefined"
       );
     });
 
@@ -2595,7 +2518,7 @@ describe("SongbirdFramework", () => {
       framework.setCardinalListener("bar", jest.fn());
       framework.setCardinalListener("baz", jest.fn());
 
-      framework.initiateV1Fallback("buzz");
+      framework.handleSongbirdError("buzz");
       expect(window.Cardinal.off).toBeCalledTimes(3);
       expect(window.Cardinal.off).toBeCalledWith("foo");
       expect(window.Cardinal.off).toBeCalledWith("bar");
@@ -2605,11 +2528,11 @@ describe("SongbirdFramework", () => {
     it("sends an analytics event for the error type provided", () => {
       const framework = createFramework();
 
-      framework.initiateV1Fallback("foo");
+      framework.handleSongbirdError("foo");
 
       expect(analytics.sendEvent).toBeCalledWith(
         expect.anything(),
-        "three-d-secure.v1-fallback.foo"
+        "three-d-secure.cardinal-sdk.songbird-error.foo"
       );
     });
 
@@ -2628,7 +2551,7 @@ describe("SongbirdFramework", () => {
 
       expect(isSetup).toBe(false);
 
-      framework.initiateV1Fallback("foo");
+      framework.handleSongbirdError("foo");
 
       await wait();
 

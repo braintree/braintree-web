@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.99.2",
+  "version": "3.100.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,

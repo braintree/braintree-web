@@ -327,6 +327,8 @@ describe("LocalPayment", () => {
               paymentTypeCountryCode: "PL",
               amount: "10.00",
               intent: "sale",
+              recurrent: undefined,
+              merchantOrPartnerCustomerId: undefined,
               billingAddress: {
                 line1: undefined,
                 line2: undefined,
@@ -601,6 +603,8 @@ describe("LocalPayment", () => {
               paymentTypeCountryCode: "NL",
               amount: "10.00",
               intent: "sale",
+              recurrent: undefined,
+              merchantOrPartnerCustomerId: undefined,
               billingAddress: {
                 line1: "Prinzregentenstr 99991658",
                 line2: undefined,
@@ -666,6 +670,8 @@ describe("LocalPayment", () => {
               paymentTypeCountryCode: "NL",
               amount: "10.00",
               intent: "sale",
+              recurrent: undefined,
+              merchantOrPartnerCustomerId: undefined,
               billingAddress: {
                 line1: "Prinzregentenstr 99991658",
                 line2: undefined,
@@ -937,6 +943,18 @@ describe("LocalPayment", () => {
         });
     });
 
+    it("errors when no customerId param provided for recurrent payment", () => {
+      testContext.options.recurrent = true;
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(({ code }) => {
+          expect(code).toBe(
+            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+          );
+        });
+    });
+
     it("errors when authorization is already in progress", () => {
       testContext.localPayment._authorizationInProgress = true;
 
@@ -967,6 +985,71 @@ describe("LocalPayment", () => {
               paymentTypeCountryCode: "NL",
               amount: "10.00",
               intent: "sale",
+              recurrent: undefined,
+              merchantOrPartnerCustomerId: undefined,
+              billingAddress: {
+                line1: undefined,
+                line2: undefined,
+                city: undefined,
+                state: undefined,
+                postalCode: undefined,
+                countryCode: undefined,
+              },
+              birthDate: undefined,
+              correlationId: undefined,
+              discountAmount: undefined,
+              experienceProfile: {
+                brandName: "My Brand!",
+                noShipping: false,
+                customerServiceInstructions: undefined,
+                locale: undefined,
+              },
+              currencyIsoCode: "USD",
+              firstName: "First",
+              lastName: "Last",
+              payerEmail: "email@example.com",
+              phone: "1234",
+              line1: "123 Address",
+              line2: "Unit 1",
+              city: "Chicago",
+              state: "IL",
+              postalCode: "60654",
+              countryCode: "US",
+              lineItems: undefined,
+              phoneCountryCode: undefined,
+              shippingAmount: undefined,
+              merchantAccountId: "merchant-account-id",
+              bic: "ABGANL6A",
+            },
+          });
+        });
+    });
+
+    it("creates a payment resource for a recurrent payment", () => {
+      const client = testContext.client;
+
+      testContext.options.recurrent = true;
+      testContext.options.customerId = "12345678";
+
+      testContext.frameServiceInstance.open.mockImplementation(
+        yields(null, { foo: "bar" })
+      );
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(client.request).toHaveBeenCalledWith({
+            method: "post",
+            endpoint: "local_payments/create",
+            data: {
+              cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text&c=1`,
+              returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Button%20Text`,
+              fundingSource: "ideal",
+              paymentTypeCountryCode: "NL",
+              amount: "10.00",
+              intent: "sale",
+              recurrent: true,
+              merchantOrPartnerCustomerId: "12345678",
               billingAddress: {
                 line1: undefined,
                 line2: undefined,
@@ -1028,6 +1111,8 @@ describe("LocalPayment", () => {
               paymentTypeCountryCode: "NL",
               amount: "10.00",
               intent: "sale",
+              recurrent: undefined,
+              merchantOrPartnerCustomerId: undefined,
               experienceProfile: {
                 brandName: "My Brand!",
                 noShipping: false,

@@ -94,6 +94,8 @@ LocalPayment.prototype._initialize = function () {
  * @property {string} surname Last name of the customer.
  * @property {string} phone Phone number of the customer.
  * @property {string} bic Bank Identification Code of the customer (specific to iDEAL transactions).
+ * @property {boolean} recurrent Enable recurrent payment.
+ * @property {string} customerId The customer's id in merchant's system (required for recurrent payments).
  * @property {boolean} shippingAddressRequired Indicates whether or not the payment needs to be shipped. For digital goods, this should be false. Defaults to false.
  * @property {object} address The shipping address.
  * @property {string} address.streetAddress Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.
@@ -427,11 +429,13 @@ LocalPayment.prototype.startPayment = function (options) {
     line2: address.extendedAddress,
     lineItems: options.lineItems,
     merchantAccountId: self._merchantAccountId,
+    merchantOrPartnerCustomerId: options.customerId,
     payerEmail: options.email,
     paymentTypeCountryCode: options.paymentTypeCountryCode,
     phone: options.phone,
     phoneCountryCode: options.phoneCountryCode,
     postalCode: address.postalCode,
+    recurrent: options.recurrent,
     returnUrl: querystring.queryify(
       self._assetsUrl +
         "/html/local-payment-redirect-frame" +
@@ -996,6 +1000,9 @@ function hasMissingOption(options) {
     }
     if (!options.fallback.buttonText) {
       return "fallback.buttonText";
+    }
+    if (options.recurrent === true && !options.customerId) {
+      return "customerId";
     }
   }
 
