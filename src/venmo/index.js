@@ -55,6 +55,7 @@ var VERSION = process.env.npm_package_version;
  * @param {boolean} [options.allowAndroidRecreation=true] This flag is for when your integration uses the [Android PopupBridge](https://github.com/braintree/popup-bridge-android). Setting this flag to false will avoid a page refresh when returning to your page after payment authorization. If not specified, it defaults to true and the Android activity will be recreated, resulting in a page refresh.
  * @param {boolean} [options.collectCustomerBillingAddress] When `true`, the customer's billing address will be collected and displayed on the Venmo paysheet (provided the Enriched Customer Data checkbox is also enabled for the merchant account).
  * @param {boolean} [options.collectCustomerShippingAddress] When `true`, the customer's shipping address will be collected and displayed on the Venmo paysheet (provided the Enriched Customer Data checkbox is also enabled for the merchant account).
+ * @param {boolean} [options.isFinalAmount=false] When `true`, it denotes that the purchase amount (`totalAmount`) is final and will not change.
  * @param {lineItem[]} [options.lineItems] The {@link Venmo~lineItem|line items} belonging to the transaction. It can include up to 249 line items.
  * @param {string} [options.subTotalAmount] The subtotal amount of the transaction, excluding taxes, discounts, and shipping.
  * @param {string} [options.discountAmount] The total discount amount applied on the transaction.

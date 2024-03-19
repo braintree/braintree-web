@@ -74,6 +74,7 @@ function Venmo(options) {
     options.collectCustomerBillingAddress || false;
   this._collectCustomerShippingAddress =
     options.collectCustomerShippingAddress || false;
+  this._isFinalAmount = options.isFinalAmount || false;
   this._lineItems = options.lineItems;
   this._subTotalAmount = options.subTotalAmount;
   this._discountAmount = options.discountAmount;
@@ -298,6 +299,7 @@ Venmo.prototype._createVenmoPaymentContext = function (
     ) {
       return transactionDetails[detail] !== undefined; // eslint-disable-line no-undefined
     });
+
     promise = client
       .request({
         api: "graphQLApi",
@@ -308,6 +310,7 @@ Venmo.prototype._createVenmoPaymentContext = function (
               paymentMethodUsage: this._paymentMethodUsage,
               intent: "CONTINUE",
               customerClient: "MOBILE_WEB",
+              isFinalAmount: this._isFinalAmount,
               displayName: this._displayName,
               paysheetDetails: {
                 collectCustomerBillingAddress:

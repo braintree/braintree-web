@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# 3.101.0
+
+- Venmo
+  - Add support for `isFinalAmount` flag to Venmo create
+- Package updates
+  - Updated @braintree/sanitize-url to 7.0.1
+
 # 3.100.0
 
 - 3D Secure

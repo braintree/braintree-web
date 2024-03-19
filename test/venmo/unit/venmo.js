@@ -287,6 +287,7 @@ describe("Venmo", () => {
             paymentMethodUsage: "SINGLE_USE",
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            isFinalAmount: false,
             paysheetDetails: {
               collectCustomerBillingAddress: false,
               collectCustomerShippingAddress: false,
@@ -378,6 +379,7 @@ describe("Venmo", () => {
             paymentMethodUsage: "SINGLE_USE",
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            isFinalAmount: false,
             paysheetDetails: {
               collectCustomerBillingAddress: false,
               collectCustomerShippingAddress: false,
@@ -423,6 +425,7 @@ describe("Venmo", () => {
           input: {
             paymentMethodUsage: "SINGLE_USE",
             intent: "CONTINUE",
+            isFinalAmount: false,
             customerClient: "MOBILE_WEB",
             paysheetDetails: {
               collectCustomerBillingAddress: false,
@@ -472,6 +475,7 @@ describe("Venmo", () => {
             paymentMethodUsage: "SINGLE_USE",
             displayName: "name",
             intent: "CONTINUE",
+            isFinalAmount: false,
             customerClient: "MOBILE_WEB",
             paysheetDetails: {
               collectCustomerBillingAddress: false,
@@ -552,6 +556,7 @@ describe("Venmo", () => {
           input: {
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            isFinalAmount: false,
             paymentMethodUsage: "SINGLE_USE",
             paysheetDetails: {
               collectCustomerBillingAddress: expectedDefault,
@@ -599,6 +604,7 @@ describe("Venmo", () => {
           input: {
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            isFinalAmount: false,
             paymentMethodUsage: "SINGLE_USE",
             paysheetDetails: {
               collectCustomerBillingAddress: inputAddressCollection,
@@ -662,6 +668,7 @@ describe("Venmo", () => {
           input: {
             intent: "CONTINUE",
             customerClient: "MOBILE_WEB",
+            isFinalAmount: false,
             paymentMethodUsage: expectedFields.paymentMethodUsage.toUpperCase(),
             paysheetDetails: {
               collectCustomerBillingAddress: false,
@@ -976,6 +983,78 @@ describe("Venmo", () => {
         testContext.configuration.gatewayConfiguration.assetsUrl
       ),
       debug: testContext.configuration.isDebug,
+    });
+  });
+
+  it("sets up a payment context with `isFinalAmount` flag when passed", async () => {
+    const expectedLineItems = [
+      {
+        name: "Example item Q",
+        quantity: 5,
+        unitAmount: "21.10",
+        type: "CREDIT",
+        description: "purchase item",
+      },
+    ];
+    const expectedFields = {
+      discountAmount: "5.5",
+      isFinalAmount: true,
+      paymentMethodUsage: "single_use",
+      subTotalAmount: "105.5",
+      taxAmount: "10.00",
+      totalAmount: "110",
+    };
+
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoPaymentContext: {
+          venmoPaymentContext: {
+            status: "CREATED",
+            id: "context-id",
+            createdAt: "2022-01-20T02:25:37.522000Z",
+            expiresAt: "2022-01-20T03:30:37.522000Z",
+          },
+        },
+      },
+    });
+
+    new Venmo({
+      createPromise: Promise.resolve(testContext.client),
+      paymentMethodUsage: expectedFields.paymentMethodUsage,
+      discountAmount: expectedFields.discountAmount,
+      isFinalAmount: expectedFields.isFinalAmount,
+      lineItems: expectedLineItems,
+      subTotalAmount: expectedFields.subTotalAmount,
+      taxAmount: expectedFields.taxAmount,
+      totalAmount: expectedFields.totalAmount,
+    });
+
+    await flushPromises();
+
+    expect(testContext.client.request).toBeCalledWith({
+      api: "graphQLApi",
+      data: {
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+        variables: {
+          input: {
+            intent: "CONTINUE",
+            customerClient: "MOBILE_WEB",
+            isFinalAmount: expectedFields.isFinalAmount,
+            paymentMethodUsage: expectedFields.paymentMethodUsage.toUpperCase(),
+            paysheetDetails: {
+              collectCustomerBillingAddress: false,
+              collectCustomerShippingAddress: false,
+              transactionDetails: {
+                totalAmount: expectedFields.totalAmount,
+                discountAmount: expectedFields.discountAmount,
+                subTotalAmount: expectedFields.subTotalAmount,
+                taxAmount: expectedFields.taxAmount,
+                lineItems: expectedLineItems,
+              },
+            },
+          },
+        },
+      },
     });
   });
 
