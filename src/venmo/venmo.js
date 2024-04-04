@@ -248,6 +248,9 @@ Venmo.prototype._createVenmoPaymentContext = function (
   var configuration = client.getConfiguration();
   var venmoConfiguration = configuration.gatewayConfiguration.payWithVenmo;
   var transactionDetailsPresent = false;
+  var customerClientChannel = self._useAllowDesktopWebLogin
+    ? "WEB"
+    : "MOBILE_WEB";
 
   if (!this._shouldCreateVenmoPaymentContext) {
     return Promise.resolve();
@@ -309,7 +312,7 @@ Venmo.prototype._createVenmoPaymentContext = function (
             input: {
               paymentMethodUsage: this._paymentMethodUsage,
               intent: "CONTINUE",
-              customerClient: "MOBILE_WEB",
+              customerClient: customerClientChannel,
               isFinalAmount: this._isFinalAmount,
               displayName: this._displayName,
               paysheetDetails: {

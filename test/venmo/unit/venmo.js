@@ -3005,6 +3005,22 @@ describe("Venmo", () => {
           api: "graphQLApi",
           data: expect.objectContaining({
             query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+            variables: {
+              input: {
+                customerClient: "WEB",
+                // eslint-disable-next-line no-undefined
+                displayName: undefined,
+                intent: "CONTINUE",
+                isFinalAmount: false,
+                paymentMethodUsage: "SINGLE",
+                paysheetDetails: {
+                  collectCustomerBillingAddress: false,
+                  collectCustomerShippingAddress: false,
+                  // eslint-disable-next-line no-undefined
+                  transactionDetails: undefined,
+                },
+              },
+            },
           }),
         };
         const result = await venmo.tokenize();

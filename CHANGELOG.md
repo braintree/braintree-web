@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.101.1
+
+- Venmo
+  - Fix issue where the Venmo Desktop flow would sometimes report as a mobile web transaction
+
 # 3.101.0
 
 - Venmo
