@@ -3007,7 +3007,7 @@ describe("Venmo", () => {
             query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
             variables: {
               input: {
-                customerClient: "WEB",
+                customerClient: "NATIVE_WEB",
                 // eslint-disable-next-line no-undefined
                 displayName: undefined,
                 intent: "CONTINUE",

@@ -249,7 +249,7 @@ Venmo.prototype._createVenmoPaymentContext = function (
   var venmoConfiguration = configuration.gatewayConfiguration.payWithVenmo;
   var transactionDetailsPresent = false;
   var customerClientChannel = self._useAllowDesktopWebLogin
-    ? "WEB"
+    ? "NATIVE_WEB"
     : "MOBILE_WEB";
 
   if (!this._shouldCreateVenmoPaymentContext) {

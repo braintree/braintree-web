@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.101.2
+
+- Venmo
+  - Fix issue introduced in previous patch that would sometimes cause the Venmo flow to crash
+
 # 3.101.1
 
 - Venmo
