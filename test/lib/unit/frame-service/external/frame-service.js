@@ -32,6 +32,7 @@ describe("FrameService", () => {
   function createFakeBus() {
     return {
       listeners: [],
+      targetFrames: [],
       on: function (eventName, callback) {
         this.listeners.push({ eventName, callback });
       },
@@ -48,6 +49,9 @@ describe("FrameService", () => {
             listener.callback(payload);
           }
         });
+      },
+      addTargetFrame: function (frame) {
+        this.targetFrames.push(frame);
       },
     };
   }
@@ -195,7 +199,13 @@ describe("FrameService", () => {
   describe("initialize", () => {
     it("listens for dispatch frame to report ready", () => {
       const context = {
-        _bus: { on: jest.fn() },
+        _bus: {
+          on: jest.fn(),
+          targetFrames: [],
+          addTargetFrame: function (frame) {
+            this.targetFrames.push(frame);
+          },
+        },
         _writeDispatchFrame: noop,
       };
 
@@ -240,7 +250,14 @@ describe("FrameService", () => {
 
     it("makes a call to write a dispatch frame", () => {
       const _writeDispatchFrame = jest.fn();
-      const context = { _bus: { on: noop, off: noop }, _writeDispatchFrame };
+      const context = {
+        _bus: {
+          on: noop,
+          off: noop,
+          addTargetFrame: noop,
+        },
+        _writeDispatchFrame,
+      };
 
       FrameService.prototype.initialize.call(context, noop);
 

@@ -10,7 +10,11 @@ function start() {
   var serviceChannel = window.name.split("_")[1].split("?")[0];
   var configuration;
 
-  window.bus = new Bus({ channel: serviceChannel });
+  window.bus = new Bus({
+    channel: serviceChannel,
+    targetFrames: [window.parent],
+  });
+
   window.bus.emit(
     BUS_CONFIGURATION_REQUEST_EVENT,
     function (localConfiguration) {

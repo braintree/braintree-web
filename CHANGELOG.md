@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.101.3
+
+- FrameService
+  - Updated to limit messages sent between popup and iframe from the window parent.
+
 # 3.101.2
 
 - Venmo
