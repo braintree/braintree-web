@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 3.102.0
+
+- PayPal
+  - Support new `amountBreakdown` and its subfields in the `updatePayment` method
+
 # 3.101.3
 
 - FrameService

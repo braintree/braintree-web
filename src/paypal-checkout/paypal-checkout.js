@@ -575,6 +575,14 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * @param {string} options.currency The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
  * @param {shippingOption[]} [options.shippingOptions] List of {@link PayPalCheckout~shippingOption|shipping options} offered by the payee or merchant to the payer to ship or pick up their items.
  * @param {lineItem[]} [options.lineItems] The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
+ * @param {object} [options.amountBreakdown] Optional collection of amounts that break down the total into individual pieces.
+ * @param {string} [options.amountBreakdown.itemTotal] Optional, item amount
+ * @param {string} [options.amountBreakdown.shipping] Optional, shipping amount
+ * @param {string} [options.amountBreakdown.handling] Optional, handling amount
+ * @param {string} [options.amountBreakdown.taxTotal] Optional, tax amount
+ * @param {string} [options.amountBreakdown.insurance] Optional, insurance amount
+ * @param {string} [options.amountBreakdown.shippingDiscount] Optional, shipping discount amount
+ * @param {string} [options.amountBreakdown.discount] Optional, discount amount
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
@@ -1467,6 +1475,10 @@ PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {
 
   if (options.hasOwnProperty("shippingOptions")) {
     paymentResource.shippingOptions = options.shippingOptions;
+  }
+
+  if (options.hasOwnProperty("amountBreakdown")) {
+    paymentResource.amountBreakdown = options.amountBreakdown;
   }
 
   /* shippingAddress not supported yet */

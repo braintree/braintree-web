@@ -1520,6 +1520,32 @@ describe("PayPalCheckout", () => {
         expect(formattedData).not.toHaveProperty("recipientName");
       });
     });
+
+    it("propagates amountBreakdown when passed", () => {
+      const amountBreakdown = {
+        itemTotal: "12.34",
+        shipping: "2.99",
+        handling: "0",
+        taxTotal: "1.99",
+        insurance: "0",
+        shippingDiscount: "0",
+        discount: "0",
+      };
+      const options = {
+        paymentId: "abc123",
+        currency: "USD",
+        amountBreakdown: amountBreakdown,
+      };
+      const actual = PayPalCheckout.prototype._formatUpdatePaymentData(options);
+
+      expect(actual).toStrictEqual({
+        paymentId: "abc123",
+        // eslint-disable-next-line no-undefined
+        merchantAccountId: undefined,
+        currencyIsoCode: "USD",
+        amountBreakdown: amountBreakdown,
+      });
+    });
   });
 
   describe("startVaultInitiatedCheckout", () => {
