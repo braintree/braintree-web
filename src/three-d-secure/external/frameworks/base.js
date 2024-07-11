@@ -184,6 +184,26 @@ BaseFramework.prototype._performLookup = function (nonce, data) {
   });
 };
 
+BaseFramework.prototype._existsAndIsNumeric = function (value) {
+  /**
+   * Returns true if value is numeric and false if value is:
+   *  - undefined
+   *  - null
+   *  - an array
+   *  - an empty string
+   *  - boolean
+   *  - otherwise non-numeric value (e.g. {}, "cows")
+   */
+  return !(
+    value === undefined || // eslint-disable-line no-undefined
+    value === null ||
+    Array.isArray(value) ||
+    typeof value === "boolean" ||
+    (typeof value === "string" && value.trim() === "") ||
+    isNaN(Number(value))
+  );
+};
+
 BaseFramework.prototype._checkForVerifyCardError = function (
   options,
   privateOptions
@@ -194,7 +214,10 @@ BaseFramework.prototype._checkForVerifyCardError = function (
     return new BraintreeError(errors.THREEDS_AUTHENTICATION_IN_PROGRESS);
   } else if (!options.nonce) {
     errorOption = "a nonce";
-  } else if (!options.amount) {
+  } else if (
+    // eslint-disable-next-line no-undefined
+    !this._existsAndIsNumeric(options.amount)
+  ) {
     errorOption = "an amount";
   }
 

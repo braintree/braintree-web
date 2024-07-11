@@ -80,7 +80,9 @@ describe("BaseFramework", () => {
             );
           }));
 
-      it("requires an amount", () =>
+      it("requires an amount", () => {
+        expect.assertions(3);
+
         testContext.instance
           .verifyCard({
             nonce: "abcdef",
@@ -91,7 +93,45 @@ describe("BaseFramework", () => {
             expect(err.message).toBe(
               "verifyCard options must include an amount."
             );
-          }));
+          });
+      });
+
+      it("accepts an amount of 0", () => {
+        expect.assertions(0);
+
+        testContext.instance
+          .verifyCard({
+            nonce: "abcdef",
+            amount: 0,
+          })
+          .catch((err) => {
+            expect(err).not.toBeNull();
+          });
+      });
+
+      it.each([
+        ["non-numeric string", "g"],
+        ["empty object", {}],
+        ["empty list", []],
+        ["empty string", ""],
+        ["null", null],
+        ["boolean", false],
+      ])("does not accept an amount of '%s'", (descr, value) => {
+        expect.assertions(3);
+
+        testContext.instance
+          .verifyCard({
+            nonce: "abcdef",
+            amount: value,
+          })
+          .catch((err) => {
+            expect(err.type).toBe("MERCHANT");
+            expect(err.code).toBe("THREEDS_MISSING_VERIFY_CARD_OPTION");
+            expect(err.message).toBe(
+              "verifyCard options must include an amount."
+            );
+          });
+      });
     });
 
     describe("lookup errors", () => {

@@ -1,5 +1,19 @@
 # CHANGELOG
 
+# 3.103.0
+- Package updates:
+  - Updates @braintree/asset-loader to v2.0.1
+  - Updates @braintree/browser-detection to v2.0.1
+  - Updates @braintree/extended-promise to v1.0.0
+  - Updates @braintree/iframer to v2.0.0
+  - Updates @braintree/sanitize-url to v7.0.4 
+  - Updates card-validator to v10.0.0
+  - Updates credit-card-type to v10.0.1
+  - Updates framebus to v6.0.0
+  - Updates inject-stylesheet to v6.0.1
+- ThreeDS
+  - Update base `verifyCard` to accept amount = 0
+
 # 3.102.0
 
 - PayPal
