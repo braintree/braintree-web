@@ -1284,6 +1284,222 @@ describe("GraphQL", () => {
         });
       });
     });
+
+    describe("paypal fastlane body", () => {
+      beforeEach(() => {
+        testContext.tokenizeUrl =
+          "https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312";
+        testContext.config = {
+          graphQL: {
+            url: "http://localhost/graphql",
+            features: ["tokenize_credit_cards"],
+          },
+        };
+      });
+
+      it("creates a GraphQL mutation for Fastlane credit card tokenization without an authAssertion", () => {
+        let graphQLRequest, body, parsedBody;
+
+        testContext.options.data = {
+          creditCard: {
+            /* eslint-disable camelcase */
+            fastlane: {
+              termsAndConditionsVersion: "1",
+              has_buyer_consent: true,
+            },
+            email: "me@getbraintree.com",
+            number: "4111111111111111",
+            expirationYear: "12",
+            expirationMonth: "2020",
+            cvv: "123",
+            cardholderName: "Brian Treep",
+            billingAddress: {
+              company: "Braintree",
+              streetAddress: "123 Townsend St.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale",
+              lastName: "Cooper",
+              locality: "San Francisco",
+              region: "CA",
+              postalCode: "94107",
+              countryCodeAlpha3: "USA",
+            },
+            phone: {
+              phoneNumber: "18005551212",
+              countryPhoneCode: "1",
+            },
+            shippingAddress: {
+              company: "Braintree-ship",
+              streetAddress: "222 Merchandize Mart Plaza.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale-ship",
+              lastName: "Cooper-ship",
+              locality: "Chicago",
+              region: "IL",
+              postalCode: "60654",
+              countryCodeAlpha3: "USA",
+            },
+          },
+        };
+
+        graphQLRequest = new GraphQLRequest(testContext.options);
+        body = graphQLRequest.getBody();
+        parsedBody = JSON.parse(body);
+
+        expect(parsedBody.query).toStrictEqual(
+          expect.stringContaining("mutation")
+        );
+        expect(parsedBody.query).toStrictEqual(
+          expect.stringContaining("tokenizeCreditCardForPayPalConnect")
+        );
+        expect(parsedBody.variables).toBeDefined();
+        expect(parsedBody.operationName).toEqual(
+          "TokenizeCreditCardForPayPalConnect"
+        );
+
+        expect(parsedBody.variables.input).toEqual({
+          creditCard: {
+            billingAddress: {
+              company: "Braintree",
+              streetAddress: "123 Townsend St.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale",
+              lastName: "Cooper",
+              locality: "San Francisco",
+              region: "CA",
+              postalCode: "94107",
+              countryCodeAlpha3: "USA",
+            },
+            number: "4111111111111111",
+            expirationYear: "12",
+            expirationMonth: "2020",
+            cvv: "123",
+            cardholderName: "Brian Treep",
+          },
+          email: "me@getbraintree.com",
+          optIn: true,
+          options: {},
+          phone: {
+            countryPhoneCode: "1",
+            phoneNumber: "18005551212",
+          },
+          shippingAddress: {
+            company: "Braintree-ship",
+            streetAddress: "222 Merchandize Mart Plaza.",
+            extendedAddress: "8th Floor",
+            firstName: "Dale-ship",
+            lastName: "Cooper-ship",
+            locality: "Chicago",
+            region: "IL",
+            postalCode: "60654",
+            countryCodeAlpha3: "USA",
+          },
+          termsAndConditionsVersion: "1",
+        });
+      });
+      it("creates a GraphQL mutation for Fastlane credit card tokenization with an authAssertion", () => {
+        let graphQLRequest, body, parsedBody;
+
+        testContext.options.data = {
+          creditCard: {
+            /* eslint-disable camelcase */
+            fastlane: {
+              authAssertion: false,
+              termsAndConditionsVersion: "1",
+              has_buyer_consent: true,
+            },
+            email: "me@getbraintree.com",
+            number: "4111111111111111",
+            expirationYear: "12",
+            expirationMonth: "2020",
+            cvv: "123",
+            cardholderName: "Brian Treep",
+            billingAddress: {
+              company: "Braintree",
+              streetAddress: "123 Townsend St.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale",
+              lastName: "Cooper",
+              locality: "San Francisco",
+              region: "CA",
+              postalCode: "94107",
+              countryCodeAlpha3: "USA",
+            },
+            phone: {
+              phoneNumber: "18005551212",
+              countryPhoneCode: "1",
+            },
+            shippingAddress: {
+              company: "Braintree-ship",
+              streetAddress: "222 Merchandize Mart Plaza.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale-ship",
+              lastName: "Cooper-ship",
+              locality: "Chicago",
+              region: "IL",
+              postalCode: "60654",
+              countryCodeAlpha3: "USA",
+            },
+          },
+        };
+
+        graphQLRequest = new GraphQLRequest(testContext.options);
+        body = graphQLRequest.getBody();
+        parsedBody = JSON.parse(body);
+
+        expect(parsedBody.query).toStrictEqual(
+          expect.stringContaining("mutation")
+        );
+        expect(parsedBody.query).toStrictEqual(
+          expect.stringContaining("tokenizeCreditCardForPayPalConnect")
+        );
+        expect(parsedBody.variables).toBeDefined();
+        expect(parsedBody.operationName).toEqual(
+          "TokenizeCreditCardForPayPalConnect"
+        );
+
+        expect(parsedBody.variables.input).toEqual({
+          authAssertion: false,
+          creditCard: {
+            billingAddress: {
+              company: "Braintree",
+              streetAddress: "123 Townsend St.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale",
+              lastName: "Cooper",
+              locality: "San Francisco",
+              region: "CA",
+              postalCode: "94107",
+              countryCodeAlpha3: "USA",
+            },
+            number: "4111111111111111",
+            expirationYear: "12",
+            expirationMonth: "2020",
+            cvv: "123",
+            cardholderName: "Brian Treep",
+          },
+          email: "me@getbraintree.com",
+          optIn: true,
+          options: {},
+          phone: {
+            countryPhoneCode: "1",
+            phoneNumber: "18005551212",
+          },
+          shippingAddress: {
+            company: "Braintree-ship",
+            streetAddress: "222 Merchandize Mart Plaza.",
+            extendedAddress: "8th Floor",
+            firstName: "Dale-ship",
+            lastName: "Cooper-ship",
+            locality: "Chicago",
+            region: "IL",
+            postalCode: "60654",
+            countryCodeAlpha3: "USA",
+          },
+          termsAndConditionsVersion: "1",
+        });
+      });
+    });
   });
 
   describe("adaptResponseBody", () => {
@@ -1299,6 +1515,7 @@ describe("GraphQL", () => {
         countryOfIssuance: "USA",
         productId: "123",
       };
+      testContext.options.data = {};
     });
 
     it("normalizes a GraphQL credit card tokenization response", () => {
@@ -1350,6 +1567,84 @@ describe("GraphQL", () => {
             threeDSecureInfo: null,
           },
         ],
+      });
+    });
+
+    describe("fastlane", () => {
+      beforeEach(() => {
+        testContext.tokenizeUrl =
+          "https://localhost/merchant_id/client_api/v1/payment_methods/credit_cards?12312";
+        testContext.config = {
+          graphQL: {
+            url: "http://localhost/graphql",
+            features: ["tokenize_credit_cards"],
+          },
+        };
+        testContext.options.graphQL = new GraphQL(testContext.config);
+        testContext.options.url = testContext.tokenizeUrl;
+      });
+
+      it("normalizes a GraphQL fastlane credit card tokenization response", () => {
+        testContext.options.data = {
+          creditCard: {
+            /* eslint-disable camelcase */
+            fastlane: {
+              /* eslint-disable camelcase */
+              has_buyer_consent: true,
+            },
+          },
+        };
+        const graphQLRequest = new GraphQLRequest(testContext.options);
+        const fakeGraphQLResponse = {
+          data: {
+            tokenizeCreditCardForPayPalConnect: {
+              paymentMethod: {
+                id: "faketoken",
+                details: {
+                  cardholderName: "Given Sur",
+                  expirationMonth: "09",
+                  expirationYear: "2020",
+                  brandCode: "VISA",
+                  last4: "1234",
+                  bin: "401111",
+                  binData: {
+                    prepaid: "YES",
+                    healthcare: null,
+                    debit: "NO",
+                    durbinRegulated: "YES",
+                    commercial: "NO",
+                    payroll: "UNKNOWN",
+                    issuingBank: "Fake Bank",
+                    countryOfIssuance: "USA",
+                    productId: "123",
+                  },
+                },
+              },
+            },
+          },
+        };
+
+        expect(graphQLRequest.adaptResponseBody(fakeGraphQLResponse)).toEqual({
+          creditCards: [
+            {
+              binData: testContext.binData,
+              consumed: false,
+              description: "ending in 34",
+              nonce: "faketoken",
+              details: {
+                cardholderName: "Given Sur",
+                expirationMonth: "09",
+                expirationYear: "2020",
+                bin: "401111",
+                cardType: "Visa",
+                lastFour: "1234",
+                lastTwo: "34",
+              },
+              type: "CreditCard",
+              threeDSecureInfo: null,
+            },
+          ],
+        });
       });
     });
 

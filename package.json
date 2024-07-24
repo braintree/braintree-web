@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.103.0",
+  "version": "3.104.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -28,6 +28,7 @@
     "@braintree/sanitize-url": "7.0.4",
     "@braintree/uuid": "1.0.0",
     "@braintree/wrap-promise": "2.1.0",
+    "@paypal/accelerated-checkout-loader": "1.0.1",
     "card-validator": "10.0.0",
     "credit-card-type": "10.0.1",
     "framebus": "6.0.0",
@@ -36,6 +37,7 @@
     "restricted-input": "3.0.5"
   },
   "devDependencies": {
+    "@ladjs/gulp-envify": "^2.0.1",
     "browserify": "^17.0.0",
     "browserify-derequire": "^1.1.1",
     "cached-path-relative": "1.1.0",
@@ -50,7 +52,6 @@
     "eslint-config-braintree": "^5.0.1",
     "eslint-config-prettier": "^8.5.0",
     "gulp": "^4.0.2",
-    "@ladjs/gulp-envify": "^2.0.1",
     "gulp-minifier": "^3.5.0",
     "gulp-remove-code": "^3.0.2",
     "gulp-rename": "^2.0.0",
@@ -63,8 +64,8 @@
     "json5": "2.2.3",
     "loose-envify": "^1.0.0",
     "merge-stream": "^2.0.0",
-    "mkdirp": "^1.0.4",
     "minimist": "1.2.8",
+    "mkdirp": "^1.0.4",
     "mock-xmlhttprequest": "^7.0.4",
     "posix-getopt": "^1.2.1",
     "prettier": "^2.6.2",

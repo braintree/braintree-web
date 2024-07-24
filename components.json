@@ -3,6 +3,7 @@
   "apple-pay",
   "client",
   "data-collector",
+  "fastlane",
   "google-payment",
   "hosted-fields",
   "local-payment",

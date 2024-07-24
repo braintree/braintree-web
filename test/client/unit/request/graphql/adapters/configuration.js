@@ -28,6 +28,7 @@ describe("GraphQL Configuration", () => {
         FAKE_HEADER: "Fake header",
       },
       metadata: testContext.fakeMetadata,
+      data: {},
     };
   });
 
@@ -79,6 +80,7 @@ describe("GraphQL Configuration", () => {
                 "ELO",
               ],
             },
+            fastlane: true,
             googlePay: {
               displayName: "merchant",
               environment: "SANDBOX",
@@ -185,6 +187,7 @@ describe("GraphQL Configuration", () => {
             "elo",
           ],
         },
+        fastlane: true,
         kount: {
           kountMerchantId: "600000",
         },
@@ -315,6 +318,7 @@ describe("GraphQL Configuration", () => {
       expect(adaptedResponse.applePayWeb).toEqual(
         configurationResponse.applePayWeb
       );
+      expect(adaptedResponse.fastlane).toEqual(true);
       expect(adaptedResponse.kount).toEqual(configurationResponse.kount);
       expect(adaptedResponse.masterpass).toEqual(
         configurationResponse.masterpass
@@ -364,6 +368,7 @@ describe("GraphQL Configuration", () => {
                 "https://localhost/merchants/merchant_id/client_api",
               creditCard: null,
               applePayWeb: null,
+              fastlane: null,
               googlePay: null,
               ideal: null,
               kount: null,
@@ -398,6 +403,7 @@ describe("GraphQL Configuration", () => {
         expect(adaptedResponse.androidPay).toBeUndefined();
         expect(adaptedResponse.braintreeApi).toBeUndefined();
         expect(adaptedResponse.kount).toBeUndefined();
+        expect(adaptedResponse.fastlane).toBeUndefined();
         expect(adaptedResponse.unionPay).toBeUndefined();
         expect(adaptedResponse.visaCheckout).toBeUndefined();
         expect(adaptedResponse.masterpass).toBeUndefined();

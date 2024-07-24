@@ -21,7 +21,7 @@ describe("FraudNet", () => {
   });
 
   it("contains expected values in parsed data", async () => {
-    const result = await fraudNet.setup();
+    const result = await fraudNet.setup({ sessionId: "fake-sessionID" });
 
     const sessionId = result.sessionId;
     const el = document.querySelector('[fncls][type="application/json"]');
@@ -33,12 +33,20 @@ describe("FraudNet", () => {
     expect(parsedData.sandbox).toBe(true);
   });
 
-  it("can pass a custom session id", async () => {
+  it("prefers custom session id over clientSessionId when passed", async () => {
     const result = await fraudNet.setup({
       sessionId: "session",
     });
 
     expect(result.sessionId).toBe("session");
+  });
+
+  it("uses clientSessionId as sessionId if sessionId not passed", async () => {
+    const result = await fraudNet.setup({
+      clientSessionId: "fakeSessionId",
+    });
+
+    expect(result.sessionId).toBe("fakeSessionId");
   });
 
   it("re-uses session id when initialized more than once", async () => {

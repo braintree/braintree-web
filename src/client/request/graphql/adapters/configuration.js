@@ -103,6 +103,10 @@ function adaptConfigurationResponseBody(body, ctx) {
     delete response.applePayWeb.supportedCardBrands;
   }
 
+  if (configuration.fastlane) {
+    response.fastlane = configuration.fastlane;
+  }
+
   if (configuration.ideal) {
     response.ideal = configuration.ideal;
   }

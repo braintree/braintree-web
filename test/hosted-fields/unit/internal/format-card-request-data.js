@@ -55,11 +55,25 @@ describe("formatCardRequestData", () => {
     expect(result).toEqual({ cvv: "123" });
   });
 
-  it("includes postal code", () => {
-    const result = formatCardRequestData({ postalCode: "12345" });
+  it("includes postal code for billing address", () => {
+    const result = formatCardRequestData({
+      billingAddress: { postalCode: "12345" },
+    });
 
     expect(result).toEqual({
       billing_address: {
+        postal_code: "12345",
+      },
+    });
+  });
+
+  it("includes postal code for shipping address", () => {
+    const result = formatCardRequestData({
+      shippingAddress: { postalCode: "12345" },
+    });
+
+    expect(result).toEqual({
+      shippingAddress: {
         postal_code: "12345",
       },
     });
@@ -73,15 +87,83 @@ describe("formatCardRequestData", () => {
     });
   });
 
-  it("includes all data", () => {
+  it("includes phone number", () => {
     const result = formatCardRequestData({
+      phone: { number: "3125551234" },
+    });
+
+    expect(result).toEqual({
+      phone: {
+        phoneNumber: "3125551234",
+        countryPhoneCode: "",
+        extensionNumber: "",
+      },
+    });
+  });
+
+  it("ignores spaces, slashes, and parens in phone numbers", () => {
+    const result = formatCardRequestData({
+      phone: { number: "(312) 555-1234" },
+    });
+
+    expect(result.phone.phoneNumber).toEqual("3125551234");
+  });
+
+  it("includes email", () => {
+    const result = formatCardRequestData({ email: "test@test.com" });
+
+    expect(result).toEqual({
+      email: "test@test.com",
+    });
+  });
+
+  it("includes connect checkout (Fastlane) metadata", () => {
+    const result = formatCardRequestData({
+      metadata: {
+        connectCheckout: {
+          termsAndConditionsVersion: "1",
+          hasBuyerConsent: true,
+          authAssertion: "test-auth-assertion",
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      fastlane: {
+        terms_and_conditions_version: "1",
+        has_buyer_consent: true,
+        auth_assertion: "test-auth-assertion",
+      },
+    });
+  });
+
+  it("includes all data", () => {
+    const inputData = {
       cardholderName: "First Last",
       number: "4111111111111111",
       expirationMonth: "04",
       expirationYear: "21",
       cvv: "123",
-      postalCode: "12345",
-    });
+      phone: {
+        number: "312 555 1234",
+        countryCode: "1",
+        extension: "123",
+      },
+      billingAddress: {
+        postalCode: "12345",
+      },
+      shippingAddress: {
+        company: "Slugs R Us",
+      },
+      metadata: {
+        connectCheckout: {
+          termsAndConditionsVersion: "1",
+          hasBuyerConsent: true,
+          authAssertion: "test-auth-assertion",
+        },
+      },
+    };
+    const result = formatCardRequestData(inputData);
 
     expect(result).toEqual({
       cardholderName: "First Last",
@@ -89,8 +171,21 @@ describe("formatCardRequestData", () => {
       expiration_month: "04",
       expiration_year: "2021",
       cvv: "123",
+      phone: {
+        countryPhoneCode: "1",
+        phoneNumber: "3125551234",
+        extensionNumber: "123",
+      },
       billing_address: {
         postal_code: "12345",
+      },
+      shippingAddress: {
+        company: "Slugs R Us",
+      },
+      fastlane: {
+        terms_and_conditions_version: "1",
+        has_buyer_consent: true,
+        auth_assertion: "test-auth-assertion",
       },
     });
   });

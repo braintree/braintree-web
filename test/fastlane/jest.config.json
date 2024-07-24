@@ -1,0 +1,11 @@
+{
+  "testEnvironment": "jsdom",
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/fastlane/coverage",
+  "displayName": "fastlane",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/fastlane",
+  "roots": ["<rootDir>", "<rootDir>/../../test/fastlane"],
+  "testMatch": ["**/unit/**/*.js"]
+}

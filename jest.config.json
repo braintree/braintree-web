@@ -5,6 +5,7 @@
     "<rootDir>/../test/american-express/jest.config.json",
     "<rootDir>/../test/apple-pay/jest.config.json",
     "<rootDir>/../test/client/jest.config.json",
+    "<rootDir>/../test/fastlane/jest.config.json",
     "<rootDir>/../test/data-collector/jest.config.json",
     "<rootDir>/../test/environment/jest.config.json",
     "<rootDir>/../test/google-payment/jest.config.json",

@@ -17,25 +17,13 @@ var errors = require("../shared/errors");
 var events = constants.events;
 var allowedStyles = constants.allowedStyles;
 var tokenizationErrorCodes = constants.tokenizationErrorCodes;
+var ALLOWED_BILLING_ADDRESS_FIELDS = constants.allowedBillingAddressFields;
+var ALLOWED_SHIPPING_ADDRESS_FIELDS = constants.allowedShippingAddressFields;
 var formatCardRequestData = require("./format-card-request-data");
 var normalizeCardType = require("./normalize-card-type");
 var focusIntercept = require("../shared/focus-intercept");
 
 var CHECK_FOR_NEW_AUTOFILL_DATA_INTERVAL = 100;
-var ALLOWED_BILLING_ADDRESS_FIELDS = [
-  "company",
-  "countryCodeNumeric",
-  "countryCodeAlpha2",
-  "countryCodeAlpha3",
-  "countryName",
-  "extendedAddress",
-  "locality",
-  "region",
-  "firstName",
-  "lastName",
-  "postalCode",
-  "streetAddress",
-];
 
 function initialize(cardForm) {
   var fieldComponent;
@@ -266,7 +254,7 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
     var data;
 
     Promise.resolve(clientInstanceOrPromise).then(function (client) {
-      var mergedCardData, creditCardDetails;
+      var mergedCardData, creditCardDetails, tokenizer;
       var fieldsToTokenize = options.fieldsToTokenize;
       var isEmpty = cardForm.isEmpty(fieldsToTokenize);
       var invalidFieldKeys = cardForm.invalidFieldKeys(fieldsToTokenize);
@@ -317,47 +305,52 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
         data.merchantAccountId = merchantAccountIdForAuthInsight;
       }
 
-      return client
-        .request({
-          api: "clientApi",
-          method: "post",
-          endpoint: "payment_methods/credit_cards",
-          data: data,
-        })
-        .then(function (clientApiResult) {
-          var clientApiCreditCard = clientApiResult.creditCards[0];
-          var result = {
-            nonce: clientApiCreditCard.nonce,
-            details: clientApiCreditCard.details,
-            description: clientApiCreditCard.description,
-            type: clientApiCreditCard.type,
-            binData: clientApiCreditCard.binData,
-          };
+      tokenizer = handleTokenization;
 
-          if (clientApiCreditCard.authenticationInsight) {
-            result.authenticationInsight =
-              clientApiCreditCard.authenticationInsight;
-          }
-
-          analytics.sendEvent(
-            clientInstanceOrPromise,
-            "custom.hosted-fields.tokenization.succeeded"
-          );
-
-          reply([null, result]);
-        })
-        .catch(function (clientApiError) {
-          var formattedError = formatTokenizationError(clientApiError);
-
-          analytics.sendEvent(
-            clientInstanceOrPromise,
-            "custom.hosted-fields.tokenization.failed"
-          );
-
-          reply([formattedError]);
-        });
+      return tokenizer(client, clientInstanceOrPromise, data, reply);
     });
   };
+}
+
+function handleTokenization(client, clientInstanceOrPromise, data, reply) {
+  return client
+    .request({
+      api: "clientApi",
+      method: "post",
+      endpoint: "payment_methods/credit_cards",
+      data: data,
+    })
+    .then(function (clientApiResult) {
+      var paymentMethod = clientApiResult.creditCards[0];
+      var result = {
+        nonce: paymentMethod.nonce,
+        details: paymentMethod.details,
+        description: paymentMethod.description,
+        type: paymentMethod.type,
+        binData: paymentMethod.binData,
+      };
+
+      if (paymentMethod.authenticationInsight) {
+        result.authenticationInsight = paymentMethod.authenticationInsight;
+      }
+
+      analytics.sendEvent(
+        clientInstanceOrPromise,
+        "custom.hosted-fields.tokenization.succeeded"
+      );
+
+      reply([null, result]);
+    })
+    .catch(function (clientApiError) {
+      var formattedError = formatTokenizationError(clientApiError);
+
+      analytics.sendEvent(
+        clientInstanceOrPromise,
+        "custom.hosted-fields.tokenization.failed"
+      );
+
+      reply([formattedError]);
+    });
 }
 
 function formatTokenizationError(err) {
@@ -480,20 +473,60 @@ function getSupportedCardBrands(client, merchantConfiguredCardBrands) {
 
 function mergeCardData(cardData, options) {
   var newCardData;
-  var userProvidedCardData = assign({}, options.billingAddress);
+  var userProvidedCardData = {};
+  var userProvidedBillingAddress = {};
+  var userProvidedShippingAddress = {};
   var cardholderName = options.cardholderName;
+  var phone = options.phone;
+  var email = options.email;
+  var metadata = options.metadata;
+  var hasBillingAddress = false;
 
-  Object.keys(userProvidedCardData).forEach(function (field) {
-    if (
-      ALLOWED_BILLING_ADDRESS_FIELDS.indexOf(field) === -1 ||
-      cardData.hasOwnProperty(field)
-    ) {
-      delete userProvidedCardData[field];
-    }
-  });
+  if (options.billingAddress) {
+    hasBillingAddress = true;
+    userProvidedBillingAddress = assign({}, options.billingAddress);
+
+    Object.keys(userProvidedBillingAddress).forEach(function (field) {
+      if (ALLOWED_BILLING_ADDRESS_FIELDS.indexOf(field) === -1) {
+        delete userProvidedBillingAddress[field];
+      }
+    });
+  }
+
+  if (options.shippingAddress) {
+    userProvidedShippingAddress = assign({}, options.shippingAddress);
+
+    Object.keys(userProvidedShippingAddress).forEach(function (field) {
+      if (ALLOWED_SHIPPING_ADDRESS_FIELDS.indexOf(field) === -1) {
+        delete userProvidedShippingAddress[field];
+      }
+    });
+    userProvidedCardData.shippingAddress = userProvidedShippingAddress;
+  }
+
+  if (cardData.hasOwnProperty("postalCode")) {
+    hasBillingAddress = true;
+    userProvidedBillingAddress.postalCode = cardData.postalCode;
+  }
+
+  if (hasBillingAddress) {
+    userProvidedCardData.billingAddress = userProvidedBillingAddress;
+  }
 
   if (cardholderName) {
     userProvidedCardData.cardholderName = cardholderName;
+  }
+
+  if (phone) {
+    userProvidedCardData.phone = phone;
+  }
+
+  if (email) {
+    userProvidedCardData.email = email;
+  }
+
+  if (metadata) {
+    userProvidedCardData.metadata = metadata;
   }
 
   newCardData = assign({}, cardData, userProvidedCardData);

@@ -119,6 +119,7 @@ join() {
 
 release_source() {
   set +e
+
   git ls-files | egrep -v "$(join '|' $SOURCE_IGNORES)" | xargs cp --parents -t "$BRAINTREE_JS_SOURCE_DEST"
   echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
   exit 0

@@ -206,6 +206,7 @@ describe("dataCollector", () => {
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
             environment: "custom-environment-value",
+            clientSessionId: "fakeSessionId",
           });
         });
     });
@@ -221,6 +222,7 @@ describe("dataCollector", () => {
           expect(fraudnet.setup).toBeCalledWith({
             sessionId: "custom-risk-correlation-id",
             environment: "sandbox",
+            clientSessionId: "fakeSessionId",
           });
         });
     });
@@ -236,6 +238,7 @@ describe("dataCollector", () => {
           expect(fraudnet.setup).toBeCalledWith({
             sessionId: "custom-correlation-id",
             environment: "sandbox",
+            clientSessionId: "fakeSessionId",
           });
         });
     });
@@ -251,6 +254,7 @@ describe("dataCollector", () => {
           expect(fraudnet.setup).toBeCalledWith({
             sessionId: "custom-correlation-id",
             environment: "sandbox",
+            clientSessionId: "fakeSessionId",
           });
         });
     });
@@ -267,6 +271,7 @@ describe("dataCollector", () => {
           expect(fraudnet.setup).toBeCalledWith({
             sessionId: "custom-risk-correlation-id",
             environment: "sandbox",
+            clientSessionId: "fakeSessionId",
           });
         });
     });
@@ -283,6 +288,7 @@ describe("dataCollector", () => {
           expect(fraudnet.setup).toBeCalledWith({
             sessionId: "custom-client-metadata-id",
             environment: "sandbox",
+            clientSessionId: "fakeSessionId",
           });
         });
     });

@@ -39,6 +39,7 @@
 var americanExpress = require("./american-express");
 var applePay = require("./apple-pay");
 var client = require("./client");
+var fastlane = require("./fastlane");
 var dataCollector = require("./data-collector");
 var hostedFields = require("./hosted-fields");
 var localPayment = require("./local-payment");
@@ -58,6 +59,8 @@ var preferredPaymentMethods = require("./preferred-payment-methods");
 var VERSION = process.env.npm_package_version;
 
 module.exports = {
+  /** @type {module:braintree-web/fastlane} */
+  fastlane: fastlane,
   /** @type {module:braintree-web/american-express} */
   americanExpress: americanExpress,
   /** @type {module:braintree-web/apple-pay} */

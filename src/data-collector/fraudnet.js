@@ -31,7 +31,7 @@ Fraudnet.prototype.initialize = function (options) {
   var environment = options.environment;
   var self = this;
 
-  this.sessionId = options.sessionId || _generateSessionId();
+  this.sessionId = options.sessionId || options.clientSessionId;
   if (!options.sessionId) {
     cachedSessionId = this.sessionId;
   }
@@ -70,17 +70,6 @@ function removeElementIfOnPage(element) {
   if (element && element.parentNode) {
     element.parentNode.removeChild(element);
   }
-}
-
-function _generateSessionId() {
-  var i;
-  var id = "";
-
-  for (i = 0; i < 32; i++) {
-    id += Math.floor(Math.random() * 16).toString(16);
-  }
-
-  return id;
 }
 
 function _generateBeaconId(sessionId) {

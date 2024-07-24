@@ -4,19 +4,37 @@ var BRAINTREE_VERSION = require("../../constants").BRAINTREE_VERSION;
 
 var assign = require("../../../lib/assign").assign;
 var snakeCaseToCamelCase = require("../../../lib/snake-case-to-camel-case");
+var isFastlaneCheckout = require("../../../lib/is-fastlane-checkout");
 
 var creditCardTokenizationBodyGenerator = require("./generators/credit-card-tokenization");
 var creditCardTokenizationResponseAdapter = require("./adapters/credit-card-tokenization");
+var creditCardTokenizationFastlaneResponseAdapter = require("./adapters/credit-card-tokenization-fastlane");
+var creditCardForFastlaneTokenizationBodyGenerator = require("./generators/credit-card-for-fastlane-tokenization");
 
 var configurationBodyGenerator = require("./generators/configuration");
 var configurationResponseAdapter = require("./adapters/configuration");
 
 var generators = {
-  "payment_methods/credit_cards": creditCardTokenizationBodyGenerator,
+  "payment_methods/credit_cards": function (data, isFastlane) {
+    if (isFastlane) {
+      // Only want to use this generator when using the Fastlane flow
+      return creditCardForFastlaneTokenizationBodyGenerator(data);
+    }
+
+    return creditCardTokenizationBodyGenerator(data);
+  },
   configuration: configurationBodyGenerator,
 };
+
 var adapters = {
-  "payment_methods/credit_cards": creditCardTokenizationResponseAdapter,
+  "payment_methods/credit_cards": function (parsedBody, context, isFastlane) {
+    if (isFastlane) {
+      // Only want to use this adapter when using the Fastlane flow
+      return creditCardTokenizationFastlaneResponseAdapter(parsedBody, context);
+    }
+
+    return creditCardTokenizationResponseAdapter(parsedBody, context);
+  },
   configuration: configurationResponseAdapter,
 };
 
@@ -46,7 +64,11 @@ GraphQLRequest.prototype.getUrl = function () {
 
 GraphQLRequest.prototype.getBody = function () {
   var formattedBody = formatBodyKeys(this._data);
-  var generatedBody = this._generator(formattedBody);
+  var generatedBody = this._generator(
+    formattedBody,
+    // Since this is used for all GQL requests, we only want this if it's a Fastlane Tokenization request
+    isFastlaneCheckout(this._data.creditCard)
+  );
   var body = assign(
     { clientSdkMetadata: this._clientSdkMetadata },
     generatedBody
@@ -79,7 +101,12 @@ GraphQLRequest.prototype.getHeaders = function () {
 };
 
 GraphQLRequest.prototype.adaptResponseBody = function (parsedBody) {
-  return this._adapter(parsedBody, this);
+  return this._adapter(
+    parsedBody,
+    this,
+    // Since this is used for all GQL requests, we only want this if it's a Fastlane Checkout Tokenization request
+    "creditCard" in this._data && isFastlaneCheckout(this._data.creditCard)
+  );
 };
 
 GraphQLRequest.prototype.determineStatus = function (
@@ -124,6 +151,12 @@ function isGraphQLError(errorClass, parsedResponse) {
   return !errorClass && parsedResponse.errors[0].message;
 }
 
+/**
+ * @ignore
+ * This function formats the body consistently so _everything_ is camelCase.
+ * @param {object} originalBody the body to format
+ * @returns {object} The formatted object
+ */
 function formatBodyKeys(originalBody) {
   var body = {};
 

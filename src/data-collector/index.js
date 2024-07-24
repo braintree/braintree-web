@@ -149,14 +149,16 @@ function create(options) {
           return Promise.resolve(client);
         })
         .then(function (client) {
+          var clientConfiguration = client.getConfiguration();
+
           return fraudnet
             .setup({
               sessionId:
                 options.riskCorrelationId ||
                 options.clientMetadataId ||
                 options.correlationId,
-              environment:
-                client.getConfiguration().gatewayConfiguration.environment,
+              clientSessionId: clientConfiguration.analyticsMetadata.sessionId,
+              environment: clientConfiguration.gatewayConfiguration.environment,
             })
             .then(function (fraudnetInstance) {
               if (fraudnetInstance) {

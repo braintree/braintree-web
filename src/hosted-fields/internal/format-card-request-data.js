@@ -2,8 +2,8 @@
 
 "use strict";
 
-function constructBillingAddress(data) {
-  var billingAddress = {
+function constructAddress(data) {
+  var address = {
     company: data.company,
     country_code_numeric: data.countryCodeNumeric,
     country_code_alpha2: data.countryCodeAlpha2,
@@ -18,19 +18,61 @@ function constructBillingAddress(data) {
     street_address: data.streetAddress,
   };
 
-  Object.keys(billingAddress).forEach(function (key) {
-    if (billingAddress[key] == null) {
-      delete billingAddress[key];
+  Object.keys(address).forEach(function (key) {
+    if (address[key] == null) {
+      delete address[key];
     }
   });
 
-  return billingAddress;
+  return address;
 }
 
 module.exports = function (data) {
   var result = {};
-  var billingAddress = constructBillingAddress(data);
-  var hasBillingAddress = Object.keys(billingAddress).length > 0;
+
+  // connectCheckout are the tokenize options from the Fastlane SDK
+  if ("metadata" in data && "connectCheckout" in data.metadata) {
+    result.fastlane = {
+      terms_and_conditions_version:
+        "termsAndConditionsVersion" in data.metadata.connectCheckout
+          ? data.metadata.connectCheckout.termsAndConditionsVersion
+          : "",
+      has_buyer_consent:
+        "hasBuyerConsent" in data.metadata.connectCheckout
+          ? data.metadata.connectCheckout.hasBuyerConsent
+          : false,
+      auth_assertion: data.metadata.connectCheckout.authAssertion,
+    };
+  }
+
+  if ("billingAddress" in data) {
+    result.billing_address = constructAddress(data.billingAddress);
+  }
+
+  if ("shippingAddress" in data) {
+    result.shippingAddress = constructAddress(data.shippingAddress);
+  }
+
+  if ("phone" in data) {
+    result.phone = {
+      phoneNumber:
+        "number" in data.phone && data.phone.number
+          ? data.phone.number.replace(/(?:[\(]|[\)]|[-]|[\s])/g, "")
+          : "",
+      countryPhoneCode:
+        "countryCode" in data.phone && data.phone.countryCode
+          ? data.phone.countryCode
+          : "",
+      extensionNumber:
+        "extension" in data.phone && data.phone.extension
+          ? data.phone.extension
+          : "",
+    };
+  }
+
+  if ("email" in data) {
+    result.email = data.email;
+  }
 
   if ("number" in data) {
     result.number = data.number.replace(/[-\s]/g, "");
@@ -50,10 +92,6 @@ module.exports = function (data) {
     } else {
       result.expiration_year = data.expirationYear;
     }
-  }
-
-  if (hasBillingAddress) {
-    result.billing_address = billingAddress;
   }
 
   if ("cardholderName" in data) {

@@ -22,6 +22,9 @@ var CONFIGURATION_QUERY =
   "      merchantIdentifier " +
   "      supportedCardBrands " +
   "    } " +
+  "    fastlane { " +
+  "      enabled " +
+  "    } " +
   "    googlePay { " +
   "      displayName " +
   "      supportedCardBrands " +

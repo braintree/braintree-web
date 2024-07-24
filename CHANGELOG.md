@@ -1,12 +1,20 @@
 # CHANGELOG
 
+# 3.104.0
+
+- Fastlane
+  - Add support for Fastlane.
+- DataCollector
+  - Correlation ID now defaults to match Client Session ID if no Correlation ID is passed when creating DataCollector.
+
 # 3.103.0
+
 - Package updates:
   - Updates @braintree/asset-loader to v2.0.1
   - Updates @braintree/browser-detection to v2.0.1
   - Updates @braintree/extended-promise to v1.0.0
   - Updates @braintree/iframer to v2.0.0
-  - Updates @braintree/sanitize-url to v7.0.4 
+  - Updates @braintree/sanitize-url to v7.0.4
   - Updates card-validator to v10.0.0
   - Updates credit-card-type to v10.0.1
   - Updates framebus to v6.0.0
