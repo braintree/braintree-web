@@ -230,6 +230,14 @@ GooglePayment.prototype._createPaymentDataRequestSyncronously = function (
   var createPaymentDataRequestMethod =
     CREATE_PAYMENT_DATA_REQUEST_METHODS[version];
 
+  if (
+    paymentDataRequest.transactionInfo &&
+    paymentDataRequest.transactionInfo.totalPrice
+  ) {
+    paymentDataRequest.transactionInfo.totalPrice =
+      paymentDataRequest.transactionInfo.totalPrice.toString();
+  }
+
   analytics.sendEvent(
     this._createPromise,
     "google-payment.v" + version + ".createPaymentDataRequest"

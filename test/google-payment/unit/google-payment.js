@@ -528,6 +528,31 @@ describe("GooglePayment", () => {
       });
     });
 
+    describe("when passing totalPrice values", () => {
+      it("converts numbers to strings", () => {
+        return testContext.googlePayment
+          .createPaymentDataRequest({
+            transactionInfo: {
+              totalPrice: 15,
+            },
+          })
+          .then((paymentDataRequest) => {
+            expect(paymentDataRequest.transactionInfo.totalPrice).toBe("15");
+          });
+      });
+      it("leaves strings unchanged", () => {
+        return testContext.googlePayment
+          .createPaymentDataRequest({
+            transactionInfo: {
+              totalPrice: "15.00",
+            },
+          })
+          .then((paymentDataRequest) => {
+            expect(paymentDataRequest.transactionInfo.totalPrice).toBe("15.00");
+          });
+      });
+    });
+
     describe("when using options during instance construction", () => {
       it("preserves options in a GooglePayment instance", () => {
         const googlePayment = new GooglePayment({

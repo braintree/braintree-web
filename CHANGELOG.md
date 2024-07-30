@@ -1,5 +1,12 @@
 # CHANGELOG
 
+# 3.105.0
+
+- PayPal Checkout
+  - Add client-metadata-id as a data attribute when loading the PayPal SDK
+- Google Pay
+  - Add string conversion for totalPrice
+
 # 3.104.0
 
 - Fastlane

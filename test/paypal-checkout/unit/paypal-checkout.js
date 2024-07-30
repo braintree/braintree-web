@@ -2775,6 +2775,19 @@ describe("PayPalCheckout", () => {
       });
     });
 
+    it("always adds the client-metadata-id data attribute", () => {
+      const instance = testContext.paypalCheckout;
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-client-metadata-id")).toEqual(
+          expect.any(String)
+        );
+      });
+    });
+
     it("can pass data attributes", () => {
       const instance = testContext.paypalCheckout;
 

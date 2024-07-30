@@ -1198,6 +1198,11 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
   var userIdToken =
     dataAttributes["user-id-token"] || dataAttributes["data-user-id-token"];
 
+  if (this._configuration) {
+    dataAttributes["client-metadata-id"] =
+      this._configuration.analyticsMetadata.sessionId;
+  }
+
   if (!userIdToken) {
     userIdToken =
       this._authorizationInformation.fingerprint &&
