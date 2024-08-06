@@ -13,7 +13,9 @@ describe("FraudNet", () => {
   });
 
   it('appends a script type of "application/json" to the document', async () => {
-    await fraudNet.setup();
+    await fraudNet.setup({
+      sessionId: "custom-session",
+    });
 
     expect(
       document.querySelector('[fncls][type="application/json"]')
@@ -49,8 +51,10 @@ describe("FraudNet", () => {
     expect(result.sessionId).toBe("fakeSessionId");
   });
 
-  it("re-uses session id when initialized more than once", async () => {
-    const instance = await fraudNet.setup();
+  it("re-uses clientSessionId when initialized more than once", async () => {
+    const instance = await fraudNet.setup({
+      clientSessionId: "custom-client-session-id",
+    });
 
     const originalSessionId = instance.sessionId;
 
@@ -61,7 +65,7 @@ describe("FraudNet", () => {
     expect(newInstance.sessionId).toBe(originalSessionId);
   });
 
-  it("does not re-use custom session id when initialized more than once", async () => {
+  it("does not re-use custom session id when initialized more than once with no teardown", async () => {
     await fraudNet.setup({
       sessionId: "custom-session",
     });
@@ -86,10 +90,23 @@ describe("FraudNet", () => {
   it("does not include a sandbox param when production env is passed", async () => {
     await fraudNet.setup({
       environment: "production",
+      clientSessionId: "client-session-id",
     });
     const scriptEl = document.querySelector('[fncls][type="application/json"]');
     const data = JSON.parse(scriptEl.text);
 
     expect(data).not.toHaveProperty("sandbox");
+  });
+
+  it("uses a truncated sessionId if it is over the truncation length", async () => {
+    var characterToRepeat = "x";
+    var amountToRepeat = 46;
+    var truncatedLength = 32;
+
+    const result = await fraudNet.setup({
+      sessionId: characterToRepeat.repeat(amountToRepeat),
+    });
+
+    expect(result.sessionId).toBe(characterToRepeat.repeat(truncatedLength));
   });
 });

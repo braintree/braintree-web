@@ -5,6 +5,8 @@ var FRAUDNET_SOURCE = require("../lib/constants").FRAUDNET_SOURCE;
 var FRAUDNET_URL = require("../lib/constants").FRAUDNET_URL;
 var loadScript = require("../lib/assets").loadScript;
 
+var TRUNCATION_LENGTH = 32;
+
 var cachedSessionId;
 
 function setup(options) {
@@ -32,9 +34,15 @@ Fraudnet.prototype.initialize = function (options) {
   var self = this;
 
   this.sessionId = options.sessionId || options.clientSessionId;
+
+  if (this.sessionId) {
+    this.sessionId = this.sessionId.substring(0, TRUNCATION_LENGTH);
+  }
+
   if (!options.sessionId) {
     cachedSessionId = this.sessionId;
   }
+
   this._beaconId = _generateBeaconId(this.sessionId);
   this._parameterBlock = _createParameterBlock(
     this.sessionId,

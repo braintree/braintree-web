@@ -1,20 +1,25 @@
 # CHANGELOG
 
-# 3.105.0
+## 3.106.0
+
+- Fraudnet
+  - Truncate session id to 32 characters.
+
+## 3.105.0
 
 - PayPal Checkout
   - Add client-metadata-id as a data attribute when loading the PayPal SDK
 - Google Pay
   - Add string conversion for totalPrice
 
-# 3.104.0
+## 3.104.0
 
 - Fastlane
   - Add support for Fastlane.
 - DataCollector
   - Correlation ID now defaults to match Client Session ID if no Correlation ID is passed when creating DataCollector.
 
-# 3.103.0
+## 3.103.0
 
 - Package updates:
   - Updates @braintree/asset-loader to v2.0.1
@@ -29,74 +34,74 @@
 - ThreeDS
   - Update base `verifyCard` to accept amount = 0
 
-# 3.102.0
+## 3.102.0
 
 - PayPal
   - Support new `amountBreakdown` and its subfields in the `updatePayment` method
 
-# 3.101.3
+## 3.101.3
 
 - FrameService
   - Updated to limit messages sent between popup and iframe from the window parent.
 
-# 3.101.2
+## 3.101.2
 
 - Venmo
   - Fix issue introduced in previous patch that would sometimes cause the Venmo flow to crash
 
-# 3.101.1
+## 3.101.1
 
 - Venmo
   - Fix issue where the Venmo Desktop flow would sometimes report as a mobile web transaction
 
-# 3.101.0
+## 3.101.0
 
 - Venmo
   - Add support for `isFinalAmount` flag to Venmo create
 - Package updates
   - Updated @braintree/sanitize-url to 7.0.1
 
-# 3.100.0
+## 3.100.0
 
 - 3D Secure
   - Remove call to V1 modal as 3DS v1 is unsupported
 - Local Payment
   - Add support for recurrent local payment
 
-# 3.99.2
+## 3.99.2
 
 - Venmo
   - Fix race condition in previous bug fix.
 
-# 3.99.1
+## 3.99.1
 
 - Venmo
   - Fix bug where the Venmo Desktop Popup would sometimes return a tokenization error when a customer canceled within the modal.
 - Package updates
   - Replace `tomashanacek/gulp-envify` with `ladjs/gulp-envify` due to missing dependency (`tomashanacek/loose-envify`).
 
-# 3.99.0
+## 3.99.0
 
 - Venmo
   - Update `isBrowserSupported` to return true for iOS Chrome when `allowNewBrowserTab` is true and Venmo is not presented in an iFrame.
 
-# 3.98.0
+## 3.98.0
 
 - Local Payment
   - Add support for seamless/oneclick BLIK local payment
 
-# 3.97.4
+## 3.97.4
 
 - Venmo
   - Change overlay container to be on top of other page components and prevent click-through.
 
-# 3.97.3
+## 3.97.3
 
 - JS Docs
   - Venmo
     - Add clarification to `isBrowserSupported` for iOS Chrome.
 
-# 3.97.2
+## 3.97.2
 
 - JS Docs
   - PayPal
@@ -104,14 +109,14 @@
   - Apple Pay
     - Updated `displayName` docs for `performValidation` to indicate that maximium length is 64 characters
 
-# 3.97.1
+## 3.97.1
 
 - JS docs
   - Add more details about content security policy
 - Hosted Fields
   - Fix bug where keyboard navigation would sometimes not work in FireFox
 
-# 3.97.0
+## 3.97.0
 
 - 3D Secure
   - Updated documentation for `requestVisaDAF` parameter on `verifyCard`
@@ -125,12 +130,12 @@
   - Updated @braintree/sanitize-url to 6.0.4
   - Updated @braintree/browser-detection to 1.17.1
 
-# 3.96.1
+## 3.96.1
 
 - Venmo
   - Fix bug that does not receive the right `enrichedCustomerDataEnabled` flag
 
-# 3.96.0
+## 3.96.0
 
 - Update framebus to v5.2.1
 - Hosted Fields
@@ -141,7 +146,7 @@
 - PayPal
   - Add support for v2/orders
 
-# 3.95.0
+## 3.95.0
 
 - 3D Secure
   - Add `merchantName` option to `verifyCard`
@@ -152,18 +157,18 @@
     `totalAmount`, `subTotalAmount`, `discountAmount`, `taxAmount`, `shippingAmount`,
     and `lineItems` params to `createVenmoPaymentContext` for rendering in Venmo paysheet
 
-# 3.94.0
+## 3.94.0
 
 - 3D Secure
   - Adds `collectDeviceData` opt-in flag for 3DS lookups
 
-# 3.93.0
+## 3.93.0
 
 - Updated documentation in regards to 3D secure and CSP recommendations
 - Local Payment
   - Add support for Pay Upon Invoice local payment type: `pay_upon_invoice`
 
-# 3.92.2
+## 3.92.2
 
 - Remove dependency on `promise-polyfill`
 - Drop depenency on `@braintree/class-list`
@@ -181,7 +186,7 @@
   - Moved minimist to devDependencies
   - Moved terser to devDependencies
 
-# 3.92.1
+## 3.92.1
 
 - Hosted Fields
 
@@ -195,7 +200,7 @@
   - Updated minimist to 1.2.8
   - Updated cached-path-relative to 1.1.0
 
-# 3.92.0
+## 3.92.0
 
 - Venmo
   - Fix issue resulting in blocked popups in desktop web login flow
@@ -204,7 +209,7 @@
 - 3D Secure
   - Clarify format of IP Address in `AdditionalInformation` object
 
-# 3.91.0
+## 3.91.0
 
 - 3D Secure
   - Add `requestedExemptionType` option to `verifyCard`
@@ -214,35 +219,35 @@
 - Hosted Fields
   - Improved accessibility for screen readers
 
-# 3.90.0
+## 3.90.0
 
 - Paypal
   - Add support for `updatePayment`
 
-# 3.88.6
+## 3.88.6
 
 - Venmo
   - Fix Desktop Web Login flow running from an iframe
 
-# 3.88.5
+## 3.88.5
 
 - Venmo
   - Update constants to use correct deeplinking url for Venmo
 
-# 3.88.4
+## 3.88.4
 
 - 3D Secure
   - Update the regex to validate cardinal commerce domain
 - Venmo Desktop
   - Use latest framebus for more secure messaging
 
-# 3.88.3
+## 3.88.3
 
 - Update framebus to v5.2.0
 - Hosted Fields
   - Improve iframe communication with parent page
 
-# 3.88.2
+## 3.88.2
 
 - Sepa: fix jsdoc entry for `tokenize`
 - 3D Secure: update jsdoc entry for `teardown`
@@ -253,12 +258,12 @@
 - Local payments
   - Fix canceled or failed flow for PopupBridge use cases
 
-# 3.88.1
+## 3.88.1
 
 - Venmo:
   - fix cases where nonce payload data was missing after tokenization
 
-# 3.88.0
+## 3.88.0
 
 - Venmo
   - add `allowAndroidRecreation` for addressing Android PopupBridge use cases
@@ -266,25 +271,25 @@
 - 3D Secure
   - Add check to verify acsUrl if not a cardinal commerce domain
 
-# 3.87.0
+## 3.87.0
 
 - Venmo fix mobileWebFallback url reference
 - Add support for SEPA Direct Debit
 
-# 3.86.0
+## 3.86.0
 
 - Add support for Desktop Web Login flow
 - Add support for Mobile Web Fallback
 
-# 3.85.5
+## 3.85.5
 
 - Fix internal build issue
 
-# 3.85.4
+## 3.85.4
 
 - Update @braintree/browser-detection to v1.14.0
 
-# 3.85.3
+## 3.85.3
 
 - Update @braintree/sanitize-url to v6.0.0
 - Update promise-polyfill to v8.2.3
@@ -295,7 +300,7 @@
   - Fix issue where query strings from URLs with a hash fragment _before_ the query string could not be parsed correctly
 - Clarify Vault Manager `options.defaultFirst` functionality in JSDoc
 
-# 3.85.2
+## 3.85.2
 
 - Venmo
   - Fix issue where iOS Chrome was reporting as a supported browser when Venmo was configured for desktop
@@ -303,12 +308,12 @@
 - UnionPay
   - Fix typo in our GraphQL Tokenization CREDIT_CARD_BRAND_MAP
 
-# 3.85.1
+## 3.85.1
 
 - Venmo
   - Fix issue where iOS Chrome was reporting as a supported browser
 
-# 3.85.0
+## 3.85.0
 
 - Client
   - Add Elo, Hiper, and Hipercard graphQL adapters to card
@@ -324,7 +329,7 @@
 - Venmo
   - Expose `paymentContextId` when available
 
-# 3.84.0
+## 3.84.0
 
 - Client
   - Add Elo, Hiper, and Hipercard to `supportedCardTypes`
@@ -333,7 +338,7 @@
 - Venmo
   - Adjust UI for better navigation
 
-# 3.83.0
+## 3.83.0
 
 - Data Collector
   - Updates `clientMetadataId` to `riskCorrelationId`
@@ -347,7 +352,7 @@
   - Fix issue where Facebook on Android would report as a supported
     browser
 
-# 3.82.0
+## 3.82.0
 
 - Update @braintree/browser-detection to v1.12.1
 - Update inject-stylesheet@v5.0.0
@@ -358,7 +363,7 @@
   - Updates `correlationId` to `clientMetadataId` (`correlationId`
     is treated as an alias)
 
-# 3.81.1
+## 3.81.1
 
 - Venmo
   - Fix issue where `@` was sometimes not returned in username param
