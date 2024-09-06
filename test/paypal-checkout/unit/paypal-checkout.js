@@ -841,6 +841,109 @@ describe("PayPalCheckout", () => {
       });
     });
 
+    describe("createPayment:vaulted with plan", () => {
+      it('does not send both "plan_type" and "plan_metadata" if they do not exist', () => {
+        testContext.paypalCheckout
+          .createPayment({
+            flow: "vault",
+          })
+          .then(() => {
+            expect(
+              testContext.client.request.mock.calls[0][0].data.plan_type
+            ).toBeUndefined();
+            expect(
+              testContext.client.request.mock.calls[0][0].data.plan_metadata
+            ).toBeUndefined();
+          });
+      });
+
+      it('does not send "plan_metadata" if it does not exist', () => {
+        const planType = "RECURRING";
+
+        testContext.paypalCheckout
+          .createPayment({
+            flow: "vault",
+            planType: planType,
+          })
+          .then(() => {
+            expect(
+              testContext.client.request.mock.calls[0][0].data.plan_type
+            ).toBe(planType);
+            expect(
+              testContext.client.request.mock.calls[0][0].data.plan_metadata
+            ).toBeUndefined();
+          });
+      });
+
+      it('sends both "plan_type" and "plan_metadata" when they exist', () => {
+        const planType = "RECURRING";
+        const planMetadata = {
+          billingCycles: [
+            {
+              billingFrequency: "1",
+              billingFrequencyUnit: "MONTH",
+              numberOfExecutions: "1",
+              sequence: "1",
+              startDate: "2024-04-06T00:00:00Z",
+              trial: true,
+              pricingScheme: {
+                pricingModel: "FIXED",
+              },
+            },
+          ],
+          currencyIsoCode: "USD",
+          name: "Netflix with Ads",
+          productDescription: "iPhone 13",
+          productQuantity: "1.0",
+          oneTimeFeeAmount: "10",
+          shippingAmount: "3.0",
+          productPrice: "200",
+          taxAmount: "20",
+        };
+
+        /* eslint-disable camelcase */
+        const expectedPlanMetadata = {
+          billing_cycles: [
+            {
+              billing_frequency: "1",
+              billing_frequency_unit: "MONTH",
+              number_of_executions: "1",
+              sequence: "1",
+              start_date: "2024-04-06T00:00:00Z",
+              trial: true,
+              pricing_scheme: {
+                pricing_model: "FIXED",
+              },
+            },
+          ],
+          currency_iso_code: planMetadata.currencyIsoCode,
+          name: planMetadata.name,
+          product_description: planMetadata.productDescription,
+          product_quantity: planMetadata.productQuantity,
+          one_time_fee_amount: planMetadata.oneTimeFeeAmount,
+          shipping_amount: planMetadata.shippingAmount,
+          product_price: planMetadata.productPrice,
+          tax_amount: planMetadata.taxAmount,
+        };
+        /* eslint-enable camelcase */
+
+        testContext.paypalCheckout
+          .createPayment({
+            flow: "vault",
+            planType: planType,
+            planMetadata: planMetadata,
+          })
+          .then(() => {
+            expect(
+              testContext.client.request.mock.calls[0][0].data.plan_type
+            ).toBe(planType);
+            expect(
+              testContext.client.request.mock.calls[0][0].data.plan_metadata
+            ).toMatchObject(expectedPlanMetadata);
+          });
+      });
+    });
+
     it("formats request", () =>
       testContext.paypalCheckout
         .createPayment({
@@ -2775,15 +2878,35 @@ describe("PayPalCheckout", () => {
       });
     });
 
-    it("always adds the client-metadata-id data attribute", () => {
+    it("always uses analytics session ID as the client-metadata-id data attribute when client-metadata-id not passed", () => {
       const instance = testContext.paypalCheckout;
       const promise = instance.loadPayPalSDK();
+      const expectedId = testContext.configuration.analyticsMetadata.sessionId;
 
       fakeScript.onload();
 
       return promise.then(() => {
         expect(fakeScript.getAttribute("data-client-metadata-id")).toEqual(
-          expect.any(String)
+          expectedId
+        );
+      });
+    });
+
+    it("always uses client-metadata-id data attribute when passed", () => {
+      const instance = testContext.paypalCheckout;
+      const someCmid = "some-cmid";
+      const inputOptions = {
+        dataAttributes: {
+          "client-metadata-id": someCmid,
+        },
+      };
+      const promise = instance.loadPayPalSDK(inputOptions);
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-client-metadata-id")).toEqual(
+          someCmid
         );
       });
     });

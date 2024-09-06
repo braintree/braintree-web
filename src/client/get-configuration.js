@@ -12,10 +12,10 @@ var isDateStringBeforeOrOn = require("../lib/is-date-string-before-or-on");
 
 var BRAINTREE_VERSION = require("./constants").BRAINTREE_VERSION;
 
-function getConfiguration(authData) {
+function getConfiguration(authData, inputSessionId) {
   return new Promise(function (resolve, reject) {
     var configuration, attrs, configUrl, reqOptions;
-    var sessionId = uuid();
+    var sessionId = inputSessionId || uuid();
     var analyticsMetadata = {
       merchantAppId: window.location.host,
       platform: constants.PLATFORM,

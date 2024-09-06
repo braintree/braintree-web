@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 3.107.0
+
+- Hosted Fields
+  - Add support for passing through a sessionId value
+- PayPal Checkout
+  - Enable option to pass through client-metadata-id
+- Fastlane
+  - Add support for loading the Fastlane component in an AMD environment
+- Local Payment
+  - Added Support for Local Payment `mbway` and `bancomatpay`
+
 ## 3.106.0
 
 - Fraudnet

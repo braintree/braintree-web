@@ -834,6 +834,108 @@ describe("LocalPayment", () => {
     });
   });
 
+  describe.each(["mbway", "bancomatpay"])(
+    "startPayment $paymentType",
+    (paymentType) => {
+      beforeEach(() => {
+        testContext.localPayment = new LocalPayment({
+          client: testContext.client,
+          merchantAccountId: "merchant-account-id",
+        });
+        testContext.frameServiceInstance = {
+          _serviceId: "service-id",
+          close: jest.fn(),
+          open: jest.fn(),
+          redirect: jest.fn(),
+        };
+
+        testContext.options = {
+          onPaymentStart: jest.fn(),
+          paymentType: paymentType,
+          paymentTypeCountryCode: "IT",
+          amount: "10.00",
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Button Text",
+          },
+          shippingAddressRequired: true,
+          currencyCode: "EUR",
+          givenName: "First",
+          surname: "Last",
+          email: "email@example.com",
+          phone: "1234",
+          displayName: "My Brand!",
+          address: {
+            streetAddress: "123 Address",
+            extendedAddress: "Unit 1",
+            locality: "Chicago",
+            region: "IL",
+            postalCode: "60654",
+            countryCode: "US",
+          },
+        };
+
+        jest.spyOn(testContext.client, "request").mockResolvedValue({
+          paymentResource: {
+            redirectUrl: null,
+            paymentToken: "payment-token",
+          },
+        });
+
+        jest
+          .spyOn(frameService, "create")
+          .mockImplementation(yields(testContext.frameServiceInstance));
+
+        return testContext.localPayment._initialize();
+      });
+
+      it("No redirects occur for payment source creation", () => {
+        const frame = testContext.frameServiceInstance;
+
+        return testContext.localPayment
+          .startPayment(testContext.options)
+          .then(() => {
+            expect(frame.redirect).toHaveBeenCalledTimes(0);
+          });
+      });
+
+      it("Does not open a window for payment processing", () => {
+        const frame = testContext.frameServiceInstance;
+
+        frame.open.mockImplementation(yields(null, { foo: "bar" }));
+
+        return testContext.localPayment
+          .startPayment(testContext.options)
+          .then(() => {
+            expect(frame.open).toHaveBeenCalledTimes(0);
+          });
+      });
+
+      it("errors when payment resource returns redirectUrl for deferred payment", () => {
+        const responseWithRedirectUrl = {
+          paymentResource: {
+            redirectUrl: "https://example.com/redirect-url",
+            paymentToken: "payment-token",
+          },
+        };
+
+        testContext.client.request.mockClear();
+        testContext.client.request.mockResolvedValue(responseWithRedirectUrl);
+
+        return testContext.localPayment
+          .startPayment(testContext.options)
+          .catch(({ code }) => {
+            expect(code).toBe(
+              "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED"
+            );
+            expect(testContext.localPayment._authorizationInProgress).toBe(
+              false
+            );
+          });
+      });
+    }
+  );
+
   describe("startPayment iDeal", () => {
     beforeEach(() => {
       testContext.localPayment = new LocalPayment({

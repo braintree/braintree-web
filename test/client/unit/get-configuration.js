@@ -1,5 +1,7 @@
 "use strict";
 
+jest.mock("@braintree/uuid");
+
 const BraintreeError = require("../../../src/lib/braintree-error");
 const { getConfiguration } = require("../../../src/client/get-configuration");
 const createAuthorizationData = require("../../../src/lib/create-authorization-data");
@@ -9,10 +11,14 @@ const {
   yieldsAsync,
 } = require("../../helpers");
 const GraphQL = require("../../../src/client/request/graphql");
+const uuid = require("@braintree/uuid");
 
 describe("getConfiguration", () => {
+  const mockUuid = "some_string";
+
   beforeEach(() => {
     jest.spyOn(AJAXDriver, "request").mockReturnValue(null);
+    uuid.mockReturnValue(mockUuid);
   });
 
   it("returns a promise when no callback is passed", () => {
@@ -21,6 +27,34 @@ describe("getConfiguration", () => {
     );
 
     expect(getConfiguration(authData)).toBeInstanceOf(Promise);
+  });
+
+  it("uses automatically sets sessionId when not provided", async () => {
+    jest.spyOn(AJAXDriver, "request").mockImplementation((ops, cb) => {
+      cb(undefined, {}, 200); // eslint-disable-line no-undefined
+    });
+    const authData = createAuthorizationData(
+      "production_abc123_prod_merchant_id"
+    );
+
+    let config = await getConfiguration(authData);
+
+    expect(config.analyticsMetadata.sessionId).toEqual(mockUuid);
+  });
+
+  it("uses manually set sessionId when provided", async () => {
+    jest.spyOn(AJAXDriver, "request").mockImplementation((ops, cb) => {
+      cb(undefined, {}, 200); // eslint-disable-line no-undefined
+    });
+
+    const authData = createAuthorizationData(
+      "production_abc123_prod_merchant_id"
+    );
+
+    let sessionId = "00000-00000";
+    let config = await getConfiguration(authData, sessionId);
+
+    expect(config.analyticsMetadata.sessionId).toEqual(sessionId);
   });
 
   describe("tokenization key", () => {

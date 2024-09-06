@@ -132,6 +132,7 @@ var VERSION = process.env.npm_package_version;
  * @param {styleOptions} [options.styles] {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
  * @param {boolean} [options.preventAutofill=false] When true, browsers will not try to prompt the customer to autofill their credit card information.
  * @param {callback} [callback] The second argument, `data`, is the {@link HostedFields} instance. If no callback is provided, `create` returns a promise that resolves with the {@link HostedFields} instance.
+ * @param {string} [options.sessionId] Used in specific cases where associating SDK events with a specific external id is required.
  * @returns {void}
  * @example
  * braintree.hostedFields.create({

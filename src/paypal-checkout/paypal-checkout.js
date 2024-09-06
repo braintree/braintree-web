@@ -16,6 +16,7 @@ var methods = require("../lib/methods");
 var useMin = require("../lib/use-min");
 var convertMethodsToError = require("../lib/convert-methods-to-error");
 var querystring = require("../lib/querystring");
+var camelCaseToSnakeCase = require("../lib/camel-case-to-snake-case");
 var VERSION = process.env.npm_package_version;
 var INTEGRATION_TIMEOUT_MS = require("../lib/constants").INTEGRATION_TIMEOUT_MS;
 
@@ -364,6 +365,36 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @property {string} amount.value The amount the shipping option will cost. Includes the specified number of digits after decimal separator for the ISO-4217 currency code.
  */
 
+/** @typedef {object} PayPalCheckout~pricingScheme
+ * @property {string} pricingModel The pricing model. Options are `FIXED`, `VARIABLE`, or `AUTO_RELOAD`.
+ * @property {string} price The price for the billing cycle.
+ * @property {string} reloadThresholdAmount The amount at which to reload on auto_reload plans.
+ */
+
+/**
+ * @typedef {Object} PayPalCheckout~billingCycles
+ * @property {(string|number)} billingFrequency The frequency of billing.
+ * @property {string} billingFrequencyUnit The unit of billing frequency. Options are `DAY`, `WEEK`, `MONTH`, or `YEAR`.
+ * @property {(string|number)} numberOfExecutions The number of executions for the billing cycle.
+ * @property {(string|number)} sequence The order in the upcoming billing cycles.
+ * @property {string} startDate The start date in ISO 8601 format (`2024-04-06T00:00:00Z`). If populated and the intent is to charge the buyer for the billing cycle at the checkout, it should be populated as current time in ISO 8601 format.
+ * @property {boolean} trial Indicates if the billing cycle is a trial.
+ * @property {pricingScheme} pricingScheme The {@link PayPalCheckout~pricingScheme|pricing scheme object} for this billing cycle.
+ */
+
+/**
+ * @typedef {Object} PayPalCheckout~planMetadata
+ * @property {billingCycles[]} [billingCycles] An array of {@link PayPalCheckout~billingCycles|billing cyles} for this plan.
+ * @property {string} currencyIsoCode The ISO code for the currency, for example `USD`.
+ * @property {string} name The name of the plan.
+ * @property {string} productDescription A description of the product. (Accepts only one element)
+ * @property {(string|number)} productQuantity The quantity of the product. (Accepts only one element)
+ * @property {(string|number)} oneTimeFeeAmount The one-time fee amount.
+ * @property {(string|number)} shippingAmount The amount for shipping.
+ * @property {(string|number)} productPrice The price of the product.
+ * @property {(string|number)} taxAmount The amount of tax.
+ */
+
 /**
  * Creates a PayPal payment ID or billing token using the given options. This is meant to be passed to the PayPal JS SDK.
  * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the PayPal JS SDK. Otherwise, it returns a Promise that resolves with the id.
@@ -400,6 +431,10 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * * `login` - A PayPal account login page is used.
  * * `billing` - A non-PayPal account landing page is used.
  * @param {lineItem[]} [options.lineItems] The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
+ *
+ * @param {string} [options.planType] Determines the charge pattern for the Recurring Billing Agreement. Can be 'RECURRING', 'SUBSCRIPTION', 'UNSCHEDULED', or 'INSTALLMENTS'.
+ * @param {planMetadata} [options.planMetadata] When plan type is defined, allows for {@link PayPalCheckout~planMetadata|plan metadata} to be set for the Billing Agreement.
+ *
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
@@ -479,9 +514,65 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * }).catch(function (err) {
  *  console.error('Error!', err);
  * });
+ *
  * ```
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @example <caption>use the new plan features</caption>
+ * // Plan and plan metadata are passed to createPayment
+ * ```javascript
+ * braintree.client.create({
+ *   authorization: 'authorization'
+ * }).then(function (clientInstance) {
+ *   return braintree.paypalCheckout.create({
+ *     client: clientInstance
+ *   });
+ * }).then(function (paypalCheckoutInstance) {
+ *   return paypal.Button.render({
+ *     env: 'production'
+ *
+ *     payment: function () {
+ *       return paypalCheckoutInstance.createPayment({
+ *         flow: 'vault',
+ *         planType: 'RECURRING',
+ *         planMetadata: {
+ *           billingCycles: [
+ *             {
+ *                billingFrequency: "1",
+ *                billingFrequencyUnit: "MONTH",
+ *                numberOfExecutions: "1",
+ *                sequence: "1",
+ *                startDate: "2024-04-06T00:00:00Z",
+ *                trial: true,
+ *                pricingScheme: {
+ *                  pricingModel: "FIXED",
+ *              },
+ *            },
+ *            ],
+ *           currencyIsoCode: "USD",
+ *           name: "Netflix with Ads",
+ *           productDescription: "iPhone 13",
+ *           productQuantity: "1.0",
+ *           oneTimeFeeAmount: "10",
+ *           shippingAmount: "3.0",
+ *           productPrice: "200",
+ *           taxAmount: "20",
+ *        };
+ *       });
+ *     },
+ *
+ *     onAuthorize: function (data, actions) {
+ *       return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+ *         // Submit payload.nonce to your server
+ *       });
+ *     }
+ *   }, '#paypal-button');
+ * }).catch(function (err) {
+ *  console.error('Error!', err);
+ * });
+ *
+ * ```
+ *
+ * @returns {(promise|void)} returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.createPayment = function (options) {
   if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
@@ -1199,8 +1290,9 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     dataAttributes["user-id-token"] || dataAttributes["data-user-id-token"];
 
   if (this._configuration) {
-    dataAttributes["client-metadata-id"] =
-      this._configuration.analyticsMetadata.sessionId;
+    dataAttributes["client-metadata-id"] = dataAttributes["client-metadata-id"]
+      ? dataAttributes["client-metadata-id"]
+      : this._configuration.analyticsMetadata.sessionId;
   }
 
   if (!userIdToken) {
@@ -1383,10 +1475,23 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
       paymentResource.billingAgreementDetails = options.billingAgreementDetails;
     }
   } else {
+    // NOTE: This flow is "vault"
     paymentResource.shippingAddress = options.shippingAddressOverride;
 
     if (options.billingAgreementDescription) {
       paymentResource.description = options.billingAgreementDescription;
+    }
+
+    if (options.planType) {
+      /* eslint-disable camelcase */
+      paymentResource.plan_type = options.planType;
+
+      if (options.planMetadata) {
+        paymentResource.plan_metadata = camelCaseToSnakeCase(
+          options.planMetadata
+        );
+      }
+      /* eslint-enable camelcase */
     }
   }
 

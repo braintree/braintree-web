@@ -682,6 +682,20 @@ describe("HostedFields", () => {
       expect(state.cards).toEqual(getCardTypes(""));
     });
 
+    it("uses manually provided sessionId instead of generating uuid", () => {
+      let sessionId = "00000-00000";
+
+      testContext.defaultConfiguration.sessionId = sessionId;
+      testContext.instance = new HostedFields(testContext.defaultConfiguration);
+
+      expect(
+        testContext.instance._merchantConfigurationOptions.sessionId
+      ).toEqual(sessionId);
+      expect(createDeferredClient.create).toBeCalledWith(
+        expect.objectContaining({ sessionId })
+      );
+    });
+
     it("loads deferred when using an authorization instead of a client", (done) => {
       let frameReadyHandler;
       const configuration = testContext.defaultConfiguration;

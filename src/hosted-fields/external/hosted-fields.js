@@ -371,11 +371,12 @@ function HostedFields(options) {
   var frameReadyPromiseResolveFunctions = {};
   var frameReadyPromises = [];
   var componentId = uuid();
+  var sessionId = options.sessionId;
 
   this._merchantConfigurationOptions = assign({}, options);
 
   if (options.client) {
-    clientConfig = options.client.getConfiguration();
+    clientConfig = options.client.getConfiguration(undefined, sessionId); // eslint-disable-line no-undefined
     assetsUrl = clientConfig.gatewayConfiguration.assetsUrl;
     isDebug = clientConfig.isDebug;
   } else {
@@ -389,6 +390,7 @@ function HostedFields(options) {
     debug: isDebug,
     assetsUrl: assetsUrl,
     name: "Hosted Fields",
+    sessionId: sessionId,
   });
 
   hostedFieldsUrl = composeUrl(assetsUrl, componentId, isDebug);

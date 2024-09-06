@@ -8,12 +8,32 @@ function transformKey(key) {
     .toLowerCase();
 }
 
-module.exports = function (obj) {
-  return Object.keys(obj).reduce(function (newObj, key) {
-    var transformedKey = transformKey(key);
+function camelCaseToSnakeCase(input) {
+  var converted;
 
-    newObj[transformedKey] = obj[key];
+  if (Array.isArray(input)) {
+    converted = [];
 
-    return newObj;
-  }, {});
-};
+    input.forEach(function (x) {
+      converted.push(camelCaseToSnakeCase(x));
+    });
+  } else if (typeof input === "object") {
+    converted = Object.keys(input).reduce(function (newObj, key) {
+      var transformedKey = transformKey(key);
+
+      if (typeof input[key] === "object") {
+        newObj[transformedKey] = camelCaseToSnakeCase(input[key]);
+      } else {
+        newObj[transformedKey] = input[key];
+      }
+
+      return newObj;
+    }, {});
+  } else {
+    converted = input;
+  }
+
+  return converted;
+}
+
+module.exports = camelCaseToSnakeCase;

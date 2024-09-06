@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.106.0",
+  "version": "3.107.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -28,7 +28,7 @@
     "@braintree/sanitize-url": "7.0.4",
     "@braintree/uuid": "1.0.0",
     "@braintree/wrap-promise": "2.1.0",
-    "@paypal/accelerated-checkout-loader": "1.0.1",
+    "@paypal/accelerated-checkout-loader": "1.1.0",
     "card-validator": "10.0.0",
     "credit-card-type": "10.0.1",
     "framebus": "6.0.0",

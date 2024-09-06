@@ -349,6 +349,56 @@ LocalPayment.prototype._initialize = function () {
  *   // Handle any error calling startPayment.
  *   console.error(err);
  * });
+ * @example <caption>MB WAY</caption>
+ * localPaymentInstance.startPayment({
+ *   paymentType: 'mbway',
+ *   amount: '10.00',
+ *   currencyCode: 'EUR',
+ *   givenName: 'Joe',
+ *   surname: 'Doe',
+ *   phone: '1234566789',
+ *   phoneCountryCode: '351'
+ *   address: {
+ *     streetAddress: 'Rua Escura 12',
+ *     locality: 'Porto',
+ *     postalCode: '4465-283',
+ *     countryCode: 'PT',
+ *   },
+ *   onPaymentStart: function (data) {
+ *     // NOTE: It is critical here to store data.paymentId on your server
+ *     //       so it can be mapped to a webhook sent by Braintree once the
+ *     //       buyer completes their payment.
+ *     console.log('Payment ID:', data.paymentId);
+ *   },
+ * }).catch(function (err) {
+ *   // Handle any error calling startPayment.
+ *   console.error(err);
+ * });
+ * @example <caption>BANCOMAT PAY</caption>
+ * localPaymentInstance.startPayment({
+ *   paymentType: 'bancomatpay',
+ *   amount: '10.00',
+ *   currencyCode: 'EUR',
+ *   givenName: 'Joe',
+ *   surname: 'Doe',
+ *   phone: '1234566789',
+ *   phoneCountryCode: '49'
+ *   address: {
+ *     streetAddress: 'Via del Corso 12',
+ *     locality: 'Roma',
+ *     postalCode: '00100',
+ *     countryCode: 'IT',
+ *   },
+ *   onPaymentStart: function (data) {
+ *     // NOTE: It is critical here to store data.paymentId on your server
+ *     //       so it can be mapped to a webhook sent by Braintree once the
+ *     //       buyer completes their payment.
+ *     console.log('Payment ID:', data.paymentId);
+ *   },
+ * }).catch(function (err) {
+ *   // Handle any error calling startPayment.
+ *   console.error(err);
+ * });
  */
 LocalPayment.prototype.startPayment = function (options) {
   var missingOption,
@@ -843,16 +893,14 @@ function isDeferredPaymentTypeOptions(options) {
       ? options.paymentType.toLowerCase()
       : options.paymentType;
 
-  if (paymentType === "pay_upon_invoice") {
-    return true;
-  } else if (paymentType === "blik") {
+  if (paymentType === "blik") {
     return (
       blikOptions.hasOwnProperty("level_0") ||
       blikOptions.hasOwnProperty("oneClick")
     );
   }
 
-  return false;
+  return ["pay_upon_invoice", "mbway", "bancomatpay"].includes(paymentType);
 }
 
 function hasMissingAddressOption(options) {
