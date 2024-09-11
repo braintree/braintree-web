@@ -117,7 +117,7 @@ Client.initialize = function (options) {
     );
   }
 
-  promise = getGatewayConfiguration(authData).then(function (configuration) {
+  promise = getGatewayConfiguration(authData, options.sessionId).then(function (configuration) {
     if (options.debug) {
       configuration.isDebug = true;
     }

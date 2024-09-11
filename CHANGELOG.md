@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.107.1 
+- Hosted Fields
+  - Fix passing through a sessionId value
+
 ## 3.107.0
 
 - Hosted Fields

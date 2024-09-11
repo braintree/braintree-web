@@ -234,6 +234,9 @@ var FRAMEWORKS = require("./frameworks");
  *  - `04` Add card
  *  - `05` Maintain card
  *  - `06` Cardholder verification as part of EMV token ID&V
+ *  - `08` Split Shipment
+ *  - `09` Delayed Shipment
+ *  - `85` Payment with multiple merchants
  * @property {string} [installment] An integer value greater than 1 indicating the maximum number of permitted authorizations for installment payments. (maximum length 3)
  * @property {string} [purchaseDate] The 14-digit number (format: YYYYMMDDHHMMSS) indicating the date in UTC of original purchase.
  * @property {string} [recurringEnd] The 8-digit number (format: YYYYMMDD) indicating the date after which no further recurring authorizations should be performed.
