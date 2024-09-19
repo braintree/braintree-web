@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+- PayPal Checkout
+  - Add `userAuthenticationEmail` to `createPayment`
+
 ## 3.107.1 
 - Hosted Fields
   - Fix passing through a sessionId value

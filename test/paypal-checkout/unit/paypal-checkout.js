@@ -434,6 +434,20 @@ describe("PayPalCheckout", () => {
             });
           }));
 
+      it("contains the payer email when specified", () => {
+        testContext.options.userAuthenticationEmail = "the@email.com";
+
+        return testContext.paypalCheckout
+          .createPayment(testContext.options)
+          .then(() => {
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              data: {
+                payerEmail: "the@email.com",
+              },
+            });
+          });
+      });
+
       describe("when using checkout flow", () => {
         beforeEach(() => {
           testContext.options.flow = "checkout";
