@@ -1,6 +1,12 @@
 # CHANGELOG
 
-## 3.107.1 
+## 3.108.0
+
+- PayPal
+  - Support Checkout with Vault on v2 orders API
+
+## 3.107.1
+
 - Hosted Fields
   - Fix passing through a sessionId value
 

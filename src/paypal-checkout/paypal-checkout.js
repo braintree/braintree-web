@@ -601,6 +601,7 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
   var self = this;
   var endpoint = "paypal_hermes/" + constants.FLOW_ENDPOINTS[options.flow];
 
+  this._flow = options.flow;
   delete this.intentFromCreatePayment;
 
   config = config || {};
@@ -1127,10 +1128,7 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
   var shouldVault = true;
   var payload;
   var options = {
-    flow:
-      tokenizeOptions.billingToken && !tokenizeOptions.paymentID
-        ? "vault"
-        : "checkout",
+    flow: this._flow,
     intent: tokenizeOptions.intent || this.intentFromCreatePayment,
   };
   var params = {

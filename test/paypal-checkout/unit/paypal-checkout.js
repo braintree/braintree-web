@@ -2473,6 +2473,7 @@ describe("PayPalCheckout", () => {
 
     it("validates if flow is vault and auth is not tokenization key", () => {
       testContext.configuration.authorizationType = "CLIENT_TOKEN";
+      testContext.paypalCheckout._flow = "vault";
 
       return testContext.paypalCheckout
         .tokenizePayment({ billingToken: "token" })
@@ -2492,6 +2493,7 @@ describe("PayPalCheckout", () => {
 
     it("does not validate if merchant opts out even when flow is vault and auth is not tokenization key", () => {
       testContext.configuration.authorizationType = "CLIENT_TOKEN";
+      testContext.paypalCheckout._flow = "vault";
 
       return testContext.paypalCheckout
         .tokenizePayment({
@@ -2514,6 +2516,7 @@ describe("PayPalCheckout", () => {
 
     it("does not validate if merchant is using the pay later flow", () => {
       testContext.configuration.authorizationType = "CLIENT_TOKEN";
+      testContext.paypalCheckout._flow = "checkout";
 
       return testContext.paypalCheckout
         .tokenizePayment({
@@ -2536,6 +2539,7 @@ describe("PayPalCheckout", () => {
 
     it("does not validate if flow is vault and auth is tokenization key", () => {
       testContext.configuration.authorizationType = "TOKENIZATION_KEY";
+      testContext.paypalCheckout._flow = "vault";
 
       return testContext.paypalCheckout
         .tokenizePayment({ billingToken: "token" })
@@ -2570,6 +2574,68 @@ describe("PayPalCheckout", () => {
             },
           });
         }));
+
+    it("passes along paymentID as paymentToken when paymentID and billingToken are present and flow is checkout", () => {
+      testContext.paypalCheckout._flow = "checkout";
+      testContext.paypalCheckout
+        .tokenizePayment({
+          payerID: "payer id",
+          paymentID: "payment id",
+          billingToken: "ba token",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            data: {
+              paypalAccount: {
+                paymentToken: "payment id",
+                payerId: "payer id",
+              },
+            },
+          });
+        });
+    });
+
+    it("passes along orderId as payemntToken when orderId and billingToken are present and flow is checkout", () => {
+      testContext.paypalCheckout._flow = "checkout";
+      testContext.paypalCheckout
+        .tokenizePayment({
+          payerID: "payer id",
+          orderID: "order id",
+          billingToken: "ba token",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            data: {
+              paypalAccount: {
+                paymentToken: "order id",
+                payerId: "payer id",
+              },
+            },
+          });
+        });
+    });
+
+    it("passes along billingAgreementToken when orderId and billingToken are present and flow is vault", () => {
+      testContext.paypalCheckout._flow = "vault";
+      testContext.paypalCheckout
+        .tokenizePayment({
+          payerID: "payer id",
+          orderID: "order id",
+          billingToken: "ba token",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            data: {
+              paypalAccount: {
+                billingAgreementToken: "ba token",
+              },
+            },
+          });
+        });
+    });
 
     it("passes along orderId as payemntToken when orderId is present and paymentID is not present", () =>
       testContext.paypalCheckout
