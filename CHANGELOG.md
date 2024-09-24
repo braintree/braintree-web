@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.109.0
+
+- PayPal Checkout
+  - Add `userAuthenticationEmail` to `createPayment` to enable MPE
+
 ## 3.108.0
 
 - PayPal

@@ -434,7 +434,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  *
  * @param {string} [options.planType] Determines the charge pattern for the Recurring Billing Agreement. Can be 'RECURRING', 'SUBSCRIPTION', 'UNSCHEDULED', or 'INSTALLMENTS'.
  * @param {planMetadata} [options.planMetadata] When plan type is defined, allows for {@link PayPalCheckout~planMetadata|plan metadata} to be set for the Billing Agreement.
- *
+ * @param {string} [options.userAuthenticationEmail] Optional merchant-provided buyer email, used to streamline the sign-in process for both one-time checkout and vault flows.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
@@ -1433,6 +1433,7 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
       landingPageType: options.landingPageType,
     },
     shippingOptions: options.shippingOptions,
+    payer_email: options.userAuthenticationEmail, // eslint-disable-line camelcase
   };
 
   if (options.flow === "checkout") {

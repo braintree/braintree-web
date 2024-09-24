@@ -3342,4 +3342,64 @@ describe("PayPalCheckout", () => {
       expect(testContext.fakeFrameService.teardown).toBeCalledTimes(0);
     });
   });
+
+  describe("_formatPaymentResourceData", () => {
+    beforeEach(() => {
+      testContext.configuration = {
+        authorization: "development_testing_altpay_merchant",
+        gatewayConfiguration: {
+          paypal: {
+            assetsUrl: "https://paypal.assets.url",
+            displayName: "my brand",
+          },
+        },
+      };
+      testContext.config = {};
+    });
+
+    it("passes along payer_email if flow is vault and userAuthenticationEmail is passed", () => {
+      const options = {
+        flow: "vault",
+        userAuthenticationEmail: "user@example.com",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        { _configuration: testContext.configuration },
+        options,
+        testContext.config
+      );
+
+      expect(actual.payer_email).toBe("user@example.com");
+    });
+
+    it("passes along payer_email if flow is checkout and userAuthenticationEmail is passed", () => {
+      const options = {
+        flow: "checkout",
+        userAuthenticationEmail: "user@example.com",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        { _configuration: testContext.configuration },
+        options,
+        testContext.config
+      );
+
+      expect(actual.payer_email).toBe("user@example.com");
+    });
+
+    it("doesn't pass along payer_email if userAuthenticationEmail isn't passed", () => {
+      const options = {
+        flow: "vault",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        { _configuration: testContext.configuration },
+        options,
+        testContext.config
+      );
+
+      // eslint-disable-next-line no-undefined
+      expect(actual.payer_email).toBe(undefined);
+    });
+  });
 });
