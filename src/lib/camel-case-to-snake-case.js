@@ -11,6 +11,10 @@ function transformKey(key) {
 function camelCaseToSnakeCase(input) {
   var converted;
 
+  if (null === input) {
+      return null;
+  }
+
   if (Array.isArray(input)) {
     converted = [];
 

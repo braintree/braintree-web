@@ -106,4 +106,45 @@ describe("camelCaseToSnakeCase", () => {
 
     expect(camelCaseToSnakeCase(arrayOfValues)).toEqual(expectedArrayOfValues);
   });
+
+  it("returns of mixed types", () => {
+    const values = {
+      "snake_to_snake": false,
+      "camelToSnake": true,
+      "nullableField": null,
+      "decimal": 1.5,
+      "stringValue": "stringValue",
+      "nestedObject": {
+        "stringValue": "stringValue",
+      },
+      "nestedArray": [
+        "camelValueLiteral",
+        {
+          "nestedObject": {
+            "stringValue": "stringValue",
+          },
+        },
+      ],
+    };
+    const expectedValues = {
+      "snake_to_snake": false,
+      "camel_to_snake": true,
+      "nullable_field": null,
+      "decimal": 1.5,
+      "string_value": "stringValue",
+      "nested_object": {
+        "string_value": "stringValue",
+      },
+      "nested_array": [
+        "camelValueLiteral",
+        {
+          "nested_object": {
+            "string_value": "stringValue",
+          },
+        },
+      ],
+    };
+
+    expect(camelCaseToSnakeCase(values)).toEqual(expectedValues);
+  });
 });
