@@ -5,6 +5,7 @@ jest.mock("../../../src/lib/basic-component-verification");
 jest.mock("../../../src/lib/create-deferred-client");
 jest.mock("../../../src/lib/create-assets-url");
 jest.mock("../../../src/sepa/external/sepa");
+jest.mock("../../../src/sepa/external/mandate");
 
 const { fake } = require("../../helpers");
 const { create } = require("../../../src/sepa");
@@ -12,6 +13,8 @@ const SEPA = require("../../../src/sepa/external/sepa");
 const basicComponentVerification = require("../../../src/lib/basic-component-verification");
 const createDeferredClient = require("../../../src/lib/create-deferred-client");
 const analytics = require("../../../src/lib/analytics");
+const assign = require("../../../src/lib/assign").assign;
+const mandate = require("../../../src/sepa/external/mandate");
 
 describe("SEPA static methods", () => {
   describe("sepa.create", () => {
@@ -85,6 +88,46 @@ describe("SEPA static methods", () => {
         testContext.client,
         "sepa.client.initialized"
       );
+    });
+
+    it("when success=true and cart_id provided, should call handleApprovalForFullPageRedirect", async () => {
+      const cartId = "12345";
+      const prevUrl = window.location.href;
+
+      mandate.handleApprovalForFullPageRedirect.mockImplementation(() => {
+        return Promise.resolve();
+      });
+
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        get() {
+          return {
+            href: "https://www.example.com?success=true&cart_id=" + cartId,
+          };
+        },
+      });
+      const options = {
+        client: testContext.client,
+        accountHolderName: "Jane Doe",
+        iban: "1234567890101112131415",
+        countryCode: "US",
+        customerId: "1234567890",
+        mandateType: "ONE_OFF",
+        merchantAccountId: "9876543210",
+      };
+
+      await create(options);
+
+      expect(mandate.handleApprovalForFullPageRedirect).toBeCalledWith(
+        options.client,
+        assign(options, { success: true, cart_id: cartId }) // eslint-disable-line camelcase
+      );
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        get() {
+          return { href: prevUrl };
+        },
+      });
     });
   });
 });

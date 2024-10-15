@@ -8,6 +8,7 @@ var useMin = require("../../lib/use-min");
 var billingAddressOptions =
   require("../shared/constants").BILLING_ADDRESS_OPTIONS;
 var snakeCaseToCamelCase = require("../../lib/snake-case-to-camel-case");
+var assign = require("../../lib/assign").assign;
 
 var POPUP_WIDTH = 400;
 var POPUP_HEIGHT = 570;
@@ -165,6 +166,10 @@ function openPopup(client, options) {
   });
 }
 
+function redirectPage(approvalUrl) {
+  window.location.href = approvalUrl;
+}
+
 function mandateApproved(params) {
   return params && params.success;
 }
@@ -244,10 +249,44 @@ function handleApproval(client, options) {
     });
 }
 
+function handleApprovalForFullPageRedirect(client, options) {
+  return client
+    .request({
+      api: "clientApi",
+      method: "get",
+      endpoint: "sepa_debit/" + options.cart_id,
+    })
+    .then(function (response) {
+      var payload = response.sepaDebitMandateDetail;
+
+      analytics.sendEvent(client, "sepa.redirect.mandate.approved");
+
+      assign(options, {
+        last4: payload.last4,
+        customerId: payload.merchantOrPartnerCustomerId,
+        mandateType: payload.mandateType,
+        bankReferenceToken: payload.bankReferenceToken,
+      });
+
+      return handleApproval(client, options);
+    })
+    .then(function (response) {
+      analytics.sendEvent(client, "sepa.redirect.tokenization.success");
+
+      return response;
+    })
+    .catch(function () {
+      analytics.sendEvent(client, "sepa.redirect.handle-approval.failed");
+      throw new BraintreeError(sepaErrors.SEPA_TRANSACTION_FAILED);
+    });
+}
+
 module.exports = {
   createMandate: createMandate,
   openPopup: openPopup,
   handleApproval: handleApproval,
   POPUP_WIDTH: POPUP_WIDTH,
   POPUP_HEIGHT: POPUP_HEIGHT,
+  redirectPage: redirectPage,
+  handleApprovalForFullPageRedirect: handleApprovalForFullPageRedirect,
 };

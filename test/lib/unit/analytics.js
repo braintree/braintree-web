@@ -1,10 +1,9 @@
 "use strict";
 
 const analytics = require("../../../src/lib/analytics");
-const constants = require("../../../src/lib/constants");
 const { yieldsAsync } = require("../../helpers");
 
-describe("analytics.sendEvent", () => {
+describe("analytics", () => {
   let testContext;
 
   beforeEach(() => {
@@ -18,15 +17,9 @@ describe("analytics.sendEvent", () => {
 
       return testContext.fauxDate;
     });
+
     testContext.client = {
       _request: jest.fn(yieldsAsync()),
-      getConfiguration: () => ({
-        authorization: "development_testing_merchant_id",
-        analyticsMetadata: { sessionId: "sessionId" },
-        gatewayConfiguration: {
-          analytics: { url: "https://example.com/analytics-url" },
-        },
-      }),
     };
   });
 
@@ -34,126 +27,132 @@ describe("analytics.sendEvent", () => {
     jest.useRealTimers();
   });
 
-  it("correctly sends an analytics event with a callback", (done) => {
-    analytics.sendEvent(testContext.client, "test.event.kind", () => {
-      const currentTimestamp = Date.now();
-      const { timeout, url, method, data } =
-        testContext.client._request.mock.calls[0][0];
-
-      expect(testContext.client._request).toHaveBeenCalled();
-
-      expect(url).toBe("https://example.com/analytics-url");
-      expect(method).toBe("post");
-      expect(data.analytics[0].kind).toBe("web.test.event.kind");
-      expect(data.braintreeLibraryVersion).toBe(
-        constants.BRAINTREE_LIBRARY_VERSION
-      );
-      expect(data._meta.sessionId).toBe("sessionId");
-      expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
-      expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
-      expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-      expect(data.analytics[0].isAsync).toBe(false);
-
-      done();
+  describe("send loggernodeweb events", () => {
+    beforeEach(() => {
+      testContext.client.getConfiguration = () => {
+        return {
+          authorization: "development_testing_merchant_id",
+          analyticsMetadata: {
+            sessionId: "sessionId",
+            integrationType: "custom",
+          },
+          gatewayConfiguration: {
+            analytics: { url: "https://example.com/analytics-url" },
+            environment: "sandbox",
+            merchantId: "merchant-id",
+          },
+        };
+      };
     });
-  });
 
-  it("correctly sends an analytics event with no callback (fire-and-forget)", async () => {
-    testContext.client._request.mockReset();
+    it("passes client creation rejection to callback", (done) => {
+      const clientPromise = Promise.reject(new Error("failed to set up"));
 
-    analytics.sendEvent(testContext.client, "test.event.kind");
+      analytics.sendEvent(clientPromise, "test.event.kind", (err) => {
+        expect(err.message).toBe("failed to set up");
 
-    await Promise.resolve(() => jest.runAllTimers());
-
-    const currentTimestamp = Date.now();
-
-    expect(testContext.client._request).toBeCalledTimes(1);
-
-    const postArgs = testContext.client._request.mock.calls[0];
-    const { timeout, url, method, data } = postArgs[0];
-
-    expect(testContext.client._request).toHaveBeenCalled();
-    expect(url).toBe("https://example.com/analytics-url");
-    expect(method).toBe("post");
-    expect(data.analytics[0].kind).toBe("web.test.event.kind");
-    expect(data.braintreeLibraryVersion).toBe(
-      constants.BRAINTREE_LIBRARY_VERSION
-    );
-    expect(data._meta.sessionId).toBe("sessionId");
-    expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
-    expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
-    expect(postArgs[1]).toBeFalsy();
-    expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-    expect(data.analytics[0].isAsync).toBe(false);
-  });
-
-  it("can send a deferred analytics event if client is a promise", (done) => {
-    const clientPromise = Promise.resolve(testContext.client);
-
-    analytics.sendEvent(clientPromise, "test.event.kind", () => {
-      const currentTimestamp = Date.now();
-      const { timeout, url, method, data } =
-        testContext.client._request.mock.calls[0][0];
-
-      expect(testContext.client._request).toHaveBeenCalled();
-
-      expect(url).toBe("https://example.com/analytics-url");
-      expect(method).toBe("post");
-      expect(data.analytics[0].kind).toBe("web.test.event.kind");
-      expect(data.braintreeLibraryVersion).toBe(
-        constants.BRAINTREE_LIBRARY_VERSION
-      );
-      expect(data._meta.sessionId).toBe("sessionId");
-      expect(currentTimestamp - data.analytics[0].timestamp).toBeLessThan(2000);
-      expect(currentTimestamp - data.analytics[0].timestamp).toBeGreaterThan(0);
-      expect(timeout).toBe(constants.ANALYTICS_REQUEST_TIMEOUT_MS);
-      expect(data.analytics[0].isAsync).toBe(false);
-
-      done();
+        done();
+      });
     });
-  });
 
-  it("passes client creation rejection to callback", (done) => {
-    const clientPromise = Promise.reject(new Error("failed to set up"));
+    it("ignores errors when client promise rejects and no callback is passed", async () => {
+      let err;
+      const clientPromise = Promise.reject(new Error("failed to set up"));
 
-    analytics.sendEvent(clientPromise, "test.event.kind", (err) => {
-      expect(err.message).toBe("failed to set up");
+      try {
+        await analytics.sendEvent(clientPromise, "test.event.kind");
+      } catch (e) {
+        err = e;
+      }
 
-      done();
+      expect(err).toBeFalsy();
     });
-  });
 
-  it("ignores errors when client promise rejects and no callback is passed", async () => {
-    let err;
-    const clientPromise = Promise.reject(new Error("failed to set up"));
+    it("sets timestamp to the time when the event was initialized, not when it was sent", (done) => {
+      const client = testContext.client;
 
-    try {
-      await analytics.sendEvent(clientPromise, "test.event.kind");
-    } catch (e) {
-      err = e;
-    }
+      testContext.fauxDate += 1500;
+      const clientPromise = Promise.resolve(client);
 
-    expect(err).toBeFalsy();
-  });
+      /* eslint-disable new-cap */
+      client._request = jest.fn().mockImplementation((options, cb) => {
+        if (cb) {
+          cb();
+        }
 
-  it("sets timestamp to the time when the event was initialized, not when it was sent", (done) => {
-    const client = testContext.client;
+        return Promise();
+      });
 
-    testContext.fauxDate += 1500;
-    const clientPromise = Promise.resolve(client);
+      analytics.sendEvent(clientPromise, "test.event.kind", () => {
+        const currentTimestamp = Date.now();
+        /* eslint-disable camelcase */
+        const eventData = client._request.mock.calls[0][0].data;
+        const timestamp = eventData.events[0].payload.timestamp;
+        /* eslint-disable camelcase */
+        const tenant_name = eventData.tracking[0].tenant_name;
 
-    analytics.sendEvent(clientPromise, "test.event.kind", () => {
-      const currentTimestamp = Date.now();
-      const { timestamp, isAsync } =
-        client._request.mock.calls[0][0].data.analytics[0];
+        expect(currentTimestamp - timestamp).toBeLessThan(2000);
+        expect(currentTimestamp - timestamp).toBeGreaterThan(0);
+        expect(tenant_name).toBe(
+          "braintree"
+        ); /* eslint-disable-line camelcase */
 
-      expect(currentTimestamp - timestamp).toBeLessThan(2000);
-      expect(currentTimestamp - timestamp).toBeGreaterThan(0);
-      expect(isAsync).toBe(true);
+        jest.runAllTimers();
+        done();
+      });
+    });
+
+    it("sends specified event/analytic", (done) => {
+      const expectedEventName = "api.module.thing.happened";
+      const client = testContext.client;
+
+      analytics.sendEvent(client, expectedEventName, () => {
+        /* eslint-disable camelcase */
+        const actualEventName =
+          /* eslint-disable camelcase */
+          client._request.mock.calls[0][0].events[0].event;
+
+        expect(actualEventName).toBe("web." + expectedEventName);
+
+        jest.runAllTimers();
+      });
 
       done();
     });
 
-    jest.runAllTimers();
+    it("sends expected event envelope", (done) => {
+      const expectedEventName = "api.module.thing.happened";
+      const expectedEventEnvelope = {
+        events: [],
+        tracking: [],
+      };
+      const client = testContext.client;
+
+      analytics.sendEvent(client, expectedEventName, () => {
+        /* eslint-disable camelcase */
+        const actualEventSent =
+          /* eslint-disable camelcase */
+          client._request.mock.calls[0][0].data;
+
+        expect(actualEventSent).toMatchObject(expectedEventEnvelope);
+        expect(actualEventSent).toHaveProperty("events");
+        expect(actualEventSent).toHaveProperty("tracking");
+        expect(actualEventSent.events[0].level).not.toBeNull();
+        expect(actualEventSent.events[0].event).not.toBeNull();
+        expect(actualEventSent.events[0].payload).not.toBeNull();
+        /* eslint-disable camelcase */
+        expect(actualEventSent.events[0].payload).toHaveProperty("env");
+        /* eslint-disable camelcase */
+        expect(actualEventSent.events[0].payload).toHaveProperty("timestamp");
+        /* eslint-disable camelcase */
+        expect(actualEventSent.events[0].event).toBe(
+          "web." + expectedEventName
+        );
+
+        jest.runAllTimers();
+      });
+
+      done();
+    });
   });
 });

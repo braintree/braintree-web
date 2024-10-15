@@ -9,7 +9,7 @@ var BraintreeError = require("../lib/braintree-error");
 var convertToBraintreeError = require("../lib/convert-to-braintree-error");
 var getGatewayConfiguration = require("./get-configuration").getConfiguration;
 var createAuthorizationData = require("../lib/create-authorization-data");
-var addMetadata = require("../lib/add-metadata");
+var metadata = require("../lib/add-metadata");
 var wrapPromise = require("@braintree/wrap-promise");
 var once = require("../lib/once");
 var deferred = require("../lib/deferred");
@@ -321,7 +321,10 @@ Client.prototype.request = function (options, callback) {
     if (api === "clientApi") {
       baseUrl = self._clientApiBaseUrl;
 
-      requestOptions.data = addMetadata(self._configuration, options.data);
+      requestOptions.data = metadata.addMetadata(
+        self._configuration,
+        options.data
+      );
     } else if (api === "graphQLApi") {
       baseUrl =
         GRAPHQL_URLS[self._configuration.gatewayConfiguration.environment];

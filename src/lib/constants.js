@@ -34,6 +34,7 @@ if (process.env.BRAINTREE_JS_ENV === "development") {
 module.exports = {
   ANALYTICS_PREFIX: PLATFORM + ".",
   ANALYTICS_REQUEST_TIMEOUT_MS: 2000,
+  ANALYTICS_URL: "https://www.paypal.com/xoplatform/logger/api/logger",
   ASSETS_URLS: ASSETS_URLS,
   CLIENT_API_URLS: CLIENT_API_URLS,
   FRAUDNET_SOURCE: "BRAINTREE_SIGNIN",

@@ -3,6 +3,7 @@
 const { fake } = require("../../helpers");
 const createDeferredClient = require("../../../src/lib/create-deferred-client");
 const {
+  handleApprovalForFullPageRedirect,
   createMandate,
   openPopup,
   handleApproval,
@@ -60,7 +61,7 @@ describe("mandate.js", () => {
     bankReferenceToken,
     merchantAccountId,
   };
-  const mockSepaSucessResponse = {
+  const mockSepaSuccessResponse = {
     nonce: nonce,
   };
 
@@ -449,7 +450,7 @@ describe("mandate.js", () => {
     it("makes the http request", async () => {
       testContext.client.request = jest.fn();
 
-      testContext.client.request.mockResolvedValue(mockSepaSucessResponse);
+      testContext.client.request.mockResolvedValue(mockSepaSuccessResponse);
 
       const expectedResult = {
         nonce,
@@ -495,6 +496,33 @@ describe("mandate.js", () => {
         expect(err.message).toEqual(sepaErrors.SEPA_TRANSACTION_FAILED.message);
         expect(err.details).toEqual(sepaErrors.SEPA_TRANSACTION_FAILED.details);
       }
+    });
+  });
+
+  describe("handleApprovalForFullPageRedirect()", () => {
+    it("sends expected events when successful", async () => {
+      testContext.client.request = jest.fn();
+      testContext.client.request
+        .mockResolvedValueOnce({
+          sepaDebitMandateDetail: {
+            last4: iban.slice(-4),
+            merchantOrPartnerCustomerId: customerId,
+            mandateType: mandateType,
+            bankReferenceToken: bankReferenceToken,
+          },
+        })
+        .mockResolvedValueOnce(mockSepaSuccessResponse);
+
+      await handleApprovalForFullPageRedirect(testContext.client, payload);
+
+      expect(analytics.sendEvent).toBeCalledWith(
+        testContext.client,
+        "sepa.redirect.mandate.approved"
+      );
+      expect(analytics.sendEvent).toBeCalledWith(
+        testContext.client,
+        "sepa.redirect.tokenization.success"
+      );
     });
   });
 });

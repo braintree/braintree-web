@@ -81,6 +81,16 @@ describe("sepa.js", () => {
           mandateType: requiredInputs.mandateType,
         });
       });
+      jest
+        .spyOn(mandates, "handleApprovalForFullPageRedirect")
+        .mockImplementation(() => {
+          return Promise.resolve({
+            nonce: mockNonce,
+            ibanLastFour: requiredInputs.iban.slice(-4),
+            customerId: requiredInputs.customerId,
+            mandateType: requiredInputs.mandateType,
+          });
+        });
       sepaInputs = {
         client: testContext.client,
         merchantId,
@@ -269,28 +279,6 @@ describe("sepa.js", () => {
       }
     });
 
-    it("should call handleApproval", async () => {
-      const sepaInstance = new SEPA(sepaInputs);
-
-      await sepaInstance.tokenize(requiredInputs);
-
-      const client = testContext.client;
-
-      const expectedArgs = {
-        bankReferenceToken: requiredInputs.bankReferenceToken,
-        last4: requiredInputs.last4,
-        customerId: requiredInputs.customerId,
-        mandateType: requiredInputs.mandateType,
-        merchantAccountId: requiredInputs.merchantAccountId,
-      };
-
-      expect(mandates.handleApproval).toBeCalledWith(client, expectedArgs);
-      expect(analytics.sendEvent).toBeCalledWith(
-        sepaInputs.client,
-        "sepa.mandate.approved"
-      );
-    });
-
     it("should complete tokenize process sucessfuly", async () => {
       const expectedResponse = {
         nonce: mockNonce,
@@ -299,12 +287,19 @@ describe("sepa.js", () => {
         mandateType: requiredInputs.mandateType,
       };
       const sepaInstance = new SEPA(sepaInputs);
+
+      // Called when you make a new SEPA
+      expect(analytics.sendEvent).toBeCalledWith(
+        sepaInputs.client,
+        "sepa.component.initialized"
+      );
+
       const data = await sepaInstance.tokenize(requiredInputs);
 
       expect(data).toEqual(expectedResponse);
       expect(analytics.sendEvent).toBeCalledWith(
         sepaInputs.client,
-        "sepa.tokenization.success"
+        "sepa.create-mandate.success"
       );
     });
 

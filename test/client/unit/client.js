@@ -472,15 +472,13 @@ describe("Client", () => {
     it("calls driver with client for source in _meta if source is not provided", () => {
       const client = new Client(fakeConfiguration());
 
-      jest.spyOn(client, "_request").mockReturnValue(null);
-      client.request(
-        {
-          endpoint: "payment_methods",
-          method: "get",
-        },
-        () => {}
-      );
+      jest.spyOn(client, "_request").mockReturnValue(null); // yieldsAsync
+      client.request({
+        endpoint: "payment_methods",
+        method: "get",
+      });
 
+      expect(client._request.mock.calls).not.toEqual([]);
       expect(client._request.mock.calls[0][0]).toMatchObject({
         data: { _meta: { source: "client" } },
       });

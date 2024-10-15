@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.110.0
+
+- SEPA
+  - Add support for new full page redirect flow
+
 ## 3.109.0
 
 - PayPal Checkout

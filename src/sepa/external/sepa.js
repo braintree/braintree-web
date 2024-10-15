@@ -23,8 +23,17 @@ function SEPA(options) {
   this._assetsUrl =
     getConfiguration.gatewayConfiguration.assetsUrl + "/web/" + VERSION;
   this._isDebug = getConfiguration.isDebug;
-  this._returnUrl = this._assetsUrl + "/html/redirect-frame.html?success=1";
-  this._cancelUrl = this._assetsUrl + "/html/redirect-frame.html?cancel=1";
+  if (options.redirectUrl) {
+    this._returnUrl = options.redirectUrl;
+    this._cancelUrl = options.redirectUrl + "?cancel=1";
+    this._isRedirectFlow = true;
+  } else {
+    this._returnUrl = this._assetsUrl + "/html/redirect-frame.html?success=1";
+    this._cancelUrl = this._assetsUrl + "/html/redirect-frame.html?cancel=1";
+  }
+  if (options.tokenizePayload) {
+    this.tokenizePayload = options.tokenizePayload;
+  }
 
   analytics.sendEvent(this._client, "sepa.component.initialized");
 }
@@ -69,6 +78,7 @@ function SEPA(options) {
  */
 SEPA.prototype.tokenize = function (options) {
   var self = this;
+  var popupPromise;
   var createMandateOptions = assign(
     { cancelUrl: self._cancelUrl, returnUrl: self._returnUrl },
     options
@@ -90,10 +100,15 @@ SEPA.prototype.tokenize = function (options) {
     );
   }
 
-  return mandates
+  popupPromise = mandates
     .createMandate(self._client, createMandateOptions)
     .then(function (mandateResponse) {
       analytics.sendEvent(self._client, "sepa.create-mandate.success");
+
+      if (self._isRedirectFlow) {
+        return mandates.redirectPage(mandateResponse.approvalUrl);
+      }
+
       options.last4 = mandateResponse.last4;
       options.bankReferenceToken = mandateResponse.bankReferenceToken;
 
@@ -101,7 +116,15 @@ SEPA.prototype.tokenize = function (options) {
         approvalUrl: mandateResponse.approvalUrl,
         assetsUrl: self._assetsUrl,
       });
-    })
+    });
+
+  // Must be outside of .then() to return from top-level function
+  if (self._isRedirectFlow) {
+    return Promise.resolve();
+  }
+
+  // At this point, we know the promise came from the popup flow
+  return popupPromise
     .then(function () {
       analytics.sendEvent(self._client, "sepa.mandate.approved");
 
