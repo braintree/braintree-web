@@ -15,6 +15,7 @@ var querystring = require("../../lib/querystring");
 var wrapPromise = require("@braintree/wrap-promise");
 var constants = require("./constants");
 var errors = require("../shared/errors");
+var assign = require("../../lib/assign").assign;
 
 var DEFAULT_WINDOW_WIDTH = 1282;
 var DEFAULT_WINDOW_HEIGHT = 720;
@@ -43,6 +44,10 @@ function LocalPayment(options) {
   this._authorizationInProgress = false;
   this._paymentType = "unknown";
   this._merchantAccountId = options.merchantAccountId;
+  if (options.redirectUrl) {
+    this._redirectUrl = options.redirectUrl;
+    this._isRedirectFlow = true;
+  }
 }
 
 LocalPayment.prototype._initialize = function () {
@@ -76,12 +81,12 @@ LocalPayment.prototype._initialize = function () {
 /**
  * Options used for most local payment types.
  * @typedef {object} LocalPayment~StartPaymentOptions
- * @property {object} fallback Configuration for what to do when app switching back from a Bank app on a mobile device.
+ * @property {object} fallback Configuration for what to do when app switching back from a Bank app on a mobile device. Only applicable to the popup flow.
  * @property {string} fallback.buttonText The text to display in a button to redirect back to the merchant page.
  * @property {string} fallback.url The url to redirect to when the redirect button is pressed. Query params will be added to the url to process the data returned from the bank.
  * @property {string} fallback.cancelButtonText The text to display in a button to redirect back to the merchant page when the customer cancels. If no `cancelButtonText` is provided, `buttonText` will be used.
  * @property {string} fallback.cancelUrl The url to redirect to when the redirect button is pressed when the customer cancels. Query params will be added to the url to check the state of the payment. If no `cancelUrl` is provided, `url` will be used.
- * @property {object} [windowOptions] The options for configuring the window that is opened when starting the payment.
+ * @property {object} [windowOptions] The options for configuring the window that is opened when starting the payment. Only applicable to the popup flow.
  * @property {number} [windowOptions.width=1282] The width in pixels of the window opened when starting the payment. The default width size is this large to allow various banking partner landing pages to display the QR Code to be scanned by the bank's mobile app. Many will not display the QR code when the window size is smaller than a standard desktop screen.
  * @property {number} [windowOptions.height=720] The height in pixels of the window opened when starting the payment.
  * @property {string} amount The amount to authorize for the transaction.
@@ -409,10 +414,17 @@ LocalPayment.prototype.startPayment = function (options) {
     promise,
     billingAddress,
     windowOptions,
-    onPaymentStartPromise;
+    onPaymentStartPromise,
+    serviceId,
+    cancelUrl,
+    returnUrl;
   var self = this; // eslint-disable-line no-invalid-this
-  var serviceId = this._frameService._serviceId; // eslint-disable-line no-invalid-this
 
+  if (self._isRedirectFlow) {
+    options.redirectUrl = self._redirectUrl;
+  } else {
+    serviceId = self._frameService._serviceId;
+  }
   // In order to provide the merchant with appropriate error messaging,
   // more robust validation is being done on the client-side, since some
   // option names are mapped to legacy names for the sake of the API.
@@ -448,18 +460,6 @@ LocalPayment.prototype.startPayment = function (options) {
     },
     birthDate: options.birthDate,
     blikOptions: options.blikOptions,
-    cancelUrl: querystring.queryify(
-      self._assetsUrl +
-        "/html/local-payment-redirect-frame" +
-        useMin(self._isDebug) +
-        ".html",
-      {
-        channel: serviceId,
-        r: fallback.cancelUrl || fallback.url,
-        t: fallback.cancelButtonText || fallback.buttonText,
-        c: 1, // indicating we went through the cancel flow
-      }
-    ),
     city: address.locality,
     correlationId: options.correlationId,
     countryCode: address.countryCode,
@@ -486,7 +486,29 @@ LocalPayment.prototype.startPayment = function (options) {
     phoneCountryCode: options.phoneCountryCode,
     postalCode: address.postalCode,
     recurrent: options.recurrent,
-    returnUrl: querystring.queryify(
+    shippingAmount: options.shippingAmount,
+    state: address.region,
+  };
+
+  if (self._isRedirectFlow) {
+    cancelUrl = querystring.queryify(self._redirectUrl, {
+      wasCanceled: true,
+    });
+    returnUrl = self._redirectUrl;
+  } else {
+    cancelUrl = querystring.queryify(
+      self._assetsUrl +
+        "/html/local-payment-redirect-frame" +
+        useMin(self._isDebug) +
+        ".html",
+      {
+        channel: serviceId,
+        r: fallback.cancelUrl || fallback.url,
+        t: fallback.cancelButtonText || fallback.buttonText,
+        c: 1, // indicating we went through the cancel flow
+      }
+    );
+    returnUrl = querystring.queryify(
       self._assetsUrl +
         "/html/local-payment-redirect-frame" +
         useMin(self._isDebug) +
@@ -496,13 +518,13 @@ LocalPayment.prototype.startPayment = function (options) {
         r: fallback.url,
         t: fallback.buttonText,
       }
-    ),
-    shippingAmount: options.shippingAmount,
-    state: address.region,
-  };
+    );
+  }
+  assign(params, { cancelUrl: cancelUrl, returnUrl: returnUrl });
 
   self._paymentType = options.paymentType.toLowerCase();
-  if (self._authorizationInProgress) {
+
+  if (self._authorizationInProgress && !self._isRedirectFlow) {
     analytics.sendEvent(
       self._client,
       self._paymentType + ".local-payment.start-payment.error.already-opened"
@@ -519,7 +541,7 @@ LocalPayment.prototype.startPayment = function (options) {
 
   // For deferred payment types, the popup window should not be opened,
   // since the actual payment will be done outside of this session.
-  if (!isDeferredPaymentTypeOptions(options)) {
+  if (!isDeferredPaymentTypeOptions(options) && !self._isRedirectFlow) {
     self._startPaymentCallback = self._createStartPaymentCallback(
       function (val) {
         promise.resolve(val);
@@ -547,10 +569,17 @@ LocalPayment.prototype.startPayment = function (options) {
     .then(function (response) {
       var redirectUrl = response.paymentResource.redirectUrl;
 
-      analytics.sendEvent(
-        self._client,
-        self._paymentType + ".local-payment.start-payment.opened"
-      );
+      if (self._isRedirectFlow) {
+        analytics.sendEvent(
+          self._client,
+          self._paymentType + ".local-payment.start-payment.redirected"
+        );
+      } else {
+        analytics.sendEvent(
+          self._client,
+          self._paymentType + ".local-payment.start-payment.opened"
+        );
+      }
       self._startPaymentOptions = options;
 
       if (isDeferredPaymentTypeOptions(options)) {
@@ -575,6 +604,8 @@ LocalPayment.prototype.startPayment = function (options) {
             promise.resolve();
           }
         }
+      } else if (self._isRedirectFlow) {
+        window.location.href = response.paymentResource.redirectUrl;
       } else {
         options.onPaymentStart(
           { paymentId: response.paymentResource.paymentToken },
@@ -587,7 +618,9 @@ LocalPayment.prototype.startPayment = function (options) {
     .catch(function (err) {
       var status = err.details && err.details.httpStatus;
 
-      self._frameService.close();
+      if (!self._isRedirectFlow) {
+        self._frameService.close();
+      }
       self._authorizationInProgress = false;
 
       if (status === 422) {
@@ -936,6 +969,12 @@ function hasMissingBlikOptions(options) {
   var i, option, oneClick;
   var blikOptions = options.blikOptions || {};
 
+  if (!options.redirectUrl) {
+    constants.REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE.push(
+      "onPaymentStart"
+    );
+  }
+
   for (
     i = 0;
     i < constants.REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE.length;
@@ -1035,6 +1074,10 @@ function hasMissingOption(options) {
       return hasMissingBlikOptions(options);
     }
   } else {
+    if (!options.redirectUrl) {
+      constants.REQUIRED_OPTIONS_FOR_START_PAYMENT.push("onPaymentStart");
+    }
+
     for (i = 0; i < constants.REQUIRED_OPTIONS_FOR_START_PAYMENT.length; i++) {
       option = constants.REQUIRED_OPTIONS_FOR_START_PAYMENT[i];
 
@@ -1072,7 +1115,9 @@ function hasMissingOption(options) {
 LocalPayment.prototype.teardown = function () {
   var self = this; // eslint-disable-line no-invalid-this
 
-  self._frameService.teardown();
+  if (!self._isRedirectFlow) {
+    self._frameService.teardown();
+  }
 
   convertMethodsToError(self, methods(LocalPayment.prototype));
 

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.111.0
+
+- Local Payment Methods
+  - Add Full Page Redirect
+
 ## 3.110.0
 
 - SEPA

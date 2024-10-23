@@ -91,5 +91,75 @@ describe("local payment", () => {
           "local-payment.initialized"
         );
       }));
+
+    describe("Full page redirect", () => {
+      const originalHref = window.location.href;
+
+      beforeEach(() => {});
+
+      afterEach(() => {
+        Object.defineProperty(window, "location", {
+          configurable: true,
+          get() {
+            return {
+              href: originalHref,
+            };
+          },
+        });
+      });
+
+      it("tokenizes when when token is present", async () => {
+        const testToken = "testtoken";
+        const testUrl = `www.example.com/?token=${testToken}`;
+
+        Object.defineProperty(window, "location", {
+          configurable: true,
+          get() {
+            return {
+              href: testUrl,
+            };
+          },
+        });
+
+        LocalPayment.prototype.tokenize = jest.fn();
+        LocalPayment.prototype.tokenize.mockImplementation(() =>
+          Promise.resolve()
+        );
+
+        await create({
+          client: testContext.client,
+          redirectUrl: "www.merchant-site.com",
+        });
+        expect(LocalPayment.prototype.tokenize).toHaveBeenCalledWith({
+          token: testToken,
+        });
+      });
+
+      it("tokenizes when canceled", async () => {
+        const testUrl = `www.example.com/?wasCanceled=true`;
+
+        Object.defineProperty(window, "location", {
+          configurable: true,
+          get() {
+            return {
+              href: testUrl,
+            };
+          },
+        });
+
+        LocalPayment.prototype.tokenize = jest.fn();
+        LocalPayment.prototype.tokenize.mockImplementation(() =>
+          Promise.resolve()
+        );
+
+        await create({
+          client: testContext.client,
+          redirectUrl: "www.merchant-site.com",
+        });
+        expect(LocalPayment.prototype.tokenize).toHaveBeenCalledWith({
+          wasCanceled: "true",
+        });
+      });
+    });
   });
 });

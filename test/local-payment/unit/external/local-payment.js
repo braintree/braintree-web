@@ -158,6 +158,106 @@ describe("LocalPayment", () => {
     });
   });
 
+  describe("full page redirect flow", () => {
+    const originalHref = window.location.href;
+
+    beforeEach(() => {
+      testContext.localPayment = new LocalPayment({
+        client: testContext.client,
+        redirectUrl: "www.example.com",
+        merchantAccountId: "merchant-account-id",
+      });
+
+      testContext.frameServiceInstance = {
+        _serviceId: "service-id",
+        close: jest.fn(),
+        open: jest.fn(),
+        redirect: jest.fn(),
+      };
+
+      testContext.options = {
+        redirectUrl: "www.example.com",
+        paymentType: "ideal",
+        paymentTypeCountryCode: "PL",
+        amount: "10.00",
+        shippingAddressRequired: true,
+        currencyCode: "PLN",
+        givenName: "First",
+        surname: "Last",
+        email: "email@example.com",
+        phone: "1234",
+        displayName: "My Brand!",
+        fallback: {
+          url: "https://example.com/fallback",
+          buttonText: "Button Text",
+        },
+        address: {
+          streetAddress: "123 Address",
+          extendedAddress: "Unit 1",
+          locality: "Chicago",
+          region: "IL",
+          postalCode: "60654",
+          countryCode: "US",
+        },
+      };
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: null,
+          paymentToken: "payment-token",
+        },
+      });
+
+      jest
+        .spyOn(frameService, "create")
+        .mockImplementation(yields(testContext.frameServiceInstance));
+
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        get() {
+          return {
+            href: "www.example.com",
+          };
+        },
+      });
+
+      return testContext.localPayment._initialize();
+    });
+
+    afterEach(() => {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        get() {
+          return {
+            href: originalHref,
+          };
+        },
+      });
+    });
+
+    it.each([
+      ["bancontext", "BE", "EUR"],
+      ["blik", "PL", "PLN"],
+      ["eps", "AT", "EUR"],
+      ["grabpay", "SG", "SGD"],
+      ["ideal", "NL", "EUR"],
+      ["sofort", "AT", "EUR"],
+      ["mybank", "IT", "EUR"],
+      ["p24", "PL", "PLN"],
+    ])(
+      "%p doesn't error when onPaymentStart is omitted",
+      (paymentType, countryCode, currencyCode) => {
+        testContext.options.paymentType = paymentType;
+        testContext.options.paymentTypeCountryCode = countryCode;
+        testContext.options.currencyCode = currencyCode;
+
+        expect(
+          testContext.localPayment.startPayment(testContext.options)
+        ).rejects.not.toThrow();
+      }
+    );
+  });
+
   describe("startPayment Blik seamless", () => {
     beforeEach(() => {
       testContext.localPayment = new LocalPayment({

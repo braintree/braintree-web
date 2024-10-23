@@ -13,6 +13,7 @@ var VERSION = process.env.npm_package_version;
 var wrapPromise = require("@braintree/wrap-promise");
 var BraintreeError = require("../lib/braintree-error");
 var errors = require("./shared/errors");
+var parse = require("../lib/querystring").parse;
 
 /**
  * @static
@@ -21,6 +22,7 @@ var errors = require("./shared/errors");
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {string} [options.merchantAccountId] A non-default merchant account ID to use for tokenization and creation of the authorizing transaction. Braintree strongly recommends specifying this parameter.
+ * @param {redirectUrl} When provided, triggers full page redirect flow instead of popup flow.
  * @param {callback} callback The second argument, `data`, is the {@link LocalPayment} instance.
  * @example <caption>Using the local payment component to set up an iDEAL button</caption>
  * var idealButton = document.querySelector('.ideal-button');
@@ -102,7 +104,7 @@ function create(options) {
       });
     })
     .then(function (client) {
-      var localPaymentInstance;
+      var localPaymentInstance, params;
       var config = client.getConfiguration();
 
       options.client = client;
@@ -116,6 +118,26 @@ function create(options) {
       analytics.sendEvent(client, "local-payment.initialized");
 
       localPaymentInstance = new LocalPayment(options);
+      if (options.redirectUrl) {
+        params = parse(window.location.href);
+
+        if (params.token || params.wasCanceled) {
+          return localPaymentInstance
+            .tokenize(params)
+            .then(function (payload) {
+              localPaymentInstance.tokenizePayload = payload;
+
+              return localPaymentInstance;
+            })
+            .catch(function (err) {
+              console.log("Error while tokenizing: ", err);
+
+              return localPaymentInstance;
+            });
+        }
+
+        return localPaymentInstance;
+      }
 
       return localPaymentInstance._initialize();
     });
