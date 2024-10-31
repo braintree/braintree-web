@@ -77,10 +77,12 @@ describe("analytics", () => {
       /* eslint-disable new-cap */
       client._request = jest.fn().mockImplementation((options, cb) => {
         if (cb) {
-          cb();
+          return cb();
         }
 
-        return Promise();
+        return new Promise(function (resolve) {
+          resolve();
+        });
       });
 
       analytics.sendEvent(clientPromise, "test.event.kind", () => {
@@ -107,10 +109,9 @@ describe("analytics", () => {
       const client = testContext.client;
 
       analytics.sendEvent(client, expectedEventName, () => {
-        /* eslint-disable camelcase */
         const actualEventName =
           /* eslint-disable camelcase */
-          client._request.mock.calls[0][0].events[0].event;
+          client._request.mock.calls[0][0].data.events[0].event;
 
         expect(actualEventName).toBe("web." + expectedEventName);
 
@@ -122,10 +123,6 @@ describe("analytics", () => {
 
     it("sends expected event envelope", (done) => {
       const expectedEventName = "api.module.thing.happened";
-      const expectedEventEnvelope = {
-        events: [],
-        tracking: [],
-      };
       const client = testContext.client;
 
       analytics.sendEvent(client, expectedEventName, () => {
@@ -134,9 +131,8 @@ describe("analytics", () => {
           /* eslint-disable camelcase */
           client._request.mock.calls[0][0].data;
 
-        expect(actualEventSent).toMatchObject(expectedEventEnvelope);
-        expect(actualEventSent).toHaveProperty("events");
-        expect(actualEventSent).toHaveProperty("tracking");
+        expect(Array.isArray(actualEventSent.events)).toBe(true);
+        expect(Array.isArray(actualEventSent.tracking)).toBe(true);
         expect(actualEventSent.events[0].level).not.toBeNull();
         expect(actualEventSent.events[0].event).not.toBeNull();
         expect(actualEventSent.events[0].payload).not.toBeNull();

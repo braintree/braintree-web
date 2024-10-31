@@ -56,35 +56,41 @@ function isCardinalCommerce(client, configuration) {
 }
 
 function handleConfiguration(configuration) {
-  var input, field;
-  var fields = { pareq: "PaReq", md: "MD", termUrl: "TermUrl" };
-  var form = document.createElement("form");
-  var client = new Client(configuration.clientConfiguration);
+  return new Promise(function (resolve, reject) {
+    var input, field;
+    var fields = { pareq: "PaReq", md: "MD", termUrl: "TermUrl" };
+    var form = document.createElement("form");
+    var client = new Client(configuration.clientConfiguration);
 
-  if (!isVerifiedDomain(configuration.termUrl)) {
-    throw new BraintreeError(errors.THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN);
-  }
+    if (!isVerifiedDomain(configuration.termUrl)) {
+      throw new BraintreeError(
+        errors.THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN
+      );
+    }
 
-  return isCardinalCommerce(client, configuration)
-    .then(function (acsUrl) {
-      form.action = sanitizeUrl(acsUrl);
-      form.method = "POST";
+    isCardinalCommerce(client, configuration)
+      .then(function (acsUrl) {
+        form.action = sanitizeUrl(acsUrl);
+        form.method = "POST";
 
-      for (field in fields) {
-        if (fields.hasOwnProperty(field)) {
-          input = document.createElement("input");
-          input.name = fields[field];
-          input.type = "hidden";
-          input.setAttribute("value", configuration[field]);
-          form.appendChild(input);
+        for (field in fields) {
+          if (fields.hasOwnProperty(field)) {
+            input = document.createElement("input");
+            input.name = fields[field];
+            input.type = "hidden";
+            input.setAttribute("value", configuration[field]);
+            form.appendChild(input);
+          }
         }
-      }
 
-      document.body.appendChild(form);
+        document.body.appendChild(form);
 
-      form.submit();
-    })
-    .catch(function (err) {
-      Promise.reject(err);
-    });
+        form.submit();
+
+        resolve();
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+  });
 }

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.111.1
+
+- Node.js
+  - Updated from Node.js v14 to Node.js v20
+
 ## 3.111.0
 
 - Local Payment Methods

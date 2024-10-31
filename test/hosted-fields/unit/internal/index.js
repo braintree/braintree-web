@@ -1791,6 +1791,8 @@ describe("internal", () => {
         });
 
         it("tokenizes country name for shipping address", async () => {
+          function mockReplyFunction() {}
+
           testContext.fakeOptions.shippingAddress = {
             countryName: "United States",
           };
@@ -1800,7 +1802,7 @@ describe("internal", () => {
             testContext.cardFormWithPostalCode
           );
 
-          await testHandler(testContext.fakeOptions);
+          await testHandler(testContext.fakeOptions, mockReplyFunction);
 
           expect(testContext.goodClient.request).toHaveBeenCalledWith(
             expect.any(Object)
@@ -1849,6 +1851,8 @@ describe("internal", () => {
         });
 
         it("tokenizes country code alpha 2 for shipping address", async () => {
+          function mockReplyFunction() {}
+
           testContext.fakeOptions.shippingAddress = {
             countryCodeAlpha2: "US",
           };
@@ -1858,7 +1862,7 @@ describe("internal", () => {
             testContext.cardFormWithPostalCode
           );
 
-          await testHandler(testContext.fakeOptions);
+          await testHandler(testContext.fakeOptions, mockReplyFunction);
           expect(testContext.goodClient.request).toHaveBeenCalledWith(
             expect.any(Object)
           );
@@ -1906,6 +1910,8 @@ describe("internal", () => {
         });
 
         it("tokenizes country code alpha 3 for shipping address", async () => {
+          function mockReplyFunction() {}
+
           testContext.fakeOptions.shippingAddress = {
             countryCodeAlpha3: "USA",
           };
@@ -1915,7 +1921,7 @@ describe("internal", () => {
             testContext.cardFormWithPostalCode
           );
 
-          await testHandler(testContext.fakeOptions);
+          await testHandler(testContext.fakeOptions, mockReplyFunction);
 
           expect(testContext.goodClient.request).toHaveBeenCalledWith(
             expect.any(Object)
@@ -1964,6 +1970,8 @@ describe("internal", () => {
         });
 
         it("tokenizes numeric country code for shipping address", async () => {
+          function mockReplyFunction() {}
+
           testContext.fakeOptions.shippingAddress = {
             countryCodeNumeric: "840",
           };
@@ -1973,7 +1981,8 @@ describe("internal", () => {
             testContext.cardFormWithPostalCode
           );
 
-          await testHandler(testContext.fakeOptions);
+          await testHandler(testContext.fakeOptions, mockReplyFunction);
+
           expect(testContext.goodClient.request).toHaveBeenCalledWith(
             expect.any(Object)
           );

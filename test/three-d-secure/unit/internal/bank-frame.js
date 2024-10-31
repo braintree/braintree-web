@@ -13,6 +13,8 @@ describe("initializeBankFrame", () => {
   let testContext;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     testContext = {};
     testContext.oldWindowName = window.name;
     jest.spyOn(Client.prototype, "request").mockImplementation(() =>
@@ -83,7 +85,7 @@ describe("initializeBankFrame", () => {
     expect(fakeDomNode.className).toBe("hidden");
   });
 
-  it("throw an error if termUrl is not a valid domain", (done) => {
+  it("throw an error if termUrl is not a valid domain", async () => {
     let handleConfiguration;
 
     initializeBankFrame();
@@ -91,7 +93,7 @@ describe("initializeBankFrame", () => {
     handleConfiguration = Bus.prototype.emit.mock.calls[0][1];
 
     try {
-      handleConfiguration({
+      await handleConfiguration({
         clientConfiguration: configuration(),
         acsUrl: "http://example.com/acs",
         pareq: "the pareq",
@@ -103,8 +105,6 @@ describe("initializeBankFrame", () => {
       expect(err.type).toBe(BraintreeError.types.INTERNAL);
       expect(err.code).toBe("THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN");
       expect(err.message).toBe("Term Url must be on a Braintree domain.");
-
-      done();
     }
   });
 
