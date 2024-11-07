@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.112.0
+
+- Local Payment
+  - Remove support of `bic` field for iDeal payments
+  - Update documentation for redirectUrl
+- Utility Functions
+  - Ensure camelCaseToSnakeCase handles null values correctly
+
 ## 3.111.1
 
 - Node.js

@@ -11,7 +11,9 @@ function transformKey(key) {
 function camelCaseToSnakeCase(input) {
   var converted;
 
-  if (Array.isArray(input)) {
+  if (input === null) {
+    converted = null;
+  } else if (Array.isArray(input)) {
     converted = [];
 
     input.forEach(function (x) {

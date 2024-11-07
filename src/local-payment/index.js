@@ -22,7 +22,7 @@ var parse = require("../lib/querystring").parse;
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {string} [options.merchantAccountId] A non-default merchant account ID to use for tokenization and creation of the authorizing transaction. Braintree strongly recommends specifying this parameter.
- * @param {redirectUrl} When provided, triggers full page redirect flow instead of popup flow.
+ * @param {string} [options.redirectUrl] When provided, triggers full page redirect flow instead of popup flow.
  * @param {callback} callback The second argument, `data`, is the {@link LocalPayment} instance.
  * @example <caption>Using the local payment component to set up an iDEAL button</caption>
  * var idealButton = document.querySelector('.ideal-button');

@@ -98,7 +98,6 @@ LocalPayment.prototype._initialize = function () {
  * @property {string} givenName First name of the customer.
  * @property {string} surname Last name of the customer.
  * @property {string} phone Phone number of the customer.
- * @property {string} bic Bank Identification Code of the customer (specific to iDEAL transactions).
  * @property {boolean} recurrent Enable recurrent payment.
  * @property {string} customerId The customer's id in merchant's system (required for recurrent payments).
  * @property {boolean} shippingAddressRequired Indicates whether or not the payment needs to be shipped. For digital goods, this should be false. Defaults to false.
@@ -449,7 +448,6 @@ LocalPayment.prototype.startPayment = function (options) {
   billingAddress = options.billingAddress || {};
   params = {
     amount: options.amount,
-    bic: options.bic,
     billingAddress: {
       line1: billingAddress.streetAddress,
       line2: billingAddress.extendedAddress,

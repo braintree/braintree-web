@@ -106,4 +106,26 @@ describe("camelCaseToSnakeCase", () => {
 
     expect(camelCaseToSnakeCase(arrayOfValues)).toEqual(expectedArrayOfValues);
   });
+
+  it("handles null values", () => {
+    const input = {
+      nullableValue: null,
+    };
+    const expectedOutput = {
+      nullable_value: null,
+    };
+
+    expect(camelCaseToSnakeCase(input)).toEqual(expectedOutput);
+  });
+
+  it("handles undefined values", () => {
+    const input = {
+      undefinedValue: undefined, // eslint-disable-line no-undefined
+    };
+    const expectedOutput = {
+      undefined_value: undefined, // eslint-disable-line no-undefined
+    };
+
+    expect(camelCaseToSnakeCase(input)).toEqual(expectedOutput);
+  });
 });

@@ -461,7 +461,6 @@ describe("LocalPayment", () => {
               phoneCountryCode: undefined,
               shippingAmount: undefined,
               merchantAccountId: "merchant-account-id",
-              bic: undefined,
               blikOptions: {
                 // eslint-disable-next-line camelcase
                 level_0: {
@@ -584,7 +583,6 @@ describe("LocalPayment", () => {
         surname: "Last",
         email: "email@example.com",
         phone: "1234",
-        bic: "ABGANL6A",
         displayName: "My Brand!",
         address: {
           streetAddress: "123 Address",
@@ -745,7 +743,6 @@ describe("LocalPayment", () => {
               phoneCountryCode: "49",
               shippingAmount: "2.00",
               merchantAccountId: "merchant-account-id",
-              bic: "ABGANL6A",
             },
           });
         });
@@ -812,7 +809,6 @@ describe("LocalPayment", () => {
               phoneCountryCode: "49",
               shippingAmount: "2.00",
               merchantAccountId: "merchant-account-id",
-              bic: "ABGANL6A",
             },
           });
         });
@@ -1072,7 +1068,6 @@ describe("LocalPayment", () => {
         surname: "Last",
         email: "email@example.com",
         phone: "1234",
-        bic: "ABGANL6A",
         displayName: "My Brand!",
         address: {
           streetAddress: "123 Address",
@@ -1221,7 +1216,6 @@ describe("LocalPayment", () => {
               phoneCountryCode: undefined,
               shippingAmount: undefined,
               merchantAccountId: "merchant-account-id",
-              bic: "ABGANL6A",
             },
           });
         });
@@ -1284,7 +1278,6 @@ describe("LocalPayment", () => {
               phoneCountryCode: undefined,
               shippingAmount: undefined,
               merchantAccountId: "merchant-account-id",
-              bic: "ABGANL6A",
             },
           });
         });
@@ -1347,7 +1340,6 @@ describe("LocalPayment", () => {
               postalCode: "60654",
               countryCode: "US",
               merchantAccountId: "merchant-account-id",
-              bic: "ABGANL6A",
             },
           });
         });
