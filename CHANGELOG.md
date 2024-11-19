@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.112.1
+
+- Venmo
+  - Fix a bug where, after redirecting in the mobile web flow, we were passing in a null context ID to a graphql API call. The fix is to set the Venmo instance's venmoPaymentContextId based on resource_id in url.
+
 ## 3.112.0
 
 - Local Payment

@@ -5,6 +5,7 @@ jest.mock("../../../src/venmo/shared/supports-venmo");
 jest.mock("../../../src/venmo/external");
 jest.mock("../../../src/lib/in-iframe");
 jest.mock("../../../src/venmo/shared/web-login-backdrop");
+jest.mock("../../../src/lib/url-params");
 
 const analytics = require("../../../src/lib/analytics");
 const { fake } = require("../../helpers");
@@ -23,6 +24,7 @@ const {
   setupDesktopWebLogin,
 } = require("../../../src/venmo/shared/web-login-backdrop");
 const venmoConstants = require("../../../src/venmo/shared/constants");
+const urlParams = require("../../../src/lib/url-params");
 
 function triggerVisibilityHandler(instance, runAllTimers = true) {
   // TODO we should have it trigger the actual
@@ -55,6 +57,7 @@ describe("Venmo", () => {
   beforeAll(() => {
     window.open = jest.fn();
     originalLocationHref = window.location.href;
+    urlParams.getUrlParams.mockReturnValue({});
   });
 
   beforeEach(() => {
@@ -2007,6 +2010,16 @@ describe("Venmo", () => {
 
     it("returns false when URL has no Venmo payload", () => {
       expect(venmo.hasTokenizationResult()).toBe(false);
+    });
+
+    it("sets the _venmoPaymentContextId from the resource_id", () => {
+      urlParams.getUrlParams.mockReturnValue({
+        resource_id: "test-resource-id", // eslint-disable-line camelcase
+      });
+
+      venmo.hasTokenizationResult();
+
+      expect(venmo._venmoPaymentContextId).toBe("test-resource-id");
     });
   });
 

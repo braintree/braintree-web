@@ -16,6 +16,7 @@ var ExtendedPromise = require("@braintree/extended-promise");
 var getVenmoUrl = require("./shared/get-venmo-url");
 var desktopWebLogin = require("./shared/web-login-backdrop");
 var snakeCaseToCamelCase = require("../lib/snake-case-to-camel-case");
+var urlParams = require("../lib/url-params");
 
 // NEXT_MAJOR_VERSION the source code for this is actually in a
 // typescript repo called venmo-desktop, once the SDK is migrated
@@ -503,6 +504,11 @@ Venmo.prototype.hasTokenizationResult = function () {
 // when listening on a hashchange event
 Venmo.prototype._hasTokenizationResult = function (hash) {
   var params = getFragmentParameters(hash);
+  var paramsFromUrl = urlParams.getUrlParams();
+
+  if (paramsFromUrl.resource_id) {
+    this._venmoPaymentContextId = paramsFromUrl.resource_id;
+  }
 
   return (
     typeof (params.venmoSuccess || params.venmoError || params.venmoCancel) !==
