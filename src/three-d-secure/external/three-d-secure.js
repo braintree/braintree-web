@@ -66,7 +66,7 @@ var FRAMEWORKS = require("./frameworks");
  * @property {string} threeDSecureInfo.cavv Cardholder authentication verification value or CAVV. The main encrypted message issuers and card networks use to verify authentication has occurred. Mastercard uses an AVV message and American Express uses an AEVV message, each of which should also be passed in the cavv parameter.
  * @property {string} threeDSecureInfo.dsTransactionId Transaction identifier resulting from 3D Secure 2 authentication.
  * @property {string} threeDSecureInfo.eciFlag The value of the electronic commerce indicator (ECI) flag, which indicates the outcome of the 3DS authentication. This will be a two-digit value.
- * @property {boolean} threeDSecureInfo.enrolled Indicates the status of 3D Secure authentication eligibility with the card issuer.
+ * @property {string} threeDSecureInfo.enrolled Indicates the status of 3D Secure authentication eligibility with the card issuer.
  * @property {boolean} threeDSecureInfo.liabilityShifted Indicates whether the liability for fraud has been shifted away from the merchant.
  * @property {boolean} threeDSecureInfo.liabilityShiftPossible Indicates whether liability shift is still possible on a retry.
  * @property {string} threeDSecureInfo.paresStatus Transaction status result identifier.

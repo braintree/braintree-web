@@ -2,8 +2,23 @@
 
 var constants = require("./constants");
 var metadata = require("./add-metadata");
+var assign = require("./assign").assign;
 
 function sendPaypalEvent(clientInstanceOrPromise, eventName, callback) {
+  return sendPaypalEventPlusFields(
+    clientInstanceOrPromise,
+    eventName,
+    {},
+    callback
+  );
+}
+
+function sendPaypalEventPlusFields(
+  clientInstanceOrPromise,
+  eventName,
+  extraFields,
+  callback
+) {
   var timestamp = Date.now();
 
   return Promise.resolve(clientInstanceOrPromise)
@@ -35,6 +50,10 @@ function sendPaypalEvent(clientInstanceOrPromise, eventName, callback) {
       ];
       data.tracking = [trackingMeta];
 
+      if (extraFields && typeof extraFields === "object") {
+        data.tracking = [appendExtraFieldsTo(trackingMeta, extraFields)];
+      }
+
       return request(
         {
           url: url,
@@ -52,6 +71,22 @@ function sendPaypalEvent(clientInstanceOrPromise, eventName, callback) {
     });
 }
 
+function appendExtraFieldsTo(trackingMeta, extraFields) {
+  var result = {};
+  var allowedExtraFields = assign({}, extraFields);
+
+  Object.keys(allowedExtraFields).forEach(function (field) {
+    if (constants.ALLOWED_EXTRA_EVENT_FIELDS.indexOf(field) === -1) {
+      delete allowedExtraFields[field];
+    }
+  });
+
+  result = assign(trackingMeta, allowedExtraFields);
+
+  return result;
+}
+
 module.exports = {
   sendEvent: sendPaypalEvent,
+  sendEventPlus: sendPaypalEventPlusFields,
 };

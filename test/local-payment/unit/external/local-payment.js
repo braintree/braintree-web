@@ -1805,6 +1805,14 @@ describe("LocalPayment", () => {
       expect(testContext.localPayment.hasTokenizationParams()).toBe(true);
     });
 
+    it("returns true if token is a url param (full page redirect flow)", () => {
+      querystring.parse.mockReturnValue({
+        token: "example-token",
+      });
+
+      expect(testContext.localPayment.hasTokenizationParams()).toBe(true);
+    });
+
     it("returns false if no query params", () => {
       querystring.parse.mockReturnValue({});
 

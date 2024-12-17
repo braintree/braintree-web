@@ -150,5 +150,61 @@ describe("analytics", () => {
 
       done();
     });
+
+    describe("add additional data to events", () => {
+      it("adds specified fields to event metadata", (done) => {
+        const client = testContext.client;
+        const expectedContextId = "venmo-1234-id";
+        const expectedEventName = "api.module.thing.happened";
+        var actualEventSent, actualTracking;
+
+        analytics.sendEventPlus(
+          client,
+          expectedEventName,
+          {
+            paypal_context_id: expectedContextId,
+          },
+          () => {
+            actualEventSent =
+              /* eslint-disable camelcase */
+              client._request.mock.calls[0][0].data;
+            expect(actualEventSent).not.toBeNull();
+            actualTracking = actualEventSent.tracking[0];
+            expect(actualTracking).not.toBeNull();
+            expect(actualTracking.paypal_context_id).toBe(expectedContextId);
+          }
+        );
+
+        done();
+      });
+
+      it("does not clobber preset metadata fields", (done) => {
+        const altComponent = "overwritten";
+        const client = testContext.client;
+        const expectedContextId = "venmo-1234-id";
+        const expectedEventName = "api.module.thing.happened";
+        var actualEventSent, actualTracking;
+
+        analytics.sendEventPlus(
+          client,
+          expectedEventName,
+          {
+            paypal_context_id: expectedContextId,
+            component: altComponent,
+          },
+          () => {
+            actualEventSent =
+              /* eslint-disable camelcase */
+              client._request.mock.calls[0][0].data;
+            expect(actualEventSent).not.toBeNull();
+            actualTracking = actualEventSent.tracking[0];
+            expect(actualTracking).not.toBeNull();
+            expect(actualTracking.component).toBe("braintreeclientsdk");
+          }
+        );
+
+        done();
+      });
+    });
   });
 });

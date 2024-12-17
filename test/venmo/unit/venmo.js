@@ -2598,11 +2598,15 @@ describe("Venmo", () => {
 
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
-          "venmo.tokenize.manual-return.start"
+          "venmo.tokenize.manual-return.start",
+          {
+            paypal_context_id: "context-id", // eslint-disable-line camelcase
+          }
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
-          "venmo.tokenize.manual-return.success"
+          "venmo.tokenize.manual-return.success",
+          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
@@ -2735,7 +2739,10 @@ describe("Venmo", () => {
           );
           expect(analytics.sendEvent).toBeCalledWith(
             expect.anything(),
-            "venmo.tokenize.manual-return.failure"
+            "venmo.tokenize.manual-return.failure",
+            {
+              paypal_context_id: "context-id", // eslint-disable-line camelcase
+            }
           );
 
           expect(err.code).toBe(
@@ -2764,7 +2771,10 @@ describe("Venmo", () => {
             );
             expect(analytics.sendEvent).toBeCalledWith(
               expect.anything(),
-              `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`
+              `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`,
+              {
+                paypal_context_id: "context-id", // eslint-disable-line camelcase
+              }
             );
           });
         }
@@ -2799,15 +2809,23 @@ describe("Venmo", () => {
 
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
-          "venmo.tokenize.manual-return.status-change.scanned"
+          "venmo.tokenize.manual-return.status-change.scanned",
+          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
-          "venmo.tokenize.manual-return.status-change.unknown_status_we_do_not_account_for"
+          "venmo.tokenize.manual-return.status-change.unknown_status_we_do_not_account_for",
+          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
-          "venmo.tokenize.manual-return.status-change.approved"
+          "venmo.tokenize.manual-return.status-change.approved",
+          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
+        );
+        expect(analytics.sendEvent).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.success",
+          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
         );
 
         // once to create the payment context
@@ -3347,12 +3365,14 @@ describe("Venmo", () => {
           expect(analytics.sendEvent).toHaveBeenNthCalledWith(
             3,
             expect.anything(),
-            expectedStartEvent
+            expectedStartEvent,
+            { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
           );
           expect(analytics.sendEvent).toHaveBeenNthCalledWith(
             4,
             expect.anything(),
-            expectedApprovedEvent
+            expectedApprovedEvent,
+            { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
           );
         });
 
@@ -3366,7 +3386,8 @@ describe("Venmo", () => {
             expect(analytics.sendEvent).toHaveBeenNthCalledWith(
               4,
               expect.anything(),
-              expectedApprovedEvent
+              expectedApprovedEvent,
+              { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
             );
           });
         });
@@ -3380,7 +3401,8 @@ describe("Venmo", () => {
           expect(analytics.sendEvent).toHaveBeenNthCalledWith(
             3,
             expect.anything(),
-            expectedApprovedEvent
+            expectedApprovedEvent,
+            { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
           );
         });
       });

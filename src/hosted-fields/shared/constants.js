@@ -55,6 +55,7 @@ var constants = {
     "-webkit-box-shadow",
     "-webkit-font-smoothing",
     "-webkit-tap-highlight-color",
+    "-webkit-text-fill-color",
     "-webkit-transition",
     "appearance",
     "box-shadow",

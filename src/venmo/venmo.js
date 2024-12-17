@@ -723,7 +723,9 @@ Venmo.prototype.cancelTokenization = function () {
 Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
   var self = this;
 
-  analytics.sendEvent(self._createPromise, "venmo.tokenize.web-login.start");
+  analytics.sendEvent(self._createPromise, "venmo.tokenize.web-login.start", {
+    paypal_context_id: self._venmoPaymentContextId,
+  });
   this._tokenizePromise = new ExtendedPromise();
 
   return this.getUrl().then(function (url) {
@@ -740,7 +742,10 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
       .then(function (payload) {
         analytics.sendEvent(
           self._createPromise,
-          "venmo.tokenize.web-login.success"
+          "venmo.tokenize.web-login.success",
+          {
+            paypal_context_id: self._venmoPaymentContextId,
+          }
         );
 
         self._tokenizePromise.resolve({
@@ -753,7 +758,10 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
       .catch(function (err) {
         analytics.sendEvent(
           self._createPromise,
-          "venmo.tokenize.web-login.failure"
+          "venmo.tokenize.web-login.failure",
+          {
+            paypal_context_id: self._venmoPaymentContextId,
+          }
         );
 
         self._tokenizePromise.reject(err);
@@ -807,7 +815,10 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
 
       analytics.sendEvent(
         self._createPromise,
-        "venmo.tokenize.web-login.status-change"
+        "venmo.tokenize.web-login.status-change",
+        {
+          paypal_context_id: self._venmoPaymentContextId,
+        }
       );
 
       switch (resultStatus) {
@@ -892,7 +903,10 @@ Venmo.prototype._pollForStatusChange = function () {
         analytics.sendEvent(
           self._createPromise,
           "venmo.tokenize.manual-return.status-change." +
-            newStatus.toLowerCase()
+            newStatus.toLowerCase(),
+          {
+            paypal_context_id: self._venmoPaymentContextId,
+          }
         );
 
         switch (newStatus) {
@@ -927,7 +941,10 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
 
   analytics.sendEvent(
     this._createPromise,
-    "venmo.tokenize.manual-return.start"
+    "venmo.tokenize.manual-return.start",
+    {
+      paypal_context_id: self._venmoPaymentContextId,
+    }
   );
 
   this._mobilePollingContextExpiresIn =
@@ -938,7 +955,10 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
     .then(function (payload) {
       analytics.sendEvent(
         self._createPromise,
-        "venmo.tokenize.manual-return.success"
+        "venmo.tokenize.manual-return.success",
+        {
+          paypal_context_id: self._venmoPaymentContextId,
+        }
       );
 
       self._tokenizePromise.resolve({
@@ -951,7 +971,10 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
     .catch(function (err) {
       analytics.sendEvent(
         self._createPromise,
-        "venmo.tokenize.manual-return.failure"
+        "venmo.tokenize.manual-return.failure",
+        {
+          paypal_context_id: self._venmoPaymentContextId,
+        }
       );
 
       self._tokenizePromise.reject(err);
@@ -1223,7 +1246,10 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
         .then(function (payload) {
           analytics.sendEvent(
             self._createPromise,
-            "venmo.appswitch.handle.payment-context-status-query.success"
+            "venmo.appswitch.handle.payment-context-status-query.success",
+            {
+              paypal_context_id: self._venmoPaymentContextId,
+            }
           );
 
           return resolve({
@@ -1243,7 +1269,10 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
 
           analytics.sendEvent(
             self._createPromise,
-            "venmo.process-results.payment-context-status-query-failed"
+            "venmo.process-results.payment-context-status-query-failed",
+            {
+              paypal_context_id: self._venmoPaymentContextId,
+            }
           );
           // If the polling request fails, but not because of cancelization, we will rely on the params provided from the hash
           resolve(params);

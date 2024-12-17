@@ -872,6 +872,10 @@ LocalPayment.prototype._formatTokenizePayload = function (response) {
  * // ?btLpToken=token&btLpPaymentId=payment-id&btLpPayerId=payer-id
  * localPaymentInstance.hasTokenizationParams(); // true
  *
+ * // if query string has token: (full page redirect flow)
+ * // ?token=abcdefg123456789
+ * localPaymentInstance.hasTokenizationParams(); // true
+ *
  * // if query string is missing required params
  * localPaymentInstance.hasTokenizationParams(); // false
  *
@@ -883,7 +887,7 @@ LocalPayment.prototype._formatTokenizePayload = function (response) {
 LocalPayment.prototype.hasTokenizationParams = function () {
   var params = querystring.parse();
 
-  if (params.errorcode) {
+  if (params.errorcode || params.token) {
     return true;
   }
 

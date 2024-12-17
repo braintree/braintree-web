@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 3.113.0
+
+- Local Payment Methods
+  - Fix hasTokenizationParams to account for token URL param
+- Hosted Fields
+  - add support for `-webkit-text-fill-color` CSS rule
+
 ## 3.112.1
 
 - Venmo

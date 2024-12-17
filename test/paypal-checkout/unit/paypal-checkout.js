@@ -1115,17 +1115,22 @@ describe("PayPalCheckout", () => {
         currency: "USD",
         paymentId: "pay-token-123-abc",
       };
+      analytics.sendEventPlus = jest.fn();
+      testContext.paypalCheckout._contextId = "pay-token-123-abc";
     });
 
-    it("sends analytics event when udpatePayment is called", () => {
-      analytics.sendEvent.mockClear();
+    it("sends analytics event when udpatePayment is called", async () => {
+      analytics.sendEventPlus.mockClear();
 
-      testContext.paypalCheckout.updatePayment(testContext.options);
+      await testContext.paypalCheckout.updatePayment(testContext.options);
 
-      expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
-      expect(analytics.sendEvent).toHaveBeenCalledWith(
+      expect(analytics.sendEventPlus).toHaveBeenCalledTimes(1);
+      expect(analytics.sendEventPlus).toHaveBeenCalledWith(
         testContext.paypalCheckout._clientPromise,
-        "paypal-checkout.updatePayment"
+        "paypal-checkout.updatePayment",
+        {
+          paypal_context_id: testContext.options.paymentId, // eslint-disable-line camelcase
+        }
       );
     });
 
@@ -1137,7 +1142,7 @@ describe("PayPalCheckout", () => {
         details: { httpStatus: 422 },
       });
 
-      analytics.sendEvent.mockClear();
+      analytics.sendEventPlus.mockClear();
 
       testContext.client.request.mockRejectedValue(unprocessableError);
 
@@ -1150,16 +1155,19 @@ describe("PayPalCheckout", () => {
           expect(details).toEqual({
             originalError: unprocessableError,
           });
-          expect(analytics.sendEvent).toHaveBeenCalledTimes(2);
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledTimes(2);
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             testContext.paypalCheckout._clientPromise,
-            "paypal-checkout.updatePayment.invalid"
+            "paypal-checkout.updatePayment.invalid",
+            {
+              paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+            }
           );
         });
     });
 
     it("handles network error (HTTP status 404)", () => {
-      analytics.sendEvent.mockClear();
+      analytics.sendEventPlus.mockClear();
 
       const originalError = new Error("Something bad happened");
 
@@ -1554,7 +1562,7 @@ describe("PayPalCheckout", () => {
       });
 
       it("sends analytics event when includes shipping address", () => {
-        analytics.sendEvent.mockClear();
+        analytics.sendEventPlus.mockClear();
 
         testContext.options.amount = 1;
         testContext.options.shippingAddress = {
@@ -1574,10 +1582,13 @@ describe("PayPalCheckout", () => {
           testContext.options
         );
 
-        expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect(analytics.sendEventPlus).toHaveBeenCalledTimes(1);
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
           testContext.paypalCheckout._clientPromise,
-          "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant"
+          "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant",
+          {
+            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          }
         );
       });
 
@@ -1663,6 +1674,7 @@ describe("PayPalCheckout", () => {
           redirectUrl: "https://example.com/redirect",
         },
       });
+      testContext.paypalCheckout._contextId = "context-id";
 
       jest
         .spyOn(testContext.paypalCheckout, "tokenizePayment")
@@ -1670,6 +1682,8 @@ describe("PayPalCheckout", () => {
           nonce: "new-fake-nonce",
           type: "PayPalAccount",
         });
+
+      analytics.sendEventPlus = jest.fn();
     });
 
     it("rejects if auth is already in progress", async () => {
@@ -1687,9 +1701,12 @@ describe("PayPalCheckout", () => {
         message: "Vault initiated checkout already in progress.",
       });
 
-      expect(analytics.sendEvent).toBeCalledWith(
+      expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
-        "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress"
+        "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress",
+        {
+          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+        }
       );
 
       await firstAttempt;
@@ -1824,18 +1841,24 @@ describe("PayPalCheckout", () => {
       expect(data.type).toBe("PayPalAccount");
     });
 
-    it("sends analtyic events for success", async () => {
+    it("sends analytic events for success", async () => {
       await testContext.paypalCheckout.startVaultInitiatedCheckout(
         testContext.options
       );
 
-      expect(analytics.sendEvent).toBeCalledWith(
+      expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
-        "paypal-checkout.startVaultInitiatedCheckout.succeeded"
+        "paypal-checkout.startVaultInitiatedCheckout.succeeded",
+        {
+          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+        }
       );
-      expect(analytics.sendEvent).toBeCalledWith(
+      expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
-        "paypal-checkout.startVaultInitiatedCheckout.started"
+        "paypal-checkout.startVaultInitiatedCheckout.started",
+        {
+          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+        }
       );
     });
 
@@ -1986,9 +2009,12 @@ describe("PayPalCheckout", () => {
         message: "Customer closed PayPal popup before authorizing.",
       });
 
-      expect(analytics.sendEvent).toBeCalledWith(
+      expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
-        "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer"
+        "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer",
+        {
+          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+        }
       );
       expect(testContext.fakeFrameService.close).toBeCalledTimes(0);
     });
@@ -2013,9 +2039,12 @@ describe("PayPalCheckout", () => {
         },
       });
 
-      expect(analytics.sendEvent).toBeCalledWith(
+      expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
-        "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened"
+        "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened",
+        {
+          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+        }
       );
       expect(testContext.fakeFrameService.close).toBeCalledTimes(1);
     });
@@ -2056,6 +2085,12 @@ describe("PayPalCheckout", () => {
   });
 
   describe("closeVaultInitiatedCheckoutWindow", () => {
+    beforeEach(() => {
+      testContext.paypalCheckout._contextId = "context-id";
+
+      analytics.sendEventPlus = jest.fn();
+    });
+
     it("calls close on the frame service", async () => {
       await testContext.paypalCheckout.closeVaultInitiatedCheckoutWindow();
 
@@ -2065,9 +2100,12 @@ describe("PayPalCheckout", () => {
     it("sends an analytics event when vault initiated checkout is in progress", async () => {
       await testContext.paypalCheckout.closeVaultInitiatedCheckoutWindow();
 
-      expect(analytics.sendEvent).not.toBeCalledWith(
+      expect(analytics.sendEventPlus).not.toBeCalledWith(
         expect.anything(),
-        "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant"
+        "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
+        {
+          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+        }
       );
 
       const promise = testContext.paypalCheckout.startVaultInitiatedCheckout({
@@ -2078,9 +2116,12 @@ describe("PayPalCheckout", () => {
 
       await testContext.paypalCheckout.closeVaultInitiatedCheckoutWindow();
 
-      expect(analytics.sendEvent).toBeCalledWith(
+      expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
-        "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant"
+        "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
+        {
+          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+        }
       );
 
       await promise;
@@ -2088,6 +2129,12 @@ describe("PayPalCheckout", () => {
   });
 
   describe("tokenizePayment", () => {
+    beforeEach(() => {
+      testContext.paypalCheckout._contextId = "context-id";
+
+      analytics.sendEventPlus = jest.fn();
+    });
+
     it("rejects with a BraintreeError if a non-Braintree error comes back from the client", () => {
       const error = new Error("Error");
 
@@ -2338,9 +2385,12 @@ describe("PayPalCheckout", () => {
       testContext.paypalCheckout
         .tokenizePayment({ billingToken: "token" })
         .then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             testContext.paypalCheckout._clientPromise,
-            "paypal-checkout.tokenization.started"
+            "paypal-checkout.tokenization.started",
+            {
+              paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+            }
           );
         }));
 
@@ -2361,9 +2411,12 @@ describe("PayPalCheckout", () => {
       client.request.mockResolvedValue({});
 
       return testContext.paypalCheckout.tokenizePayment({}).then(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
           testContext.paypalCheckout._clientPromise,
-          "paypal-checkout.tokenization.success"
+          "paypal-checkout.tokenization.success",
+          {
+            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          }
         );
       });
     });
@@ -2384,9 +2437,12 @@ describe("PayPalCheckout", () => {
       });
 
       return testContext.paypalCheckout.tokenizePayment({}).then(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
           testContext.paypalCheckout._clientPromise,
-          "paypal-checkout.credit.accepted"
+          "paypal-checkout.credit.accepted",
+          {
+            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          }
         );
       });
     });
@@ -2724,9 +2780,12 @@ describe("PayPalCheckout", () => {
       client.request.mockRejectedValue(new Error("Error"));
 
       return testContext.paypalCheckout.tokenizePayment({}).catch(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
           testContext.paypalCheckout._clientPromise,
-          "paypal-checkout.tokenization.failed"
+          "paypal-checkout.tokenization.failed",
+          {
+            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          }
         );
       });
     });

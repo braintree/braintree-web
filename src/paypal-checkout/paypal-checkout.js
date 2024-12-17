@@ -575,6 +575,8 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @returns {(promise|void)} returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.createPayment = function (options) {
+  var self = this;
+
   if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
     return Promise.reject(
       new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED)
@@ -592,6 +594,8 @@ PayPalCheckout.prototype.createPayment = function (options) {
     } else {
       flowToken = response.agreementSetup.tokenId;
     }
+
+    self._contextId = flowToken;
 
     return flowToken;
   });
@@ -729,9 +733,12 @@ PayPalCheckout.prototype.updatePayment = function (options) {
   var endpoint = "paypal_hermes/patch_payment_resource";
 
   if (!options || this._hasMissingOption(options, constants.REQUIRED_OPTIONS)) {
-    analytics.sendEvent(
+    analytics.sendEventPlus(
       self._clientPromise,
-      "paypal-checkout.updatePayment.missing-options"
+      "paypal-checkout.updatePayment.missing-options",
+      {
+        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+      }
     );
 
     return Promise.reject(
@@ -740,9 +747,12 @@ PayPalCheckout.prototype.updatePayment = function (options) {
   }
 
   if (!this._verifyConsistentCurrency(options)) {
-    analytics.sendEvent(
+    analytics.sendEventPlus(
       self._clientPromise,
-      "paypal-checkout.updatePayment.inconsistent-currencies"
+      "paypal-checkout.updatePayment.inconsistent-currencies",
+      {
+        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+      }
     );
 
     return Promise.reject(
@@ -759,7 +769,13 @@ PayPalCheckout.prototype.updatePayment = function (options) {
     );
   }
 
-  analytics.sendEvent(this._clientPromise, "paypal-checkout.updatePayment");
+  analytics.sendEventPlus(
+    this._clientPromise,
+    "paypal-checkout.updatePayment",
+    {
+      paypal_context_id: self._contextId, // eslint-disable-line camelcase
+    }
+  );
 
   return this._clientPromise
     .then(function (client) {
@@ -773,9 +789,12 @@ PayPalCheckout.prototype.updatePayment = function (options) {
       var status = err.details && err.details.httpStatus;
 
       if (status === 422) {
-        analytics.sendEvent(
+        analytics.sendEventPlus(
           self._clientPromise,
-          "paypal-checkout.updatePayment.invalid"
+          "paypal-checkout.updatePayment.invalid",
+          {
+            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          }
         );
 
         return Promise.reject(
@@ -790,9 +809,12 @@ PayPalCheckout.prototype.updatePayment = function (options) {
         );
       }
 
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._clientPromise,
-        "paypal-checkout.updatePayment." + errors.PAYPAL_FLOW_FAILED.code
+        "paypal-checkout.updatePayment." + errors.PAYPAL_FLOW_FAILED.code,
+        {
+          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        }
       );
 
       return Promise.reject(
@@ -839,9 +861,12 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
   var self = this;
 
   if (this._vaultInitiatedCheckoutInProgress) {
-    analytics.sendEvent(
+    analytics.sendEventPlus(
       this._clientPromise,
-      "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress"
+      "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress",
+      {
+        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+      }
     );
 
     return Promise.reject(
@@ -874,9 +899,12 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
     flow: "checkout",
   });
 
-  analytics.sendEvent(
+  analytics.sendEventPlus(
     this._clientPromise,
-    "paypal-checkout.startVaultInitiatedCheckout.started"
+    "paypal-checkout.startVaultInitiatedCheckout.started",
+    {
+      paypal_context_id: self._contextId, // eslint-disable-line camelcase
+    }
   );
 
   return this._waitForVaultInitiatedCheckoutDependencies()
@@ -907,9 +935,12 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
       self._removeModalBackdrop();
 
       if (err.code === "FRAME_SERVICE_FRAME_CLOSED") {
-        analytics.sendEvent(
+        analytics.sendEventPlus(
           self._clientPromise,
-          "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer"
+          "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer",
+          {
+            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          }
         );
 
         return Promise.reject(
@@ -927,9 +958,12 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
         err.code &&
         err.code.indexOf("FRAME_SERVICE_FRAME_OPEN_FAILED") > -1
       ) {
-        analytics.sendEvent(
+        analytics.sendEventPlus(
           self._clientPromise,
-          "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened"
+          "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened",
+          {
+            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          }
         );
 
         return Promise.reject(
@@ -954,9 +988,12 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
       self._frameService.close();
       self._vaultInitiatedCheckoutInProgress = false;
       self._removeModalBackdrop();
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._clientPromise,
-        "paypal-checkout.startVaultInitiatedCheckout.succeeded"
+        "paypal-checkout.startVaultInitiatedCheckout.succeeded",
+        {
+          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        }
       );
 
       return Promise.resolve(response);
@@ -1012,9 +1049,12 @@ PayPalCheckout.prototype._removeModalBackdrop = function () {
  */
 PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
   if (this._vaultInitiatedCheckoutInProgress) {
-    analytics.sendEvent(
+    analytics.sendEventPlus(
       this._clientPromise,
-      "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant"
+      "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
+      {
+        paypal_context_id: this._contextId, // eslint-disable-line camelcase
+      }
     );
   }
 
@@ -1147,9 +1187,12 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
 
   options.vault = shouldVault;
 
-  analytics.sendEvent(
+  analytics.sendEventPlus(
     this._clientPromise,
-    "paypal-checkout.tokenization.started"
+    "paypal-checkout.tokenization.started",
+    {
+      paypal_context_id: self._contextId, // eslint-disable-line camelcase
+    }
   );
 
   return this._clientPromise
@@ -1163,14 +1206,20 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     .then(function (response) {
       payload = self._formatTokenizePayload(response);
 
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._clientPromise,
-        "paypal-checkout.tokenization.success"
+        "paypal-checkout.tokenization.success",
+        {
+          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        }
       );
       if (payload.creditFinancingOffered) {
-        analytics.sendEvent(
+        analytics.sendEventPlus(
           self._clientPromise,
-          "paypal-checkout.credit.accepted"
+          "paypal-checkout.credit.accepted",
+          {
+            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          }
         );
       }
 
@@ -1181,9 +1230,12 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
         return Promise.reject(self._setupError);
       }
 
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._clientPromise,
-        "paypal-checkout.tokenization.failed"
+        "paypal-checkout.tokenization.failed",
+        {
+          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        }
       );
 
       return Promise.reject(
@@ -1592,9 +1644,12 @@ PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {
 
   /* shippingAddress not supported yet */
   if (options.hasOwnProperty("shippingAddress")) {
-    analytics.sendEvent(
+    analytics.sendEventPlus(
       self._clientPromise,
-      "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant"
+      "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant",
+      {
+        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+      }
     );
 
     paymentResource.line1 = options.shippingAddress.line1;

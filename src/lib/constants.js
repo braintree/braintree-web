@@ -48,4 +48,5 @@ module.exports = {
   SOURCE: "client",
   PLATFORM: PLATFORM,
   BRAINTREE_LIBRARY_VERSION: "braintree/" + PLATFORM + "/" + VERSION,
+  ALLOWED_EXTRA_EVENT_FIELDS: ["paypal_context_id"],
 };
