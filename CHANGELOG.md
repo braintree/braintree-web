@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 3.114.0
+- PayPal Checkout
+  - Add recipientEmail option to shippingAddressOverride
+- Update dependencies
+  - @braintree/asset-loader to v2.0.2
+  - @braintree/browser-detection to v2.0.2
+  - @braintree/iframer to v2.0.1
+  - @braintree/uuid to v1.0.1
+  - card-validator to v10.0.2
+  - credit-card-type to v10.0.2
+  - framebus to v6.0.2
+  - inject-stylesheet to v6.0.2
+- PayPal Checkout
+  - Add support for shippingCallbackUrl in `createPayment
+- Data Collector
+  - Deprecate Kount
+
 ## 3.113.0
 
 - Local Payment Methods
