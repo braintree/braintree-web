@@ -99,9 +99,6 @@ describe("GraphQL Configuration", () => {
               routeId: "route_id",
               assetsUrl: "https://localhost",
             },
-            kount: {
-              merchantId: "600000",
-            },
             masterpass: {
               merchantCheckoutId: "merchant_checkout_id",
               supportedCardBrands: [
@@ -188,9 +185,6 @@ describe("GraphQL Configuration", () => {
           ],
         },
         fastlane: true,
-        kount: {
-          kountMerchantId: "600000",
-        },
         masterpass: {
           merchantCheckoutId: "merchant_checkout_id",
           supportedNetworks: [
@@ -319,7 +313,6 @@ describe("GraphQL Configuration", () => {
         configurationResponse.applePayWeb
       );
       expect(adaptedResponse.fastlane).toEqual(true);
-      expect(adaptedResponse.kount).toEqual(configurationResponse.kount);
       expect(adaptedResponse.masterpass).toEqual(
         configurationResponse.masterpass
       );
@@ -371,7 +364,6 @@ describe("GraphQL Configuration", () => {
               fastlane: null,
               googlePay: null,
               ideal: null,
-              kount: null,
               masterpass: null,
               paypal: null,
               unionPay: null,
@@ -402,7 +394,6 @@ describe("GraphQL Configuration", () => {
         expect(adaptedResponse.payWithVenmo).toBeUndefined();
         expect(adaptedResponse.androidPay).toBeUndefined();
         expect(adaptedResponse.braintreeApi).toBeUndefined();
-        expect(adaptedResponse.kount).toBeUndefined();
         expect(adaptedResponse.fastlane).toBeUndefined();
         expect(adaptedResponse.unionPay).toBeUndefined();
         expect(adaptedResponse.visaCheckout).toBeUndefined();

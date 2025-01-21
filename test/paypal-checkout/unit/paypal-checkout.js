@@ -574,6 +574,7 @@ describe("PayPalCheckout", () => {
             countryCode: "USA",
             phone: "111-1111",
             recipientName: "Joe Bloggs",
+            recipientEmail: "received@here.net",
           };
           testContext.options.lineItems = [
             {
@@ -607,6 +608,7 @@ describe("PayPalCheckout", () => {
                     countryCode: "USA",
                     phone: "111-1111",
                     recipientName: "Joe Bloggs",
+                    recipientEmail: "received@here.net",
                     lineItems: [
                       {
                         quantity: "1",
@@ -3459,6 +3461,20 @@ describe("PayPalCheckout", () => {
 
       // eslint-disable-next-line no-undefined
       expect(actual.payer_email).toBe(undefined);
+    });
+
+    it("passes along shipping callback url if shippingCallbackUrl is passed", () => {
+      const options = {
+        shippingCallbackUrl: "www.example.com",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        { _configuration: testContext.configuration },
+        options,
+        testContext.config
+      );
+
+      expect(actual.shippingCallbackUrl).toBe("www.example.com");
     });
   });
 });

@@ -111,12 +111,6 @@ function adaptConfigurationResponseBody(body, ctx) {
     response.ideal = configuration.ideal;
   }
 
-  if (configuration.kount) {
-    response.kount = {
-      kountMerchantId: configuration.kount.merchantId,
-    };
-  }
-
   if (configuration.creditCard) {
     response.challenges = configuration.creditCard.challenges.map(function (
       challenge

@@ -435,6 +435,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.planType] Determines the charge pattern for the Recurring Billing Agreement. Can be 'RECURRING', 'SUBSCRIPTION', 'UNSCHEDULED', or 'INSTALLMENTS'.
  * @param {planMetadata} [options.planMetadata] When plan type is defined, allows for {@link PayPalCheckout~planMetadata|plan metadata} to be set for the Billing Agreement.
  * @param {string} [options.userAuthenticationEmail] Optional merchant-provided buyer email, used to streamline the sign-in process for both one-time checkout and vault flows.
+ * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
@@ -669,6 +670,7 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * @param {(string|number)} options.amount The amount of the transaction, including the amount of the selected shipping option, and all `line_items`.
  * * Supports up to 2 decimal digits.
  * @param {string} options.currency The currency code of the amount, such as 'USD'. Required when using the Checkout flow.
+ * @param {string} [options.recipientEmail] Email address of the contact and shipping recipient of the order.
  * @param {shippingOption[]} [options.shippingOptions] List of {@link PayPalCheckout~shippingOption|shipping options} offered by the payee or merchant to the payer to ship or pick up their items.
  * @param {lineItem[]} [options.lineItems] The {@link PayPalCheckout~lineItem|line items} for this transaction. It can include up to 249 line items.
  * @param {object} [options.amountBreakdown] Optional collection of amounts that break down the total into individual pieces.
@@ -1487,6 +1489,10 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
     shippingOptions: options.shippingOptions,
     payer_email: options.userAuthenticationEmail, // eslint-disable-line camelcase
   };
+
+  if (options.hasOwnProperty("shippingCallbackUrl")) {
+    paymentResource.shippingCallbackUrl = options.shippingCallbackUrl;
+  }
 
   if (options.flow === "checkout") {
     paymentResource.amount = options.amount;

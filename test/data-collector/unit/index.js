@@ -8,7 +8,6 @@ jest.mock("../../../src/lib/create-deferred-client");
 const basicComponentVerification = require("../../../src/lib/basic-component-verification");
 const createDeferredClient = require("../../../src/lib/create-deferred-client");
 const dataCollector = require("../../../src/data-collector");
-const kount = require("../../../src/data-collector/kount");
 const fraudnet = require("../../../src/data-collector/fraudnet");
 const BraintreeError = require("../../../src/lib/braintree-error");
 const methods = require("../../../src/lib/methods");
@@ -23,13 +22,9 @@ describe("dataCollector", () => {
   beforeEach(() => {
     testContext = {};
     testContext.configuration = configuration();
-    testContext.configuration.gatewayConfiguration.kount = {
-      kountMerchantId: "12345",
-    };
     testContext.client = fakeClient({
       configuration: testContext.configuration,
     });
-    jest.spyOn(kount, "setup").mockReturnValue(null);
     jest.spyOn(fraudnet, "setup").mockResolvedValue({});
     jest
       .spyOn(createDeferredClient, "create")
@@ -37,29 +32,6 @@ describe("dataCollector", () => {
   });
 
   describe("create", () => {
-    it("resolves", () => {
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "12345", // eslint-disable-line camelcase
-        },
-      };
-
-      kount.setup.mockReturnValue(mockData);
-
-      return dataCollector
-        .create({
-          client: testContext.client,
-          kount: true,
-        })
-        .then(() => {
-          expect(kount.setup).toBeCalledWith({
-            environment: "sandbox",
-            merchantId: "12345",
-          });
-        });
-    });
-
     it("verifies with basicComponentVerification", () => {
       const client = testContext.client;
 
@@ -73,21 +45,12 @@ describe("dataCollector", () => {
     });
 
     it("can create with an authorization instead of a client", () => {
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "12345", // eslint-disable-line camelcase
-        },
-      };
-
-      kount.setup.mockReturnValue(mockData);
       fraudnet.setup.mockResolvedValue({
         sessionId: "paypal_id",
       });
 
       return dataCollector
         .create({
-          kount: true,
           authorization: clientToken,
           useDeferredClient: true,
           debug: true,
@@ -105,93 +68,22 @@ describe("dataCollector", () => {
         });
     });
 
-    it("returns an error if merchant is not enabled for kount but specified kount", () => {
-      delete testContext.configuration.gatewayConfiguration.kount;
-
-      return dataCollector
-        .create({ client: testContext.client, kount: true })
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.message).toBe("Kount is not enabled for this merchant.");
-          expect(err.code).toBe("DATA_COLLECTOR_KOUNT_NOT_ENABLED");
-          expect(err.type).toBe("MERCHANT");
-        });
-    });
-
-    it("returns an error if kount throws an error", () => {
-      kount.setup.mockImplementation(() => {
-        throw new Error("foo boo");
-      });
-
-      return dataCollector
+    it("doesn't raise an error when passed kount=true", () => {
+      dataCollector
         .create({
-          client: testContext.client,
           kount: true,
+          authorization: clientToken,
+          useDeferredClient: true,
+          debug: true,
         })
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.message).toBe("foo boo");
-          expect(err.type).toBe("MERCHANT");
-          expect(err.code).toBe("DATA_COLLECTOR_KOUNT_ERROR");
-        });
-    });
-
-    it("sets Kount merchantId from gateway configuration", () => {
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "12345", // eslint-disable-line camelcase
-        },
-      };
-
-      kount.setup.mockReturnValue(mockData);
-      fraudnet.setup.mockResolvedValue({
-        sessionId: "paypal_id",
-      });
-
-      return dataCollector
-        .create({
-          client: testContext.client,
-          kount: true,
+        .then((dtInstance) => {
+          expect(dtInstance).toBeDefined();
         })
-        .then(() => {
-          expect(kount.setup).toBeCalledWith({
-            environment: "sandbox",
-            merchantId: "12345",
-          });
+        .catch(() => {
+          // Should never get here
+          expect(true).toBe(false);
         });
-    });
-
-    it("returns both kount and paypal data if kount is true", () => {
-      const mockPPid = "paypal_id";
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "fmid", // eslint-disable-line camelcase
-        },
-      };
-
-      kount.setup.mockReturnValue(mockData);
-      fraudnet.setup.mockResolvedValue({
-        sessionId: mockPPid,
-      });
-
-      return dataCollector
-        .create({
-          client: testContext.client,
-          kount: true,
-        })
-        .then((data) => {
-          const actual = JSON.parse(data.deviceData);
-
-          expect(actual.correlation_id).toBe(mockPPid);
-          expect(actual.device_session_id).toBe(
-            mockData.deviceData.device_session_id
-          );
-          expect(actual.fraud_merchant_id).toBe(
-            mockData.deviceData.fraud_merchant_id
-          );
-        });
+      expect.assertions(1);
     });
 
     it("sets up fraudnet with the gateway environment", () => {
@@ -293,9 +185,7 @@ describe("dataCollector", () => {
         });
     });
 
-    it("returns only fraudnet information if kount is not present but paypal is true", () => {
-      delete testContext.configuration.gatewayConfiguration.kount;
-
+    it("returns only fraudnet information if paypal is true", () => {
       const mockData = {
         sessionId: "thingy",
       };
@@ -314,49 +204,9 @@ describe("dataCollector", () => {
         });
     });
 
-    it("returns both fraudnet and kount information if kount and paypal are present", () => {
+    it("returns fraudnet only when paypal isn't present", () => {
       const mockPPid = "paypal_id";
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "fmid", // eslint-disable-line camelcase
-        },
-      };
 
-      kount.setup.mockReturnValue(mockData);
-      fraudnet.setup.mockResolvedValue({
-        sessionId: mockPPid,
-      });
-
-      return dataCollector
-        .create({
-          client: testContext.client,
-          paypal: true,
-          kount: true,
-        })
-        .then((data) => {
-          const actual = JSON.parse(data.deviceData);
-
-          expect(actual.correlation_id).toBe(mockPPid);
-          expect(actual.device_session_id).toBe(
-            mockData.deviceData.device_session_id
-          );
-          expect(actual.fraud_merchant_id).toBe(
-            mockData.deviceData.fraud_merchant_id
-          );
-        });
-    });
-
-    it("returns fraudnet only when neither kount or paypal are present", () => {
-      const mockPPid = "paypal_id";
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "fmid", // eslint-disable-line camelcase
-        },
-      };
-
-      kount.setup.mockReturnValue(mockData);
       fraudnet.setup.mockResolvedValue({
         sessionId: mockPPid,
       });
@@ -375,14 +225,7 @@ describe("dataCollector", () => {
     it("returns different data every invocation", () => {
       let actual1;
       const mockPPid = "paypal_id";
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "fmid", // eslint-disable-line camelcase
-        },
-      };
 
-      kount.setup.mockReturnValue(mockData);
       fraudnet.setup.mockResolvedValue({
         sessionId: mockPPid,
       });
@@ -391,11 +234,9 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           paypal: true,
-          kount: true,
         })
         .then((actual) => {
           actual1 = actual;
-          kount.setup.mockReturnValue({ deviceData: { newStuff: "anything" } });
           fraudnet.setup.mockResolvedValue({
             sessionId: "newid",
           });
@@ -404,7 +245,6 @@ describe("dataCollector", () => {
             .create({
               client: testContext.client,
               paypal: true,
-              kount: true,
             })
             .then((actual2) => {
               expect(actual1.deviceData).not.toBe(actual2.deviceData);
@@ -414,14 +254,7 @@ describe("dataCollector", () => {
 
     it("provides rawDeviceData", () => {
       const mockPPid = "paypal_id";
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "fmid", // eslint-disable-line camelcase
-        },
-      };
 
-      kount.setup.mockReturnValue(mockData);
       fraudnet.setup.mockResolvedValue({
         sessionId: mockPPid,
       });
@@ -430,49 +263,33 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           paypal: true,
-          kount: true,
         })
         .then((instance) => {
           expect(instance.rawDeviceData).toEqual({
             correlation_id: "paypal_id", // eslint-disable-line camelcase
-            device_session_id: "did", // eslint-disable-line camelcase
-            fraud_merchant_id: "fmid", // eslint-disable-line camelcase
           });
         });
     });
 
-    it("does not add correlation id if fraudnet.setup resolves without an instance", () => {
-      const mockData = {
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "fmid", // eslint-disable-line camelcase
-        },
-      };
-
-      kount.setup.mockReturnValue(mockData);
+    it("returns a rejected promise if fraudnet.setup resolves without an instance", (done) => {
       fraudnet.setup.mockResolvedValue(null);
 
-      return dataCollector
+      dataCollector
         .create({
           client: testContext.client,
-          kount: true,
           paypal: true,
         })
-        .then((actual) => {
-          expect(actual.deviceData).toBe(JSON.stringify(mockData.deviceData));
+        .catch((err) => {
+          expect(err.code).toEqual("DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS");
+          done();
         });
     });
   });
 
   describe("teardown", () => {
     it("runs teardown on all instances", () => {
-      const kountTeardown = jest.fn();
       const fraudnetTeardown = jest.fn();
 
-      kount.setup.mockReturnValue({
-        deviceData: {},
-        teardown: kountTeardown,
-      });
       fraudnet.setup.mockResolvedValue({
         sessionId: "anything",
         teardown: fraudnetTeardown,
@@ -482,22 +299,16 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           paypal: true,
-          kount: true,
         })
         .then((actual) => {
           return actual.teardown();
         })
         .then(() => {
           expect(fraudnetTeardown).toHaveBeenCalled();
-          expect(kountTeardown).toHaveBeenCalled();
         });
     });
 
     it("resolves a promise", (done) => {
-      kount.setup.mockReturnValue({
-        deviceData: {},
-        teardown: noop,
-      });
       fraudnet.setup.mockResolvedValue({
         sessionId: "anything",
         teardown: noop,
@@ -507,7 +318,6 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           paypal: true,
-          kount: true,
         })
         .then((instance) => {
           instance.teardown().then(() => {
@@ -517,10 +327,6 @@ describe("dataCollector", () => {
     });
 
     it("replaces all methods so error is thrown when methods are invoked", (done) => {
-      kount.setup.mockReturnValue({
-        deviceData: {},
-        teardown: noop,
-      });
       fraudnet.setup.mockResolvedValue({
         sessionId: "anything",
         teardown: noop,
@@ -530,7 +336,6 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           paypal: true,
-          kount: true,
         })
         .then((instance) => {
           instance.teardown(() => {
@@ -563,13 +368,6 @@ describe("dataCollector", () => {
     it("waits for deferred client to be ready when using authorization setup", () => {
       let clientHasResolved = false;
 
-      kount.setup.mockReturnValue({
-        teardown: jest.fn(),
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "12345", // eslint-disable-line camelcase
-        },
-      });
       fraudnet.setup.mockResolvedValue({
         teardown: jest.fn(),
         sessionId: "paypal_id",
@@ -590,7 +388,6 @@ describe("dataCollector", () => {
           authorization: "fake-auth",
           useDeferredClient: true,
           paypal: true,
-          kount: true,
         })
         .then((instance) => {
           expect(clientHasResolved).toBe(false);
@@ -604,12 +401,6 @@ describe("dataCollector", () => {
 
   describe("getDeviceData", () => {
     beforeEach(() => {
-      kount.setup.mockReturnValue({
-        deviceData: {
-          device_session_id: "did", // eslint-disable-line camelcase
-          fraud_merchant_id: "12345", // eslint-disable-line camelcase
-        },
-      });
       fraudnet.setup.mockResolvedValue({
         sessionId: "paypal_id",
       });
@@ -620,13 +411,10 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           paypal: true,
-          kount: true,
         })
         .then((instance) => instance.getDeviceData())
         .then((deviceData) => {
           expect(JSON.parse(deviceData)).toEqual({
-            device_session_id: "did", // eslint-disable-line camelcase
-            fraud_merchant_id: "12345", // eslint-disable-line camelcase
             correlation_id: "paypal_id", // eslint-disable-line camelcase
           });
         }));
@@ -636,7 +424,6 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           paypal: true,
-          kount: true,
         })
         .then((instance) =>
           instance.getDeviceData({
@@ -645,8 +432,6 @@ describe("dataCollector", () => {
         )
         .then((deviceData) => {
           expect(deviceData).toEqual({
-            device_session_id: "did", // eslint-disable-line camelcase
-            fraud_merchant_id: "12345", // eslint-disable-line camelcase
             correlation_id: "paypal_id", // eslint-disable-line camelcase
           });
         }));
@@ -669,7 +454,6 @@ describe("dataCollector", () => {
           authorization: "fake-auth",
           useDeferredClient: true,
           paypal: true,
-          kount: true,
         })
         .then((instance) => {
           expect(clientHasResolved).toBe(false);

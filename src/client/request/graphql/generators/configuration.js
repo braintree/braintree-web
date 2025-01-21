@@ -36,9 +36,6 @@ var CONFIGURATION_QUERY =
   "      routeId " +
   "      assetsUrl " +
   "    } " +
-  "    kount { " +
-  "      merchantId " +
-  "    } " +
   "    masterpass { " +
   "      merchantCheckoutId " +
   "      supportedCardBrands " +

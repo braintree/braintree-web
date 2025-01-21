@@ -1,7 +1,6 @@
 "use strict";
 /** @module braintree-web/data-collector */
 
-var kount = require("./kount");
 var fraudnet = require("./fraudnet");
 var BraintreeError = require("../lib/braintree-error");
 var basicComponentVerification = require("../lib/basic-component-verification");
@@ -18,7 +17,7 @@ var errors = require("./errors");
  * @global
  * @name DataCollector
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/data-collector.create|braintree-web.data-collector.create} instead.</strong>
- * @classdesc This class is used for fraud integration with PayPal and Kount. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions.
+ * @classdesc This class is used for fraud integration with PayPal. Instances of this class have {@link DataCollector#deviceData|deviceData} which is used to correlate user sessions with server transactions.
  */
 
 /**
@@ -83,13 +82,10 @@ var errors = require("./errors");
  * @static
  * @function create
  * @description Creates a DataCollector instance and collects device data based on your merchant configuration. We recommend that you call this method as early as possible, e.g. as soon as your website loads. If that's too early, call it at the beginning of customer checkout.
- * **Note:** To use your own Kount ID, contact our support team ([support@braintreepayments.com](mailto:support@braintreepayments.com) or [877.434.2894](tel:877.434.2894)).
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {boolean} [options.useDeferredClient] Used in conjunction with `authorization`, allows the Data Collector instance to be available right away by fetching the client configuration in the background. When this option is used, {@link GooglePayment#getDeviceData} must be used to collect the device data.
- * @param {boolean} [options.kount] Kount fraud data collection will occur if the merchant configuration has it enabled.
- * **Note:** the data sent to Kount is asynchronous and may not have completed by the time the data collector create call is complete. In most cases, this will not matter, but if you create the data collector instance and immediately navigate away from the page, the device information may fail to be sent to Kount.
  * @param {boolean} [options.paypal] *Deprecated:* PayPal fraud data collection will occur when the DataCollector instance is created.
  * @param {string} [options.riskCorrelationId] Pass a custom risk correlation id when creating the data collector.
  * @param {string} [options.clientMetadataId] Deprecated. Use `options.riskCorrelationId` instead.
@@ -102,7 +98,7 @@ function create(options) {
   var result = {
     _instances: [],
   };
-  var data;
+  var data = {};
 
   return basicComponentVerification
     .verify({
@@ -119,34 +115,6 @@ function create(options) {
           debug: options.debug,
           assetsUrl: createAssetsUrl.create(options.authorization),
           name: name,
-        })
-        .then(function (client) {
-          var kountInstance;
-          var config = client.getConfiguration();
-
-          if (options.kount === true && config.gatewayConfiguration.kount) {
-            try {
-              kountInstance = kount.setup({
-                environment: config.gatewayConfiguration.environment,
-                merchantId: config.gatewayConfiguration.kount.kountMerchantId,
-              });
-            } catch (err) {
-              return Promise.reject(
-                new BraintreeError({
-                  type: errors.DATA_COLLECTOR_KOUNT_ERROR.type,
-                  code: errors.DATA_COLLECTOR_KOUNT_ERROR.code,
-                  message: err.message,
-                })
-              );
-            }
-
-            data = kountInstance.deviceData;
-            result._instances.push(kountInstance);
-          } else {
-            data = {};
-          }
-
-          return Promise.resolve(client);
         })
         .then(function (client) {
           var clientConfiguration = client.getConfiguration();
