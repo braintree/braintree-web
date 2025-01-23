@@ -16,6 +16,7 @@ var wrapPromise = require("@braintree/wrap-promise");
 var constants = require("./constants");
 var errors = require("../shared/errors");
 var assign = require("../../lib/assign").assign;
+var inIframe = require("../../lib/in-iframe");
 
 var DEFAULT_WINDOW_WIDTH = 1282;
 var DEFAULT_WINDOW_HEIGHT = 720;
@@ -603,7 +604,11 @@ LocalPayment.prototype.startPayment = function (options) {
           }
         }
       } else if (self._isRedirectFlow) {
-        window.location.href = response.paymentResource.redirectUrl;
+        if (inIframe()) {
+          window.top.location.href = response.paymentResource.redirectUrl;
+        } else {
+          window.location.href = response.paymentResource.redirectUrl;
+        }
       } else {
         options.onPaymentStart(
           { paymentId: response.paymentResource.paymentToken },

@@ -425,6 +425,9 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} options.shippingAddressOverride.countryCode Country.
  * @param {string} [options.shippingAddressOverride.phone] Phone number.
  * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
+ * @param {string} [options.shippingAddressOverride.recipientEmail] Email address of the recipient.
+ * @param {string} [options.shippingAddressOverride.internationalPhone.countryCode] Phone country code of the recipient.
+ * @param {string} [options.shippingAddressOverride.internationalPhone.nationalNumber] Phone national number of the recipient.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
  * @param {string} [options.landingPageType] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.

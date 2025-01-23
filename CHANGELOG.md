@@ -1,8 +1,18 @@
 # CHANGELOG
 
+## 3.115.0
+
+- Docs update
+  - Add `internationalPhone` option to `shippingAddressOverride` in PayPal Checkout JSDoc
+- Update dependencies
+  - framebus to v6.0.3
+- Local Payment Methods
+  - Allow redirect flow to work when inside an iframe
+
 ## 3.114.0
+
 - PayPal Checkout
-  - Add recipientEmail option to shippingAddressOverride
+  - Add `recipientEmail` option to `shippingAddressOverride`
 - Update dependencies
   - @braintree/asset-loader to v2.0.2
   - @braintree/browser-detection to v2.0.2
@@ -13,7 +23,7 @@
   - framebus to v6.0.2
   - inject-stylesheet to v6.0.2
 - PayPal Checkout
-  - Add support for shippingCallbackUrl in `createPayment
+  - Add support for `shippingCallbackUrl` in `createPayment
 - Data Collector
   - Deprecate Kount
 

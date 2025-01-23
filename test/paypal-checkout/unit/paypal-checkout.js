@@ -575,6 +575,10 @@ describe("PayPalCheckout", () => {
             phone: "111-1111",
             recipientName: "Joe Bloggs",
             recipientEmail: "received@here.net",
+            internationalPhone: {
+              countryCode: "1",
+              nationalNumber: "4125555555",
+            },
           };
           testContext.options.lineItems = [
             {
@@ -609,6 +613,10 @@ describe("PayPalCheckout", () => {
                     phone: "111-1111",
                     recipientName: "Joe Bloggs",
                     recipientEmail: "received@here.net",
+                    internationalPhone: {
+                      countryCode: "1",
+                      nationalNumber: "4125555555",
+                    },
                     lineItems: [
                       {
                         quantity: "1",
