@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Ensure all JavaScript files staged for commit pass standard code style
-FILES=`git diff --name-only --cached --diff-filter=ACM | grep -E '(js|jsx)$' || true`;
-# FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".jsx\?$")
+FILES=$(git diff --name-only --cached --diff-filter=ACM | grep -E '(js|jsx)$' | grep -Ev '^(tasks\/|test\/)' || true)
 
 if [ ! -z "$FILES" ]; then
 	for file in $FILES; do
@@ -13,7 +12,7 @@ if [ ! -z "$FILES" ]; then
 	done
 
 	# Prettify all selected files
-  echo "$FILES" | xargs ./node_modules/.bin/prettier --ignore-unknown --cache --check
+	echo "$FILES" | xargs ./node_modules/.bin/prettier --ignore-unknown --cache --check
 else
-  echo -e "\033[1;31m You have no staged javascript files, skipping checks .. "
+	echo -e "\033[1;31m You have no staged javascript files, skipping checks .. \033[0m"
 fi

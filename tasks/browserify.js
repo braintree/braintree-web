@@ -44,7 +44,9 @@ function forkBrowserify(options, done) {
 
   if (uglify) {
     buildCmdArray.push("&&");
-    buildCmdArray.push(`uglifyjs ${unminifiedFile} -m -c -o "${minifiedFile}"`);
+    buildCmdArray.push(
+      `uglifyjs ${unminifiedFile} -m --compress arrows=false -o "${minifiedFile}"`
+    );
   }
 
   buildCmd = buildCmdArray.join(" ");

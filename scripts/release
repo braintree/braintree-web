@@ -21,6 +21,14 @@ dotenv() {
   fi
 }
 
+check_npm_registry() {
+  if grep -q "paypalinc" package-lock.json; then
+  echo "${RED}Internal NPM registry URLs detected in package-lock.json! Please run a fresh 'npm install --registry=https://registry.npmjs.org'."
+  echo "${RED}You can use 'grep \"paypalinc\" package-lock.json' to ensure only public npm registry is being used."
+  exit 1
+  fi
+}
+
 set -e
 
 handle_abort() {
@@ -138,6 +146,7 @@ main() {
   trap 'handle_abort' SIGINT SIGTERM
   cd "$(dirname "${BASH_SOURCE[0]}")/.."
   dotenv
+  check_npm_registry
 
   case "$TASK" in
     hosted)

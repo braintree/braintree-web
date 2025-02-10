@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.115.1
+
+- Update restricted-input to v4.0.3
+- Update dependencies
+  - UglifyJS to 3.19.3
+- Update browserify task
+  - Setting UglifyJS `arrows` option to `false`
+
 ## 3.115.0
 
 - Docs update
