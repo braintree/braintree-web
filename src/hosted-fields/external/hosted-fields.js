@@ -423,7 +423,6 @@ function HostedFields(options) {
     self._bus.teardown();
   });
 
-  // NEXT_MAJOR_VERSION analytics events should have present tense verbs
   if (!options.client) {
     analytics.sendEvent(
       this._clientPromise,

@@ -10,13 +10,6 @@ var allowedFields = constants.allowedFields;
 var ENTER_KEY_CODE = 13;
 var DEFAULT_MASK_CHARACTER = "•";
 
-// NEXT_MAJOR_VERSION Use inputMode="numeric" with type="text" instead of type="tel"
-// for inputs that require the 0-9 Keyboard.
-// https://github.com/braintree/braintree-web/pull/542
-// iOS ^v12.2 technically supports inputMode, but it uses the alphanumeric
-// keyboard instead of the numeric keyboard. Because of this (and difficulty
-// testing on old Android Chrome versions) we'll put this off until the
-// next major version.
 function constructAttributes(options) {
   var field = options.field;
   var name = options.name;

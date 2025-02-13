@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.115.2
+
+- Apple Pay
+  - Add `isDeviceToken` to `TokenizePayload`
+
 ## 3.115.1
 
 - Update restricted-input to v4.0.3

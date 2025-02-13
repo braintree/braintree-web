@@ -14,6 +14,8 @@ var wrapPromise = require("@braintree/wrap-promise");
  * @property {string} details.cardType Type of card, ex: Visa, MasterCard.
  * @property {string} details.cardHolderName The name of the card holder.
  * @property {string} details.dpanLastTwo Last two digits of card number.
+ * @property {boolean} details.isDeviceToken Whether this tokenized card is a
+ * device-specific account number (DPAN) ('true') or merchant/cloud token (MPAN) ('false').
  * @property {string} description A human-readable description.
  * @property {string} type The payment method type, always `ApplePayCard`.
  * @property {object} binData Information about the card based on the bin.

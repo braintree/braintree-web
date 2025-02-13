@@ -701,8 +701,6 @@ SongbirdFramework.prototype._onLookupComplete = function (
     .call(this, lookupResponse)
     .then(function (response) {
       return new Promise(function (resolve, reject) {
-        // NEXT_MAJOR_VERSION format this response object to look like the mobile sdk response
-        // which is basically the lookup param at the top level with some additional accessors
         response.requiresUserAuthentication = Boolean(
           response.lookup && response.lookup.acsUrl
         );

@@ -407,6 +407,39 @@ describe("ApplePay", () => {
           expect(response).toBe(fakeResponseData.applePayCards[0]);
         });
     });
+
+    describe("returns", () => {
+      const fakeResponseData = {
+        applePayCards: [
+          {
+            nonce: "nonce",
+            details: {
+              isDeviceToken: true,
+            },
+          },
+        ],
+      };
+      var testClient, token;
+
+      beforeEach(() => {
+        testClient = {
+          _client: testContext.client,
+          _waitForClient: jest.fn().mockResolvedValue(testContext.client),
+        };
+        token = {
+          token: "token",
+        };
+        testContext.client.request = () => Promise.resolve(fakeResponseData);
+      });
+
+      it("payload including `is_device_token`", () => {
+        return ApplePay.prototype.tokenize
+          .call(testClient, token)
+          .then((response) => {
+            expect(response).toBe(fakeResponseData.applePayCards[0]);
+          });
+      });
+    });
   });
 
   describe("analytics", () => {
@@ -457,28 +490,40 @@ describe("ApplePay", () => {
     });
 
     describe("tokenize", () => {
-      it("submits succeeded", () => {
-        testContext.client.request = () =>
-          Promise.resolve({
-            applePayCards: [],
-          });
+      describe("submits succeeded", () => {
+        var testClient, token;
 
-        return ApplePay.prototype.tokenize
-          .call(
-            {
-              _client: testContext.client,
-              _waitForClient: jest.fn().mockResolvedValue(testContext.client),
-            },
-            {
-              token: "token",
-            }
-          )
-          .then(() => {
-            expect(analytics.sendEvent).toHaveBeenCalledWith(
-              testContext.client,
-              "applepay.tokenize.succeeded"
-            );
-          });
+        beforeEach(() => {
+          testClient = {
+            _client: testContext.client,
+            _waitForClient: jest.fn().mockResolvedValue(testContext.client),
+          };
+          token = {
+            token: "token",
+          };
+          testContext.client.request = () =>
+            Promise.resolve({
+              applePayCards: [
+                {
+                  nonce: "nonce",
+                  details: {
+                    isDeviceToken: true,
+                  },
+                },
+              ],
+            });
+        });
+
+        it("sends success event", () => {
+          return ApplePay.prototype.tokenize
+            .call(testClient, token)
+            .then(() => {
+              expect(analytics.sendEvent).toHaveBeenCalledWith(
+                testContext.client,
+                "applepay.tokenize.succeeded"
+              );
+            });
+        });
       });
 
       it("submits failed", () => {
