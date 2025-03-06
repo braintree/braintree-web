@@ -2,7 +2,6 @@
 
 const EventEmitter = require("@braintree/event-emitter");
 const ThreeDSecure = require("../../../../src/three-d-secure/external/three-d-secure");
-const LegacyFramework = require("../../../../src/three-d-secure/external/frameworks/legacy");
 const SongbirdFramework = require("../../../../src/three-d-secure/external/frameworks/songbird");
 const CardinalModalFramework = require("../../../../src/three-d-secure/external/frameworks/cardinal-modal");
 const Bootstrap3ModalFramework = require("../../../../src/three-d-secure/external/frameworks/bootstrap3-modal");
@@ -41,16 +40,6 @@ describe("ThreeDSecure", () => {
       const dddS = new ThreeDSecure(options);
 
       expect(dddS).toBeInstanceOf(EventEmitter);
-    });
-
-    it('uses legacy framework when "legacy" is passed in', () => {
-      const options = {
-        client: testContext.client,
-        framework: "legacy",
-      };
-      const dddS = new ThreeDSecure(options);
-
-      expect(dddS._framework).toBeInstanceOf(LegacyFramework);
     });
 
     it('uses cardinal modal framework when "cardinal-modal" is passed in', () => {
@@ -306,7 +295,7 @@ describe("ThreeDSecure", () => {
     it("replaces all methods so error is thrown when methods are invoked", () => {
       const instance = new ThreeDSecure({
         client: testContext.client,
-        framework: "legacy",
+        framework: "cardinal-modal",
       });
 
       expect.assertions(28);
@@ -334,25 +323,25 @@ describe("ThreeDSecure", () => {
     });
 
     it("calls stategies teardown method", () => {
-      const legacyInstance = new ThreeDSecure({
+      const bootstrapInstance = new ThreeDSecure({
         client: testContext.client,
-        framework: "legacy",
+        framework: "bootstrap3-modal",
       });
       const cardinalModalInstance = new ThreeDSecure({
         client: testContext.client,
         framework: "cardinal-modal",
       });
 
-      jest.spyOn(legacyInstance._framework, "teardown").mockResolvedValue();
+      jest.spyOn(bootstrapInstance._framework, "teardown").mockResolvedValue();
       jest
         .spyOn(cardinalModalInstance._framework, "teardown")
         .mockResolvedValue();
 
       return Promise.all([
-        legacyInstance.teardown(),
+        bootstrapInstance.teardown(),
         cardinalModalInstance.teardown(),
       ]).then(() => {
-        expect(legacyInstance._framework.teardown).toHaveBeenCalledTimes(1);
+        expect(bootstrapInstance._framework.teardown).toHaveBeenCalledTimes(1);
         expect(cardinalModalInstance._framework.teardown).toHaveBeenCalledTimes(
           1
         );

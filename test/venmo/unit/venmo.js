@@ -1848,7 +1848,7 @@ describe("Venmo", () => {
         );
         expect(analytics.sendEvent).toHaveBeenCalledWith(
           expect.anything(),
-          "venmo.appswitch.start.popup-bridge"
+          "popup-bridge:venmo:started"
         );
 
         delete window.popupBridge;

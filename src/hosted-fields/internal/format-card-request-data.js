@@ -37,6 +37,10 @@ module.exports = function (data) {
         "termsAndConditionsVersion" in data.metadata.connectCheckout
           ? data.metadata.connectCheckout.termsAndConditionsVersion
           : "",
+      terms_and_conditions_country:
+        "termsAndConditionsCountry" in data.metadata.connectCheckout
+          ? data.metadata.connectCheckout.termsAndConditionsCountry
+          : "",
       has_buyer_consent:
         "hasBuyerConsent" in data.metadata.connectCheckout
           ? data.metadata.connectCheckout.hasBuyerConsent

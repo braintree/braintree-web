@@ -570,7 +570,7 @@ describe("PayPal", () => {
         .then(() => {
           expect(analytics.sendEvent).toHaveBeenCalledWith(
             testContext.context._client,
-            "paypal.tokenization.opened-popupbridge"
+            "popup-bridge:paypal:started"
           );
         });
     });
@@ -1131,7 +1131,7 @@ describe("PayPal", () => {
     );
 
     describe.each([
-      ["", {}, "-popupbridge"],
+      ["", {}, "popup-bridge"],
       ["not", undefined, ""], // eslint-disable-line no-undefined
     ])("%s using popupBridge", (s, popupBridgeValue, analytic) => {
       beforeEach(() => {
@@ -1221,7 +1221,9 @@ describe("PayPal", () => {
 
         expect(analytics.sendEvent).toHaveBeenCalledWith(
           testContext.context._client,
-          `paypal.tokenization.closed${analytic}.by-user`
+          analytic
+            ? `${analytic}:paypal:canceled`
+            : "paypal.tokenization.closed.by-user"
         );
       });
     });
@@ -1312,7 +1314,7 @@ describe("PayPal", () => {
         .catch(() => {
           expect(analytics.sendEvent).toHaveBeenCalledWith(
             testContext.context._client,
-            "paypal.tokenization.failed-popupbridge"
+            "popup-bridge:paypal:failed"
           );
         });
     });
@@ -1361,7 +1363,7 @@ describe("PayPal", () => {
         .then(() => {
           expect(analytics.sendEvent).toHaveBeenCalledWith(
             testContext.context._client,
-            "paypal.tokenization.success-popupbridge"
+            "popup-bridge:paypal:succeeded"
           );
         });
     });

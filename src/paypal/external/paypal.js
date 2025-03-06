@@ -345,10 +345,7 @@ PayPal.prototype._createFrameServiceCallback = function (
 
       // `err` exists when the user clicks "Done" button of browser view
       if (err || canceled) {
-        analytics.sendEvent(
-          client,
-          "paypal.tokenization.closed-popupbridge.by-user"
-        );
+        analytics.sendEvent(client, "popup-bridge:paypal:canceled");
         // Call merchant's tokenize callback with an error
         reject(new BraintreeError(errors.PAYPAL_POPUP_CLOSED));
       } else if (payload) {
@@ -406,7 +403,7 @@ PayPal.prototype._tokenizePayPal = function (options, params) {
       var payload = self._formatTokenizePayload(response);
 
       if (window.popupBridge) {
-        analytics.sendEvent(client, "paypal.tokenization.success-popupbridge");
+        analytics.sendEvent(client, "popup-bridge:paypal:succeeded");
       } else {
         analytics.sendEvent(client, "paypal.tokenization.success");
       }
@@ -421,7 +418,7 @@ PayPal.prototype._tokenizePayPal = function (options, params) {
     })
     .catch(function (err) {
       if (window.popupBridge) {
-        analytics.sendEvent(client, "paypal.tokenization.failed-popupbridge");
+        analytics.sendEvent(client, "popup-bridge:paypal:failed");
       } else {
         analytics.sendEvent(client, "paypal.tokenization.failed");
       }
@@ -520,7 +517,7 @@ PayPal.prototype._navigateFrameToAuth = function (options) {
       }
 
       if (window.popupBridge) {
-        analytics.sendEvent(client, "paypal.tokenization.opened-popupbridge");
+        analytics.sendEvent(client, "popup-bridge:paypal:started");
       }
 
       self._frameService.redirect(redirectUrl);

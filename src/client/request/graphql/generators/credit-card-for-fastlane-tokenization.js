@@ -59,6 +59,10 @@ function createCreditCardForFastlaneTokenizationBody(body, options) {
     "fastlane" in creditCard &&
     "termsAndConditionsVersion" in creditCard.fastlane &&
     creditCard.fastlane.termsAndConditionsVersion;
+  var termsAndConditionsCountry =
+    "fastlane" in creditCard &&
+    "termsAndConditionsCountry" in creditCard.fastlane &&
+    creditCard.fastlane.termsAndConditionsCountry;
   var email = creditCard.email;
   var optIn = "hasBuyerConsent" in fastlane && fastlane.hasBuyerConsent;
   var shippingAddress = creditCard.shippingAddress;
@@ -69,6 +73,7 @@ function createCreditCardForFastlaneTokenizationBody(body, options) {
     optIn: optIn,
     phone: creditCard.phone,
     termsAndConditionsVersion: termsAndConditionsVersion,
+    termsAndConditionsCountry: termsAndConditionsCountry,
   });
 
   if ("authAssertion" in fastlane) {

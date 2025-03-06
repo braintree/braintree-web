@@ -1305,6 +1305,7 @@ describe("GraphQL", () => {
             /* eslint-disable camelcase */
             fastlane: {
               termsAndConditionsVersion: "1",
+              termsAndConditionsCountry: "UK",
               has_buyer_consent: true,
             },
             email: "me@getbraintree.com",
@@ -1395,6 +1396,7 @@ describe("GraphQL", () => {
             countryCodeAlpha3: "USA",
           },
           termsAndConditionsVersion: "1",
+          termsAndConditionsCountry: "UK",
         });
       });
       it("creates a GraphQL mutation for Fastlane credit card tokenization with an authAssertion", () => {
@@ -1405,6 +1407,7 @@ describe("GraphQL", () => {
             /* eslint-disable camelcase */
             fastlane: {
               authAssertion: false,
+              termsAndConditionsCountry: "UK",
               termsAndConditionsVersion: "1",
               has_buyer_consent: true,
             },
@@ -1497,6 +1500,7 @@ describe("GraphQL", () => {
             countryCodeAlpha3: "USA",
           },
           termsAndConditionsVersion: "1",
+          termsAndConditionsCountry: "UK",
         });
       });
     });

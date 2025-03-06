@@ -371,10 +371,7 @@ Venmo.prototype.appSwitch = function (url) {
       window.popupBridge &&
       typeof window.popupBridge.open === "function"
     ) {
-      analytics.sendEvent(
-        this._createPromise,
-        "venmo.appswitch.start.popup-bridge"
-      );
+      analytics.sendEvent(this._createPromise, "popup-bridge:venmo:started");
       window.popupBridge.open(url);
     } else {
       analytics.sendEvent(this._createPromise, "venmo.appswitch.start.webview");

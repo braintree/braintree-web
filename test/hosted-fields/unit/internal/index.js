@@ -1326,6 +1326,7 @@ describe("internal", () => {
           testContext.fakeOptions.metadata = {
             connectCheckout: {
               termsAndConditionsVersion: "1",
+              termsAndConditionsCountry: "UK",
               hasBuyerConsent: true,
             },
           };
@@ -1343,6 +1344,7 @@ describe("internal", () => {
                 data: {
                   creditCard: {
                     fastlane: {
+                      terms_and_conditions_country: "UK",
                       terms_and_conditions_version: "1",
                       // hasBuyerConsent: true,
                     },

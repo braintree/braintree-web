@@ -122,6 +122,7 @@ describe("formatCardRequestData", () => {
       metadata: {
         connectCheckout: {
           termsAndConditionsVersion: "1",
+          termsAndConditionsCountry: "UK",
           hasBuyerConsent: true,
           authAssertion: "test-auth-assertion",
         },
@@ -131,6 +132,7 @@ describe("formatCardRequestData", () => {
     expect(result).toEqual({
       fastlane: {
         terms_and_conditions_version: "1",
+        terms_and_conditions_country: "UK",
         has_buyer_consent: true,
         auth_assertion: "test-auth-assertion",
       },
@@ -157,6 +159,7 @@ describe("formatCardRequestData", () => {
       },
       metadata: {
         connectCheckout: {
+          termsAndConditionsCountry: "UK",
           termsAndConditionsVersion: "1",
           hasBuyerConsent: true,
           authAssertion: "test-auth-assertion",
@@ -183,6 +186,7 @@ describe("formatCardRequestData", () => {
         company: "Slugs R Us",
       },
       fastlane: {
+        terms_and_conditions_country: "UK",
         terms_and_conditions_version: "1",
         has_buyer_consent: true,
         auth_assertion: "test-auth-assertion",

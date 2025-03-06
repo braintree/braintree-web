@@ -24,7 +24,6 @@ var wrapPromise = require("@braintree/wrap-promise");
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {(number|string)} [options.version=1] The version of 3D Secure to use. Possible options:
- * * 1 - The legacy 3D Secure v1.0 integration.
  * * 2 - A 3D Secure v2.0 integration that uses a modal to host the 3D Secure iframe.
  * * 2-bootstrap3-modal - A 3D Secure v2.0 integration that uses a modal styled with Bootstrap 3 styles to host the 3D Secure iframe. Requires having the Bootstrap 3 script files and stylesheets on your page.
  * * 2-inline-iframe - A 3D Secure v2.0 integration that provides the authentication iframe directly to the merchant.
@@ -155,7 +154,6 @@ function create(options) {
           }
 
           if (
-            framework !== "legacy" &&
             !(
               gwConfig.threeDSecure &&
               gwConfig.threeDSecure.cardinalAuthenticationJWT

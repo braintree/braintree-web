@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 3.116.0
+
+- Fastlane
+  - add `termsAndConditionsCountry` in tokenization
+- 3D Secure
+  - Remove Legacy framework as v1 has been deprecated completely
+- Analytics
+  - Changed Popup Bridge analytics to standardize around all Braintree SDKs
+
 ## 3.115.2
 
 - Apple Pay

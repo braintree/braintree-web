@@ -129,10 +129,10 @@ release_source() {
   set +e
 
   local CP_CMD="cp"
-  #if [[ "$(uname)"="Darwin" ]]; then
+  if [[ "$(uname)"="Darwin" ]]; then
     # Coreutils version of cp supports --parents, mac default one doesn't
-  #  CP_CMD="gcp"
-  #fi
+    CP_CMD="gcp"
+  fi
 
   git ls-files | egrep -v "$(join '|' $SOURCE_IGNORES)" | xargs "$CP_CMD" --parents -t "$BRAINTREE_JS_SOURCE_DEST"
   echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
