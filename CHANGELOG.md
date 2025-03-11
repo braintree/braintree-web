@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.116.1
+
+- Fastlane
+  - Fix bug that occured when `termsAndConditionsCountry` was not available for tokenization
+
 ## 3.116.0
 
 - Fastlane

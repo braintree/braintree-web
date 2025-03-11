@@ -139,6 +139,26 @@ describe("formatCardRequestData", () => {
     });
   });
 
+  it("excludes termsAndConditionsCountry from Connect (Fastlane) metadata if not sent", () => {
+    const result = formatCardRequestData({
+      metadata: {
+        connectCheckout: {
+          termsAndConditionsVersion: "1",
+          hasBuyerConsent: true,
+          authAssertion: "test-auth-assertion",
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      fastlane: {
+        terms_and_conditions_version: "1",
+        has_buyer_consent: true,
+        auth_assertion: "test-auth-assertion",
+      },
+    });
+  });
+
   it("includes all data", () => {
     const inputData = {
       cardholderName: "First Last",

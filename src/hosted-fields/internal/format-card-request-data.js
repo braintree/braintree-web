@@ -33,20 +33,22 @@ module.exports = function (data) {
   // connectCheckout are the tokenize options from the Fastlane SDK
   if ("metadata" in data && "connectCheckout" in data.metadata) {
     result.fastlane = {
-      terms_and_conditions_version:
-        "termsAndConditionsVersion" in data.metadata.connectCheckout
-          ? data.metadata.connectCheckout.termsAndConditionsVersion
-          : "",
-      terms_and_conditions_country:
-        "termsAndConditionsCountry" in data.metadata.connectCheckout
-          ? data.metadata.connectCheckout.termsAndConditionsCountry
-          : "",
+      auth_assertion: data.metadata.connectCheckout.authAssertion,
       has_buyer_consent:
         "hasBuyerConsent" in data.metadata.connectCheckout
           ? data.metadata.connectCheckout.hasBuyerConsent
           : false,
-      auth_assertion: data.metadata.connectCheckout.authAssertion,
     };
+
+    if ("termsAndConditionsVersion" in data.metadata.connectCheckout) {
+      result.fastlane.terms_and_conditions_version =
+        data.metadata.connectCheckout.termsAndConditionsVersion;
+    }
+
+    if ("termsAndConditionsCountry" in data.metadata.connectCheckout) {
+      result.fastlane.terms_and_conditions_country =
+        data.metadata.connectCheckout.termsAndConditionsCountry;
+    }
   }
 
   if ("billingAddress" in data) {
