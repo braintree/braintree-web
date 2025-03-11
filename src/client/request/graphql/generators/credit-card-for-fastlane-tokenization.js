@@ -72,9 +72,15 @@ function createCreditCardForFastlaneTokenizationBody(body, options) {
     email: email,
     optIn: optIn,
     phone: creditCard.phone,
-    termsAndConditionsVersion: termsAndConditionsVersion,
-    termsAndConditionsCountry: termsAndConditionsCountry,
   });
+
+  if (termsAndConditionsVersion) {
+    ccpcVariables.termsAndConditionsVersion = termsAndConditionsVersion;
+  }
+
+  if (termsAndConditionsCountry) {
+    ccpcVariables.termsAndConditionsCountry = termsAndConditionsCountry;
+  }
 
   if ("authAssertion" in fastlane) {
     ccpcVariables.authAssertion = fastlane.authAssertion;

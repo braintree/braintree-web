@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.116.2
+
+- Fastlane
+  - Previous fix for a bug that occured when `termsAndConditionsCountry` was not available for tokenization did not cover all edge cases
+
 ## 3.116.1
 
 - Fastlane

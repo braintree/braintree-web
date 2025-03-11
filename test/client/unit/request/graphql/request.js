@@ -1399,6 +1399,104 @@ describe("GraphQL", () => {
           termsAndConditionsCountry: "UK",
         });
       });
+      it("creates a GraphQL mutation for Fastlane credit card tokenization without termsAndConditionsCountry or termsAndConditionsVersion", () => {
+        let graphQLRequest, body, parsedBody;
+
+        testContext.options.data = {
+          creditCard: {
+            /* eslint-disable camelcase */
+            fastlane: {
+              has_buyer_consent: true,
+            },
+            email: "me@getbraintree.com",
+            number: "4111111111111111",
+            expirationYear: "12",
+            expirationMonth: "2020",
+            cvv: "123",
+            cardholderName: "Brian Treep",
+            billingAddress: {
+              company: "Braintree",
+              streetAddress: "123 Townsend St.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale",
+              lastName: "Cooper",
+              locality: "San Francisco",
+              region: "CA",
+              postalCode: "94107",
+              countryCodeAlpha3: "USA",
+            },
+            phone: {
+              phoneNumber: "18005551212",
+              countryPhoneCode: "1",
+            },
+            shippingAddress: {
+              company: "Braintree-ship",
+              streetAddress: "222 Merchandize Mart Plaza.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale-ship",
+              lastName: "Cooper-ship",
+              locality: "Chicago",
+              region: "IL",
+              postalCode: "60654",
+              countryCodeAlpha3: "USA",
+            },
+          },
+        };
+
+        graphQLRequest = new GraphQLRequest(testContext.options);
+        body = graphQLRequest.getBody();
+        parsedBody = JSON.parse(body);
+
+        expect(parsedBody.query).toStrictEqual(
+          expect.stringContaining("mutation")
+        );
+        expect(parsedBody.query).toStrictEqual(
+          expect.stringContaining("tokenizeCreditCardForPayPalConnect")
+        );
+        expect(parsedBody.variables).toBeDefined();
+        expect(parsedBody.operationName).toEqual(
+          "TokenizeCreditCardForPayPalConnect"
+        );
+
+        expect(parsedBody.variables.input).toEqual({
+          creditCard: {
+            billingAddress: {
+              company: "Braintree",
+              streetAddress: "123 Townsend St.",
+              extendedAddress: "8th Floor",
+              firstName: "Dale",
+              lastName: "Cooper",
+              locality: "San Francisco",
+              region: "CA",
+              postalCode: "94107",
+              countryCodeAlpha3: "USA",
+            },
+            number: "4111111111111111",
+            expirationYear: "12",
+            expirationMonth: "2020",
+            cvv: "123",
+            cardholderName: "Brian Treep",
+          },
+          email: "me@getbraintree.com",
+          optIn: true,
+          options: {},
+          phone: {
+            countryPhoneCode: "1",
+            phoneNumber: "18005551212",
+          },
+          shippingAddress: {
+            company: "Braintree-ship",
+            streetAddress: "222 Merchandize Mart Plaza.",
+            extendedAddress: "8th Floor",
+            firstName: "Dale-ship",
+            lastName: "Cooper-ship",
+            locality: "Chicago",
+            region: "IL",
+            postalCode: "60654",
+            countryCodeAlpha3: "USA",
+          },
+        });
+      });
       it("creates a GraphQL mutation for Fastlane credit card tokenization with an authAssertion", () => {
         let graphQLRequest, body, parsedBody;
 
