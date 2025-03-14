@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.116.3
+
+- PayPal Checkout
+  - Adding public documentation for riskCorrelationId in createPayment
+
 ## 3.116.2
 
 - Fastlane

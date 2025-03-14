@@ -439,6 +439,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {planMetadata} [options.planMetadata] When plan type is defined, allows for {@link PayPalCheckout~planMetadata|plan metadata} to be set for the Billing Agreement.
  * @param {string} [options.userAuthenticationEmail] Optional merchant-provided buyer email, used to streamline the sign-in process for both one-time checkout and vault flows.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
+ * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
