@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.117.0
+
+- Venmo
+  - Add missing analytics events for Popup Bridge
+  - Add `styleCspNonce` option to provide nonce to whitelist injected style in content support policy.
+- Fraudnet
+  - Add new option `cb1` to `dataCollector.create()` to allow specifying a callback name that will be invoked when fraudnet has finished initializing.
+
 ## 3.116.3
 
 - PayPal Checkout

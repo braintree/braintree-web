@@ -47,7 +47,8 @@ Fraudnet.prototype.initialize = function (options) {
   this._parameterBlock = _createParameterBlock(
     this.sessionId,
     this._beaconId,
-    environment
+    environment,
+    options.cb1
   );
 
   return loadScript({
@@ -94,12 +95,13 @@ function _generateBeaconId(sessionId) {
   );
 }
 
-function _createParameterBlock(sessionId, beaconId, environment) {
+function _createParameterBlock(sessionId, beaconId, environment, cb1) {
   var el = document.body.appendChild(document.createElement("script"));
   var config = {
     f: sessionId,
     s: FRAUDNET_SOURCE,
     b: beaconId,
+    cb1: cb1,
   };
 
   // for some reason, the presence of the sandbox

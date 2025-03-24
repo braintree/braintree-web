@@ -201,7 +201,7 @@ function getElementStyles() {
   return allStyles.join("\n");
 }
 
-function buildAndStyleElements() {
+function buildAndStyleElements(styleCspNonce) {
   var alreadyRenderedBackdrop = document.getElementById(ELEMENT_IDS.backdrop);
   var backdropStylesElement,
     backdropDiv,
@@ -226,6 +226,9 @@ function buildAndStyleElements() {
   continueButton = document.createElement("button");
   cancelButton = document.createElement("button");
 
+  if (styleCspNonce) {
+    backdropStylesElement.nonce = styleCspNonce;
+  }
   backdropStylesElement.id = "venmo-desktop-web__injected-styles";
   backdropStylesElement.innerHTML = getElementStyles();
 
@@ -274,7 +277,7 @@ function buildAndStyleElements() {
  * @returns {Promise} Returns a promise
  */
 function runWebLogin(options) {
-  buildAndStyleElements();
+  buildAndStyleElements(options.styleCspNonce);
 
   return openPopup(options);
 }

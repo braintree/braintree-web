@@ -90,6 +90,7 @@ var errors = require("./errors");
  * @param {string} [options.riskCorrelationId] Pass a custom risk correlation id when creating the data collector.
  * @param {string} [options.clientMetadataId] Deprecated. Use `options.riskCorrelationId` instead.
  * @param {string} [options.correlationId] Deprecated. Use `options.riskCorrelationId` instead.
+ * @param {string} [options.cb1] Callback name for fraudnet that will be invoked on the window object when fraudnet is finished initializing.
  * @param {callback} [callback] The second argument, `data`, is the {@link DataCollector} instance.
  * @returns {(Promise|void)} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
  */
@@ -127,6 +128,7 @@ function create(options) {
                 options.correlationId,
               clientSessionId: clientConfiguration.analyticsMetadata.sessionId,
               environment: clientConfiguration.gatewayConfiguration.environment,
+              cb1: options.cb1,
             })
             .then(function (fraudnetInstance) {
               if (fraudnetInstance) {

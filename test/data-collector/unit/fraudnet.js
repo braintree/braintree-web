@@ -23,7 +23,11 @@ describe("FraudNet", () => {
   });
 
   it("contains expected values in parsed data", async () => {
-    const result = await fraudNet.setup({ sessionId: "fake-sessionID" });
+    const testCallback = "testCallback";
+    const result = await fraudNet.setup({
+      sessionId: "fake-sessionID",
+      cb1: testCallback,
+    });
 
     const sessionId = result.sessionId;
     const el = document.querySelector('[fncls][type="application/json"]');
@@ -32,6 +36,7 @@ describe("FraudNet", () => {
     expect(parsedData.b).toContain(sessionId);
     expect(parsedData.f).toBe(sessionId);
     expect(parsedData.s).toBe("BRAINTREE_SIGNIN");
+    expect(parsedData.cb1).toBe(testCallback);
     expect(parsedData.sandbox).toBe(true);
   });
 

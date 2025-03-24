@@ -1,4 +1,5 @@
 "use strict";
+const assign = require("../../../src/lib/assign").assign;
 
 const {
   runWebLogin,
@@ -113,6 +114,24 @@ describe("web-login-backdrop", () => {
     expect(document.createElement).toHaveBeenNthCalledWith(8, "button");
     expect(document.head.appendChild).toBeCalled();
     expect(document.body.appendChild).toBeCalled();
+  });
+
+  it("create the backdrop with nonce for style element", async () => {
+    let options = assign({}, openOptions, {
+      styleCspNonce: "24680-fakeFauxNonce",
+    });
+
+    document.getElementById.mockReturnValueOnce();
+
+    await runWebLogin(options);
+
+    expect(document.createElement).toHaveBeenNthCalledWith(1, "style");
+    expect(document.head.appendChild.mock.calls[0][0].id).toBe(
+      "venmo-desktop-web__injected-styles"
+    );
+    expect(document.head.appendChild.mock.calls[0][0].nonce).toBe(
+      "24680-fakeFauxNonce"
+    );
   });
 
   it("uses existing backdrop if already rendered instead of creating it again", async () => {

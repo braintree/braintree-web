@@ -1,6 +1,7 @@
 "use strict";
 
 var analytics = require("../lib/analytics");
+var assign = require("../lib/assign").assign;
 var isBrowserSupported = require("./shared/supports-venmo");
 var browserDetection = require("./shared/browser-detection");
 var constants = require("./shared/constants");
@@ -82,6 +83,9 @@ function Venmo(options) {
   this._taxAmount = options.taxAmount;
   this._shippingAmount = options.shippingAmount;
   this._totalAmount = options.totalAmount;
+  this._cspNonce =
+    (this._mobileWebFallBack || this._allowDesktop) &&
+    (options.styleCspNonce || false);
 
   this._shouldCreateVenmoPaymentContext =
     this._cannotHaveReturnUrls || !this._shouldUseLegacyFlow;
@@ -605,7 +609,7 @@ Venmo.prototype.tokenize = function (options) {
      *
      * This is an alternate, opt-in flow to be used the Desktop QR Flow is not desired for Pay with Venmo desktop experiences.
      */
-    tokenizationPromise = this._tokenizeWebLoginWithRedirect();
+    tokenizationPromise = this._tokenizeWebLoginWithRedirect(options);
   } else if (this._cannotHaveReturnUrls) {
     // in the manual return strategy, we create the payment
     // context on initialization, then continually poll once
@@ -719,6 +723,7 @@ Venmo.prototype.cancelTokenization = function () {
 
 Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
   var self = this;
+  var webLoginOptions;
 
   analytics.sendEvent(self._createPromise, "venmo.tokenize.web-login.start", {
     paypal_context_id: self._venmoPaymentContextId,
@@ -726,16 +731,22 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
   this._tokenizePromise = new ExtendedPromise();
 
   return this.getUrl().then(function (url) {
+    webLoginOptions = {
+      checkForStatusChange:
+        self._checkPaymentContextStatusAndProcessResult.bind(self),
+      cancelTokenization: self.cancelTokenization.bind(self),
+      frameServiceInstance: self._frameServiceInstance,
+      venmoUrl: url,
+      debug: self._isDebug,
+      checkPaymentContextStatus: self._checkPaymentContextStatus.bind(self),
+    };
+    if (self._cspNonce) {
+      webLoginOptions = assign({}, webLoginOptions, {
+        styleCspNonce: self._cspNonce,
+      });
+    }
     desktopWebLogin
-      .runWebLogin({
-        checkForStatusChange:
-          self._checkPaymentContextStatusAndProcessResult.bind(self),
-        cancelTokenization: self.cancelTokenization.bind(self),
-        frameServiceInstance: self._frameServiceInstance,
-        venmoUrl: url,
-        debug: self._isDebug,
-        checkPaymentContextStatus: self._checkPaymentContextStatus.bind(self),
-      })
+      .runWebLogin(webLoginOptions)
       .then(function (payload) {
         analytics.sendEvent(
           self._createPromise,
@@ -1249,6 +1260,13 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
             }
           );
 
+          if (window.popupBridge) {
+            analytics.sendEvent(
+              self._createPromise,
+              "popup-bridge:venmo:succeeded"
+            );
+          }
+
           return resolve({
             paymentMethodNonce: payload.paymentMethodId,
             username: payload.userName,
@@ -1260,8 +1278,19 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
           if (
             err.type === errors.VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED.type
           ) {
+            if (window.popupBridge) {
+              analytics.sendEvent(
+                self._createPromise,
+                "popup-bridge:venmo:canceled"
+              );
+            }
             // We want to reject in this case because if it the process was canceled, we don't want to take the happy path
             reject(err);
+          } else if (window.popupBridge) {
+            analytics.sendEvent(
+              self._createPromise,
+              "popup-bridge:venmo:failed"
+            );
           }
 
           analytics.sendEvent(
@@ -1280,9 +1309,21 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
         "venmo.appswitch.handle.success"
       );
 
+      if (window.popupBridge) {
+        analytics.sendEvent(
+          self._createPromise,
+          "popup-bridge:venmo:succeeded"
+        );
+      }
+
       resolve(params);
     } else if (params.venmoError) {
       analytics.sendEvent(self._createPromise, "venmo.appswitch.handle.error");
+
+      if (window.popupBridge) {
+        analytics.sendEvent(self._createPromise, "popup-bridge:venmo:failed");
+      }
+
       reject(
         new BraintreeError({
           type: errors.VENMO_APP_FAILED.type,
@@ -1298,6 +1339,11 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
       );
     } else if (params.venmoCancel) {
       analytics.sendEvent(self._createPromise, "venmo.appswitch.handle.cancel");
+
+      if (window.popupBridge) {
+        analytics.sendEvent(self._createPromise, "popup-bridge:venmo:canceled");
+      }
+
       reject(new BraintreeError(errors.VENMO_APP_CANCELED));
     } else {
       // User has either manually switched back to browser, or app is not available for app switch
