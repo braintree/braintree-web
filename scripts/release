@@ -130,7 +130,7 @@ release_source() {
 
   local CP_CMD="cp"
   #if [[ "$(uname)"="Darwin" ]]; then
-    # Coreutils version of cp supports --parents, mac default one doesn't
+  #  # Coreutils version of cp supports --parents, mac default one doesn't
   #  CP_CMD="gcp"
   #fi
 

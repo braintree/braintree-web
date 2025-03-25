@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.117.1
+
+- Venmo
+  - fix to set `cspNonce` if `allowDeskopWebLogin` is enabled
+
 ## 3.117.0
 
 - Venmo

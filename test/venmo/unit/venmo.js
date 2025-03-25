@@ -3082,6 +3082,30 @@ describe("Venmo", () => {
         });
       });
 
+      it("passes style nonce with web login", async () => {
+        let nonceText = "eigh-eee-iii-oh-you";
+        let nonceOption = {
+          styleCspNonce: nonceText,
+        };
+
+        let venmo = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          ...flowSpecificConfig,
+          ...nonceOption,
+        });
+
+        await venmo.tokenize();
+        expect(runWebLogin).toHaveBeenCalledWith({
+          cancelTokenization: expect.any(Function),
+          checkForStatusChange: expect.any(Function),
+          frameServiceInstance: expect.any(Object),
+          venmoUrl: expect.stringContaining(venmoConstants.VENMO_WEB_LOGIN_URL),
+          debug: testContext.configuration.isDebug,
+          checkPaymentContextStatus: expect.any(Function),
+          styleCspNonce: expect.stringMatching(nonceText),
+        });
+      });
+
       it("processes the payment context status on approval", async () => {
         const expectedStatus = "APPROVED";
         let venmo = new Venmo({

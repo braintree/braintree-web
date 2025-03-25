@@ -84,7 +84,7 @@ function Venmo(options) {
   this._shippingAmount = options.shippingAmount;
   this._totalAmount = options.totalAmount;
   this._cspNonce =
-    (this._mobileWebFallBack || this._allowDesktop) &&
+    (this._mobileWebFallBack || this._allowDesktopWebLogin) &&
     (options.styleCspNonce || false);
 
   this._shouldCreateVenmoPaymentContext =
