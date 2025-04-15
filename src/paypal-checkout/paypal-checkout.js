@@ -416,6 +416,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.vaultInitiatedCheckoutPaymentMethodToken] Use the payment method nonce representing a PayPal account with a Billing Agreement ID to create the payment and redirect the customer to select a new financial instrument. This option is only applicable to the `checkout` flow.
  * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
+ * @param {string} [options.contactPreference] Optional field but required if using different recipient via `shippingAddressOverride`. Can be 'NO_CONTACT_INFO', 'RETAIN_CONTACT_INFO' or 'UPDATE_CONTACT_INFO'. If null, will default to 'NO_CONTACT_INFO'.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
  * @param {string} options.shippingAddressOverride.line1 Street address.
  * @param {string} [options.shippingAddressOverride.line2] Street address (extended).
@@ -1530,6 +1531,10 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
       if (options.shippingAddressOverride.hasOwnProperty(key)) {
         paymentResource[key] = options.shippingAddressOverride[key];
       }
+    }
+
+    if (options.contactPreference) {
+      paymentResource.contactPreference = options.contactPreference;
     }
 
     if (options.hasOwnProperty("billingAgreementDetails")) {

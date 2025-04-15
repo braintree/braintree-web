@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.118.0
+
+- Fastlane
+  - add `tokensOnDemand` to GQL
+  - add `tokenExchange` to GQL
+- PayPal Checkout
+  - Add `contactPreference` to PayPal Checkout schema for Contact Module
+
 ## 3.117.1
 
 - Venmo

@@ -24,6 +24,12 @@ var CONFIGURATION_QUERY =
   "    } " +
   "    fastlane { " +
   "      enabled " +
+  "      tokensOnDemand { " +
+  "        enabled " +
+  "        tokenExchange { " +
+  "          enabled " +
+  "        } " +
+  "      } " +
   "    } " +
   "    googlePay { " +
   "      displayName " +

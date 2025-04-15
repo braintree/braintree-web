@@ -565,6 +565,7 @@ describe("PayPalCheckout", () => {
 
         it("contains other options when specified", () => {
           testContext.options.intent = "sale";
+          testContext.options.contactPreference = "RETAIN_CONTACT_INFO";
           testContext.options.shippingAddressOverride = {
             line1: "123 Townsend St",
             line2: "Fl 6",
@@ -611,6 +612,7 @@ describe("PayPalCheckout", () => {
                     postalCode: "94107",
                     countryCode: "USA",
                     phone: "111-1111",
+                    contactPreference: "RETAIN_CONTACT_INFO",
                     recipientName: "Joe Bloggs",
                     recipientEmail: "received@here.net",
                     internationalPhone: {
