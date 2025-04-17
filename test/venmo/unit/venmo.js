@@ -1804,6 +1804,22 @@ describe("Venmo", () => {
           "venmo.appswitch.start.browser"
         );
       });
+
+      it("sets location.href when device is android chrome", async () => {
+        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+
+        const venmo = new Venmo(venmoOptions);
+
+        await venmo.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).toBe("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.browser"
+        );
+      });
     });
 
     describe("deep link return url", () => {

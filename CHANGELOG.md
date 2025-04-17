@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.118.1
+
+- Venmo
+  - Fix behavior for Android Chrome on `mobileWebFallback`
+
 ## 3.118.0
 
 - Fastlane

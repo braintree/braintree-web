@@ -389,6 +389,11 @@ Venmo.prototype.appSwitch = function (url) {
       this._shouldUseRedirectStrategy()
     ) {
       window.location.href = url;
+    } else if (browserDetection.isAndroid() && browserDetection.isChrome()) {
+      // Android chrome needs to use window.location.href
+      // to remain in the same tab as expected.
+      // Chrome now defaults to opening a new tab.
+      window.location.href = url;
     } else {
       window.open(url);
     }
