@@ -1,11 +1,16 @@
 # CHANGELOG
 
-## 3.118.1
+## 3.118.2 (2025-04-25)
+
+- Local Payment Methods
+  - Fix to make `paymentId` available before full page redirect
+
+## 3.118.1 (2025-04-17)
 
 - Venmo
   - Fix behavior for Android Chrome on `mobileWebFallback`
 
-## 3.118.0
+## 3.118.0 (2025-04-15)
 
 - Fastlane
   - add `tokensOnDemand` to GQL
@@ -13,12 +18,12 @@
 - PayPal Checkout
   - Add `contactPreference` to PayPal Checkout schema for Contact Module
 
-## 3.117.1
+## 3.117.1 (2025-03-25)
 
 - Venmo
   - fix to set `cspNonce` if `allowDeskopWebLogin` is enabled
 
-## 3.117.0
+## 3.117.0 (2025-03-24)
 
 - Venmo
   - Add missing analytics events for Popup Bridge
@@ -26,22 +31,22 @@
 - Fraudnet
   - Add new option `cb1` to `dataCollector.create()` to allow specifying a callback name that will be invoked when fraudnet has finished initializing.
 
-## 3.116.3
+## 3.116.3 (2025-03-14)
 
 - PayPal Checkout
   - Adding public documentation for riskCorrelationId in createPayment
 
-## 3.116.2
+## 3.116.2 (2025-03-11)
 
 - Fastlane
   - Previous fix for a bug that occured when `termsAndConditionsCountry` was not available for tokenization did not cover all edge cases
 
-## 3.116.1
+## 3.116.1 (2025-03-11)
 
 - Fastlane
   - Fix bug that occured when `termsAndConditionsCountry` was not available for tokenization
 
-## 3.116.0
+## 3.116.0 (2025-03-06)
 
 - Fastlane
   - add `termsAndConditionsCountry` in tokenization
@@ -50,12 +55,12 @@
 - Analytics
   - Changed Popup Bridge analytics to standardize around all Braintree SDKs
 
-## 3.115.2
+## 3.115.2 (2025-02-13)
 
 - Apple Pay
   - Add `isDeviceToken` to `TokenizePayload`
 
-## 3.115.1
+## 3.115.1 (2025-02-10)
 
 - Update restricted-input to v4.0.3
 - Update dependencies
@@ -63,7 +68,7 @@
 - Update browserify task
   - Setting UglifyJS `arrows` option to `false`
 
-## 3.115.0
+## 3.115.0 (2025-01-23)
 
 - Docs update
   - Add `internationalPhone` option to `shippingAddressOverride` in PayPal Checkout JSDoc
@@ -72,7 +77,7 @@
 - Local Payment Methods
   - Allow redirect flow to work when inside an iframe
 
-## 3.114.0
+## 3.114.0 (2025-01-21)
 
 - PayPal Checkout
   - Add `recipientEmail` option to `shippingAddressOverride`
@@ -90,19 +95,19 @@
 - Data Collector
   - Deprecate Kount
 
-## 3.113.0
+## 3.113.0 (2024-12-17)
 
 - Local Payment Methods
   - Fix hasTokenizationParams to account for token URL param
 - Hosted Fields
   - add support for `-webkit-text-fill-color` CSS rule
 
-## 3.112.1
+## 3.112.1 (2024-11-19)
 
 - Venmo
   - Fix a bug where, after redirecting in the mobile web flow, we were passing in a null context ID to a graphql API call. The fix is to set the Venmo instance's venmoPaymentContextId based on resource_id in url.
 
-## 3.112.0
+## 3.112.0 (2024-11-07)
 
 - Local Payment
   - Remove support of `bic` field for iDeal payments
@@ -110,37 +115,37 @@
 - Utility Functions
   - Ensure camelCaseToSnakeCase handles null values correctly
 
-## 3.111.1
+## 3.111.1 (2024-10-31)
 
 - Node.js
   - Updated from Node.js v14 to Node.js v20
 
-## 3.111.0
+## 3.111.0 (2024-10-23)
 
 - Local Payment Methods
   - Add Full Page Redirect
 
-## 3.110.0
+## 3.110.0 (2024-10-15)
 
 - SEPA
   - Add support for new full page redirect flow
 
-## 3.109.0
+## 3.109.0 (2024-09-24)
 
 - PayPal Checkout
   - Add `userAuthenticationEmail` to `createPayment` to enable MPE
 
-## 3.108.0
+## 3.108.0 (2024-09-19)
 
 - PayPal
   - Support Checkout with Vault on v2 orders API
 
-## 3.107.1
+## 3.107.1 (2024-09-11)
 
 - Hosted Fields
   - Fix passing through a sessionId value
 
-## 3.107.0
+## 3.107.0 (2024-09-06)
 
 - Hosted Fields
   - Add support for passing through a sessionId value
@@ -151,26 +156,26 @@
 - Local Payment
   - Added Support for Local Payment `mbway` and `bancomatpay`
 
-## 3.106.0
+## 3.106.0 (2024-08-06)
 
 - Fraudnet
   - Truncate session id to 32 characters.
 
-## 3.105.0
+## 3.105.0 (2024-07-30)
 
 - PayPal Checkout
   - Add client-metadata-id as a data attribute when loading the PayPal SDK
 - Google Pay
   - Add string conversion for totalPrice
 
-## 3.104.0
+## 3.104.0 (2024-07-24)
 
 - Fastlane
   - Add support for Fastlane.
 - DataCollector
   - Correlation ID now defaults to match Client Session ID if no Correlation ID is passed when creating DataCollector.
 
-## 3.103.0
+## 3.103.0 (2024-07-11)
 
 - Package updates:
   - Updates @braintree/asset-loader to v2.0.1
@@ -185,74 +190,74 @@
 - ThreeDS
   - Update base `verifyCard` to accept amount = 0
 
-## 3.102.0
+## 3.102.0 (2024-05-02)
 
 - PayPal
   - Support new `amountBreakdown` and its subfields in the `updatePayment` method
 
-## 3.101.3
+## 3.101.3 (2024-04-18)
 
 - FrameService
   - Updated to limit messages sent between popup and iframe from the window parent.
 
-## 3.101.2
+## 3.101.2 (2024-04-11)
 
 - Venmo
   - Fix issue introduced in previous patch that would sometimes cause the Venmo flow to crash
 
-## 3.101.1
+## 3.101.1 (2024-04-04)
 
 - Venmo
   - Fix issue where the Venmo Desktop flow would sometimes report as a mobile web transaction
 
-## 3.101.0
+## 3.101.0 (2024-03-19)
 
 - Venmo
   - Add support for `isFinalAmount` flag to Venmo create
 - Package updates
   - Updated @braintree/sanitize-url to 7.0.1
 
-## 3.100.0
+## 3.100.0 (2024-02-06)
 
 - 3D Secure
   - Remove call to V1 modal as 3DS v1 is unsupported
 - Local Payment
   - Add support for recurrent local payment
 
-## 3.99.2
+## 3.99.2 (2024-01-26)
 
 - Venmo
   - Fix race condition in previous bug fix.
 
-## 3.99.1
+## 3.99.1 (2024-01-26)
 
 - Venmo
   - Fix bug where the Venmo Desktop Popup would sometimes return a tokenization error when a customer canceled within the modal.
 - Package updates
   - Replace `tomashanacek/gulp-envify` with `ladjs/gulp-envify` due to missing dependency (`tomashanacek/loose-envify`).
 
-## 3.99.0
+## 3.99.0 (2024-01-08)
 
 - Venmo
   - Update `isBrowserSupported` to return true for iOS Chrome when `allowNewBrowserTab` is true and Venmo is not presented in an iFrame.
 
-## 3.98.0
+## 3.98.0 (2023-12-12)
 
 - Local Payment
   - Add support for seamless/oneclick BLIK local payment
 
-## 3.97.4
+## 3.97.4 (2023-12-05)
 
 - Venmo
   - Change overlay container to be on top of other page components and prevent click-through.
 
-## 3.97.3
+## 3.97.3 (2023-10-17)
 
 - JS Docs
   - Venmo
     - Add clarification to `isBrowserSupported` for iOS Chrome.
 
-## 3.97.2
+## 3.97.2 (2023-09-20)
 
 - JS Docs
   - PayPal
@@ -260,14 +265,14 @@
   - Apple Pay
     - Updated `displayName` docs for `performValidation` to indicate that maximium length is 64 characters
 
-## 3.97.1
+## 3.97.1 (2023-08-17)
 
 - JS docs
   - Add more details about content security policy
 - Hosted Fields
   - Fix bug where keyboard navigation would sometimes not work in FireFox
 
-## 3.97.0
+## 3.97.0 (2023-08-08)
 
 - 3D Secure
   - Updated documentation for `requestVisaDAF` parameter on `verifyCard`
@@ -281,12 +286,12 @@
   - Updated @braintree/sanitize-url to 6.0.4
   - Updated @braintree/browser-detection to 1.17.1
 
-## 3.96.1
+## 3.96.1 (2023-07-20)
 
 - Venmo
   - Fix bug that does not receive the right `enrichedCustomerDataEnabled` flag
 
-## 3.96.0
+## 3.96.0 (2023-07-06)
 
 - Update framebus to v5.2.1
 - Hosted Fields
@@ -297,7 +302,7 @@
 - PayPal
   - Add support for v2/orders
 
-## 3.95.0
+## 3.95.0 (2023-06-27)
 
 - 3D Secure
   - Add `merchantName` option to `verifyCard`
@@ -308,18 +313,18 @@
     `totalAmount`, `subTotalAmount`, `discountAmount`, `taxAmount`, `shippingAmount`,
     and `lineItems` params to `createVenmoPaymentContext` for rendering in Venmo paysheet
 
-## 3.94.0
+## 3.94.0 (2023-05-09)
 
 - 3D Secure
   - Adds `collectDeviceData` opt-in flag for 3DS lookups
 
-## 3.93.0
+## 3.93.0 (2023-05-04)
 
 - Updated documentation in regards to 3D secure and CSP recommendations
 - Local Payment
   - Add support for Pay Upon Invoice local payment type: `pay_upon_invoice`
 
-## 3.92.2
+## 3.92.2 (2023-04-24)
 
 - Remove dependency on `promise-polyfill`
 - Drop depenency on `@braintree/class-list`
@@ -337,7 +342,7 @@
   - Moved minimist to devDependencies
   - Moved terser to devDependencies
 
-## 3.92.1
+## 3.92.1 (2023-03-30)
 
 - Hosted Fields
 
@@ -351,7 +356,7 @@
   - Updated minimist to 1.2.8
   - Updated cached-path-relative to 1.1.0
 
-## 3.92.0
+## 3.92.0 (2023-03-09)
 
 - Venmo
   - Fix issue resulting in blocked popups in desktop web login flow
@@ -360,7 +365,7 @@
 - 3D Secure
   - Clarify format of IP Address in `AdditionalInformation` object
 
-## 3.91.0
+## 3.91.0 (2023-02-22)
 
 - 3D Secure
   - Add `requestedExemptionType` option to `verifyCard`
@@ -370,35 +375,35 @@
 - Hosted Fields
   - Improved accessibility for screen readers
 
-## 3.90.0
+## 3.90.0 (2023-01-18)
 
 - Paypal
   - Add support for `updatePayment`
 
-## 3.88.6
+## 3.88.6 (2022-12-15)
 
 - Venmo
   - Fix Desktop Web Login flow running from an iframe
 
-## 3.88.5
+## 3.88.5 (2022-12-07)
 
 - Venmo
   - Update constants to use correct deeplinking url for Venmo
 
-## 3.88.4
+## 3.88.4 (2022-11-08)
 
 - 3D Secure
   - Update the regex to validate cardinal commerce domain
 - Venmo Desktop
   - Use latest framebus for more secure messaging
 
-## 3.88.3
+## 3.88.3 (2022-11-03)
 
 - Update framebus to v5.2.0
 - Hosted Fields
   - Improve iframe communication with parent page
 
-## 3.88.2
+## 3.88.2 (2022-10-27)
 
 - Sepa: fix jsdoc entry for `tokenize`
 - 3D Secure: update jsdoc entry for `teardown`
@@ -409,12 +414,12 @@
 - Local payments
   - Fix canceled or failed flow for PopupBridge use cases
 
-## 3.88.1
+## 3.88.1 (2022-09-12)
 
 - Venmo:
   - fix cases where nonce payload data was missing after tokenization
 
-## 3.88.0
+## 3.88.0 (2022-09-07)
 
 - Venmo
   - add `allowAndroidRecreation` for addressing Android PopupBridge use cases
@@ -422,17 +427,17 @@
 - 3D Secure
   - Add check to verify acsUrl if not a cardinal commerce domain
 
-## 3.87.0
+## 3.87.0 (2022-08-26)
 
 - Venmo fix mobileWebFallback url reference
 - Add support for SEPA Direct Debit
 
-## 3.86.0
+## 3.86.0 (2022-08-11)
 
 - Add support for Desktop Web Login flow
 - Add support for Mobile Web Fallback
 
-## 3.85.5
+## 3.85.5 (2022-07-21)
 
 - Fix internal build issue
 
@@ -440,7 +445,7 @@
 
 - Update @braintree/browser-detection to v1.14.0
 
-## 3.85.3
+## 3.85.3 (2022-04-06)
 
 - Update @braintree/sanitize-url to v6.0.0
 - Update promise-polyfill to v8.2.3
@@ -451,7 +456,7 @@
   - Fix issue where query strings from URLs with a hash fragment _before_ the query string could not be parsed correctly
 - Clarify Vault Manager `options.defaultFirst` functionality in JSDoc
 
-## 3.85.2
+## 3.85.2 (2022-01-21)
 
 - Venmo
   - Fix issue where iOS Chrome was reporting as a supported browser when Venmo was configured for desktop
@@ -459,12 +464,12 @@
 - UnionPay
   - Fix typo in our GraphQL Tokenization CREDIT_CARD_BRAND_MAP
 
-## 3.85.1
+## 3.85.1 (2022-01-13)
 
 - Venmo
   - Fix issue where iOS Chrome was reporting as a supported browser
 
-## 3.85.0
+## 3.85.0 (2022-01-07)
 
 - Client
   - Add Elo, Hiper, and Hipercard graphQL adapters to card
@@ -480,7 +485,7 @@
 - Venmo
   - Expose `paymentContextId` when available
 
-## 3.84.0
+## 3.84.0 (2021-11-30)
 
 - Client
   - Add Elo, Hiper, and Hipercard to `supportedCardTypes`
@@ -489,7 +494,7 @@
 - Venmo
   - Adjust UI for better navigation
 
-## 3.83.0
+## 3.83.0 (2021-11-02)
 
 - Data Collector
   - Updates `clientMetadataId` to `riskCorrelationId`
@@ -503,7 +508,7 @@
   - Fix issue where Facebook on Android would report as a supported
     browser
 
-## 3.82.0
+## 3.82.0 (2021-09-29)
 
 - Update @braintree/browser-detection to v1.12.1
 - Update inject-stylesheet@v5.0.0
@@ -514,13 +519,13 @@
   - Updates `correlationId` to `clientMetadataId` (`correlationId`
     is treated as an alias)
 
-## 3.81.1
+## 3.81.1 (2021-09-23)
 
 - Venmo
   - Fix issue where `@` was sometimes not returned in username param
     upon successful tokenization
 
-## 3.81.0
+## 3.81.0 (2021-08-18)
 
 - Data Collector
   - Allow passing custom correlation id when initializing data
@@ -528,7 +533,7 @@
 - Visa Checkout
   - Add `encryptionKey` to `createInitOptions`
 
-## 3.80.0
+## 3.80.0 (2021-08-09)
 
 - 3D Secure
   - deprecate `cardAdd` in `verifyCard` in favor of
@@ -540,13 +545,13 @@
   - fix issue where v1 fallback could result in an unrecoverable
     exception (\#582)
 
-## 3.79.1
+## 3.79.1 (2021-07-12)
 
 - Hosted Fields
   - Fix issue where inputs could not tab forward in iOS Safari 14.5+
     (tabbing backward is still broken) (\#456)
 
-## 3.79.0
+## 3.79.0 (2021-07-08)
 
 - Fix issue where SDK could not be used with server side rendering in
   Node v16 (\#576)
@@ -561,7 +566,7 @@
 - Google Pay
   - Support Maestro cards
 
-## 3.78.3
+## 3.78.3 (2021-06-25)
 
 - Update restricted-input to v3.0.4
 - Hosted Fields
@@ -570,7 +575,7 @@
   - Fix issue where some Mac OS input sources would not format
     correctly in Safari
 
-## 3.78.2
+## 3.78.2 (2021-06-15)
 
 - Hosted Fields
   - Fix issue where Safari could not programatically focus to input
@@ -580,14 +585,14 @@
   - Fix issue where Desktop Safari required 2 tabs to tab forward
     (\#490)
 
-## 3.78.1
+## 3.78.1 (2021-06-08)
 
 - Venmo
   - Fix issue where Chrome for iOS would leave behind a blank
     window, making it difficult to return to the merchant page in
     manual return flow
 
-## 3.78.0
+## 3.78.0 (2021-06-08)
 
 - Update browser-detection to v1.12.0
 - Apple Pay
@@ -598,13 +603,13 @@
   - Add `displayName` option
   - Fix issue where payment contexts where not cancelled correctly
 
-## 3.77.0
+## 3.77.0 (2021-06-03)
 
 - Update @braintree/sanitize-url to v5.0.2
 - Venmo
   - Add `paymentMethodUsage` parameter to create
 
-## 3.76.4
+## 3.76.4 (2021-05-11)
 
 - Update card-validator to v8.1.1
 - Local Payments
@@ -612,14 +617,14 @@
   - Fix issue where customer could get stranded when cancelling from
     a mobile banking app
 
-## 3.76.3
+## 3.76.3 (2021-04-30)
 
 - Update @braintree/sanitize-url to v5.0.1
 - Venmo
   - Fix issue where profile id was not being passed to Venmo Desktop
     flow
 
-## 3.76.2
+## 3.76.2 (2021-04-07)
 
 - Update browser-detection to v1.11.1
 - Hosted Fields
@@ -628,20 +633,20 @@
 - Venmo
   - Fix issue where `venmo.isSupported({ allowNewBrowserTab: false })` was returning `true` for Firefox on iOS
 
-## 3.76.1
+## 3.76.1 (2021-03-31)
 
 - Local Payments
   - Correct error code for a payment that fails on the bank side of
     the payment (was previously reported as the customer canceling
     the process)
 
-## 3.76.0
+## 3.76.0 (2021-03-22)
 
 - Venmo
   - Add `useRedirectForIOS` flag as an alternate way to open Venmo
     flow in iOS environments
 
-## 3.75.0
+## 3.75.0 (2021-03-17)
 
 - Hosted Fields
   - Add support for `box-shadow` style (\#559)
@@ -655,7 +660,7 @@
     when merchant page url included an empty `#`
   - Fix issue with `requireManualReturn` flow in iOS webviews
 
-## 3.74.0
+## 3.74.0 (2021-03-05)
 
 - PayPal Checkout
   - Default `intent` parameter to `authorize` in `loadPayPalSDK`
@@ -670,13 +675,13 @@
     `windowOptions.height` and `windowOptions.width` when calling
     `startPayment`
 
-## 3.73.1
+## 3.73.1 (2021-02-17)
 
 - Update framebus to v5.1.2
   - Fix issue where components dependent on framebus (Hosted Fields,
     PayPal, etc) would not load in IE11 (\#554)
 
-## 3.73.0
+## 3.73.0 (2021-02-16)
 
 - Venmo
   - Add `cancelTokenization` for programatic cancelation of the
@@ -685,19 +690,19 @@
     beginning tokenization
   - Fix issue where Venmo would fail when embedded in an iframe
 
-## 3.72.0
+## 3.72.0 (2021-02-04)
 
 - 3D Secure
   - Add `accountType` param to `verifyCard`
 
-## 3.71.1
+## 3.71.1 (2021-01-27)
 
 - Update framebus to v5.1.0
 - Data Collector
   - Fix issue where sandbox environment was not set for Advanced
     Fraud Protection
 
-## 3.71.0
+## 3.71.0 (2021-01-13)
 
 - Update promise-polyfill to v8.2.0
 - Update credit-card-type to v9.1.0
@@ -707,13 +712,13 @@
   - Allow maxlength field to be greater than 10 for postal code
     inputs (\#551)
 
-## 3.70.0
+## 3.70.0 (2020-12-22)
 
 - Local Payments
   - Add `paymentTypeCountryCode` as supported field when starting a
     local payment
 
-## 3.69.0
+## 3.69.0 (2020-11-05)
 
 - Update @braintree/browser-detection to v1.11.0
 - Update @braintree/extended-promise to v0.4.1
@@ -726,7 +731,7 @@
     rendering the PayPal SDK using `options.autoSetDataUserIdToken`
     in the create call
 
-## 3.68.0
+## 3.68.0 (2020-10-13)
 
 - Update framebus to v4.0.4
 - Apple Pay
@@ -738,7 +743,7 @@
     loaded in the head of the document instead of the body to allow
     re-loading the SDK dynamically
 
-## 3.67.0
+## 3.67.0 (2020-09-29)
 
 - Update @braintree/sanitize-url to v5.0.0
 - Client
@@ -748,7 +753,7 @@
 - Venmo
   - Add `allowWebviews` configuration to `isBrowserSupported`
 
-## 3.66.0
+## 3.66.0 (2020-09-21)
 
 - Hosted Fields
   - Fix issue where cardholder name field would present a number
@@ -773,7 +778,7 @@
   - Add `authentication-modal-render` and
     `authentication-modal-close` events
 
-## 3.65.0
+## 3.65.0 (2020-08-25)
 
 - Update @braintree/event-emitter to v0.4.1
 - Update card-validator to v8.1.0
@@ -796,7 +801,7 @@
   - Add event for when a customer cancels the verification
   - Add `rawCardinalSDKVerificationData` to `verifyCard` payload
 
-## 3.64.2
+## 3.64.2 (2020-08-06)
 
 - Update inject-stylesheet to v4.0.0
 - Hosted Fields
@@ -805,11 +810,11 @@
   - Fix issue where `preventAutofill` did not work in the Chrome
     browser
 
-## 3.64.1
+## 3.64.1 (2020-07-30)
 
 - Update restricted-input to v3.0.2
 
-## 3.64.0
+## 3.64.0 (2020-07-30)
 
 - Use @braintree/uuid for uuid generation
 - Update @braintree/browser-detection to v1.10.0
@@ -835,7 +840,7 @@
     option
   - Support web components (closes \#495)
 
-## 3.63.0
+## 3.63.0 (2020-07-07)
 
 - Update framebus to v4.0.2 (fixes \#504)
 - Update restricted-input to v2.1.1
@@ -844,17 +849,17 @@
 - PayPal Checkout
   - Add `loadPayPalSDK` method to dynamically load the v5 PayPal SDK
 
-## 3.62.2
+## 3.62.2 (2020-06-12)
 
 - Update framebus to v4.0.1
 
-## 3.62.1
+## 3.62.1 (2020-05-12)
 
 - Google Pay
   - Fix issue where PayPal via Google Pay would not be enabled for
     eligible merchants
 
-## 3.62.0
+## 3.62.0 (2020-04-30)
 
 - Venmo
   - Fix issue where a single page app's router may disrupt the Venmo
@@ -862,13 +867,13 @@
   - Add `ignoreHistoryChanges` to create options
   - Fix issue where Android webviews could not app switch correctly
 
-## 3.61.0
+## 3.61.0 (2020-04-23)
 
 - Update sanitize-url to v4.0.1
 - Google Pay
   - Add `bin` to GooglePayment `tokenizedPayload`
 
-## 3.60.0
+## 3.60.0 (2020-03-19)
 
 - Apple Pay
   - Add `useDeferredClient` option when creating instance
@@ -887,7 +892,7 @@
 - Vault Manager
   - Update to use deferred client
 
-## 3.59.0
+## 3.59.0 (2020-03-04)
 
 - Data Collector
   - Add `useDeferredClient` option when creating instance
@@ -899,7 +904,7 @@
   - Provide way to opt-out of auto-vaulting behavior
   - Add `getClientId` method
 
-## 3.58.0
+## 3.58.0 (2020-02-13)
 
 - Update `@braintree/extended-promise` to v0.3.0
 - Data Collector
@@ -911,13 +916,13 @@
   - Fix issue where webview integrations could not tokenize
   - Add `processResultsDelay` configuration to `tokenize`
 
-## 3.57.0
+## 3.57.0 (2020-01-10)
 
 - 3D Secure
   - Fix issue where cardinal sdk options were not being used
   - Falls back to a v1 flow if v2 SDK setup fails
 
-## 3.56.0
+## 3.56.0 (2019-12-10)
 
 - 3D Secure
   - Add `cardinalSDKConfig` option to `create` method. Supported
@@ -931,7 +936,7 @@
   - Use `hashchange` event listener to detect when Venmo
     tokenization has completed
 
-## 3.55.0
+## 3.55.0 (2019-10-24)
 
 - Fix issue where not passing in an `authorization` to components
   would throw a misleading error
@@ -950,7 +955,7 @@
   - Add `vaultInitiatedCheckoutPaymentMethodToken` parameter to
     `createPayment`
 
-## 3.54.2
+## 3.54.2 (2019-10-17)
 
 - Update @braintree/sanitize-url to v4.0.0
 - Client
@@ -960,12 +965,12 @@
   - Fix issue where callback could not be used in Mobile fallback
     flow
 
-## 3.54.1
+## 3.54.1 (2019-10-10)
 
 - Venmo
   - Fix issue where params may be malformed upon tokenization
 
-## 3.54.0
+## 3.54.0 (2019-10-08)
 
 - 3D Secure
   - Add `2-bootstrap3-modal` as a `version` option
@@ -973,7 +978,7 @@
   - Fix issue where billing address information was not being sent
     to lookup if no additional information was sent
 
-## 3.53.0
+## 3.53.0 (2019-09-25)
 
 - Update `@braintree/browser-detection` to v1.9.0
 - Hosted Fields
@@ -992,7 +997,7 @@
   - Fix issue where `initializeChallengeFrameWithLookupResponse`
     would error if called too quickly after creation
 
-## 3.52.1
+## 3.52.1 (2019-09-13)
 
 - Update credit-card-type to v8.3.0
 - Hosted Fields
@@ -1003,7 +1008,7 @@
   - Fix issue where regulation environment information was not
     parsed correctly
 
-## 3.52.0
+## 3.52.0 (2019-09-06)
 
 - Update event-emitter to v0.3.0
 - Hosted Fields
@@ -1011,7 +1016,7 @@
 - 3D Secure
   - Fix issue where `bin` was not being passed along to Cardinal SDK
 
-## 3.51.0
+## 3.51.0 (2019-08-29)
 
 - Hosted Fields
   - Add `authenticationInsight` option to tokenization
@@ -1022,7 +1027,7 @@
     integrations
   - Update songbird.js script urls
 
-## 3.50.1
+## 3.50.1 (2019-08-14)
 
 - Update restricted-input to v2.0.2
 - Update browser-detection to v1.8.0
@@ -1038,25 +1043,25 @@
   - Fix issue where chrome books could not input correctly with a
     soft keyboard
 
-## 3.50.0
+## 3.50.0 (2019-07-29)
 
 - Hosted Fields
   - Add `expirationMonth` and `expirationYear` to tokenization
     payload
 
-## 3.49.0
+## 3.49.0 (2019-07-25)
 
 - Hosted Fields
   - Add `binAvailable` event
 - 3D Secure
   - Add `threeDSecureInfo` to the `verifyCard` response
 
-## 3.48.0
+## 3.48.0 (2019-07-11)
 
 - Us Bank Account
   - Bring out of Beta into General Availability
 
-## 3.47.0
+## 3.47.0 (2019-07-09)
 
 - Update `asset-loader` to v0.3.1
 - Update `event-emitter` to v0.2.0
@@ -1078,7 +1083,7 @@
   - Fix issue where calling `fetchCapabilities` twice in quick
     succession causes the subsequent requests to not fire (\#441)
 
-## 3.46.0
+## 3.46.0 (2019-06-12)
 
 - Update restricted-input to v2.0.1
 - Update inject-stylesheet to v2.0.0
@@ -1088,7 +1093,7 @@
   - Add configuration to validate specific card brands, overriding
     merchant control panel settings
 
-## 3.45.0
+## 3.45.0 (2019-05-16)
 
 - Update @braintree/wrap-promise to v2.0.0 - errors thrown inside
   developer supplied callback functions will log to the console
@@ -1104,7 +1109,7 @@
 - Local Payments
   - Update endpoint for creating local payments
 
-## 3.44.2
+## 3.44.2 (2019-04-10)
 
 - Update @braintree/sanitize-url to v3.1.0
 - Google Pay
@@ -1116,7 +1121,7 @@
   - Fix bug where merchant account id was not being applied in vault
     flows
 
-## 3.44.1
+## 3.44.1 (2019-04-03)
 
 - Hosted Fields
   - Fix issue tabbing between fields on mobile devices
@@ -1126,7 +1131,7 @@
   - Fix typo where the fallback scenario could not succesfully
     tokenize
 
-## 3.44.0
+## 3.44.0 (2019-04-01)
 
 - Data Collector
   - Fix issue where PayPal data collection could not teardown all
@@ -1138,7 +1143,7 @@
 - Local Payment
   - Fix issue where fallback URL was not decoded correctly
 
-## 3.43.0
+## 3.43.0 (2019-03-12)
 
 - Update credit-card-type to v8.1.0
 - Client
@@ -1151,7 +1156,7 @@
   - Update component for compatibility with
     <https://www.paypal.com/sdk/js>
 
-## 3.42.0
+## 3.42.0 (2019-01-15)
 
 - Update @braintree/sanitize-url to v3.0.0
 - Hosted Fields
@@ -1167,7 +1172,7 @@
 - Payment Request
   - Add canMakePayment method
 
-## 3.41.0
+## 3.41.0 (2018-12-20)
 
 - Add Local Payments component
 - PayPal Checkout
@@ -1176,7 +1181,7 @@
   - Support Google Pay v2
   - Support PayPal in Google Pay
 
-## 3.40.0
+## 3.40.0 (2018-12-06)
 
 - Update framebus to v3.0.2
 - 3D Secure
@@ -1232,7 +1237,7 @@
   - Allow creating component with an `authorization` instead of a
     `client`
 
-## 3.39.0
+## 3.39.0 (2018-10-30)
 
 - PayPal Checkout
   - Add `merchantAccountId` to PayPal `options`
@@ -1245,12 +1250,12 @@
   - Fix issue where analytics in iframe could be out of sync with
     analytics on merchant page
 
-## 3.38.1
+## 3.38.1 (2018-10-09)
 
 - Update credit-card-type to v8.0.0
 - Update card-validator to v6.0.0
 
-## 3.38.0
+## 3.38.0 (2018-09-24)
 
 - Hosted Fields
   - Only accepts Luhn valid UnionPay cards. Previously, non-Luhn
@@ -1260,7 +1265,7 @@
   - Fix issue where npm browser builds could not load payment
     request (\#388)
 
-## 3.37.0
+## 3.37.0 (2018-09-05)
 
 - Provide browser compatible files on npm for each component in
   `dist/browser/component-name.js` (\#366)
@@ -1272,7 +1277,7 @@
   - Fix error emitted by Chrome (in verbose logging mode) for not
     using a passive flag for `touchstart` event
 
-## 3.36.0
+## 3.36.0 (2018-08-09)
 
 - Update promise-polyfill to v8.0.0
 - Provide browser compatible file on npm in `dist/browser` (\#366)
@@ -1286,7 +1291,7 @@
   - Expose error when no field keys are passed into fields object
     (\#355)
 
-## 3.35.0
+## 3.35.0 (2018-07-27)
 
 - Add title attribute to iframes to improve accessibility for
   screenreaders (\#374)
@@ -1294,7 +1299,7 @@
   - Expose if fetched payment methods have an associated
     subscription
 
-## 3.34.1
+## 3.34.1 (2018-07-10)
 
 - Update credit-card-type to v7.0.0
 - Update card-validator to v5.0.0
@@ -1311,7 +1316,7 @@
 - Venmo
   - Add validation for profile ids (must be strings)
 
-## 3.34.0
+## 3.34.0 (2018-05-16)
 
 - Apple Pay
   - Fix issue with Apple Pay configuration
@@ -1327,7 +1332,7 @@
     back with `+` symbols instead of spaces
   - Add binData property to verify card payload
 
-## 3.33.0
+## 3.33.0 (2018-05-07)
 
 - Internal performance optimizations
 - Update framebus to v3.0.1
@@ -1342,7 +1347,7 @@
   - Fix issue with changing shipping address and shipping options
     which could cause Chrome to crash
 
-## 3.32.1
+## 3.32.1 (2018-04-19)
 
 - Payment Request
   - Expose errors more gracefully
@@ -1353,7 +1358,7 @@
     Safari if their container was changed from `display: none` to
     `display: block`
 
-## 3.32.0
+## 3.32.0 (2018-04-05)
 
 - Venmo
   - Add support for Venmo profile IDs
@@ -1381,7 +1386,7 @@
 - 3D Secure
   - Add support for American Express SafeKey params
 
-## 3.31.0
+## 3.31.0 (2018-02-08)
 
 - Update credit-card-type to v6.2.0
 - Update card-validator to v4.3.0
@@ -1389,7 +1394,7 @@
   - Add browser support detection helper as static method on
     `braintree.venmo.isBrowserSuppported`
 
-## 3.30.0
+## 3.30.0 (2018-02-02)
 
 - Update promise-polyfill to v7.0.2 (\#350 thanks @Macavity)
   - Fixes issues with promises not working in IE from
@@ -1397,7 +1402,7 @@
 - Hosted Fields
   - Add `padding` to supported CSS attributes (\#104)
 
-## 3.29.0
+## 3.29.0 (2018-01-30)
 
 - Update credit-card-type to v6.1.1
 - Update jsdoc-template to v3.2.0
@@ -1416,11 +1421,11 @@
       and `on` methods and has been removed. See documentation
       example for new integration pattern.
 
-## 3.28.1
+## 3.28.1 (2018-01-25)
 
 - Update @braintree/sanitize-url to v2.1.0
 
-## 3.28.0
+## 3.28.0 (2018-01-10)
 
 - Update promise-polyfill to v7.0.0
 - American Express
@@ -1455,7 +1460,7 @@
     instantiating a Payment Request component with
     `enabledPaymentMethods` option
 
-## 3.27.0
+## 3.27.0 (2017-12-26)
 
 - Update card-validator to v4.2.0
 - Internal performance optimizations
@@ -1478,7 +1483,7 @@
 - Pay with Google - Beta
   - Support `requestShipping` option
 
-## 3.26.0
+## 3.26.0 (2017-11-14)
 
 - Hosted Fields
   - Correct bug where pasting in on an iOS device would mangle the
@@ -1486,7 +1491,7 @@
   - Update credit-card-type to version 6.1.0 (accept JCB cards of
     length 17-19)
 
-## 3.25.0
+## 3.25.0 (2017-10-27)
 
 - Hosted Fields
   - Add `setMessage` for screenreader-compatible error messages
@@ -1496,7 +1501,7 @@
 - Payment Request - Beta
   - Add `lastFour` to tokenize payload
 
-## 3.24.1
+## 3.24.1 (2017-10-19)
 
 - Update credit-card-type to v6.0.0
 - Update card-validator to v4.1.1
@@ -1507,7 +1512,7 @@
   - Correct isSupported to only return true on Android Chrome v61
     and higher
 
-## 3.24.0
+## 3.24.0 (2017-10-12)
 
 - 3D Secure
   - Error early in creation if a tokenization key is used for
@@ -1524,7 +1529,7 @@
 - Payment Request and Pay with Google - Beta
   - Some non-essential fields from tokenize payload removed
 
-## 3.23.0
+## 3.23.0 (2017-09-29)
 
 - Add beta Pay with Google Component
 - Add beta Payment Request Component
@@ -1543,7 +1548,7 @@
 - Vault Manager
   - Provide bin data if present
 
-## 3.22.2
+## 3.22.2 (2017-08-21)
 
 - Update sanitize-url to version 2.0.0
 - 3D Secure
@@ -1554,14 +1559,14 @@
   - Update credit-card-type to version 5.0.4
   - Fix issue where placeholder would not load in IE9
 
-## 3.22.1
+## 3.22.1 (2017-08-14)
 
 - Security improvements
 - Data Collector
   - Fix bug where Data Collector with Kount could not be torn down
     more than once (\#314)
 
-## 3.22.0
+## 3.22.0 (2017-08-08)
 
 - Hosted Fields
   - Fix regression where postal code input would not display alpha
@@ -1569,12 +1574,12 @@
   - Add bin data to tokenization payload
   - Add option for input masking
 
-## 3.21.1
+## 3.21.1 (2017-08-02)
 
 - Hosted Fields
   - Fix regression where iframes could not load on IE 9 and 10
 
-## 3.21.0
+## 3.21.0 (2017-07-31)
 
 - Hosted Fields
   - Fix issue where phone number keyboard would display on iOS
@@ -1586,7 +1591,7 @@
     Firefox, etc) would add multiple history states when Hosted
     Fields loads
 
-## 3.20.1
+## 3.20.1 (2017-07-26)
 
 - Update browser-detection to v1.6.0
 - Hosted Fields
@@ -1595,7 +1600,7 @@
 - PayPal
   - Fix issue in iOS Firefox where PayPal window would not open
 
-## 3.20.0
+## 3.20.0 (2017-07-19)
 
 - Client
   - Add request retries for TCP preconnect errors in Internet
@@ -1611,7 +1616,7 @@
   - Fix issue where Hosted Fields validity would not update after
     paste events (\#308)
 
-## 3.19.1
+## 3.19.1 (2017-07-05)
 
 - Client
   - Cache client creation when using the same authorization
@@ -1620,18 +1625,18 @@
     MasterCard bins were not being marked as potentially valid
 - Inline JS in HTML frames
 
-## 3.19.0
+## 3.19.0 (2017-06-15)
 
 - Hosted Fields
   - Allow `cardholderName` to be passed while tokenizing the card
   - Fix bug disabling fields when enter is pressed
 
-## 3.18.0
+## 3.18.0 (2017-06-06)
 
 - Hosted Fields
   - Fix autofill issues for Chrome and Safari (\#239)
 
-## 3.17.0
+## 3.17.0 (2017-05-30)
 
 - Hosted Fields
   - Add `minlength` to fields options to set the `minlength` of
@@ -1642,7 +1647,7 @@
 - PayPal
   - Frame fixes in iOS
 
-## 3.16.0
+## 3.16.0 (2017-05-18)
 
 - Client
   - Access version with `getVersion()`
@@ -1658,7 +1663,7 @@
   - Mark PayPal component as deprecated in favor of using PayPal
     Checkout
 
-## 3.15.0
+## 3.15.0 (2017-05-09)
 
 - Hosted Fields
   - Fix bug where expiration dates using select boxes would print an
@@ -1673,7 +1678,7 @@
   - Fix issue where Kount data was not collected by additional Data
     Collector instances
 
-## 3.14.0
+## 3.14.0 (2017-04-25)
 
 - American Express
   - `americanExpress.create` returns a promise if no callback is
@@ -1735,7 +1740,7 @@
   - `visaCheckout.tokenize` returns a promise if no callback is
     provided
 
-## 3.13.0
+## 3.13.0 (2017-04-21)
 
 - Hosted Fields
   - Fix an issue where Firefox did not receive focus/blur events
@@ -1749,13 +1754,13 @@
     - Limiting the length of the postal code input when cards are
       coming from a known region
 
-## 3.12.1
+## 3.12.1 (2017-04-06)
 
 - PayPal
   - Fix bug where PayPal did not detect when the Popup was closed by
     the customer
 
-## 3.12.0
+## 3.12.0 (2017-04-04)
 
 - Client
   - Fix a bug where `atob` was not being called with the window
@@ -1767,7 +1772,7 @@
 - Visa Checkout
   - Add Visa Checkout component
 
-## 3.11.1
+## 3.11.1 (2017-03-24)
 
 - Client
   - Fix a bug where errors within the request callback function were
@@ -1775,7 +1780,7 @@
 - PayPal Checkout
   - Allow tokenization keys to use the `vault` flow
 
-## 3.11.0
+## 3.11.0 (2017-03-14)
 
 - Hosted Fields
   - `hostedFields.create` now returns a promise if no callback is
@@ -1788,7 +1793,7 @@
 - Vault Manager
   - Create the Vault Manager component
 
-## 3.10.0
+## 3.10.0 (2017-03-08)
 
 - Client
   - Fix bug where creation errors did not bubble up correctly
@@ -1811,7 +1816,7 @@
   - Provide error when PayPal Checkout can not be used because there
     is no linked PayPal Sandbox account
 
-## 3.9.0
+## 3.9.0 (2017-02-23)
 
 - Client
   - `client.request` now returns a promise if no callback is
@@ -1839,7 +1844,7 @@
   - Pass in correlation id from billing agreement token or ec token
     when tokenizing
 
-## 3.8.0
+## 3.8.0 (2017-02-08)
 
 - Pre-bundled files are now published to npm, fixing parsing errors
   when using webpack
@@ -1860,7 +1865,7 @@
   - Call callback with BROWSER_NOT_SUPPORTED error when using
     Chrome for iOS v47 or lower
 
-## 3.7.0
+## 3.7.0 (2017-01-31)
 
 - Client
   - Fix issue where `getConfiguration` and `toJSON` were not
@@ -1880,13 +1885,13 @@
   - Create the PayPal Checkout component to integrate with PayPal's
     [checkout.js library](https://github.com/paypal/paypal-checkout)
 
-## 3.6.3
+## 3.6.3 (2016-12-21)
 
 - Hosted Fields
   - Fix bug where Samsung Keyboards would format incorrectly in
     Android Chrome
 
-## 3.6.2
+## 3.6.2 (2016-12-13)
 
 - American Express
   - Fix bug where additional options were not passed along in
@@ -1899,7 +1904,7 @@
   - Fix input formatting with third party keyboards on Android
     Chrome
 
-## 3.6.1
+## 3.6.1 (2016-12-01)
 
 - Hosted Fields
   - Fix a bug where iOS Safari autocomplete would not print credit
@@ -1911,7 +1916,7 @@
   - Fix bug where failing `verifyCard` call put component in an
     inconsistent state
 
-## 3.6.0
+## 3.6.0 (2016-11-11)
 
 - Data Collector
   - Fix iframe styling in PayPal fraud tools
@@ -1925,12 +1930,12 @@
   - Show loading indicator in popup when a successful authorization
     is being processed and tokenized
 
-## 3.5.0
+## 3.5.0 (2016-10-13)
 
 - Hosted Fields
   - Add dropdown support for expiration month and expiration year
 
-## 3.4.0
+## 3.4.0 (2016-10-10)
 
 - Client
   - More helpful error when a client token is generated with
@@ -1944,7 +1949,7 @@
   - Return a proper error when calling some functions without
     callbacks
 
-## 3.3.0
+## 3.3.0 (2016-09-21)
 
 - The `index.js` and `debug.js` files are now full `braintree-web`
   bundles and can be safely loaded in non-CommonJS environments
@@ -1956,7 +1961,7 @@
     [SJCL](https://bitwiseshiftleft.github.io/sjcl/) to reduce file
     size
 
-## 3.2.0
+## 3.2.0 (2016-09-14)
 
 - Hosted Fields
   - Add `type` property for field configuration to allow things such
@@ -1969,7 +1974,7 @@
   - Utility iframes are now annotated with the
     `braintree-dispatch-frame` class to assist with CSS targeting
 
-## 3.1.0
+## 3.1.0 (2016-09-07)
 
 - PayPal
   - Add focus handle to tokenize method
@@ -1981,7 +1986,7 @@
   - Fix a bug with tokenization parameters—no more workaround
     required
 
-## 3.0.2
+## 3.0.2 (2016-08-30)
 
 - Client
   - Provide better error messaging when actions that require a
@@ -2013,13 +2018,13 @@
     with `APPLE_PAY_MERCHANT_VALIDATION_FAILED` and
     `APPLE_PAY_MERCHANT_VALIDATION_NETWORK`
 
-## 3.0.1
+## 3.0.1 (2016-08-16)
 
 - PayPal
   - Fix a bug where vault flows that used a tokenization key could
     not tokenize
 
-## 3.0.0
+## 3.0.0 (2016-08-10)
 
 - Add prefix to `BraintreeError` codes to prevent namespace collisions
 - PayPal

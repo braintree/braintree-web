@@ -603,19 +603,26 @@ LocalPayment.prototype.startPayment = function (options) {
             promise.resolve();
           }
         }
-      } else if (self._isRedirectFlow) {
-        if (inIframe()) {
-          window.top.location.href = response.paymentResource.redirectUrl;
-        } else {
-          window.location.href = response.paymentResource.redirectUrl;
-        }
       } else {
-        options.onPaymentStart(
-          { paymentId: response.paymentResource.paymentToken },
-          function () {
-            self._frameService.redirect(response.paymentResource.redirectUrl);
+        if (typeof options.onPaymentStart === "function") {
+          options.onPaymentStart(
+            { paymentId: response.paymentResource.paymentToken },
+            function () {
+              if (!self._isRedirectFlow) {
+                self._frameService.redirect(
+                  response.paymentResource.redirectUrl
+                );
+              }
+            }
+          );
+        }
+        if (self._isRedirectFlow) {
+          if (inIframe()) {
+            window.top.location.href = response.paymentResource.redirectUrl;
+          } else {
+            window.location.href = response.paymentResource.redirectUrl;
           }
-        );
+        }
       }
     })
     .catch(function (err) {

@@ -256,6 +256,53 @@ describe("LocalPayment", () => {
         ).rejects.not.toThrow();
       }
     );
+
+    it("`paymentId` is available before redirect", async () => {
+      var paymentIdFromOnPaymentStart;
+
+      testContext.options.paymentType = "ideal";
+      testContext.options.paymentTypeCountryCode = "NL";
+      testContext.options.currencyCode = "EUR";
+      testContext.options.onPaymentStart = jest.fn((data, start) => {
+        paymentIdFromOnPaymentStart = data.paymentId;
+
+        start();
+      });
+
+      testContext.frameServiceInstance.open = jest.fn(
+        yieldsAsync(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        })
+      );
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect-url",
+          paymentToken: "payment-token",
+        },
+      });
+
+      testContext.localPayment
+        .startPayment(testContext.options)
+        .then(function () {
+          expect(analytics.sendEvent).toBeCalledWith(
+            expect.anything(),
+            expect.stringContaining(".local-payment.start-payment.redirected")
+          );
+
+          expect(
+            testContext.frameServiceInstance.redirect
+          ).toHaveBeenCalledTimes(0);
+
+          expect(testContext.frameService.open).toBeCalledWith(
+            jest.any(),
+            jest.any()
+          );
+          expect(paymentIdFromOnPaymentStart).not.toBeUndefined();
+          expect(paymentIdFromOnPaymentStart).toBe("payment-token");
+        });
+    });
   });
 
   describe("startPayment Blik seamless", () => {
