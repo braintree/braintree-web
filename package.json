@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.118.2",
+  "version": "3.119.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -60,7 +60,7 @@
     "gzip-size": "^6.0.0",
     "husky": "^9.1.7",
     "jest": "^29.2.1",
-    "jest-environment-jsdom": "^29.2.1",
+    "jest-environment-jsdom": "^29.7.0",
     "jsdoc": "^3.6.10",
     "jsdoc-template": "braintree/jsdoc-template#3.2.0",
     "json5": "2.2.3",

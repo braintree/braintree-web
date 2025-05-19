@@ -956,6 +956,76 @@ describe("PayPalCheckout", () => {
       });
     });
 
+    it('sends both "plan_type" and "plan_metadata" when they exist. Added new field `totalAmount` to `planMetadata`', () => {
+      const planType = "RECURRING";
+      const planMetadata = {
+        billingCycles: [
+          {
+            billingFrequency: "1",
+            billingFrequencyUnit: "MONTH",
+            numberOfExecutions: "1",
+            sequence: "1",
+            startDate: "2024-04-06T00:00:00Z",
+            trial: true,
+            pricingScheme: {
+              pricingModel: "FIXED",
+            },
+            totalAmount: "10",
+          },
+        ],
+        currencyIsoCode: "USD",
+        name: "Netflix with Ads",
+        productDescription: "iPhone 13",
+        productQuantity: "1.0",
+        oneTimeFeeAmount: "10",
+        shippingAmount: "3.0",
+        productPrice: "200",
+        taxAmount: "20",
+      };
+
+      /* eslint-disable camelcase */
+      const expectedPlanMetadata = {
+        billing_cycles: [
+          {
+            billing_frequency: "1",
+            billing_frequency_unit: "MONTH",
+            number_of_executions: "1",
+            sequence: "1",
+            start_date: "2024-04-06T00:00:00Z",
+            trial: true,
+            pricing_scheme: {
+              pricing_model: "FIXED",
+            },
+            total_amount: "10",
+          },
+        ],
+        currency_iso_code: planMetadata.currencyIsoCode,
+        name: planMetadata.name,
+        product_description: planMetadata.productDescription,
+        product_quantity: planMetadata.productQuantity,
+        one_time_fee_amount: planMetadata.oneTimeFeeAmount,
+        shipping_amount: planMetadata.shippingAmount,
+        product_price: planMetadata.productPrice,
+        tax_amount: planMetadata.taxAmount,
+      };
+      /* eslint-enable camelcase */
+
+      testContext.paypalCheckout
+        .createPayment({
+          flow: "vault",
+          planType: planType,
+          planMetadata: planMetadata,
+        })
+        .then(() => {
+          expect(
+            testContext.client.request.mock.calls[0][0].data.plan_type
+          ).toBe(planType);
+          expect(
+            testContext.client.request.mock.calls[0][0].data.plan_metadata
+          ).toMatchObject(expectedPlanMetadata);
+        });
+    });
+
     it("formats request", () =>
       testContext.paypalCheckout
         .createPayment({
@@ -981,6 +1051,97 @@ describe("PayPalCheckout", () => {
             },
           });
         }));
+
+    describe("user action", () => {
+      it.each(["COMMIT", "CONTINUE"])(
+        "sets user action=%p for checkout flow if specified",
+        (userActionParam) =>
+          testContext.paypalCheckout
+            .createPayment({
+              flow: "checkout",
+              locale: "FOO",
+              amount: "10.00",
+              enableShippingAddress: true,
+              shippingAddressEditable: false,
+              userAction: userActionParam,
+            })
+            .then(() => {
+              expect(testContext.client.request).toHaveBeenCalledTimes(1);
+              expect(testContext.client.request.mock.calls[0][0]).toMatchObject(
+                {
+                  data: {
+                    amount: "10.00",
+                    returnUrl: "https://www.paypal.com/checkoutnow/error",
+                    cancelUrl: "https://www.paypal.com/checkoutnow/error",
+                    experienceProfile: {
+                      brandName: "Name",
+                      localeCode: "FOO",
+                      noShipping: "false",
+                      addressOverride: true,
+                      userAction: userActionParam,
+                    },
+                  },
+                }
+              );
+            })
+      );
+
+      it.each(["COMMIT", "CONTINUE"])(
+        "sets user action=%p for vault flow if specified",
+        (actionParam) =>
+          testContext.paypalCheckout
+            .createPayment({
+              flow: "vault",
+              userAction: actionParam,
+              shippingAddressOverride: {
+                line1: "line1",
+                line2: "line2",
+                city: "city",
+                state: "state",
+                countryCode: "countryCode",
+                postalCode: "postal",
+              },
+              shippingAddressEditable: false,
+            })
+            .then(() => {
+              expect(testContext.client.request.mock.calls[0][0]).toMatchObject(
+                {
+                  data: {
+                    experienceProfile: {
+                      addressOverride: true,
+                      userAction: actionParam,
+                    },
+                  },
+                }
+              );
+            })
+      );
+
+      it("ignores invalid user action value", () =>
+        testContext.paypalCheckout
+          .createPayment({
+            flow: "vault",
+            userAction: "INVALID",
+            shippingAddressOverride: {
+              line1: "line1",
+              line2: "line2",
+              city: "city",
+              state: "state",
+              countryCode: "countryCode",
+              postalCode: "postal",
+            },
+            shippingAddressEditable: false,
+          })
+          .then(() => {
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              data: {
+                experienceProfile: {
+                  addressOverride: true,
+                },
+              },
+            });
+          }));
+    });
 
     it("allows override of displayName", () =>
       testContext.paypalCheckout
@@ -3435,7 +3596,11 @@ describe("PayPalCheckout", () => {
       };
 
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        { _configuration: testContext.configuration },
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
         options,
         testContext.config
       );
@@ -3450,7 +3615,11 @@ describe("PayPalCheckout", () => {
       };
 
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        { _configuration: testContext.configuration },
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
         options,
         testContext.config
       );
@@ -3464,7 +3633,11 @@ describe("PayPalCheckout", () => {
       };
 
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        { _configuration: testContext.configuration },
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
         options,
         testContext.config
       );
@@ -3479,7 +3652,11 @@ describe("PayPalCheckout", () => {
       };
 
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        { _configuration: testContext.configuration },
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
         options,
         testContext.config
       );

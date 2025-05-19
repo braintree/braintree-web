@@ -64,7 +64,15 @@ function adaptTokenizeCreditCardResponseBody(body) {
       }
     });
 
-    ["issuingBank", "countryOfIssuance", "productId"].forEach(function (key) {
+    [
+      "issuingBank",
+      "countryOfIssuance",
+      "productId",
+      "business",
+      "consumer",
+      "purchase",
+      "corporate",
+    ].forEach(function (key) {
       if (!binData[key]) {
         binData[key] = "Unknown";
       }

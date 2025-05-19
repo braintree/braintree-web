@@ -754,7 +754,13 @@ describe("internal", () => {
       testContext.fakeType = "YASS";
       testContext.fakeDescription = "fake description";
       testContext.fakeOptions = { foo: "bar" };
-      testContext.binData = { commercial: "Yes" };
+      testContext.binData = {
+        commercial: "Yes",
+        business: "Yes",
+        consumer: "Yes",
+        purchase: "Yes",
+        corporate: "Yes",
+      };
 
       requestStub.mockResolvedValue({
         creditCards: [

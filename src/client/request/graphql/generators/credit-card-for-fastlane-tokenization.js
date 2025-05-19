@@ -35,6 +35,10 @@ function createMutation(config) {
     "        issuingBank " +
     "        countryOfIssuance " +
     "        productId " +
+    "        business " +
+    "        consumer " +
+    "        purchase " +
+    "        corporate " +
     "      } " +
     "        } " +
     "      } " +

@@ -161,6 +161,10 @@ module.exports = {
             issuingBank: "Unknown",
             countryOfIssuance: "CAN",
             productId: "Unknown",
+            business: "Unknown",
+            consumer: "Unknown",
+            purchase: "Unknown",
+            corporate: "Unknown",
           },
           details: {
             last2: 11,

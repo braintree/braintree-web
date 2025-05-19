@@ -59,6 +59,10 @@ var FRAMEWORKS = require("./frameworks");
  * @property {string} binData.payroll Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.prepaid Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.productId The product id.
+ * @property {string} binData.business Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.consumer Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.purchase Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.corporate Possible values: 'Yes', 'No', 'Unknown'.
  * @property {boolean} liabilityShiftPossible *Deprecated:* Use `threeDSecureInfo.liabilityShiftPossible` instead.
  * @property {boolean} liabilityShifted *Deprecated:* Use `threeDSecureInfo.liabilityShifted` instead.
  * @property {object} threeDSecureInfo 3DS information about the card. Note: This information should be verified on the server by using the [payment method nonce find method](https://developer.paypal.com/braintree/docs/reference/request/payment-method-nonce/find). The values provided here are merely for convenience. Only values looked up on the server should determine the logic about how to process a transaction.

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 3.119.0 (2025-05-19)
+
+- Add test coverage for new RBA metadata field
+  - New field `totalAmount`
+- PayPal Checkout
+  - add support for userAction param for `createPayment`
+
 ## 3.118.2 (2025-04-25)
 
 - Local Payment Methods
@@ -17,6 +24,8 @@
   - add `tokenExchange` to GQL
 - PayPal Checkout
   - Add `contactPreference` to PayPal Checkout schema for Contact Module
+- Return commercial data from `binData` in credit card response
+  - New commercial boolean metadata fields: `business`, `consumer`, `purchase`, `corporate`
 
 ## 3.117.1 (2025-03-25)
 

@@ -221,6 +221,7 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
  */
 function PayPalCheckout(options) {
   this._merchantAccountId = options.merchantAccountId;
+  // eslint-disable-next-line no-warning-comments
   // TODO remove this requirement for it to be opt in.
   // This feature is not yet GA, so we're intentionally making
   // it opt in and not publicly documenting it yet. Once it's
@@ -384,12 +385,13 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
 
 /**
  * @typedef {Object} PayPalCheckout~planMetadata
- * @property {billingCycles[]} [billingCycles] An array of {@link PayPalCheckout~billingCycles|billing cyles} for this plan.
+ * @property {billingCycles[]} [billingCycles] An array of {@link PayPalCheckout~billingCycles|billing cycles} for this plan.
  * @property {string} currencyIsoCode The ISO code for the currency, for example `USD`.
  * @property {string} name The name of the plan.
  * @property {string} productDescription A description of the product. (Accepts only one element)
  * @property {(string|number)} productQuantity The quantity of the product. (Accepts only one element)
  * @property {(string|number)} oneTimeFeeAmount The one-time fee amount.
+ * @property {string} totalAmount This field is for vault with purchase only. Can include up to 2 decimal places. This value can't be negative or zero.
  * @property {(string|number)} shippingAmount The amount for shipping.
  * @property {(string|number)} productPrice The price of the product.
  * @property {(string|number)} taxAmount The amount of tax.
@@ -441,6 +443,10 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.userAuthenticationEmail] Optional merchant-provided buyer email, used to streamline the sign-in process for both one-time checkout and vault flows.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
+ * @param {string} [options.userAction] Use this option to control whether checkout terminates with PayPal UI or returns to merchant website to submit order.
+ *  * `COMMIT` - complete the transaction on the PayPal review page
+ *  * `CONTINUE` - return to merchant site to complete transaction
+ * The default behavior is determined by the merchant's configuration.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
@@ -577,6 +583,33 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * });
  *
  * ```
+ * @example <caption>Vault Flow with Purchase (Billing Agreement with Recurring Payment)</caption>
+ * paypal.Buttons({
+ *   createBillingAgreement: function () {
+ *     return paypalCheckoutInstance.createPayment({
+ *       flow: 'vault',
+ *       amount: '12.50',
+ *       currency: 'USD',
+ *       planMetadata: {
+ *         billingCycles: [{
+ *           billingFrequency: 1,
+ *           billingFrequencyUnit: "MONTH",
+ *           sequence: 1,
+ *           pricingScheme: {
+ *             pricingModel: "FIXED",
+ *             price: "10.00"
+ *           },
+ *         }],
+ *         currencyIsoCode: "USD",
+ *         totalAmount: "10.00",
+ *         name: "My Recurring Product"
+ *       }
+ *     });
+ *   },
+ *   onApprove: function (data) {
+ *     return paypalCheckoutInstance.tokenizePayment(data);
+ *   }
+ * }).render('#paypal-button');
  *
  * @returns {(promise|void)} returns a promise if no callback is provided.
  */
@@ -1094,6 +1127,7 @@ PayPalCheckout.prototype._createFrameServiceCallback = function (
 ) {
   var self = this;
 
+  // eslint-disable-next-line no-warning-comments
   // TODO when a merchant integrates an iOS or Android integration
   // with a webview using the web SDK, we will have to add popupbridge
   // support
@@ -1471,12 +1505,11 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
   options,
   config
 ) {
-  var key;
+  var self = this;
   var gatewayConfiguration = this._configuration.gatewayConfiguration;
   // NEXT_MAJOR_VERSION default value for intent in PayPal SDK is capture
   // but our integrations default value is authorize. Default this to capture
   // in the next major version.
-  var intent = options.intent;
   var paymentResource = {
     // returnUrl and cancelUrl are required in hermes create_payment_resource route
     // but are not used by the PayPal sdk, except to redirect to an error page
@@ -1498,6 +1531,62 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
   if (options.hasOwnProperty("shippingCallbackUrl")) {
     paymentResource.shippingCallbackUrl = options.shippingCallbackUrl;
   }
+
+  if (options.hasOwnProperty("userAction")) {
+    if (options.userAction.toLowerCase() === "commit") {
+      paymentResource.experienceProfile.userAction = "COMMIT";
+    } else if (options.userAction.toLowerCase() === "continue") {
+      paymentResource.experienceProfile.userAction = "CONTINUE";
+    }
+  }
+
+  self._formatPaymentResourceCheckoutData(paymentResource, options);
+  self._formatPaymentResourceVaultData(paymentResource, options);
+
+  // this needs to be set outside of the block where add it to the
+  // payment request so that a follow up tokenization call can use it,
+  // but if a second create payment resource call is made without
+  // the correlation id, we want to reset it to undefined so that the
+  // tokenization call does not use a stale correlation id
+  this._riskCorrelationId = options.riskCorrelationId;
+  if (options.riskCorrelationId) {
+    paymentResource.correlationId = this._riskCorrelationId;
+  }
+
+  return paymentResource;
+};
+
+PayPalCheckout.prototype._formatPaymentResourceVaultData = function (
+  paymentResource,
+  options
+) {
+  if (options.flow !== "checkout") {
+    paymentResource.shippingAddress = options.shippingAddressOverride;
+
+    if (options.billingAgreementDescription) {
+      paymentResource.description = options.billingAgreementDescription;
+    }
+
+    if (options.planType) {
+      /* eslint-disable camelcase */
+      paymentResource.plan_type = options.planType;
+
+      if (options.planMetadata) {
+        paymentResource.plan_metadata = camelCaseToSnakeCase(
+          options.planMetadata
+        );
+      }
+      /* eslint-enable camelcase */
+    }
+  }
+};
+
+PayPalCheckout.prototype._formatPaymentResourceCheckoutData = function (
+  paymentResource,
+  options
+) {
+  var key;
+  var intent = options.intent;
 
   if (options.flow === "checkout") {
     paymentResource.amount = options.amount;
@@ -1540,38 +1629,7 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
     if (options.hasOwnProperty("billingAgreementDetails")) {
       paymentResource.billingAgreementDetails = options.billingAgreementDetails;
     }
-  } else {
-    // NOTE: This flow is "vault"
-    paymentResource.shippingAddress = options.shippingAddressOverride;
-
-    if (options.billingAgreementDescription) {
-      paymentResource.description = options.billingAgreementDescription;
-    }
-
-    if (options.planType) {
-      /* eslint-disable camelcase */
-      paymentResource.plan_type = options.planType;
-
-      if (options.planMetadata) {
-        paymentResource.plan_metadata = camelCaseToSnakeCase(
-          options.planMetadata
-        );
-      }
-      /* eslint-enable camelcase */
-    }
   }
-
-  // this needs to be set outside of the block where add it to the
-  // payment request so that a follow up tokenization call can use it,
-  // but if a second create payment resource call is made without
-  // the correlation id, we want to reset it to undefined so that the
-  // tokenization call does not use a stale correlation id
-  this._riskCorrelationId = options.riskCorrelationId;
-  if (options.riskCorrelationId) {
-    paymentResource.correlationId = this._riskCorrelationId;
-  }
-
-  return paymentResource;
 };
 
 /**

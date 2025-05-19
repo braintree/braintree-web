@@ -60,6 +60,10 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @property {string} binData.payroll Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.prepaid Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.productId The product id.
+ * @property {string} binData.business Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.consumer Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.purchase Possible values: 'Yes', 'No', 'Unknown'.
+ * @property {string} binData.corporate Possible values: 'Yes', 'No', 'Unknown'.
  */
 
 /**
