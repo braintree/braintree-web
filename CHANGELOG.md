@@ -1,11 +1,16 @@
 # CHANGELOG
 
+## 3.120.0 (2025-05-22)
+
+- PayPal Checkout
+  - fix JS docs for `createPayment()` `userAction` param
+  - add PayPal AppSwitch support
+
 ## 3.119.0 (2025-05-19)
 
-- Add test coverage for new RBA metadata field
-  - New field `totalAmount`
 - PayPal Checkout
   - add support for userAction param for `createPayment`
+  - new field `totalAmount` in `createPayment` for RBA Metadata
 
 ## 3.118.2 (2025-04-25)
 

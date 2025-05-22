@@ -1617,6 +1617,11 @@ describe("PayPalCheckout", () => {
         testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
         testContext.paypalCheckout._clientPromise = jest.fn();
         testContext.paypalCheckout._clientPromise.mockResolvedValue({});
+        testContext.paypalCheckout._formatPaymentResourceCheckoutData =
+          jest.fn();
+        testContext.paypalCheckout._formatPaymentResourceCheckoutData.mockReturnValue(
+          {}
+        );
 
         const expectedRequestBody = {
           amount: testContext.options.amount,
@@ -3008,6 +3013,25 @@ describe("PayPalCheckout", () => {
       });
     });
 
+    it("loads the staging PayPal script when specified", () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({ env: "stage" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(document.head.insertBefore).toBeCalledTimes(1);
+        expect(document.head.insertBefore).toBeCalledWith(
+          fakeScript,
+          firstHeadElement
+        );
+        expect(fakeScript.src).toMatch(
+          "https://www.msmaster.qa.paypal.com/sdk/js?"
+        );
+      });
+    });
+
     it("resolves with the PayPal Checkout instance", () => {
       const instance = testContext.paypalCheckout;
 
@@ -3644,6 +3668,62 @@ describe("PayPalCheckout", () => {
 
       // eslint-disable-next-line no-undefined
       expect(actual.payer_email).toBe(undefined);
+    });
+
+    it("passes along returnUrl when passed", () => {
+      const options = {
+        returnUrl: "www.example.com/return",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.returnUrl).toBe("www.example.com/return");
+    });
+
+    it("passes along cancelUrl when passed", () => {
+      const options = {
+        cancelUrl: "www.example.com/cancel",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.cancelUrl).toBe("www.example.com/cancel");
+    });
+
+    it("passes along appSwitchPreference when passed", () => {
+      const options = {
+        appSwitchPreference: {
+          launchPaypalApp: true,
+        },
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.appSwitchPreference.launchPaypalApp).toBe(true);
     });
 
     it("passes along shipping callback url if shippingCallbackUrl is passed", () => {

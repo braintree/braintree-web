@@ -180,6 +180,60 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
  * });
  * ```
  *
+ * #### Integrate AppSwitch Flow with PayPal SDK
+ *
+ * ```javascript
+ * braintree.client.create({
+ *   authorization: 'authorization'
+ * }).then(function (clientInstance) {
+ *   return braintree.paypalCheckout.create({
+ *     client: clientInstance
+ *   });
+ * }).then(function (paypalCheckoutInstance) {
+ *   const buttons = paypal.Buttons({
+ *
+ *      appSwitchPreference: { launchPaypalApp: true }, // Need an indicator to trigger app switch
+ *
+ *     createOrder: function () {
+ *       return paypalCheckoutInstance.createPayment({
+ *         flow: 'checkout',
+ *         currency: 'USD',
+ *         amount: '10.00',
+ *         intent: 'capture', // this value must either be `capture` or match the intent passed into the PayPal SDK intent query parameter
+ *         returnUrl: 'www.example.com/return',
+ *         cancelUrl: 'www.example.com/cancel',
+ *         // your other createPayment options here
+ *       });
+ *     },
+ *
+ *     onApprove: function (data, actions) {
+ *       // some logic here before tokenization happens below
+ *       return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+ *         // Submit payload.nonce to your server
+ *       });
+ *     },
+ *
+ *     onCancel: function () {
+ *       // handle case where user cancels
+ *     },
+ *
+ *     onError: function (err) {
+ *       // handle case where error occurs
+ *     }
+ *   });
+ *
+ *   // If you support app switch, depending on the browser the buyer may end up in a new tab
+ *   // To trigger completion of the flow, execute the code below after re-instantiating buttons
+ *   if (buttons.hasReturned()) {
+ *     buttons.resume();
+ *   } else {
+ *     buttons.render('#paypal-button');
+ *   };
+ * }).catch(function (err) {
+ *  console.error('Error!', err);
+ * });
+ * ```
+ *
  * #### Integrate with Checkout.js (deprecated PayPal SDK)
  *
  * If you are creating a new PayPal integration, please follow the previous integration guide to use the current version of the PayPal SDK. Use this integration guide only as a reference if you are already integrated with Checkout.js.
@@ -441,6 +495,10 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.planType] Determines the charge pattern for the Recurring Billing Agreement. Can be 'RECURRING', 'SUBSCRIPTION', 'UNSCHEDULED', or 'INSTALLMENTS'.
  * @param {planMetadata} [options.planMetadata] When plan type is defined, allows for {@link PayPalCheckout~planMetadata|plan metadata} to be set for the Billing Agreement.
  * @param {string} [options.userAuthenticationEmail] Optional merchant-provided buyer email, used to streamline the sign-in process for both one-time checkout and vault flows.
+ * @param {string} [options.returnUrl] The URL that the PayPal app will open after a successful authentication in the app switch flow
+ * @param {string} [options.cancelUrl] The URL that the PayPal app will open after an unsuccessful authentication in the app switch flow
+ * @param {object} [options.appSwitchPreference] Sets options for the app switch flow. Must use `returnUrl` and `cancelUrl` with this option.
+ * @param {boolean} options.appSwitchPreference.launchPaypalApp Opts into the app switch flow.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
  * @param {string} [options.userAction] Use this option to control whether checkout terminates with PayPal UI or returns to merchant website to submit order.
@@ -1421,8 +1479,19 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     options.intent = options.intent || "authorize";
     options.currency = options.currency || "USD";
   }
+  // for internal testing only
+  if (options.env === "stage") {
+    src = "https://www.msmaster.qa.paypal.com/sdk/js?";
+  } else if (options.env === "sandbox") {
+    src = "https://www.sandbox.paypal.com/sdk/js?";
+  } else {
+    src = "https://www.paypal.com/sdk/js?";
+  }
+  // we want to remove the env
+  // regardless of what its set to
+  // so it doesn't get added as query params
+  delete options.env;
 
-  src = "https://www.paypal.com/sdk/js?";
   this._paypalScript.onload = function () {
     loadPromise.resolve();
   };
@@ -1527,6 +1596,18 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
     shippingOptions: options.shippingOptions,
     payer_email: options.userAuthenticationEmail, // eslint-disable-line camelcase
   };
+
+  if (options.hasOwnProperty("returnUrl")) {
+    paymentResource.returnUrl = options.returnUrl;
+  }
+
+  if (options.hasOwnProperty("cancelUrl")) {
+    paymentResource.cancelUrl = options.cancelUrl;
+  }
+
+  if (options.hasOwnProperty("appSwitchPreference")) {
+    paymentResource.appSwitchPreference = options.appSwitchPreference;
+  }
 
   if (options.hasOwnProperty("shippingCallbackUrl")) {
     paymentResource.shippingCallbackUrl = options.shippingCallbackUrl;
