@@ -730,9 +730,13 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
   var self = this;
   var webLoginOptions;
 
-  analytics.sendEvent(self._createPromise, "venmo.tokenize.web-login.start", {
-    paypal_context_id: self._venmoPaymentContextId,
-  });
+  analytics.sendEventPlus(
+    self._createPromise,
+    "venmo.tokenize.web-login.start",
+    {
+      paypal_context_id: self._venmoPaymentContextId,
+    }
+  );
   this._tokenizePromise = new ExtendedPromise();
 
   return this.getUrl().then(function (url) {
@@ -753,7 +757,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
     desktopWebLogin
       .runWebLogin(webLoginOptions)
       .then(function (payload) {
-        analytics.sendEvent(
+        analytics.sendEventPlus(
           self._createPromise,
           "venmo.tokenize.web-login.success",
           {
@@ -769,7 +773,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
         });
       })
       .catch(function (err) {
-        analytics.sendEvent(
+        analytics.sendEventPlus(
           self._createPromise,
           "venmo.tokenize.web-login.failure",
           {
@@ -826,7 +830,7 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
     if (resultStatus !== self._venmoPaymentContextStatus) {
       self._venmoPaymentContextStatus = resultStatus;
 
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._createPromise,
         "venmo.tokenize.web-login.status-change",
         {
@@ -913,7 +917,7 @@ Venmo.prototype._pollForStatusChange = function () {
       if (newStatus !== self._venmoPaymentContextStatus) {
         self._venmoPaymentContextStatus = newStatus;
 
-        analytics.sendEvent(
+        analytics.sendEventPlus(
           self._createPromise,
           "venmo.tokenize.manual-return.status-change." +
             newStatus.toLowerCase(),
@@ -952,7 +956,7 @@ Venmo.prototype._pollForStatusChange = function () {
 Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
   var self = this;
 
-  analytics.sendEvent(
+  analytics.sendEventPlus(
     this._createPromise,
     "venmo.tokenize.manual-return.start",
     {
@@ -966,7 +970,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
 
   this._pollForStatusChange()
     .then(function (payload) {
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._createPromise,
         "venmo.tokenize.manual-return.success",
         {
@@ -982,7 +986,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
       });
     })
     .catch(function (err) {
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._createPromise,
         "venmo.tokenize.manual-return.failure",
         {
@@ -1257,7 +1261,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
       self
         ._pollForStatusChange()
         .then(function (payload) {
-          analytics.sendEvent(
+          analytics.sendEventPlus(
             self._createPromise,
             "venmo.appswitch.handle.payment-context-status-query.success",
             {
@@ -1298,7 +1302,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
             );
           }
 
-          analytics.sendEvent(
+          analytics.sendEventPlus(
             self._createPromise,
             "venmo.process-results.payment-context-status-query-failed",
             {

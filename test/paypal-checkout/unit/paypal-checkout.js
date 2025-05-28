@@ -1087,7 +1087,7 @@ describe("PayPalCheckout", () => {
       );
 
       it.each(["COMMIT", "CONTINUE"])(
-        "sets user action=%p for vault flow if specified",
+        "does not set user action=%p for vault flow if specified",
         (actionParam) =>
           testContext.paypalCheckout
             .createPayment({
@@ -1109,7 +1109,6 @@ describe("PayPalCheckout", () => {
                   data: {
                     experienceProfile: {
                       addressOverride: true,
-                      userAction: actionParam,
                     },
                   },
                 }

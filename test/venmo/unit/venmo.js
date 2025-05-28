@@ -75,6 +75,8 @@ describe("Venmo", () => {
 
     setupDesktopWebLogin.mockResolvedValue({});
 
+    analytics.sendEventPlus = jest.fn();
+
     jest.spyOn(document, "addEventListener");
     jest.spyOn(document, "removeEventListener");
   });
@@ -2612,14 +2614,14 @@ describe("Venmo", () => {
         expect(payload.details.username).toBe("@some-name");
         expect(payload.details.paymentContextId).toBe("context-id");
 
-        expect(analytics.sendEvent).toBeCalledWith(
+        expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.start",
           {
             paypal_context_id: "context-id", // eslint-disable-line camelcase
           }
         );
-        expect(analytics.sendEvent).toBeCalledWith(
+        expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
           { paypal_context_id: "context-id" } // eslint-disable-line camelcase
@@ -2753,7 +2755,7 @@ describe("Venmo", () => {
             expect.anything(),
             "venmo.tokenize.manual-return.success"
           );
-          expect(analytics.sendEvent).toBeCalledWith(
+          expect(analytics.sendEventPlus).toBeCalledWith(
             expect.anything(),
             "venmo.tokenize.manual-return.failure",
             {
@@ -2785,7 +2787,7 @@ describe("Venmo", () => {
             expect(err.code).toBe(
               `VENMO_MOBILE_POLLING_TOKENIZATION_${status}`
             );
-            expect(analytics.sendEvent).toBeCalledWith(
+            expect(analytics.sendEventPlus).toBeCalledWith(
               expect.anything(),
               `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`,
               {
@@ -2823,22 +2825,22 @@ describe("Venmo", () => {
 
         await venmo.tokenize();
 
-        expect(analytics.sendEvent).toBeCalledWith(
+        expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.scanned",
           { paypal_context_id: "context-id" } // eslint-disable-line camelcase
         );
-        expect(analytics.sendEvent).toBeCalledWith(
+        expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.unknown_status_we_do_not_account_for",
           { paypal_context_id: "context-id" } // eslint-disable-line camelcase
         );
-        expect(analytics.sendEvent).toBeCalledWith(
+        expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.approved",
           { paypal_context_id: "context-id" } // eslint-disable-line camelcase
         );
-        expect(analytics.sendEvent).toBeCalledWith(
+        expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
           { paypal_context_id: "context-id" } // eslint-disable-line camelcase
@@ -3402,14 +3404,14 @@ describe("Venmo", () => {
 
           await venmo._tokenizeWebLoginWithRedirect();
 
-          expect(analytics.sendEvent).toHaveBeenNthCalledWith(
-            3,
+          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
+            1,
             expect.anything(),
             expectedStartEvent,
             { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
           );
-          expect(analytics.sendEvent).toHaveBeenNthCalledWith(
-            4,
+          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
+            2,
             expect.anything(),
             expectedApprovedEvent,
             { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
@@ -3423,8 +3425,8 @@ describe("Venmo", () => {
           const expectedApprovedEvent = "venmo.tokenize.web-login.failure";
 
           await venmo._tokenizeWebLoginWithRedirect().catch(() => {
-            expect(analytics.sendEvent).toHaveBeenNthCalledWith(
-              4,
+            expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
+              2,
               expect.anything(),
               expectedApprovedEvent,
               { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
@@ -3438,8 +3440,8 @@ describe("Venmo", () => {
 
           await venmo._checkPaymentContextStatusAndProcessResult();
 
-          expect(analytics.sendEvent).toHaveBeenNthCalledWith(
-            3,
+          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
+            1,
             expect.anything(),
             expectedApprovedEvent,
             { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase

@@ -501,10 +501,9 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {boolean} options.appSwitchPreference.launchPaypalApp Opts into the app switch flow.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
- * @param {string} [options.userAction] Use this option to control whether checkout terminates with PayPal UI or returns to merchant website to submit order.
+ * @param {string} [options.userAction] Use this option to control whether checkout (flow="checkout") terminates with PayPal UI or returns to merchant website to submit order. The default behavior is determined by the merchant's configuration.
  *  * `COMMIT` - complete the transaction on the PayPal review page
  *  * `CONTINUE` - return to merchant site to complete transaction
- * The default behavior is determined by the merchant's configuration.
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
@@ -1613,14 +1612,6 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
     paymentResource.shippingCallbackUrl = options.shippingCallbackUrl;
   }
 
-  if (options.hasOwnProperty("userAction")) {
-    if (options.userAction.toLowerCase() === "commit") {
-      paymentResource.experienceProfile.userAction = "COMMIT";
-    } else if (options.userAction.toLowerCase() === "continue") {
-      paymentResource.experienceProfile.userAction = "CONTINUE";
-    }
-  }
-
   self._formatPaymentResourceCheckoutData(paymentResource, options);
   self._formatPaymentResourceVaultData(paymentResource, options);
 
@@ -1673,6 +1664,14 @@ PayPalCheckout.prototype._formatPaymentResourceCheckoutData = function (
     paymentResource.amount = options.amount;
     paymentResource.currencyIsoCode = options.currency;
     paymentResource.requestBillingAgreement = options.requestBillingAgreement;
+
+    if (options.hasOwnProperty("userAction")) {
+      if (options.userAction.toLowerCase() === "commit") {
+        paymentResource.experienceProfile.userAction = "COMMIT";
+      } else if (options.userAction.toLowerCase() === "continue") {
+        paymentResource.experienceProfile.userAction = "CONTINUE";
+      }
+    }
 
     if (intent) {
       // 'sale' has been changed to 'capture' in PayPal's backend, but

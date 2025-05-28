@@ -1,9 +1,15 @@
 # CHANGELOG
 
+## 3.120.1
+
+- PayPal Checkout
+  - limit user action support to `flow=checkout`
+- Venmo
+  - Fix analytics calls to use correct function
+
 ## 3.120.0 (2025-05-22)
 
 - PayPal Checkout
-  - fix JS docs for `createPayment()` `userAction` param
   - add PayPal AppSwitch support
 
 ## 3.119.0 (2025-05-19)
