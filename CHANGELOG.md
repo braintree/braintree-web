@@ -1,6 +1,11 @@
 # CHANGELOG
 
-## 3.120.1
+## 3.120.2 (2025-05-29)
+
+- LocalPayment
+  - Fix onPaymentStart not correctly handling asynchronous functions
+
+## 3.120.1 (2025-05-28)
 
 - PayPal Checkout
   - limit user action support to `flow=checkout`

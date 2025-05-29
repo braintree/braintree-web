@@ -603,8 +603,8 @@ LocalPayment.prototype.startPayment = function (options) {
             promise.resolve();
           }
         }
-      } else {
-        if (typeof options.onPaymentStart === "function") {
+      } else if (typeof options.onPaymentStart === "function") {
+        Promise.resolve(
           options.onPaymentStart(
             { paymentId: response.paymentResource.paymentToken },
             function () {
@@ -614,15 +614,20 @@ LocalPayment.prototype.startPayment = function (options) {
                 );
               }
             }
-          );
-        }
-        if (self._isRedirectFlow) {
-          if (inIframe()) {
-            window.top.location.href = response.paymentResource.redirectUrl;
-          } else {
-            window.location.href = response.paymentResource.redirectUrl;
+          )
+        ).then(function () {
+          if (self._isRedirectFlow) {
+            self._redirectToPaymentResource(
+              response.paymentResource.redirectUrl
+            );
+
+            promise.resolve();
           }
-        }
+        });
+      } else if (self._isRedirectFlow) {
+        self._redirectToPaymentResource(response.paymentResource.redirectUrl);
+
+        promise.resolve();
       }
     })
     .catch(function (err) {
@@ -658,6 +663,14 @@ LocalPayment.prototype.startPayment = function (options) {
     });
 
   return promise;
+};
+
+LocalPayment.prototype._redirectToPaymentResource = function (redirectUrl) {
+  if (inIframe()) {
+    window.top.location.href = redirectUrl;
+  } else {
+    window.location.href = redirectUrl;
+  }
 };
 
 /**

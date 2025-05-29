@@ -253,7 +253,7 @@ describe("LocalPayment", () => {
 
         expect(
           testContext.localPayment.startPayment(testContext.options)
-        ).rejects.not.toThrow();
+        ).resolves.toBeUndefined();
       }
     );
 
@@ -283,25 +283,58 @@ describe("LocalPayment", () => {
         },
       });
 
-      testContext.localPayment
-        .startPayment(testContext.options)
-        .then(function () {
-          expect(analytics.sendEvent).toBeCalledWith(
-            expect.anything(),
-            expect.stringContaining(".local-payment.start-payment.redirected")
-          );
+      await testContext.localPayment.startPayment(testContext.options);
 
-          expect(
-            testContext.frameServiceInstance.redirect
-          ).toHaveBeenCalledTimes(0);
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        expect.stringContaining(".local-payment.start-payment.redirected")
+      );
 
-          expect(testContext.frameService.open).toBeCalledWith(
-            jest.any(),
-            jest.any()
-          );
-          expect(paymentIdFromOnPaymentStart).not.toBeUndefined();
-          expect(paymentIdFromOnPaymentStart).toBe("payment-token");
+      expect(testContext.frameServiceInstance.redirect).toHaveBeenCalledTimes(
+        0
+      );
+
+      expect(paymentIdFromOnPaymentStart).not.toBeUndefined();
+      expect(paymentIdFromOnPaymentStart).toBe("payment-token");
+    });
+
+    it("awaits async onPaymentStart before redirecting in redirect flow", async () => {
+      testContext.options.paymentType = "ideal";
+      testContext.options.paymentTypeCountryCode = "NL";
+      testContext.options.currencyCode = "EUR";
+      testContext.options.onPaymentStart = jest.fn((data, start) => {
+        return new Promise((resolve) => setTimeout(resolve, 10)).then(() => {
+          start();
         });
+      });
+
+      testContext.frameServiceInstance.open = jest.fn(
+        yieldsAsync(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        })
+      );
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect-url",
+          paymentToken: "payment-token",
+        },
+      });
+      jest.spyOn(testContext.localPayment, "_redirectToPaymentResource");
+
+      await testContext.localPayment.startPayment(testContext.options);
+
+      expect(testContext.frameServiceInstance.redirect).toHaveBeenCalledTimes(
+        0
+      );
+      expect(testContext.options.onPaymentStart).toHaveBeenCalledWith(
+        { paymentId: "payment-token" },
+        expect.any(Function)
+      );
+      expect(
+        testContext.localPayment._redirectToPaymentResource
+      ).toHaveBeenCalledWith("https://example.com/redirect-url");
     });
   });
 
