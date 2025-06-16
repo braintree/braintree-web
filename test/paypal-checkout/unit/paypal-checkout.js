@@ -911,6 +911,7 @@ describe("PayPalCheckout", () => {
           shippingAmount: "3.0",
           productPrice: "200",
           taxAmount: "20",
+          totalAmount: "233.0",
         };
 
         /* eslint-disable camelcase */
@@ -930,12 +931,13 @@ describe("PayPalCheckout", () => {
           ],
           currency_iso_code: planMetadata.currencyIsoCode,
           name: planMetadata.name,
-          product_description: planMetadata.productDescription,
-          product_quantity: planMetadata.productQuantity,
           one_time_fee_amount: planMetadata.oneTimeFeeAmount,
-          shipping_amount: planMetadata.shippingAmount,
+          product_description: planMetadata.productDescription,
           product_price: planMetadata.productPrice,
+          product_quantity: planMetadata.productQuantity,
+          shipping_amount: planMetadata.shippingAmount,
           tax_amount: planMetadata.taxAmount,
+          total_amount: planMetadata.totalAmount,
         };
         /* eslint-enable camelcase */
 
@@ -970,7 +972,6 @@ describe("PayPalCheckout", () => {
             pricingScheme: {
               pricingModel: "FIXED",
             },
-            totalAmount: "10",
           },
         ],
         currencyIsoCode: "USD",
@@ -981,6 +982,7 @@ describe("PayPalCheckout", () => {
         shippingAmount: "3.0",
         productPrice: "200",
         taxAmount: "20",
+        totalAmount: "233.0",
       };
 
       /* eslint-disable camelcase */
@@ -996,17 +998,17 @@ describe("PayPalCheckout", () => {
             pricing_scheme: {
               pricing_model: "FIXED",
             },
-            total_amount: "10",
           },
         ],
         currency_iso_code: planMetadata.currencyIsoCode,
         name: planMetadata.name,
-        product_description: planMetadata.productDescription,
-        product_quantity: planMetadata.productQuantity,
         one_time_fee_amount: planMetadata.oneTimeFeeAmount,
-        shipping_amount: planMetadata.shippingAmount,
+        product_description: planMetadata.productDescription,
         product_price: planMetadata.productPrice,
+        product_quantity: planMetadata.productQuantity,
+        shipping_amount: planMetadata.shippingAmount,
         tax_amount: planMetadata.taxAmount,
+        total_amount: planMetadata.totalAmount,
       };
       /* eslint-enable camelcase */
 
@@ -1051,6 +1053,114 @@ describe("PayPalCheckout", () => {
             },
           });
         }));
+
+    describe("_formatPlanMetadata", () => {
+      it("formats a complete plan with billing cycles", () => {
+        /* eslint-disable camelcase */
+        const inputPlan = {
+          currency_iso_code: "USD",
+          name: "Monthly Subscription",
+          one_time_fee_amount: "10.00",
+          product_description: "Pro Plan",
+          total_amount: "29.99",
+          billing_cycles: [
+            {
+              billing_frequency: "7",
+              billing_frequency_unit: "DAY",
+              number_of_executions: "1",
+              sequence: "1",
+              start_date: "2024-04-06T00:00:00Z",
+              trial: true,
+              pricing_scheme: {
+                pricingModel: "FIXED",
+                price: "0.00",
+              },
+              extra_property: "should be filtered out",
+            },
+            {
+              billing_frequency: "1",
+              billing_frequency_unit: "MONTH",
+              sequence: "2",
+              number_of_executions: null,
+              start_date: null,
+              trial: false,
+              pricing_scheme: {
+                pricingModel: "FIXED",
+                price: "29.99",
+              },
+            },
+          ],
+          unrelated_property: "should not be included",
+        };
+
+        const result =
+          testContext.paypalCheckout._formatPlanMetadata(inputPlan);
+
+        expect(result.currency_iso_code).toBe("USD");
+        expect(result.name).toBe("Monthly Subscription");
+        expect(result.one_time_fee_amount).toBe("10.00");
+        expect(result.product_description).toBe("Pro Plan");
+        expect(result.total_amount).toBe("29.99");
+        expect(result.unrelated_property).toBeUndefined();
+
+        expect(result.billing_cycles.length).toBe(2);
+
+        // First billing cycle (trial period)
+        expect(result.billing_cycles[0].billing_frequency).toBe("7");
+        expect(result.billing_cycles[0].billing_frequency_unit).toBe("DAY");
+        expect(result.billing_cycles[0].number_of_executions).toBe("1");
+        expect(result.billing_cycles[0].sequence).toBe("1");
+        expect(result.billing_cycles[0].start_date).toBe(
+          "2024-04-06T00:00:00Z"
+        );
+        expect(result.billing_cycles[0].trial).toBe(true);
+        expect(result.billing_cycles[0].pricing_scheme).toEqual({
+          pricingModel: "FIXED",
+          price: "0.00",
+        });
+        expect(result.billing_cycles[0].extra_property).toBeUndefined();
+
+        // Second billing cycle (regular subscription)
+        expect(result.billing_cycles[1].billing_frequency).toBe("1");
+        expect(result.billing_cycles[1].billing_frequency_unit).toBe("MONTH");
+        expect(result.billing_cycles[1].sequence).toBe("2");
+        expect(result.billing_cycles[1].number_of_executions).toBeNull();
+        expect(result.billing_cycles[1].trial).toBe(false);
+      });
+
+      it("handles a plan with no billing cycles", () => {
+        const inputPlan = {
+          currency_iso_code: "USD",
+          name: "Basic Plan",
+          total_amount: "19.99",
+        };
+
+        const result =
+          testContext.paypalCheckout._formatPlanMetadata(inputPlan);
+
+        expect(result.currency_iso_code).toBe("USD");
+        expect(result.name).toBe("Basic Plan");
+        expect(result.total_amount).toBe("19.99");
+        expect(result.billing_cycles.length).toBe(0);
+      });
+
+      it("only includes specified plan properties", () => {
+        const inputPlan = {
+          currency_iso_code: "EUR",
+          name: "Premium Plan",
+          unrelated_property: "should not be included",
+          another_property: "also not included",
+        };
+
+        const result =
+          testContext.paypalCheckout._formatPlanMetadata(inputPlan);
+
+        expect(result.currency_iso_code).toBe("EUR");
+        expect(result.name).toBe("Premium Plan");
+        expect(result.unrelated_property).toBeUndefined();
+        expect(result.another_property).toBeUndefined();
+      });
+    });
 
     describe("user action", () => {
       it.each(["COMMIT", "CONTINUE"])(

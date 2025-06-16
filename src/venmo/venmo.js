@@ -362,41 +362,126 @@ Venmo.prototype._createVenmoPaymentContext = function (
   });
 };
 
+Venmo.prototype._popupBridgeIsInstalled = function () {
+  return window.popupBridge && typeof window.popupBridge.open === "function";
+};
+
+Venmo.prototype._venmoNativeAppIsInstalled = function () {
+  return Boolean(
+    window.popupBridge &&
+      ((window.parent && window.parent.popupBridge.isVenmoInstalled) ||
+        window.popupBridge.isVenmoInstalled)
+  );
+};
+
+/**
+ * Handle app switching when a deep link return URL is configured
+ * @private
+ * @param {string} url - The URL to redirect to
+ * @returns {void}
+ */
+Venmo.prototype._handleDeepLinkAppSwitch = function (url) {
+  if (isIosWebviewInDeepLinkReturnUrlFlow()) {
+    this._handleIosWebviewDeepLink(url);
+  } else if (this._popupBridgeIsInstalled()) {
+    this._handlePopupBridgeAppSwitch(url);
+  } else {
+    analytics.sendEvent(this._createPromise, "venmo.appswitch.start.webview");
+    window.open(url);
+  }
+};
+
+/**
+ * Handle app switching for iOS webview with deep link return URL
+ * @private
+ * @param {string} url - The URL to redirect to
+ * @returns {void}
+ */
+Venmo.prototype._handleIosWebviewDeepLink = function (url) {
+  analytics.sendEvent(this._createPromise, "venmo.appswitch.start.ios-webview");
+
+  if (inIframe()) {
+    this._handleIosWebviewInIframe(url);
+  } else if (
+    !this._venmoNativeAppIsInstalled() &&
+    this._popupBridgeIsInstalled()
+  ) {
+    this._handlePopupBridgeAppSwitch(url);
+  } else {
+    // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open
+    window.location.href = url;
+  }
+};
+
+/**
+ * Handle iOS webview app switching when in an iframe
+ * @private
+ * @param {string} url - The URL to redirect to
+ * @returns {void}
+ */
+Venmo.prototype._handleIosWebviewInIframe = function (url) {
+  if (this._venmoNativeAppIsInstalled()) {
+    this._handleIFrameBreakout(url);
+  } else if (this._popupBridgeIsInstalled()) {
+    this._handlePopupBridgeAppSwitch(url);
+  } else {
+    this._handleIFrameBreakout(url);
+  }
+};
+
+/**
+ * Handle app switching with PopupBridge
+ * @private
+ * @param {string} url - The URL to redirect to
+ * @returns {void}
+ */
+Venmo.prototype._handlePopupBridgeAppSwitch = function (url) {
+  analytics.sendEvent(
+    this._createPromise,
+    "venmo.appswitch.start.popup-bridge"
+  );
+  window.popupBridge.open(url);
+};
+
+/**
+ * Handle app switching for standard browser environments
+ * @private
+ * @param {string} url - The URL to redirect to
+ * @returns {void}
+ */
+Venmo.prototype._handleBrowserAppSwitch = function (url) {
+  analytics.sendEvent(this._createPromise, "venmo.appswitch.start.browser");
+
+  if (
+    browserDetection.doesNotSupportWindowOpenInIos() ||
+    this._shouldUseRedirectStrategy()
+  ) {
+    window.location.href = url;
+  } else if (browserDetection.isAndroid() && browserDetection.isChrome()) {
+    // Android chrome needs to use window.location.href
+    // to remain in the same tab as expected.
+    // Chrome now defaults to opening a new tab.
+    window.location.href = url;
+  } else {
+    window.open(url);
+  }
+};
+
+/**
+ * Handle breaking out of the iframe we're in
+ * @private
+ * @param {string} url - The URL to redirect to
+ * @returns {void}
+ */
+Venmo.prototype._handleIFrameBreakout = function (url) {
+  window.top.location.href = url;
+};
+
 Venmo.prototype.appSwitch = function (url) {
   if (this._deepLinkReturnUrl) {
-    if (isIosWebviewInDeepLinkReturnUrlFlow()) {
-      analytics.sendEvent(
-        this._createPromise,
-        "venmo.appswitch.start.ios-webview"
-      );
-      // Deep link URLs do not launch iOS apps from a webview when using window.open or PopupBridge.open.
-      window.location.href = url;
-    } else if (
-      window.popupBridge &&
-      typeof window.popupBridge.open === "function"
-    ) {
-      analytics.sendEvent(this._createPromise, "popup-bridge:venmo:started");
-      window.popupBridge.open(url);
-    } else {
-      analytics.sendEvent(this._createPromise, "venmo.appswitch.start.webview");
-      window.open(url);
-    }
+    this._handleDeepLinkAppSwitch(url);
   } else {
-    analytics.sendEvent(this._createPromise, "venmo.appswitch.start.browser");
-
-    if (
-      browserDetection.doesNotSupportWindowOpenInIos() ||
-      this._shouldUseRedirectStrategy()
-    ) {
-      window.location.href = url;
-    } else if (browserDetection.isAndroid() && browserDetection.isChrome()) {
-      // Android chrome needs to use window.location.href
-      // to remain in the same tab as expected.
-      // Chrome now defaults to opening a new tab.
-      window.location.href = url;
-    } else {
-      window.open(url);
-    }
+    this._handleBrowserAppSwitch(url);
   }
 };
 

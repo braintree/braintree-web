@@ -44,6 +44,8 @@ describe("three-d-secure.create", () => {
 
     testContext.configuration.gatewayConfiguration.threeDSecure = {
       cardinalAuthenticationJWT: "jwt",
+      cardinalSongbirdUrl:
+        "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
     };
 
     await expect(async () => {

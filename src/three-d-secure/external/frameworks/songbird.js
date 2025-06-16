@@ -9,7 +9,6 @@ var analytics = require("../../../lib/analytics");
 var assets = require("../../../lib/assets");
 var errors = require("../../shared/errors");
 var enumerate = require("../../../lib/enumerate");
-var constants = require("../../shared/constants");
 var ExtendedPromise = require("@braintree/extended-promise");
 
 var INTEGRATION_TIMEOUT_MS =
@@ -383,10 +382,22 @@ SongbirdFramework.prototype._createCardinalConfigurationOptions = function (
 
 SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
   var self = this;
+  var scriptAttrs = {};
+  var identityHash;
 
   return this._waitForClient()
     .then(function () {
-      var scriptSource = self._getCardinalScriptSource();
+      scriptAttrs.src =
+        self._client.getConfiguration().gatewayConfiguration.threeDSecure.cardinalSongbirdUrl;
+
+      identityHash =
+        self._client.getConfiguration().gatewayConfiguration.threeDSecure
+          .cardinalSongbirdIdentityHash;
+
+      if (identityHash) {
+        scriptAttrs.crossorigin = "anonymous";
+        scriptAttrs.integrity = identityHash;
+      }
 
       self._songbirdSetupTimeoutReference = window.setTimeout(function () {
         analytics.sendEvent(
@@ -396,7 +407,7 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
         self.handleSongbirdError("cardinal-sdk-setup-timeout");
       }, setupOptions.timeout || INTEGRATION_TIMEOUT_MS);
 
-      return assets.loadScript({ src: scriptSource });
+      return assets.loadScript(scriptAttrs);
     })
     .catch(function (err) {
       self._v2SetupFailureReason = "songbird-js-failed-to-load";
@@ -408,16 +419,6 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
         )
       );
     });
-};
-
-SongbirdFramework.prototype._getCardinalScriptSource = function () {
-  var gatewayConfig = this._client.getConfiguration().gatewayConfiguration;
-
-  if (gatewayConfig && gatewayConfig.environment === "production") {
-    return constants.CARDINAL_SCRIPT_SOURCE.production;
-  }
-
-  return constants.CARDINAL_SCRIPT_SOURCE.sandbox;
 };
 
 SongbirdFramework.prototype._createPaymentsSetupCompleteCallback = function () {

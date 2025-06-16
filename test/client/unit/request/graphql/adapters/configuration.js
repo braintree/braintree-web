@@ -64,6 +64,8 @@ describe("GraphQL Configuration", () => {
               threeDSecureEnabled: false,
               threeDSecure: {
                 cardinalAuthenticationJWT: "3ds-jwt",
+                cardinalSongbirdUrl: "some-songbird-url",
+                cardinalSongbirdIdentityHash: "some-songbird-identity-hash",
               },
             },
             supportedFeatures: ["TOKENIZE_CREDIT_CARDS"],
@@ -163,6 +165,8 @@ describe("GraphQL Configuration", () => {
         threeDSecureEnabled: false,
         threeDSecure: {
           cardinalAuthenticationJWT: "3ds-jwt",
+          cardinalSongbirdUrl: "some-songbird-url",
+          cardinalSongbirdIdentityHash: "some-songbird-identity-hash",
         },
         analytics: {
           url: "https://localhost/analytics",

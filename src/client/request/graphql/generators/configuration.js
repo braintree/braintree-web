@@ -14,6 +14,8 @@ var CONFIGURATION_QUERY =
   "      threeDSecureEnabled " +
   "      threeDSecure { " +
   "        cardinalAuthenticationJWT " +
+  "        cardinalSongbirdUrl " +
+  "        cardinalSongbirdIdentityHash " +
   "      } " +
   "    } " +
   "    applePayWeb { " +

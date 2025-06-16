@@ -85,11 +85,15 @@ describe("Venmo", () => {
     window.location.href = originalLocationHref;
     jest.clearAllTimers();
     jest.useRealTimers();
+
+    if (window.popupBridge) {
+      delete window.popupBridge;
+    }
   });
 
   it("sends analytics events when venmo is not configured for desktop", async () => {
     new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -113,7 +117,7 @@ describe("Venmo", () => {
     createVenmoDesktop.mockResolvedValue({});
     new Venmo({
       allowDesktop: true,
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -137,7 +141,7 @@ describe("Venmo", () => {
     createVenmoDesktop.mockRejectedValue(new Error("foo"));
     new Venmo({
       allowDesktop: true,
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -156,7 +160,7 @@ describe("Venmo", () => {
     createVenmoDesktop.mockResolvedValue({});
     new Venmo({
       allowDesktop: true,
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "multi_use",
     });
 
@@ -173,7 +177,7 @@ describe("Venmo", () => {
     createVenmoDesktop.mockResolvedValue({});
     new Venmo({
       allowDesktop: true,
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       displayName: "name",
     });
 
@@ -190,7 +194,7 @@ describe("Venmo", () => {
     createVenmoDesktop.mockResolvedValue({});
     new Venmo({
       allowDesktop: true,
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -207,7 +211,7 @@ describe("Venmo", () => {
     new Venmo({
       allowDesktop: true,
       profileId: "profile-id",
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -234,7 +238,7 @@ describe("Venmo", () => {
     });
     inIframe.mockReturnValue(true);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -277,7 +281,7 @@ describe("Venmo", () => {
     });
     inIframe.mockReturnValue(true);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
     });
 
@@ -325,7 +329,7 @@ describe("Venmo", () => {
     });
 
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       requireManualReturn: true,
     });
 
@@ -368,7 +372,7 @@ describe("Venmo", () => {
       },
     });
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       requireManualReturn: true,
       paymentMethodUsage: "single_use",
     });
@@ -416,7 +420,7 @@ describe("Venmo", () => {
       },
     });
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
     });
 
@@ -464,7 +468,7 @@ describe("Venmo", () => {
     });
     // eslint-disable-next-line no-unused-vars
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
       displayName: "name",
     });
@@ -507,7 +511,7 @@ describe("Venmo", () => {
     });
     // eslint-disable-next-line no-unused-vars
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       requireManualReturn: true,
       displayName: "name",
     });
@@ -547,7 +551,7 @@ describe("Venmo", () => {
     });
 
     new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
     });
 
@@ -593,7 +597,7 @@ describe("Venmo", () => {
     });
 
     new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
       collectCustomerBillingAddress: inputAddressCollection,
       collectCustomerShippingAddress: inputAddressCollection,
@@ -654,7 +658,7 @@ describe("Venmo", () => {
     });
 
     new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: expectedFields.paymentMethodUsage,
       totalAmount: expectedFields.totalAmount,
       discountAmount: expectedFields.discountAmount,
@@ -697,7 +701,7 @@ describe("Venmo", () => {
 
     // eslint-disable-next-line no-unused-vars
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
     });
 
@@ -739,7 +743,7 @@ describe("Venmo", () => {
     });
     inIframe.mockReturnValue(true);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -786,7 +790,7 @@ describe("Venmo", () => {
     });
     inIframe.mockReturnValue(true);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -844,7 +848,7 @@ describe("Venmo", () => {
     });
     inIframe.mockReturnValue(true);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await flushPromises();
@@ -891,7 +895,7 @@ describe("Venmo", () => {
     testContext.client.request.mockRejectedValue(networkError);
     inIframe.mockResolvedValue(true);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
     });
 
     await venmo.getUrl().catch((err) => {
@@ -926,7 +930,7 @@ describe("Venmo", () => {
 
     testContext.client.request.mockRejectedValue(error);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
     });
 
@@ -943,7 +947,7 @@ describe("Venmo", () => {
 
     testContext.client.request.mockRejectedValue(networkError);
     const venmo = new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
     });
 
@@ -977,7 +981,7 @@ describe("Venmo", () => {
     });
 
     new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
     });
 
@@ -1024,7 +1028,7 @@ describe("Venmo", () => {
     });
 
     new Venmo({
-      createPromise: Promise.resolve(testContext.client),
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: expectedFields.paymentMethodUsage,
       discountAmount: expectedFields.discountAmount,
       isFinalAmount: expectedFields.isFinalAmount,
@@ -1067,7 +1071,9 @@ describe("Venmo", () => {
     let venmo;
 
     beforeEach(() => {
-      venmo = new Venmo({ createPromise: Promise.resolve(testContext.client) });
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+      });
       testContext.client.request.mockResolvedValue({
         data: {
           createVenmoQRCodePaymentContext: {
@@ -1099,7 +1105,7 @@ describe("Venmo", () => {
 
       venmo = new Venmo({
         allowDesktopWebLogin,
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       return venmo.getUrl().then((url) => {
@@ -1114,7 +1120,7 @@ describe("Venmo", () => {
     it("uses web fallback url when mobileWebFallBack supplied as true", () => {
       const venmoConfig = {
         mobileWebFallBack: true,
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       };
 
       venmo = new Venmo(venmoConfig);
@@ -1181,7 +1187,7 @@ describe("Venmo", () => {
       if (deepLinked) {
         venmo = new Venmo({
           allowDesktopWebLogin: false,
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: location,
         });
       } else if (location !== testContext.location) {
@@ -1211,7 +1217,7 @@ describe("Venmo", () => {
       });
       inIframe.mockReturnValue(true);
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       return venmo.getUrl().then((url) => {
@@ -1239,7 +1245,7 @@ describe("Venmo", () => {
       inIframe.mockReturnValue(true);
       venmo = new Venmo({
         deepLinkReturnUrl: "https://example.com/top-level-page",
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       return venmo.getUrl().then((url) => {
@@ -1271,7 +1277,7 @@ describe("Venmo", () => {
         },
       });
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         requireManualReturn: true,
       });
 
@@ -1305,7 +1311,7 @@ describe("Venmo", () => {
         };
 
         venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           profileId: merchantID,
         });
 
@@ -1342,7 +1348,7 @@ describe("Venmo", () => {
         },
       });
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         requireManualReturn: true,
       });
 
@@ -1370,7 +1376,7 @@ describe("Venmo", () => {
         },
       });
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         paymentMethodUsage: "multi_use",
       });
 
@@ -1410,7 +1416,7 @@ describe("Venmo", () => {
     it("includes allowAndroidRecreation flag if merchant configures it to do so", async () => {
       let venmoRecreating = new Venmo({
         allowAndroidRecreation: false,
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
       const url = await venmoRecreating.getUrl();
 
@@ -1429,7 +1435,7 @@ describe("Venmo", () => {
 
     beforeEach(() => {
       createOptions = {
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       };
       // when venmo is created with a paymentMethodUsage param, it ends
       // up creating a payment context object before it resolves.
@@ -1708,15 +1714,21 @@ describe("Venmo", () => {
   });
 
   describe("appSwitch", () => {
-    let originalNavigator, originalLocation, venmoOptions;
+    let originalNavigator, originalLocation, originalTop, venmoOptions;
 
     beforeEach(() => {
-      venmoOptions = { createPromise: Promise.resolve(testContext.client) };
+      venmoOptions = {
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+      };
 
       originalNavigator = window.navigator;
       originalLocation = window.location;
+      originalTop = window.top;
+
       delete window.navigator;
       delete window.location;
+      delete window.top;
+
       window.navigator = {
         platform: "platform",
       };
@@ -1724,11 +1736,17 @@ describe("Venmo", () => {
         href: "old",
         hash: "",
       };
+      window.top = {
+        location: {
+          href: "top-old",
+        },
+      };
     });
 
     afterEach(() => {
       window.navigator = originalNavigator;
       window.location = originalLocation;
+      window.top = originalTop;
     });
 
     describe("not deep link return url", () => {
@@ -1866,10 +1884,8 @@ describe("Venmo", () => {
         );
         expect(analytics.sendEvent).toHaveBeenCalledWith(
           expect.anything(),
-          "popup-bridge:venmo:started"
+          "venmo.appswitch.start.popup-bridge"
         );
-
-        delete window.popupBridge;
       });
 
       it("opens the app switch url by calling window.open otherwise", async () => {
@@ -1884,6 +1900,83 @@ describe("Venmo", () => {
           "venmo.appswitch.start.webview"
         );
       });
+
+      it("opens the Venmo native app if it is iOS, in an iframe, and the Venmo native app is installed", async () => {
+        const mockUrl = "com.venmo.test://";
+
+        window.popupBridge = {
+          isVenmoInstalled: true,
+        };
+        window.navigator.platform = "iPhone";
+
+        const venmo = new Venmo(venmoOptions);
+
+        inIframe.mockReturnValueOnce(true);
+        await venmo.appSwitch(mockUrl);
+
+        expect(window.top.location.href).toBe(mockUrl);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.ios-webview"
+        );
+      });
+
+      it("opens Popup Bridge if it is is iOS, in an iframe, and Popup Bridge is installed", async () => {
+        const mockUrl = "https://venmo.com/braintree";
+
+        window.popupBridge = {
+          open: jest.fn(),
+        };
+        window.navigator.platform = "iPhone";
+
+        const venmo = new Venmo(venmoOptions);
+
+        inIframe.mockReturnValueOnce(true);
+        await venmo.appSwitch(mockUrl);
+
+        expect(window.popupBridge.open).toBeCalledWith(mockUrl);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.popup-bridge"
+        );
+      });
+
+      it("opens Popup Bridge if it is iOS, not in an iframe, Venmo native is not installed, and Popup Bridge is installed", async () => {
+        const mockUrl = "https://venmo.com/braintree";
+
+        window.popupBridge = {
+          open: jest.fn(),
+        };
+        window.navigator.platform = "iPhone";
+
+        const venmo = new Venmo(venmoOptions);
+
+        inIframe.mockReturnValueOnce(false);
+        await venmo.appSwitch(mockUrl);
+
+        expect(window.popupBridge.open).toBeCalledWith(mockUrl);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.popup-bridge"
+        );
+      });
+
+      it("breaks out of the iframe if the device is iOS, in an iframe, Venmo native is not installed, and Popup Bridge is not installed", async () => {
+        const mockUrl = "https://venmo.com/braintree";
+
+        window.navigator.platform = "iPhone";
+
+        const venmo = new Venmo(venmoOptions);
+
+        inIframe.mockReturnValueOnce(true);
+        await venmo.appSwitch(mockUrl);
+
+        expect(window.top.location.href).toBe(mockUrl);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.ios-webview"
+        );
+      });
     });
   });
 
@@ -1891,7 +1984,9 @@ describe("Venmo", () => {
     let venmo;
 
     beforeEach(() => {
-      venmo = new Venmo({ createPromise: Promise.resolve(testContext.client) });
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+      });
       jest.spyOn(supportsVenmo, "isBrowserSupported");
     });
 
@@ -1937,7 +2032,7 @@ describe("Venmo", () => {
 
     it("calls isBrowserSupported with allowNewBrowserTab: false when venmo instance is configured to do so", () => {
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowNewBrowserTab: false,
       });
 
@@ -1952,7 +2047,7 @@ describe("Venmo", () => {
 
     it("calls isBrowserSupported with allowWebviews: false when venmo instance is configured to do so", () => {
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowWebviews: false,
       });
 
@@ -1969,7 +2064,7 @@ describe("Venmo", () => {
       // pass a stub so create methods don't hang
       createVenmoDesktop.mockResolvedValue({});
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: true,
       });
 
@@ -1986,7 +2081,7 @@ describe("Venmo", () => {
       // testing isBrowserSupported for web login flow, not desktop QR flow
       createVenmoDesktop.mockResolvedValue({});
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: false,
         allowDesktopWebLogin: true,
       });
@@ -2006,7 +2101,9 @@ describe("Venmo", () => {
     let venmo;
 
     beforeEach(() => {
-      venmo = new Venmo({ createPromise: Promise.resolve(testContext.client) });
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+      });
     });
 
     afterEach(() => {
@@ -2044,7 +2141,7 @@ describe("Venmo", () => {
   describe("tokenize", () => {
     it("errors if another tokenization request is active", () => {
       const venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       venmo.tokenize();
@@ -2063,7 +2160,7 @@ describe("Venmo", () => {
 
       beforeEach(() => {
         venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
         });
       });
 
@@ -2458,7 +2555,7 @@ describe("Venmo", () => {
 
         inIframe.mockReturnValue(true);
         venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
         });
         venmo._mobilePollingInterval = 10;
         venmo._mobilePollingExpiresThreshold = 50;
@@ -2579,7 +2676,7 @@ describe("Venmo", () => {
         });
 
         venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           mobileWebFallBack: true,
           paymentMethodUsage: "single_use",
         });
@@ -2901,7 +2998,7 @@ describe("Venmo", () => {
         };
         createVenmoDesktop.mockResolvedValue(fakeVenmoDesktop);
         venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           allowDesktop: true,
         });
       });
@@ -3046,7 +3143,7 @@ describe("Venmo", () => {
 
       it("launches the desktop web login flow with approval", async () => {
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3085,7 +3182,7 @@ describe("Venmo", () => {
 
       it("use the correct url for web login", async () => {
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3127,7 +3224,7 @@ describe("Venmo", () => {
       it("processes the payment context status on approval", async () => {
         const expectedStatus = "APPROVED";
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3168,7 +3265,7 @@ describe("Venmo", () => {
         });
 
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3220,7 +3317,7 @@ describe("Venmo", () => {
         });
 
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3265,7 +3362,7 @@ describe("Venmo", () => {
         });
 
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3327,7 +3424,7 @@ describe("Venmo", () => {
         });
 
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3367,7 +3464,7 @@ describe("Venmo", () => {
         });
 
         let venmo = new Venmo({
-          createPromise: Promise.resolve(testContext.client),
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
 
@@ -3393,7 +3490,9 @@ describe("Venmo", () => {
 
         beforeEach(() => {
           venmo = new Venmo({
-            createPromise: Promise.resolve(testContext.client),
+            createPromise: new Promise((resolve) =>
+              resolve(testContext.client)
+            ),
             ...flowSpecificConfig,
           });
         });
@@ -3454,7 +3553,7 @@ describe("Venmo", () => {
   describe("cancelTokenization", () => {
     it("errors if no tokenization is in process", () => {
       const venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       expect.assertions(1);
@@ -3468,7 +3567,7 @@ describe("Venmo", () => {
       expect.assertions(1);
 
       const venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       jest.spyOn(window, "addEventListener").mockImplementation();
@@ -3489,7 +3588,7 @@ describe("Venmo", () => {
 
     it("removes event listeners for event listener mobile flow", () => {
       const venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       jest.spyOn(window, "addEventListener").mockImplementation();
@@ -3534,7 +3633,7 @@ describe("Venmo", () => {
       inIframe.mockReturnValue(true);
 
       const venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       venmo.tokenize().catch(() => {
@@ -3576,7 +3675,7 @@ describe("Venmo", () => {
       inIframe.mockReturnValue(true);
 
       const venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         paymentMethodUsage: "multi_use",
       });
 
@@ -3615,7 +3714,7 @@ describe("Venmo", () => {
       createVenmoDesktop.mockResolvedValue(fakeVenmoDesktop);
 
       const venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: true,
       });
 
@@ -3638,7 +3737,9 @@ describe("Venmo", () => {
     let venmo;
 
     beforeEach(() => {
-      venmo = new Venmo({ createPromise: Promise.resolve(testContext.client) });
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+      });
     });
 
     it("removes event listener from document body", () => {
@@ -3678,7 +3779,7 @@ describe("Venmo", () => {
 
       createVenmoDesktop.mockResolvedValue(fakeVenmoDesktop);
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: true,
       });
 
@@ -3703,7 +3804,7 @@ describe("Venmo", () => {
 
       inIframe.mockReturnValue(true);
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
       });
 
       await flushPromises();
@@ -3742,7 +3843,7 @@ describe("Venmo", () => {
 
       inIframe.mockReturnValue(true);
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         paymentMethodUsage: "single_use",
       });
 
@@ -3782,7 +3883,7 @@ describe("Venmo", () => {
 
       inIframe.mockReturnValue(true);
       venmo = new Venmo({
-        createPromise: Promise.resolve(testContext.client),
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
         paymentMethodUsage: "single_use",
       });
 

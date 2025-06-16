@@ -428,7 +428,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
 
 /**
  * @typedef {Object} PayPalCheckout~billingCycles
- * @property {(string|number)} billingFrequency The frequency of billing.
+ * @property {(string|number)} billingFrequency The frequency of billing. This value must be a whole number and can't be negative or zero.
  * @property {string} billingFrequencyUnit The unit of billing frequency. Options are `DAY`, `WEEK`, `MONTH`, or `YEAR`.
  * @property {(string|number)} numberOfExecutions The number of executions for the billing cycle.
  * @property {(string|number)} sequence The order in the upcoming billing cycles.
@@ -442,13 +442,13 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @property {billingCycles[]} [billingCycles] An array of {@link PayPalCheckout~billingCycles|billing cycles} for this plan.
  * @property {string} currencyIsoCode The ISO code for the currency, for example `USD`.
  * @property {string} name The name of the plan.
- * @property {string} productDescription A description of the product. (Accepts only one element)
- * @property {(string|number)} productQuantity The quantity of the product. (Accepts only one element)
  * @property {(string|number)} oneTimeFeeAmount The one-time fee amount.
- * @property {string} totalAmount This field is for vault with purchase only. Can include up to 2 decimal places. This value can't be negative or zero.
- * @property {(string|number)} shippingAmount The amount for shipping.
+ * @property {string} productDescription A description of the product. (Accepts only one element)
  * @property {(string|number)} productPrice The price of the product.
+ * @property {(string|number)} productQuantity The quantity of the product. (Accepts only one element)
+ * @property {(string|number)} shippingAmount The amount for shipping.
  * @property {(string|number)} taxAmount The amount of tax.
+ * @property {string} totalAmount This field is for vault with purchase only. Can include up to 2 decimal places. This value can't be negative or zero.
  */
 
 /**
@@ -647,6 +647,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  *       flow: 'vault',
  *       amount: '12.50',
  *       currency: 'USD',
+ *       planType: 'SUBSCRIPTION',
  *       planMetadata: {
  *         billingCycles: [{
  *           billingFrequency: 1,
@@ -1644,11 +1645,10 @@ PayPalCheckout.prototype._formatPaymentResourceVaultData = function (
       paymentResource.plan_type = options.planType;
 
       if (options.planMetadata) {
-        paymentResource.plan_metadata = camelCaseToSnakeCase(
-          options.planMetadata
+        paymentResource.plan_metadata = this._formatPlanMetadata(
+          camelCaseToSnakeCase(options.planMetadata)
         );
       }
-      /* eslint-enable camelcase */
     }
   }
 };
@@ -1769,6 +1769,59 @@ PayPalCheckout.prototype._hasMissingOption = function (options, required) {
   }
 
   return false;
+};
+
+/**
+ * @ignore
+ * @static
+ * @function _formatPlanMetadata
+ * @param {object} plan All options required for the billing agreement vault flow.
+ * @returns {object} Returns a formatted planMetadata object.
+ */
+PayPalCheckout.prototype._formatPlanMetadata = function (plan) {
+  var i, j, billingCycle, formattedBillingCycle;
+  var planProperties = [
+    "currency_iso_code",
+    "name",
+    "one_time_fee_amount",
+    "product_description",
+    "product_price",
+    "product_quantity",
+    "shipping_amount",
+    "tax_amount",
+    "total_amount",
+  ];
+  var requiredbillingCycle = [
+    "billing_frequency",
+    "billing_frequency_unit",
+    "number_of_executions",
+    "sequence",
+    "start_date",
+    "trial",
+    "pricing_scheme",
+  ];
+  var formattedPlan = { billing_cycles: [] };
+
+  if (plan.hasOwnProperty("billing_cycles")) {
+    formattedPlan.billing_cycles = [];
+
+    for (i = 0; i < plan.billing_cycles.length; i++) {
+      billingCycle = plan.billing_cycles[i];
+      formattedBillingCycle = {};
+
+      for (j = 0; j < requiredbillingCycle.length; j++) {
+        formattedBillingCycle[requiredbillingCycle[j]] =
+          billingCycle[requiredbillingCycle[j]];
+      }
+      formattedPlan.billing_cycles.push(formattedBillingCycle);
+    }
+  }
+
+  for (i = 0; i < planProperties.length; i++) {
+    formattedPlan[planProperties[i]] = plan[planProperties[i]];
+  }
+
+  return formattedPlan;
 };
 
 PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {

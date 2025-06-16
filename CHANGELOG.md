@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 3.122.0 (2025-06-16)
+
+- PayPal Checkout
+  - Fixed issue with `setup_billing_agreement` allowing extra parameters to be passed in
+- Venmo
+  - Adding fix for the Venmo component when it was rendering inside of an iframe inside of a webview
+  - Adding additional code path for the Venmo component for handling if the device is iOS, not in an iframe, and the native Venmo app isn't installed
+  - Major refactoring of the appSwitch function
+
+## 3.121.0 (2025-06-12)
+
+- PayPal Checkout
+  - Update JS Reference Docs for RBA Metadata to include `planType` in code example
+- 3D Secure
+  - Retrieve Cardinal songbird script URL and integrity hash from the gateway configuration
+
 ## 3.120.2 (2025-05-29)
 
 - LocalPayment

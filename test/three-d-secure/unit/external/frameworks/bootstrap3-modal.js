@@ -19,6 +19,8 @@ describe("Bootstrap3ModalFramework", () => {
         assetsUrl: "http://example.com/assets",
         threeDSecure: {
           cardinalAuthenticationJWT: "jwt",
+          cardinalSongbirdUrl:
+            "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
         },
       },
     };

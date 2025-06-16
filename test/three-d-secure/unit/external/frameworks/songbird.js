@@ -58,6 +58,8 @@ describe("SongbirdFramework", () => {
         assetsUrl: "http://example.com/assets",
         threeDSecure: {
           cardinalAuthenticationJWT: "jwt",
+          cardinalSongbirdUrl:
+            "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
         },
       },
     };
@@ -1585,40 +1587,48 @@ describe("SongbirdFramework", () => {
       });
     });
 
-    it("loads cardinal production script onto page", () => {
-      testContext.configuration.gatewayConfiguration.environment = "production";
+    it("loads cardinal script onto page when identity hash is present", () => {
+      let identityHash = "sha256-vEcT3Nt+azgYAFOiCFiu2nP5vWcJdeXlxHeS7Zl2BrQ=";
+
+      testContext.configuration.gatewayConfiguration.threeDSecure.cardinalSongbirdIdentityHash =
+        identityHash;
 
       const framework = createFramework();
-      const prodUrl =
-        "https://songbird.cardinalcommerce.com/edge/v1/songbird.js";
-
-      jest.spyOn(framework, "_getCardinalScriptSource");
 
       framework.setupSongbird().then(() => {
-        expect(framework._getCardinalScriptSource).toHaveBeenCalledTimes(1);
-        expect(framework._getCardinalScriptSource()).toEqual(prodUrl);
         expect(assets.loadScript).toHaveBeenCalledTimes(1);
         expect(assets.loadScript).toHaveBeenCalledWith({
-          src: prodUrl,
+          src: "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
+          crossorigin: "anonymous",
+          integrity: identityHash,
         });
       });
     });
 
-    it("loads cardinal sandbox script onto page", () => {
-      testContext.configuration.gatewayConfiguration.environment = "sandbox";
+    it("loads cardinal script onto page when identity hash is empty", () => {
+      testContext.configuration.gatewayConfiguration.threeDSecure.cardinalSongbirdIdentityHash =
+        "";
 
       const framework = createFramework();
-      const sandboxUrl =
-        "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js";
-
-      jest.spyOn(framework, "_getCardinalScriptSource");
 
       framework.setupSongbird().then(() => {
-        expect(framework._getCardinalScriptSource).toHaveBeenCalledTimes(1);
-        expect(framework._getCardinalScriptSource()).toEqual(sandboxUrl);
         expect(assets.loadScript).toHaveBeenCalledTimes(1);
         expect(assets.loadScript).toHaveBeenCalledWith({
-          src: sandboxUrl,
+          src: "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
+        });
+      });
+    });
+
+    it("loads cardinal script onto page when identity hash is not provided", () => {
+      delete testContext.configuration.gatewayConfiguration.threeDSecure
+        .cardinalSongbirdIdentityHash;
+
+      const framework = createFramework();
+
+      framework.setupSongbird().then(() => {
+        expect(assets.loadScript).toHaveBeenCalledTimes(1);
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
         });
       });
     });
