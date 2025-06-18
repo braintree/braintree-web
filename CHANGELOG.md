@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 3.123.0 (2025-06-18)
+- PayPal Checkout
+  - Add support for RBA metadata for checkout flows
+- 3D Secure
+  - Update documentation for giftCardCurrencyCode
+
 ## 3.122.0 (2025-06-16)
 
 - PayPal Checkout

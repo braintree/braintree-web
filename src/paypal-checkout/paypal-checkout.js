@@ -16,7 +16,6 @@ var methods = require("../lib/methods");
 var useMin = require("../lib/use-min");
 var convertMethodsToError = require("../lib/convert-methods-to-error");
 var querystring = require("../lib/querystring");
-var camelCaseToSnakeCase = require("../lib/camel-case-to-snake-case");
 var VERSION = process.env.npm_package_version;
 var INTEGRATION_TIMEOUT_MS = require("../lib/constants").INTEGRATION_TIMEOUT_MS;
 
@@ -504,6 +503,14 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.userAction] Use this option to control whether checkout (flow="checkout") terminates with PayPal UI or returns to merchant website to submit order. The default behavior is determined by the merchant's configuration.
  *  * `COMMIT` - complete the transaction on the PayPal review page
  *  * `CONTINUE` - return to merchant site to complete transaction
+ * @param {object} [options.amountBreakdown] Collection of amounts that break down the total into individual pieces.
+ * @param {string} options.amountBreakdown.itemTotal item amount
+ * @param {string} [options.amountBreakdown.taxTotal] Tax amount. Required when `lineItem.unitTaxAmount` is used
+ * @param {string} [options.amountBreakdown.shipping] Shipping amount
+ * @param {string} [options.amountBreakdown.handling] Handling amount. Not accepted with {@link PayPalCheckout~planMetadata|plan metadata}
+ * @param {string} [options.amountBreakdown.insurance] Insurance amount. Not accepted with {@link PayPalCheckout~planMetadata|plan metadata}
+ * @param {string} [options.amountBreakdown.shippingDiscount] Shipping discount amount. Not accepted with {@link PayPalCheckout~planMetadata|plan metadata}
+ * @param {string} [options.amountBreakdown.discount] Discount amount. Not accepted with {@link PayPalCheckout~planMetadata|plan metadata}
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
@@ -1613,6 +1620,20 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
     paymentResource.shippingCallbackUrl = options.shippingCallbackUrl;
   }
 
+  if (options.hasOwnProperty("amountBreakdown")) {
+    paymentResource.amountBreakdown = options.amountBreakdown;
+  }
+
+  if (options.planType) {
+    paymentResource.planType = options.planType;
+
+    if (options.planMetadata) {
+      paymentResource.planMetadata = this._formatPlanMetadata(
+        options.planMetadata
+      );
+    }
+  }
+
   self._formatPaymentResourceCheckoutData(paymentResource, options);
   self._formatPaymentResourceVaultData(paymentResource, options);
 
@@ -1638,17 +1659,6 @@ PayPalCheckout.prototype._formatPaymentResourceVaultData = function (
 
     if (options.billingAgreementDescription) {
       paymentResource.description = options.billingAgreementDescription;
-    }
-
-    if (options.planType) {
-      /* eslint-disable camelcase */
-      paymentResource.plan_type = options.planType;
-
-      if (options.planMetadata) {
-        paymentResource.plan_metadata = this._formatPlanMetadata(
-          camelCaseToSnakeCase(options.planMetadata)
-        );
-      }
     }
   }
 };
@@ -1781,39 +1791,39 @@ PayPalCheckout.prototype._hasMissingOption = function (options, required) {
 PayPalCheckout.prototype._formatPlanMetadata = function (plan) {
   var i, j, billingCycle, formattedBillingCycle;
   var planProperties = [
-    "currency_iso_code",
+    "currencyIsoCode",
     "name",
-    "one_time_fee_amount",
-    "product_description",
-    "product_price",
-    "product_quantity",
-    "shipping_amount",
-    "tax_amount",
-    "total_amount",
+    "oneTimeFeeAmount",
+    "productDescription",
+    "productPrice",
+    "productQuantity",
+    "shippingAmount",
+    "taxAmount",
+    "totalAmount",
   ];
   var requiredbillingCycle = [
-    "billing_frequency",
-    "billing_frequency_unit",
-    "number_of_executions",
+    "billingFrequency",
+    "billingFrequencyUnit",
+    "numberOfExecutions",
     "sequence",
-    "start_date",
+    "startDate",
     "trial",
-    "pricing_scheme",
+    "pricingScheme",
   ];
-  var formattedPlan = { billing_cycles: [] };
+  var formattedPlan = { billingCycles: [] };
 
-  if (plan.hasOwnProperty("billing_cycles")) {
-    formattedPlan.billing_cycles = [];
+  if (plan.hasOwnProperty("billingCycles")) {
+    formattedPlan.billingCycles = [];
 
-    for (i = 0; i < plan.billing_cycles.length; i++) {
-      billingCycle = plan.billing_cycles[i];
+    for (i = 0; i < plan.billingCycles.length; i++) {
+      billingCycle = plan.billingCycles[i];
       formattedBillingCycle = {};
 
       for (j = 0; j < requiredbillingCycle.length; j++) {
         formattedBillingCycle[requiredbillingCycle[j]] =
           billingCycle[requiredbillingCycle[j]];
       }
-      formattedPlan.billing_cycles.push(formattedBillingCycle);
+      formattedPlan.billingCycles.push(formattedBillingCycle);
     }
   }
 

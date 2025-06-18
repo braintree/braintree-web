@@ -171,7 +171,7 @@ var FRAMEWORKS = require("./frameworks");
  * - `02` Future availability
  * @property {string} [preorderDate] The 8-digit number (format: YYYYMMDD) indicating expected date that a pre-ordered purchase will be available.
  * @property {string} [giftCardAmount] The purchase amount total for prepaid gift cards in major units. (maximum length 15)
- * @property {string} [giftCardCurrencyCode] ISO 4217 currency code for the gift card purchased. (maximum length 3)
+ * @property {string} [giftCardCurrencyCode] ISO 4217 numeric currency code for the gift card purchased. (maximum length 3)
  * @property {string} [giftCardCount] Total count of individual prepaid gift cards purchased. (maximum length 2)
  * @property {string} [accountAgeIndicator] The 2-digit value representing the length of time cardholder has had account. Possible values:
  * - `01` No Account
