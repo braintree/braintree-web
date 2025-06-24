@@ -1,9 +1,11 @@
 "use strict";
 
 jest.mock("../../../src/lib/analytics");
+jest.mock("../../../src/lib/in-iframe");
 
 const analytics = require("../../../src/lib/analytics");
 const methods = require("../../../src/lib/methods");
+const inIframe = require("../../../src/lib/in-iframe");
 const ApplePay = require("../../../src/apple-pay/apple-pay");
 const BraintreeError = require("../../../src/lib/braintree-error");
 const { fake } = require("../../helpers");
@@ -12,10 +14,13 @@ describe("ApplePay", () => {
   let testContext;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     const configuration = fake.configuration();
 
     testContext = {};
     jest.spyOn(analytics, "sendEvent").mockImplementation();
+    jest.spyOn(analytics, "sendEventPlus").mockImplementation();
     testContext.configuration = configuration;
     testContext.client = fake.client({
       configuration,
@@ -310,6 +315,58 @@ describe("ApplePay", () => {
           expect(response).toBe(fakeResponseData);
         });
     });
+
+    it("the domainName used in the request will be the parents location when in an iframe", async () => {
+      const fakeResponseData = { foo: "boo" };
+      const validationOptions = {
+        validationURL:
+          "https://apple-pay-gateway-cert.apple.com/paymentservices/startSession",
+        displayName: "Awesome Merchant",
+      };
+      const iframeParentHostname = "iframe-parent-hostname";
+
+      inIframe.mockReturnValue(true);
+
+      Object.defineProperty(window, "parent", {
+        configurable: true,
+        value: {
+          location: {
+            hostname: iframeParentHostname,
+          },
+        },
+      });
+
+      expect(testContext.applePay._client).toBe(testContext.client);
+
+      testContext.client.request = jest.fn().mockImplementation((options) => {
+        expect(options.method).toBe("post");
+        expect(options.endpoint).toBe("apple_pay_web/sessions");
+        expect(options.data._meta.source).toBe("apple-pay");
+        expect(options.data.applePayWebSession.merchantIdentifier).toBe(
+          "com.example.test-merchant-identifier"
+        );
+        expect(options.data.applePayWebSession.domainName).toBe(
+          iframeParentHostname
+        );
+        expect(options.data.applePayWebSession.displayName).toBe(
+          "Awesome Merchant"
+        );
+        expect(options.data.applePayWebSession.validationUrl).toBe(
+          "https://apple-pay-gateway-cert.apple.com/paymentservices/startSession"
+        );
+
+        return Promise.resolve(fakeResponseData);
+      });
+
+      const response = await testContext.applePay.performValidation(
+        validationOptions
+      );
+
+      // Clean up after test
+      delete window.parent;
+
+      expect(response).toBe(fakeResponseData);
+    });
   });
 
   describe("tokenize", () => {
@@ -446,6 +503,7 @@ describe("ApplePay", () => {
     describe("performValidation", () => {
       it("submits succeeded", () => {
         testContext.client.request = () => Promise.resolve({});
+        inIframe.mockReturnValue(false);
 
         return ApplePay.prototype.performValidation
           .call(

@@ -1,6 +1,12 @@
 # CHANGELOG
 
+## 3.123.1 (2025-06-24)
+
+- Apple Pay
+  - Adding support for `domainName` to be inferred from the parent location when inside of an iframe
+
 ## 3.123.0 (2025-06-18)
+
 - PayPal Checkout
   - Add support for RBA metadata for checkout flows
 - 3D Secure

@@ -6,6 +6,7 @@ var errors = require("./errors");
 var methods = require("../lib/methods");
 var convertMethodsToError = require("../lib/convert-methods-to-error");
 var wrapPromise = require("@braintree/wrap-promise");
+var inIframe = require("../lib/in-iframe");
 
 /**
  * @typedef {object} ApplePay~tokenizePayload
@@ -240,7 +241,11 @@ ApplePay.prototype.performValidation = function (options) {
     .then(function () {
       var applePayWebSession = {
         validationUrl: options.validationURL,
-        domainName: options.domainName || window.location.hostname,
+        domainName:
+          options.domainName ||
+          (inIframe()
+            ? window.parent.location.hostname
+            : window.location.hostname),
         merchantIdentifier:
           options.merchantIdentifier || self.merchantIdentifier,
       };
