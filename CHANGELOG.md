@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.123.2 (2025-07-01)
+
+- Update dependencies:
+  - Update card-validator to 10.0.3
+
 ## 3.123.1 (2025-06-24)
 
 - Apple Pay
