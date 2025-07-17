@@ -230,7 +230,8 @@ FrameService.prototype._getFrameForEnvironment = function (options) {
 
   if (popupBridgeExists) {
     return new PopupBridge(initOptions);
-  } else if (usePopup) {
+  }
+  if (usePopup) {
     return new Popup(initOptions);
   }
 

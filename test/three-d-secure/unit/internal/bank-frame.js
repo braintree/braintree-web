@@ -312,7 +312,7 @@ describe("initializeBankFrame", () => {
 
     handleConfiguration({
       clientConfiguration: configuration(),
-      acsUrl: decodeURIComponent("jaVa%0ascript:alert(document.domain)"), // eslint-disable-line no-script-url
+      acsUrl: decodeURIComponent("jaVa%0ascript:alert(document.domain)"),
       pareq: "the pareq",
       md: "the md",
       termUrl: "https://braintreepayments.com/some/url",

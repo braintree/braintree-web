@@ -656,7 +656,7 @@ PayPal.prototype.focusWindow = function () {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PayPal.prototype.teardown = wrapPromise(function () {
-  var self = this; // eslint-disable-line no-invalid-this
+  var self = this;
 
   self._frameService.teardown();
 

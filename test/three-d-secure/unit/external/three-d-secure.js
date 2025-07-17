@@ -120,7 +120,7 @@ describe("ThreeDSecure", () => {
           expect(instance._framework.verifyCard).toHaveBeenCalledTimes(1);
           expect(instance._framework.verifyCard).toHaveBeenCalledWith(
             {},
-            // eslint-disable-next-line no-undefined
+
             undefined
           );
         });

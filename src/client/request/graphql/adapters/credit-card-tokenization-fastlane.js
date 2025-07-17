@@ -3,7 +3,6 @@
 var errorResponseAdapter = require("./error");
 
 var CARD_BRAND_MAP = {
-  /* eslint-disable camelcase */
   AMERICAN_EXPRESS: "American Express",
   DINERS: "Discover",
   DISCOVER: "Discover",
@@ -16,7 +15,6 @@ var CARD_BRAND_MAP = {
   UK_MAESTRO: "Maestro",
   UNION_PAY: "UnionPay",
   VISA: "Visa",
-  /* eslint-enable camelcase */
 };
 
 var BIN_DATA_MAP = {

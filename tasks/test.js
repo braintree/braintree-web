@@ -1,7 +1,6 @@
 "use strict";
 
 var gulp = require("gulp");
-var path = require("path");
 var spawn = require("child_process").spawn;
 var components = require("../components.json");
 
@@ -10,7 +9,7 @@ var LINT_TASKS = components.concat(["lib", "environment", "publishing"]);
 function _lint(src, test, done) {
   spawn("eslint", ["src/" + src, "test/" + test], {
     stdio: "inherit",
-  }).on("exit", function (code, signal) {
+  }).on("exit", function (code, _signal) {
     if (code === 0) {
       done();
     } else {

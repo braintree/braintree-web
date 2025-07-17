@@ -1225,8 +1225,6 @@ describe("internal", () => {
       });
 
       describe("when supplying additional data", () => {
-        /* eslint-disable camelcase */
-
         beforeEach(() => {
           let fakeConfigWithPostalCode;
 
@@ -2164,7 +2162,6 @@ describe("internal", () => {
             }
           );
         });
-        /* eslint-enable camelcase */
       });
 
       it("sends Client API error when Client API fails", (done) => {

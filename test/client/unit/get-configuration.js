@@ -31,7 +31,7 @@ describe("getConfiguration", () => {
 
   it("uses automatically sets sessionId when not provided", async () => {
     jest.spyOn(AJAXDriver, "request").mockImplementation((ops, cb) => {
-      cb(undefined, {}, 200); // eslint-disable-line no-undefined
+      cb(undefined, {}, 200);
     });
     const authData = createAuthorizationData(
       "production_abc123_prod_merchant_id"
@@ -44,7 +44,7 @@ describe("getConfiguration", () => {
 
   it("uses manually set sessionId when provided", async () => {
     jest.spyOn(AJAXDriver, "request").mockImplementation((ops, cb) => {
-      cb(undefined, {}, 200); // eslint-disable-line no-undefined
+      cb(undefined, {}, 200);
     });
 
     const authData = createAuthorizationData(

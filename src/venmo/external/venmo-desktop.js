@@ -327,8 +327,8 @@ var VenmoDesktop = /** @class */ (function () {
           intent: intent,
         },
       }).then(function (response) {
-        return response
-          .createVenmoQRCodePaymentContext.venmoQRCodePaymentContext;
+        return response.createVenmoQRCodePaymentContext
+          .venmoQRCodePaymentContext;
       });
     };
   VenmoDesktop.prototype.createPaymentContextFromGraphQL = function (intent) {

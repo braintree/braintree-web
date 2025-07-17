@@ -14,6 +14,7 @@ function _replaceVersionInFile(filename) {
   return `<(sed -e 's/@VERSION/${VERSION}/g' '${filename}')`;
 }
 
+// eslint-disable-next-line complexity
 function jsdoc(options, done) {
   var args = ["jsdoc", "src"];
 

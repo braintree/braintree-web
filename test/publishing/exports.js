@@ -13,7 +13,9 @@ const components = require("../helpers/components").components.reduce(
       bower: require(`../../dist/bower/${component}`),
       bowerDebug: require(`../../dist/bower/${component}.debug`),
       hosted: require(`../../dist/hosted/web/${VERSION}/js/${component}`),
-      hostedMin: require(`../../dist/hosted/web/${VERSION}/js/${component}.min`),
+      hostedMin: require(
+        `../../dist/hosted/web/${VERSION}/js/${component}.min`
+      ),
     };
 
     return result;

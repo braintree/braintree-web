@@ -63,7 +63,7 @@ describe("credit card model", () => {
 
       jest.spyOn(CreditCardForm.prototype, "setSupportedCardTypes");
 
-      new CreditCardForm(configuration); // eslint-disable-line no-new
+      new CreditCardForm(configuration);
 
       expect(
         CreditCardForm.prototype.setSupportedCardTypes
@@ -187,7 +187,7 @@ describe("credit card model", () => {
     });
 
     it("sets expiration month to current month if using a <select> and no placeholder", () => {
-      const currentMonth = (new Date().getMonth() + 1).toString(); // eslint-disable-line no-extra-parens
+      const currentMonth = (new Date().getMonth() + 1).toString();
 
       testContext.scope.configuration.fields.expirationMonth = { select: true };
 

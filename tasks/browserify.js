@@ -54,10 +54,10 @@ function forkBrowserify(options, done) {
   function callback(err, stdout, stderr) {
     if (err) {
       if (stdout) {
-        console.log(stdout);
+        console.log(stdout); // eslint-disable-line no-console
       }
       if (stderr) {
-        console.error(stderr);
+        console.error(stderr); // eslint-disable-line no-console
       }
 
       done(err);

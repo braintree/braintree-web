@@ -37,10 +37,11 @@ function isCardinalCommerce(client, configuration) {
 
     parser.href = configuration.acsUrl;
     if (isValidCardinalUrl(parser)) {
-      return resolve(configuration.acsUrl);
+      resolve(configuration.acsUrl);
+      return;
     }
 
-    return client
+    client
       .request({
         api: "clientApi",
         method: "get",

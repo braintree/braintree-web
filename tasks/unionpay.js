@@ -4,7 +4,6 @@ var del = require("del");
 var gulp = require("gulp");
 var browserify = require("./browserify");
 var fs = require("fs");
-var rename = require("gulp-rename");
 var replace = require("gulp-replace");
 var minifyHTML = require("./minify").minifyHTML;
 var VERSION = require("../package.json").version;
@@ -36,7 +35,7 @@ gulp.task("build:unionpay:frame:js", function (done) {
   );
 });
 
-gulp.task("build:unionpay:frame:html", function (done) {
+gulp.task("build:unionpay:frame:html", function (_done) {
   var jsFile = fs.readFileSync(
     DIST_DIR + "/js/unionpay-hosted-fields-internal.js",
     "utf-8"
@@ -48,7 +47,7 @@ gulp.task("build:unionpay:frame:html", function (done) {
   return minifyHTML(stream, DIST_DIR + "/html");
 });
 
-gulp.task("build:unionpay:frame:js:delete", function (done) {
+gulp.task("build:unionpay:frame:js:delete", function (_done) {
   var jsFilePath = DIST_DIR + "/js/unionpay-hosted-fields-internal.js";
 
   return del(jsFilePath);

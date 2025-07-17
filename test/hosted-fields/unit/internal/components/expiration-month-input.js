@@ -367,7 +367,7 @@ describe("Expiration Month Input", () => {
 
       it("selects current month value when no placeholder is set", () => {
         let i, el;
-        const currentMonth = parseInt(new Date().getMonth(), 10); // eslint-disable-line no-extra-parens
+        const currentMonth = parseInt(new Date().getMonth(), 10);
         const input = new ExpirationMonthInput({
           type: "expirationMonth",
           model: new CreditCardForm({
@@ -407,7 +407,6 @@ describe("Expiration Month Input", () => {
 
     it("calls parent class method", () => {
       new ExpirationMonthInput({
-        // eslint-disable-line no-new
         type: "expirationMonth",
         model: new CreditCardForm({
           fields: {
@@ -425,7 +424,6 @@ describe("Expiration Month Input", () => {
 
     it("sets up listener for SET_MONTH_OPTIONS if expiration month is a select", () => {
       new ExpirationMonthInput({
-        // eslint-disable-line no-new
         type: "expirationMonth",
         model: new CreditCardForm({
           fields: {
@@ -445,7 +443,6 @@ describe("Expiration Month Input", () => {
 
     it("does not set up listener for SET_MONTH_OPTIONS if expiration month is not a select", () => {
       new ExpirationMonthInput({
-        // eslint-disable-line no-new
         type: "expirationMonth",
         model: new CreditCardForm({
           fields: {
@@ -532,7 +529,6 @@ describe("Expiration Month Input", () => {
     it("defaults to existing value if passed options are less than the options", (done) => {
       let callback;
       const input = new ExpirationMonthInput({
-        // eslint-disable-line no-new
         type: "expirationMonth",
         model: new CreditCardForm({
           fields: {
@@ -582,7 +578,6 @@ describe("Expiration Month Input", () => {
     it("ignores options beyond the 12th", (done) => {
       let callback;
       const input = new ExpirationMonthInput({
-        // eslint-disable-line no-new
         type: "expirationMonth",
         model: new CreditCardForm({
           fields: {
@@ -656,7 +651,6 @@ describe("Expiration Month Input", () => {
     it("does not override the placeholder if set", (done) => {
       let callback;
       const input = new ExpirationMonthInput({
-        // eslint-disable-line no-new
         type: "expirationMonth",
         model: new CreditCardForm({
           fields: {

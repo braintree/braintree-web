@@ -784,7 +784,7 @@ describe("FrameService", () => {
     });
 
     it("returns true if frame is undefined", () => {
-      const context = { _frame: undefined }; // eslint-disable-line no-undefined
+      const context = { _frame: undefined };
       const result = FrameService.prototype.isFrameClosed.call(context);
 
       expect(result).toBe(true);

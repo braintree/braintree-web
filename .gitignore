@@ -6,3 +6,5 @@ npm-debug.log
 .DS_Store
 src/dropin/
 coverage/
+
+.eslintcache

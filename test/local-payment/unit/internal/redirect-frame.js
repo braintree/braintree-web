@@ -148,7 +148,6 @@ describe("redirect-frame", () => {
         yieldsAsync(new Error("no frame"))
       );
       testContext.params.r = window.encodeURIComponent(
-        // eslint-disable-next-line no-script-url
         'javascript:alert("hey")'
       );
       testContext.params.t = "Return to Site";

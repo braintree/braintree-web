@@ -1,5 +1,3 @@
-/* eslint-disable no-mixed-operators */
-
 "use strict";
 
 var assign = require("../../../lib/assign").assign;
@@ -176,9 +174,11 @@ function stealPlaceholder(src, dest) {
 function getStyle(elem, prop) {
   if (elem.currentStyle) {
     return elem.currentStyle[prop];
-  } else if (window.getComputedStyle && elem instanceof HTMLElement) {
+  }
+  if (window.getComputedStyle && elem instanceof HTMLElement) {
     return document.defaultView.getComputedStyle(elem, null)[prop];
-  } else if (prop in elem.style) {
+  }
+  if (prop in elem.style) {
     return elem.style[prop];
   }
 

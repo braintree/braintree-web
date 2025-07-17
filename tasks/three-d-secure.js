@@ -58,7 +58,7 @@ gulp.task("build:three-d-secure:js", function (done) {
   );
 });
 
-gulp.task("build:three-d-secure:frame:js:delete", function (done) {
+gulp.task("build:three-d-secure:frame:js:delete", function (_done) {
   var frameJsFilePath = DIST_DIR + "js/three-d-secure-frame.js";
 
   return del(frameJsFilePath);

@@ -1,8 +1,7 @@
-/* eslint-disable camelcase */
-
 "use strict";
 
 function constructAddress(data) {
+  /* eslint-disable camelcase */
   var address = {
     company: data.company,
     country_code_numeric: data.countryCodeNumeric,
@@ -17,6 +16,7 @@ function constructAddress(data) {
     postal_code: data.postalCode,
     street_address: data.streetAddress,
   };
+  /* eslint-enable camelcase */
 
   Object.keys(address).forEach(function (key) {
     if (address[key] == null) {
@@ -27,11 +27,13 @@ function constructAddress(data) {
   return address;
 }
 
+// eslint-disable-next-line complexity
 module.exports = function (data) {
   var result = {};
 
   // connectCheckout are the tokenize options from the Fastlane SDK
   if ("metadata" in data && "connectCheckout" in data.metadata) {
+    /* eslint-disable camelcase */
     result.fastlane = {
       auth_assertion: data.metadata.connectCheckout.authAssertion,
       has_buyer_consent:
@@ -49,10 +51,11 @@ module.exports = function (data) {
       result.fastlane.terms_and_conditions_country =
         data.metadata.connectCheckout.termsAndConditionsCountry;
     }
+    /* eslint-enable camelcase */
   }
 
   if ("billingAddress" in data) {
-    result.billing_address = constructAddress(data.billingAddress);
+    result.billing_address = constructAddress(data.billingAddress); // eslint-disable-line camelcase
   }
 
   if ("shippingAddress" in data) {
@@ -89,14 +92,14 @@ module.exports = function (data) {
   }
 
   if ("expirationMonth" in data) {
-    result.expiration_month = data.expirationMonth;
+    result.expiration_month = data.expirationMonth; // eslint-disable-line camelcase
   }
 
   if ("expirationYear" in data) {
     if (data.expirationYear.length === 2) {
-      result.expiration_year = "20" + data.expirationYear;
+      result.expiration_year = "20" + data.expirationYear; // eslint-disable-line camelcase
     } else {
-      result.expiration_year = data.expirationYear;
+      result.expiration_year = data.expirationYear; // eslint-disable-line camelcase
     }
   }
 

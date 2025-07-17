@@ -1,5 +1,3 @@
-/* eslint-disable max-len */
-
 "use strict";
 
 jest.mock("../../../../src/lib/analytics");
@@ -179,9 +177,9 @@ describe("Masterpass", () => {
           yieldsAsync(null, {
             queryItems: {
               mpstatus: "success",
-              oauth_token: "token", // eslint-disable-line camelcase
-              oauth_verifier: "verifier", // eslint-disable-line camelcase
-              checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+              oauth_token: "token",
+              oauth_verifier: "verifier",
+              checkout_resource_url: "checkout-resource-url",
             },
           })
         );
@@ -203,9 +201,9 @@ describe("Masterpass", () => {
           yieldsAsync(null, {
             queryItems: {
               mpstatus: "success",
-              oauth_token: "token", // eslint-disable-line camelcase
-              oauth_verifier: "verifier", // eslint-disable-line camelcase
-              checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+              oauth_token: "token",
+              oauth_verifier: "verifier",
+              checkout_resource_url: "checkout-resource-url",
             },
           })
         );
@@ -238,9 +236,9 @@ describe("Masterpass", () => {
           yieldsAsync(null, {
             queryItems: {
               mpstatus: "success",
-              oauth_token: "token", // eslint-disable-line camelcase
-              oauth_verifier: "verifier", // eslint-disable-line camelcase
-              checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+              oauth_token: "token",
+              oauth_verifier: "verifier",
+              checkout_resource_url: "checkout-resource-url",
             },
           })
         );
@@ -357,9 +355,9 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "success",
-          oauth_token: "token", // eslint-disable-line camelcase
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_token: "token",
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -379,9 +377,9 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "success",
-          oauth_token: "token", // eslint-disable-line camelcase
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_token: "token",
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
       testContext.fakeClient.request.mockResolvedValue({
@@ -417,7 +415,7 @@ describe("Masterpass", () => {
       if (option) {
         delete options[option];
       } else {
-        options = undefined; // eslint-disable-line no-undefined
+        options = undefined;
       }
 
       return testContext.masterpass.tokenize(options).catch((err) => {
@@ -452,9 +450,9 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "success",
-          oauth_token: "token", // eslint-disable-line camelcase
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_token: "token",
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -481,9 +479,9 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "success",
-          oauth_token: "token", // eslint-disable-line camelcase
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_token: "token",
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -504,9 +502,9 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "failed",
-          oauth_token: "token", // eslint-disable-line camelcase
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_token: "token",
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -520,7 +518,6 @@ describe("Masterpass", () => {
         });
     });
 
-    /* eslint-disable camelcase */
     it.each([
       [
         "oauth_verifier is missing",
@@ -579,15 +576,14 @@ describe("Masterpass", () => {
           expect(code).toBe("MASTERPASS_POPUP_MISSING_REQUIRED_PARAMETERS");
         });
     });
-    /* eslint-enable camelcase */
 
     it("closes the popup when masterpass payment `mpstatus` is not `success`", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "failed",
-          oauth_token: "token", // eslint-disable-line camelcase
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_token: "token",
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -605,8 +601,8 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "success",
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -725,8 +721,8 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "success",
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -747,9 +743,9 @@ describe("Masterpass", () => {
       testContext.fakeFrameService.open.mockImplementation(
         yieldsAsync(null, {
           mpstatus: "failed",
-          oauth_token: "token", // eslint-disable-line camelcase
-          oauth_verifier: "verifier", // eslint-disable-line camelcase
-          checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+          oauth_token: "token",
+          oauth_verifier: "verifier",
+          checkout_resource_url: "checkout-resource-url",
         })
       );
 
@@ -842,9 +838,9 @@ describe("Masterpass", () => {
         testContext.fakeFrameService.open.mockImplementation(
           yieldsAsync(null, {
             mpstatus: "success",
-            oauth_token: "token", // eslint-disable-line camelcase
-            oauth_verifier: "verifier", // eslint-disable-line camelcase
-            checkout_resource_url: "checkout-resource-url", // eslint-disable-line camelcase
+            oauth_token: "token",
+            oauth_verifier: "verifier",
+            checkout_resource_url: "checkout-resource-url",
           })
         );
         testContext.options = {

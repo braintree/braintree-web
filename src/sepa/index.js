@@ -83,9 +83,10 @@ function create(options) {
             return sepaInstance;
           })
           .catch(function (err) {
-            console.error("Problem while finishing tokenizing: ", err);
+            console.error("Problem while finishing tokenizing: ", err); // eslint-disable-line no-console
           });
-      } else if (params.cancel) {
+      }
+      if (params.cancel) {
         analytics.sendEvent(
           options.client,
           "sepa.redirect.customer-canceled.failed"

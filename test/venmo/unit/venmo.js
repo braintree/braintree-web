@@ -466,7 +466,7 @@ describe("Venmo", () => {
         },
       },
     });
-    // eslint-disable-next-line no-unused-vars
+
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
@@ -509,7 +509,7 @@ describe("Venmo", () => {
         },
       },
     });
-    // eslint-disable-next-line no-unused-vars
+
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
       requireManualReturn: true,
@@ -571,7 +571,7 @@ describe("Venmo", () => {
               collectCustomerBillingAddress: expectedDefault,
               collectCustomerShippingAddress: expectedDefault,
               // transactionDetails should not be present when amounts & line items are missing
-              transactionDetails: undefined, // eslint-disable-line no-undefined
+              transactionDetails: undefined,
             },
           },
         },
@@ -618,7 +618,7 @@ describe("Venmo", () => {
             paysheetDetails: {
               collectCustomerBillingAddress: inputAddressCollection,
               collectCustomerShippingAddress: inputAddressCollection,
-              transactionDetails: undefined, // eslint-disable-line no-undefined
+              transactionDetails: undefined,
             },
           },
         },
@@ -699,7 +699,6 @@ describe("Venmo", () => {
   it("does not create a new payment context or venmo desktop when url hash has tokenization results", async () => {
     jest.spyOn(Venmo.prototype, "hasTokenizationResult").mockReturnValue(true);
 
-    // eslint-disable-next-line no-unused-vars
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
@@ -1303,7 +1302,6 @@ describe("Venmo", () => {
     it.each([["pwv-merchant-id"], ["pwv-profile-id"]])(
       'contains correct Braintree configuration options in query params when "braintree_merchant_id" is %p',
       (merchantID) => {
-        /* eslint-disable camelcase */
         const braintreeConfig = {
           braintree_merchant_id: merchantID,
           braintree_access_token: "pwv-access-token",
@@ -1328,7 +1326,6 @@ describe("Venmo", () => {
             braintreeConfig.braintree_environment
           );
         });
-        /* eslint-enable camelcase */
       }
     );
 
@@ -1395,7 +1392,7 @@ describe("Venmo", () => {
 
       return venmo.getUrl().then((url) => {
         params = querystring.parse(url);
-        braintreeData = JSON.parse(atob(params.braintree_sdk_data)); // eslint-disable-line camelcase
+        braintreeData = JSON.parse(atob(params.braintree_sdk_data));
         metadata = braintreeData._meta;
 
         expect(metadata.version).toBe(VERSION);
@@ -2129,7 +2126,7 @@ describe("Venmo", () => {
 
     it("sets the _venmoPaymentContextId from the resource_id", () => {
       urlParams.getUrlParams.mockReturnValue({
-        resource_id: "test-resource-id", // eslint-disable-line camelcase
+        resource_id: "test-resource-id",
       });
 
       venmo.hasTokenizationResult();
@@ -2715,13 +2712,13 @@ describe("Venmo", () => {
           expect.anything(),
           "venmo.tokenize.manual-return.start",
           {
-            paypal_context_id: "context-id", // eslint-disable-line camelcase
+            paypal_context_id: "context-id",
           }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
+          { paypal_context_id: "context-id" }
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
@@ -2856,7 +2853,7 @@ describe("Venmo", () => {
             expect.anything(),
             "venmo.tokenize.manual-return.failure",
             {
-              paypal_context_id: "context-id", // eslint-disable-line camelcase
+              paypal_context_id: "context-id",
             }
           );
 
@@ -2888,7 +2885,7 @@ describe("Venmo", () => {
               expect.anything(),
               `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`,
               {
-                paypal_context_id: "context-id", // eslint-disable-line camelcase
+                paypal_context_id: "context-id",
               }
             );
           });
@@ -2925,22 +2922,22 @@ describe("Venmo", () => {
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.scanned",
-          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
+          { paypal_context_id: "context-id" }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.unknown_status_we_do_not_account_for",
-          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
+          { paypal_context_id: "context-id" }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.approved",
-          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
+          { paypal_context_id: "context-id" }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { paypal_context_id: "context-id" } // eslint-disable-line camelcase
+          { paypal_context_id: "context-id" }
         );
 
         // once to create the payment context
@@ -3154,7 +3151,7 @@ describe("Venmo", () => {
             variables: {
               input: {
                 customerClient: "NATIVE_WEB",
-                // eslint-disable-next-line no-undefined
+
                 displayName: undefined,
                 intent: "CONTINUE",
                 isFinalAmount: false,
@@ -3162,7 +3159,7 @@ describe("Venmo", () => {
                 paysheetDetails: {
                   collectCustomerBillingAddress: false,
                   collectCustomerShippingAddress: false,
-                  // eslint-disable-next-line no-undefined
+
                   transactionDetails: undefined,
                 },
               },
@@ -3507,13 +3504,13 @@ describe("Venmo", () => {
             1,
             expect.anything(),
             expectedStartEvent,
-            { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
+            { paypal_context_id: "some-context-id" }
           );
           expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
             2,
             expect.anything(),
             expectedApprovedEvent,
-            { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
+            { paypal_context_id: "some-context-id" }
           );
         });
 
@@ -3528,7 +3525,7 @@ describe("Venmo", () => {
               2,
               expect.anything(),
               expectedApprovedEvent,
-              { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
+              { paypal_context_id: "some-context-id" }
             );
           });
         });
@@ -3543,7 +3540,7 @@ describe("Venmo", () => {
             1,
             expect.anything(),
             expectedApprovedEvent,
-            { paypal_context_id: "some-context-id" } // eslint-disable-line camelcase
+            { paypal_context_id: "some-context-id" }
           );
         });
       });
@@ -3748,7 +3745,7 @@ describe("Venmo", () => {
       expect(document.removeEventListener).toHaveBeenCalledTimes(1);
       expect(document.removeEventListener).toHaveBeenCalledWith(
         "visibilitychange",
-        // eslint-disable-next-line no-undefined
+
         undefined
       );
     });

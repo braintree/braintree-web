@@ -185,9 +185,11 @@ USBankAccount.prototype.tokenize = function (options) {
           "tokenize must be called with bankDetails or bankLogin, not both.",
       })
     );
-  } else if (options.bankDetails) {
+  }
+  if (options.bankDetails) {
     return this._tokenizeBankDetails(options);
-  } else if (options.bankLogin) {
+  }
+  if (options.bankLogin) {
     return this._tokenizeBankLogin(options);
   }
 
@@ -437,7 +439,7 @@ USBankAccount.prototype._loadPlaid = function (callback) {
 
 function addLoadListeners(script, callback) {
   function loadHandler() {
-    var readyState = this.readyState; // eslint-disable-line no-invalid-this
+    var readyState = this.readyState;
 
     if (!readyState || readyState === "loaded" || readyState === "complete") {
       removeLoadListeners();

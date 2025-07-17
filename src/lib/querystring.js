@@ -12,7 +12,6 @@ function _notEmpty(obj) {
   return false;
 }
 
-/* eslint-disable no-mixed-operators */
 function _isArray(value) {
   return (
     (value &&
@@ -22,7 +21,6 @@ function _isArray(value) {
     false
   );
 }
-/* eslint-enable no-mixed-operators */
 
 function hasQueryParams(url) {
   url = url || window.location.href;

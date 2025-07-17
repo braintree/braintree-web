@@ -1,5 +1,4 @@
 "use strict";
-/* eslint-disable camelcase */
 
 jest.mock("../../../src/lib/analytics");
 

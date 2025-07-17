@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.124.0 (2025-07-17)
+
+- PayPalCheckout
+  - Add support for `userAction` in vault flow
+- Update dependencies
+  - Update eslint-config-braintree to 7.0.0
+  - Update eslint to 9.30.1
+
 ## 3.123.2 (2025-07-01)
 
 - Update dependencies:
@@ -403,7 +411,6 @@
 ## 3.92.1 (2023-03-30)
 
 - Hosted Fields
-
   - Fixed bug related to cardholderName having wrong inputmode
 
 - Package updates
@@ -2126,7 +2133,6 @@
 - Fix an error in Require.js API docs
 
 - Hosted Fields
-
   - Automatic input formatting disabled for Android Firefox
   - Add `vault` as an option to `tokenize` which allows cards to be
     vaulted on tokenization
@@ -2135,13 +2141,11 @@
     on tokenization attempts
 
 - PayPal
-
   - Consistently return `BraintreeError` objects when the PayPal
     flow is canceled
   - Return error during `create` when using a webview
 
 - UnionPay
-
   - Add `type` to tokenize payload
 
 - Add Apple Pay component.
@@ -2243,7 +2247,6 @@
 **BREAKING CHANGES**
 
 - Data Collector
-
   - The `create` API has changed. `options.kount` for
     `dataCollector.create` is now a simple boolean:
 

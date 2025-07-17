@@ -500,9 +500,10 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {boolean} options.appSwitchPreference.launchPaypalApp Opts into the app switch flow.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
- * @param {string} [options.userAction] Use this option to control whether checkout (flow="checkout") terminates with PayPal UI or returns to merchant website to submit order. The default behavior is determined by the merchant's configuration.
- *  * `COMMIT` - complete the transaction on the PayPal review page
- *  * `CONTINUE` - return to merchant site to complete transaction
+ * @param {string} [options.userAction=CONTINUE] Changes the call-to-action on the PayPal review page
+ *  * `CONTINUE` - Shows the default call-to-action text on the PayPal Express Checkout page.
+ *  * `COMMIT` - Shows a deterministic call-to-action for the PayPal Checkout flow.
+ *  * `SETUP_NOW` - Shows a deterministic call-to-action for the PayPal Vault flow.
  * @param {object} [options.amountBreakdown] Collection of amounts that break down the total into individual pieces.
  * @param {string} options.amountBreakdown.itemTotal item amount
  * @param {string} [options.amountBreakdown.taxTotal] Tax amount. Required when `lineItem.unitTaxAmount` is used
@@ -705,6 +706,10 @@ PayPalCheckout.prototype.createPayment = function (options) {
   });
 };
 
+/**
+ * @private
+ * @returns {Promise} A promise that resolves with payment resource data
+ */
 PayPalCheckout.prototype._createPaymentResource = function (options, config) {
   var self = this;
   var endpoint = "paypal_hermes/" + constants.FLOW_ENDPOINTS[options.flow];
@@ -785,6 +790,7 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * @param {string} [options.amountBreakdown.shippingDiscount] Optional, shipping discount amount
  * @param {string} [options.amountBreakdown.discount] Optional, discount amount
  * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
+ * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
  * // see https://github.com/paypal/paypal-checkout-components
@@ -831,7 +837,6 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  *
  * ```
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 PayPalCheckout.prototype.updatePayment = function (options) {
   var self = this;
@@ -1660,6 +1665,10 @@ PayPalCheckout.prototype._formatPaymentResourceVaultData = function (
     if (options.billingAgreementDescription) {
       paymentResource.description = options.billingAgreementDescription;
     }
+
+    if (options.hasOwnProperty("userAction")) {
+      paymentResource.experienceProfile.userAction = options.userAction;
+    }
   }
 };
 
@@ -1676,11 +1685,7 @@ PayPalCheckout.prototype._formatPaymentResourceCheckoutData = function (
     paymentResource.requestBillingAgreement = options.requestBillingAgreement;
 
     if (options.hasOwnProperty("userAction")) {
-      if (options.userAction.toLowerCase() === "commit") {
-        paymentResource.experienceProfile.userAction = "COMMIT";
-      } else if (options.userAction.toLowerCase() === "continue") {
-        paymentResource.experienceProfile.userAction = "CONTINUE";
-      }
+      paymentResource.experienceProfile.userAction = options.userAction;
     }
 
     if (intent) {

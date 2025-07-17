@@ -405,6 +405,7 @@ LocalPayment.prototype._initialize = function () {
  *   console.error(err);
  * });
  */
+// eslint-disable-next-line complexity
 LocalPayment.prototype.startPayment = function (options) {
   var missingOption,
     missingError,
@@ -418,7 +419,7 @@ LocalPayment.prototype.startPayment = function (options) {
     serviceId,
     cancelUrl,
     returnUrl;
-  var self = this; // eslint-disable-line no-invalid-this
+  var self = this;
 
   if (self._isRedirectFlow) {
     options.redirectUrl = self._redirectUrl;
@@ -715,7 +716,8 @@ LocalPayment.prototype.tokenize = function (params) {
         },
       })
     );
-  } else if (params.errorcode) {
+  }
+  if (params.errorcode) {
     return Promise.reject(
       new BraintreeError({
         type: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.type,
@@ -1021,7 +1023,6 @@ function hasMissingBlikOptions(options) {
     ) {
       option = constants.REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_LEVEL_0[i];
 
-      // eslint-disable-next-line camelcase
       if (!blikOptions.level_0.hasOwnProperty(option)) {
         return "blikOptions.level_0." + option;
       }
@@ -1064,6 +1065,7 @@ function hasMissingBlikOptions(options) {
 // This will return the name of the first missing required option that
 // is found or `true` if `options` itself is not defined. Otherwise, it
 // will return `false`.
+// eslint-disable-next-line complexity
 function hasMissingOption(options) {
   var i, option, missingAddressOption, missingLineItemOption, paymentType;
 
@@ -1140,7 +1142,7 @@ function hasMissingOption(options) {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 LocalPayment.prototype.teardown = function () {
-  var self = this; // eslint-disable-line no-invalid-this
+  var self = this;
 
   if (!self._isRedirectFlow) {
     self._frameService.teardown();

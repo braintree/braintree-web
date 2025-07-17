@@ -94,7 +94,7 @@ describe("loading-frame", () => {
 
     it("sanitizes callbackUrl", () => {
       testContext.params.callbackUrl =
-        "Javascript:alert.call(null,document.domain)//"; // eslint-disable-line no-script-url
+        "Javascript:alert.call(null,document.domain)//";
 
       loadingFrame.start();
 

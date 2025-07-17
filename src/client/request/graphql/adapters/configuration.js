@@ -3,7 +3,6 @@
 var errorResponseAdapter = require("./error");
 var assign = require("../../../../lib/assign").assign;
 
-/* eslint-disable camelcase */
 var cardTypeTransforms = {
   creditCard: {
     AMERICAN_EXPRESS: "American Express",
@@ -51,7 +50,6 @@ var cardTypeTransforms = {
     JCB: "jcb",
   },
 };
-/* eslint-enable camelcase */
 
 function configurationResponseAdapter(responseBody, ctx) {
   var adaptedResponse;
@@ -112,11 +110,11 @@ function adaptConfigurationResponseBody(body, ctx) {
   }
 
   if (configuration.creditCard) {
-    response.challenges = configuration.creditCard.challenges.map(function (
-      challenge
-    ) {
-      return challenge.toLowerCase();
-    });
+    response.challenges = configuration.creditCard.challenges.map(
+      function (challenge) {
+        return challenge.toLowerCase();
+      }
+    );
 
     response.creditCards = {
       supportedCardTypes: mapCardTypes(

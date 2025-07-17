@@ -74,7 +74,6 @@ describe("analytics", () => {
       testContext.fauxDate += 1500;
       const clientPromise = Promise.resolve(client);
 
-      /* eslint-disable new-cap */
       client._request = jest.fn().mockImplementation((options, cb) => {
         if (cb) {
           return cb();
@@ -87,17 +86,15 @@ describe("analytics", () => {
 
       analytics.sendEvent(clientPromise, "test.event.kind", () => {
         const currentTimestamp = Date.now();
-        /* eslint-disable camelcase */
+
         const eventData = client._request.mock.calls[0][0].data;
         const timestamp = eventData.events[0].payload.timestamp;
-        /* eslint-disable camelcase */
+
         const tenant_name = eventData.tracking[0].tenant_name;
 
         expect(currentTimestamp - timestamp).toBeLessThan(2000);
         expect(currentTimestamp - timestamp).toBeGreaterThan(0);
-        expect(tenant_name).toBe(
-          "braintree"
-        ); /* eslint-disable-line camelcase */
+        expect(tenant_name).toBe("braintree");
 
         jest.runAllTimers();
         done();
@@ -110,7 +107,6 @@ describe("analytics", () => {
 
       analytics.sendEvent(client, expectedEventName, () => {
         const actualEventName =
-          /* eslint-disable camelcase */
           client._request.mock.calls[0][0].data.events[0].event;
 
         expect(actualEventName).toBe("web." + expectedEventName);
@@ -126,21 +122,18 @@ describe("analytics", () => {
       const client = testContext.client;
 
       analytics.sendEvent(client, expectedEventName, () => {
-        /* eslint-disable camelcase */
-        const actualEventSent =
-          /* eslint-disable camelcase */
-          client._request.mock.calls[0][0].data;
+        const actualEventSent = client._request.mock.calls[0][0].data;
 
         expect(Array.isArray(actualEventSent.events)).toBe(true);
         expect(Array.isArray(actualEventSent.tracking)).toBe(true);
         expect(actualEventSent.events[0].level).not.toBeNull();
         expect(actualEventSent.events[0].event).not.toBeNull();
         expect(actualEventSent.events[0].payload).not.toBeNull();
-        /* eslint-disable camelcase */
+
         expect(actualEventSent.events[0].payload).toHaveProperty("env");
-        /* eslint-disable camelcase */
+
         expect(actualEventSent.events[0].payload).toHaveProperty("timestamp");
-        /* eslint-disable camelcase */
+
         expect(actualEventSent.events[0].event).toBe(
           "web." + expectedEventName
         );
@@ -165,9 +158,7 @@ describe("analytics", () => {
             paypal_context_id: expectedContextId,
           },
           () => {
-            actualEventSent =
-              /* eslint-disable camelcase */
-              client._request.mock.calls[0][0].data;
+            actualEventSent = client._request.mock.calls[0][0].data;
             expect(actualEventSent).not.toBeNull();
             actualTracking = actualEventSent.tracking[0];
             expect(actualTracking).not.toBeNull();
@@ -193,9 +184,7 @@ describe("analytics", () => {
             component: altComponent,
           },
           () => {
-            actualEventSent =
-              /* eslint-disable camelcase */
-              client._request.mock.calls[0][0].data;
+            actualEventSent = client._request.mock.calls[0][0].data;
             expect(actualEventSent).not.toBeNull();
             actualTracking = actualEventSent.tracking[0];
             expect(actualTracking).not.toBeNull();

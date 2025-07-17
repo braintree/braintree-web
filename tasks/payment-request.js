@@ -5,7 +5,6 @@ var del = require("del");
 var fs = require("fs");
 var gulp = require("gulp");
 var path = require("path");
-var rename = require("gulp-rename");
 var replace = require("gulp-replace");
 var minifyHTML = require("./minify").minifyHTML;
 var VERSION = require("../package.json").version;

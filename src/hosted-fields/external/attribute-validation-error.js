@@ -33,7 +33,8 @@ function attributeValidationError(attribute, value) {
 function _isValid(attribute, value) {
   if (allowedAttributes[attribute] === "string") {
     return typeof value === "string" || typeof value === "number";
-  } else if (allowedAttributes[attribute] === "boolean") {
+  }
+  if (allowedAttributes[attribute] === "boolean") {
     return String(value) === "true" || String(value) === "false";
   }
 

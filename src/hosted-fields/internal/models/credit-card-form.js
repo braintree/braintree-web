@@ -75,8 +75,7 @@ CreditCardForm.prototype.setSupportedCardTypes = function (supportedCardTypes) {
       }
 
       return brands;
-    },
-    []);
+    }, []);
   } else {
     supportedCardTypes = getCardTypes("").map(function (card) {
       return card.type;

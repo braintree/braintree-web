@@ -526,7 +526,7 @@ describe("UnionPay", () => {
       });
 
       it.each([
-        ["undefined", undefined], // eslint-disable-line no-undefined
+        ["undefined", undefined],
         ["empty string", ""],
       ])(
         "does not apply expirationMonth and expirationYear to payload if %s",

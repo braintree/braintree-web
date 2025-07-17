@@ -122,7 +122,7 @@ describe("HostedFields", () => {
       delete testContext.defaultConfiguration.fields;
 
       try {
-        new HostedFields(testContext.defaultConfiguration); // eslint-disable-line no-new
+        new HostedFields(testContext.defaultConfiguration);
       } catch (e) {
         error = e;
       }
@@ -137,7 +137,7 @@ describe("HostedFields", () => {
       testContext.defaultConfiguration.fields = {};
 
       try {
-        new HostedFields(testContext.defaultConfiguration); // eslint-disable-line no-new
+        new HostedFields(testContext.defaultConfiguration);
       } catch (e) {
         error = e;
       }
@@ -529,7 +529,7 @@ describe("HostedFields", () => {
       delete testContext.defaultConfiguration.fields.number.container;
 
       try {
-        new HostedFields(testContext.defaultConfiguration); // eslint-disable-line no-new
+        new HostedFields(testContext.defaultConfiguration);
       } catch (e) {
         error = e;
       }

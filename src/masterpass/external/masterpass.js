@@ -289,7 +289,8 @@ Masterpass.prototype._createFrameOpenHandler = function (resolve, reject) {
         );
 
         return;
-      } else if (!payload.queryItems) {
+      }
+      if (!payload.queryItems) {
         analytics.sendEvent(
           self._client,
           "masterpass.tokenization.failed-popupbridge"

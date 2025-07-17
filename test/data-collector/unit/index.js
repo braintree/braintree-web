@@ -266,7 +266,7 @@ describe("dataCollector", () => {
         })
         .then((instance) => {
           expect(instance.rawDeviceData).toEqual({
-            correlation_id: "paypal_id", // eslint-disable-line camelcase
+            correlation_id: "paypal_id",
           });
         });
     });
@@ -415,7 +415,7 @@ describe("dataCollector", () => {
         .then((instance) => instance.getDeviceData())
         .then((deviceData) => {
           expect(JSON.parse(deviceData)).toEqual({
-            correlation_id: "paypal_id", // eslint-disable-line camelcase
+            correlation_id: "paypal_id",
           });
         }));
 
@@ -432,7 +432,7 @@ describe("dataCollector", () => {
         )
         .then((deviceData) => {
           expect(deviceData).toEqual({
-            correlation_id: "paypal_id", // eslint-disable-line camelcase
+            correlation_id: "paypal_id",
           });
         }));
 

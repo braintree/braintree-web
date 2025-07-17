@@ -118,6 +118,54 @@ confirm_version() {
   fi
 }
 
+confirm_changelog() {
+  local previous_tag
+  previous_tag="$(git describe --abbrev=0 --tags)"
+  
+  echo -e "${CYAN}Changelog diff between previous tag and current version:${RESET}"
+  echo -e "${MAGENTA}===============================================${RESET}"
+  
+  # Create temporary files
+  git show "$previous_tag:CHANGELOG.md" > /tmp/previous_changelog.md
+  cp CHANGELOG.md /tmp/current_changelog.md
+  
+  # Create a temp file for the augmented changelog
+  cp CHANGELOG.md /tmp/header_changelog.md
+  
+  # Find the first diff line number in current changelog
+  diff_start=$(diff /tmp/previous_changelog.md /tmp/current_changelog.md | grep -m 1 "^>" | cut -d' ' -f1 | sed 's/>//' || echo "")
+  
+  if [[ -n "$diff_start" ]]; then
+    # Find the nearest header before the diff
+    header_line=$(head -n "$diff_start" /tmp/current_changelog.md | grep -n "^##" | tail -1 || echo "")
+    
+    if [[ -n "$header_line" ]]; then
+      # Extract header and add highlighting
+      header_num=$(echo "$header_line" | cut -d: -f1)
+      header_text=$(echo "$header_line" | cut -d: -f2-)
+      
+      # Print the header prominently
+      echo -e "${GREEN}Nearest header to changes:${RESET} ${CYAN}${header_text}${RESET}"
+      echo -e "${MAGENTA}-----------------------------------------------${RESET}"
+    fi
+  fi
+  
+  # Show the diff with current CHANGELOG.md with 10 lines of context before each change
+  diff -U 10 --color=always /tmp/previous_changelog.md /tmp/current_changelog.md | head -n 100 || true
+  
+  # Clean up temporary files
+  rm /tmp/previous_changelog.md /tmp/current_changelog.md /tmp/header_changelog.md 2>/dev/null || true
+  
+  echo -e "${MAGENTA}===============================================${RESET}"
+  echo -e "${YELLOW}Does the changelog look correct (y/n)? ${RESET}"
+  read message
+  
+  if [[ ! "$message" =~ $YES ]]; then
+    >&2 echo -e "${RED}Please update the changelog before proceeding.$RESET"
+    exit 1
+  fi
+}
+
 join() {
   # IFS is used as the separator for $* printing
   local IFS="$1"
@@ -154,6 +202,7 @@ main() {
       confirm_error_code_documentation
       reinstall_dependencies
       run_unit_tests
+      confirm_changelog
       confirm_version
       env BRAINTREE_JS_ENV=production gulp release:hosted
       ;;

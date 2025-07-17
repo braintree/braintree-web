@@ -5,7 +5,8 @@ module.exports = function inIframe(win) {
 
   try {
     return win.self !== win.top;
-  } catch (e) {
+    // eslint-disable-next-line no-unused-vars
+  } catch (err) {
     return true;
   }
 };

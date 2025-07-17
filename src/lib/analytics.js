@@ -36,7 +36,7 @@ function sendPaypalEventPlusFields(
       var trackingMeta = metadata.addEventMetadata(client, data);
 
       trackingMeta.event_name = qualifiedEvent; // eslint-disable-line camelcase
-      trackingMeta.t = timestamp; // eslint-disable-line camelcase
+      trackingMeta.t = timestamp;
 
       data.events = [
         {

@@ -3,6 +3,7 @@
 var browserDetection = require("./browser-detection");
 var inIframe = require("../../lib/in-iframe");
 
+// eslint-disable-next-line complexity
 function isBrowserSupported(options) {
   var isKnownUnsupportedMobileBrowser,
     merchantAllowsDesktopBrowsers,

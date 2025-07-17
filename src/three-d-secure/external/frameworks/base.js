@@ -195,7 +195,7 @@ BaseFramework.prototype._existsAndIsNumeric = function (value) {
    *  - otherwise non-numeric value (e.g. {}, "cows")
    */
   return !(
-    value === undefined || // eslint-disable-line no-undefined
+    value === undefined ||
     value === null ||
     Array.isArray(value) ||
     typeof value === "boolean" ||
@@ -212,12 +212,10 @@ BaseFramework.prototype._checkForVerifyCardError = function (
 
   if (this._verifyCardInProgress === true) {
     return new BraintreeError(errors.THREEDS_AUTHENTICATION_IN_PROGRESS);
-  } else if (!options.nonce) {
+  }
+  if (!options.nonce) {
     errorOption = "a nonce";
-  } else if (
-    // eslint-disable-next-line no-undefined
-    !this._existsAndIsNumeric(options.amount)
-  ) {
+  } else if (!this._existsAndIsNumeric(options.amount)) {
     errorOption = "an amount";
   }
 

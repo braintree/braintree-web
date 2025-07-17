@@ -3,7 +3,6 @@
 var gulp = require("gulp");
 var chalk = require("chalk");
 var VERSION = require("../package.json").version;
-var spawn = require("child_process").spawn;
 var HOSTED_DEST = process.env.BRAINTREE_JS_HOSTED_DEST;
 var BOWER_DEST = process.env.BRAINTREE_JS_BOWER_DEST;
 var NPM_DEST = "./dist/npm";
@@ -58,22 +57,23 @@ gulp.task(
     "build:hosted",
     "build:npm",
     endingMessage(NPM_DEST, function () {
-      console.log();
-      console.log("Run", chalk.yellow("cd dist/npm"));
-      console.log();
-      console.log("Run", chalk.yellow("npm publish"));
+      console.log(); // eslint-disable-line no-console
+      console.log("Run", chalk.yellow("cd dist/npm")); // eslint-disable-line no-console
+      console.log(); // eslint-disable-line no-console
+      console.log("Run", chalk.yellow("npm publish")); // eslint-disable-line no-console
     })
   )
 );
 
 function endingMessage(destination, additionalTask) {
   return function () {
-    console.log();
+    console.log(); // eslint-disable-line no-console
+    // eslint-disable-next-line no-console
     console.log(
       chalk.red("Files have been copied into"),
       chalk.green(destination)
     );
-    console.log();
+    console.log(); // eslint-disable-line no-console
 
     if (additionalTask) {
       additionalTask();

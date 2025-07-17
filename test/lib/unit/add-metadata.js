@@ -122,8 +122,8 @@ describe("metadata", () => {
     it("sets tokenizationKey when present", () => {
       const configData = metadata.addEventMetadata(client);
 
-      expect(configData["tokenization_key"]).toBe(fauxTokenizeKey); // eslint-disable-line dot-notation
-      expect(configData["auth_fingerprint"]).toBeUndefined(); // eslint-disable-line dot-notation
+      expect(configData["tokenization_key"]).toBe(fauxTokenizeKey);
+      expect(configData["auth_fingerprint"]).toBeUndefined();
     });
 
     it("sets auth_fingerprint when present", () => {
@@ -137,7 +137,7 @@ describe("metadata", () => {
       config = client.getConfiguration();
 
       configData = metadata.addEventMetadata(client);
-      expect(configData["auth_fingerprint"]).toBe(fauxAuthFingerprint); // eslint-disable-line dot-notation
+      expect(configData["auth_fingerprint"]).toBe(fauxAuthFingerprint);
     });
   });
 });

@@ -155,7 +155,8 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
 
   try {
     req.send(prepBody(method, body));
-  } catch (e) {
+    // eslint-disable-next-line no-unused-vars
+  } catch (err) {
     /* ignored */
   }
 }

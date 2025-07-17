@@ -111,25 +111,26 @@ Client.initialize = function (options) {
 
   try {
     authData = createAuthorizationData(options.authorization);
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     return Promise.reject(
       new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION)
     );
   }
 
-  promise = getGatewayConfiguration(authData, options.sessionId).then(function (
-    configuration
-  ) {
-    if (options.debug) {
-      configuration.isDebug = true;
+  promise = getGatewayConfiguration(authData, options.sessionId).then(
+    function (configuration) {
+      if (options.debug) {
+        configuration.isDebug = true;
+      }
+
+      configuration.authorization = options.authorization;
+
+      clientInstance = new Client(configuration);
+
+      return clientInstance;
     }
-
-    configuration.authorization = options.authorization;
-
-    clientInstance = new Client(configuration);
-
-    return clientInstance;
-  });
+  );
 
   cachedClients[options.authorization] = promise;
 
@@ -280,7 +281,7 @@ Client.prototype._findOrCreateFraudnetJSON = function (clientMetadataId) {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 Client.prototype.request = function (options, callback) {
-  var self = this; // eslint-disable-line no-invalid-this
+  var self = this;
   var requestPromise = new Promise(function (resolve, reject) {
     var optionName, api, baseUrl, requestOptions;
     var shouldCollectData = Boolean(
@@ -465,7 +466,6 @@ Client.prototype.toJSON = function () {
  * }, function (createErr, clientInstance) {
  *   console.log(clientInstance.getVersion()); // Ex: 1.0.0
  * });
- * @returns {void}
  */
 Client.prototype.getVersion = function () {
   return VERSION;
@@ -484,7 +484,7 @@ Client.prototype.getVersion = function () {
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  */
 Client.prototype.teardown = wrapPromise(function () {
-  var self = this; // eslint-disable-line no-invalid-this
+  var self = this;
 
   delete cachedClients[self.getConfiguration().authorization];
   convertMethodsToError(self, methods(Client.prototype));

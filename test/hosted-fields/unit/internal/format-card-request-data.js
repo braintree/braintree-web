@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-
 "use strict";
 
 const formatCardRequestData = require("../../../../src/hosted-fields/internal/format-card-request-data");

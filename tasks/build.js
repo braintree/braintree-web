@@ -16,7 +16,6 @@ var HTML_PATH = "dist/hosted/web/" + VERSION + "/html/";
 var BOWER_DIST = "dist/bower";
 var NPM_DIST = "dist/npm";
 var fs = require("fs");
-var JS_COMMENT_REGEX = /(\/\*[\s\S]*?\*\/\n*|\/\/.*?\n)/gm;
 
 var BUILD_TASKS = COMPONENTS.concat(["index", "frame-service"]).map(
   (name) => "build:" + name
@@ -58,12 +57,11 @@ gulp.task("build:npm:packagejson", function (done) {
     return obj;
   }, {});
   pkg.browser["./index.js"] = "./dist/browser/index.js";
-  (pkg.description =
-    "A suite of tools for integrating Braintree in the browser"),
-    (pkg.repository = {
-      type: "git",
-      url: "git@github.com:braintree/braintree-web",
-    });
+  pkg.description = "A suite of tools for integrating Braintree in the browser";
+  pkg.repository = {
+    type: "git",
+    url: "git@github.com:braintree/braintree-web",
+  };
   pkg.keywords = ["braintree", "payments"];
   pkg.author = "braintree <code@getbraintree.com>";
   pkg.homepage = "https://github.com/braintree/braintree-web";
@@ -75,11 +73,7 @@ gulp.task("build:npm:packagejson", function (done) {
 
   mkdirp.sync(NPM_DIST);
 
-  fs.writeFile(
-    NPM_DIST + "/" + "package.json",
-    JSON.stringify(pkg, null, 2),
-    done
-  );
+  fs.writeFile(NPM_DIST + "/package.json", JSON.stringify(pkg, null, 2), done);
 });
 
 gulp.task(

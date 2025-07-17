@@ -130,7 +130,7 @@ function create(options) {
               return localPaymentInstance;
             })
             .catch(function (err) {
-              console.log("Error while tokenizing: ", err);
+              console.log("Error while tokenizing: ", err); // eslint-disable-line no-console
 
               return localPaymentInstance;
             });

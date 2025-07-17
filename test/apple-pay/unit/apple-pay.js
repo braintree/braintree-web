@@ -358,9 +358,8 @@ describe("ApplePay", () => {
         return Promise.resolve(fakeResponseData);
       });
 
-      const response = await testContext.applePay.performValidation(
-        validationOptions
-      );
+      const response =
+        await testContext.applePay.performValidation(validationOptions);
 
       // Clean up after test
       delete window.parent;

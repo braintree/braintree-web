@@ -1,3 +1,5 @@
+/* eslint-disable */
+// prettier-ignore-file
 "use strict";
 var sjcl = {
   cipher: {},
@@ -49,25 +51,25 @@ sjcl.cipher.aes = function (a) {
   for (a = b; a < 4 * b + 28; a++) {
     c = d[a - 1];
     if (0 === a % b || (8 === b && 4 === a % b))
-      (c =
+      ((c =
         (f[c >>> 24] << 24) ^
         (f[(c >> 16) & 255] << 16) ^
         (f[(c >> 8) & 255] << 8) ^
         f[c & 255]),
         0 === a % b &&
           ((c = (c << 8) ^ (c >>> 24) ^ (k << 24)),
-          (k = (k << 1) ^ (283 * (k >> 7))));
+          (k = (k << 1) ^ (283 * (k >> 7)))));
     d[a] = d[a - b] ^ c;
   }
   for (b = 0; a; b++, a--)
-    (c = d[b & 3 ? a : a - 4]),
+    ((c = d[b & 3 ? a : a - 4]),
       (e[b] =
         4 >= a || 4 > b
           ? c
           : g[0][f[c >>> 24]] ^
             g[1][f[(c >> 16) & 255]] ^
             g[2][f[(c >> 8) & 255]] ^
-            g[3][f[c & 255]]);
+            g[3][f[c & 255]]));
 };
 sjcl.cipher.aes.prototype = {
   encrypt: function (a) {
@@ -108,9 +110,9 @@ sjcl.cipher.aes.prototype = {
         4 > e;
         e++
       )
-        (a[e][f] = n = (n << 24) ^ (n >>> 8)),
-          (b[e][h] = m = (m << 24) ^ (m >>> 8));
-    for (e = 0; 5 > e; e++) (a[e] = a[e].slice(0)), (b[e] = b[e].slice(0));
+        ((a[e][f] = n = (n << 24) ^ (n >>> 8)),
+          (b[e][h] = m = (m << 24) ^ (m >>> 8)));
+    for (e = 0; 5 > e; e++) ((a[e] = a[e].slice(0)), (b[e] = b[e].slice(0)));
   },
 };
 function t(a, b, c) {
@@ -135,7 +137,7 @@ function t(a, b, c) {
     w = k[3],
     x = k[4];
   for (h = 0; h < n; h++)
-    (k =
+    ((k =
       a[e >>> 24] ^ r[(f >> 16) & 255] ^ v[(g >> 8) & 255] ^ w[b & 255] ^ d[m]),
       (l =
         a[f >>> 24] ^
@@ -158,9 +160,9 @@ function t(a, b, c) {
       (m += 4),
       (e = k),
       (f = l),
-      (g = p);
+      (g = p));
   for (h = 0; 4 > h; h++)
-    (q[c ? 3 & -h : h] =
+    ((q[c ? 3 & -h : h] =
       (x[e >>> 24] << 24) ^
       (x[(f >> 16) & 255] << 16) ^
       (x[(g >> 8) & 255] << 8) ^
@@ -170,7 +172,7 @@ function t(a, b, c) {
       (e = f),
       (f = g),
       (g = b),
-      (b = k);
+      (b = k));
   return q;
 }
 sjcl.bitArray = {
@@ -229,10 +231,10 @@ sjcl.bitArray = {
   M: function (a, b, c, d) {
     var e;
     e = 0;
-    for (void 0 === d && (d = []); 32 <= b; b -= 32) d.push(c), (c = 0);
+    for (void 0 === d && (d = []); 32 <= b; b -= 32) (d.push(c), (c = 0));
     if (0 === b) return d.concat(a);
     for (e = 0; e < a.length; e++)
-      d.push(c | (a[e] >>> b)), (c = a[e] << (32 - b));
+      (d.push(c | (a[e] >>> b)), (c = a[e] << (32 - b)));
     e = a.length ? a[a.length - 1] : 0;
     a = sjcl.bitArray.getPartial(e);
     d.push(sjcl.bitArray.partial((b + a) & 31, 32 < b + a ? c : d.pop(), 1));
@@ -244,9 +246,9 @@ sjcl.bitArray = {
   byteswapM: function (a) {
     var b, c;
     for (b = 0; b < a.length; ++b)
-      (c = a[b]),
+      ((c = a[b]),
         (a[b] =
-          (c >>> 24) | ((c >>> 8) & 0xff00) | ((c & 0xff00) << 8) | (c << 24));
+          (c >>> 24) | ((c >>> 8) & 0xff00) | ((c & 0xff00) << 8) | (c << 24)));
     return a;
   },
 };
@@ -257,9 +259,9 @@ sjcl.codec.utf8String = {
       d,
       e;
     for (d = 0; d < c / 8; d++)
-      0 === (d & 3) && (e = a[d / 4]),
+      (0 === (d & 3) && (e = a[d / 4]),
         (b += String.fromCharCode(((e >>> 8) >>> 8) >>> 8)),
-        (e <<= 8);
+        (e <<= 8));
     return decodeURIComponent(escape(b));
   },
   toBits: function (a) {
@@ -268,7 +270,7 @@ sjcl.codec.utf8String = {
       c,
       d = 0;
     for (c = 0; c < a.length; c++)
-      (d = (d << 8) | a.charCodeAt(c)), 3 === (c & 3) && (b.push(d), (d = 0));
+      ((d = (d << 8) | a.charCodeAt(c)), 3 === (c & 3) && (b.push(d), (d = 0)));
     c & 3 && b.push(sjcl.bitArray.partial(8 * (c & 3), d));
     return b;
   },
@@ -321,7 +323,7 @@ sjcl.hash.sha256.prototype = {
       var d = new Uint32Array(c),
         e = 0;
       for (b = 512 + b - ((512 + b) & 0x1ff); b <= a; b += 512)
-        u(this, d.subarray(16 * e, 16 * (e + 1))), (e += 1);
+        (u(this, d.subarray(16 * e, 16 * (e + 1))), (e += 1));
       c.splice(0, 16 * e);
     } else
       for (b = 512 + b - ((512 + b) & 0x1ff); b <= a; b += 512)
@@ -374,7 +376,7 @@ function u(a, b) {
     q = f[6],
     r = f[7];
   for (c = 0; 64 > c; c++)
-    16 > c
+    (16 > c
       ? (d = b[c])
       : ((d = b[(c + 1) & 15]),
         (e = b[(c + 14) & 15]),
@@ -411,7 +413,7 @@ function u(a, b) {
             (l << 30) ^
             (l << 19) ^
             (l << 10))) |
-        0);
+        0));
   f[0] = (f[0] + k) | 0;
   f[1] = (f[1] + l) | 0;
   f[2] = (f[2] + p) | 0;
@@ -481,9 +483,9 @@ sjcl.prng.prototype = {
       );
     }
     for (d = 0; d < a; d += 4)
-      0 === (d + 1) % this.O && y(this),
+      (0 === (d + 1) % this.O && y(this),
         (e = z(this)),
-        c.push(e[0], e[1], e[2], e[3]);
+        c.push(e[0], e[1], e[2], e[3]));
     y(this);
     return c.slice(0, a);
   },
@@ -531,7 +533,7 @@ sjcl.prng.prototype = {
         if (!l) {
           if (void 0 === b)
             for (c = b = 0; c < a.length; c++)
-              for (e = a[c]; 0 < e; ) b++, (e = e >>> 1);
+              for (e = a[c]; 0 < e; ) (b++, (e = e >>> 1));
           this.c[g].update([d, this.F++, 2, b, f, a.length].concat(a));
         }
         break;
@@ -560,8 +562,8 @@ sjcl.prng.prototype = {
         ? this.A | this.w
         : this.w
       : this.f >= a
-      ? this.A | this.m
-      : this.m;
+        ? this.A | this.m
+        : this.m;
   },
   getProgress: function (a) {
     a = this.I[a ? a : this.D];
@@ -577,7 +579,7 @@ sjcl.prng.prototype = {
         touchCollector: B(this, this.X),
       };
       if (window.addEventListener)
-        window.addEventListener("load", this.a.loadTimeCollector, !1),
+        (window.addEventListener("load", this.a.loadTimeCollector, !1),
           window.addEventListener("mousemove", this.a.mouseCollector, !1),
           window.addEventListener("keypress", this.a.keyboardCollector, !1),
           window.addEventListener(
@@ -585,11 +587,11 @@ sjcl.prng.prototype = {
             this.a.accelerometerCollector,
             !1
           ),
-          window.addEventListener("touchmove", this.a.touchCollector, !1);
+          window.addEventListener("touchmove", this.a.touchCollector, !1));
       else if (document.attachEvent)
-        document.attachEvent("onload", this.a.loadTimeCollector),
+        (document.attachEvent("onload", this.a.loadTimeCollector),
           document.attachEvent("onmousemove", this.a.mouseCollector),
-          document.attachEvent("keypress", this.a.keyboardCollector);
+          document.attachEvent("keypress", this.a.keyboardCollector));
       else throw new sjcl.exception.bug("can't attach event");
       this.s = !0;
     }
@@ -621,7 +623,7 @@ sjcl.prng.prototype = {
       e = this.B[a],
       f = [];
     for (d in e) e.hasOwnProperty(d) && e[d] === b && f.push(d);
-    for (c = 0; c < f.length; c++) (d = f[c]), delete e[d];
+    for (c = 0; c < f.length; c++) ((d = f[c]), delete e[d]);
   },
   U: function () {
     C(this, 1);
@@ -629,8 +631,8 @@ sjcl.prng.prototype = {
   W: function (a) {
     var b, c;
     try {
-      (b = a.x || a.clientX || a.offsetX || 0),
-        (c = a.y || a.clientY || a.offsetY || 0);
+      ((b = a.x || a.clientX || a.offsetX || 0),
+        (c = a.y || a.clientY || a.offsetY || 0));
     } catch (d) {
       c = b = 0;
     }
@@ -698,9 +700,9 @@ a: try {
     G = E = H;
   }
   if (G && E.randomBytes)
-    (D = E.randomBytes(128)),
+    ((D = E.randomBytes(128)),
       (D = new Uint32Array(new Uint8Array(D).buffer)),
-      sjcl.random.addEntropy(D, 1024, "crypto['randomBytes']");
+      sjcl.random.addEntropy(D, 1024, "crypto['randomBytes']"));
   else if (
     "undefined" !== typeof window &&
     "undefined" !== typeof Uint32Array

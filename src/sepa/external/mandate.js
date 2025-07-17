@@ -51,7 +51,7 @@ var POPUP_HEIGHT = 570;
 
 function createMandate(client, options) {
   // Disabling eslint because api is expecting snake_case format for the keys
-  /* eslint-disable */
+  /* eslint-disable camelcase */
   var data = {
     sepa_debit: {
       account_holder_name: options.accountHolderName,
@@ -67,6 +67,7 @@ function createMandate(client, options) {
     return_url: options.returnUrl,
     merchant_account_id: options.merchantAccountId,
   };
+  /* eslint-enable camelcase */
 
   if (options.billingAddress) {
     billingAddressOptions.forEach(function (option) {
@@ -77,7 +78,6 @@ function createMandate(client, options) {
       }
     });
   }
-  /* eslint-enable */
 
   return client
     .request({
@@ -213,7 +213,7 @@ function centeredPopupDimensions() {
 
 function handleApproval(client, options) {
   // Disabling eslint because api is expecting snake_case format for the keys
-  /* eslint-disable */
+  /* eslint-disable camelcase */
   var data = {
     sepa_debit_account: {
       last_4: options.last4,
@@ -223,8 +223,8 @@ function handleApproval(client, options) {
     },
     merchant_account_id: options.merchantAccountId,
   };
+  /* eslint-enable camelcase */
 
-  /* eslint-enable */
   return client
     .request({
       api: "clientApi",

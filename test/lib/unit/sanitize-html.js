@@ -28,6 +28,6 @@ describe("sanitizeHtml", () => {
     expect(sanitize(true)).toBe("");
     expect(sanitize(0)).toBe("");
     expect(sanitize(noop)).toBe("");
-    expect(sanitize(new String("nope"))).toBe(""); // eslint-disable-line no-new-wrappers
+    expect(sanitize(new String("nope"))).toBe("");
   });
 });

@@ -597,7 +597,6 @@ ThreeDSecure.prototype.verifyCard = function (options) {
   return this._framework.verifyCard(options, privateOptions);
 };
 
-/* eslint-disable-next-line valid-jsdoc */
 /**
  * Launch the iframe challenge using a 3D Secure lookup response from a server side lookup.
  *

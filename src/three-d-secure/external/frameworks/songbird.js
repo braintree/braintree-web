@@ -20,7 +20,7 @@ var SONGBIRD_UI_EVENTS = [
   "ui.close",
   "ui.render",
 
-  // TODO these events are not documented in the
+  // TODO these events are not documented in the // eslint-disable-line no-warning-comments
   // client reference because so far we have
   // not been able to trigger them in our testing
   "ui.renderHidden",
@@ -147,14 +147,14 @@ SongbirdFramework.prototype._triggerCardinalBinProcess = function (bin) {
   var self = this;
   var issuerStartTime = Date.now();
 
-  return window.Cardinal.trigger("bin.process", bin).then(function (
-    binResults
-  ) {
-    self._clientMetadata.issuerDeviceDataCollectionTimeElapsed =
-      Date.now() - issuerStartTime;
-    self._clientMetadata.issuerDeviceDataCollectionResult =
-      binResults && binResults.Status;
-  });
+  return window.Cardinal.trigger("bin.process", bin).then(
+    function (binResults) {
+      self._clientMetadata.issuerDeviceDataCollectionTimeElapsed =
+        Date.now() - issuerStartTime;
+      self._clientMetadata.issuerDeviceDataCollectionResult =
+        binResults && binResults.Status;
+    }
+  );
 };
 
 SongbirdFramework.prototype.transformBillingAddress = function (
@@ -533,6 +533,7 @@ SongbirdFramework.prototype._createPaymentsValidatedCallback = function () {
    * @param {string} validatedJwt Response JWT
    * @returns {void}
    * */
+  // eslint-disable-next-line complexity
   return function (data, validatedJwt) {
     var formattedError;
 

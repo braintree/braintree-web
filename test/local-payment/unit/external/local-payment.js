@@ -1,4 +1,3 @@
-/* eslint-disable no-undefined */
 "use strict";
 
 jest.mock("../../../../src/lib/frame-service/external");
@@ -373,7 +372,6 @@ describe("LocalPayment", () => {
           countryCode: "US",
         },
         blikOptions: {
-          // eslint-disable-next-line camelcase
           level_0: {
             authCode: "123456",
           },
@@ -542,7 +540,6 @@ describe("LocalPayment", () => {
               shippingAmount: undefined,
               merchantAccountId: "merchant-account-id",
               blikOptions: {
-                // eslint-disable-next-line camelcase
                 level_0: {
                   authCode: "123456",
                 },

@@ -7,9 +7,8 @@ var atobNormalized = typeof atob === "function" ? atob : atobPolyfill;
 
 function atobPolyfill(base64String) {
   var a, b, c, b1, b2, b3, b4, i;
-  var base64Matcher = new RegExp(
-    "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})([=]{1,2})?$"
-  );
+  var base64Matcher =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})([=]{1,2})?$/;
   var characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
   var result = "";

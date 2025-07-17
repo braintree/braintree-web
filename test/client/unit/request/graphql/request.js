@@ -441,7 +441,6 @@ describe("GraphQL", () => {
     it("handles snake case keys", () => {
       let graphQLRequest, body, parsedBody;
 
-      /* eslint-disable camelcase */
       testContext.options.data = {
         credit_card: {
           number: "4111111111111111",
@@ -462,7 +461,6 @@ describe("GraphQL", () => {
           },
         },
       };
-      /* eslint-enable camelcase */
 
       graphQLRequest = new GraphQLRequest(testContext.options);
       body = graphQLRequest.getBody();
@@ -1302,7 +1300,6 @@ describe("GraphQL", () => {
 
         testContext.options.data = {
           creditCard: {
-            /* eslint-disable camelcase */
             fastlane: {
               termsAndConditionsVersion: "1",
               termsAndConditionsCountry: "UK",
@@ -1404,7 +1401,6 @@ describe("GraphQL", () => {
 
         testContext.options.data = {
           creditCard: {
-            /* eslint-disable camelcase */
             fastlane: {
               has_buyer_consent: true,
             },
@@ -1502,7 +1498,6 @@ describe("GraphQL", () => {
 
         testContext.options.data = {
           creditCard: {
-            /* eslint-disable camelcase */
             fastlane: {
               authAssertion: false,
               termsAndConditionsCountry: "UK",
@@ -1697,9 +1692,7 @@ describe("GraphQL", () => {
       it("normalizes a GraphQL fastlane credit card tokenization response", () => {
         testContext.options.data = {
           creditCard: {
-            /* eslint-disable camelcase */
             fastlane: {
-              /* eslint-disable camelcase */
               has_buyer_consent: true,
             },
           },

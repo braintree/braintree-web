@@ -5,7 +5,7 @@ jest.mock("framebus");
 jest.mock("../../../src/lib/create-assets-url");
 
 beforeEach(() => {
-  console.warn = jest.fn(); // eslint-disable-line no-console
+  console.warn = jest.fn();
 
   document.body.innerHTML = "";
 

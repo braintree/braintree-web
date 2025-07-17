@@ -171,7 +171,7 @@ function createInputsForAutofill(fieldComponent, form, cardModel) {
       monthValue = "0" + monthValue;
     }
     if (yearValue && yearValue.length === 2) {
-      thisYear = String(new Date().getFullYear()); // eslint-disable-line no-extra-parens
+      thisYear = String(new Date().getFullYear());
       yearValue = thisYear.substring(0, 2) + yearValue;
     }
 
@@ -267,7 +267,8 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
         reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
 
         return Promise.resolve();
-      } else if (!isValid) {
+      }
+      if (!isValid) {
         reply([
           new BraintreeError({
             type: errors.HOSTED_FIELDS_FIELDS_INVALID.type,
@@ -363,7 +364,8 @@ function formatTokenizationError(err) {
     try {
       rootError = BraintreeError.findRootError(err);
       code = rootError.fieldErrors[0].fieldErrors[0].code;
-    } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (err) {
       // just bail out if code property cannot be found on rootError
     }
 
@@ -423,7 +425,8 @@ function orchestrate(configuration) {
   iframes.forEach(function (iframe) {
     try {
       iframe.braintree.hostedFields.initialize(cardForm);
-    } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (err) {
       /* noop */
     }
   });

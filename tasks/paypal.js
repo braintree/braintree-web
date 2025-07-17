@@ -1,10 +1,7 @@
 "use strict";
 
-var del = require("del");
-var fs = require("fs");
 var gulp = require("gulp");
 var rename = require("gulp-rename");
-var replace = require("gulp-replace");
 var browserify = require("./browserify");
 var minifyHTML = require("./minify").minifyHTML;
 var VERSION = require("../package.json").version;

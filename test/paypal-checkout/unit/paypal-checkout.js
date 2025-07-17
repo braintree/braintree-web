@@ -1000,7 +1000,6 @@ describe("PayPalCheckout", () => {
           taxAmount: planMetadata.taxAmount,
           totalAmount: planMetadata.totalAmount,
         };
-        /* eslint-enable camelcase */
 
         testContext.paypalCheckout
           .createPayment({
@@ -1046,7 +1045,6 @@ describe("PayPalCheckout", () => {
         totalAmount: "233.0",
       };
 
-      /* eslint-disable camelcase */
       const expectedPlanMetadata = {
         billingCycles: [
           {
@@ -1071,7 +1069,6 @@ describe("PayPalCheckout", () => {
         taxAmount: planMetadata.taxAmount,
         totalAmount: planMetadata.totalAmount,
       };
-      /* eslint-enable camelcase */
 
       testContext.paypalCheckout
         .createPayment({
@@ -1117,7 +1114,6 @@ describe("PayPalCheckout", () => {
 
     describe("_formatPlanMetadata", () => {
       it("formats a complete plan with billing cycles", () => {
-        /* eslint-disable camelcase */
         const inputPlan = {
           currencyIsoCode: "USD",
           name: "Monthly Subscription",
@@ -1255,8 +1251,8 @@ describe("PayPalCheckout", () => {
             })
       );
 
-      it.each(["COMMIT", "CONTINUE"])(
-        "does not set user action=%p for vault flow if specified",
+      it.each(["SETUP_NOW", "CONTINUE"])(
+        "sets user action=%p for vault flow if specified",
         (actionParam) =>
           testContext.paypalCheckout
             .createPayment({
@@ -1277,7 +1273,7 @@ describe("PayPalCheckout", () => {
                 {
                   data: {
                     experienceProfile: {
-                      addressOverride: true,
+                      userAction: actionParam,
                     },
                   },
                 }
@@ -1301,13 +1297,9 @@ describe("PayPalCheckout", () => {
             shippingAddressEditable: false,
           })
           .then(() => {
-            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
-              data: {
-                experienceProfile: {
-                  addressOverride: true,
-                },
-              },
-            });
+            expect(
+              testContext.client.request.mock.calls[0][0]
+            ).not.toHaveProperty("userAction");
           }));
     });
 
@@ -1470,7 +1462,7 @@ describe("PayPalCheckout", () => {
         testContext.paypalCheckout._clientPromise,
         "paypal-checkout.updatePayment",
         {
-          paypal_context_id: testContext.options.paymentId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.options.paymentId,
         }
       );
     });
@@ -1501,7 +1493,7 @@ describe("PayPalCheckout", () => {
             testContext.paypalCheckout._clientPromise,
             "paypal-checkout.updatePayment.invalid",
             {
-              paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+              paypal_context_id: testContext.paypalCheckout._contextId,
             }
           );
         });
@@ -1933,7 +1925,7 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+            paypal_context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -2000,7 +1992,7 @@ describe("PayPalCheckout", () => {
 
       expect(actual).toStrictEqual({
         paymentId: "abc123",
-        // eslint-disable-next-line no-undefined
+
         merchantAccountId: undefined,
         currencyIsoCode: "USD",
         amountBreakdown: amountBreakdown,
@@ -2051,7 +2043,7 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.paypalCheckout._contextId,
         }
       );
 
@@ -2196,14 +2188,14 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.succeeded",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.paypalCheckout._contextId,
         }
       );
       expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.started",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.paypalCheckout._contextId,
         }
       );
     });
@@ -2359,7 +2351,7 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.paypalCheckout._contextId,
         }
       );
       expect(testContext.fakeFrameService.close).toBeCalledTimes(0);
@@ -2389,7 +2381,7 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.paypalCheckout._contextId,
         }
       );
       expect(testContext.fakeFrameService.close).toBeCalledTimes(1);
@@ -2450,7 +2442,7 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.paypalCheckout._contextId,
         }
       );
 
@@ -2466,7 +2458,7 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+          paypal_context_id: testContext.paypalCheckout._contextId,
         }
       );
 
@@ -2735,7 +2727,7 @@ describe("PayPalCheckout", () => {
             testContext.paypalCheckout._clientPromise,
             "paypal-checkout.tokenization.started",
             {
-              paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+              paypal_context_id: testContext.paypalCheckout._contextId,
             }
           );
         }));
@@ -2761,7 +2753,7 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.tokenization.success",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+            paypal_context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -2787,7 +2779,7 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.credit.accepted",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+            paypal_context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -3130,7 +3122,7 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.tokenization.failed",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId, // eslint-disable-line camelcase
+            paypal_context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -3834,7 +3826,6 @@ describe("PayPalCheckout", () => {
         testContext.config
       );
 
-      // eslint-disable-next-line no-undefined
       expect(actual.payer_email).toBe(undefined);
     });
 

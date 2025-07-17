@@ -49,13 +49,13 @@ function addEventMetadata(clientInstanceOrPromise) {
     client_session_id: configuration.analyticsMetadata.sessionId,
     tenant_name: "braintree",
   };
+  /* eslint-enable camelcase */
 
   if (authAttrs.tokenizationKey) {
-    metadata.tokenization_key = authAttrs.tokenizationKey;
+    metadata.tokenization_key = authAttrs.tokenizationKey; // eslint-disable-line camelcase
   } else {
-    metadata.auth_fingerprint = authAttrs.authorizationFingerprint;
+    metadata.auth_fingerprint = authAttrs.authorizationFingerprint; // eslint-disable-line camelcase
   }
-  /* eslint-enable camelcase */
 
   return metadata;
 }

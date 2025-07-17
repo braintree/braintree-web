@@ -56,7 +56,7 @@ function containsDisallowedlistedKeys(body) {
       return accumulator && accumulator[key];
     }, body);
 
-    return value !== undefined; // eslint-disable-line no-undefined
+    return value !== undefined;
   });
 }
 

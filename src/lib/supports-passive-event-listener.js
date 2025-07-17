@@ -9,12 +9,14 @@ try {
   opts = Object.defineProperty({}, "passive", {
     get: function () {
       supportsPassive = true;
+      return true;
     },
   });
 
   window.addEventListener("testPassive", null, opts);
   window.removeEventListener("testPassive", null, opts);
-} catch (e) {
+  // eslint-disable-next-line no-unused-vars
+} catch (err) {
   // ignore errors
 }
 

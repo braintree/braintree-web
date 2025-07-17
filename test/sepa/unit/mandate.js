@@ -117,7 +117,7 @@ describe("mandate.js", () => {
       expect(testContext.client.request).toHaveBeenCalledWith(
         expect.objectContaining({
           // Disabling eslint because api is expecting snake_case format for the keys
-          /* eslint-disable */
+
           api: "clientApi",
           data: {
             cancel_url: expect.anything(),
@@ -138,7 +138,6 @@ describe("mandate.js", () => {
             },
             merchant_account_id: expect.anything(),
             return_url: expect.anything(),
-            /* eslint-enable */
           },
           endpoint: expect.anything(),
           method: expect.anything(),
@@ -168,7 +167,7 @@ describe("mandate.js", () => {
       expect(testContext.client.request).toHaveBeenCalledWith(
         expect.objectContaining({
           // Disabling eslint because api is expecting snake_case format for the keys
-          /* eslint-disable */
+
           api: "clientApi",
           data: {
             cancel_url: expect.anything(),
@@ -184,7 +183,6 @@ describe("mandate.js", () => {
             },
             merchant_account_id: expect.anything(),
             return_url: expect.anything(),
-            /* eslint-enable */
           },
           endpoint: expect.anything(),
           method: expect.anything(),
@@ -256,7 +254,6 @@ describe("mandate.js", () => {
     beforeEach(() => {
       mockFrameService = {
         open: jest.fn().mockImplementation((obj, callback) => {
-          /* eslint-disable no-undefined */
           return Promise.resolve(callback(undefined, mockSuccessParams));
         }),
         redirect: jest.fn(),
@@ -355,7 +352,6 @@ describe("mandate.js", () => {
     it("rejects when cancel redirect is used and closes popup", async () => {
       expect.assertions(6);
       mockFrameService.open = jest.fn((obj, callback) => {
-        /* eslint-disable no-undefined */
         callback(undefined, mockCancelParams);
       });
       frameService.create = jest.fn().mockImplementation((obj, callback) => {
@@ -401,7 +397,6 @@ describe("mandate.js", () => {
       const emptyParams = {};
 
       mockFrameService.open = jest.fn((obj, callback) => {
-        /* eslint-disable no-undefined */
         callback(undefined, emptyParams);
       });
       frameService.create = jest.fn().mockImplementation((obj, callback) => {

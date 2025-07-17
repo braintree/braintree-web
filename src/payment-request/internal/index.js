@@ -175,7 +175,8 @@ function tokenize(paymentResponse) {
 
         return tokenizedCard;
       });
-  } else if (paymentResponse.methodName === "https://google.com/pay") {
+  }
+  if (paymentResponse.methodName === "https://google.com/pay") {
     try {
       parsedResponse = JSON.parse(
         paymentResponse.details.paymentMethodToken.token

@@ -476,14 +476,12 @@ describe("GooglePayment", () => {
             expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
             expect(paypalPaymentMethod.type).toBe("PAYPAL");
             expect(paypalPaymentMethod.parameters.purchase_context).toEqual({
-              // eslint-disable-next-line camelcase
               purchase_units: [
                 {
                   payee: {
-                    // eslint-disable-next-line camelcase
                     client_id: "paypal_client_id",
                   },
-                  // eslint-disable-next-line camelcase
+
                   recurring_payment: true,
                 },
               ],

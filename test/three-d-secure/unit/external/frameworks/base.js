@@ -13,7 +13,6 @@ describe("BaseFramework", () => {
     jest
       .spyOn(BaseFramework.prototype, "_presentChallenge")
       .mockImplementation(function () {
-        // eslint-disable-next-line no-invalid-this
         this._verifyCardPromisePlus.resolve({
           nonce: "some-fake-nonce",
           liabilityShifted: true,

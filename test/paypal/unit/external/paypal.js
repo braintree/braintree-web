@@ -287,8 +287,8 @@ describe("PayPal", () => {
 
     describe.each(["vault", "checkout"])("%s flow", (flow) => {
       it.each([
-        [false, undefined], // eslint-disable-line no-undefined
-        [false, undefined], // eslint-disable-line no-undefined
+        [false, undefined],
+        [false, undefined],
         [false, "true"],
         [true, true],
         [true, true],
@@ -1132,7 +1132,7 @@ describe("PayPal", () => {
 
     describe.each([
       ["", {}, "popup-bridge"],
-      ["not", undefined, ""], // eslint-disable-line no-undefined
+      ["not", undefined, ""],
     ])("%s using popupBridge", (s, popupBridgeValue, analytic) => {
       beforeEach(() => {
         window.popupBridge = popupBridgeValue;
@@ -1523,7 +1523,7 @@ describe("PayPal", () => {
           intent: "sale",
         },
         {
-          ba_token: "ba_token", // eslint-disable-line camelcase
+          ba_token: "ba_token",
         }
       );
 
@@ -1537,7 +1537,7 @@ describe("PayPal", () => {
           intent: "sale",
         },
         {
-          ba_token: "ba_token", // eslint-disable-line camelcase
+          ba_token: "ba_token",
         }
       );
 
@@ -1560,7 +1560,7 @@ describe("PayPal", () => {
             flow: "vault",
           },
           {
-            ba_token: "ba_token", // eslint-disable-line camelcase
+            ba_token: "ba_token",
           }
         );
 
@@ -1574,7 +1574,7 @@ describe("PayPal", () => {
         {},
         {
           token: "EC-83T8551496489354",
-          ba_token: "ba_token", // eslint-disable-line camelcase
+          ba_token: "ba_token",
         }
       );
 

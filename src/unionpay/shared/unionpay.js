@@ -56,7 +56,8 @@ UnionPay.prototype.fetchCapabilities = function (options) {
     return Promise.reject(
       new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES)
     );
-  } else if (cardNumber) {
+  }
+  if (cardNumber) {
     return client
       .request({
         method: "get",
@@ -93,7 +94,8 @@ UnionPay.prototype.fetchCapabilities = function (options) {
           })
         );
       });
-  } else if (hostedFields) {
+  }
+  if (hostedFields) {
     if (!hostedFields._bus) {
       return Promise.reject(
         new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID)
@@ -167,7 +169,8 @@ UnionPay.prototype.enroll = function (options) {
       return Promise.reject(
         new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID)
       );
-    } else if (card) {
+    }
+    if (card) {
       return Promise.reject(
         new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES)
       );
@@ -190,7 +193,8 @@ UnionPay.prototype.enroll = function (options) {
         );
       });
     });
-  } else if (card && card.number) {
+  }
+  if (card && card.number) {
     data = {
       _meta: { source: "unionpay" },
       unionPayEnrollment: {
@@ -292,7 +296,8 @@ UnionPay.prototype.tokenize = function (options) {
     return Promise.reject(
       new BraintreeError(errors.UNIONPAY_CARD_AND_HOSTED_FIELDS_INSTANCES)
     );
-  } else if (card) {
+  }
+  if (card) {
     data = {
       _meta: { source: "unionpay" },
       creditCard: {
@@ -356,7 +361,8 @@ UnionPay.prototype.tokenize = function (options) {
 
         return Promise.reject(error);
       });
-  } else if (hostedFields) {
+  }
+  if (hostedFields) {
     if (!hostedFields._bus) {
       return Promise.reject(
         new BraintreeError(errors.UNIONPAY_HOSTED_FIELDS_INSTANCE_INVALID)

@@ -11,7 +11,8 @@ function assembleIFrames(win) {
       if (frame.location.href === window.location.href) {
         frames.push(frame);
       }
-    } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (err) {
       /* ignored */
     }
   }

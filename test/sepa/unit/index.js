@@ -120,7 +120,7 @@ describe("SEPA static methods", () => {
 
       expect(mandate.handleApprovalForFullPageRedirect).toBeCalledWith(
         options.client,
-        assign(options, { success: true, cart_id: cartId }) // eslint-disable-line camelcase
+        assign(options, { success: true, cart_id: cartId })
       );
       Object.defineProperty(window, "location", {
         configurable: true,

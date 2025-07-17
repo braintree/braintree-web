@@ -295,7 +295,6 @@ describe("web-login-backdrop", () => {
       };
 
       mockFrameService.open = jest.fn((obj, callback) => {
-        /* eslint-disable no-undefined */
         callback(undefined, hashFromRedirectParams);
       });
       frameService.create = jest.fn().mockImplementation((obj, callback) => {
@@ -329,7 +328,6 @@ describe("web-login-backdrop", () => {
       };
 
       mockFrameService.open = jest.fn((obj, callback) => {
-        /* eslint-disable no-undefined */
         callback(undefined, hashFromRedirectParams);
       });
       frameService.create = jest.fn().mockImplementation((obj, callback) => {

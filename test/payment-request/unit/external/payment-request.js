@@ -289,7 +289,6 @@ describe("Payment Request component", () => {
           {
             type: "PAYPAL",
             parameters: {
-              /* eslint-disable camelcase */
               purchase_context: {
                 purchase_units: [
                   {
@@ -300,7 +299,6 @@ describe("Payment Request component", () => {
                   },
                 ],
               },
-              /* eslint-enable camelcase */
             },
             tokenizationSpecification: {
               type: "PAYMENT_GATEWAY",

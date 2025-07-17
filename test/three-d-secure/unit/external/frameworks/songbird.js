@@ -481,7 +481,7 @@ describe("SongbirdFramework", () => {
               endpoint: "payment_methods/abcdef/three_d_secure/lookup",
               method: "post",
               data: {
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -517,7 +517,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 cardAdd: false,
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -552,7 +552,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 cardAdd: false,
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -589,7 +589,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 cardAdd: true,
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -624,7 +624,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 accountType: "credit",
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -659,7 +659,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 challengeRequested: true,
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -694,7 +694,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 merchantName: "foo",
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -730,7 +730,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 requestedExemptionType: "low_value",
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -782,7 +782,7 @@ describe("SongbirdFramework", () => {
               endpoint: "payment_methods/abcdef/three_d_secure/lookup",
               method: "post",
               data: {
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -818,7 +818,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 customFields: { 1: "one", 2: "two" },
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -844,7 +844,7 @@ describe("SongbirdFramework", () => {
               endpoint: "payment_methods/abcdef/three_d_secure/lookup",
               method: "post",
               data: {
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -879,7 +879,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 dataOnlyRequested: true,
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -914,7 +914,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 exemptionRequested: true,
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -949,7 +949,7 @@ describe("SongbirdFramework", () => {
               method: "post",
               data: {
                 requestVisaDAF: true,
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });
@@ -983,7 +983,7 @@ describe("SongbirdFramework", () => {
               endpoint: "payment_methods/abcdef/three_d_secure/lookup",
               method: "post",
               data: {
-                dfReferenceId: "df-id", // eslint-disable-line camelcase
+                dfReferenceId: "df-id",
                 amount: 100,
               },
             });

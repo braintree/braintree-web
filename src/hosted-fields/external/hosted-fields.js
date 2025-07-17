@@ -335,13 +335,12 @@ function createInputEventHandler(fields) {
       !field.isPotentiallyValid
     );
 
-    // eslint-disable-next-line no-invalid-this
     this._state = {
       cards: merchantPayload.cards,
       fields: merchantPayload.fields,
     };
 
-    this._emit(eventData.type, merchantPayload); // eslint-disable-line no-invalid-this
+    this._emit(eventData.type, merchantPayload);
   };
 }
 
@@ -380,7 +379,7 @@ function HostedFields(options) {
   this._merchantConfigurationOptions = assign({}, options);
 
   if (options.client) {
-    clientConfig = options.client.getConfiguration(undefined, sessionId); // eslint-disable-line no-undefined
+    clientConfig = options.client.getConfiguration(undefined, sessionId);
     assetsUrl = clientConfig.gatewayConfiguration.assetsUrl;
     isDebug = clientConfig.isDebug;
   } else {
@@ -560,16 +559,16 @@ function HostedFields(options) {
   );
 
   if (this._merchantConfigurationOptions.styles) {
-    Object.keys(this._merchantConfigurationOptions.styles).forEach(function (
-      selector
-    ) {
-      var className = self._merchantConfigurationOptions.styles[selector];
+    Object.keys(this._merchantConfigurationOptions.styles).forEach(
+      function (selector) {
+        var className = self._merchantConfigurationOptions.styles[selector];
 
-      if (typeof className === "string") {
-        self._merchantConfigurationOptions.styles[selector] =
-          getStylesFromClass(className);
+        if (typeof className === "string") {
+          self._merchantConfigurationOptions.styles[selector] =
+            getStylesFromClass(className);
+        }
       }
-    });
+    );
   }
 
   this._bus.on(events.REMOVE_FOCUS_INTERCEPTS, function (data) {
@@ -788,18 +787,18 @@ HostedFields.prototype.getSupportedCardTypes = function () {
   return this._clientPromise.then(function (client) {
     var cards = client
       .getConfiguration()
-      .gatewayConfiguration.creditCards.supportedCardTypes.map(function (
-        cardType
-      ) {
-        if (cardType === "MasterCard") {
-          // Mastercard changed their branding. We can't update our
-          // config without creating a breaking change, so we just
-          // hard code the change here
-          return "Mastercard";
-        }
+      .gatewayConfiguration.creditCards.supportedCardTypes.map(
+        function (cardType) {
+          if (cardType === "MasterCard") {
+            // Mastercard changed their branding. We can't update our
+            // config without creating a breaking change, so we just
+            // hard code the change here
+            return "Mastercard";
+          }
 
-        return cardType;
-      });
+          return cardType;
+        }
+      );
 
     return cards;
   });

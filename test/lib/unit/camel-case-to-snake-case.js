@@ -1,5 +1,4 @@
 "use strict";
-/* eslint-disable camelcase */
 
 const camelCaseToSnakeCase = require("../../../src/lib/camel-case-to-snake-case");
 
@@ -120,10 +119,10 @@ describe("camelCaseToSnakeCase", () => {
 
   it("handles undefined values", () => {
     const input = {
-      undefinedValue: undefined, // eslint-disable-line no-undefined
+      undefinedValue: undefined,
     };
     const expectedOutput = {
-      undefined_value: undefined, // eslint-disable-line no-undefined
+      undefined_value: undefined,
     };
 
     expect(camelCaseToSnakeCase(input)).toEqual(expectedOutput);

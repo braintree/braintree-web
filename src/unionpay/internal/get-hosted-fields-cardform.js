@@ -20,10 +20,10 @@ function getCardForm(client, hostedFieldsInstance) {
 
     try {
       if (frame.location.href === hostedFieldsFrameUrl && frame.cardForm) {
-        // eslint-disable-line no-extra-parens
         return frame.cardForm;
       }
-    } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (err) {
       /* ignored */
     }
   }

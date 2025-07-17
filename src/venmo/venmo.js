@@ -48,6 +48,7 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
  * @description <strong>Do not use this constructor directly. Use {@link module:braintree-web/venmo.create|braintree-web.venmo.create} instead.</strong>
  * @classdesc This class represents a Venmo component produced by {@link module:braintree-web/venmo.create|braintree-web/venmo.create}. Instances of this class have methods for tokenizing Venmo payments.
  */
+// eslint-disable-next-line complexity
 function Venmo(options) {
   var self = this;
 
@@ -276,8 +277,8 @@ Venmo.prototype._createVenmoPaymentContext = function (
         },
       })
       .then(function (response) {
-        return response
-          .data.createVenmoQRCodePaymentContext.venmoQRCodePaymentContext;
+        return response.data.createVenmoQRCodePaymentContext
+          .venmoQRCodePaymentContext;
       });
   } else {
     // Merchants are not allowed to collect user addresses unless ECD (Enriched Customer Data) is enabled on the BT Control Panel.
@@ -302,11 +303,11 @@ Venmo.prototype._createVenmoPaymentContext = function (
       totalAmount: this._totalAmount,
       lineItems: this._lineItems,
     };
-    transactionDetailsPresent = Object.keys(transactionDetails).some(function (
-      detail
-    ) {
-      return transactionDetails[detail] !== undefined; // eslint-disable-line no-undefined
-    });
+    transactionDetailsPresent = Object.keys(transactionDetails).some(
+      function (detail) {
+        return transactionDetails[detail] !== undefined;
+      }
+    );
 
     promise = client
       .request({
@@ -327,7 +328,7 @@ Venmo.prototype._createVenmoPaymentContext = function (
                   this._collectCustomerShippingAddress,
                 transactionDetails: transactionDetailsPresent
                   ? transactionDetails
-                  : undefined, // eslint-disable-line no-undefined
+                  : undefined,
               },
             },
           },
@@ -510,7 +511,6 @@ Venmo.prototype.getUrl = function () {
 
       currentUrl = currentUrl.replace(/#*$/, "");
 
-      /* eslint-disable camelcase */
       if (this._venmoPaymentContextId) {
         if (this._shouldUseLegacyFlow) {
           // NEXT_MAJOR_VERSION stop adding the context id to the access token.
@@ -519,7 +519,7 @@ Venmo.prototype.getUrl = function () {
           // pulling the resource id off of the query params
           accessToken += "|pcid:" + this._venmoPaymentContextId;
         } else {
-          params.resource_id = this._venmoPaymentContextId;
+          params.resource_id = this._venmoPaymentContextId; // eslint-disable-line camelcase
         }
       }
 
@@ -544,11 +544,11 @@ Venmo.prototype.getUrl = function () {
       }
 
       params.ua = window.navigator.userAgent;
-      params.braintree_merchant_id =
+      params.braintree_merchant_id = // eslint-disable-line camelcase
         this._profileId || venmoConfiguration.merchantId;
-      params.braintree_access_token = accessToken;
-      params.braintree_environment = venmoConfiguration.environment;
-      params.braintree_sdk_data = btoa(JSON.stringify(braintreeData));
+      params.braintree_access_token = accessToken; // eslint-disable-line camelcase
+      params.braintree_environment = venmoConfiguration.environment; // eslint-disable-line camelcase
+      params.braintree_sdk_data = btoa(JSON.stringify(braintreeData)); // eslint-disable-line camelcase
 
       return (
         getVenmoUrl({
@@ -819,7 +819,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
     self._createPromise,
     "venmo.tokenize.web-login.start",
     {
-      paypal_context_id: self._venmoPaymentContextId,
+      paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
     }
   );
   this._tokenizePromise = new ExtendedPromise();
@@ -846,7 +846,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
           self._createPromise,
           "venmo.tokenize.web-login.success",
           {
-            paypal_context_id: self._venmoPaymentContextId,
+            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
 
@@ -862,7 +862,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
           self._createPromise,
           "venmo.tokenize.web-login.failure",
           {
-            paypal_context_id: self._venmoPaymentContextId,
+            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
 
@@ -919,7 +919,7 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
         self._createPromise,
         "venmo.tokenize.web-login.status-change",
         {
-          paypal_context_id: self._venmoPaymentContextId,
+          paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
         }
       );
 
@@ -942,13 +942,13 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
       if (retryCount < self._maxRetryCount) {
         retryCount++;
 
-        return self
+        self
           ._checkPaymentContextStatusAndProcessResult(retryCount)
           .then(resolve)
           .catch(reject);
+      } else {
+        reject(new BraintreeError(errors.VENMO_TOKENIZATION_FAILED));
       }
-
-      return reject(new BraintreeError(errors.VENMO_TOKENIZATION_FAILED));
     });
   });
 };
@@ -1007,7 +1007,7 @@ Venmo.prototype._pollForStatusChange = function () {
           "venmo.tokenize.manual-return.status-change." +
             newStatus.toLowerCase(),
           {
-            paypal_context_id: self._venmoPaymentContextId,
+            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
 
@@ -1045,7 +1045,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
     this._createPromise,
     "venmo.tokenize.manual-return.start",
     {
-      paypal_context_id: self._venmoPaymentContextId,
+      paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
     }
   );
 
@@ -1059,7 +1059,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
         self._createPromise,
         "venmo.tokenize.manual-return.success",
         {
-          paypal_context_id: self._venmoPaymentContextId,
+          paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
         }
       );
 
@@ -1075,7 +1075,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
         self._createPromise,
         "venmo.tokenize.manual-return.failure",
         {
-          paypal_context_id: self._venmoPaymentContextId,
+          paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
         }
       );
 
@@ -1350,7 +1350,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
             self._createPromise,
             "venmo.appswitch.handle.payment-context-status-query.success",
             {
-              paypal_context_id: self._venmoPaymentContextId,
+              paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
             }
           );
 
@@ -1391,7 +1391,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
             self._createPromise,
             "venmo.process-results.payment-context-status-query-failed",
             {
-              paypal_context_id: self._venmoPaymentContextId,
+              paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
             }
           );
           // If the polling request fails, but not because of cancelization, we will rely on the params provided from the hash
