@@ -388,7 +388,7 @@ Venmo.prototype._handleDeepLinkAppSwitch = function (url) {
     this._handlePopupBridgeAppSwitch(url);
   } else {
     analytics.sendEvent(this._createPromise, "venmo.appswitch.start.webview");
-    window.open(url);
+    this._venmoWindow = window.open(url);
   }
 };
 
@@ -458,13 +458,17 @@ Venmo.prototype._handleBrowserAppSwitch = function (url) {
     this._shouldUseRedirectStrategy()
   ) {
     window.location.href = url;
-  } else if (browserDetection.isAndroid() && browserDetection.isChrome()) {
+  } else if (
+    this._mobileWebFallBack &&
+    browserDetection.isAndroid() &&
+    browserDetection.isChrome()
+  ) {
     // Android chrome needs to use window.location.href
     // to remain in the same tab as expected.
     // Chrome now defaults to opening a new tab.
     window.location.href = url;
   } else {
-    window.open(url);
+    this._venmoWindow = window.open(url);
   }
 };
 
@@ -599,6 +603,8 @@ Venmo.prototype._hasTokenizationResult = function (hash) {
 
   if (paramsFromUrl.resource_id) {
     this._venmoPaymentContextId = paramsFromUrl.resource_id;
+  } else if (params.id) {
+    this._venmoPaymentContextId = params.id;
   }
 
   return (
@@ -738,6 +744,7 @@ Venmo.prototype.tokenize = function (options) {
         })
         .then(function () {
           self._tokenizationInProgress = false;
+          self._venmoWindow = null;
 
           return formatTokenizePayload(payload);
         });
@@ -752,6 +759,7 @@ Venmo.prototype.tokenize = function (options) {
         })
         .then(function () {
           self._tokenizationInProgress = false;
+          self._venmoWindow = null;
 
           return Promise.reject(err);
         });
@@ -976,9 +984,51 @@ Venmo.prototype._checkPaymentContextStatus = function () {
 Venmo.prototype._pollForStatusChange = function () {
   var self = this;
 
+  if (!self._venmoPaymentContextId) {
+    return Promise.reject(
+      new BraintreeError(errors.VENMO_MOBILE_POLLING_TOKENIZATION_NO_CONTEXT_ID)
+    );
+  }
+
   if (Date.now() > self._mobilePollingContextExpiresIn) {
     return Promise.reject(
       new BraintreeError(errors.VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT)
+    );
+  }
+
+  if (
+    self._venmoWindow &&
+    self._venmoWindow.closed &&
+    self._venmoPaymentContextStatus !== "APPROVED"
+  ) {
+    analytics.sendEvent(
+      self._createPromise,
+      "venmo.appswitch.browser-window.closed"
+    );
+
+    self
+      ._cancelMobilePaymentContext()
+      .then(function () {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.tokenize.manual-return.canceled",
+          {
+            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          }
+        );
+      })
+      .catch(function (_err) {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.tokenize.manual-return.canceled.error",
+          {
+            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          }
+        );
+      });
+
+    return Promise.reject(
+      new BraintreeError(errors.VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED)
     );
   }
 
@@ -1164,6 +1214,10 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
       options.processResultsDelay || constants.DEFAULT_PROCESS_RESULTS_DELAY;
 
     if (!window.document.hidden) {
+      if (self._venmoWindow && !self._venmoWindow.closed) {
+        self._venmoWindow.close();
+      }
+
       if (!resultProcessingInProgress) {
         visibilityChangeListenerTimeout = setTimeout(completeFlow, delay);
       }
@@ -1370,7 +1424,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
         })
         .catch(function (err) {
           if (
-            err.type === errors.VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED.type
+            err.code === errors.VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED.code
           ) {
             if (window.popupBridge) {
               analytics.sendEvent(
@@ -1378,7 +1432,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
                 "popup-bridge:venmo:canceled"
               );
             }
-            // We want to reject in this case because if it the process was canceled, we don't want to take the happy path
+            // We want to reject in this case because if the process was canceled, we don't want to take the happy path
             reject(err);
           } else if (window.popupBridge) {
             analytics.sendEvent(

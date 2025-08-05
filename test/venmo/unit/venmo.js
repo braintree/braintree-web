@@ -1558,6 +1558,9 @@ describe("Venmo", () => {
 
       const venmo = new Venmo(createOptions);
 
+      // hasTokenizationResult should have extracted this in real-life usage
+      venmo._venmoPaymentContextId = mockResourceId;
+
       const results = await venmo.processHashChangeFlowResults(
         `venmoSuccess=1&paymentMethodNonce=${mockNonce}&username=${mockUsername}&resource_id=${mockResourceId}`
       );
@@ -1570,7 +1573,9 @@ describe("Venmo", () => {
     });
 
     it("fails if polling rejects due to canceled status", async () => {
-      expect.assertions(3);
+      const mockResourceId = "context-id-from-hash";
+
+      expect.assertions(4);
       testContext.client.request.mockResolvedValueOnce({
         data: {
           node: {
@@ -1582,14 +1587,28 @@ describe("Venmo", () => {
 
       const venmo = new Venmo(createOptions);
 
+      // hasTokenizationResult should have extracted this in real-life usage
+      venmo._venmoPaymentContextId = mockResourceId;
+
       return venmo
         .processHashChangeFlowResults(
-          "venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=context-id-from-hash"
+          `venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=${mockResourceId}`
         )
         .catch((error) => {
           expect(error).toBeInstanceOf(BraintreeError);
           expect(error.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED");
           expect(testContext.client.request).toBeCalledTimes(1);
+
+          // Add this new assertion to check the context ID is passed correctly
+          expect(testContext.client.request).toBeCalledWith({
+            api: "graphQLApi",
+            data: {
+              query: expect.stringMatching("on VenmoPaymentContext"),
+              variables: {
+                id: "context-id-from-hash",
+              },
+            },
+          });
         });
     });
 
@@ -1822,16 +1841,40 @@ describe("Venmo", () => {
         );
       });
 
-      it("sets location.href when device is android chrome", async () => {
+      it("sets location.href when device is android chrome and mobileWebFallBack is true", async () => {
         jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
         jest.spyOn(browserDetection, "isChrome").mockReturnValue(true);
 
-        const venmo = new Venmo(venmoOptions);
+        const venmoOptionsWithFallback = {
+          ...venmoOptions,
+          mobileWebFallBack: true,
+        };
+        const venmo = new Venmo(venmoOptionsWithFallback);
 
         await venmo.appSwitch("https://venmo.com/braintree");
 
         expect(window.open).not.toBeCalled();
         expect(window.location.href).toBe("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.browser"
+        );
+      });
+
+      it("calls window.open when device is android chrome and mobileWebFallBack is false", async () => {
+        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+
+        const venmoOptionsWithoutFallback = {
+          ...venmoOptions,
+          mobileWebFallBack: false,
+        };
+        const venmo = new Venmo(venmoOptionsWithoutFallback);
+
+        await venmo.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).toBeCalledWith("https://venmo.com/braintree");
+        expect(window.location.href).not.toBe("https://venmo.com/braintree");
         expect(analytics.sendEvent).toHaveBeenCalledWith(
           expect.anything(),
           "venmo.appswitch.start.browser"
@@ -2132,6 +2175,19 @@ describe("Venmo", () => {
       venmo.hasTokenizationResult();
 
       expect(venmo._venmoPaymentContextId).toBe("test-resource-id");
+    });
+
+    it("sets the _venmoPaymentContextId from the hash fragment id", () => {
+      urlParams.getUrlParams.mockReturnValue({});
+      history.replaceState(
+        {},
+        "",
+        `${testContext.location}#venmoSuccess=1&resource_id=test-hash-id`
+      );
+
+      venmo.hasTokenizationResult();
+
+      expect(venmo._venmoPaymentContextId).toBe("test-hash-id");
     });
   });
 
@@ -2645,6 +2701,8 @@ describe("Venmo", () => {
       });
 
       it("app switches to the Venmo app on mobile web fallback", async () => {
+        const mockPaymentContextId = "mockPaymentContextId";
+
         testContext.client.request.mockImplementation((options) => {
           if (options.data.query.includes("mutation CreateVenmo")) {
             return Promise.resolve({
@@ -2652,7 +2710,7 @@ describe("Venmo", () => {
                 createVenmoPaymentContext: {
                   venmoPaymentContext: {
                     status: "CREATED",
-                    id: "mockPaymentContextId",
+                    id: mockPaymentContextId,
                     createdAt: new Date().toString(),
                     expiresAt: new Date(Date.now() + 30000000).toString(),
                   },
@@ -2677,6 +2735,9 @@ describe("Venmo", () => {
           mobileWebFallBack: true,
           paymentMethodUsage: "single_use",
         });
+
+        // hasTokenizationResult should have extracted this in real-life usage
+        venmo._venmoPaymentContextId = mockPaymentContextId;
 
         jest.spyOn(venmo, "appSwitch");
 
@@ -2779,7 +2840,7 @@ describe("Venmo", () => {
         });
       });
 
-      it("creates a new payment context upon succesfull tokenization", async () => {
+      it("creates a new payment context upon successful tokenization", async () => {
         testContext.client.request.mockResolvedValueOnce({
           data: {
             node: {
@@ -2809,7 +2870,7 @@ describe("Venmo", () => {
         expect(venmo._venmoPaymentContextId).toBe("new-context-id");
       });
 
-      it("creates a new payment context upon unsuccesfull tokenization", async () => {
+      it("creates a new payment context upon unsuccessful tokenization", async () => {
         expect.assertions(2);
 
         testContext.client.request.mockRejectedValueOnce(
@@ -2891,6 +2952,23 @@ describe("Venmo", () => {
           });
         }
       );
+
+      it("rejects with cancellation error when tab/window is closed", async () => {
+        expect.assertions(3);
+
+        const mockWindow = { closed: true };
+        venmo._venmoWindow = mockWindow;
+        venmo._venmoPaymentContextStatus = "CREATED";
+
+        await venmo.tokenize().catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED");
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            expect.anything(),
+            "venmo.appswitch.browser-window.closed"
+          );
+        });
+      });
 
       it("sends an analytics event for each status change", async () => {
         testContext.client.request.mockResolvedValueOnce({

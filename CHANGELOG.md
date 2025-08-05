@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 3.125.0 (2025-08-05)
+
+- Venmo
+  - Cancel payment context when Venmo app is not installed and user closes tab
+  - Accept `resource_id` param in hash fragment query parameters
+  - Fix mobile tokenization canceled error catching
+- Update Dependencies
+  - Update credit-card-type to 10.3.0
+    - Adds support for Verve cards
+
 ## 3.124.0 (2025-07-17)
 
 - PayPalCheckout

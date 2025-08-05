@@ -22,6 +22,7 @@
  * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED Occurs when the polling has expired and the payment cannot be completed.
  * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED Occurs when the polling operation is canceled by the customer.
  * @property {CUSTOMER} VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT Occurs when customer takes too long to complete payment.
+ * @property {UNKNOWN} VENMO_MOBILE_POLLING_TOKENIZATION_NO_CONTEXT_ID Occurs when payment context ID is not available.
  * @property {UNKNOWN} VENMO_MOBILE_POLLING_TOKENIZATION_FAILED Occurs if there is an unknown error during the mobile polling process.
  * @property {NETWORK} VENMO_NETWORK_ERROR Occurs when a network error causes a request to fail.
  * @property {MERCHANT} VENMO_TOKENIZATION_CANCELED_BY_MERCHANT Occurs when `cancelTokenization` is called while tokenization is in progress.
@@ -115,6 +116,11 @@ module.exports = {
     type: BraintreeError.types.CUSTOMER,
     code: "VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT",
     message: "Customer took too long to authorize Venmo payment.",
+  },
+  VENMO_MOBILE_POLLING_TOKENIZATION_NO_CONTEXT_ID: {
+    type: BraintreeError.types.UNKNOWN,
+    code: "VENMO_MOBILE_POLLING_TOKENIZATION_NO_CONTEXT_ID",
+    message: "No Venmo payment context ID available.",
   },
   VENMO_MOBILE_POLLING_TOKENIZATION_FAILED: {
     type: BraintreeError.types.UNKNOWN,
