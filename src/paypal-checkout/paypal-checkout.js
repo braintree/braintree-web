@@ -681,7 +681,6 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  */
 PayPalCheckout.prototype.createPayment = function (options) {
   var self = this;
-
   if (!options || !constants.FLOW_ENDPOINTS.hasOwnProperty(options.flow)) {
     return Promise.reject(
       new BraintreeError(errors.PAYPAL_FLOW_OPTION_REQUIRED)
@@ -847,7 +846,8 @@ PayPalCheckout.prototype.updatePayment = function (options) {
       self._clientPromise,
       "paypal-checkout.updatePayment.missing-options",
       {
-        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        flow: self._flow,
+        context_id: self._contextId, // eslint-disable-line camelcase
       }
     );
 
@@ -861,7 +861,8 @@ PayPalCheckout.prototype.updatePayment = function (options) {
       self._clientPromise,
       "paypal-checkout.updatePayment.inconsistent-currencies",
       {
-        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        flow: self._flow,
+        context_id: self._contextId, // eslint-disable-line camelcase
       }
     );
 
@@ -878,12 +879,12 @@ PayPalCheckout.prototype.updatePayment = function (options) {
       })
     );
   }
-
   analytics.sendEventPlus(
     this._clientPromise,
     "paypal-checkout.updatePayment",
     {
-      paypal_context_id: self._contextId, // eslint-disable-line camelcase
+      flow: self._flow,
+      context_id: self._contextId, // eslint-disable-line camelcase
     }
   );
 
@@ -903,7 +904,8 @@ PayPalCheckout.prototype.updatePayment = function (options) {
           self._clientPromise,
           "paypal-checkout.updatePayment.invalid",
           {
-            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+            flow: self._flow,
+            context_id: self._contextId, // eslint-disable-line camelcase
           }
         );
 
@@ -923,7 +925,8 @@ PayPalCheckout.prototype.updatePayment = function (options) {
         self._clientPromise,
         "paypal-checkout.updatePayment." + errors.PAYPAL_FLOW_FAILED.code,
         {
-          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          flow: self._flow,
+          context_id: self._contextId, // eslint-disable-line camelcase
         }
       );
 
@@ -975,7 +978,8 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
       this._clientPromise,
       "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress",
       {
-        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        flow: self._flow,
+        context_id: self._contextId, // eslint-disable-line camelcase
       }
     );
 
@@ -1008,12 +1012,12 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
   options = assign({}, options, {
     flow: "checkout",
   });
-
   analytics.sendEventPlus(
     this._clientPromise,
     "paypal-checkout.startVaultInitiatedCheckout.started",
     {
-      paypal_context_id: self._contextId, // eslint-disable-line camelcase
+      flow: self._flow,
+      context_id: self._contextId, // eslint-disable-line camelcase
     }
   );
 
@@ -1049,7 +1053,8 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
           self._clientPromise,
           "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer",
           {
-            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+            flow: self._flow,
+            context_id: self._contextId, // eslint-disable-line camelcase
           }
         );
 
@@ -1072,7 +1077,8 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
           self._clientPromise,
           "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened",
           {
-            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+            flow: self._flow,
+            context_id: self._contextId, // eslint-disable-line camelcase
           }
         );
 
@@ -1102,7 +1108,8 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
         self._clientPromise,
         "paypal-checkout.startVaultInitiatedCheckout.succeeded",
         {
-          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          flow: self._flow,
+          context_id: self._contextId, // eslint-disable-line camelcase
         }
       );
 
@@ -1163,7 +1170,8 @@ PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
       this._clientPromise,
       "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
       {
-        paypal_context_id: this._contextId, // eslint-disable-line camelcase
+        flow: this._flow,
+        context_id: this._contextId, // eslint-disable-line camelcase
       }
     );
   }
@@ -1302,7 +1310,8 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     this._clientPromise,
     "paypal-checkout.tokenization.started",
     {
-      paypal_context_id: self._contextId, // eslint-disable-line camelcase
+      flow: self._flow,
+      context_id: self._contextId, // eslint-disable-line camelcase
     }
   );
 
@@ -1321,7 +1330,8 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
         self._clientPromise,
         "paypal-checkout.tokenization.success",
         {
-          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          flow: self._flow,
+          context_id: self._contextId, // eslint-disable-line camelcase
         }
       );
       if (payload.creditFinancingOffered) {
@@ -1329,7 +1339,8 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
           self._clientPromise,
           "paypal-checkout.credit.accepted",
           {
-            paypal_context_id: self._contextId, // eslint-disable-line camelcase
+            flow: self._flow,
+            context_id: self._contextId, // eslint-disable-line camelcase
           }
         );
       }
@@ -1345,7 +1356,8 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
         self._clientPromise,
         "paypal-checkout.tokenization.failed",
         {
-          paypal_context_id: self._contextId, // eslint-disable-line camelcase
+          flow: self._flow,
+          context_id: self._contextId, // eslint-disable-line camelcase
         }
       );
 
@@ -1492,16 +1504,7 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     options.currency = options.currency || "USD";
   }
   // for internal testing only
-  if (options.env === "stage") {
-    src = "https://www.msmaster.qa.paypal.com/sdk/js?";
-  } else if (options.env === "sandbox") {
-    src = "https://www.sandbox.paypal.com/sdk/js?";
-  } else {
-    src = "https://www.paypal.com/sdk/js?";
-  }
-  // we want to remove the env
-  // regardless of what its set to
-  // so it doesn't get added as query params
+  src = constants.ENVIRONMENT[options.env] || "https://www.paypal.com/sdk/js?";
   delete options.env;
 
   this._paypalScript.onload = function () {
@@ -1631,12 +1634,12 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
 
   if (options.planType) {
     paymentResource.planType = options.planType;
+  }
 
-    if (options.planMetadata) {
-      paymentResource.planMetadata = this._formatPlanMetadata(
-        options.planMetadata
-      );
-    }
+  if (options.planMetadata) {
+    paymentResource.planMetadata = this._formatPlanMetadata(
+      options.planMetadata
+    );
   }
 
   self._formatPaymentResourceCheckoutData(paymentResource, options);
@@ -1869,7 +1872,8 @@ PayPalCheckout.prototype._formatUpdatePaymentData = function (options) {
       self._clientPromise,
       "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant",
       {
-        paypal_context_id: self._contextId, // eslint-disable-line camelcase
+        flow: self._flow,
+        context_id: self._contextId, // eslint-disable-line camelcase
       }
     );
 

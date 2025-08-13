@@ -119,6 +119,18 @@ describe("metadata", () => {
       expect(configData.tenant_name).toBe("braintree");
     });
 
+    it("sets product_name", () => {
+      const configData = metadata.addEventMetadata(client);
+
+      expect(configData.product_name).toBe("BT_DCC");
+    });
+
+    it("sets space_key", () => {
+      const configData = metadata.addEventMetadata(client);
+
+      expect(configData.space_key).toBe("SKDUYK");
+    });
+
     it("sets tokenizationKey when present", () => {
       const configData = metadata.addEventMetadata(client);
 

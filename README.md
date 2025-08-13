@@ -181,6 +181,69 @@ braintree.client
   });
 ```
 
+# Storybook
+
+[Storybook](https://storybook.js.org/) is used for isolated component demonstration and integration testing.
+
+#### Setup
+
+Retrieve your sandbox tokenization key from your Braintree sandbox account and add it to `.env`.
+
+For full functionality please ensure the sandbox account used for testing is fully configured to use any payment methods that will be tested
+
+```
+STORYBOOK_BRAINTREE_TOKENIZATION_KEY="your-sandbox-tokenization-key"
+```
+
+#### Development server
+
+To run the Storybook development server
+
+```
+npm run storybook:dev
+```
+
+#### Static build
+
+To run the Storybook static build on a local secure server(required for Apple Pay flow to initialize)
+
+First create a private key and certificate in the root directory of the repo
+
+```
+openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem -subj "/CN=127.0.0.1"
+```
+
+Build the Storybook static files
+
+```
+npm run storybook:build
+```
+
+Start the secure server
+
+```
+npm run storybook:run-build
+```
+
+# Browserstack Testing
+
+Follow [setup](#setup) and [static build](#static-build) instructions for Storybook.
+
+Add the following environment variables to your `.env`. Utilize credentials from either your own Browserstack account or utilize team Browserstack account credentials.
+
+```shell
+export BROWSERSTACK_USERNAME="******"
+export BROWSERSTACK_ACCESS_KEY="******"
+```
+
+To run all test Browserstack test suites run:
+
+```shell
+npm run test:integration
+```
+
+Test results will be viewable in the terminal. A link will also be output in the terminal to view test runs in the Browserstack UI.
+
 # Releases
 
 Subscribe to this repo to be notified when SDK releases go out.

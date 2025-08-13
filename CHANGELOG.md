@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.126.0 (2025-08-13)
+
+- PayPalCheckout
+  - Added support for teBraintree env in Braintree appSwitch
+  - Fix vaulted recurring payment issue that allowed successful transactions with missing or null `planType`
+- Venmo
+  - Fix Android app switch issue when `mobileWebFallback: false`
+
 ## 3.125.0 (2025-08-05)
 
 - Venmo

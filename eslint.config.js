@@ -36,4 +36,16 @@ module.exports = [
     },
   },
   ...eslintJestConfig.default,
+  {
+    files: [".storybook/**/*.ts"],
+    languageOptions: {
+      globals: {
+        browser: "readonly",
+        driver: "readonly",
+        $: "readonly",
+        $$: "readonly",
+        process: "readonly",
+      },
+    },
+  },
 ];

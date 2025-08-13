@@ -20,6 +20,11 @@ function sendPaypalEventPlusFields(
   callback
 ) {
   var timestamp = Date.now();
+  if (extraFields.flow === "vault") {
+    extraFields.context_type = "BA_Token"; //eslint-disable-line camelcase
+  } else if (extraFields.flow === "checkout") {
+    extraFields.context_type = "EC_Token"; //eslint-disable-line camelcase
+  }
 
   return Promise.resolve(clientInstanceOrPromise)
     .then(function (client) {
@@ -42,10 +47,13 @@ function sendPaypalEventPlusFields(
         {
           level: "info",
           event: qualifiedEvent,
-          payload: {
-            env: isProd ? "production" : "sandbox",
-            timestamp: timestamp,
-          },
+          payload: assign(
+            {
+              env: isProd ? "production" : "sandbox",
+              timestamp: timestamp,
+            },
+            extraFields
+          ),
         },
       ];
       data.tracking = [trackingMeta];

@@ -48,6 +48,8 @@ function addEventMetadata(clientInstanceOrPromise) {
     session_id: configuration.analyticsMetadata.sessionId,
     client_session_id: configuration.analyticsMetadata.sessionId,
     tenant_name: "braintree",
+    product_name: "BT_DCC",
+    space_key: "SKDUYK",
   };
   /* eslint-enable camelcase */
 

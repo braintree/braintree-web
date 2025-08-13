@@ -1449,6 +1449,7 @@ describe("PayPalCheckout", () => {
         paymentId: "pay-token-123-abc",
       };
       analytics.sendEventPlus = jest.fn();
+      testContext.paypalCheckout._flow = "checkout";
       testContext.paypalCheckout._contextId = "pay-token-123-abc";
     });
 
@@ -1456,13 +1457,13 @@ describe("PayPalCheckout", () => {
       analytics.sendEventPlus.mockClear();
 
       await testContext.paypalCheckout.updatePayment(testContext.options);
-
       expect(analytics.sendEventPlus).toHaveBeenCalledTimes(1);
       expect(analytics.sendEventPlus).toHaveBeenCalledWith(
         testContext.paypalCheckout._clientPromise,
         "paypal-checkout.updatePayment",
         {
-          paypal_context_id: testContext.options.paymentId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.options.paymentId,
         }
       );
     });
@@ -1493,7 +1494,8 @@ describe("PayPalCheckout", () => {
             testContext.paypalCheckout._clientPromise,
             "paypal-checkout.updatePayment.invalid",
             {
-              paypal_context_id: testContext.paypalCheckout._contextId,
+              flow: testContext.paypalCheckout._flow,
+              context_id: testContext.paypalCheckout._contextId,
             }
           );
         });
@@ -1925,7 +1927,8 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.updatePayment.shippingAddress.provided.by-the-merchant",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId,
+            flow: testContext.paypalCheckout._flow,
+            context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -2013,6 +2016,7 @@ describe("PayPalCheckout", () => {
         },
       });
       testContext.paypalCheckout._contextId = "context-id";
+      testContext.paypalCheckout._flow = "checkout";
 
       jest
         .spyOn(testContext.paypalCheckout, "tokenizePayment")
@@ -2043,7 +2047,8 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.error.already-in-progress",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.paypalCheckout._contextId,
         }
       );
 
@@ -2183,19 +2188,20 @@ describe("PayPalCheckout", () => {
       await testContext.paypalCheckout.startVaultInitiatedCheckout(
         testContext.options
       );
-
       expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.succeeded",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.paypalCheckout._contextId,
         }
       );
       expect(analytics.sendEventPlus).toBeCalledWith(
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.started",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.paypalCheckout._contextId,
         }
       );
     });
@@ -2351,7 +2357,8 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.canceled.by-customer",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.paypalCheckout._contextId,
         }
       );
       expect(testContext.fakeFrameService.close).toBeCalledTimes(0);
@@ -2381,7 +2388,8 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.failed.popup-not-opened",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.paypalCheckout._contextId,
         }
       );
       expect(testContext.fakeFrameService.close).toBeCalledTimes(1);
@@ -2425,6 +2433,7 @@ describe("PayPalCheckout", () => {
   describe("closeVaultInitiatedCheckoutWindow", () => {
     beforeEach(() => {
       testContext.paypalCheckout._contextId = "context-id";
+      testContext.paypalCheckout._flow = "checkout";
 
       analytics.sendEventPlus = jest.fn();
     });
@@ -2437,12 +2446,12 @@ describe("PayPalCheckout", () => {
 
     it("sends an analytics event when vault initiated checkout is in progress", async () => {
       await testContext.paypalCheckout.closeVaultInitiatedCheckoutWindow();
-
       expect(analytics.sendEventPlus).not.toBeCalledWith(
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.paypalCheckout._contextId,
         }
       );
 
@@ -2458,7 +2467,8 @@ describe("PayPalCheckout", () => {
         expect.anything(),
         "paypal-checkout.startVaultInitiatedCheckout.canceled.by-merchant",
         {
-          paypal_context_id: testContext.paypalCheckout._contextId,
+          flow: testContext.paypalCheckout._flow,
+          context_id: testContext.paypalCheckout._contextId,
         }
       );
 
@@ -2469,6 +2479,7 @@ describe("PayPalCheckout", () => {
   describe("tokenizePayment", () => {
     beforeEach(() => {
       testContext.paypalCheckout._contextId = "context-id";
+      testContext.paypalCheckout._flow = "checkout";
 
       analytics.sendEventPlus = jest.fn();
     });
@@ -2727,7 +2738,8 @@ describe("PayPalCheckout", () => {
             testContext.paypalCheckout._clientPromise,
             "paypal-checkout.tokenization.started",
             {
-              paypal_context_id: testContext.paypalCheckout._contextId,
+              flow: testContext.paypalCheckout._flow,
+              context_id: testContext.paypalCheckout._contextId,
             }
           );
         }));
@@ -2753,7 +2765,8 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.tokenization.success",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId,
+            flow: testContext.paypalCheckout._flow,
+            context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -2779,7 +2792,8 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.credit.accepted",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId,
+            flow: testContext.paypalCheckout._flow,
+            context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -3122,7 +3136,8 @@ describe("PayPalCheckout", () => {
           testContext.paypalCheckout._clientPromise,
           "paypal-checkout.tokenization.failed",
           {
-            paypal_context_id: testContext.paypalCheckout._contextId,
+            flow: testContext.paypalCheckout._flow,
+            context_id: testContext.paypalCheckout._contextId,
           }
         );
       });
@@ -3188,6 +3203,25 @@ describe("PayPalCheckout", () => {
         );
         expect(fakeScript.src).toMatch(
           "https://www.msmaster.qa.paypal.com/sdk/js?"
+        );
+      });
+    });
+
+    it("loads the teBraintree PayPal script when specified", () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({ env: "teBraintree" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(document.head.insertBefore).toBeCalledTimes(1);
+        expect(document.head.insertBefore).toBeCalledWith(
+          fakeScript,
+          firstHeadElement
+        );
+        expect(fakeScript.src).toMatch(
+          "https://www.te-braintree.qa.paypal.com/sdk/js?"
         );
       });
     });

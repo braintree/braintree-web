@@ -155,18 +155,44 @@ describe("analytics", () => {
           client,
           expectedEventName,
           {
-            paypal_context_id: expectedContextId,
+            flow: "vault",
+            context_id: expectedContextId,
           },
           () => {
             actualEventSent = client._request.mock.calls[0][0].data;
             expect(actualEventSent).not.toBeNull();
             actualTracking = actualEventSent.tracking[0];
             expect(actualTracking).not.toBeNull();
-            expect(actualTracking.paypal_context_id).toBe(expectedContextId);
+            expect(actualTracking.context_type).toBe("BA_Token");
+            expect(actualTracking.context_id).toBe(expectedContextId);
           }
         );
 
         done();
+      });
+
+      it("sets context_type to EC_Token for checkout flow", (done) => {
+        const client = testContext.client;
+        const expectedContextId = "paypal-5678-id";
+        const expectedEventName = "api.module.thing.happened";
+
+        analytics.sendEventPlus(
+          client,
+          expectedEventName,
+          {
+            flow: "checkout",
+            context_id: expectedContextId,
+          },
+          () => {
+            const actualEventSent = client._request.mock.calls[0][0].data;
+            const actualTracking = actualEventSent.tracking[0];
+
+            expect(actualTracking.context_type).toBe("EC_Token");
+            expect(actualTracking.context_id).toBe(expectedContextId);
+
+            done();
+          }
+        );
       });
 
       it("does not clobber preset metadata fields", (done) => {
@@ -180,7 +206,7 @@ describe("analytics", () => {
           client,
           expectedEventName,
           {
-            paypal_context_id: expectedContextId,
+            context_id: expectedContextId,
             component: altComponent,
           },
           () => {

@@ -8,3 +8,14 @@ src/dropin/
 coverage/
 
 .eslintcache
+.idea
+
+*storybook.log
+storybook-static
+
+cert.pem
+key.pem
+
+browserstack.err
+local.log
+logs/

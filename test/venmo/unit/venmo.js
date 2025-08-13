@@ -2773,13 +2773,13 @@ describe("Venmo", () => {
           expect.anything(),
           "venmo.tokenize.manual-return.start",
           {
-            paypal_context_id: "context-id",
+            context_id: "context-id",
           }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { paypal_context_id: "context-id" }
+          { context_id: "context-id" }
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
@@ -2914,7 +2914,7 @@ describe("Venmo", () => {
             expect.anything(),
             "venmo.tokenize.manual-return.failure",
             {
-              paypal_context_id: "context-id",
+              context_id: "context-id",
             }
           );
 
@@ -2946,7 +2946,7 @@ describe("Venmo", () => {
               expect.anything(),
               `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`,
               {
-                paypal_context_id: "context-id",
+                context_id: "context-id",
               }
             );
           });
@@ -2968,6 +2968,30 @@ describe("Venmo", () => {
             "venmo.appswitch.browser-window.closed"
           );
         });
+      });
+
+      it("does not trigger cancellation when window is closed but payment context status is APPROVED", async () => {
+        const mockWindow = { closed: true };
+        venmo._venmoWindow = mockWindow;
+        venmo._venmoPaymentContextStatus = "SCANNED";
+
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            node: {
+              status: "APPROVED",
+              paymentMethodId: "fake-nonce",
+              userName: "some-name",
+            },
+          },
+        });
+
+        const result = await venmo.tokenize();
+
+        expect(result.nonce).toBe("fake-nonce");
+        expect(analytics.sendEvent).not.toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.browser-window.closed"
+        );
       });
 
       it("sends an analytics event for each status change", async () => {
@@ -3000,22 +3024,22 @@ describe("Venmo", () => {
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.scanned",
-          { paypal_context_id: "context-id" }
+          { context_id: "context-id" }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.unknown_status_we_do_not_account_for",
-          { paypal_context_id: "context-id" }
+          { context_id: "context-id" }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.approved",
-          { paypal_context_id: "context-id" }
+          { context_id: "context-id" }
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { paypal_context_id: "context-id" }
+          { context_id: "context-id" }
         );
 
         // once to create the payment context
@@ -3582,13 +3606,13 @@ describe("Venmo", () => {
             1,
             expect.anything(),
             expectedStartEvent,
-            { paypal_context_id: "some-context-id" }
+            { context_id: "some-context-id" }
           );
           expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
             2,
             expect.anything(),
             expectedApprovedEvent,
-            { paypal_context_id: "some-context-id" }
+            { context_id: "some-context-id" }
           );
         });
 
@@ -3603,7 +3627,7 @@ describe("Venmo", () => {
               2,
               expect.anything(),
               expectedApprovedEvent,
-              { paypal_context_id: "some-context-id" }
+              { context_id: "some-context-id" }
             );
           });
         });
@@ -3618,7 +3642,7 @@ describe("Venmo", () => {
             1,
             expect.anything(),
             expectedApprovedEvent,
-            { paypal_context_id: "some-context-id" }
+            { context_id: "some-context-id" }
           );
         });
       });

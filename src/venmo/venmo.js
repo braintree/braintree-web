@@ -827,7 +827,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
     self._createPromise,
     "venmo.tokenize.web-login.start",
     {
-      paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+      context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
     }
   );
   this._tokenizePromise = new ExtendedPromise();
@@ -854,7 +854,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
           self._createPromise,
           "venmo.tokenize.web-login.success",
           {
-            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
 
@@ -870,7 +870,7 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
           self._createPromise,
           "venmo.tokenize.web-login.failure",
           {
-            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
 
@@ -927,7 +927,7 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
         self._createPromise,
         "venmo.tokenize.web-login.status-change",
         {
-          paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
         }
       );
 
@@ -999,7 +999,7 @@ Venmo.prototype._pollForStatusChange = function () {
   if (
     self._venmoWindow &&
     self._venmoWindow.closed &&
-    self._venmoPaymentContextStatus !== "APPROVED"
+    self._venmoPaymentContextStatus === "CREATED"
   ) {
     analytics.sendEvent(
       self._createPromise,
@@ -1013,7 +1013,7 @@ Venmo.prototype._pollForStatusChange = function () {
           self._createPromise,
           "venmo.tokenize.manual-return.canceled",
           {
-            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
       })
@@ -1022,7 +1022,7 @@ Venmo.prototype._pollForStatusChange = function () {
           self._createPromise,
           "venmo.tokenize.manual-return.canceled.error",
           {
-            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
       });
@@ -1057,7 +1057,7 @@ Venmo.prototype._pollForStatusChange = function () {
           "venmo.tokenize.manual-return.status-change." +
             newStatus.toLowerCase(),
           {
-            paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
           }
         );
 
@@ -1095,7 +1095,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
     this._createPromise,
     "venmo.tokenize.manual-return.start",
     {
-      paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+      context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
     }
   );
 
@@ -1109,7 +1109,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
         self._createPromise,
         "venmo.tokenize.manual-return.success",
         {
-          paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
         }
       );
 
@@ -1125,7 +1125,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
         self._createPromise,
         "venmo.tokenize.manual-return.failure",
         {
-          paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
         }
       );
 
@@ -1404,7 +1404,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
             self._createPromise,
             "venmo.appswitch.handle.payment-context-status-query.success",
             {
-              paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+              context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
             }
           );
 
@@ -1445,7 +1445,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
             self._createPromise,
             "venmo.process-results.payment-context-status-query-failed",
             {
-              paypal_context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+              context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
             }
           );
           // If the polling request fails, but not because of cancelization, we will rely on the params provided from the hash

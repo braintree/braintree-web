@@ -16,3 +16,15 @@ if [ ! -z "$FILES" ]; then
 else
 	echo -e "\033[1;31m You have no staged javascript files, skipping checks .. \033[0m"
 fi
+
+# Check for PayPal internal registry in package-lock
+if grep -q 'paypalinc' package-lock.json; then
+    echo "🥴 Found 'paypalinc' in package-lock.json. If you're intentionally using the PayPal registry for dependencies, feel free to ignore this."
+	echo "If you're not intentionally using the PayPal registry for dependencies, please reinstall npm packages:"
+	echo
+	echo "-------------------------------------------------"
+    echo "rm -rf node_modules/"
+    echo "rm package-lock.json"
+    echo "npm install --registry=https://registry.npmjs.org"
+	echo "-------------------------------------------------"
+fi
