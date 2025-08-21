@@ -8,6 +8,7 @@
   "hosted-fields",
   "local-payment",
   "masterpass",
+  "payment-ready",
   "payment-request",
   "paypal",
   "paypal-checkout",

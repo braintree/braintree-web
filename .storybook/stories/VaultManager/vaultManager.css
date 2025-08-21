@@ -1,0 +1,199 @@
+.vault-manager-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: var(--font-body);
+  background: var(--color-white);
+  color: var(--color-black);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.vault-manager-container h2 {
+  color: var(--color-black);
+  margin-bottom: 10px;
+  font-size: 28px;
+  font-weight: 600;
+  font-family: var(--font-display);
+}
+
+.vault-description {
+  margin-bottom: 30px;
+  padding: 15px;
+  background-color: var(--color-white);
+  border-left: 4px solid var(--color-deep-blue);
+  border-radius: 4px;
+}
+
+.vault-description p {
+  margin: 0;
+  color: var(--color-black);
+  line-height: 1.5;
+  font-family: var(--font-body);
+}
+
+.credentials-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 1px solid var(--color-black);
+  border-radius: 6px;
+  background-color: var(--color-white);
+}
+
+.credentials-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: var(--color-black);
+  font-size: 18px;
+  font-family: var(--font-display);
+}
+
+.actions-section {
+  margin-bottom: 30px;
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: 1px solid var(--color-black);
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+  transform: translateY(-1px);
+}
+
+.btn-warning {
+  background-color: var(--color-bright-blue);
+  color: var(--color-black);
+  border: 1px solid var(--color-bright-blue);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: var(--color-white);
+  color: var(--color-bright-blue);
+  border: 1px solid var(--color-bright-blue);
+  transform: translateY(-1px);
+}
+
+.results-section {
+  margin-top: 20px;
+}
+
+.result-display {
+  transition: opacity 0.15s ease-in-out;
+  font-family: var(--font-body);
+}
+
+.error-display .error-text {
+  color: var(--color-black);
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+
+.success-text {
+  display: block;
+  color: var(--color-deep-blue);
+  font-family: var(--font-body);
+}
+
+.info-text {
+  color: var(--color-black);
+  font-weight: 500;
+  font-family: var(--font-body);
+}
+
+.payment-method-card {
+  border: 1px solid var(--color-black);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background-color: var(--color-white);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.payment-method-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payment-method-info {
+  color: var(--color-black);
+  line-height: 1.6;
+  font-family: var(--font-body);
+}
+
+.payment-method-info strong {
+  color: var(--color-black);
+  font-family: var(--font-body);
+}
+
+.update-result {
+  padding: 15px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-deep-blue);
+  border-radius: 4px;
+  margin-top: 15px;
+}
+
+.update-result a {
+  color: var(--color-deep-blue);
+  word-break: break-all;
+  font-family: var(--font-body);
+}
+
+.update-result a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .vault-manager-container {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .actions-section {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
+}

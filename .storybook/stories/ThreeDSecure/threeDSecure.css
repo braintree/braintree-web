@@ -1,0 +1,134 @@
+/* Container and layout styles */
+.three-d-secure-container {
+  max-width: 600px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+.three-d-secure-intro {
+  margin-bottom: 20px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+/* Button styles */
+.autofill-button {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font-body);
+  margin-bottom: 15px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.autofill-button:hover,
+.autofill-button:active {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+}
+
+.pay-button {
+  margin-top: 10px;
+}
+
+.cancel-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-black);
+  background: var(--color-white);
+  color: var(--color-black);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.cancel-button:hover,
+.cancel-button:active {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+}
+
+/* Form layout styles */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.form-grid-full-width {
+  grid-column: span 2;
+}
+
+/* Input and field styles */
+.hosted-field {
+  border: 1px solid var(--color-black);
+  padding: 10px;
+  border-radius: 4px;
+  height: 20px;
+  background-color: var(--color-white);
+  font-family: var(--font-body);
+}
+
+.hosted-field:focus-within {
+  border-color: var(--color-deep-blue);
+}
+
+/* Error message styles */
+.help-text {
+  color: var(--color-black);
+  font-size: 12px;
+  margin-top: 2px;
+  font-family: var(--font-body);
+}
+
+/* Result display styles */
+.result-warning {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-bright-blue);
+  font-family: var(--font-body);
+}
+
+/* Modal styles */
+.three-ds-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.three-ds-modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-white);
+  color: var(--color-black);
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  font-family: var(--font-body);
+}
+
+/* Error state for form fields */
+.has-error .shared-input,
+.has-error .shared-select {
+  border-color: var(--color-black);
+}

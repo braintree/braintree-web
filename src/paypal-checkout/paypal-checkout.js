@@ -472,6 +472,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
  * @param {string} [options.contactPreference] Optional field but required if using different recipient via `shippingAddressOverride`. Can be 'NO_CONTACT_INFO', 'RETAIN_CONTACT_INFO' or 'UPDATE_CONTACT_INFO'. If null, will default to 'NO_CONTACT_INFO'.
+ * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
  * @param {string} options.shippingAddressOverride.line1 Street address.
  * @param {string} [options.shippingAddressOverride.line2] Street address (extended).
@@ -500,6 +501,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {boolean} options.appSwitchPreference.launchPaypalApp Opts into the app switch flow.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
+ * @param {string} [options.paymentReadySessionId] Optional session identifier returned from PaymentReady.createCustomerSession that can be used to track a specific checkout attempt. This ID is used for analytics and to connect multiple API calls associated with a single checkout flow.
  * @param {string} [options.userAction=CONTINUE] Changes the call-to-action on the PayPal review page
  *  * `CONTINUE` - Shows the default call-to-action text on the PayPal Express Checkout page.
  *  * `COMMIT` - Shows a deterministic call-to-action for the PayPal Checkout flow.
@@ -1628,6 +1630,10 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
     paymentResource.shippingCallbackUrl = options.shippingCallbackUrl;
   }
 
+  if (options.hasOwnProperty("paymentReadySessionId")) {
+    paymentResource.paymentReadySessionId = options.paymentReadySessionId;
+  }
+
   if (options.hasOwnProperty("amountBreakdown")) {
     paymentResource.amountBreakdown = options.amountBreakdown;
   }
@@ -1905,7 +1911,12 @@ PayPalCheckout.prototype._formatTokenizeData = function (options, params) {
   var gatewayConfiguration = clientConfiguration.gatewayConfiguration;
   var isTokenizationKey =
     clientConfiguration.authorizationType === "TOKENIZATION_KEY";
-  var isVaultFlow = options.flow === "vault";
+  // Non-default browsers in the app-switch flow will return to a new tab
+  // where the context of flow is lost, so in these cases we need to check
+  // if paymentId is returned in the onApprove callback. This param is
+  // null for vault flows.
+  var isVaultFlow =
+    options.flow === "vault" || (options.flow == null && !params.paymentId);
   var correlationId =
     this._riskCorrelationId || params.billingToken || params.ecToken;
   var data = {

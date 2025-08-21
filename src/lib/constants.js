@@ -48,5 +48,13 @@ module.exports = {
   SOURCE: "client",
   PLATFORM: PLATFORM,
   BRAINTREE_LIBRARY_VERSION: "braintree/" + PLATFORM + "/" + VERSION,
-  ALLOWED_EXTRA_EVENT_FIELDS: ["context_id", "context_type"],
+  ALLOWED_EXTRA_EVENT_FIELDS: [
+    "context_id",
+    "context_type",
+    "payment_ready_button_order",
+    "payment_ready_experiment_type",
+    "payment_ready_page_type",
+    "payment_ready_session_id",
+    "button_type",
+  ],
 };

@@ -30,13 +30,13 @@ git clone https://github.com/braintree/braintree-web.git "$BT_WEB_DIR"
 echo -e "Building jsdoc...\n"
 cd "$BT_JS_DIR" && npm run jsdoc
 
-cd "$BT_WEB_DIR" && git co gh-pages
+cd "$BT_WEB_DIR" && git checkout gh-pages
 git config user.name Braintree
 git config user.email code@getbraintree.com
 
 echo -e "Adding jsdoc to braintree-web and publishing...\n"
 cp -r ~/bt/braintree.js/dist/jsdoc/$npm_package_version .
-cp -r ~/bt/braintree.js/dist/jsdoc/current .
+cp -rP ~/bt/braintree.js/dist/jsdoc/current .
 cp -r ~/bt/braintree.js/dist/jsdoc/index.html .
 cp -r ~/bt/braintree.js/dist/jsdoc/.nojekyll .
 commit_and_push

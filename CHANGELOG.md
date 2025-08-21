@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.127.0 (2025-08-21)
+
+- Payment Ready
+  - Add support for Payment Ready
+- PayPal Checkout
+  - Fix issue with non-default browsers in app-switch vaulting flow
+  - Update JS docs on limited `contactPreference` availability
+
 ## 3.126.0 (2025-08-13)
 
 - PayPalCheckout

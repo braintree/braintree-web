@@ -1,0 +1,11 @@
+{
+  "testEnvironment": "jsdom",
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/payment-ready/coverage",
+  "displayName": "payment-ready",
+  "restoreMocks": true,
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "rootDir": "../../src/payment-ready",
+  "roots": ["<rootDir>", "<rootDir>/../../test/payment-ready"],
+  "testMatch": ["**/unit/**/*.js"]
+}

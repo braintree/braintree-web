@@ -1,0 +1,44 @@
+/* PayPal Checkout Story Styles */
+
+/* Container Styles */
+.paypal-container {
+  max-width: 400px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+/* Section Styles */
+.paypal-description {
+  margin-bottom: 20px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+/* Form Controls */
+.paypal-form-group {
+  margin: 15px 0;
+}
+
+.paypal-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+.paypal-checkbox {
+  margin-right: 8px;
+  accent-color: var(--color-deep-blue);
+}
+
+.paypal-checkbox-text {
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+/* Button Container */
+.paypal-button-container {
+  margin-bottom: 20px;
+}

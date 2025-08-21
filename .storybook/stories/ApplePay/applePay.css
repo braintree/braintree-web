@@ -1,0 +1,55 @@
+.apple-pay-requirements {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-deep-blue);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+.apple-pay-requirements ul {
+  margin: 10px 0;
+  padding-left: 20px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+.apple-pay-button-container {
+  margin-bottom: 20px;
+}
+
+.apple-pay-button {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.apple-pay-button:hover,
+.apple-pay-button:active {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+}
+
+.apple-pay-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-black);
+  color: var(--color-white);
+}

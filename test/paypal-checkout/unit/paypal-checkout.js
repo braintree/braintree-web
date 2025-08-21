@@ -1274,6 +1274,7 @@ describe("PayPalCheckout", () => {
                   data: {
                     experienceProfile: {
                       userAction: actionParam,
+                      addressOverride: true,
                     },
                   },
                 }
@@ -1437,6 +1438,33 @@ describe("PayPalCheckout", () => {
           arg = testContext.client.request.mock.calls[0][0];
 
           expect(arg.data).not.toHaveProperty("description");
+        });
+    });
+
+    it("handles paymentReadySessionId option correctly when passed", () => {
+      testContext.client.request.mockResolvedValue({
+        agreementSetup: {
+          tokenId: "id",
+        },
+        paymentResource: {
+          paymentToken: "PAY-XXXXXXXXXX",
+          redirectUrl: "https://example.com?foo=bar&EC-token&foo2=bar2",
+        },
+      });
+
+      return testContext.paypalCheckout
+        .createPayment({
+          flow: "vault",
+          paymentReadySessionId: "XYZ1-ABC2-9876DEF5-4321-123456789ABC",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                paymentReadySessionId: "XYZ1-ABC2-9876DEF5-4321-123456789ABC",
+              }),
+            })
+          );
         });
     });
   });
@@ -3141,6 +3169,25 @@ describe("PayPalCheckout", () => {
           }
         );
       });
+    });
+
+    it("passes the billingToken as the billingAgreementToken when both flow and paymentId are null", () => {
+      testContext.paypalCheckout._flow = null;
+      testContext.paypalCheckout
+        .tokenizePayment({
+          billingToken: "BA-token123",
+          paymentId: null,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledTimes(1);
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            data: {
+              paypalAccount: {
+                billingAgreementToken: "BA-token123",
+              },
+            },
+          });
+        });
     });
   });
 

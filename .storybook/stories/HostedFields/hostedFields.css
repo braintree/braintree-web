@@ -1,0 +1,87 @@
+/* Container and Layout */
+.hosted-fields-container {
+  max-width: 400px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+.hosted-fields-heading {
+  margin-bottom: 1rem;
+  font-family: var(--font-display);
+  color: var(--color-black);
+}
+
+/* Form Elements */
+.hosted-fields-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field {
+  margin-bottom: 15px;
+}
+
+.form-field-group {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-field-group--small-gap {
+  gap: 10px;
+}
+
+.form-field-flex {
+  flex: 1;
+}
+
+/* Input Containers */
+.hosted-field-container {
+  border: 1px solid var(--color-black);
+  padding: 10px;
+  border-radius: 4px;
+  height: 20px;
+  background-color: var(--color-white);
+}
+
+.hosted-field-container:focus-within {
+  border-color: var(--color-deep-blue);
+}
+
+/* Button Styling */
+.submit-button {
+  margin-top: 10px;
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+  font-family: var(--font-body);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.submit-button:hover,
+.submit-button:active {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+}
+
+.submit-button:disabled {
+  opacity: 0.7;
+  background-color: var(--color-black);
+  color: var(--color-white);
+}
+
+.submit-button--success {
+  background-color: var(--color-deep-blue);
+  color: var(--color-white);
+  border: 1px solid var(--color-deep-blue);
+}
+
+.submit-button--success:hover,
+.submit-button--success:active {
+  background-color: var(--color-white);
+  color: var(--color-deep-blue);
+  border: 1px solid var(--color-deep-blue);
+}

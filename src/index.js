@@ -45,6 +45,7 @@ var hostedFields = require("./hosted-fields");
 var localPayment = require("./local-payment");
 var masterpass = require("./masterpass");
 var paymentRequest = require("./payment-request");
+var paymentReady = require("./payment-ready");
 var paypal = require("./paypal");
 var paypalCheckout = require("./paypal-checkout");
 var googlePayment = require("./google-payment");
@@ -79,6 +80,8 @@ module.exports = {
   googlePayment: googlePayment,
   /** @type {module:braintree-web/payment-request} */
   paymentRequest: paymentRequest,
+  /** @type {module:braintree-web/payment-ready} */
+  paymentReady: paymentReady,
   /** @type {module:braintree-web/paypal} */
   paypal: paypal,
   /** @type {module:braintree-web/paypal-checkout} */

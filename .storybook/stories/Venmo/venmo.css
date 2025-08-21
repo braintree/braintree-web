@@ -1,0 +1,23 @@
+.venmo-description-wrapper {
+  margin-bottom: 20px;
+  font-family: var(--font-body);
+  color: var(--color-black);
+}
+
+.venmo-button {
+  background-color: var(--color-venmo-blue);
+  color: var(--color-white);
+  border: 1px solid var(--color-venmo-blue);
+  padding: 10px 15px;
+  font-family: var(--font-body);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.venmo-button:hover,
+.venmo-button:active {
+  background-color: var(--color-white);
+  color: var(--color-venmo-blue);
+  border: 1px solid var(--color-venmo-blue);
+}
