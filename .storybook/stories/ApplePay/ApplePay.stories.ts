@@ -30,19 +30,32 @@ export default meta;
 // 14 is the latest version as of today (2024-07-17)
 const APPLE_PAY_VERSION = 14;
 
-const createApplePayForm = (isIframe: boolean = false): HTMLElement => {
+const createIframe = (): HTMLElement => {
   const container = document.createElement("div");
   container.innerHTML = `
-    <div class="shared-container">
-      <h2>Apple Pay ${isIframe ? "(iframe)" : ""}</h2>
+  <div class="shared-container">
+      <h2>Apple Pay iframe</h2>
 
       <div class="shared-spacing-bottom">
         <p class="shared-description">
-          ${
-            isIframe
-              ? "Apple Pay integration within an iframe for embedded payment flows."
-              : "Apple Pay allows customers to make secure payments using Touch ID, Face ID, or their device passcode."
-          }
+          Apple Pay integration within an iframe for embedded payment flows.
+        </p>
+      </div>
+      <iframe allow="payment" src="https://127.0.0.1:8080/iframe.html?globals=&args=&id=braintree-apple-pay--apple-pay&viewMode=story" width="600" height="600"></iframe>
+  </div>`;
+
+  return container;
+};
+
+const createApplePayForm = (): HTMLElement => {
+  const container = document.createElement("div");
+  container.innerHTML = `
+    <div class="shared-container">
+      <h2>Apple Pay</h2>
+
+      <div class="shared-spacing-bottom">
+        <p class="shared-description">
+          Apple Pay allows customers to make secure payments using Touch ID, Face ID, or their device passcode.
         </p>
       </div>
 
@@ -367,4 +380,13 @@ export const ApplePay: StoryObj = {
     },
     ["client.min.js", "apple-pay.min.js"]
   ),
+};
+
+export const ApplePayInIframe: StoryObj = {
+  render: (): HTMLElement => {
+    const container = document.createElement("div");
+    const formContainer = createIframe();
+    container.appendChild(formContainer);
+    return container;
+  },
 };

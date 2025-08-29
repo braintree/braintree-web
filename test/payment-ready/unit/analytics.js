@@ -113,65 +113,51 @@ describe("PaymentReady.prototype.sendPresentedEvent", () => {
     );
   });
 
-  it("sends analytics event if no `pageType` specified", () => {
-    const modifiedPresentedOptions = assign({}, mockPresentedEventOptions);
-
-    modifiedPresentedOptions.buttonType = constants.BUTTON_TYPE.VENMO;
-    delete modifiedPresentedOptions.presentmentDetails.pageType;
-
-    paymentReadyInstance.sendPresentedEvent(modifiedPresentedOptions);
-
-    expect(analytics.sendEventPlus).toHaveBeenCalledWith(
-      mockClient,
-      constants.EVENT_BUTTON_PRESENTED,
-      {
+  it.each([
+    {
+      missingProperty: "pageType",
+      expectedAnalyticsData: {
         button_type: "venmo",
         payment_ready_session_id: mockSessionId,
         payment_ready_button_order: mockButtonOrder,
         payment_ready_experiment_type: mockExperimentType,
-      }
-    );
-  });
-
-  it("sends analytics event if no `buttonOrder` specified", () => {
-    const modifiedPresentedOptions = assign({}, mockPresentedEventOptions);
-
-    modifiedPresentedOptions.buttonType = constants.BUTTON_TYPE.VENMO;
-    delete modifiedPresentedOptions.presentmentDetails.buttonOrder;
-
-    paymentReadyInstance.sendPresentedEvent(modifiedPresentedOptions);
-
-    expect(analytics.sendEventPlus).toHaveBeenCalledWith(
-      mockClient,
-      constants.EVENT_BUTTON_PRESENTED,
-      {
+      },
+    },
+    {
+      missingProperty: "buttonOrder",
+      expectedAnalyticsData: {
         button_type: "venmo",
         payment_ready_session_id: mockSessionId,
         payment_ready_experiment_type: mockExperimentType,
         payment_ready_page_type: mockPageType,
-      }
-    );
-  });
-
-  it("sends analytics event if no `experimentType` specified", () => {
-    const modifiedPresentedOptions = assign({}, mockPresentedEventOptions);
-
-    modifiedPresentedOptions.buttonType = constants.BUTTON_TYPE.VENMO;
-    delete modifiedPresentedOptions.presentmentDetails.experimentType;
-
-    paymentReadyInstance.sendPresentedEvent(modifiedPresentedOptions);
-
-    expect(analytics.sendEventPlus).toHaveBeenCalledWith(
-      mockClient,
-      constants.EVENT_BUTTON_PRESENTED,
-      {
+      },
+    },
+    {
+      missingProperty: "experimentType",
+      expectedAnalyticsData: {
         button_type: "venmo",
         payment_ready_session_id: mockSessionId,
         payment_ready_button_order: mockButtonOrder,
         payment_ready_page_type: mockPageType,
-      }
-    );
-  });
+      },
+    },
+  ])(
+    "sends analytics event if no `$missingProperty` specified",
+    ({ missingProperty, expectedAnalyticsData }) => {
+      const modifiedPresentedOptions = assign({}, mockPresentedEventOptions);
+
+      modifiedPresentedOptions.buttonType = constants.BUTTON_TYPE.VENMO;
+      delete modifiedPresentedOptions.presentmentDetails[missingProperty];
+
+      paymentReadyInstance.sendPresentedEvent(modifiedPresentedOptions);
+
+      expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+        mockClient,
+        constants.EVENT_BUTTON_PRESENTED,
+        expectedAnalyticsData
+      );
+    }
+  );
 
   it("sends analytics event if no `presentmentDetails` specified", () => {
     const modifiedPresentedOptions = assign({}, mockPresentedEventOptions);

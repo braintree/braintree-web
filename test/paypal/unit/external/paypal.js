@@ -453,25 +453,17 @@ describe("PayPal", () => {
       };
     });
 
-    it("makes an api request for a paypal payment resource", () =>
-      PayPal.prototype._navigateFrameToAuth
-        .call(testContext.context, testContext.options)
-        .then(() => {
-          expect(testContext.context._client.request).toHaveBeenCalledWith({
-            endpoint: "paypal_hermes/create_payment_resource",
-            method: "post",
-            data: expect.any(Object),
-          });
-        }));
-
-    it("makes an api request for a billing agreement", () => {
-      testContext.options.flow = "vault";
+    it.each([
+      ["checkout", "paypal_hermes/create_payment_resource"],
+      ["vault", "paypal_hermes/setup_billing_agreement"],
+    ])("makes an api request for %s flow", (flow, expectedEndpoint) => {
+      testContext.options.flow = flow;
 
       return PayPal.prototype._navigateFrameToAuth
         .call(testContext.context, testContext.options)
         .then(() => {
           expect(testContext.context._client.request).toHaveBeenCalledWith({
-            endpoint: "paypal_hermes/setup_billing_agreement",
+            endpoint: expectedEndpoint,
             method: "post",
             data: expect.any(Object),
           });
@@ -545,20 +537,6 @@ describe("PayPal", () => {
         });
     });
 
-    it("redirects to a redirectUrl", () => {
-      testContext.context._client.request.mockResolvedValue({
-        paymentResource: { redirectUrl: "redirect-url" },
-      });
-
-      return PayPal.prototype._navigateFrameToAuth
-        .call(testContext.context, testContext.options)
-        .then(() => {
-          expect(
-            testContext.context._frameService.redirect
-          ).toHaveBeenCalledWith("redirect-url");
-        });
-    });
-
     it("calls analytics with opened popupBridge event", () => {
       testContext.context._client.request.mockResolvedValue({
         paymentResource: {},
@@ -587,54 +565,57 @@ describe("PayPal", () => {
         });
     });
 
-    it("redirects to an approvalUrl", () => {
-      testContext.context._client.request.mockResolvedValue({
-        agreementSetup: { approvalUrl: "approval-url" },
-      });
-
-      testContext.options.flow = "vault";
-
-      return PayPal.prototype._navigateFrameToAuth
-        .call(testContext.context, testContext.options)
-        .then(() => {
-          expect(
-            testContext.context._frameService.redirect
-          ).toHaveBeenCalledWith("approval-url");
-        });
-    });
-
-    it("appends useraction to an approvalUrl", () => {
-      testContext.context._client.request.mockResolvedValue({
-        agreementSetup: { approvalUrl: "approval-url" },
-      });
-
-      testContext.options.flow = "vault";
-      testContext.options.useraction = "commit";
+    it.each([
+      [
+        "checkout",
+        { paymentResource: { redirectUrl: "redirect-url" } },
+        "redirect-url",
+      ],
+      [
+        "vault",
+        { agreementSetup: { approvalUrl: "approval-url" } },
+        "approval-url",
+      ],
+    ])("redirects to URL for %s flow", (flow, mockResponse, expectedUrl) => {
+      testContext.context._client.request.mockResolvedValue(mockResponse);
+      testContext.options.flow = flow;
 
       return PayPal.prototype._navigateFrameToAuth
         .call(testContext.context, testContext.options)
         .then(() => {
           expect(
             testContext.context._frameService.redirect
-          ).toHaveBeenCalledWith("approval-url?useraction=commit");
+          ).toHaveBeenCalledWith(expectedUrl);
         });
     });
 
-    it("appends useraction to a redirectUrl", () => {
-      testContext.context._client.request.mockResolvedValue({
-        paymentResource: { redirectUrl: "redirect-url" },
-      });
+    it.each([
+      [
+        "vault",
+        { agreementSetup: { approvalUrl: "approval-url" } },
+        "approval-url?useraction=commit",
+      ],
+      [
+        "checkout",
+        { paymentResource: { redirectUrl: "redirect-url" } },
+        "redirect-url?useraction=commit",
+      ],
+    ])(
+      "appends useraction to URL for %s flow",
+      (flow, mockResponse, expectedUrl) => {
+        testContext.context._client.request.mockResolvedValue(mockResponse);
+        testContext.options.flow = flow;
+        testContext.options.useraction = "commit";
 
-      testContext.options.useraction = "commit";
-
-      return PayPal.prototype._navigateFrameToAuth
-        .call(testContext.context, testContext.options)
-        .then(() => {
-          expect(
-            testContext.context._frameService.redirect
-          ).toHaveBeenCalledWith("redirect-url?useraction=commit");
-        });
-    });
+        return PayPal.prototype._navigateFrameToAuth
+          .call(testContext.context, testContext.options)
+          .then(() => {
+            expect(
+              testContext.context._frameService.redirect
+            ).toHaveBeenCalledWith(expectedUrl);
+          });
+      }
+    );
   });
 
   describe("teardown", () => {
@@ -934,39 +915,25 @@ describe("PayPal", () => {
         );
       });
 
-      it("calls analytics when credit is offered and using checkout flow", () => {
-        const client = testContext.client;
+      it.each(["checkout", "vault"])(
+        "calls analytics when credit is offered and using %s flow",
+        (flow) => {
+          const client = testContext.client;
 
-        testContext.tokenizeOptions.flow = "checkout";
-        testContext.tokenizeOptions.offerCredit = true;
-        PayPal.prototype.tokenize.call(
-          testContext.context,
-          testContext.tokenizeOptions,
-          noop
-        );
+          testContext.tokenizeOptions.flow = flow;
+          testContext.tokenizeOptions.offerCredit = true;
+          PayPal.prototype.tokenize.call(
+            testContext.context,
+            testContext.tokenizeOptions,
+            noop
+          );
 
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
-          client,
-          "paypal.credit.offered"
-        );
-      });
-
-      it("calls analytics when credit is offered and using vault flow", () => {
-        const client = testContext.client;
-
-        testContext.tokenizeOptions.flow = "vault";
-        testContext.tokenizeOptions.offerCredit = true;
-        PayPal.prototype.tokenize.call(
-          testContext.context,
-          testContext.tokenizeOptions,
-          noop
-        );
-
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
-          client,
-          "paypal.credit.offered"
-        );
-      });
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            client,
+            "paypal.credit.offered"
+          );
+        }
+      );
 
       it("does not send credit.offered event when credit is not offered", () => {
         const client = testContext.client;

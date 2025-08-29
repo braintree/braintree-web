@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.128.0 (2025-08-28)
+
+- Hosted Fields
+  - Add option to fix cursor jumps on iOS
+
 ## 3.127.0 (2025-08-21)
 
 - Payment Ready
@@ -89,6 +94,8 @@
 - PayPal Checkout
   - add support for userAction param for `createPayment`
   - new field `totalAmount` in `createPayment` for RBA Metadata
+- Return commercial data from `binData` in credit card response
+  - New commercial boolean metadata fields: `business`, `consumer`, `purchase`, `corporate`
 
 ## 3.118.2 (2025-04-25)
 
@@ -107,8 +114,6 @@
   - add `tokenExchange` to GQL
 - PayPal Checkout
   - Add `contactPreference` to PayPal Checkout schema for Contact Module
-- Return commercial data from `binData` in credit card response
-  - New commercial boolean metadata fields: `business`, `consumer`, `purchase`, `corporate`
 
 ## 3.117.1 (2025-03-25)
 

@@ -286,9 +286,10 @@ describe("PaymentReady", () => {
 
       mockClient.request.mockResolvedValue(mockResponse);
 
-      const result = await paymentReadyInstance.getCustomerRecommendations(
-        recommendationsInput
-      );
+      const result =
+        await paymentReadyInstance.getCustomerRecommendations(
+          recommendationsInput
+        );
 
       expect(mockClient.request).toHaveBeenCalledWith({
         api: "graphQLApi",

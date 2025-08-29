@@ -58,29 +58,31 @@ describe("getConfiguration", () => {
   });
 
   describe("tokenization key", () => {
-    it("uses a production config endpoint with a production tokenization key", () => {
-      const authData = createAuthorizationData(
-        "production_abc123_prod_merchant_id"
-      );
+    it.each([
+      {
+        tokenizationKey: "production_abc123_prod_merchant_id",
+        expectedUrl:
+          "https://api.braintreegateway.com:443/merchants/prod_merchant_id/client_api/v1/configuration",
+        environment: "production",
+      },
+      {
+        tokenizationKey: "sandbox_abc123_sandbox_merchant_id",
+        expectedUrl:
+          "https://api.sandbox.braintreegateway.com:443/merchants/sandbox_merchant_id/client_api/v1/configuration",
+        environment: "sandbox",
+      },
+    ])(
+      "uses a $environment config endpoint with a $environment tokenization key",
+      ({ tokenizationKey, expectedUrl }) => {
+        const authData = createAuthorizationData(tokenizationKey);
 
-      getConfiguration(authData);
+        getConfiguration(authData);
 
-      expect(AJAXDriver.request.mock.calls[0][0]).toMatchObject({
-        url: "https://api.braintreegateway.com:443/merchants/prod_merchant_id/client_api/v1/configuration",
-      });
-    });
-
-    it("uses a sandbox config endpoint with a sandbox tokenization key", () => {
-      const authData = createAuthorizationData(
-        "sandbox_abc123_sandbox_merchant_id"
-      );
-
-      getConfiguration(authData);
-
-      expect(AJAXDriver.request.mock.calls[0][0]).toMatchObject({
-        url: "https://api.sandbox.braintreegateway.com:443/merchants/sandbox_merchant_id/client_api/v1/configuration",
-      });
-    });
+        expect(AJAXDriver.request.mock.calls[0][0]).toMatchObject({
+          url: expectedUrl,
+        });
+      }
+    );
 
     it("passes back configuration on successful request", (done) => {
       const payload = { foo: "bar" };
@@ -112,78 +114,53 @@ describe("getConfiguration", () => {
       );
     });
 
-    it("calls the callback with a CLIENT_AUTHORIZATION_INVALID error if request 401s", (done) => {
-      const fakeErr = new Error("you goofed!");
+    it.each([
+      {
+        statusCode: 401,
+        expectedCode: "CLIENT_AUTHORIZATION_INVALID",
+        expectedType: "MERCHANT",
+        expectedMessage:
+          "Either the client token has expired and a new one should be generated or the tokenization key has been deactivated or deleted.",
+      },
+      {
+        statusCode: 403,
+        expectedCode: "CLIENT_AUTHORIZATION_INSUFFICIENT",
+        expectedType: "MERCHANT",
+        expectedMessage: "The authorization used has insufficient privileges.",
+      },
+      {
+        statusCode: null,
+        expectedCode: "CLIENT_GATEWAY_NETWORK",
+        expectedType: "NETWORK",
+        expectedMessage: "Cannot contact the gateway at this time.",
+      },
+    ])(
+      "calls the callback with a $expectedCode error if request returns status $statusCode",
+      ({ statusCode, expectedCode, expectedType, expectedMessage }) => {
+        return new Promise((resolve) => {
+          const fakeErr = new Error("you goofed!");
 
-      jest
-        .spyOn(AJAXDriver, "request")
-        .mockImplementation(yieldsAsync(fakeErr, null, 401));
+          jest
+            .spyOn(AJAXDriver, "request")
+            .mockImplementation(yieldsAsync(fakeErr, null, statusCode));
 
-      getConfiguration(
-        createAuthorizationData(tokenizationKey),
-        (err, response) => {
-          expect(response).toBeFalsy();
+          getConfiguration(
+            createAuthorizationData(tokenizationKey),
+            (err, response) => {
+              expect(response).toBeFalsy();
 
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("MERCHANT");
-          expect(err.code).toBe("CLIENT_AUTHORIZATION_INVALID");
-          expect(err.message).toBe(
-            "Either the client token has expired and a new one should be generated or the tokenization key has been deactivated or deleted."
+              expect(err).toBeInstanceOf(BraintreeError);
+              expect(err.type).toBe(expectedType);
+              expect(err.code).toBe(expectedCode);
+              expect(err.message).toBe(expectedMessage);
+              expect(err.details.originalError).toBe(fakeErr);
+
+              resolve();
+            }
           );
-          expect(err.details.originalError).toBe(fakeErr);
-
-          done();
-        }
-      );
-    });
-
-    it("calls the callback with a CLIENT_AUTHORIZATION_INSUFFICIENT error if request 403s", (done) => {
-      const fakeErr = new Error("you goofed!");
-
-      jest
-        .spyOn(AJAXDriver, "request")
-        .mockImplementation(yieldsAsync(fakeErr, null, 403));
-
-      getConfiguration(
-        createAuthorizationData(tokenizationKey),
-        (err, response) => {
-          expect(response).toBeFalsy();
-
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("MERCHANT");
-          expect(err.code).toBe("CLIENT_AUTHORIZATION_INSUFFICIENT");
-          expect(err.message).toBe(
-            "The authorization used has insufficient privileges."
-          );
-          expect(err.details.originalError).toBe(fakeErr);
-
-          done();
-        }
-      );
-    });
-
-    it("calls the callback with a CLIENT_GATEWAY_NETWORK error if request fails", (done) => {
-      const fakeErr = new Error("you goofed!");
-
-      jest
-        .spyOn(AJAXDriver, "request")
-        .mockImplementation(yieldsAsync(fakeErr, null));
-
-      getConfiguration(
-        createAuthorizationData(tokenizationKey),
-        (err, response) => {
-          expect(response).toBeFalsy();
-
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("NETWORK");
-          expect(err.code).toBe("CLIENT_GATEWAY_NETWORK");
-          expect(err.message).toBe("Cannot contact the gateway at this time.");
-          expect(err.details.originalError).toBe(fakeErr);
-
-          done();
-        }
-      );
-    });
+        });
+      }
+    );
   });
 
   describe("client token", () => {

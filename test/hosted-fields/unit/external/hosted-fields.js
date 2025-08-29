@@ -785,6 +785,61 @@ describe("HostedFields", () => {
       frameReadyHandler({ field: "cvv" }, noop);
       frameReadyHandler({ field: "expirationDate" }, noop);
     });
+
+    describe("preventCursorJumps configuration", () => {
+      it("does not include preventCursorJumps in configuration when not specified", (done) => {
+        var frameReadyHandler;
+        var configuration = testContext.defaultConfiguration;
+        var replyStub = jest.fn();
+
+        delete configuration.preventCursorJumps;
+
+        testContext.instance = new HostedFields(configuration);
+
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
+
+        testContext.instance.on("ready", () => {
+          expect(replyStub).toHaveBeenCalledWith(
+            expect.not.objectContaining({
+              preventCursorJumps: expect.anything(),
+            })
+          );
+          done();
+        });
+
+        frameReadyHandler({ field: "number" }, replyStub);
+      });
+
+      it("includes preventCursorJumps in configuration when set to true", (done) => {
+        var frameReadyHandler;
+        var configuration = testContext.defaultConfiguration;
+        var replyStub = jest.fn();
+
+        configuration.preventCursorJumps = true;
+
+        testContext.instance = new HostedFields(configuration);
+
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
+
+        testContext.instance.on("ready", () => {
+          // Verify that preventCursorJumps was passed to the frame configuration
+          expect(replyStub).toHaveBeenCalledWith(
+            expect.objectContaining({
+              preventCursorJumps: true,
+            })
+          );
+          done();
+        });
+
+        frameReadyHandler({ field: "number" }, replyStub);
+      });
+    });
   });
 
   describe("input event handler", () => {

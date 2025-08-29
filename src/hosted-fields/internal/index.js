@@ -25,10 +25,35 @@ var focusIntercept = require("../shared/focus-intercept");
 
 var CHECK_FOR_NEW_AUTOFILL_DATA_INTERVAL = 100;
 
+function blockSetSelectionRangeOnHostedFields() {
+  var originalSetSelectionRange = HTMLInputElement.prototype.setSelectionRange;
+
+  HTMLInputElement.prototype.setSelectionRange = function (
+    start,
+    end,
+    direction
+  ) {
+    // Check if this input is within a Braintree hosted field iframe
+    var isHostedField =
+      window.name && window.name.indexOf("braintree-hosted-field") === 0;
+
+    if (browserDetection.isIos() && isHostedField) {
+      // Block setSelectionRange for hosted field inputs on iOS
+      return;
+    }
+
+    originalSetSelectionRange.call(this, start, end, direction);
+  };
+}
+
 function initialize(cardForm) {
   var fieldComponent;
   var name = frameName.getFrameName();
   var form = document.createElement("form");
+
+  if (cardForm.configuration.preventCursorJumps === true) {
+    blockSetSelectionRangeOnHostedFields();
+  }
 
   form.setAttribute("novalidate", true);
   form.setAttribute("action", "#"); // Forms need an action in order to offer a "go" button on soft keyboard

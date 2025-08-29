@@ -44,119 +44,101 @@ describe("Visa Checkout", () => {
       }
     });
 
-    it("sets apikey if undefined", () => {
+    it.each([
+      {
+        description: "sets apikey if undefined",
+        options: {},
+        valueExtractor: function (option) {
+          return option.apikey;
+        },
+        expectedValue: "gwApikey",
+      },
+      {
+        description: "does not overwrite apikey if defined",
+        options: { apikey: "apikey" },
+        valueExtractor: function (option) {
+          return option.apikey;
+        },
+        expectedValue: "apikey",
+      },
+      {
+        description: "sets encryptionKey",
+        options: {},
+        valueExtractor: function (option) {
+          return option.encryptionKey;
+        },
+        expectedValue: "gwEncryptionKey",
+      },
+      {
+        description: "sets externalClientId if undefined",
+        options: {},
+        valueExtractor: function (option) {
+          console.log(option);
+          return option.externalClientId;
+        },
+        expectedValue: "gwExternalClientId",
+      },
+      {
+        description: "does not overwrite externalClientId if defined",
+        options: { externalClientId: "externalClientId" },
+        valueExtractor: function (option) {
+          return option.externalClientId;
+        },
+        expectedValue: "externalClientId",
+      },
+      {
+        description: "sets settings.dataLevel if undefined",
+        options: {},
+        valueExtractor: function (option) {
+          return option.settings.dataLevel;
+        },
+        expectedValue: "FULL",
+      },
+      {
+        description: "overwrites settings.dataLevel if defined",
+        options: { settings: { dataLevel: "summary" } },
+        valueExtractor: function (option) {
+          return option.settings.dataLevel;
+        },
+        expectedValue: "FULL",
+      },
+    ])("$description", ({ options, valueExtractor, expectedValue }) => {
       const initOptions = VisaCheckout.prototype.createInitOptions.call(
         {
           _client: testContext.client,
         },
-        {}
+        options
       );
 
-      expect(initOptions.apikey).toBe("gwApikey");
+      expect(valueExtractor(initOptions)).toBe(expectedValue);
     });
 
-    it("does not overwrite apikey if defined", () => {
+    it.each([
+      {
+        inputOptions: {},
+        description:
+          "transforms gateway visaCheckout.supportedCardTypes to settings.payment.cardBrands if undefined",
+        expectedCardBrands: ["VISA", "MASTERCARD", "DISCOVER", "AMEX"],
+      },
+      {
+        inputOptions: {
+          settings: { payment: { cardBrands: ["CARD1", "CARD2"] } },
+        },
+        description:
+          "does not overwrite settings.payment.cardBrands if defined",
+        expectedCardBrands: ["CARD1", "CARD2"],
+      },
+    ])("$description", ({ inputOptions, expectedCardBrands }) => {
       const initOptions = VisaCheckout.prototype.createInitOptions.call(
         {
           _client: testContext.client,
         },
-        { apikey: "apikey" }
+        inputOptions
       );
 
-      expect(initOptions.apikey).toBe("apikey");
-    });
-
-    it("sets encryptionKey", () => {
-      const initOptions = VisaCheckout.prototype.createInitOptions.call(
-        {
-          _client: testContext.client,
-        },
-        {}
+      expect(initOptions.settings.payment.cardBrands).toEqual(
+        expectedCardBrands
       );
-
-      expect(initOptions.encryptionKey).toBe("gwEncryptionKey");
-    });
-
-    it("sets externalClientId if undefined", () => {
-      const initOptions = VisaCheckout.prototype.createInitOptions.call(
-        {
-          _client: testContext.client,
-        },
-        {}
-      );
-
-      expect(initOptions.externalClientId).toBe("gwExternalClientId");
-    });
-
-    it("does not overwrite externalClientId if defined", () => {
-      const initOptions = VisaCheckout.prototype.createInitOptions.call(
-        {
-          _client: testContext.client,
-        },
-        { externalClientId: "externalClientId" }
-      );
-
-      expect(initOptions.externalClientId).toBe("externalClientId");
-    });
-
-    it("sets settings.dataLevel if undefined", () => {
-      const initOptions = VisaCheckout.prototype.createInitOptions.call(
-        { _client: testContext.client },
-        {}
-      );
-
-      expect(initOptions.settings.dataLevel).toBe("FULL");
-    });
-
-    it("overwrites settings.dataLevel if defined", () => {
-      const initOptions = VisaCheckout.prototype.createInitOptions.call(
-        {
-          _client: testContext.client,
-        },
-        {
-          settings: {
-            dataLevel: "summary",
-          },
-        }
-      );
-
-      expect(initOptions.settings.dataLevel).toBe("FULL");
-    });
-
-    it("transforms gateway visaCheckout.supportedCardTypes to settings.payment.cardBrands if undefined", () => {
-      const initOptions = VisaCheckout.prototype.createInitOptions.call(
-        {
-          _client: testContext.client,
-        },
-        {}
-      );
-
-      expect(initOptions.settings.payment.cardBrands).toEqual([
-        "VISA",
-        "MASTERCARD",
-        "DISCOVER",
-        "AMEX",
-      ]);
-    });
-
-    it("does not overwrite settings.payment.cardBrands if defined", () => {
-      const initOptions = VisaCheckout.prototype.createInitOptions.call(
-        {
-          _client: testContext.client,
-        },
-        {
-          settings: {
-            payment: {
-              cardBrands: ["CARD1", "CARD2"],
-            },
-          },
-        }
-      );
-
-      expect(initOptions.settings.payment.cardBrands).toEqual([
-        "CARD1",
-        "CARD2",
-      ]);
     });
 
     it("does not mutate incoming options", () => {
