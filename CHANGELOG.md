@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 3.129.0 (2025-09-04)
+
+- PayPalCheckout
+  - Change the URL of `teBraintree` environment to `www.braintree.stage.paypal.com`
+- PayPal Checkout
+  - Improve observability for App Switch flow
+
 ## 3.128.0 (2025-08-28)
 
 - Hosted Fields

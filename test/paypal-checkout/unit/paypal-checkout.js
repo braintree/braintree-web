@@ -12,6 +12,7 @@ const frameService = require("../../../src/lib/frame-service/external");
 const { fake, yieldsAsync } = require("../../helpers");
 const methods = require("../../../src/lib/methods");
 const errors = require("../../../src/paypal-checkout/errors");
+const constants = require("../../../src/paypal/shared/constants");
 
 describe("PayPalCheckout", () => {
   let testContext;
@@ -3268,7 +3269,7 @@ describe("PayPalCheckout", () => {
           firstHeadElement
         );
         expect(fakeScript.src).toMatch(
-          "https://www.te-braintree.qa.paypal.com/sdk/js?"
+          "https://www.braintree.stage.paypal.com/sdk/js?"
         );
       });
     });
@@ -3845,6 +3846,7 @@ describe("PayPalCheckout", () => {
       testContext.configuration = {
         authorization: "development_testing_altpay_merchant",
         gatewayConfiguration: {
+          merchantId: "merchant-id",
           paypal: {
             assetsUrl: "https://paypal.assets.url",
             displayName: "my brand",
@@ -3944,6 +3946,100 @@ describe("PayPalCheckout", () => {
       );
 
       expect(actual.cancelUrl).toBe("www.example.com/cancel");
+    });
+
+    it("includes BT source parameter with value 'bsdk'", () => {
+      const options = {
+        flow: "checkout",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.source).toBe(constants.BT_SOURCE);
+    });
+
+    it("includes BT merchant parameter from gateway configuration", () => {
+      const options = {
+        flow: "checkout",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _merchantAccountId: "DEFAULT_MERCHANT_ID",
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.merchant).toBe("merchant-id");
+    });
+
+    it("includes BT flowType parameter as 'ecs' for checkout flow", () => {
+      const options = {
+        flow: "checkout",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.flowType).toBe(constants.BT_FLOW_TYPES.EXPRESS_CHECKOUT);
+    });
+
+    it("includes BT flowType parameter as 'va' for vault flow", () => {
+      const options = {
+        flow: "vault",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.flowType).toBe(constants.BT_FLOW_TYPES.VAULT);
+    });
+
+    it("includes all BT parameters together", () => {
+      const options = {
+        flow: "checkout",
+      };
+
+      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
+        {
+          _configuration: testContext.configuration,
+          _merchantAccountId: "DEFAULT_MERCHANT_ID",
+          _formatPaymentResourceCheckoutData: jest.fn(),
+          _formatPaymentResourceVaultData: jest.fn(),
+        },
+        options,
+        testContext.config
+      );
+
+      expect(actual.source).toBe(constants.BT_SOURCE);
+      expect(actual.merchant).toBe("merchant-id");
+      expect(actual.flowType).toBe(constants.BT_FLOW_TYPES.EXPRESS_CHECKOUT);
     });
 
     it("passes along appSwitchPreference when passed", () => {

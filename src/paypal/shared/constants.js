@@ -10,6 +10,11 @@ module.exports = {
   ENVIRONMENT: {
     stage: "https://www.msmaster.qa.paypal.com/sdk/js?",
     sandbox: "https://www.sandbox.paypal.com/sdk/js?",
-    teBraintree: "https://www.te-braintree.qa.paypal.com/sdk/js?",
+    teBraintree: "https://www.braintree.stage.paypal.com/sdk/js?",
+  },
+  BT_SOURCE: "bsdk",
+  BT_FLOW_TYPES: {
+    VAULT: "va",
+    EXPRESS_CHECKOUT: "ecs",
   },
 };
