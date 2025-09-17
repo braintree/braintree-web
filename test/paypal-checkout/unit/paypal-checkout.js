@@ -3542,6 +3542,21 @@ describe("PayPalCheckout", () => {
       });
     });
 
+    it("always sets data-sdk-integration-source data attribute", (done) => {
+      const instance = testContext.paypalCheckout;
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      promise.then(() => {
+        expect(fakeScript.getAttribute("data-sdk-integration-source")).toBe(
+          "BRAINTREE_WEB_SDK"
+        );
+
+        done();
+      });
+    });
+
     it("passes authorization fingerprint as data-user-id-token when a client token is used and is enabled for setting it", () => {
       const instance = testContext.paypalCheckout;
 
@@ -3846,7 +3861,6 @@ describe("PayPalCheckout", () => {
       testContext.configuration = {
         authorization: "development_testing_altpay_merchant",
         gatewayConfiguration: {
-          merchantId: "merchant-id",
           paypal: {
             assetsUrl: "https://paypal.assets.url",
             displayName: "my brand",
@@ -3946,100 +3960,6 @@ describe("PayPalCheckout", () => {
       );
 
       expect(actual.cancelUrl).toBe("www.example.com/cancel");
-    });
-
-    it("includes BT source parameter with value 'bsdk'", () => {
-      const options = {
-        flow: "checkout",
-      };
-
-      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        {
-          _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
-        },
-        options,
-        testContext.config
-      );
-
-      expect(actual.source).toBe(constants.BT_SOURCE);
-    });
-
-    it("includes BT merchant parameter from gateway configuration", () => {
-      const options = {
-        flow: "checkout",
-      };
-
-      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        {
-          _configuration: testContext.configuration,
-          _merchantAccountId: "DEFAULT_MERCHANT_ID",
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
-        },
-        options,
-        testContext.config
-      );
-
-      expect(actual.merchant).toBe("merchant-id");
-    });
-
-    it("includes BT flowType parameter as 'ecs' for checkout flow", () => {
-      const options = {
-        flow: "checkout",
-      };
-
-      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        {
-          _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
-        },
-        options,
-        testContext.config
-      );
-
-      expect(actual.flowType).toBe(constants.BT_FLOW_TYPES.EXPRESS_CHECKOUT);
-    });
-
-    it("includes BT flowType parameter as 'va' for vault flow", () => {
-      const options = {
-        flow: "vault",
-      };
-
-      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        {
-          _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
-        },
-        options,
-        testContext.config
-      );
-
-      expect(actual.flowType).toBe(constants.BT_FLOW_TYPES.VAULT);
-    });
-
-    it("includes all BT parameters together", () => {
-      const options = {
-        flow: "checkout",
-      };
-
-      const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
-        {
-          _configuration: testContext.configuration,
-          _merchantAccountId: "DEFAULT_MERCHANT_ID",
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
-        },
-        options,
-        testContext.config
-      );
-
-      expect(actual.source).toBe(constants.BT_SOURCE);
-      expect(actual.merchant).toBe("merchant-id");
-      expect(actual.flowType).toBe(constants.BT_FLOW_TYPES.EXPRESS_CHECKOUT);
     });
 
     it("passes along appSwitchPreference when passed", () => {

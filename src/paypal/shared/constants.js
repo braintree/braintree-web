@@ -12,9 +12,5 @@ module.exports = {
     sandbox: "https://www.sandbox.paypal.com/sdk/js?",
     teBraintree: "https://www.braintree.stage.paypal.com/sdk/js?",
   },
-  BT_SOURCE: "bsdk",
-  BT_FLOW_TYPES: {
-    VAULT: "va",
-    EXPRESS_CHECKOUT: "ecs",
-  },
+  BT_INTEGRATION_SOURCE: "BRAINTREE_WEB_SDK",
 };

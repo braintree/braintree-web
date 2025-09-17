@@ -1468,6 +1468,9 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     dataAttributes["client-metadata-id"] = dataAttributes["client-metadata-id"]
       ? dataAttributes["client-metadata-id"]
       : this._configuration.analyticsMetadata.sessionId;
+    // Adding this attribute for PayPal SDK to consume for their own analytics
+    dataAttributes["data-sdk-integration-source"] =
+      constants.BT_INTEGRATION_SOURCE;
   }
 
   if (!userIdToken) {
@@ -1580,12 +1583,6 @@ PayPalCheckout.prototype._attachPreloadPixel = function (options) {
   }
   if (options.merchantId) {
     preloadOptions["merchant-id"] = options.merchantId;
-  } else if (
-    this._configuration &&
-    this._configuration.gatewayConfiguration.merchantId
-  ) {
-    preloadOptions["merchant-id"] =
-      this._configuration.gatewayConfiguration.merchantId;
   }
 
   request = new XMLHttpRequest();
@@ -1618,13 +1615,6 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
     },
     shippingOptions: options.shippingOptions,
     payer_email: options.userAuthenticationEmail, // eslint-disable-line camelcase
-    source: constants.BT_SOURCE,
-    merchant: gatewayConfiguration.merchantId,
-
-    flowType:
-      options.flow === "vault"
-        ? constants.BT_FLOW_TYPES.VAULT
-        : constants.BT_FLOW_TYPES.EXPRESS_CHECKOUT,
   };
 
   if (options.hasOwnProperty("returnUrl")) {

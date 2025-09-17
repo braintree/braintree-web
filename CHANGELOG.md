@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.129.1 (2025-09-17)
+
+- PayPalCheckout
+  - Fix bug with the observability enhancements introduced in version 3.129.0
+
 ## 3.129.0 (2025-09-04)
 
 - PayPalCheckout
