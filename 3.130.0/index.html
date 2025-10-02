@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+      Home - Documentation
+  </title>
+
+  <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+  <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+  
+
+  <!-- start Mixpanel -->
+  <script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+  0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+  for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+  mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script>
+  <!-- end Mixpanel -->
+</head>
+
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="linkIcon" fill="#706d77" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+  <label for="nav-trigger" class="navicon-button x">
+    <div class="navicon"></div>
+  </label>
+
+  <label for="nav-trigger" class="overlay"></label>
+
+  <div class="top-nav-wrapper">
+    <ul>
+      <li  class="active" >
+        <a href="index.html">
+          
+          
+            <svg fill="#0095dd" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+          
+        </a>
+      </li>
+
+      
+      <li>
+        <div class="search-wrapper">
+          <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            <path d="M0 0h24v24H0z" fill="none"/>
+
+          </svg>
+          <input type="text" placeholder="Search" class="search-input">
+        </div>
+      </li>
+      
+
+    </ul>
+  </div>
+
+  <nav>
+    <h3 class="reference-title">
+      Braintree SDK Client Reference
+    </h3>
+
+    <h3>Classes</h3><ul><li id="AmericanExpress-nav"><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type="method" id="AmericanExpress-getExpressCheckoutProfile-nav"><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type="method" id="AmericanExpress-getRewardsBalance-nav"><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li><li data-type="method" id="AmericanExpress-teardown-nav"><a href="AmericanExpress.html#teardown">teardown</a></li></ul></li><li id="ApplePay-nav"><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type="method" id="ApplePay-createPaymentRequest-nav"><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type="method" id="ApplePay-performValidation-nav"><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type="method" id="ApplePay-teardown-nav"><a href="ApplePay.html#teardown">teardown</a></li><li data-type="method" id="ApplePay-tokenize-nav"><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li id="BraintreeError-nav"><a href="BraintreeError.html">BraintreeError</a></li><li id="Client-nav"><a href="Client.html">Client</a><ul class='methods'><li data-type="method" id="Client-getConfiguration-nav"><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type="method" id="Client-getVersion-nav"><a href="Client.html#getVersion">getVersion</a></li><li data-type="method" id="Client-request-nav"><a href="Client.html#request">request</a></li></ul></li><li id="DataCollector-nav"><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type="method" id="DataCollector-getDeviceData-nav"><a href="DataCollector.html#getDeviceData">getDeviceData</a></li><li data-type="method" id="DataCollector-teardown-nav"><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li id="GooglePayment-nav"><a href="GooglePayment.html">GooglePayment</a><ul class='methods'><li data-type="method" id="GooglePayment-createPaymentDataRequest-nav"><a href="GooglePayment.html#createPaymentDataRequest">createPaymentDataRequest</a></li><li data-type="method" id="GooglePayment-parseResponse-nav"><a href="GooglePayment.html#parseResponse">parseResponse</a></li><li data-type="method" id="GooglePayment-teardown-nav"><a href="GooglePayment.html#teardown">teardown</a></li></ul></li><li id="HostedFields-nav"><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type="method" id="HostedFields-addClass-nav"><a href="HostedFields.html#addClass">addClass</a></li><li data-type="method" id="HostedFields-clear-nav"><a href="HostedFields.html#clear">clear</a></li><li data-type="method" id="HostedFields-focus-nav"><a href="HostedFields.html#focus">focus</a></li><li data-type="method" id="HostedFields-getChallenges-nav"><a href="HostedFields.html#getChallenges">getChallenges</a></li><li data-type="method" id="HostedFields-getState-nav"><a href="HostedFields.html#getState">getState</a></li><li data-type="method" id="HostedFields-getSupportedCardTypes-nav"><a href="HostedFields.html#getSupportedCardTypes">getSupportedCardTypes</a></li><li data-type="method" id="HostedFields-off-nav"><a href="HostedFields.html#off">off</a></li><li data-type="method" id="HostedFields-on-nav"><a href="HostedFields.html#on">on</a></li><li data-type="method" id="HostedFields-removeAttribute-nav"><a href="HostedFields.html#removeAttribute">removeAttribute</a></li><li data-type="method" id="HostedFields-removeClass-nav"><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type="method" id="HostedFields-setAttribute-nav"><a href="HostedFields.html#setAttribute">setAttribute</a></li><li data-type="method" id="HostedFields-setMessage-nav"><a href="HostedFields.html#setMessage">setMessage</a></li><li data-type="method" id="HostedFields-setMonthOptions-nav"><a href="HostedFields.html#setMonthOptions">setMonthOptions</a></li><li data-type="method" id="HostedFields-setPlaceholder-nav"><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type="method" id="HostedFields-teardown-nav"><a href="HostedFields.html#teardown">teardown</a></li><li data-type="method" id="HostedFields-tokenize-nav"><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li id="LocalPayment-nav"><a href="LocalPayment.html">LocalPayment</a><ul class='methods'><li data-type="method" id="LocalPayment-closeWindow-nav"><a href="LocalPayment.html#closeWindow">closeWindow</a></li><li data-type="method" id="LocalPayment-focusWindow-nav"><a href="LocalPayment.html#focusWindow">focusWindow</a></li><li data-type="method" id="LocalPayment-hasTokenizationParams-nav"><a href="LocalPayment.html#hasTokenizationParams">hasTokenizationParams</a></li><li data-type="method" id="LocalPayment-startPayment-nav"><a href="LocalPayment.html#startPayment">startPayment</a></li><li data-type="method" id="LocalPayment-teardown-nav"><a href="LocalPayment.html#teardown">teardown</a></li><li data-type="method" id="LocalPayment-tokenize-nav"><a href="LocalPayment.html#tokenize">tokenize</a></li></ul></li><li id="Masterpass-nav"><a href="Masterpass.html">Masterpass</a><ul class='methods'><li data-type="method" id="Masterpass-teardown-nav"><a href="Masterpass.html#teardown">teardown</a></li><li data-type="method" id="Masterpass-tokenize-nav"><a href="Masterpass.html#tokenize">tokenize</a></li></ul></li><li id="PaymentReady-nav"><a href="PaymentReady.html">PaymentReady</a><ul class='methods'><li data-type="method" id="PaymentReady-createCustomerSession-nav"><a href="PaymentReady.html#createCustomerSession">createCustomerSession</a></li><li data-type="method" id="PaymentReady-getCustomerRecommendations-nav"><a href="PaymentReady.html#getCustomerRecommendations">getCustomerRecommendations</a></li><li data-type="method" id="PaymentReady-sendPresentedEvent-nav"><a href="PaymentReady.html#sendPresentedEvent">sendPresentedEvent</a></li><li data-type="method" id="PaymentReady-sendSelectedEvent-nav"><a href="PaymentReady.html#sendSelectedEvent">sendSelectedEvent</a></li><li data-type="method" id="PaymentReady-updateCustomerSession-nav"><a href="PaymentReady.html#updateCustomerSession">updateCustomerSession</a></li></ul></li><li id="PaymentRequestComponent-nav"><a href="PaymentRequestComponent.html">PaymentRequestComponent</a><ul class='methods'><li data-type="method" id="PaymentRequestComponent-canMakePayment-nav"><a href="PaymentRequestComponent.html#canMakePayment">canMakePayment</a></li><li data-type="method" id="PaymentRequestComponent-createSupportedPaymentMethodsConfiguration-nav"><a href="PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration">createSupportedPaymentMethodsConfiguration</a></li><li data-type="method" id="PaymentRequestComponent-off-nav"><a href="PaymentRequestComponent.html#off">off</a></li><li data-type="method" id="PaymentRequestComponent-on-nav"><a href="PaymentRequestComponent.html#on">on</a></li><li data-type="method" id="PaymentRequestComponent-teardown-nav"><a href="PaymentRequestComponent.html#teardown">teardown</a></li><li data-type="method" id="PaymentRequestComponent-tokenize-nav"><a href="PaymentRequestComponent.html#tokenize">tokenize</a></li></ul></li><li id="PayPal-nav"><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type="method" id="PayPal-closeWindow-nav"><a href="PayPal.html#closeWindow">closeWindow</a></li><li data-type="method" id="PayPal-focusWindow-nav"><a href="PayPal.html#focusWindow">focusWindow</a></li><li data-type="method" id="PayPal-tokenize-nav"><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li id="PayPalCheckout-nav"><a href="PayPalCheckout.html">PayPalCheckout</a><ul class='methods'><li data-type="method" id="PayPalCheckout-createPayment-nav"><a href="PayPalCheckout.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckout-getClientId-nav"><a href="PayPalCheckout.html#getClientId">getClientId</a></li><li data-type="method" id="PayPalCheckout-loadPayPalSDK-nav"><a href="PayPalCheckout.html#loadPayPalSDK">loadPayPalSDK</a></li><li data-type="method" id="PayPalCheckout-teardown-nav"><a href="PayPalCheckout.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckout-tokenizePayment-nav"><a href="PayPalCheckout.html#tokenizePayment">tokenizePayment</a></li><li data-type="method" id="PayPalCheckout-updatePayment-nav"><a href="PayPalCheckout.html#updatePayment">updatePayment</a></li></ul></li><li id="SEPA-nav"><a href="SEPA.html">SEPA</a><ul class='methods'><li data-type="method" id="SEPA-tokenize-nav"><a href="SEPA.html#tokenize">tokenize</a></li></ul></li><li id="ThreeDSecure-nav"><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type="method" id="ThreeDSecure-cancelVerifyCard-nav"><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type="method" id="ThreeDSecure-initializeChallengeWithLookupResponse-nav"><a href="ThreeDSecure.html#initializeChallengeWithLookupResponse">initializeChallengeWithLookupResponse</a></li><li data-type="method" id="ThreeDSecure-off-nav"><a href="ThreeDSecure.html#off">off</a></li><li data-type="method" id="ThreeDSecure-on-nav"><a href="ThreeDSecure.html#on">on</a></li><li data-type="method" id="ThreeDSecure-prepareLookup-nav"><a href="ThreeDSecure.html#prepareLookup">prepareLookup</a></li><li data-type="method" id="ThreeDSecure-teardown-nav"><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type="method" id="ThreeDSecure-verifyCard-nav"><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li id="USBankAccount-nav"><a href="USBankAccount.html">USBankAccount</a><ul class='methods'><li data-type="method" id="USBankAccount-teardown-nav"><a href="USBankAccount.html#teardown">teardown</a></li><li data-type="method" id="USBankAccount-tokenize-nav"><a href="USBankAccount.html#tokenize">tokenize</a></li></ul></li><li id="VaultManager-nav"><a href="VaultManager.html">VaultManager</a><ul class='methods'><li data-type="method" id="VaultManager-deletePaymentMethod-nav"><a href="VaultManager.html#deletePaymentMethod">deletePaymentMethod</a></li><li data-type="method" id="VaultManager-fetchPaymentMethods-nav"><a href="VaultManager.html#fetchPaymentMethods">fetchPaymentMethods</a></li><li data-type="method" id="VaultManager-teardown-nav"><a href="VaultManager.html#teardown">teardown</a></li></ul></li><li id="Venmo-nav"><a href="Venmo.html">Venmo</a><ul class='methods'><li data-type="method" id="Venmo-hasTokenizationResult-nav"><a href="Venmo.html#hasTokenizationResult">hasTokenizationResult</a></li><li data-type="method" id="Venmo-isBrowserSupported-nav"><a href="Venmo.html#isBrowserSupported">isBrowserSupported</a></li><li data-type="method" id="Venmo-teardown-nav"><a href="Venmo.html#teardown">teardown</a></li><li data-type="method" id="Venmo-tokenize-nav"><a href="Venmo.html#tokenize">tokenize</a></li><li data-type="method" id="Venmo-cancelTokenization-nav"><a href="Venmo.html#~cancelTokenization">cancelTokenization</a></li></ul></li><li id="VisaCheckout-nav"><a href="VisaCheckout.html">VisaCheckout</a><ul class='methods'><li data-type="method" id="VisaCheckout-createInitOptions-nav"><a href="VisaCheckout.html#createInitOptions">createInitOptions</a></li><li data-type="method" id="VisaCheckout-teardown-nav"><a href="VisaCheckout.html#teardown">teardown</a></li><li data-type="method" id="VisaCheckout-tokenize-nav"><a href="VisaCheckout.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li id="braintree-web-nav"><a href="module-braintree-web.html">braintree-web</a></li><li id="braintree-web_american-express-nav"><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type="method" id="braintree-web_american-express-create-nav"><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li id="braintree-web_apple-pay-nav"><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type="method" id="braintree-web_apple-pay-create-nav"><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li id="braintree-web_client-nav"><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type="method" id="braintree-web_client-create-nav"><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li id="braintree-web_data-collector-nav"><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type="method" id="braintree-web_data-collector-create-nav"><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li id="braintree-web_fastlane-nav"><a href="module-braintree-web_fastlane.html">braintree-web/fastlane</a><ul class='methods'><li data-type="method" id="braintree-web_fastlane-create-nav"><a href="module-braintree-web_fastlane.html#.create">create</a></li></ul></li><li id="braintree-web_google-payment-nav"><a href="module-braintree-web_google-payment.html">braintree-web/google-payment</a><ul class='methods'><li data-type="method" id="braintree-web_google-payment-create-nav"><a href="module-braintree-web_google-payment.html#.create">create</a></li></ul></li><li id="braintree-web_hosted-fields-nav"><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type="method" id="braintree-web_hosted-fields-create-nav"><a href="module-braintree-web_hosted-fields.html#.create">create</a></li><li data-type="method" id="braintree-web_hosted-fields-supportsInputFormatting-nav"><a href="module-braintree-web_hosted-fields.html#.supportsInputFormatting">supportsInputFormatting</a></li></ul></li><li id="braintree-web_local-payment-nav"><a href="module-braintree-web_local-payment.html">braintree-web/local-payment</a><ul class='methods'><li data-type="method" id="braintree-web_local-payment-create-nav"><a href="module-braintree-web_local-payment.html#.create">create</a></li></ul></li><li id="braintree-web_masterpass-nav"><a href="module-braintree-web_masterpass.html">braintree-web/masterpass</a><ul class='methods'><li data-type="method" id="braintree-web_masterpass-create-nav"><a href="module-braintree-web_masterpass.html#.create">create</a></li><li data-type="method" id="braintree-web_masterpass-isSupported-nav"><a href="module-braintree-web_masterpass.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_payment-ready-nav"><a href="module-braintree-web_payment-ready.html">braintree-web/payment-ready</a><ul class='methods'><li data-type="method" id="braintree-web_payment-ready-create-nav"><a href="module-braintree-web_payment-ready.html#.create">create</a></li></ul></li><li id="braintree-web_payment-request-nav"><a href="module-braintree-web_payment-request.html">braintree-web/payment-request</a><ul class='methods'><li data-type="method" id="braintree-web_payment-request-create-nav"><a href="module-braintree-web_payment-request.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-nav"><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-create-nav"><a href="module-braintree-web_paypal.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-isSupported-nav"><a href="module-braintree-web_paypal.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-nav"><a href="module-braintree-web_paypal-checkout.html">braintree-web/paypal-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-create-nav"><a href="module-braintree-web_paypal-checkout.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-isSupported-nav"><a href="module-braintree-web_paypal-checkout.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_sepa-nav"><a href="module-braintree-web_sepa.html">braintree-web/sepa</a><ul class='methods'><li data-type="method" id="braintree-web_sepa-create-nav"><a href="module-braintree-web_sepa.html#.create">create</a></li></ul></li><li id="braintree-web_three-d-secure-nav"><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type="method" id="braintree-web_three-d-secure-create-nav"><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li id="braintree-web_us-bank-account-nav"><a href="module-braintree-web_us-bank-account.html">braintree-web/us-bank-account</a><ul class='methods'><li data-type="method" id="braintree-web_us-bank-account-create-nav"><a href="module-braintree-web_us-bank-account.html#.create">create</a></li></ul></li><li id="braintree-web_vault-manager-nav"><a href="module-braintree-web_vault-manager.html">braintree-web/vault-manager</a><ul class='methods'><li data-type="method" id="braintree-web_vault-manager-create-nav"><a href="module-braintree-web_vault-manager.html#.create">create</a></li></ul></li><li id="braintree-web_venmo-nav"><a href="module-braintree-web_venmo.html">braintree-web/venmo</a><ul class='methods'><li data-type="method" id="braintree-web_venmo-create-nav"><a href="module-braintree-web_venmo.html#.create">create</a></li><li data-type="method" id="braintree-web_venmo-isBrowserSupported-nav"><a href="module-braintree-web_venmo.html#.isBrowserSupported">isBrowserSupported</a></li></ul></li><li id="braintree-web_visa-checkout-nav"><a href="module-braintree-web_visa-checkout.html">braintree-web/visa-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_visa-checkout-create-nav"><a href="module-braintree-web_visa-checkout.html#.create">create</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#Modal">Modal</a></li></ul>
+  </nav>
+
+  <div id="main">
+    
+
+    
+      
+
+
+
+    
+
+      
+
+
+  <section class="readme">
+    <article>
+      <h1>Braintree Web Client Reference <span>v3.130.0</span></h1>
+<p><span class="rule"></span></p>
+<ul>
+<li><a href="#overview">Overview</a>
+<ul>
+<li><a href="#module-hierarchy">Module Hierarchy</a></li>
+<li><a href="#callbacks">Callbacks</a></li>
+<li><a href="#promises">Promises</a></li>
+</ul>
+</li>
+<li><a href="#browser-support">Browser Support</a>
+<ul>
+<li><a href="#browser-support-desktop">Desktop</a></li>
+<li><a href="#browser-support-mobile">Mobile</a></li>
+<li><a href="#browser-support-webviews">Webviews</a></li>
+</ul>
+</li>
+<li><a href="#teardown">Teardown</a></li>
+<li><a href="#content-security-policy">Content Security Policy</a></li>
+</ul>
+<p><span class="rule"></span></p>
+<p><a id="overview"></a></p>
+<h2>Overview</h2>
+<p>The Braintree JavaScript SDK is split up into several <strong>modules</strong>. Each module is also represented by a <strong>class</strong> encapsulating the actions that module can perform. In general, each SDK feature is represented by its own standalone module. You can include as many or as few of these modules in your page depending on the Braintree features you will be using.</p>
+<p>Each module exports a <code>create</code> function which is responsible for returning an instance of that module's class. For instance, the <code>braintree-web/paypal</code> module's <code>create</code> method will return an instance of the <code>PayPal</code> class.</p>
+<p><a id="module-hierarchy"></a></p>
+<h3>Module hierarchy</h3>
+<p>Many modules of this SDK require an instance of our <code>Client</code> for communicating to our servers. In these cases, a single <code>Client</code> instance can be used for the creation of several other module instances.</p>
+<pre class="prettyprint source"><code>braintree.client.create(...) --------> Client ─┐
+                         ┌─────────────────────┤
+braintree.paypal.create(...) --------> PayPal  │
+                               ┌───────────────┘
+braintree.hostedFields.create(...) --> HostedFields
+</code></pre>
+<p><a id="callbacks"></a></p>
+<h3>Callbacks</h3>
+<p>This SDK uses the Node.js callback style, with callbacks passed as the last argument to a function. Callbacks are expected to receive possible errors as the first parameter, and any returned data as the second:</p>
+<pre class="prettyprint source lang-javascript"><code>braintree.client.create({...}, callback);
+
+function callback(err, clientInstance) { ... }
+</code></pre>
+<p><a id="promises"></a></p>
+<h3>Promises</h3>
+<p>In addition to callbacks, all asynchronous methods will return a <code>Promise</code> if no callback is provided:</p>
+<pre class="prettyprint source lang-javascript"><code>braintree.client
+  .create({
+    authorization: CLIENT_AUTHORIZATION,
+  })
+  .then(function (client) {
+    // Create other components
+  });
+</code></pre>
+<p><a id="browser-support"></a></p>
+<h2>Browser support</h2>
+<p>The Braintree JS SDK provides support for numerous browsers and devices. There are, however, caveats with certain integrations and browser combinations.</p>
+<p>While <code>braintree-web</code> will work in browsers other than the ones below, these represent the platforms against which we actively test. If you have problems with a specific browser or device, contact <a href="https://developer.paypal.com/braintree/help">our Support team</a>.</p>
+<p><a id="browser-support-desktop"></a></p>
+<h3>Desktop</h3>
+<ul>
+<li>Chrome latest</li>
+<li>Firefox latest</li>
+<li>Microsoft Edge latest</li>
+<li>Safari 8+</li>
+</ul>
+<p><a id="browser-support-mobile"></a></p>
+<h3>Mobile</h3>
+<h4>iOS</h4>
+<ul>
+<li>Safari 8+ (9+ for 3D Secure)</li>
+<li>Chrome 48+ (iOS 9+)</li>
+</ul>
+<h4>Android</h4>
+<ul>
+<li>Native browser 4.4+</li>
+<li>Chrome</li>
+<li>Firefox
+<a id="browser-support-webviews"></a></li>
+</ul>
+<h3>Webviews and hybrid environments</h3>
+<p>If you are using PayPal in a mobile webview, we recommend using PopupBridge for <a href="https://github.com/braintree/popup-bridge-ios">iOS</a> or <a href="https://github.com/braintree/popup-bridge-android">Android</a> to open the PayPal authentication flow in a mobile browser for improved security.</p>
+<p>Additionally, <code>braintree-web</code> is neither tested nor developed for hybrid runtimes such as Cordova, PhoneGap, Ionic, React Native, and Electron. While some success may be had in such environments, our SDK is optimized for the browser and its security policies and may not function correctly outside of them.</p>
+<p><a id="teardown"></a></p>
+<h2>Teardown</h2>
+<p>In certain scenarios you may need to remove your <code>braintree-web</code> integration. This is common in single page applications, modal flows, and other situations where state management is a key factor. Any module returned from a <code>braintree.component.create</code> call that can be torn down will include a <code>teardown</code> function.</p>
+<p>Invoking <code>teardown</code> will clean up any DOM nodes, event handlers, popups and/or iframes that have been created by the integration. Additionally, <code>teardown</code> accepts a callback which you can use to know when it is safe to proceed.</p>
+<pre class="prettyprint source lang-js"><code>hostedFieldsInstance.teardown(function (err) {
+  if (err) {
+    console.error(&quot;Could not tear down Hosted Fields!&quot;);
+  } else {
+    console.log(&quot;Hosted Fields has been torn down!&quot;);
+  }
+});
+</code></pre>
+<p>If you happen to call this method while the instance's <code>teardown</code> is in progress, you'll receive an error. Once completed, calling any methods on the instance will throw an error.</p>
+<p><a id="content-security-policy"></a></p>
+<h2>Using <code>braintree-web</code> with a Content Security Policy (CSP)</h2>
+<p><a href="https://www.html5rocks.com/en/tutorials/security/content-security-policy/">Content Security Policy</a> is a feature of web browsers that mitigates cross-site scripting and other attacks. By limiting the origins of resources that may be loaded on your page, you can maintain tighter control over any potentially malicious code. We recommend considering the implementation of a CSP when available.</p>
+<h3>Basic Directives</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>js.braintreegateway.com<br/>assets.braintreegateway.com</td>
+<td>js.braintreegateway.com<br/>assets.braintreegateway.com</td>
+</tr>
+<tr>
+<td>img-src</td>
+<td>assets.braintreegateway.com<br/>data:</td>
+<td>assets.braintreegateway.com<br/>data:</td>
+</tr>
+<tr>
+<td>child-src</td>
+<td>assets.braintreegateway.com</td>
+<td>assets.braintreegateway.com</td>
+</tr>
+<tr>
+<td>frame-src</td>
+<td>assets.braintreegateway.com</td>
+<td>assets.braintreegateway.com</td>
+</tr>
+<tr>
+<td>connect-src</td>
+<td>api.sandbox.braintreegateway.com<br/>client-analytics.sandbox.braintreegateway.com<br/>*.braintree-api.com</td>
+<td>api.braintreegateway.com<br/>client-analytics.braintreegateway.com<br/>*.braintree-api.com</td>
+</tr>
+</tbody>
+</table>
+<h3>PayPal Specific Directives</h3>
+<p>If using the <a href="module-braintree-web_paypal-checkout.html">PayPal Checkout component</a>, include these additional directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>www.paypalobjects.com<br/>*.paypal.com<br/>'unsafe-inline'</td>
+<td>www.paypalobjects.com<br/>*.paypal.com<br/>'unsafe-inline'</td>
+</tr>
+<tr>
+<td>style-src</td>
+<td>'unsafe-inline'</td>
+<td>'unsafe-inline'</td>
+</tr>
+<tr>
+<td>img-src</td>
+<td>checkout.paypal.com</td>
+<td>checkout.paypal.com</td>
+</tr>
+<tr>
+<td>child-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+<tr>
+<td>frame-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+</tbody>
+</table>
+<h3>Google Pay Specific Directives</h3>
+<p>If using the <a href="module-braintree-web_google-payment.html">Google Pay component</a>, include these additional directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>pay.google.com</td>
+<td>pay.google.com</td>
+</tr>
+<tr>
+<td>connect-src</td>
+<td>pay.google.com<br/>https://google.com/pay<br/>https://pay.google.com<br/>https://pay.google.com/about/redirect/</td>
+<td>pay.google.com<br/>https://google.com/pay<br/>https://pay.google.com<br/>https://pay.google.com/about/redirect/</td>
+</tr>
+</tbody>
+</table>
+<p>If Google adds redirects or changes URLs related to the Google Pay component, the domains or URLs in these directives may change.</p>
+<h3>3D Secure Specific Directives</h3>
+<p>If using the <a href="module-braintree-web_three-d-secure.html">3D Secure component</a>, include these additional directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>songbirdstag.cardinalcommerce.com</td>
+<td>songbird.cardinalcommerce.com</td>
+</tr>
+<tr>
+<td>frame-src</td>
+<td>*</td>
+<td>*</td>
+</tr>
+<tr>
+<td>connect-src</td>
+<td>*.cardinalcommerce.com</td>
+<td>*.cardinalcommerce.com</td>
+</tr>
+<tr>
+<td>form-action</td>
+<td>*</td>
+<td>*</td>
+</tr>
+</tbody>
+</table>
+<p>3D Secure 2 utilizes an iframe implementation that requires the use of the issuing bank's full ACS URL. In contrast to 3D Secure 1, the 3D Secure 2 core framework does not allow masked URLs or redirects. Given that the list of possible ACS URLs changes regularly and varies between issuers and ACS providers, there is not a strict CSP configuration available for 3D Secure 2.</p>
+<p>Additionally, 3D Secure 2 includes a data collection flow called &quot;3DS Method&quot; or &quot;Method URL Collection&quot;, which also utilizes the ACS URL directly. This process increases authentication success significantly and is considered mandatory by Visa. Blocking this process through a CSP can potentially result in authentication failures and increased friction within the checkout experience.</p>
+<p>If maintaining a CSP in an integration that uses 3D Secure, merchants can consider setting <code>frame-src *</code> to whitelist all potential ACS URLs that could be utilized during the 3D Secure authentication process.</p>
+<h3>Data Collector Specific Directives</h3>
+<p>If using Kount with the <a href="DataCollector.html">Data Collector component</a>, adhere to the <a href="https://support.kount.com/hc/en-us/articles/360045746311-FAQ-How-is-Content-Security-Policy-CSP-Used-">Kount CSP guide</a>.</p>
+<p>For <a href="https://developer.paypal.com/braintree/docs/guides/premium-fraud-management-tools/overview">Braintree Fraud Protection</a>, use these directives:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+<tr>
+<td>child-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+<tr>
+<td>frame-src</td>
+<td>*.paypal.com</td>
+<td>*.paypal.com</td>
+</tr>
+</tbody>
+</table>
+<h3>Executing In-Line Scripts</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sandbox</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>script-src</td>
+<td>'unsafe-inline'</td>
+<td>'unsafe-inline'</td>
+</tr>
+<tr>
+<td>(see documentation)</td>
+<td>'sha__-{HASHED_INLINE_SCRIPT}'<br/>'nonce-ONE_TIME-BASE64'</td>
+<td>'sha__-{HASHED_INLINE_SCRIPT}'<br/>'nonce-ONE_TIME-BASE64'</td>
+</tr>
+</tbody>
+</table>
+<p>Allowing execution of any inline script(s) may lead to security vulnerabilities. To restrict the execution of inline scripts to known code, include a <a href="https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html#hashes">hash-source</a> of the inline script(s) in the <code>script-src</code> directive or generate an one-time use <a href="https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html#nonces">nonce-source</a> to allow specific <code>&lt;script&gt;</code> blocks to execute.</p>
+<p>The generation and appropriate use of these hash-source or one-time nonce-source values are specific to your HTML files and/or server setup. See documentation on &quot;content security policy&quot; and &quot;script-src&quot; directive.</p>
+<h4>Example of hash of inline script(s):</h4>
+<pre class="prettyprint source lang-html"><code>&lt;html>&lt;head>&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;
+    Content-Security-Policy: script-src 'unsafe-inline' 'sha256-zVu1jtS1MTItvxLN0tAAAAOAOlDFjjz/oAIlo5KIjMs='
+&quot;/>&lt;head>
+&lt;script>console.log(&quot;execution of inline-script&quot;)&lt;/script>
+&lt;/html>
+</code></pre>
+<p>ℹ Try generating a hash of the contents of the <code>&lt;script&gt;</code> tag <a href="https://report-uri.com/home/hash">here</a>.</p>
+<p>⚠️ Note that any change to the <code>&lt;script&gt;</code> blocks including empty-space changes will change the hash. For example:</p>
+<pre class="prettyprint source lang-html"><code>&lt;script>
+  console.log(&quot;execution of inline-script&quot;);
+&lt;/script>
+</code></pre>
+<p>Adding empty-space around the content of the <code>&lt;script&gt;</code> tags changes the matching hash. As a result, attempts to load the HTML would show the following error (visible in the developer console):</p>
+<blockquote>
+<p>Refused to execute inline script because it violates the following Content Security Policy directive: &quot;script-src 'self' 'sha256-zVu1jtS1MTItvxLN0tAAAAOAOlDFjjz/oAIlo5KIjMs=' js.braintreegateway.com assets.braintreegateway.com pay.google.com&quot;. Either the 'unsafe-inline' keyword, a hash ('sha256-y5bhUNykMSWsqlMH7ObmFlUgQFkbMBMmFmeQ3H9wltI='), or a nonce ('nonce-...') is required to enable inline execution.</p>
+</blockquote>
+<p>ℹ️ In the example above, the correct hash, <code>sha256-y5bhUNykMSWsqlMH7ObmFlUgQFkbMBMmFmeQ3H9wltI=</code>, appears in the last sentence of the error message.</p>
+<h4>Example of nonce-source</h4>
+<pre class="prettyprint source lang-html"><code>&lt;html>&lt;head>
+  &lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;
+    Content-Security-Policy: script-src 'unsafe-inline' 'nonce-123a456b789c000d='
+&quot;/>
+&lt;head>
+&lt;script nonce=&quot;123a456b789c000d=&quot;>console.log(&quot;execution of inline-script&quot;);&lt;/script>
+&lt;script nonce=&quot;123a456b789c000d=&quot;>var sum = 1 + 2;&lt;/script>
+&lt;/html>
+</code></pre>
+<p>ℹ️️ nonce-source should be one-time use; that is, it changes for each request.</p>
+<p>ℹ️️ nonce-source should be a randomly generated, non-guessable,cryptographically strong value; the standard of whats cryptographical strong continue to evolve, but is currently at least 128 bits.</p>
+<p>ℹ️️ It is recommended that a nonce-source be used with HTML templating engine.</p>
+    </article>
+  </section>
+
+
+    
+
+
+  </div>
+
+  <br class="clear">
+
+  <footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.11</a>
+  </footer>
+
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/pagelocation.js"></script>
+
+  
+  <script>
+    $(function () {
+      window.docsearch({
+        apiKey: '1097a5c904574f31dd6d5d174a658739',
+        indexName: 'braintree',
+        inputSelector: '.search-input',
+        debug: false, // Set debug to true if you want to inspect the dropdown
+        algoliaOptions: {
+          hitsPerPage: 7
+        }
+      });
+    });
+  </script>
+  
+  
+</body>
+</html>
