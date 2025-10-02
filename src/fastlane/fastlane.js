@@ -42,7 +42,14 @@ function fastlane(options) {
       delete options.minified;
       delete options.btSdkVersion;
 
-      return window.braintree.fastlane.create(
+      var createFn;
+      if (window.braintree._fastlane && window.braintree._fastlane.create) {
+        createFn = window.braintree._fastlane.create;
+      } else {
+        createFn = window.braintree.fastlane.create;
+      }
+
+      return createFn(
         assign({ platformOptions: platformOptions }, options, result.metadata)
       );
     })

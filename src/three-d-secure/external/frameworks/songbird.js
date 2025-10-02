@@ -20,7 +20,8 @@ var SONGBIRD_UI_EVENTS = [
   "ui.close",
   "ui.render",
 
-  // TODO these events are not documented in the // eslint-disable-line no-warning-comments
+  // eslint-disable-next-line no-warning-comments
+  // TODO these events are not documented in the
   // client reference because so far we have
   // not been able to trigger them in our testing
   "ui.renderHidden",

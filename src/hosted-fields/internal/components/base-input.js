@@ -292,7 +292,8 @@ BaseInput.prototype.focus = function () {
   this.updateModel("isFocused", true);
 };
 
-// TODO this no longer works in iOS v14.5/6 // eslint-disable-line no-warning-comments
+// eslint-disable-next-line no-warning-comments
+// TODO this no longer works in iOS v14.5/6
 // see if we can figure out an alternate workaround
 BaseInput.prototype.applySafariFocusFix = function () {
   var start, end;

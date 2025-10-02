@@ -33,6 +33,47 @@ describe("FraudNet", () => {
     const el = document.querySelector('[fncls][type="application/json"]');
     const parsedData = JSON.parse(el.text);
 
+    expect(parsedData).not.toHaveProperty("bu");
+    expect(parsedData.b).toContain(sessionId);
+    expect(parsedData.f).toBe(sessionId);
+    expect(parsedData.s).toBe("BRAINTREE_SIGNIN");
+    expect(parsedData.cb1).toBe(testCallback);
+    expect(parsedData.sandbox).toBe(true);
+  });
+
+  it("contains bu instead of b in parsed data when beacon is passed as false", async () => {
+    const testCallback = "testCallback";
+    const result = await fraudNet.setup({
+      sessionId: "fake-sessionID",
+      beacon: false,
+      cb1: testCallback,
+    });
+
+    const sessionId = result.sessionId;
+    const el = document.querySelector('[fncls][type="application/json"]');
+    const parsedData = JSON.parse(el.text);
+
+    expect(parsedData).not.toHaveProperty("b");
+    expect(parsedData.bu).toBe(false);
+    expect(parsedData.f).toBe(sessionId);
+    expect(parsedData.s).toBe("BRAINTREE_SIGNIN");
+    expect(parsedData.cb1).toBe(testCallback);
+    expect(parsedData.sandbox).toBe(true);
+  });
+
+  it("contains b in parsed data when beacon is passed as true", async () => {
+    const testCallback = "testCallback";
+    const result = await fraudNet.setup({
+      sessionId: "fake-sessionID",
+      beacon: true,
+      cb1: testCallback,
+    });
+
+    const sessionId = result.sessionId;
+    const el = document.querySelector('[fncls][type="application/json"]');
+    const parsedData = JSON.parse(el.text);
+
+    expect(parsedData).not.toHaveProperty("bu");
     expect(parsedData.b).toContain(sessionId);
     expect(parsedData.f).toBe(sessionId);
     expect(parsedData.s).toBe("BRAINTREE_SIGNIN");

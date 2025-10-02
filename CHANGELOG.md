@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 3.130.0 (2025-10-02)
+
+- Update dependencies:
+  - Update accelerated-checkout-loader to 1.2.0
+- Fastlane:
+  - Fix error that would sometimes occur on initialization
+
 ## 3.129.1 (2025-09-17)
 
 - PayPalCheckout

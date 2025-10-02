@@ -307,7 +307,8 @@ PaymentRequestComponent.prototype.initialize = function () {
       resolve(self);
     });
 
-    // TODO - We may need to apply the same setTimeout hack that Hosted Fields // eslint-disable-line no-warning-comments
+    // eslint-disable-next-line no-warning-comments
+    // TODO - We may need to apply the same setTimeout hack that Hosted Fields
     // uses for iframes to load correctly in Edge. See:
     // https://github.com/braintree/braintree-web/blob/0c951e5f9859c606652485de14188b6bd6656677/src/hosted-fields/external/hosted-fields.js#L449-L469
     self._frame.src = composeUrl(

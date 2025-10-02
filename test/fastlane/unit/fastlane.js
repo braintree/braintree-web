@@ -193,4 +193,32 @@ describe("fastlane", () => {
       expectedError
     );
   });
+
+  it("uses window.braintree._fastlane.create when available to avoid overwrite issue", async () => {
+    const inputDeviceData = {
+      correlationId: "test-correlation-id-123",
+    };
+
+    const mockFastlaneInstance = { id: "fastlane-instance-123" };
+
+    const mockUnderscoreFastlaneCreate = jest.fn();
+    mockUnderscoreFastlaneCreate.mockResolvedValue(mockFastlaneInstance);
+    window.braintree._fastlane = {
+      create: mockUnderscoreFastlaneCreate,
+    };
+
+    await create({ client: testContext.client, deviceData: inputDeviceData });
+
+    expect(mockUnderscoreFastlaneCreate).toHaveBeenCalledTimes(1);
+    expect(mockUnderscoreFastlaneCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        platformOptions: expect.objectContaining({
+          platform: "BT",
+          deviceData: inputDeviceData,
+        }),
+      })
+    );
+
+    expect(mockFastlaneCreate).not.toHaveBeenCalled();
+  });
 });

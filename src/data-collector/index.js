@@ -119,17 +119,20 @@ function create(options) {
         })
         .then(function (client) {
           var clientConfiguration = client.getConfiguration();
-
+          var fraudnetConfig = {
+            sessionId:
+              options.riskCorrelationId ||
+              options.clientMetadataId ||
+              options.correlationId,
+            clientSessionId: clientConfiguration.analyticsMetadata.sessionId,
+            environment: clientConfiguration.gatewayConfiguration.environment,
+            cb1: options.cb1,
+          };
+          if (options.hasOwnProperty("beacon")) {
+            fraudnetConfig.beacon = options.beacon;
+          }
           return fraudnet
-            .setup({
-              sessionId:
-                options.riskCorrelationId ||
-                options.clientMetadataId ||
-                options.correlationId,
-              clientSessionId: clientConfiguration.analyticsMetadata.sessionId,
-              environment: clientConfiguration.gatewayConfiguration.environment,
-              cb1: options.cb1,
-            })
+            .setup(fraudnetConfig)
             .then(function (fraudnetInstance) {
               if (fraudnetInstance) {
                 data.correlation_id = fraudnetInstance.sessionId; // eslint-disable-line camelcase

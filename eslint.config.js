@@ -8,6 +8,7 @@ module.exports = [
       "node_modules/",
       "dist/",
       "vendor/",
+      "storybook-static/",
       "src/venmo/shared/events.js",
       "src/venmo/shared/types.js",
       "src/venmo/internal",
