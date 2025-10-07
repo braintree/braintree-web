@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.130.1 (2025-10-07)
+
+- Update dependencies:
+  - Update accelerated-checkout-loader to 1.2.1
+
 ## 3.130.0 (2025-10-02)
 
 - Update dependencies:
