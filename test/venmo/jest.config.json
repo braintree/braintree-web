@@ -7,5 +7,8 @@
   "//": "In the future, tests should live in the same directory as the files they are testing",
   "rootDir": "../../src/venmo",
   "roots": ["<rootDir>", "<rootDir>/../../test/venmo"],
-  "testMatch": ["**/unit/**/*.js"]
+  "testMatch": ["**/unit/**/*.js"],
+  "moduleNameMapper": {
+    "^detectincognitojs$": "<rootDir>/../../src/lib/__mocks__/detectincognito.js"
+  }
 }

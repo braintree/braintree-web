@@ -13,6 +13,7 @@
     "<rootDir>/../test/lib/jest.config.json",
     "<rootDir>/../test/local-payment/jest.config.json",
     "<rootDir>/../test/masterpass/jest.config.json",
+    "<rootDir>/../test/instant-verification/jest.config.json",
     "<rootDir>/../test/payment-request/jest.config.json",
     "<rootDir>/../test/paypal/jest.config.json",
     "<rootDir>/../test/paypal-checkout/jest.config.json",

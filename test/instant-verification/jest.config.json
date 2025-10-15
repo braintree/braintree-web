@@ -1,0 +1,11 @@
+{
+  "testEnvironment": "jsdom",
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/instant-verification/coverage",
+  "displayName": "instant-verification",
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "restoreMocks": true,
+  "rootDir": "../../src/instant-verification",
+  "roots": ["<rootDir>", "<rootDir>/../../test/instant-verification"],
+  "testMatch": ["**/unit/**/*.js"]
+}

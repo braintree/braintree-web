@@ -12,6 +12,7 @@ coverage/
 
 *storybook.log
 storybook-static
+.storybook/static/local-build/
 
 cert.pem
 key.pem

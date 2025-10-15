@@ -173,6 +173,23 @@ describe("Venmo", () => {
     );
   });
 
+  it("configures venmo with allowNonDefaultBrowsers when specified", () => {
+    const venmo = new Venmo({
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      allowNonDefaultBrowsers: false,
+    });
+
+    expect(venmo._allowNonDefaultBrowsers).toBe(false);
+  });
+
+  it("defaults allowNonDefaultBrowsers to true when not specified", () => {
+    const venmo = new Venmo({
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+    });
+
+    expect(venmo._allowNonDefaultBrowsers).toBe(true);
+  });
+
   it("configures venmo desktop with display name (if passed)", async () => {
     createVenmoDesktop.mockResolvedValue({});
     new Venmo({
@@ -1072,6 +1089,7 @@ describe("Venmo", () => {
     beforeEach(() => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        _isIncognito: false,
       });
       testContext.client.request.mockResolvedValue({
         data: {
@@ -1286,6 +1304,221 @@ describe("Venmo", () => {
         expect(params["x-success"]).toBe("NOOP");
         expect(params["x-cancel"]).toBe("NOOP");
         expect(params["x-error"]).toBe("NOOP");
+      });
+    });
+
+    it("omits return urls when using non-default mobile browser", function () {
+      jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+
+      return venmo.getUrl().then(function (url) {
+        var params = querystring.parse(url);
+
+        expect(params["x-success"]).toBe("NOOP");
+        expect(params["x-cancel"]).toBe("NOOP");
+        expect(params["x-error"]).toBe("NOOP");
+      });
+    });
+
+    describe("non-default browser with deep link return URL", () => {
+      it("omits return urls when using iOS non-default browser even with deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          deepLinkReturnUrl: "com.example://return",
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe("NOOP");
+          expect(params["x-cancel"]).toBe("NOOP");
+          expect(params["x-error"]).toBe("NOOP");
+        });
+      });
+
+      it("includes return urls when using Android non-default browser with deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          deepLinkReturnUrl: "com.example://return",
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe(
+            "com.example://return#venmoSuccess=1"
+          );
+          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
+          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+        });
+      });
+    });
+
+    describe("webview with deep link return URL", () => {
+      it("includes return urls when using webview with deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(true);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          deepLinkReturnUrl: "com.example://return",
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe(
+            "com.example://return#venmoSuccess=1"
+          );
+          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
+          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+        });
+      });
+    });
+
+    describe("iframe scenarios with deep link return URL", () => {
+      beforeEach(() => {
+        inIframe.mockReturnValue(true);
+      });
+
+      it("omits return urls when iframe + non-default browser + deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          deepLinkReturnUrl: "com.example://return",
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe("NOOP");
+          expect(params["x-cancel"]).toBe("NOOP");
+          expect(params["x-error"]).toBe("NOOP");
+        });
+      });
+
+      it("includes return urls when iframe + default browser + deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          deepLinkReturnUrl: "com.example://return",
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe(
+            "com.example://return#venmoSuccess=1"
+          );
+          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
+          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+        });
+      });
+
+      it("includes return urls when webview + iframe + deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(true);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          deepLinkReturnUrl: "com.example://return",
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe(
+            "com.example://return#venmoSuccess=1"
+          );
+          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
+          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+        });
+      });
+    });
+
+    describe("incognito mode scenarios", () => {
+      it("omits return urls when default browser + incognito + no deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        inIframe.mockReturnValue(false);
+
+        // Create venmo instance with incognito mode
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+        });
+        venmo._isIncognito = true;
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe("NOOP");
+          expect(params["x-cancel"]).toBe("NOOP");
+          expect(params["x-error"]).toBe("NOOP");
+        });
+      });
+
+      it("includes return urls when incognito + deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          deepLinkReturnUrl: "com.example://return",
+        });
+        venmo._isIncognito = true;
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe(
+            "com.example://return#venmoSuccess=1"
+          );
+          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
+          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+        });
+      });
+    });
+
+    describe("manual return scenarios", () => {
+      it("omits return urls when manual return is required + no deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        inIframe.mockReturnValue(false);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          requireManualReturn: true,
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe("NOOP");
+          expect(params["x-cancel"]).toBe("NOOP");
+          expect(params["x-error"]).toBe("NOOP");
+        });
+      });
+
+      it("includes return urls when manual return is required + deep link return url", () => {
+        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+
+        venmo = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          requireManualReturn: true,
+          deepLinkReturnUrl: "com.example://return",
+        });
+
+        return venmo.getUrl().then((url) => {
+          const params = querystring.parse(url);
+          expect(params["x-success"]).toBe(
+            "com.example://return#venmoSuccess=1"
+          );
+          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
+          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+        });
       });
     });
 
@@ -2135,6 +2368,31 @@ describe("Venmo", () => {
         })
       );
     });
+
+    it("calls isBrowserSupported with allowNonDefaultBrowsers: false when venmo instance is configured to do so", () => {
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+        allowNonDefaultBrowsers: false,
+      });
+
+      venmo.isBrowserSupported();
+
+      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith(
+        expect.objectContaining({
+          allowNonDefaultBrowsers: false,
+        })
+      );
+    });
+
+    it("calls isBrowserSupported with allowNonDefaultBrowsers: true by default", () => {
+      venmo.isBrowserSupported();
+
+      expect(supportsVenmo.isBrowserSupported).toHaveBeenCalledWith(
+        expect.objectContaining({
+          allowNonDefaultBrowsers: true,
+        })
+      );
+    });
   });
 
   describe("hasTokenizationResult", () => {
@@ -2963,9 +3221,10 @@ describe("Venmo", () => {
         await venmo.tokenize().catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED");
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            "venmo.appswitch.browser-window.closed"
+            "venmo.appswitch.browser-window.closed",
+            { context_id: "context-id" }
           );
         });
       });
@@ -2988,9 +3247,10 @@ describe("Venmo", () => {
         const result = await venmo.tokenize();
 
         expect(result.nonce).toBe("fake-nonce");
-        expect(analytics.sendEvent).not.toHaveBeenCalledWith(
+        expect(analytics.sendEventPlus).not.toHaveBeenCalledWith(
           expect.anything(),
-          "venmo.appswitch.browser-window.closed"
+          "venmo.appswitch.browser-window.closed",
+          { context_id: "context-id" }
         );
       });
 
@@ -3999,6 +4259,278 @@ describe("Venmo", () => {
             query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
           }),
         });
+      });
+    });
+  });
+
+  describe("_shouldIncludeReturnUrls", () => {
+    beforeEach(() => {
+      // Set up default mocks for browser detection
+      jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+      jest.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(false);
+
+      // Set up default mocks for other conditions
+      inIframe.mockReturnValue(false);
+      supportsVenmo.isNonDefaultBrowser.mockReturnValue(false);
+    });
+
+    it("returns true when _deepLinkReturnUrl is set", () => {
+      const instance = new Venmo({
+        client: testContext.client,
+        deepLinkReturnUrl: "myapp://return",
+      });
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(true);
+    });
+
+    it("returns false when in a non-default browser that is not webview and not Android", () => {
+      supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
+
+      const instance = new Venmo({
+        client: testContext.client,
+      });
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(false);
+    });
+
+    it("returns true when in a non-default browser that is a webview", () => {
+      supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
+      jest.spyOn(browserDetection, "isWebview").mockReturnValue(true);
+
+      const instance = new Venmo({
+        client: testContext.client,
+        _isIncognito: false,
+      });
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(true);
+    });
+
+    it("returns true when in a non-default browser on Android", () => {
+      supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
+      jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+
+      const instance = new Venmo({
+        client: testContext.client,
+        _isIncognito: false,
+      });
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(true);
+    });
+
+    it("returns false when _cannotHaveReturnUrls is true (in iframe)", () => {
+      inIframe.mockReturnValue(true);
+
+      const instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+      });
+
+      // Prevent async initialization from causing unhandled promise rejections
+      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(false);
+    });
+
+    it("returns false when _isIncognito is true", () => {
+      const instance = new Venmo({
+        _isIncognito: true,
+      });
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(false);
+    });
+
+    it("returns true when _isIncognito is true and in iOS Safari", () => {
+      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
+
+      const instance = new Venmo({
+        _isIncognito: true,
+      });
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(true);
+    });
+
+    it("returns false when _isIncognito is true and in iOS Safari but in iframe", () => {
+      inIframe.mockReturnValue(true);
+      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
+
+      const instance = new Venmo({
+        _isIncognito: true,
+        createPromise: Promise.resolve(testContext.client),
+      });
+
+      // Prevent async initialization from causing unhandled promise rejections
+      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(false);
+    });
+
+    it("returns true when all conditions allow return URLs", () => {
+      const instance = new Venmo({
+        _isIncognito: false,
+      });
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(true);
+    });
+
+    it("returns true when _deepLinkReturnUrl is set even if other conditions would prevent return URLs", () => {
+      inIframe.mockReturnValue(true);
+      jest.spyOn(browserDetection, "isWebview").mockReturnValue(true); // Make it webview to bypass first condition
+
+      const instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        deepLinkReturnUrl: "myapp://return",
+        _isIncognito: true,
+      });
+
+      // Prevent async initialization from causing unhandled promise rejections
+      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(true);
+    });
+
+    it("returns false when requireManualReturn is true", () => {
+      const instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        requireManualReturn: true,
+        _isIncognito: false,
+      });
+
+      // Prevent async initialization from causing unhandled promise rejections
+      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+
+      expect(instance._shouldIncludeReturnUrls()).toBe(false);
+    });
+  });
+
+  describe("_handleCancelOnReturn", () => {
+    let venmo;
+
+    const setupVenmoForCancellation = (overrides = {}) => {
+      const defaults = {
+        cancelOnReturnToBrowser: true,
+        pollCount: 4,
+        paymentContextStatus: "CREATED",
+        locationHash: "",
+      };
+      const config = { ...defaults, ...overrides };
+
+      venmo._cancelOnReturnToBrowser = config.cancelOnReturnToBrowser;
+      venmo._pollCount = config.pollCount;
+      venmo._venmoPaymentContextStatus = config.paymentContextStatus;
+      window.location.hash = config.locationHash;
+    };
+
+    const expectNoCancellation = () => {
+      expect(analytics.sendEventPlus).not.toHaveBeenCalled();
+      expect(venmo._cancelMobilePaymentContext).not.toHaveBeenCalled();
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+      });
+      venmo._venmoPaymentContextStatus = "CREATED";
+      venmo._venmoPaymentContextId = "test-context-id";
+      venmo._cancelMobilePaymentContext = jest.fn().mockResolvedValue();
+    });
+
+    it.each([false, undefined])(
+      "does nothing if _cancelOnReturnToBrowser is %s",
+      async (cancelValue) => {
+        venmo._cancelOnReturnToBrowser = cancelValue;
+
+        await venmo._handleCancelOnReturn();
+
+        expect(venmo._pollCount).toBe(0);
+        expectNoCancellation();
+      }
+    );
+
+    it("increments poll count when _cancelOnReturnToBrowser is true", async () => {
+      venmo._cancelOnReturnToBrowser = true;
+
+      await venmo._handleCancelOnReturn();
+
+      expect(venmo._pollCount).toBe(1);
+    });
+
+    describe("when cancellation conditions are not met", () => {
+      it.each(["cancel", "error", "success"])(
+        "does not cancel if Venmo %s parameter is present",
+        async (param) => {
+          setupVenmoForCancellation({
+            locationHash: `#venmo${param.charAt(0).toUpperCase()}${param.slice(1)}=true`,
+          });
+
+          await venmo._handleCancelOnReturn();
+
+          expectNoCancellation();
+        }
+      );
+
+      it.each([
+        [
+          "payment context status is not CREATED",
+          { paymentContextStatus: "APPROVED" },
+        ],
+        ["poll count is below minimum threshold", { pollCount: 1 }],
+      ])("does not cancel if %s", async (_description, overrides) => {
+        setupVenmoForCancellation(overrides);
+
+        await venmo._handleCancelOnReturn();
+
+        expectNoCancellation();
+      });
+    });
+
+    describe("when cancellation conditions are met", () => {
+      it("cancels payment context and sends analytics", async () => {
+        setupVenmoForCancellation();
+
+        await venmo._handleCancelOnReturn();
+
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+          venmo._createPromise,
+          "venmo.appswitch.cancel-on-return-to-browser",
+          {
+            context_id: "test-context-id",
+          }
+        );
+        expect(venmo._cancelMobilePaymentContext).toHaveBeenCalled();
+      });
+
+      it("sends success analytics event when cancel succeeds", async () => {
+        setupVenmoForCancellation();
+
+        await venmo._handleCancelOnReturn();
+
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+          venmo._createPromise,
+          "venmo.appswitch.cancel-on-return-to-browser.success",
+          {
+            context_id: "test-context-id",
+          }
+        );
+        expect(venmo._pollCount).toBe(0);
+      });
+
+      it("sends error analytics event when cancel fails", async () => {
+        setupVenmoForCancellation();
+        venmo._cancelMobilePaymentContext = jest
+          .fn()
+          .mockRejectedValue(new Error("Cancel failed"));
+
+        await venmo._handleCancelOnReturn();
+
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+          venmo._createPromise,
+          "venmo.appswitch.cancel-on-return-to-browser.error",
+          {
+            context_id: "test-context-id",
+          }
+        );
+        expect(venmo._pollCount).toBe(0);
       });
     });
   });

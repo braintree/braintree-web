@@ -72,11 +72,13 @@ function Venmo(options) {
     this._allowDesktopWebLogin && this._isDesktop();
   this._cannotHaveReturnUrls = inIframe() || this._requireManualReturn;
   this._allowAndroidRecreation = options.allowAndroidRecreation !== false;
+  this._allowNonDefaultBrowsers = options.allowNonDefaultBrowsers !== false;
   this._maxRetryCount = 3;
   this._collectCustomerBillingAddress =
     options.collectCustomerBillingAddress || false;
   this._collectCustomerShippingAddress =
     options.collectCustomerShippingAddress || false;
+  this._cancelOnReturnToBrowser = options.cancelOnReturnToBrowser === true;
   this._isFinalAmount = options.isFinalAmount || false;
   this._lineItems = options.lineItems;
   this._subTotalAmount = options.subTotalAmount;
@@ -87,9 +89,19 @@ function Venmo(options) {
   this._cspNonce =
     (this._mobileWebFallBack || this._allowDesktopWebLogin) &&
     (options.styleCspNonce || false);
+  this._mobilePollingInterval = DEFAULT_MOBILE_POLLING_INTERVAL;
+  this._mobilePollingExpiresThreshold = DEFAULT_MOBILE_EXPIRING_THRESHOLD;
+  this._pollCount = 0;
 
   this._shouldCreateVenmoPaymentContext =
     this._cannotHaveReturnUrls || !this._shouldUseLegacyFlow;
+
+  this._isIncognito = options._isIncognito;
+
+  analytics.sendEvent(
+    this._createPromise,
+    "venmo.options.is-incognito." + String(Boolean(this._isIncognito))
+  );
 
   analytics.sendEvent(
     this._createPromise,
@@ -162,12 +174,6 @@ function Venmo(options) {
         });
     });
   } else if (this._shouldCreateVenmoPaymentContext) {
-    // these variables are only relevant for the manual return flow
-    // and they are only set to make testing easier (so they can
-    // be overwritten with smaller values in the tests)
-    this._mobilePollingInterval = DEFAULT_MOBILE_POLLING_INTERVAL;
-    this._mobilePollingExpiresThreshold = DEFAULT_MOBILE_EXPIRING_THRESHOLD;
-
     this._createPromise = this._createPromise.then(function (client) {
       var paymentContextPromise, webLoginPromise;
       var analyticsCategory = self._cannotHaveReturnUrls
@@ -580,6 +586,7 @@ Venmo.prototype.isBrowserSupported = function () {
     allowWebviews: this._allowWebviews,
     allowDesktop: this._allowDesktop,
     allowDesktopWebLogin: this._allowDesktopWebLogin,
+    allowNonDefaultBrowsers: this._allowNonDefaultBrowsers,
   });
 };
 
@@ -614,19 +621,48 @@ Venmo.prototype._hasTokenizationResult = function (hash) {
 };
 
 Venmo.prototype._shouldIncludeReturnUrls = function () {
-  // when a deep link return url is passed, we should always
-  // respect it and include the return urls so the venmo app
-  // can app switch back to it
+  // When the SDK is initialized in a non-default mobile browser (but not webviews
+  // and not Android)), it is not possible to automatically return to the browser
+  // from which the Venmo app was launched. When return URLs are omitted,
+  // the Venmo app prompts the user to return manually.
+  //
+  // Note: webviews are excluded from this restriction because deep link return URLs are
+  // specifically designed to work with webviews.
+  // Note: Android is excluded from this restriction because it can always return to the
+  // browser from which the Venmo app was launched.
+  if (
+    isBrowserSupported.isNonDefaultBrowser() &&
+    !browserDetection.isWebview() &&
+    !browserDetection.isAndroid()
+  ) {
+    return false;
+  }
+
+  // When we do support non-default browsers, and a deep link
+  // return url is passed, we should always respect it and
+  // include the return urls so the venmo app can app switch back to it
   if (this._deepLinkReturnUrl) {
     return true;
   }
 
-  // when the sdk is initialized within an iframe, it's
-  // impossible to return back to the correct place automatically
-  // without also setting a deepLinkReturnUrl. When the return
-  // urls are omitted, the Venmo app prompts the user to return
-  // manually.
-  return !this._cannotHaveReturnUrls;
+  // Cannot include return URLs if in iframe or manual return is required
+  if (this._cannotHaveReturnUrls) {
+    return false;
+  }
+
+  // Special case: iOS Safari in private mode should include return URLs
+  // because it does allow app switching back to Safari
+  if (this._isIncognito && browserDetection.isIosSafari()) {
+    return true;
+  }
+
+  // For all other incognito/private modes, exclude return URLs
+  if (this._isIncognito) {
+    return false;
+  }
+
+  // Default case: include return URLs
+  return true;
 };
 
 Venmo.prototype._isDesktop = function () {
@@ -981,29 +1017,36 @@ Venmo.prototype._checkPaymentContextStatus = function () {
     });
 };
 
-Venmo.prototype._pollForStatusChange = function () {
-  var self = this;
-
-  if (!self._venmoPaymentContextId) {
+Venmo.prototype._validatePollingContext = function () {
+  if (!this._venmoPaymentContextId) {
     return Promise.reject(
       new BraintreeError(errors.VENMO_MOBILE_POLLING_TOKENIZATION_NO_CONTEXT_ID)
     );
   }
 
-  if (Date.now() > self._mobilePollingContextExpiresIn) {
+  if (Date.now() > this._mobilePollingContextExpiresIn) {
     return Promise.reject(
       new BraintreeError(errors.VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT)
     );
   }
+
+  return null;
+};
+
+Venmo.prototype._handleWindowClosure = function () {
+  var self = this;
 
   if (
     self._venmoWindow &&
     self._venmoWindow.closed &&
     self._venmoPaymentContextStatus === "CREATED"
   ) {
-    analytics.sendEvent(
+    analytics.sendEventPlus(
       self._createPromise,
-      "venmo.appswitch.browser-window.closed"
+      "venmo.appswitch.browser-window.closed",
+      {
+        context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+      }
     );
 
     self
@@ -1032,6 +1075,116 @@ Venmo.prototype._pollForStatusChange = function () {
     );
   }
 
+  return null;
+};
+
+Venmo.prototype._handleCancelOnReturn = function () {
+  var self = this;
+  var minPollsBeforeCancel, params;
+
+  if (!self._cancelOnReturnToBrowser) {
+    return null;
+  }
+
+  minPollsBeforeCancel = Math.ceil(
+    constants.DEFAULT_PROCESS_RESULTS_DELAY / self._mobilePollingInterval
+  );
+  params = getFragmentParameters();
+
+  self._pollCount++;
+
+  if (
+    typeof (params.venmoSuccess || params.venmoError || params.venmoCancel) ===
+      "undefined" &&
+    self._venmoPaymentContextStatus === "CREATED" &&
+    self._pollCount >= minPollsBeforeCancel
+  ) {
+    analytics.sendEventPlus(
+      self._createPromise,
+      "venmo.appswitch.cancel-on-return-to-browser",
+      {
+        context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+      }
+    );
+
+    return self
+      ._cancelMobilePaymentContext()
+      .then(function () {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.appswitch.cancel-on-return-to-browser.success",
+          {
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          }
+        );
+      })
+      .catch(function () {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.appswitch.cancel-on-return-to-browser.error",
+          {
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          }
+        );
+      })
+      .finally(function () {
+        self._pollCount = 0;
+      });
+  }
+
+  return null;
+};
+
+Venmo.prototype._handleStatusChange = function (node) {
+  var self = this;
+  var newStatus = node.status;
+
+  if (newStatus !== self._venmoPaymentContextStatus) {
+    self._venmoPaymentContextStatus = newStatus;
+
+    analytics.sendEventPlus(
+      self._createPromise,
+      "venmo.tokenize.manual-return.status-change." + newStatus.toLowerCase(),
+      {
+        context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+      }
+    );
+
+    switch (newStatus) {
+      case "EXPIRED":
+      case "FAILED":
+      case "CANCELED":
+        return Promise.reject(
+          new BraintreeError(
+            errors["VENMO_MOBILE_POLLING_TOKENIZATION_" + newStatus]
+          )
+        );
+      case "APPROVED":
+        return Promise.resolve(node);
+      case "CREATED":
+      case "SCANNED":
+      default:
+      // any other statuses are irrelevant to the polling
+      // and can just be ignored
+    }
+  }
+
+  return self._continuePolling();
+};
+
+Venmo.prototype._continuePolling = function () {
+  var self = this;
+
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      self._pollForStatusChange().then(resolve).catch(reject);
+    }, self._mobilePollingInterval);
+  });
+};
+
+Venmo.prototype._queryAndProcessStatus = function () {
+  var self = this;
+
   return this._queryPaymentContextStatus(this._venmoPaymentContextId)
     .catch(function (networkError) {
       return Promise.reject(
@@ -1047,45 +1200,27 @@ Venmo.prototype._pollForStatusChange = function () {
       );
     })
     .then(function (node) {
-      var newStatus = node.status;
-
-      if (newStatus !== self._venmoPaymentContextStatus) {
-        self._venmoPaymentContextStatus = newStatus;
-
-        analytics.sendEventPlus(
-          self._createPromise,
-          "venmo.tokenize.manual-return.status-change." +
-            newStatus.toLowerCase(),
-          {
-            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
-          }
-        );
-
-        switch (newStatus) {
-          case "EXPIRED":
-          case "FAILED":
-          case "CANCELED":
-            return Promise.reject(
-              new BraintreeError(
-                errors["VENMO_MOBILE_POLLING_TOKENIZATION_" + newStatus]
-              )
-            );
-          case "APPROVED":
-            return Promise.resolve(node);
-          case "CREATED":
-          case "SCANNED":
-          default:
-          // any other statuses are irrelevant to the polling
-          // and can just be ignored
-        }
-      }
-
-      return new Promise(function (resolve, reject) {
-        setTimeout(function () {
-          self._pollForStatusChange().then(resolve).catch(reject);
-        }, self._mobilePollingInterval);
-      });
+      return self._handleStatusChange(node);
     });
+};
+
+Venmo.prototype._pollForStatusChange = function () {
+  var validationError = this._validatePollingContext();
+
+  if (validationError) {
+    return validationError;
+  }
+
+  var windowClosureResult = this._handleWindowClosure();
+  if (windowClosureResult) {
+    return windowClosureResult;
+  }
+
+  // This function might cancel the payment context. We will still rely on
+  // _queryAndProcessStatus to see that the status has changed to CANCELED.
+  this._handleCancelOnReturn();
+
+  return this._queryAndProcessStatus();
 };
 
 Venmo.prototype._tokenizeForMobileWithManualReturn = function () {

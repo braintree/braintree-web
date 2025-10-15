@@ -203,6 +203,23 @@ To run the Storybook development server
 npm run storybook:dev
 ```
 
+#### Local build testing
+
+To test local development builds in Storybook instead of published CDN versions:
+
+```
+npm run build
+npm run storybook:dev-local
+```
+
+This will:
+
+1. Copy your local build files to Storybook's static directory
+2. Start Storybook with "Assets from local build" available in the version selector
+3. Allow testing of local changes before they're published to CDN
+
+The version selector dropdown will show "Assets from local build" when local builds are available. Select this option to load scripts from your local `dist/` directory instead of the CDN.
+
 #### Static build
 
 To run the Storybook static build on a local secure server(required for Apple Pay flow to initialize)
@@ -236,11 +253,39 @@ export BROWSERSTACK_USERNAME="******"
 export BROWSERSTACK_ACCESS_KEY="******"
 ```
 
-To run all test Browserstack test suites run:
+## Testing with CDN versions (default)
+
+To run BrowserStack tests with published CDN versions:
 
 ```shell
 npm run test:integration
 ```
+
+## Testing with local builds
+
+To test your local development builds on BrowserStack:
+
+```shell
+npm run build:integration        # Build SDK + Storybook + start HTTPS server
+npm run test:integration:local   # Run tests using local builds
+```
+
+Or manually specify the environment variable:
+
+```shell
+npm run build:integration
+LOCAL_BUILD=true npm run test:integration
+```
+
+The integration build commands handle all the setup automatically:
+
+- `build:integration`: One-time build
+  - Builds your local SDK changes
+  - Copies local builds to Storybook static directory
+  - Builds Storybook with local assets included
+  - Starts HTTPS server for BrowserStack access
+
+When testing with local builds, the Storybook version selector will show "Assets from local build" as an option (version: `dev`). Tests can select this to validate local changes before they're published to CDN.
 
 Test results will be viewable in the terminal. A link will also be output in the terminal to view test runs in the Browserstack UI.
 

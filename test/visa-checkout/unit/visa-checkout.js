@@ -73,7 +73,6 @@ describe("Visa Checkout", () => {
         description: "sets externalClientId if undefined",
         options: {},
         valueExtractor: function (option) {
-          console.log(option);
           return option.externalClientId;
         },
         expectedValue: "gwExternalClientId",

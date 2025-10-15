@@ -6,6 +6,7 @@
   "fastlane",
   "google-payment",
   "hosted-fields",
+  "instant-verification",
   "local-payment",
   "masterpass",
   "payment-ready",

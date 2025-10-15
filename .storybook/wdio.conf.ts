@@ -43,8 +43,8 @@ export const config = {
   hostname: "hub.browserstack.com",
   logLevel: "error", // set to error to reduce noise when running tests, set to info or debug for more verbose logging
   bail: 0,
-  waitforTimeout: 20000,
-  connectionRetryTimeout: 90000,
+  waitforTimeout: process.env.LOCAL_BUILD === "true" ? 40000 : 20000,
+  connectionRetryTimeout: process.env.LOCAL_BUILD === "true" ? 120000 : 90000,
   connectionRetryCount: 1,
   framework: "mocha",
   mochaOpts: {
@@ -100,11 +100,16 @@ export const config = {
       bsLocal = new browserstack.Local();
       bsLocal.start(
         {
-          key: process.env.BROWSERSTACK_ACCESS_KEY,
+          key: process.env.BROWSERSTACK_ACCESS_KEY || "",
           localIdentifier,
+          verbose: true,
+          forcelocal: true,
         },
         (error?: Error) => {
-          if (error) return reject(new Error(error.message));
+          if (error)
+            return reject(
+              new Error(error?.message || "BrowserStack Local Error")
+            );
 
           console.log(`Connected with localIdentifier=${localIdentifier}`);
           console.log(
@@ -123,6 +128,10 @@ export const config = {
     });
   },
   async before() {
+    console.log("🔧 Environment variables:");
+    console.log("  LOCAL_BUILD:", process.env.LOCAL_BUILD);
+    console.log("  BRAINTREE_JS_ENV:", process.env.BRAINTREE_JS_ENV);
+
     loadHelpers(); // Uncomment when loadHelpers function is available
 
     await browser.setTimeout({

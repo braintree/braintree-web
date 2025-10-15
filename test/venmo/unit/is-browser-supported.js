@@ -7,6 +7,7 @@ const browserDetection = require("../../../src/venmo/shared/browser-detection");
 const inIframe = require("../../../src/lib/in-iframe");
 const {
   isBrowserSupported,
+  isNonDefaultBrowser,
 } = require("../../../src/venmo/shared/supports-venmo");
 
 describe("isBrowserSupported", () => {
@@ -17,7 +18,6 @@ describe("isBrowserSupported", () => {
     browserDetection.isChrome.mockReturnValue(false);
     browserDetection.isIosChrome.mockReturnValue(false);
     browserDetection.isIosSafari.mockReturnValue(false);
-    browserDetection.isSamsung.mockReturnValue(false);
     browserDetection.isIosWebview.mockReturnValue(false);
     browserDetection.isAndroidWebview.mockReturnValue(false);
     browserDetection.isFacebookOwnedBrowserOnAndroid.mockReturnValue(false);
@@ -44,7 +44,24 @@ describe("isBrowserSupported", () => {
       browserDetection.isIos.mockReturnValue(true);
       browserDetection.isIosChrome.mockReturnValue(true);
 
-      expect(isBrowserSupported()).toBe(true);
+      expect(
+        isBrowserSupported({
+          allowNewBrowserTab: true,
+          allowNonDefaultBrowsers: true,
+        })
+      ).toBe(true);
+    });
+
+    it("returns true for iOS Chrome when not in an iFrame and allowNewBrowserTab is false but allowNonDefaultBrowsers is true.", () => {
+      browserDetection.isIos.mockReturnValue(true);
+      browserDetection.isIosChrome.mockReturnValue(true);
+
+      expect(
+        isBrowserSupported({
+          allowNewBrowserTab: false,
+          allowNonDefaultBrowsers: true,
+        })
+      ).toBe(true);
     });
 
     it("returns false for iOS Chrome in an iFrame", () => {
@@ -52,13 +69,7 @@ describe("isBrowserSupported", () => {
       browserDetection.isIosChrome.mockReturnValue(true);
       inIframe.mockReturnValue(true);
 
-      expect(isBrowserSupported()).toBe(false);
-    });
-
-    it("returns false for Samsung Browser", () => {
-      browserDetection.isSamsung.mockReturnValue(true);
-
-      expect(isBrowserSupported()).toBe(false);
+      expect(isBrowserSupported({ allowNewBrowserTab: false })).toBe(false);
     });
 
     it("returns true for Android Chrome", () => {
@@ -76,20 +87,27 @@ describe("isBrowserSupported", () => {
       expect(isBrowserSupported()).toBe(true);
     });
 
-    it("returns false for Facebook on Android", () => {
+    it("returns false for Facebook on Android when allowNonDefaultBrowsers is false", () => {
       browserDetection.isAndroid.mockReturnValue(true);
       browserDetection.isFacebookOwnedBrowserOnAndroid.mockReturnValue(true);
 
-      expect(isBrowserSupported()).toBe(false);
+      expect(isBrowserSupported({ allowNonDefaultBrowsers: false })).toBe(
+        false
+      );
     });
 
-    it("returns false for other browsers", () => {
-      browserDetection.isIos.mockReturnValue(false);
-      browserDetection.isAndroid.mockReturnValue(false);
-      browserDetection.isIosSafari.mockReturnValue(false);
+    it("returns true for other iOS browsers", () => {
+      browserDetection.isIos.mockReturnValue(true);
       browserDetection.isChrome.mockReturnValue(false);
 
-      expect(isBrowserSupported()).toBe(false);
+      expect(isBrowserSupported()).toBe(true);
+    });
+
+    it("returns true for other Android browsers", () => {
+      browserDetection.isAndroid.mockReturnValue(true);
+      browserDetection.isChrome.mockReturnValue(false);
+
+      expect(isBrowserSupported()).toBe(true);
     });
   });
 
@@ -105,7 +123,7 @@ describe("isBrowserSupported", () => {
       ).toBe(true);
     });
 
-    it("returns true for Android Chrome when webviews are dissallowed", () => {
+    it("returns true for Android Chrome when webviews are disallowed", () => {
       browserDetection.isAndroid.mockReturnValue(true);
       browserDetection.isChrome.mockReturnValue(true);
 
@@ -116,7 +134,7 @@ describe("isBrowserSupported", () => {
       ).toBe(true);
     });
 
-    it("returns false for iOS webview when configured to dissallow webviews", () => {
+    it("returns false for iOS webview when configured to disallow webviews", () => {
       browserDetection.isIos.mockReturnValue(true);
       browserDetection.isIosSafari.mockReturnValue(true);
       browserDetection.isIosWebview.mockReturnValue(true);
@@ -149,6 +167,7 @@ describe("isBrowserSupported", () => {
       expect(
         isBrowserSupported({
           allowNewBrowserTab: false,
+          allowNonDefaultBrowsers: false,
         })
       ).toBe(false);
     });
@@ -160,6 +179,7 @@ describe("isBrowserSupported", () => {
       expect(
         isBrowserSupported({
           allowNewBrowserTab: false,
+          allowNonDefaultBrowsers: false,
         })
       ).toBe(true);
     });
@@ -171,6 +191,7 @@ describe("isBrowserSupported", () => {
       expect(
         isBrowserSupported({
           allowNewBrowserTab: false,
+          allowNonDefaultBrowsers: false,
         })
       ).toBe(true);
     });
@@ -264,6 +285,50 @@ describe("isBrowserSupported", () => {
           allowDesktopWebLogin: true,
         })
       ).toBe(true);
+    });
+  });
+
+  describe("isNonDefaultBrowser", function () {
+    beforeEach(function () {
+      browserDetection.isAndroid.mockReturnValue(false);
+      browserDetection.isIos.mockReturnValue(false);
+      browserDetection.isChrome.mockReturnValue(false);
+      browserDetection.isIosSafari.mockReturnValue(false);
+    });
+
+    it("returns false for iOS Safari (default browser)", function () {
+      browserDetection.isIos.mockReturnValue(true);
+      browserDetection.isIosSafari.mockReturnValue(true);
+
+      expect(isNonDefaultBrowser()).toBe(false);
+    });
+
+    it("returns false for Android Chrome (default browser)", function () {
+      browserDetection.isAndroid.mockReturnValue(true);
+      browserDetection.isChrome.mockReturnValue(true);
+
+      expect(isNonDefaultBrowser()).toBe(false);
+    });
+
+    it("returns true for iOS Chrome (non-default browser)", function () {
+      browserDetection.isIos.mockReturnValue(true);
+      browserDetection.isIosSafari.mockReturnValue(false);
+
+      expect(isNonDefaultBrowser()).toBe(true);
+    });
+
+    it("returns true for Android non-Chrome browsers", function () {
+      browserDetection.isAndroid.mockReturnValue(true);
+      browserDetection.isChrome.mockReturnValue(false);
+
+      expect(isNonDefaultBrowser()).toBe(true);
+    });
+
+    it("returns false for desktop browsers", function () {
+      browserDetection.isIos.mockReturnValue(false);
+      browserDetection.isAndroid.mockReturnValue(false);
+
+      expect(isNonDefaultBrowser()).toBe(false);
     });
   });
 });

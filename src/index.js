@@ -44,6 +44,7 @@ var dataCollector = require("./data-collector");
 var hostedFields = require("./hosted-fields");
 var localPayment = require("./local-payment");
 var masterpass = require("./masterpass");
+var instantVerification = require("./instant-verification");
 var paymentRequest = require("./payment-request");
 var paymentReady = require("./payment-ready");
 var paypal = require("./paypal");
@@ -72,6 +73,8 @@ module.exports = {
   dataCollector: dataCollector,
   /** @type {module:braintree-web/hosted-fields} */
   hostedFields: hostedFields,
+  /** @type {module:braintree-web/instant-verification} */
+  instantVerification: instantVerification,
   /** @type {module:braintree-web/local-payment} */
   localPayment: localPayment,
   /** @type {module:braintree-web/masterpass} */

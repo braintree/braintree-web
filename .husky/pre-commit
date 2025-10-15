@@ -1,24 +1,14 @@
 #!/bin/bash
 
-# Ensure all JavaScript files staged for commit pass standard code style
-FILES=$(git diff --name-only --cached --diff-filter=ACM | grep -E '(js|jsx)$' | grep -Ev '^(tasks\/|test\/)' || true)
+./node_modules/.bin/prettier . --ignore-unknown --check --cache
 
-if [ ! -z "$FILES" ]; then
-	echo "$FILES" | xargs ./node_modules/.bin/eslint --cache
+./node_modules/.bin/eslint . --cache
 
-	echo "$FILES" | xargs ./node_modules/.bin/prettier --ignore-unknown --cache --check
-else
-	echo -e "\033[1;31m You have no staged javascript files, skipping checks .. \033[0m"
-fi
-
-# Check for PayPal internal registry in package-lock
-if grep -q 'paypalinc' package-lock.json; then
-    echo "🥴 Found 'paypalinc' in package-lock.json. If you're intentionally using the PayPal registry for dependencies, feel free to ignore this."
-	echo "If you're not intentionally using the PayPal registry for dependencies, please reinstall npm packages:"
-	echo
+# Check to ensure we're either using the public NPM registry, or installing from Git
+if grep '"resolved":' package-lock.json | grep -Ev '"resolved": "(https://registry\.npmjs\.org|git)'; then
 	echo "-------------------------------------------------"
-    echo "rm -rf node_modules/"
-    echo "rm package-lock.json"
-    echo "npm install --registry=https://registry.npmjs.org"
+	echo "🥴 Found dependencies not from the public NPM registry or git"
 	echo "-------------------------------------------------"
+
+	exit 1
 fi

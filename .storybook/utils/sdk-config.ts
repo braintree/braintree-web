@@ -2,12 +2,15 @@
 // Centralized Braintree SDK configuration and loading utilities
 
 import { getCachedBraintreeVersions } from "./version-fetcher";
+import { isLocalBuildAvailableBrowser } from "./local-build-manager";
 import packageJson from "../../package.json";
 
 export interface SDKVersion {
   version: string;
   label: string;
   baseUrl: string;
+  isLocal?: boolean;
+  disabled?: boolean;
 }
 
 const getBraintreeUrl = (versionNumber: string) =>
@@ -73,12 +76,31 @@ const createSDKVersion = (version: string, index: number): SDKVersion => {
 };
 
 /**
- * Get available SDK versions (dynamic + fallback)
+ * Get available SDK versions (local + dynamic + fallback)
  */
 export const getAvailableSDKVersions = async (): Promise<SDKVersion[]> => {
   try {
+    const allVersions: SDKVersion[] = [];
+
+    // Check for local build first
+    const isLocalAvailable = await isLocalBuildAvailableBrowser();
+
+    // Always add the dev option, but mark it as disabled if not available
+    // Note: UI components should respect the 'disabled' property when rendering version selectors
+    allVersions.push({
+      version: "dev",
+      label: isLocalAvailable
+        ? "Assets from local build"
+        : "Local build (unavailable)",
+      baseUrl: "",
+      isLocal: isLocalAvailable,
+      disabled: !isLocalAvailable,
+    });
+
+    // Get remote versions
     if (dynamicVersions) {
-      return dynamicVersions;
+      allVersions.push(...dynamicVersions);
+      return allVersions;
     }
 
     const versions = await getCachedBraintreeVersions();
@@ -92,11 +114,13 @@ export const getAvailableSDKVersions = async (): Promise<SDKVersion[]> => {
       if (!dynamicVersions) {
         dynamicVersions = newDynamicVersions;
       }
-      return newDynamicVersions;
+      allVersions.push(...newDynamicVersions);
+      return allVersions;
     }
 
     console.log("No versions returned from npm, using fallback");
-    return FALLBACK_SDK_VERSIONS;
+    allVersions.push(...FALLBACK_SDK_VERSIONS);
+    return allVersions;
   } catch (error) {
     console.warn("Error getting SDK versions, using fallback:", error);
     return FALLBACK_SDK_VERSIONS;
@@ -126,9 +150,58 @@ const importedDefaultVersion: string = packageJson.version;
 export const DEFAULT_SDK_VERSION = importedDefaultVersion;
 
 /**
+ * Check if local build is available
+ */
+export const isLocalBuildAvailableSync = (): boolean => {
+  try {
+    // Simple sync check based on presence of element
+    if (typeof document !== "undefined") {
+      const localBuildIndicator = document.querySelector(
+        'meta[name="using-local-build"]'
+      );
+      if (localBuildIndicator) return true;
+    }
+
+    // Default to async check result
+    return false;
+  } catch (error) {
+    console.warn("Error checking local build:", error);
+    return false;
+  }
+};
+
+/**
+ * Get the preferred default version based on available builds
+ */
+export const getPreferredDefaultVersion = async (): Promise<string> => {
+  try {
+    // First check if local build is available
+    const isLocalAvailable = await isLocalBuildAvailableBrowser();
+    if (isLocalAvailable) {
+      console.log("Local build available, using 'dev' as default");
+      return "dev";
+    }
+
+    // Otherwise use package version or fallback
+    console.log("No local build available, using package version as default");
+    return DEFAULT_SDK_VERSION;
+  } catch (error) {
+    console.warn("Error checking preferred version:", error);
+    return DEFAULT_SDK_VERSION;
+  }
+};
+
+/**
  * Get the current SDK version from Storybook globals or use default
  */
 export const getCurrentSDKVersion = (): string => {
+  // Try to get from localStorage first (most persistent)
+  const storedVersion = localStorage.getItem("storybook-braintree-sdk-version");
+  if (storedVersion) {
+    console.log("Using version from localStorage:", storedVersion);
+    return storedVersion;
+  }
+
   // Try to get from Storybook globals if available
   if (
     typeof window !== "undefined" &&
@@ -147,12 +220,27 @@ export const getCurrentSDKVersion = (): string => {
       ).__STORYBOOK_ADDONS_MANAGER.getChannel();
       const globals = channel.last_event?.globals;
       if (globals?.sdkVersion) {
+        // Also store in localStorage for persistence
+        localStorage.setItem(
+          "storybook-braintree-sdk-version",
+          globals.sdkVersion
+        );
         return globals.sdkVersion;
       }
     } catch {
       // Fallback to default if globals not available
     }
   }
+
+  // If we get here, we don't have an explicit user selection
+  // Check if local build is available
+  if (isLocalBuildAvailableSync()) {
+    console.log(
+      "No explicit selection, but local build is available, using 'dev'"
+    );
+    return "dev";
+  }
+
   return DEFAULT_SDK_VERSION;
 };
 
@@ -161,10 +249,29 @@ export const getCurrentSDKVersion = (): string => {
  */
 export const getCurrentSDKBaseUrl = (): string => {
   const currentVersion = getCurrentSDKVersion();
-  const versionConfig = AVAILABLE_SDK_VERSIONS.find(
-    (v) => v.version === currentVersion
-  );
-  return versionConfig?.baseUrl || AVAILABLE_SDK_VERSIONS[0].baseUrl;
+
+  // Special handling for dev version - local build
+  if (currentVersion === "dev") {
+    return "/local-build/js";
+  }
+
+  // For regular versions, try to find in available versions
+  try {
+    // First check dynamic versions
+    const allVersions = dynamicVersions || FALLBACK_SDK_VERSIONS;
+    const versionConfig = allVersions.find((v) => v.version === currentVersion);
+
+    if (versionConfig && versionConfig.baseUrl) {
+      return versionConfig.baseUrl;
+    }
+
+    // If not found in available versions, construct URL dynamically
+    return getBraintreeUrl(currentVersion);
+  } catch (error) {
+    console.warn("Error getting SDK base URL, using fallback:", error);
+    // Use currentVersion to create a URL or fallback to first version
+    return getBraintreeUrl(currentVersion);
+  }
 };
 
 /**

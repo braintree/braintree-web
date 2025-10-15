@@ -206,6 +206,14 @@ function adaptConfigurationResponseBody(body, ctx) {
     };
   }
 
+  if (configuration.openBanking) {
+    response.openBanking = {
+      businessNames: configuration.openBanking.businessNames,
+      allowListedDomains: configuration.openBanking.allowListedDomains,
+      profileId: configuration.openBanking.profileId,
+    };
+  }
+
   return response;
 }
 

@@ -5,7 +5,19 @@ var isChrome = require("@braintree/browser-detection/is-chrome");
 var isIos = require("@braintree/browser-detection/is-ios");
 var isIosSafari = require("@braintree/browser-detection/is-ios-safari");
 var isIosWebview = require("@braintree/browser-detection/is-ios-webview");
-var isSamsung = require("@braintree/browser-detection/is-samsung");
+var isIncognito;
+
+try {
+  isIncognito = require("@braintree/browser-detection/is-incognito");
+  // eslint-disable-next-line no-unused-vars
+} catch (e) {
+  isIncognito = function () {
+    return Promise.resolve({
+      isPrivate: false,
+      browserName: "unknown",
+    });
+  };
+}
 
 function isAndroidWebview() {
   return (
@@ -40,15 +52,20 @@ function isIosChrome() {
   return isIos() && isChrome();
 }
 
+function isWebview() {
+  return isAndroidWebview() || isIosWebview();
+}
+
 module.exports = {
   isAndroid: isAndroid,
   isAndroidWebview: isAndroidWebview,
   isChrome: isChrome,
   isIos: isIos,
   isIosChrome: isIosChrome,
-  isSamsung: isSamsung,
   isIosSafari: isIosSafari,
   isIosWebview: isIosWebview,
+  isWebview: isWebview,
   isFacebookOwnedBrowserOnAndroid: isFacebookOwnedBrowserOnAndroid,
   doesNotSupportWindowOpenInIos: doesNotSupportWindowOpenInIos,
+  isIncognito: isIncognito,
 };

@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 3.131.0 (2025-10-15)
+
+- Instant Verification
+  - Add support for Instant Verification
+- Venmo
+  - Non-default browser app switch support on iOS and Android
+  - Add `cancelOnReturnToBrowser` option (default: `false`) to aid in cases where merchant depends on cancellation signal for UI elements
+- Update dependencies
+  - @braintree/browser-detection to 2.1.0
+
 ## 3.130.1 (2025-10-07)
 
 - Update dependencies:

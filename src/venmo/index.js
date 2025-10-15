@@ -11,6 +11,7 @@ var BraintreeError = require("../lib/braintree-error");
 var Venmo = require("./venmo");
 var supportsVenmo = require("./shared/supports-venmo");
 var VERSION = process.env.npm_package_version;
+var browserDetection = require("./shared/browser-detection");
 
 /**
  * @typedef {object} Venmo~lineItem
@@ -37,7 +38,7 @@ var VERSION = process.env.npm_package_version;
  * @param {string} [options.deepLinkReturnUrl] An override for the URL that the Venmo iOS app opens to return from an app switch.
  * @param {boolean} [options.requireManualReturn=false] When `true`, the customer will have to manually switch back to the browser/webview that is presenting Venmo to complete the payment.
  * @param {boolean} [options.useRedirectForIOS=false] Normally, the Venmo flow is launched using `window.open` and the Venmo app intercepts that call and opens the Venmo app instead. If the customer does not have the Venmo app installed, it opens the Venmo website in a new window and instructs the customer to install the app.
- 
+
  * In iOS webviews and Safari View Controllers (a webview-like environment which is indistinguishable from Safari for JavaScript environments), this call to `window.open` will always fail to app switch to Venmo, resulting instead in a white screen. Because of this, an alternate approach is required to launch the Venmo flow.
  *
  * When `useRedirectForIOS` is `true` and the Venmo flow is started in an iOS environment, the Venmo flow will be started by setting `window.location.href` to the Venmo website (which will still be intercepted by the Venmo app and should be the same behavior as if `window.open` was called). However, if the customer does not have the Venmo app installed, the merchant page will instead be replaced with the Venmo website and the customer will need to use the browser's back button to return to the merchant's website. Ensure that your customer's checkout information will not be lost if they are navigated away from the website and return using the browser back button.
@@ -52,8 +53,10 @@ var VERSION = process.env.npm_package_version;
  * @param {boolean} [options.allowDesktop] Used to support desktop users. When enabled, the default mode is to render a scannable QR-code customers scan with their phone's to approve via the mobile app.
  * @param {boolean} [options.allowDesktopWebLogin=false] When `true`, the customer will authorize payment via a window popup that allows them to sign in to their Venmo account. This is used explicitly for customers operating from desktop browsers wanting to avoid the QR Code flow.
  * @param {boolean} [options.mobileWebFallBack] Use this option when you want to use a web-login experience, such as if on mobile and the Venmo app isn't installed.
- * @param {string} [options.styleCspNonce] specify a nonce for style code used by Venmo. This option requires either the option `allowDesktopWebLogin=true` or `mobileWebFallback=true`. This nonce should also appear in the `style-src` section of the content security policy. See more about nonces [here]{https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP#nonces}. 
+ * @param {string} [options.styleCspNonce] specify a nonce for style code used by Venmo. This option requires either the option `allowDesktopWebLogin=true` or `mobileWebFallback=true`. This nonce should also appear in the `style-src` section of the content security policy. See more about nonces [here]{https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP#nonces}.
  * @param {boolean} [options.allowAndroidRecreation=true] This flag is for when your integration uses the [Android PopupBridge](https://github.com/braintree/popup-bridge-android). Setting this flag to false will avoid a page refresh when returning to your page after payment authorization. If not specified, it defaults to true and the Android activity will be recreated, resulting in a page refresh.
+ * @param {boolean} [options.allowNonDefaultBrowsers=true] When `true`, allows Venmo to be used in mobile browsers outside platform defaults (e.g. Chrome on iOS, Firefox on Android).
+ * @param {boolean} [options.cancelOnReturnToBrowser=false] When `true`, the payment flow will be cancelled when the user returns to the browser before completing payment.
  * @param {boolean} [options.collectCustomerBillingAddress] When `true`, the customer's billing address will be collected and displayed on the Venmo paysheet (provided the Enriched Customer Data checkbox is also enabled for the merchant account).
  * @param {boolean} [options.collectCustomerShippingAddress] When `true`, the customer's shipping address will be collected and displayed on the Venmo paysheet (provided the Enriched Customer Data checkbox is also enabled for the merchant account).
  * @param {boolean} [options.isFinalAmount=false] When `true`, it denotes that the purchase amount (`totalAmount`) is final and will not change.
@@ -96,6 +99,7 @@ function create(options) {
     })
     .then(function () {
       var createPromise, instance;
+      var incognitoPromise = browserDetection.isIncognito();
 
       if (options.profileId && typeof options.profileId !== "string") {
         return Promise.reject(
@@ -132,14 +136,20 @@ function create(options) {
           return client;
         });
 
-      options.createPromise = createPromise;
-      instance = new Venmo(options);
+      return Promise.all([createPromise, incognitoPromise]).then(
+        function (results) {
+          var isIncognito = results[1];
 
-      analytics.sendEvent(createPromise, "venmo.initialized");
+          options._isIncognito = isIncognito.isPrivate;
 
-      return createPromise.then(function () {
-        return instance;
-      });
+          options.createPromise = createPromise;
+          instance = new Venmo(options);
+
+          analytics.sendEvent(createPromise, "venmo.initialized");
+
+          return instance;
+        }
+      );
     });
 }
 
@@ -148,6 +158,7 @@ function create(options) {
  * @function isBrowserSupported
  * @param {object} [options] browser support options:
  * @param {boolean} [options.allowNewBrowserTab=true] This should be set to false if your payment flow requires returning to the same tab, e.g. single page applications.
+ * @param {boolean} [options.allowNonDefaultBrowsers=true] This should be set to false if your payment flow requires disabling support for non-default browsers on iOS and Android.
  * @param {boolean} [options.allowWebviews=true] This should be set to false if your payment flow does not occur from within a webview that you control.
  * @example
  * if (braintree.venmo.isBrowserSupported()) {
@@ -156,6 +167,12 @@ function create(options) {
  * @example <caption>Explicitly require browser support returning to the same tab</caption>
  * if (braintree.venmo.isBrowserSupported({
  *   allowNewBrowserTab: false
+ * })) {
+ *   // set up Venmo
+ * }
+ * @example <caption>Explicitly disable non-default browser support</caption>
+ * if (braintree.venmo.isBrowserSupported({
+ *   allowNonDefaultBrowsers: false
  * })) {
  *   // set up Venmo
  * }

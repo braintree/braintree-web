@@ -58,6 +58,11 @@ function configuration() {
       analytics: {
         url: "https://braintreegateway.com/analytics",
       },
+      openBanking: {
+        businessNames: ["sandbox_ach_test"],
+        allowListedDomains: ["example.com"],
+        profileId: "fake-profile-id",
+      },
       visaCheckout: {
         apikey: "gwApikey",
         encryptionKey: "gwEncryptionKey",

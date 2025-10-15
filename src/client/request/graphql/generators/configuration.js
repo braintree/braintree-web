@@ -48,6 +48,11 @@ var CONFIGURATION_QUERY =
   "      merchantCheckoutId " +
   "      supportedCardBrands " +
   "    } " +
+  "    openBanking { " +
+  "      businessNames " +
+  "      allowListedDomains " +
+  "      profileId " +
+  "    } " +
   "    paypal { " +
   "      displayName " +
   "      clientId " +

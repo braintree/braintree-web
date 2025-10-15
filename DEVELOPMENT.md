@@ -4,13 +4,17 @@ Throughout this page, replace `<component>` with the name of any SDK component (
 
 ## Table of Contents
 
-- [Project Structure](#project-structure)
-- [Project Environment](#project-environment)
-- [Building](#building)
-- [Linting](#linting)
-- [Testing](#testing)
-- [Generating Documentation](#generating-documentation)
-- [Releasing](#releasing)
+- [Development Notes](#development-notes)
+  - [Table of Contents](#table-of-contents)
+  - [Project Structure](#project-structure)
+  - [Project Environment](#project-environment)
+  - [Building](#building)
+    - [SJCL](#sjcl)
+  - [Linting](#linting)
+  - [Testing](#testing)
+  - [Generating Documentation](#generating-documentation)
+  - [Storybook Integration](#storybook-integration)
+  - [Releasing](#releasing)
 
 ## Project Structure
 
@@ -184,6 +188,23 @@ npm run assets
 ```
 
 This will serve the currently built JSDocs on port `9292`, and can be reached at `pairXX.chi.braintreepayments.com:9292/<version>`.
+
+## Storybook Integration
+
+To build and integrate with Storybook for local development and testing:
+
+```
+npm run build:integration
+```
+
+This will:
+
+1. Build the SDK
+2. Copy local build files to Storybook's static directory
+3. Build Storybook
+4. Start an HTTPS server
+
+After running this command, you can access Storybook at https://127.0.0.1:8080 and test with your local SDK build.
 
 ## Releasing
 
