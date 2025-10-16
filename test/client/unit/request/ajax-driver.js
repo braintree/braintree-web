@@ -577,4 +577,44 @@ describe("AJAXDriver", () => {
       testContext.fakeXHR.onreadystatechange();
     });
   });
+
+  describe("API latency tracking", () => {
+    afterEach(() => {
+      server._routes = {};
+    });
+
+    it("sends analytics event for create_payment_resource endpoint", (done) => {
+      const sendAnalyticsEventSpy = jest.fn();
+
+      server.post(
+        "/merchants/test/client_api/v1/paypal_hermes/create_payment_resource",
+        {
+          status: 200,
+          body: '{"success":true}',
+        }
+      );
+
+      AJAXDriver.request(
+        {
+          url: "https://api.braintreegateway.com/merchants/test/client_api/v1/paypal_hermes/create_payment_resource",
+          method: "POST",
+          data: {},
+          graphQL: testContext.fakeGraphQL,
+          sendAnalyticsEvent: sendAnalyticsEventSpy,
+        },
+        () => {
+          expect(sendAnalyticsEventSpy).toHaveBeenCalledWith(
+            "core.api-request-latency",
+            expect.objectContaining({
+              domain: "api.braintreegateway.com",
+              endpoint: "/v1/paypal_hermes/create_payment_resource",
+              startTime: expect.any(Number),
+              endTime: expect.any(Number),
+            })
+          );
+          done();
+        }
+      );
+    });
+  });
 });

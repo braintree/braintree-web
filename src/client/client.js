@@ -356,8 +356,12 @@ Client.prototype.request = function (options, callback) {
     }
 
     requestOptions.url = baseUrl + options.endpoint;
-    requestOptions.sendAnalyticsEvent = function (kind) {
-      analytics.sendEvent(self, kind);
+    requestOptions.sendAnalyticsEvent = function (kind, extraFields) {
+      if (extraFields) {
+        analytics.sendEventPlus(self, kind, extraFields);
+      } else {
+        analytics.sendEvent(self, kind);
+      }
     };
 
     self._request(requestOptions, function (err, data, status) {

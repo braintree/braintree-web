@@ -56,5 +56,11 @@ module.exports = {
     "payment_ready_page_type",
     "payment_ready_session_id",
     "button_type",
+    "connectionStartTime",
+    "domain",
+    "endpoint",
+    "endTime",
+    "requestStartTime",
+    "startTime",
   ],
 };

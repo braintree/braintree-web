@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.132.0 (2025-10-16)
+
+- API Latency Logging
+  - Added FPTI logs to track the performance metrics
+
 ## 3.131.0 (2025-10-15)
 
 - Instant Verification

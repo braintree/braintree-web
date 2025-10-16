@@ -11,9 +11,61 @@ var DefaultRequest = require("./default-request");
 
 var MAX_TCP_RETRYCOUNT = 1;
 var TCP_PRECONNECT_BUG_STATUS_CODE = 408;
+var PAYPAL_HERMES_CREATE_PAYMENT_RESOURCE_PATTERN =
+  /\/client_api\/v1\/paypal_hermes\/create_payment_resource/;
+var MERCHANT_ID_PATTERN = /\/merchants\/[A-Za-z0-9_-]+\/client_api/;
 
 function requestShouldRetry(status) {
   return !status || status === TCP_PRECONNECT_BUG_STATUS_CODE;
+}
+
+function sendApiLatencyAnalytics(url, analyticsStartTime, options) {
+  var domain, path, cleanedPath, parsedUrl;
+  var analyticsConnectionStartTime, analyticsRequestStartTime, analyticsEndTime;
+  var finalStartTime;
+  var entries, entry;
+
+  try {
+    parsedUrl = new URL(url);
+    domain = parsedUrl.hostname;
+    path = parsedUrl.pathname;
+    // eslint-disable-next-line no-unused-vars
+  } catch (e) {
+    domain = (url.match(/^https?:\/\/([^\/]+)/) || [])[1] || "";
+    path = (url.match(/^https?:\/\/[^\/]+(\/.*)$/) || [])[1] || url;
+  }
+  cleanedPath = path.replace(MERCHANT_ID_PATTERN, "");
+
+  finalStartTime = analyticsStartTime;
+  analyticsEndTime = Date.now();
+
+  if (
+    typeof window !== "undefined" &&
+    window.performance &&
+    window.performance.getEntriesByName
+  ) {
+    entries = window.performance.getEntriesByName(url);
+    if (entries && entries.length > 0) {
+      entry = entries[entries.length - 1];
+      analyticsConnectionStartTime = entry.connectStart
+        ? Math.round(entry.connectStart)
+        : null;
+      analyticsRequestStartTime = entry.requestStart
+        ? Math.round(entry.requestStart)
+        : null;
+      finalStartTime = Math.round(entry.startTime);
+      analyticsEndTime = Math.round(entry.responseEnd);
+    }
+  }
+
+  options.sendAnalyticsEvent("core.api-request-latency", {
+    connectionStartTime: analyticsConnectionStartTime,
+    domain: domain,
+    endpoint: cleanedPath,
+    endTime: analyticsEndTime,
+    requestStartTime: analyticsRequestStartTime,
+    startTime: finalStartTime,
+  });
 }
 
 function graphQLRequestShouldRetryWithClientApi(body) {
@@ -29,6 +81,7 @@ function graphQLRequestShouldRetryWithClientApi(body) {
 
 function _requestWithRetry(options, tcpRetryCount, cb) {
   var status, resBody, ajaxRequest, body, method, headers, parsedBody;
+  var analyticsStartTime = Date.now();
   var url = options.url;
   var graphQL = options.graphQL;
   var timeout = options.timeout;
@@ -79,6 +132,13 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
       parsedBody = parseBody(req.responseText);
       resBody = ajaxRequest.adaptResponseBody(parsedBody);
       status = ajaxRequest.determineStatus(req.status, parsedBody);
+
+      if (
+        PAYPAL_HERMES_CREATE_PAYMENT_RESOURCE_PATTERN.test(url) &&
+        options.sendAnalyticsEvent
+      ) {
+        sendApiLatencyAnalytics(url, analyticsStartTime, options);
+      }
 
       if (status >= 400 || status < 200) {
         if (
