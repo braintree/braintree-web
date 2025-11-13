@@ -392,6 +392,17 @@ Venmo.prototype._handleDeepLinkAppSwitch = function (url) {
     this._handleIosWebviewDeepLink(url);
   } else if (this._popupBridgeIsInstalled()) {
     this._handlePopupBridgeAppSwitch(url);
+  } else if (browserDetection.isAndroidWebview()) {
+    analytics.sendEvent(
+      this._createPromise,
+      "venmo.appswitch.start.android-webview-redirect"
+    );
+
+    if (inIframe()) {
+      this._handleIFrameBreakout(url);
+    } else {
+      window.location.href = url;
+    }
   } else {
     analytics.sendEvent(this._createPromise, "venmo.appswitch.start.webview");
     this._venmoWindow = window.open(url);
@@ -670,6 +681,20 @@ Venmo.prototype._isDesktop = function () {
 };
 
 /**
+ * Detects iOS Safari in iframe without Venmo app installed
+ * @private
+ * @returns {boolean} True if we're on iOS mobile web, in an iframe, and the Venmo app is not installed
+ */
+Venmo.prototype._isIOSIframeWithoutVenmoApp = function () {
+  return (
+    browserDetection.isIos() &&
+    inIframe() &&
+    !this._venmoNativeAppIsInstalled() &&
+    !this._requireManualReturn // Respect explicit merchant override
+  );
+};
+
+/**
  * Launches the Venmo flow and returns a nonce payload.
  *
  * If {@link Venmo#hasTokenizationResult|hasTokenizationResult} returns true, calling tokenize will immediately process and return the results without initiating the Venmo payment authorization flow.
@@ -742,7 +767,10 @@ Venmo.prototype.tokenize = function (options) {
      * This is an alternate, opt-in flow to be used the Desktop QR Flow is not desired for Pay with Venmo desktop experiences.
      */
     tokenizationPromise = this._tokenizeWebLoginWithRedirect(options);
-  } else if (this._cannotHaveReturnUrls) {
+  } else if (
+    this._cannotHaveReturnUrls &&
+    !this._isIOSIframeWithoutVenmoApp()
+  ) {
     // in the manual return strategy, we create the payment
     // context on initialization, then continually poll once
     // the app switch begins until we get a response indiciating
@@ -756,6 +784,8 @@ Venmo.prototype.tokenize = function (options) {
     //    to do a manual redirect and continunally poll for
     //    updates on the payment context to get the nonce
     // 2. same deal for when `requireManualReturn` is configured
+    // NOTE: We exclude iOS iframe without Venmo app because it causes
+    // network errors due to Apple's iframe cross-domain restrictions
     tokenizationPromise = this._tokenizeForMobileWithManualReturn();
   } else {
     // the default mobile flow is to app switch to the

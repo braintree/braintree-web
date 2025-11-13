@@ -2161,6 +2161,38 @@ describe("Venmo", () => {
         );
       });
 
+      it("opens the app switch url by setting window.location.href for Android webview", async () => {
+        const venmo = new Venmo(venmoOptions);
+
+        jest.spyOn(browserDetection, "isAndroidWebview").mockReturnValue(true);
+
+        await venmo.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).toContain("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.android-webview-redirect"
+        );
+      });
+
+      it("breaks out of iframe when in iframe and using Android webview", async () => {
+        const venmo = new Venmo(venmoOptions);
+
+        jest.spyOn(browserDetection, "isAndroidWebview").mockReturnValue(true);
+        inIframe.mockReturnValue(true);
+
+        await venmo.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).not.toBe("https://venmo.com/braintree");
+        expect(window.top.location.href).toBe("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.android-webview-redirect"
+        );
+      });
+
       it("opens the app switch url by calling window.open otherwise", async () => {
         const venmo = new Venmo(venmoOptions);
 
@@ -4089,6 +4121,88 @@ describe("Venmo", () => {
           fakeVenmoDesktop.updateVenmoDesktopPaymentContext
         ).toBeCalledWith("CANCELED");
       });
+    });
+  });
+
+  describe("_isIOSIframeWithoutVenmoApp", () => {
+    let venmo;
+
+    beforeEach(async () => {
+      venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+      });
+      await flushPromises();
+    });
+
+    it("returns true when on iOS, in iframe, without Venmo app", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      inIframe.mockReturnValue(true);
+      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+
+      expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(true);
+    });
+
+    it("returns false when not on iOS", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(false);
+      inIframe.mockReturnValue(true);
+      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+
+      expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
+    });
+
+    it("returns false when not in iframe", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      inIframe.mockReturnValue(false);
+      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+
+      expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
+    });
+
+    it("returns false when Venmo app is installed", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      inIframe.mockReturnValue(true);
+      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(true);
+
+      expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
+    });
+
+    it("returns false when requireManualReturn is true (respects merchant override)", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      inIframe.mockReturnValue(true);
+
+      venmo._requireManualReturn = true;
+      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+
+      expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
+    });
+  });
+
+  describe("iOS iframe flow bypass", () => {
+    let venmo;
+
+    beforeEach(async () => {
+      venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+      });
+      await flushPromises();
+    });
+
+    it("detects the correct scenario for iOS iframe without Venmo app", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      inIframe.mockReturnValue(true);
+      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+
+      expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(true);
+    });
+
+    it("respects requireManualReturn flag even on iOS iframe without app", () => {
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      inIframe.mockReturnValue(true);
+
+      venmo._requireManualReturn = true;
+      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+
+      expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
     });
   });
 

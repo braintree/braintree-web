@@ -1,13 +1,20 @@
 /* eslint-disable no-console */
 import { $ } from "@wdio/globals";
+import { SUCCESS_MESSAGES, DEFAULT_HOSTED_FIELDS_VALUES } from "../constants";
 
 const BASE_URL = "https://127.0.0.1:8080";
-const yearInFuture = (new Date().getFullYear() % 100) + 3; // current year + 3
-const DEFAULT_HOSTED_FIELDS_VALUES = {
-  number: "4111111111111111",
-  expirationDate: `12/${yearInFuture}`,
-  cvv: "123",
-  postalCode: "12345",
+
+const appendOrReplaceParam = (
+  url: string,
+  paramName: string,
+  value: string
+) => {
+  const hasQuery = url.includes("?");
+  const separator = hasQuery ? "&" : "?";
+
+  return url.includes(`${paramName}=`)
+    ? url.replace(new RegExp(`${paramName}=([^&]*)`), `${paramName}=${value}`)
+    : `${url}${separator}${paramName}=${value}`;
 };
 
 export const getWorkflowUrl = function (path: string) {
@@ -15,21 +22,8 @@ export const getWorkflowUrl = function (path: string) {
 
   if (process.env.LOCAL_BUILD === "true") {
     console.log("🔧 LOCAL_BUILD=true detected, modifying URL for local build");
-    console.log("🔧 Original URL:", url);
-
-    if (url.includes("globals=&")) {
-      url = url.replace("globals=&", "globals=sdkVersion:dev&");
-    } else if (url.includes("globals=")) {
-      url = url.replace(/globals=([^&]*)/, "globals=sdkVersion:dev");
-    } else {
-      const separator = url.includes("?") ? "&" : "?";
-      url = `${url}${separator}globals=sdkVersion:dev`;
-    }
-
+    url = appendOrReplaceParam(url, "globals", "sdkVersion:dev");
     console.log("🔧 Modified URL:", url);
-  } else {
-    console.log("🔧 LOCAL_BUILD not set, using default CDN build");
-    console.log("🔧 URL:", url);
   }
 
   return encodeURI(url);
@@ -53,9 +47,9 @@ export const loadHelpers = function () {
     await $("#result").waitForExist();
     const resultElement = await $("#result").getText();
 
-    result.success = resultElement
-      .trim()
-      .includes("Payment tokenized successfully!");
+    result.success =
+      resultElement.includes(SUCCESS_MESSAGES.TOKENIZATION) ||
+      resultElement.includes(SUCCESS_MESSAGES.VERIFICATION);
 
     return result;
   });
@@ -120,6 +114,32 @@ export const loadHelpers = function () {
     }
   );
 
+  browser.addCommand(
+    "hostedFieldClearWithKeypress",
+    async function (key: string, deleteCount: number) {
+      await browser.waitForHostedField(key);
+
+      await browser.switchFrame($(`#braintree-hosted-field-${key}`));
+
+      const inputField = await $("input");
+
+      await inputField.click();
+
+      // Send individual backspace keypresses with a small delay between them
+      // Safari seems to need this sequential approach
+      if (deleteCount > 0) {
+        for (let i = 0; i < deleteCount; i++) {
+          await browser.keys("\uE003"); // Single Backspace key
+          await browser.pause(50); // Small delay between keypresses
+        }
+      }
+
+      await browser.switchFrame(null);
+
+      await browser.pause(300);
+    }
+  );
+
   browser.addCommand("waitForFormReady", async function () {
     const submitButton = await $('button[type="submit"]');
 
@@ -135,25 +155,24 @@ export const loadHelpers = function () {
     );
   });
 
-  browser.addCommand("submitPay", async function (waitForResult = true) {
+  browser.addCommand("submitPay", async function () {
     await browser.waitForFormReady();
 
     const submitButton = await $('button[type="submit"]');
     await submitButton.click();
 
-    if (waitForResult) {
-      await browser.waitUntil(
-        async () => {
-          const buttonText = await submitButton.getText();
-          return buttonText.includes("Processing");
-        },
-        {
-          timeout: 5000,
-          timeoutMsg: "Submit button did not change to processing state",
-        }
-      );
+    await browser.waitUntil(
+      async () => {
+        const resultDiv = await $("#result");
+        const resultClasses = await resultDiv.getAttribute("class");
+        return resultClasses.includes("shared-result--visible");
+      },
+      {
+        timeout: 10000,
+        timeoutMsg: "Result container never became visible after submit",
+      }
+    );
 
-      await browser.getResult();
-    }
+    await browser.getResult();
   });
 };

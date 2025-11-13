@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 3.133.0 (2025-11-13)
+
+- Hosted Fields
+  - Update supportedCardTypes docs
+- Local Payment
+  - Add support for Local Payment `swish`
+- Venmo
+  - Fix iOS mobile web polling issue due to Apple's cross-domain restrictions
+  - Fix Android Webview opening up second tab when it should have been redirecting
+  - Fix Android Webview not breaking out of iframe
+
 ## 3.132.0 (2025-10-16)
 
 - API Latency Logging

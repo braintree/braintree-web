@@ -189,11 +189,20 @@ braintree.client
 
 Retrieve your sandbox tokenization key from your Braintree sandbox account and add it to `.env`.
 
-For full functionality please ensure the sandbox account used for testing is fully configured to use any payment methods that will be tested
+For full functionality, add the following to your `.env` file:
 
 ```
+BRAINTREE_JS_ENV=development
 STORYBOOK_BRAINTREE_TOKENIZATION_KEY="your-sandbox-tokenization-key"
 ```
+
+The `BRAINTREE_JS_ENV=development` setting is required for:
+
+- Using local assets in Storybook instead of CDN files
+- Making hosted-fields iframe URLs load from local resources
+- Running integration tests with local builds
+
+Ensure the sandbox account used for testing is fully configured to use any payment methods that will be tested.
 
 #### Development server
 
@@ -244,14 +253,23 @@ npm run storybook:run-build
 
 # Browserstack Testing
 
-Follow [setup](#setup) and [static build](#static-build) instructions for Storybook.
+## Setup for Integration Tests
 
-Add the following environment variables to your `.env`. Utilize credentials from either your own Browserstack account or utilize team Browserstack account credentials.
+1. Follow the [setup](#setup) instructions to create your `.env` file, including your browserstack credentials:
 
-```shell
-export BROWSERSTACK_USERNAME="******"
-export BROWSERSTACK_ACCESS_KEY="******"
-```
+   ```shell
+   BRAINTREE_JS_ENV=development
+   STORYBOOK_BRAINTREE_TOKENIZATION_KEY=<from_your_sandbox_account>
+   BROWSERSTACK_USERNAME=username
+   BROWSERSTACK_ACCESS_KEY=password
+   ```
+
+   You can use your own Browserstack account or team credentials.
+
+2. Create SSL certificates for local HTTPS server:
+   ```shell
+   openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem -subj "/CN=127.0.0.1"
+   ```
 
 ## Testing with CDN versions (default)
 
@@ -263,17 +281,38 @@ npm run test:integration
 
 ## Testing with local builds
 
-To test your local development builds on BrowserStack:
+To test your local development builds on BrowserStack, use this complete workflow:
 
 ```shell
-npm run build:integration        # Build SDK + Storybook + start HTTPS server
-npm run test:integration:local   # Run tests using local builds
+# 1. One command to build SDK, prepare Storybook, and start HTTPS server
+npm run build:integration
+
+# 2. In a new terminal, start the local development server
+npm run storybook:dev-local
+
+# 3. In a new terminal, run tests using your local builds
+npm run test:integration:local
 ```
 
-Or manually specify the environment variable:
+This is equivalent to:
 
 ```shell
-npm run build:integration
+# 1. Build the SDK
+npm run build
+
+# 2. Copy local builds to Storybook
+npm run storybook:copy-local-build
+
+# 3. Start the local Storybook development server with local builds
+npm run storybook:dev-local
+
+# 4. Build Storybook static files
+npm run storybook:build
+
+# 5. Start HTTPS server
+npm run storybook:run-build
+
+# 6. Run tests with LOCAL_BUILD=true
 LOCAL_BUILD=true npm run test:integration
 ```
 
@@ -285,7 +324,35 @@ The integration build commands handle all the setup automatically:
   - Builds Storybook with local assets included
   - Starts HTTPS server for BrowserStack access
 
+**Important:** You must also run `npm run storybook:dev-local` in a separate terminal while running the integration tests. This starts a local Storybook development server that serves the components being tested.
+
 When testing with local builds, the Storybook version selector will show "Assets from local build" as an option (version: `dev`). Tests can select this to validate local changes before they're published to CDN.
+
+## Running specific tests
+
+To run a single test file instead of the entire test suite:
+
+```shell
+npm run test:integration -- --spec .storybook/tests/your-test-file.test.ts
+```
+
+With local builds:
+
+```shell
+npm run test:integration:local -- --spec .storybook/tests/your-test-file.test.ts
+```
+
+To run only a specific test case within a file, temporarily add `.only` to the test:
+
+```typescript
+it("should test something", async function () {
+  // test code here
+});
+
+it.only("should test something", async function () {
+  // test code here
+});
+```
 
 Test results will be viewable in the terminal. A link will also be output in the terminal to view test runs in the Browserstack UI.
 

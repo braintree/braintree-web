@@ -9,6 +9,7 @@ module.exports = [
       "dist/",
       "vendor/",
       "storybook-static/",
+      ".storybook/static/local-build/**",
       "src/venmo/shared/events.js",
       "src/venmo/shared/types.js",
       "src/venmo/internal",

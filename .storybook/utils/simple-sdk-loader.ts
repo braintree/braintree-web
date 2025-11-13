@@ -11,36 +11,29 @@ interface StoryArgs {
 }
 
 export const getSelectedSDKVersion = (globals?: StorybookGlobals): string => {
-  console.log("=== VERSION SELECTION DEBUG ===");
-
   const urlParams = new URLSearchParams(window.location.search);
   const versionParam = urlParams.get("version");
 
   if (versionParam) {
-    console.log(`Using version from URL parameter: ${versionParam}`);
     localStorage.setItem("storybook-braintree-sdk-version", versionParam);
     return versionParam;
   }
 
   const storedVersion = localStorage.getItem("storybook-braintree-sdk-version");
   if (storedVersion) {
-    console.log(`Using version from localStorage: ${storedVersion}`);
     return storedVersion;
   }
 
   if (globals && globals.sdkVersion) {
-    console.log(`Using version from Storybook globals: ${globals.sdkVersion}`);
     localStorage.setItem("storybook-braintree-sdk-version", globals.sdkVersion);
     return globals.sdkVersion;
   }
 
   if (localStorage.getItem("storybook-use-local-build") === "true") {
-    console.log("Using local build based on local storage flag");
     return "dev";
   }
 
   const defaultVersion = "dev";
-  console.log(`Using default version: ${defaultVersion}`);
   return defaultVersion;
 };
 
@@ -48,12 +41,7 @@ export const loadSDKScripts = async (
   scriptNames: string[],
   globals?: StorybookGlobals
 ): Promise<void> => {
-  console.log("=== LOAD SDK SCRIPTS DEBUG ===");
-  console.log("Requested script names:", scriptNames);
-  console.log("Passed globals:", globals);
-
   const version = getSelectedSDKVersion(globals);
-  console.log("Selected version for loading:", version);
 
   let availableVersions;
   try {
@@ -97,8 +85,6 @@ export const loadSDKScripts = async (
 
   if (version === "dev") {
     try {
-      console.log("Checking if local build files are accessible...");
-
       const versionJsonCheck = await fetch("/local-build/version.json")
         .then((response) => response.ok)
         .catch(() => false);
@@ -163,7 +149,6 @@ export const loadSDKScripts = async (
     for (const scriptName of scriptNames) {
       await loadScript(scriptName, version, versionConfig.baseUrl);
     }
-    console.log("All SDK scripts loaded successfully");
   } catch (error) {
     if (version === "dev") {
       console.error(
@@ -194,9 +179,6 @@ const loadScript = (
 
       scriptUrl = `/local-build/js/${scriptName}`;
 
-      console.log(`DEBUG: Using local build path: ${scriptUrl}`);
-      console.log(`DEBUG: Current location: ${window.location.href}`);
-
       fetch(scriptUrl)
         .then((response) => {
           if (!response.ok) {
@@ -219,7 +201,6 @@ const loadScript = (
       if (localBuildMeta) localBuildMeta.remove();
 
       scriptUrl = `${baseUrl}/${scriptName}`;
-      console.log(`Loading ${scriptName} from CDN: ${scriptUrl}`);
     }
 
     const versionMetaTag = document.createElement("meta");
@@ -229,7 +210,6 @@ const loadScript = (
 
     const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
     if (existingScript) {
-      console.log(`Script ${scriptName} already loaded`);
       resolve();
       return;
     }
@@ -239,7 +219,6 @@ const loadScript = (
     script.dataset.version = version;
 
     script.onload = () => {
-      console.log(`Successfully loaded ${scriptName}`);
       localStorage.setItem("storybook-last-successful-version", version);
       resolve();
     };
@@ -415,7 +394,6 @@ export const createSimpleBraintreeStory = (
 
             if (versionConfig.version === selectedVersion) {
               option.selected = true;
-              console.log(`Selected version: ${selectedVersion} is set`);
             }
             versionSelector.appendChild(option);
           });
@@ -431,10 +409,6 @@ export const createSimpleBraintreeStory = (
           versionSelector.addEventListener("change", (event) => {
             const newVersion = (event.target as HTMLSelectElement).value;
             const isLocalBuild = newVersion === "dev";
-
-            console.log(
-              `Version changed to: ${newVersion}, is local build: ${isLocalBuild}`
-            );
 
             localStorage.setItem("storybook-braintree-sdk-version", newVersion);
 
@@ -453,8 +427,6 @@ export const createSimpleBraintreeStory = (
                 "*"
               );
             }
-
-            console.log(`Version selection changed to: ${newVersion}`);
 
             const loadingDiv = document.createElement("div");
             loadingDiv.style.cssText = `
@@ -492,22 +464,12 @@ export const createSimpleBraintreeStory = (
     }
 
     setTimeout(async () => {
-      console.log("\n\n===== STORY INITIALIZATION DEBUG =====");
-      console.log("Story initialization starting");
-      console.log("Required scripts:", requiredScripts);
-      console.log("Globals:", globals);
-
       try {
-        console.log("Loading SDK scripts...");
         await loadSDKScripts(requiredScripts, globals);
-        console.log("SDK scripts loaded successfully");
 
-        console.log("Waiting for Braintree to be ready...");
         await waitForBraintree();
-        console.log("Braintree ready, rendering story...");
 
         renderFunction(container, _args);
-        console.log("Story rendered successfully");
       } catch (error) {
         console.error("Failed to initialize Braintree SDK:", error);
         const errorDiv = document.createElement("div");

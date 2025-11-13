@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Get the current branch name
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+# Validate the branch name
+node scripts/validate-branch-name.js "$BRANCH_NAME"
+
+# Exit with the validation script's exit code
+exit $?

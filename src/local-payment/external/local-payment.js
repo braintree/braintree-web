@@ -17,6 +17,8 @@ var constants = require("./constants");
 var errors = require("../shared/errors");
 var assign = require("../../lib/assign").assign;
 var inIframe = require("../../lib/in-iframe");
+var isMobileDevice = require("../shared/browser-detection");
+var injectQrCode = require("./inject-qr-code");
 
 var DEFAULT_WINDOW_WIDTH = 1282;
 var DEFAULT_WINDOW_HEIGHT = 720;
@@ -113,6 +115,25 @@ LocalPayment.prototype._initialize = function () {
  */
 
 /**
+ * Options used for the Swish local payment type.
+ * @typedef {object} LocalPayment~StartPaymentSwishOptions
+ * @property {string} amount The amount to authorize for the transaction.
+ * @property {string} currencyCode The currency to process the payment (three-character ISO-4217).
+ * @property {string} [displayName] The merchant name displayed inside of the window that is opened when starting the payment.
+ * @property {string} paymentType The type of local payment. Must be `swish`.
+ * @property {string} paymentTypeCountryCode The country code of the local payment. Must be `SE` for Swish payments.
+ * @property {string} email Payer email of the customer.
+ * @property {string} givenName First name of the customer.
+ * @property {string} surname Last name of the customer.
+ * @property {string} phone Phone number of the customer.
+ * @property {object} [swishOptions] Swish-specific options.
+ * @property {boolean} [swishOptions.requestQrCode=false] For non-mobile devices, whether to use QR code data from the response with the intent of rendering the QR code on your page instead of following the standard redirect flow. Note: When using this option, it is important to store data.paymentId on your server so it can be mapped to a webhook sent by Braintree once the buyer completes their payment.
+ * @property {(string|HTMLElement)} swishOptions.qrContainer Required when `swishOptions.requestQrCode` is set to `true`. A CSS selector string or HTML element where the QR code image will be automatically injected.
+ * @property {string} swishOptions.returnUrl Required when using Swish Standard flow on mobile devices. The URL where users will be redirected after completing the Swish payment.
+ * @property {function} [onPaymentStart] A function that will be called with an object containing the `paymentId`.
+ */
+
+/**
  * Options used for the Pay Upon Invoice local payment type.
  * @typedef {object} LocalPayment~StartPaymentPayUponInvoiceOptions
  * @property {string} amount The amount to authorize for the transaction.
@@ -189,7 +210,7 @@ LocalPayment.prototype._initialize = function () {
  * Launches the local payment flow and returns a nonce payload. Only one local payment flow should be active at a time. One way to achieve this is to disable your local payment button while the flow is open.
  * @public
  * @function
- * @param {LocalPayment~StartPaymentOptions|LocalPayment~StartPaymentPayUponInvoiceOptions} options Options for initiating the local payment payment flow.
+ * @param {LocalPayment~StartPaymentOptions|LocalPayment~StartPaymentPayUponInvoiceOptions|LocalPayment~StartPaymentSwishOptions} options Options for initiating the local payment payment flow.
  * @param {callback} callback The second argument, <code>data</code>, is a {@link LocalPayment~startPaymentPayload|startPaymentPayload}. If no callback is provided, the method will return a Promise that resolves with a {@link LocalPayment~startPaymentPayload|startPaymentPayload}.
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example
@@ -404,6 +425,56 @@ LocalPayment.prototype._initialize = function () {
  *   // Handle any error calling startPayment.
  *   console.error(err);
  * });
+ * @example <caption>Swish with QR Code (for desktop)</caption>
+ * localPaymentInstance.startPayment({
+ *   paymentType: 'swish',
+ *   paymentTypeCountryCode: 'SE',
+ *   amount: '10.00',
+ *   currencyCode: 'SEK',
+ *   givenName: 'Joe',
+ *   surname: 'Doe',
+ *   phone: '1234566789',
+ *   email: 'joe.doe@example.com',
+ *   swishOptions: {
+ *     requestQrCode: true,
+ *     qrContainer: '#qr-code-container' // QR code will be automatically injected here
+ *   },
+ *   onPaymentStart: function (data) {
+ *     console.log('Payment ID:', data.paymentId);
+ *     // QR code is already displayed in the container
+ *   },
+ * }).catch(function (err) {
+ *   // Handle any error calling startPayment.
+ *   console.error(err);
+ * });
+ * @example <caption>Swish with redirect</caption>
+ * localPaymentInstance.startPayment({
+ *   paymentType: 'swish',
+ *   paymentTypeCountryCode: 'SE',
+ *   amount: '10.00',
+ *   currencyCode: 'SEK',
+ *   givenName: 'Joe',
+ *   surname: 'Doe',
+ *   phone: '1234566789',
+ *   email: 'joe.doe@example.com',
+ *   swishOptions: {
+ *     returnUrl: 'https://example.com/return'
+ *   },
+ *   fallback: {
+ *     buttonText: 'Return to Store',
+ *     url: 'https://example.com/my-checkout-page'
+ *   },
+ *   onPaymentStart: function (data, continueCallback) {
+ *     // On desktop, this follows standard redirect flow
+ *     console.log('Payment ID:', data.paymentId);
+ *     continueCallback();
+ *   }
+ * }).then(function (payload) {
+ *   // Submit payload.nonce to your server
+ * }).catch(function (err) {
+ *   // Handle any error calling startPayment.
+ *   console.error(err);
+ * });
  */
 // eslint-disable-next-line complexity
 LocalPayment.prototype.startPayment = function (options) {
@@ -444,6 +515,27 @@ LocalPayment.prototype.startPayment = function (options) {
 
     return Promise.reject(missingError);
   }
+
+  if (
+    options.paymentType &&
+    options.paymentType.toLowerCase() === "swish" &&
+    options.swishOptions &&
+    options.swishOptions.requestQrCode
+  ) {
+    if (isMobileDevice.isMobileDevice()) {
+      return Promise.reject(
+        new BraintreeError(errors.LOCAL_PAYMENT_QR_CODE_NOT_SUPPORTED)
+      );
+    }
+    if (!options.swishOptions.qrContainer) {
+      return Promise.reject(
+        new BraintreeError(
+          errors.LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION
+        )
+      );
+    }
+  }
+
   windowOptions = options.windowOptions || {};
   address = options.address || {};
   fallback = options.fallback || {};
@@ -490,11 +582,32 @@ LocalPayment.prototype.startPayment = function (options) {
     state: address.region,
   };
 
+  self._paymentType = options.paymentType.toLowerCase();
+
+  if (self._paymentType === "swish") {
+    if (isMobileDevice.isMobileDevice()) {
+      params.redirectToApp = true;
+      self._isRedirectFlow = true; // Set to true to trigger app switch for Swish
+    }
+  }
+
   if (self._isRedirectFlow) {
-    cancelUrl = querystring.queryify(self._redirectUrl, {
-      wasCanceled: true,
-    });
-    returnUrl = self._redirectUrl;
+    if (
+      self._paymentType === "swish" &&
+      options.swishOptions &&
+      options.swishOptions.returnUrl &&
+      isMobileDevice.isMobileDevice()
+    ) {
+      cancelUrl = querystring.queryify(options.swishOptions.returnUrl, {
+        wasCanceled: true,
+      });
+      returnUrl = options.swishOptions.returnUrl;
+    } else {
+      cancelUrl = querystring.queryify(self._redirectUrl, {
+        wasCanceled: true,
+      });
+      returnUrl = self._redirectUrl;
+    }
   } else {
     cancelUrl = querystring.queryify(
       self._assetsUrl +
@@ -520,9 +633,8 @@ LocalPayment.prototype.startPayment = function (options) {
       }
     );
   }
-  assign(params, { cancelUrl: cancelUrl, returnUrl: returnUrl });
 
-  self._paymentType = options.paymentType.toLowerCase();
+  assign(params, { cancelUrl: cancelUrl, returnUrl: returnUrl });
 
   if (self._authorizationInProgress && !self._isRedirectFlow) {
     analytics.sendEvent(
@@ -582,7 +694,38 @@ LocalPayment.prototype.startPayment = function (options) {
       }
       self._startPaymentOptions = options;
 
-      if (isDeferredPaymentTypeOptions(options)) {
+      if (isSwishQrFlow(options, response, self._paymentType)) {
+        self._authorizationInProgress = false;
+
+        try {
+          injectQrCode(
+            response.paymentResource.qrDetails.qrImage,
+            options.swishOptions.qrContainer
+          );
+        } catch (injectError) {
+          return promise.reject(injectError);
+        }
+
+        if (typeof options.onPaymentStart === "function") {
+          onPaymentStartPromise = options.onPaymentStart({
+            paymentId: response.paymentResource.paymentToken,
+          });
+
+          if (onPaymentStartPromise instanceof Promise) {
+            onPaymentStartPromise
+              .then(function () {
+                promise.resolve();
+              })
+              .catch(function (error) {
+                promise.reject(error);
+              });
+          } else {
+            promise.resolve();
+          }
+        } else {
+          promise.resolve();
+        }
+      } else if (isDeferredPaymentTypeOptions(options)) {
         self._authorizationInProgress = false;
 
         if (typeof redirectUrl === "string" && redirectUrl.length) {
@@ -597,9 +740,13 @@ LocalPayment.prototype.startPayment = function (options) {
           });
 
           if (onPaymentStartPromise instanceof Promise) {
-            onPaymentStartPromise.then(function () {
-              promise.resolve();
-            });
+            onPaymentStartPromise
+              .then(function () {
+                promise.resolve();
+              })
+              .catch(function (error) {
+                promise.reject(error);
+              });
           } else {
             promise.resolve();
           }
@@ -610,26 +757,25 @@ LocalPayment.prototype.startPayment = function (options) {
             { paymentId: response.paymentResource.paymentToken },
             function () {
               if (!self._isRedirectFlow) {
-                self._frameService.redirect(
-                  response.paymentResource.redirectUrl
-                );
+                self._frameService.redirect(redirectUrl);
               }
             }
           )
         ).then(function () {
           if (self._isRedirectFlow) {
-            self._redirectToPaymentResource(
-              response.paymentResource.redirectUrl
-            );
-
+            self._redirectToPaymentResource(redirectUrl);
             promise.resolve();
           }
         });
       } else if (self._isRedirectFlow) {
-        self._redirectToPaymentResource(response.paymentResource.redirectUrl);
+        self._redirectToPaymentResource(redirectUrl);
 
         promise.resolve();
+      } else if (!self._isRedirectFlow) {
+        self._frameService.redirect(redirectUrl);
       }
+
+      return promise;
     })
     .catch(function (err) {
       var status = err.details && err.details.httpStatus;
@@ -852,7 +998,6 @@ LocalPayment.prototype._createStartPaymentCallback = function (
       if (!window.popupBridge) {
         self._frameService.redirect(self._loadingFrameUrl);
       }
-
       self
         .tokenize(params)
         .then(resolve)
@@ -962,6 +1107,14 @@ function isDeferredPaymentTypeOptions(options) {
     );
   }
 
+  if (
+    paymentType === "swish" &&
+    options.swishOptions &&
+    options.swishOptions.requestQrCode
+  ) {
+    return true;
+  }
+
   return ["pay_upon_invoice", "mbway", "bancomatpay"].includes(paymentType);
 }
 
@@ -1062,6 +1215,54 @@ function hasMissingBlikOptions(options) {
   return false;
 }
 
+function hasMissingSwishOptions(options) {
+  var i, option;
+  var swishOptions = options.swishOptions || {};
+  var requiredSwishOptions = [
+    "givenName",
+    "surname",
+    "currencyCode",
+    "paymentType",
+    "amount",
+  ];
+
+  for (i = 0; i < requiredSwishOptions.length; i++) {
+    option = requiredSwishOptions[i];
+    if (!options.hasOwnProperty(option)) {
+      return option;
+    }
+  }
+
+  // If requestQrCode is true, qrContainer is required
+  if (swishOptions.requestQrCode && !swishOptions.qrContainer) {
+    return "swishOptions.qrContainer";
+  }
+
+  if (
+    !swishOptions.requestQrCode &&
+    !swishOptions.returnUrl &&
+    !options.redirectUrl &&
+    isMobileDevice.isMobileDevice()
+  ) {
+    return "swishOptions.returnUrl";
+  }
+
+  return false;
+}
+
+function isSwishQrFlow(options, response, paymentType) {
+  if (
+    paymentType === "swish" &&
+    options.swishOptions &&
+    options.swishOptions.requestQrCode &&
+    response.paymentResource.qrDetails &&
+    response.paymentResource.qrDetails.qrImage
+  ) {
+    return true;
+  }
+  return false;
+}
+
 // This will return the name of the first missing required option that
 // is found or `true` if `options` itself is not defined. Otherwise, it
 // will return `false`.
@@ -1073,9 +1274,12 @@ function hasMissingOption(options) {
     return true;
   }
 
-  if (isDeferredPaymentTypeOptions(options)) {
-    paymentType = options.paymentType || "";
+  paymentType = options.paymentType || "";
 
+  if (paymentType.toLowerCase() === "swish") {
+    return hasMissingSwishOptions(options);
+  }
+  if (isDeferredPaymentTypeOptions(options)) {
     if (paymentType.toLowerCase() === "pay_upon_invoice") {
       for (
         i = 0;

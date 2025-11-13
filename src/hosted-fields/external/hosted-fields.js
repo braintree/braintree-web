@@ -121,6 +121,9 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * - `american-express`
  * - `diners-club`
  * - `discover`
+ * - `elo`
+ * - `hiper`
+ * - `hipercard`
  * - `jcb`
  * - `maestro`
  * - `master-card`
@@ -130,6 +133,9 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * - `American Express`
  * - `Diners Club`
  * - `Discover`
+ * - `Elo`
+ * - `Hiper`
+ * - `Hipercard`
  * - `JCB`
  * - `Maestro`
  * - `MasterCard`

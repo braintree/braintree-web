@@ -1,6 +1,8 @@
 "use strict";
 
 jest.mock("../../../../src/lib/frame-service/external");
+jest.mock("../../../../src/local-payment/shared/browser-detection");
+jest.mock("../../../../src/local-payment/external/inject-qr-code");
 
 const { version: VERSION } = require("../../../../package.json");
 const LocalPayment = require("../../../../src/local-payment/external/local-payment");
@@ -1983,6 +1985,449 @@ describe("LocalPayment", () => {
           });
 
           done();
+        });
+      });
+    });
+  });
+
+  describe("startPayment Swish", () => {
+    beforeEach(() => {
+      testContext.localPayment = new LocalPayment({
+        client: testContext.client,
+        merchantAccountId: "merchant-account-id",
+      });
+      testContext.frameServiceInstance = {
+        _serviceId: "service-id",
+        close: jest.fn(),
+        open: jest.fn(
+          yieldsAsync(null, {
+            token: "token",
+            paymentId: "payment-id",
+            PayerID: "PayerId",
+          })
+        ),
+        redirect: jest.fn(),
+      };
+
+      testContext.baseSwishOptions = {
+        paymentType: "swish",
+        paymentTypeCountryCode: "SE",
+        amount: "10.00",
+        currencyCode: "SEK",
+        givenName: "John",
+        surname: "Doe",
+        email: "john.doe@example.com",
+        phone: "1234567890",
+      };
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect-url",
+          paymentToken: "payment-token",
+        },
+      });
+
+      jest
+        .spyOn(frameService, "create")
+        .mockImplementation(yields(testContext.frameServiceInstance));
+    });
+
+    describe("QR code flow", () => {
+      beforeEach(() => {
+        // Mock mobile device detection to return false (desktop)
+        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
+        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(false);
+
+        // Mock QR code injection
+        const injectQrCode = require("../../../../src/local-payment/external/inject-qr-code");
+        jest
+          .mocked(injectQrCode)
+          .mockReturnValue(document.createElement("img"));
+
+        document.body.innerHTML = '<div id="qr-container"></div>';
+
+        return testContext.localPayment._initialize();
+      });
+
+      afterEach(() => {
+        document.body.innerHTML = "";
+      });
+
+      it("includes throws when using QR Code flow on mobile", () => {
+        // Mock mobile device detection to return true (mobile)
+        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
+        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(true);
+
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            requestQrCode: true,
+            qrContainer: "#qr-container",
+          },
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.code).toBe("LOCAL_PAYMENT_QR_CODE_NOT_SUPPORTED");
+          expect(err.message).toContain(
+            "QR code is only supported on desktop devices."
+          );
+        });
+      });
+
+      it("validates that qrContainer is provided when requestQrCode is true", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            requestQrCode: true,
+            // Missing qrContainer
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.code).toBe(
+            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+          );
+          expect(err.details).toContain("swishOptions.qrContainer");
+        });
+      });
+
+      it("allows QR code flow when qrContainer is provided", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            requestQrCode: true,
+            qrContainer: "#qr-container",
+          },
+          onPaymentStart: jest.fn(),
+        };
+
+        testContext.client.request.mockResolvedValue({
+          paymentResource: {
+            paymentToken: "payment-token",
+            qrDetails: {
+              qrImage: "base64QrCodeData",
+            },
+          },
+        });
+
+        const injectQrCode = require("../../../../src/local-payment/external/inject-qr-code");
+        jest
+          .mocked(injectQrCode)
+          .mockReturnValue(document.createElement("img"));
+
+        return testContext.localPayment.startPayment(options).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith({
+            method: "post",
+            endpoint: "local_payments/create",
+            data: expect.objectContaining({
+              fundingSource: "swish",
+            }),
+          });
+          expect(injectQrCode).toHaveBeenCalledWith(
+            "base64QrCodeData",
+            "#qr-container"
+          );
+          expect(options.onPaymentStart).toHaveBeenCalledWith({
+            paymentId: "payment-token",
+          });
+        });
+      });
+
+      it("handles QR code injection errors gracefully", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            requestQrCode: true,
+            qrContainer: "#qr-container",
+          },
+        };
+
+        testContext.client.request.mockResolvedValue({
+          paymentResource: {
+            paymentToken: "payment-token",
+            qrDetails: {
+              qrImage: "base64QrCodeData",
+            },
+          },
+        });
+
+        const injectQrCode = require("../../../../src/local-payment/external/inject-qr-code");
+        const injectionError = new BraintreeError({
+          type: BraintreeError.types.MERCHANT,
+          code: "LOCAL_PAYMENT_QR_CODE_CONTAINER_NOT_FOUND",
+          message: "Container not found",
+        });
+        jest.mocked(injectQrCode).mockImplementation(() => {
+          throw injectionError;
+        });
+
+        return testContext.localPayment.startPayment(options).catch((err) => {
+          expect(err).toBe(injectionError);
+        });
+      });
+    });
+
+    describe("mobile redirect flow", () => {
+      beforeEach(() => {
+        // Mock mobile device detection to return true (mobile)
+        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
+        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(true);
+
+        return testContext.localPayment._initialize();
+      });
+
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it("sets redirectToApp parameter for mobile devices", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            returnUrl: "https://example.com/return",
+          },
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith({
+            method: "post",
+            endpoint: "local_payments/create",
+            data: expect.objectContaining({
+              redirectToApp: true,
+              returnUrl: `https://example.com/return`,
+            }),
+          });
+        });
+      });
+    });
+
+    describe("desktop redirect flow", () => {
+      beforeEach(() => {
+        // Mock mobile device detection to return false (desktop)
+        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
+        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(false);
+
+        return testContext.localPayment._initialize();
+      });
+
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it("does not set redirectToApp parameter for desktop devices", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith({
+            method: "post",
+            endpoint: "local_payments/create",
+            data: expect.objectContaining({
+              returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Return%20to%20Merchant`,
+            }),
+          });
+          expect(
+            testContext.client.request.mock.calls[0][0].data
+          ).not.toHaveProperty("redirectToApp");
+        });
+      });
+
+      it("does not set requestQrCode when not explicitly requested", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).then(() => {
+          expect(
+            testContext.client.request.mock.calls[0][0].data
+          ).not.toHaveProperty("requestQrCode");
+        });
+      });
+    });
+
+    describe("parameter validation", () => {
+      beforeEach(() => {
+        return testContext.localPayment._initialize();
+      });
+      it("includes all required Swish parameters in request", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            returnUrl: "https://example.com/return",
+          },
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+
+          expect(requestData).toMatchObject({
+            amount: "10.00",
+            currencyIsoCode: "SEK",
+            firstName: "John",
+            lastName: "Doe",
+            payerEmail: "john.doe@example.com",
+            phone: "1234567890",
+            fundingSource: "swish",
+            paymentTypeCountryCode: "SE",
+            returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=https%3A%2F%2Fexample.com%2Ffallback&t=Return%20to%20Merchant`,
+          });
+        });
+      });
+
+      it("handles case insensitive payment type", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          paymentType: "SWISH", // uppercase
+          swishOptions: {
+            returnUrl: "https://example.com/return",
+          },
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+          expect(requestData.fundingSource).toBe("SWISH");
+        });
+      });
+    });
+
+    describe("error handling", () => {
+      beforeEach(() => {
+        return testContext.localPayment._initialize();
+      });
+      it("sends proper analytics events for Swish payments", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            returnUrl: "https://example.com/return",
+          },
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "swish.local-payment.start-payment.opened"
+          );
+        });
+      });
+
+      it("handles API errors for Swish payments", () => {
+        const options = {
+          ...testContext.baseSwishOptions,
+          swishOptions: {
+            returnUrl: "https://example.com/return",
+          },
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        const apiError = new Error("API Error");
+        testContext.client.request.mockRejectedValue(apiError);
+
+        return testContext.localPayment.startPayment(options).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
+        });
+      });
+
+      it.each([
+        "givenName",
+        "surname",
+        "currencyCode",
+        "paymentType",
+        "amount",
+        "swishOptions.returnUrl",
+        "swishOptions.qrContainer",
+      ])("handles missing options on Swish payments", (option) => {
+        const swishOptions = {
+          requestQrCode: option === "swishOptions.returnUrl" ? undefined : true,
+          qrContainer:
+            option !== "swishOptions.qrContainer" ? "#qr-container" : undefined,
+          returnUrl:
+            option !== "swishOptions.returnUrl"
+              ? "https://example.com/return?channel=service-id"
+              : undefined,
+        };
+        const baseOptions = { ...testContext.baseSwishOptions };
+        delete baseOptions[option];
+
+        const options = {
+          ...baseOptions,
+          swishOptions: swishOptions,
+          fallback: {
+            url: "https://example.com/fallback",
+            buttonText: "Return to Merchant",
+          },
+          onPaymentStart: (data, start) => {
+            start();
+          },
+        };
+
+        return testContext.localPayment.startPayment(options).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(BraintreeError.types.MERCHANT);
+          expect(err.code).toBe(
+            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+          );
+          expect(err.details).toContain(option);
         });
       });
     });

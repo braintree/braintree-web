@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/simple-sdk-loader";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import { TEST_CARDS } from "../../utils/test-data";
+import { SUCCESS_MESSAGES } from "../../constants";
 
 import "../../shared.css";
 import "./hostedFields.css";
@@ -61,6 +62,74 @@ const createHostedFieldsForm = (args?: Record<string, string>): HTMLElement => {
 
         <button type="submit" id="submit-button" class="shared-button submit-button" disabled>Pay Now</button>
       </form>
+
+      <div id="card-type"></div>
+      <div id="emptyEvent"></div>
+      <div id="notEmptyEvent"></div>
+      <div id="focus"></div>
+      <div id="blur"></div>
+      <div id="inputSubmitRequest"></div>
+      <div id="binAvailable"></div>
+
+      <div class="form-field-group" style="margin-top: 20px;">
+        <label for="field-to-clear" class="shared-label">Field Actions</label>
+        <select id="field-to-clear" class="field-control">
+          <option value="number">Card Number</option>
+          <option value="cvv">CVV</option>
+          <option value="expirationDate">Expiration Date</option>
+          <option value="postalCode">Postal Code</option>
+        </select>
+        <button id="clear-field-button" class="shared-button" type="button">Clear Field</button>
+      </div>
+
+      <div class="form-field-group" style="margin-top: 10px;">
+        <label for="class-action-field" class="shared-label">Class Actions</label>
+        <select id="class-action-field" class="field-control">
+          <option value="number">Card Number</option>
+          <option value="cvv">CVV</option>
+          <option value="expirationDate">Expiration Date</option>
+          <option value="postalCode">Postal Code</option>
+        </select>
+        <input type="text" id="class-name-input" placeholder="custom-class" value="custom-class" />
+        <button id="add-class-button" class="shared-button" type="button">Add Class</button>
+        <button id="remove-class-button" class="shared-button" type="button">Remove Class</button>
+      </div>
+
+      <div class="form-field-group" style="margin-top: 10px;">
+        <label for="attribute-field" class="shared-label">Attribute Actions</label>
+        <select id="attribute-field" class="field-control">
+          <option value="cvv">CVV</option>
+          <option value="number">Card Number</option>
+          <option value="expirationDate">Expiration Date</option>
+          <option value="postalCode">Postal Code</option>
+        </select>
+        <input type="text" id="attribute-name-input" placeholder="placeholder" value="placeholder" />
+        <input type="text" id="attribute-value-input" placeholder="Security Code" value="Security Code" />
+        <button id="set-attribute-button" class="shared-button" type="button">Set Attribute</button>
+        <button id="remove-attribute-button" class="shared-button" type="button">Remove Attribute</button>
+      </div>
+
+      <div class="form-field-group" style="margin-top: 10px;">
+        <label for="focus-field" class="shared-label">Focus Field</label>
+        <select id="focus-field" class="field-control">
+          <option value="number">Card Number</option>
+          <option value="cvv">CVV</option>
+          <option value="expirationDate">Expiration Date</option>
+          <option value="postalCode">Postal Code</option>
+        </select>
+        <button id="focus-field-button" class="shared-button" type="button">Focus Field</button>
+      </div>
+
+      <div class="form-field-group" style="margin-top: 10px;">
+        <button id="get-state-button" class="shared-button" type="button">Get State</button>
+        <div id="state-container"></div>
+      </div>
+
+
+      <div class="form-field-group" style="margin-top: 10px;">
+        <button id="teardown-button" class="shared-button" type="button" disabled>Teardown Component</button>
+        <div id="teardown-status"></div>
+      </div>
 
       <div id="result" class="shared-result"></div>
     </div>
@@ -138,6 +207,14 @@ const setupBraintreeHostedFields = (
     })
     .then((hostedFieldsInstance) => {
       const form = container.querySelector("#checkout-form") as HTMLElement;
+      const emptyEventContainer = container.querySelector("#emptyEvent");
+      const notEmptyEventContainer = container.querySelector("#notEmptyEvent");
+      const focusEventContainer = container.querySelector("#focus");
+      const blurEventContainer = container.querySelector("#blur");
+      const binAvailableContainer = container.querySelector("#binAvailable");
+      const inputSubmitRequestContainer = container.querySelector(
+        "#inputSubmitRequest"
+      );
       const submitButton = container.querySelector(
         "#submit-button"
       ) as HTMLButtonElement;
@@ -156,6 +233,144 @@ const setupBraintreeHostedFields = (
         }
       });
 
+      // Enable the teardown button now that the hosted fields are fully initialized
+      const teardownButton = container.querySelector("#teardown-button");
+      teardownButton.disabled = false;
+
+      hostedFieldsInstance.on("cardTypeChange", (event) => {
+        const cardTypeContainer = container.querySelector("#card-type");
+        if (!event.fields.number.isEmpty) {
+          cardTypeContainer.innerHTML =
+            "Detected Card Type: " + event.cards[0].niceType;
+        } else {
+          cardTypeContainer.innerHTML = "";
+        }
+      });
+
+      hostedFieldsInstance.on("empty", (event) => {
+        emptyEventContainer.classList.add(event.emittedBy);
+        notEmptyEventContainer.classList.remove(event.emittedBy);
+      });
+
+      hostedFieldsInstance.on("notEmpty", (event) => {
+        notEmptyEventContainer.classList.add(event.emittedBy);
+        emptyEventContainer.classList.remove(event.emittedBy);
+      });
+
+      hostedFieldsInstance.on("focus", (event) => {
+        focusEventContainer.classList.add(event.emittedBy);
+        blurEventContainer.classList.remove(event.emittedBy);
+      });
+
+      hostedFieldsInstance.on("blur", (event) => {
+        blurEventContainer.classList.add(event.emittedBy);
+        focusEventContainer.classList.remove(event.emittedBy);
+      });
+
+      hostedFieldsInstance.on("inputSubmitRequest", (event) => {
+        inputSubmitRequestContainer.classList.add(event.emittedBy);
+      });
+
+      hostedFieldsInstance.on("binAvailable", () => {
+        binAvailableContainer.setAttribute("binAvailable", true);
+      });
+
+      // Add clear field button functionality
+      const clearFieldButton = container.querySelector("#clear-field-button");
+      const fieldToClearSelect = container.querySelector("#field-to-clear");
+
+      clearFieldButton.addEventListener("click", () => {
+        const fieldToClear = fieldToClearSelect.value;
+        hostedFieldsInstance.clear(fieldToClear);
+      });
+
+      // Add class button functionality
+      const classActionFieldSelect = container.querySelector(
+        "#class-action-field"
+      );
+      const classNameInput = container.querySelector("#class-name-input");
+      const addClassButton = container.querySelector("#add-class-button");
+      const removeClassButton = container.querySelector("#remove-class-button");
+
+      addClassButton.addEventListener("click", () => {
+        const field = classActionFieldSelect.value;
+        const className = classNameInput.value;
+        hostedFieldsInstance.addClass(field, className);
+      });
+
+      removeClassButton.addEventListener("click", () => {
+        const field = classActionFieldSelect.value;
+        const className = classNameInput.value;
+        hostedFieldsInstance.removeClass(field, className);
+      });
+
+      const attributeFieldSelect = container.querySelector("#attribute-field");
+      const attributeNameInput = container.querySelector(
+        "#attribute-name-input"
+      );
+      const attributeValueInput = container.querySelector(
+        "#attribute-value-input"
+      );
+      const setAttributeButton = container.querySelector(
+        "#set-attribute-button"
+      );
+      const removeAttributeButton = container.querySelector(
+        "#remove-attribute-button"
+      );
+
+      setAttributeButton.addEventListener("click", () => {
+        const field = attributeFieldSelect.value;
+        const attributeName = attributeNameInput.value;
+        const attributeValue = attributeValueInput.value;
+
+        hostedFieldsInstance.setAttribute({
+          field: field,
+          attribute: attributeName,
+          value: attributeName === "disabled" ? true : attributeValue,
+        });
+      });
+
+      removeAttributeButton.addEventListener("click", () => {
+        const field = attributeFieldSelect.value;
+        const attributeName = attributeNameInput.value;
+
+        hostedFieldsInstance.removeAttribute({
+          field: field,
+          attribute: attributeName,
+        });
+      });
+
+      const focusFieldButton = container.querySelector("#focus-field-button");
+      const focusFieldSelect = container.querySelector("#focus-field");
+
+      focusFieldButton.addEventListener("click", () => {
+        const fieldToFocus = focusFieldSelect.value;
+        hostedFieldsInstance.focus(fieldToFocus);
+      });
+
+      const getStateButton = container.querySelector("#get-state-button");
+      const stateContainer = container.querySelector("#state-container");
+
+      getStateButton.addEventListener("click", () => {
+        const state = hostedFieldsInstance.getState();
+        stateContainer.textContent = JSON.stringify(state, null, 2);
+        stateContainer.setAttribute("data-state", JSON.stringify(state));
+      });
+
+      const teardownStatus = container.querySelector("#teardown-status");
+
+      teardownButton.addEventListener("click", () => {
+        teardownStatus.textContent = "Tearing down...";
+        hostedFieldsInstance
+          .teardown()
+          .then(() => {
+            teardownStatus.textContent = "Teardown complete";
+          })
+          .catch((err) => {
+            teardownStatus.textContent = `Teardown failed: ${err.message}`;
+          });
+      });
+
       form.addEventListener("submit", (event) => {
         event.preventDefault();
 
@@ -171,7 +386,7 @@ const setupBraintreeHostedFields = (
             );
             resultDiv.classList.remove("shared-result--error");
             resultDiv.innerHTML = `
-          <strong>Payment tokenized successfully!</strong>
+          <strong>${SUCCESS_MESSAGES.TOKENIZATION}</strong>
           <small>Nonce: ${payload.nonce}</small>
           <small>Type: ${payload.type}</small>
         `;
@@ -281,7 +496,7 @@ const setupSeparateExpirationFields = (container) => {
             resultDiv.style.color = "#155724";
             resultDiv.style.border = "1px solid #c3e6cb";
             resultDiv.innerHTML = `
-          <strong>Payment tokenized successfully!</strong><br>
+          <strong>${SUCCESS_MESSAGES.TOKENIZATION}</strong><br>
           <small>Nonce: ${payload.nonce}</small><br>
           <small>Type: ${payload.type}</small>
         `;

@@ -5,6 +5,58 @@ Thanks for considering contributing to this project. Ways you can help:
 - [Create a pull request](https://help.github.com/articles/creating-a-pull-request)
 - [Add an issue](https://github.com/braintree/braintree-web/issues)
 
+## Branch Naming Convention
+
+All branch names must follow one of these formats:
+
+1. **Standard format**: lowercase kebab-case with optional version suffix
+2. **Jira format**: JIRA-TICKET-lowercase-kebab-case with optional version suffix
+
+This convention is enforced both locally (via Git hooks) and on GitHub (via CI checks).
+
+### Valid Branch Names
+
+**Standard format:**
+
+- `feature-name`
+- `fix-payment-bug`
+- `update-dependencies`
+- `refactor-auth-module`
+- `add-new-endpoint`
+- `beta.1` (beta branch with version)
+- `release-candidate.2` (versioned release candidate)
+
+**With Jira ticket prefix:**
+
+- `DTBTWEB-123-fix-payment-bug` (Jira ticket + description)
+- `PAYPL-1234-add-new-feature`
+- `ABC-99-hotfix.1` (Jira ticket + version)
+- `DTBTWEB-256-some-amazing-feature`
+
+### Invalid Branch Names
+
+- `FeatureName` (uppercase without Jira prefix)
+- `feature_name` (uses underscores instead of hyphens)
+- `feature name` (contains spaces)
+- `Feature-Name` (uppercase without proper Jira format)
+- `feature.name` (period without number at the end)
+- `dtbtweb-123-feature` (lowercase Jira prefix - must be uppercase)
+- `DTBTWEB123-feature` (missing hyphen in Jira ticket number)
+- `DTBTWEB-feature` (Jira prefix missing ticket number)
+
+### Validation
+
+Branch names are automatically validated:
+
+- **Locally**: When you attempt to push (via pre-push hook)
+- **On GitHub**: When you create a pull request or new branch
+
+To manually validate a branch name, run:
+
+```bash
+node scripts/validate-branch-name.js "your-branch-name"
+```
+
 ## Development
 
 Clone this repo, then install the project's development dependencies:
