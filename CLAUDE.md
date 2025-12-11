@@ -2,6 +2,26 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Component-Specific Documentation
+
+Each component has its own CLAUDE.md with detailed guidance. These are automatically loaded when working in that directory.
+
+**Core:** `client`, `hosted-fields`, `three-d-secure`, `data-collector`, `lib/frame-service`
+
+**Digital Wallets:** `apple-pay`, `google-payment`
+
+**Alternative Payment Methods:** `paypal-checkout`, `venmo`, `us-bank-account`, `sepa`, `local-payment`
+
+**Card Networks:** `american-express`, `unionpay`
+
+**Services:** `instant-verification`, `payment-ready`, `payment-request`, `vault-manager`, `fastlane`
+
+**Deprecated (Do Not Use):** `paypal` (use paypal-checkout), `masterpass`, `visa-checkout`, `preferred-payment-methods`
+
+## Development Tools
+
+**Storybook:** See `/.storybook/CLAUDE.md` for interactive component development, visual testing, integration testing, SDK version management, and writing stories.
+
 ## Commands
 
 ### Development
@@ -40,28 +60,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `tasks/` - Gulp build tasks, one per component
 - `test/` - Test files mirroring the src/ structure
 - `components.json` - List of all payment method components
-
-### Component Architecture
-
-This is a modular payment SDK with components for different payment methods:
-
-**Core Components:**
-
-- `client` - Base client for Braintree API communication
-- `hosted-fields` - Secure credit card input fields
-
-**Payment Methods:**
-
-- `paypal`, `apple-pay`, `google-payment` - Digital wallets
-- `venmo`, `us-bank-account`, `sepa` - Alternative payment methods
-- `three-d-secure` - Authentication component
-- `data-collector` - Fraud protection
-
-Each component follows the pattern:
-
-- `src/<component>/index.js` - Main module export with `create()` function
-- `src/<component>/<component>.js` - Core implementation class
-- Shared utilities from `src/lib/` for common functionality
 
 ### Build System
 
@@ -128,38 +126,6 @@ new BraintreeError({
   code: "COMPONENT_SPECIFIC_ERROR_CODE",
   message: "User-friendly error message",
   details: { originalError: err }, // Optional additional info
-});
-```
-
-## Frame Service Architecture
-
-### Iframe Communication
-
-The SDK uses framebus for secure iframe communication:
-
-- **Dispatch Frame** - Hidden iframe for coordinating communication
-- **Open Frame** - Visible iframe containing UI (popup, modal, etc.)
-- **Bus Events** - Structured messaging between frames
-
-### Frame Strategies
-
-1. **Popup** - Opens payment UI in popup window
-2. **Modal** - Opens payment UI in modal overlay
-3. **PopupBridge** - Mobile app integration strategy
-
-### Frame Service Usage
-
-```javascript
-var FrameService = require("../lib/frame-service/external/frame-service");
-
-var frameService = new FrameService({
-  name: "component_name",
-  dispatchFrameUrl: "https://assets.braintreegateway.com/...",
-  openFrameUrl: "https://assets.braintreegateway.com/...",
-});
-
-frameService.initialize(function () {
-  // Frame service ready
 });
 ```
 
@@ -247,6 +213,12 @@ analytics.sendEvent(client, "component.action.started");
 
 ### Frame Communication Issues
 
+For components using Frame Service (PayPal, Venmo, SEPA, Local Payment), see `/src/lib/frame-service/CLAUDE.md` for detailed debugging guidance.
+
+For Hosted Fields iframe issues, see `/src/hosted-fields/CLAUDE.md`.
+
+**General debugging:**
+
 1. Check browser console for framebus errors
 2. Verify iframe URLs are loading correctly
 3. Ensure proper domain configuration for cross-origin
@@ -272,7 +244,8 @@ analytics.sendEvent(client, "component.action.started");
 
 - Core dependencies are minimal browser-compatible libraries
 - Custom Braintree packages prefixed with `@braintree/`
-- Uses framebus for iframe communication
+- Uses framebus for iframe communication (see Frame Service and Hosted Fields docs)
+- Cardinal Commerce Songbird.js for 3D Secure (loaded dynamically)
 - SJCL crypto library (custom build) for data-collector component
 
 ### Development Workflow
@@ -284,4 +257,6 @@ analytics.sendEvent(client, "component.action.started");
 5. Use `scripts/npm-to-gulp` wrapper for component-specific commands
 6. Check version compatibility with `basicComponentVerification`
 7. Verify environment variables are set correctly for local development
-8. Use frame service for any secure UI components requiring iframes
+8. For components requiring secure UI (popups/modals), use Frame Service (see `/src/lib/frame-service/CLAUDE.md`)
+9. For components requiring card input, use Hosted Fields (see `/src/hosted-fields/CLAUDE.md`)
+10. For transactions requiring 3DS authentication, integrate with 3D Secure component (see `/src/three-d-secure/CLAUDE.md`)

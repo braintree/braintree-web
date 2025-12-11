@@ -149,7 +149,15 @@ function composeUrl(assetsUrl, componentId, isDebug) {
     // Pay with Google cannot tokenize in our dev environment
     // so in development, we have to use a sandbox merchant
     // but set the iFrame url to the development url
-    baseUrl = "https://" + process.env.BT_DEV_HOST + ":9000";
+    // This explicit type checking is required because the unreachable-branch-transform
+    // in our build process fails when evaluating undefined environment variables,
+    // as it attempts to resolve identifiers without proper scope information
+    if (
+      typeof process.env.BRAINTREE_JS_ASSET_URL === "string" &&
+      process.env.BRAINTREE_JS_ASSET_URL !== ""
+    ) {
+      baseUrl = process.env.BRAINTREE_JS_ASSET_URL;
+    }
   }
   // endRemoveIf(production)
 

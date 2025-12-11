@@ -167,12 +167,12 @@ If Google adds redirects or changes URLs related to the Google Pay component, th
 
 If using the [3D Secure component](module-braintree-web_three-d-secure.html), include these additional directives:
 
-|             | Sandbox                           | Production                    |
-| ----------- | --------------------------------- | ----------------------------- |
-| script-src  | songbirdstag.cardinalcommerce.com | songbird.cardinalcommerce.com |
-| frame-src   | \*                                | \*                            |
-| connect-src | \*.cardinalcommerce.com           | \*.cardinalcommerce.com       |
-| form-action | \*                                | \*                            |
+|             | Sandbox                                                                      | Production                                                           |
+| ----------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| script-src  | songbirdstag.cardinalcommerce.com<br />cas.static.client.cardinaltrusted.com | songbird.cardinalcommerce.com<br />static.client.cardinaltrusted.com |
+| frame-src   | \*                                                                           | \*                                                                   |
+| connect-src | \*.cardinalcommerce.com<br />\*.cardinaltrusted.com                          | \*.cardinalcommerce.com<br />\*.cardinaltrusted.com                  |
+| form-action | \*                                                                           | \*                                                                   |
 
 3D Secure 2 utilizes an iframe implementation that requires the use of the issuing bank's full ACS URL. In contrast to 3D Secure 1, the 3D Secure 2 core framework does not allow masked URLs or redirects. Given that the list of possible ACS URLs changes regularly and varies between issuers and ACS providers, there is not a strict CSP configuration available for 3D Secure 2.
 

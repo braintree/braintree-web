@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+OUTPUT_FILE=".storybook/versions.json"
+
+echo "Generating versions list from git tags for Storybook..."
+
+# Get release versions (both v-prefixed and non-prefixed, >= 3.0.0)
+RELEASE_VERSIONS=$(git tag --sort=-version:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | awk -F. '$1 >= 3')
+
+# Get 10 most recent alpha/beta versions (>= 3.0.0)
+BETA_VERSIONS=$(git tag --sort=-version:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+.*-(alpha|beta)' | sed 's/^v//' | awk -F. '$1 >= 3' | head -10)
+
+# Combine and sort all versions
+VERSIONS=$(echo -e "$RELEASE_VERSIONS\n$BETA_VERSIONS" | sort -V -r | uniq)
+
+# Create JSON array with all versions
+{
+  echo '['
+  echo "  \"dev\","
+  echo "$VERSIONS" | sed 's/.*/"&"/' | sed '$!s/$/,/' | sed 's/^/  /'
+  echo ']'
+} > "$OUTPUT_FILE"
+
+echo "Saved $(echo "$VERSIONS" | wc -l | tr -d ' ') versions to $OUTPUT_FILE"

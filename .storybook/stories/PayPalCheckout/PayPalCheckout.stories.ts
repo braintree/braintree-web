@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/html";
-import { createSimpleBraintreeStory } from "../../utils/simple-sdk-loader";
+import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
-import "../../shared.css";
 import "./payPalCheckout.css";
 
 const meta: Meta = {
   title: "Braintree/PayPal Checkout",
   parameters: {
     layout: "centered",
+    braintreeScripts: ["paypal-checkout"],
     docs: {
       description: {
         component: `

@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/html";
-import { createSimpleBraintreeStory } from "../../utils/simple-sdk-loader";
+import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import { TEST_CARDS } from "../../utils/test-data";
 import { SUCCESS_MESSAGES } from "../../constants";
 
-import "../../shared.css";
+import "../../css/main.css";
 import "./hostedFields.css";
 
 interface TokenizationPayload {
@@ -25,6 +25,7 @@ const meta: Meta = {
   title: "Braintree/Hosted Fields/Cardholder Name",
   parameters: {
     layout: "centered",
+    braintreeScripts: ["hosted-fields"],
     docs: {
       description: {
         component: `

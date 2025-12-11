@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 import type { Meta, StoryObj } from "@storybook/html";
-import { createSimpleBraintreeStory } from "../../utils/simple-sdk-loader";
-import "../../shared.css";
+import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import "./vaultManager.css";
 
 const meta: Meta = {
   title: "Braintree/Vault Manager",
   parameters: {
     layout: "centered",
+    braintreeScripts: ["vault-manager", "data-collector"],
     docs: {
       description: {
         component: `

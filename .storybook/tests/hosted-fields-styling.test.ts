@@ -1,11 +1,25 @@
 import { expect } from "@wdio/globals";
-import { getWorkflowUrl } from "./helper";
+import { createTestServer, type TestServerResult } from "./helper";
+import http from "node:http";
 
 describe("Hosted Fields Styling", function () {
   const lightThemeUrl =
     "/iframe.html?id=braintree-hosted-fields-custom-styling--light-theme&viewMode=story";
   const darkThemeUrl =
     "/iframe.html?id=braintree-hosted-fields-custom-styling--dark-theme&viewMode=story";
+
+  let server: http.Server;
+  let serverPort: number;
+
+  const getTestUrl = (path: string) => {
+    let url = `http://localhost:${serverPort}${path}`;
+    if (process.env.LOCAL_BUILD === "true") {
+      const hasQuery = url.includes("?");
+      const separator = hasQuery ? "&" : "?";
+      url = `${url}${separator}globals=sdkVersion:dev`;
+    }
+    return encodeURI(url);
+  };
 
   beforeEach(async function () {
     await browser.reloadSessionOnRetry(this.currentTest);
@@ -15,9 +29,21 @@ describe("Hosted Fields Styling", function () {
       implicit: 15000,
       script: 60000,
     });
+
+    // Create per-test server
+    const result: TestServerResult = await createTestServer();
+    server = result.server;
+    serverPort = result.port;
   });
 
   afterEach(async function () {
+    // Close server
+    if (server) {
+      await new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      });
+    }
+
     // Reset browser session after each test to prevent popup dialogs and state leakage
     try {
       await browser.reloadSession();
@@ -28,7 +54,7 @@ describe("Hosted Fields Styling", function () {
   });
 
   it("should apply custom styles in light theme", async function () {
-    await browser.url(getWorkflowUrl(lightThemeUrl));
+    await browser.url(getTestUrl(lightThemeUrl));
     await browser.waitForHostedFieldsReady();
 
     await browser.waitForHostedField("number");
@@ -50,7 +76,7 @@ describe("Hosted Fields Styling", function () {
   });
 
   it("should apply dark theme styles", async function () {
-    await browser.url(getWorkflowUrl(darkThemeUrl));
+    await browser.url(getTestUrl(darkThemeUrl));
     await browser.waitForHostedFieldsReady();
 
     const container = await $("[data-theme='dark']");
@@ -67,7 +93,7 @@ describe("Hosted Fields Styling", function () {
   });
 
   it("should apply styles to hosted fields in iframes", async function () {
-    await browser.url(getWorkflowUrl(darkThemeUrl));
+    await browser.url(getTestUrl(darkThemeUrl));
     await browser.waitForHostedFieldsReady();
 
     await browser.waitForHostedField("number");
@@ -87,7 +113,7 @@ describe("Hosted Fields Styling", function () {
   });
 
   it("should apply valid/invalid styling states", async function () {
-    await browser.url(getWorkflowUrl(lightThemeUrl));
+    await browser.url(getTestUrl(lightThemeUrl));
     await browser.waitForHostedFieldsReady();
 
     await browser.hostedFieldSendInput("number", "4111111111111111111");
@@ -109,7 +135,7 @@ describe("Hosted Fields Styling", function () {
   });
 
   it("should apply dynamic styling on field interaction", async function () {
-    await browser.url(getWorkflowUrl(lightThemeUrl));
+    await browser.url(getTestUrl(lightThemeUrl));
     await browser.waitForHostedFieldsReady();
 
     const cardNumberContainer = await $("#card-number");

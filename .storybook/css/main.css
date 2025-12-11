@@ -1,0 +1,165 @@
+/* CSS Variables for New Design System */
+:root {
+  /* Primary Palette */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-rich-black: #000000; /* For backgrounds only */
+
+  /* Secondary Palette */
+  --color-bright-blue: #60cdff;
+  --color-venmo-blue: #008cff;
+  --color-deep-blue: #002991;
+}
+
+/* Shared Container Styles */
+.shared-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--color-black);
+  background-color: var(--color-white);
+}
+
+/* Shared Description Styles */
+.shared-description {
+  color: var(--color-black);
+  font-weight: 400;
+}
+
+/* Shared Form Group Styles */
+.shared-form-group {
+  margin-bottom: 15px;
+}
+
+/* Shared Form Group Styles (Alternative) */
+.shared-form-group-alt {
+  margin-bottom: 15px;
+}
+
+.shared-form-group-alt label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: var(--color-black);
+}
+
+/* Shared Label Styles */
+.shared-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: var(--color-black);
+}
+
+/* Shared Input and Select Styles */
+.shared-input,
+.shared-select {
+  border: 1px solid var(--color-black);
+  padding: 10px;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--color-black);
+  background-color: var(--color-white);
+}
+
+.shared-input:focus,
+.shared-select:focus {
+  outline: none;
+  border-color: var(--color-deep-blue);
+}
+
+/* Shared Button Styles */
+.shared-button {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 1px solid var(--color-black);
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.shared-button:hover,
+.shared-button:active {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+}
+
+.shared-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background-color: var(--color-black);
+  color: var(--color-white);
+}
+
+/* Shared Result Display Styles */
+.shared-result {
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: 4px;
+  display: none;
+}
+
+.shared-result--success {
+  background-color: var(--color-white);
+  color: var(--color-deep-blue);
+  border: 1px solid var(--color-deep-blue);
+}
+
+.shared-result--error {
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+}
+
+.shared-result--visible {
+  display: block;
+}
+
+/* Shared Result Display Styles (Alternative) */
+.shared-result-display {
+  display: none;
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-black);
+}
+
+.shared-result-display:not(:empty) {
+  display: block;
+}
+
+/* Shared Loading Styles */
+.shared-loading {
+  margin-top: 20px;
+  padding: 10px;
+  text-align: center;
+  color: var(--color-black);
+  font-size: 14px;
+}
+
+/* Shared Spacing Utilities */
+.shared-spacing-bottom {
+  margin-bottom: 20px;
+}
+
+/* Shared Text Color Utilities */
+.shared-success-text {
+  color: var(--color-deep-blue);
+  font-weight: 600;
+}
+
+.shared-error-text {
+  color: var(--color-black);
+  font-weight: 600;
+}

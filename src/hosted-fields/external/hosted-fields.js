@@ -401,8 +401,23 @@ function HostedFields(options) {
     name: "Hosted Fields",
     sessionId: sessionId,
   });
-
+  // Default URL (used in production)
   hostedFieldsUrl = composeUrl(assetsUrl, componentId, isDebug);
+
+  // In development, check for asset URL override
+  // This explicit type checking is required because the unreachable-branch-transform
+  // in our build process fails when evaluating undefined environment variables,
+  // as it attempts to resolve identifiers without proper scope information
+  if (
+    process.env.BRAINTREE_JS_ENV === "development" &&
+    typeof process.env.BRAINTREE_JS_ASSET_URL === "string" &&
+    process.env.BRAINTREE_JS_ASSET_URL !== ""
+  ) {
+    hostedFieldsUrl =
+      process.env.BRAINTREE_JS_ASSET_URL +
+      "/html/hosted-fields-frame.html#" +
+      componentId;
+  }
 
   if (!options.fields || Object.keys(options.fields).length === 0) {
     throw new BraintreeError({

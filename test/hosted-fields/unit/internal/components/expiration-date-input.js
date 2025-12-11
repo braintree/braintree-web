@@ -6,6 +6,7 @@ const {
 const {
   ExpirationDateInput,
 } = require("../../../../../src/hosted-fields/internal/components/expiration-date-input");
+const browserDetection = require("../../../../../src/hosted-fields/shared/browser-detection");
 const { createInput } = require("../../helpers");
 const RestrictedInput = require("restricted-input");
 
@@ -75,6 +76,16 @@ describe("Expiration Date Input", () => {
     it("has autocomplete cc-exp", () => {
       expect(testContext.input.element.getAttribute("autocomplete")).toBe(
         "cc-exp"
+      );
+    });
+
+    it("has pattern set to [0-9/ ]*", () => {
+      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
+      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+      testContext.input = createInput("expirationDate");
+      expect(testContext.input.element.getAttribute("pattern")).toBe(
+        "[0-9/ ]*"
       );
     });
 

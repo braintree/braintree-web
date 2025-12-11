@@ -289,4 +289,183 @@ describe("Instant-Verification", () => {
         });
     });
   });
+
+  describe("getAchMandateDetails", () => {
+    let btIvInstance, mandateId, mockNodeResponse;
+
+    beforeEach(() => {
+      btIvInstance = new InstantVerification({
+        client: testContext.client,
+      });
+      mandateId = "mandate-id-1234";
+
+      mockNodeResponse = {
+        data: {
+          node: {
+            id: mandateId,
+            details: {
+              accountholderName: "John Doe",
+              accountType: "checking",
+              bankName: "Test Bank",
+              last4: "1234",
+              ownershipType: "personal",
+              routingNumber: "012345678",
+              verified: true,
+            },
+            verifications: {
+              edges: [
+                {
+                  node: {
+                    status: "VERIFIED",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      };
+    });
+
+    it("throws error if mandateId is not provided", () => {
+      expect.assertions(4);
+
+      return btIvInstance.getAchMandateDetails({}).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("MERCHANT");
+        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_ID_REQUIRED");
+        expect(err.message).toBe(
+          "Mandate ID is required to fetch ACH mandate details."
+        );
+      });
+    });
+
+    it("makes a request to the GraphQL API with the correct parameters", () => {
+      testContext.client.request.mockImplementation((options, callback) => {
+        callback(null, mockNodeResponse);
+      });
+
+      return btIvInstance.getAchMandateDetails({ mandateId }).then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          {
+            api: "graphQLApi",
+            method: "post",
+            data: {
+              query: expect.any(String),
+              variables: { id: mandateId },
+              operationName: "AchMandateDetails",
+            },
+          },
+          expect.any(Function)
+        );
+      });
+    });
+
+    it("formats the mandate details correctly on success", () => {
+      testContext.client.request.mockImplementation((options, callback) => {
+        callback(null, mockNodeResponse);
+      });
+
+      return btIvInstance.getAchMandateDetails({ mandateId }).then((result) => {
+        expect(result).toEqual({
+          accountHolderName: "John Doe",
+          accountType: "checking",
+          bankName: "Test Bank",
+          last4: "1234",
+          ownershipType: "personal",
+          routingNumber: "012345678",
+        });
+      });
+    });
+
+    it("sends analytics event on successful mandate details fetch", () => {
+      testContext.client.request.mockImplementation((options, callback) => {
+        callback(null, mockNodeResponse);
+      });
+
+      return btIvInstance.getAchMandateDetails({ mandateId }).then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "instant-verification.ach-mandate-details.succeeded"
+        );
+      });
+    });
+
+    it("rejects with BraintreeError if request fails", () => {
+      const mockError = new Error("Network error");
+      testContext.client.request.mockImplementation((_, callback) => {
+        callback(mockError);
+      });
+
+      expect.assertions(5);
+
+      return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("NETWORK");
+        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
+        expect(err.message).toBe("Failed to fetch ACH mandate details.");
+        expect(err.details.originalError).toBe(mockError);
+      });
+    });
+
+    it("sends analytics event when mandate details fetch fails", () => {
+      const mockError = new Error("Network error");
+      testContext.client.request.mockImplementation((_, callback) => {
+        callback(mockError);
+      });
+
+      expect.assertions(1);
+
+      return btIvInstance.getAchMandateDetails({ mandateId }).catch(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "instant-verification.ach-mandate-details.failed"
+        );
+      });
+    });
+
+    it("rejects with BraintreeError if node is missing from response", () => {
+      const missingNodeResponse = {
+        data: {},
+      };
+      testContext.client.request.mockImplementation((_, callback) => {
+        callback(null, missingNodeResponse);
+      });
+
+      expect.assertions(4);
+
+      return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("NETWORK");
+        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
+        expect(err.message).toBe(
+          "No mandate details found for the provided ID."
+        );
+      });
+    });
+
+    it("rejects with BraintreeError if details is missing from node response", () => {
+      const missingDetailsResponse = {
+        data: {
+          node: {
+            id: mandateId,
+            // Missing details object
+          },
+        },
+      };
+      testContext.client.request.mockImplementation((_, callback) => {
+        callback(null, missingDetailsResponse);
+      });
+
+      expect.assertions(4);
+
+      return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("NETWORK");
+        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
+        expect(err.message).toBe(
+          "Mandate details are missing in the response."
+        );
+      });
+    });
+  });
 });

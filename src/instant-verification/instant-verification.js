@@ -171,4 +171,116 @@ InstantVerification.prototype.handleRedirect = function (options) {
   return Promise.reject(error);
 };
 
+/**
+ * Fetches ACH mandate details for a specific mandate ID.
+ * @public
+ * @param {object} options - Options for fetching ACH mandate details.
+ * @param {string} options.mandateId - The ID of the mandate to retrieve details for.
+ * @returns {Promise<object>} Returns a promise that resolves with the ACH mandate details.
+ * If successful, the promise resolves with an object containing mandate information.
+ * Otherwise, the promise rejects with a `BraintreeError`.
+ * @example
+ * instantVerificationInstance.getAchMandateDetails({
+ *   mandateId: 'mandate-id-from-tokenization'
+ * })
+ * .then(function (mandateDetails) {
+ *   console.log('Bank name:', mandateDetails.bankName);
+ *   console.log('Account holder:', mandateDetails.accountHolderName);
+ *   console.log('Last 4:', mandateDetails.last4);
+ *   console.log('Routing number:', mandateDetails.routingNumber);
+ * })
+ * .catch(function (err) {
+ *   if (err.code === 'INSTANT_VERIFICATION_MANDATE_ID_REQUIRED') {
+ *     console.error('A mandate ID is required');
+ *   } else if (err.code === 'INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED') {
+ *     console.error('Failed to fetch mandate details:', err);
+ *   }
+ * });
+ */
+InstantVerification.prototype.getAchMandateDetails = function (options) {
+  var self = this;
+  var mandateId = options && options.mandateId;
+
+  return new Promise(function (resolve, reject) {
+    if (!mandateId) {
+      reject(
+        new BraintreeError(errors.INSTANT_VERIFICATION_MANDATE_ID_REQUIRED)
+      );
+      return;
+    }
+    self._client.request(
+      {
+        api: "graphQLApi",
+        method: "post",
+        data: {
+          query: constants.ACH_MANDATE_DETAILS_QUERY,
+          variables: { id: mandateId },
+          operationName: "AchMandateDetails",
+        },
+      },
+      function (err, response) {
+        if (err) {
+          analytics.sendEvent(
+            self._client,
+            "instant-verification.ach-mandate-details.failed"
+          );
+
+          reject(
+            new BraintreeError({
+              type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
+              code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
+              message:
+                errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.message,
+              details: { originalError: err },
+            })
+          );
+          return;
+        }
+
+        if (!response.data || !response.data.node) {
+          reject(
+            new BraintreeError({
+              type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
+              code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
+              message: "No mandate details found for the provided ID.",
+            })
+          );
+          return;
+        }
+
+        var node = response.data.node;
+
+        if (!node.details) {
+          reject(
+            new BraintreeError({
+              type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
+              code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
+              message: "Mandate details are missing in the response.",
+            })
+          );
+          return;
+        }
+
+        analytics.sendEvent(
+          self._client,
+          "instant-verification.ach-mandate-details.succeeded"
+        );
+
+        resolve(_formatMandateResponse(node));
+      }
+    );
+  });
+};
+
+function _formatMandateResponse(nodeData) {
+  return {
+    accountHolderName: nodeData.details.accountholderName,
+    accountType: nodeData.details.accountType,
+    bankName: nodeData.details.bankName,
+    last4: nodeData.details.last4,
+    ownershipType: nodeData.details.ownershipType,
+    routingNumber: nodeData.details.routingNumber,
+  };
+}
+
 module.exports = wrapPromise.wrapPrototype(InstantVerification);

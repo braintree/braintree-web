@@ -79,10 +79,19 @@
   height: 20px;
   background-color: var(--color-white);
   font-family: var(--font-body);
+  position: relative;
 }
 
 .hosted-field:focus-within {
   border-color: var(--color-deep-blue);
+}
+
+.hosted-field iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* Error message styles */

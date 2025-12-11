@@ -53,4 +53,14 @@ module.exports = {
     code: "INSTANT_VERIFICATION_JWT_MISSING",
     message: "JWT is required for Instant Verification payment flow.",
   },
+  INSTANT_VERIFICATION_MANDATE_ID_REQUIRED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "INSTANT_VERIFICATION_MANDATE_ID_REQUIRED",
+    message: "Mandate ID is required to fetch ACH mandate details.",
+  },
+  INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: "INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED",
+    message: "Failed to fetch ACH mandate details.",
+  },
 };

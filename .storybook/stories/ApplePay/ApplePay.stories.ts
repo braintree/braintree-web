@@ -1,14 +1,14 @@
 /* eslint-disable no-console */
 import type { Meta, StoryObj } from "@storybook/html";
-import { createSimpleBraintreeStory } from "../../utils/simple-sdk-loader";
+import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
-import "../../shared.css";
 import "./applePay.css";
 
 const meta: Meta = {
   title: "Braintree/Apple Pay",
   parameters: {
     layout: "centered",
+    braintreeScripts: ["apple-pay"],
     docs: {
       description: {
         component: `

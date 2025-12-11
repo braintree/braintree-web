@@ -24,6 +24,7 @@
     "useDefineForClassFields": true,
     "types": [
       "node",
+      "applepayjs",
       "@wdio/globals/types",
       "@wdio/mocha-framework",
       "@wdio/browserstack-service"

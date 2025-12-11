@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import { EventEmitter } from "events";
-
 import browserstack from "browserstack-local";
 import { loadHelpers } from "./tests/helper";
 
@@ -33,9 +32,15 @@ const localIdentifier = `local-${Date.now()}`;
 const commonCapabilities = {
   "bstack:options": {
     projectName: "Braintree Web SDK",
-    buildName: "Web SDK Playground",
+    buildName: "Web SDK Storybook",
   },
 };
+
+const SELENIUM_VERSION = "4.38.0";
+const WINDOWS_OS_NAME = "Windows";
+const WINDOWS_OS_VERSION = "10";
+const MAC_OS_NAME = "OS X";
+const MAC_OS_VERSION = "Monterey";
 
 export const config = {
   user: process.env.BROWSERSTACK_USERNAME,
@@ -58,21 +63,23 @@ export const config = {
         runner: "local",
         browserstackLocal: true,
         disableCorsRestrictions: true,
+        forcedStop: true,
       },
     ],
   ],
-  // add path to the test file
   specs: ["./tests/**/*.test.ts"],
+  // Available browsers and versions:
+  // https://www.browserstack.com/docs/automate-turboscale/getting-started/browsers-and-versions
   capabilities: [
     {
       browserName: "Chrome",
       "bstack:options": {
         browserVersion: "latest",
-        os: "Windows",
-        osVersion: "10",
+        os: WINDOWS_OS_NAME,
+        osVersion: WINDOWS_OS_VERSION,
         local: true,
         debug: true,
-        seleniumVersion: "4.1.2",
+        seleniumVersion: SELENIUM_VERSION,
         localIdentifier,
         networkLogs: true,
       },
@@ -81,12 +88,40 @@ export const config = {
     {
       browserName: "Safari",
       "bstack:options": {
-        browserVersion: "15.6",
-        os: "OS X",
-        osVersion: "Monterey",
+        browserVersion: "latest",
+        os: MAC_OS_NAME,
+        osVersion: MAC_OS_VERSION,
         local: true,
         debug: true,
-        seleniumVersion: "4.1.2",
+        seleniumVersion: SELENIUM_VERSION,
+        localIdentifier,
+        networkLogs: true,
+      },
+      acceptInsecureCerts: true,
+    },
+    {
+      browserName: "Firefox",
+      "bstack:options": {
+        browserVersion: "latest",
+        os: MAC_OS_NAME,
+        osVersion: MAC_OS_VERSION,
+        local: true,
+        debug: true,
+        seleniumVersion: SELENIUM_VERSION,
+        localIdentifier,
+        networkLogs: true,
+      },
+      acceptInsecureCerts: true,
+    },
+    {
+      browserName: "MicrosoftEdge",
+      "bstack:options": {
+        browserVersion: "latest",
+        os: WINDOWS_OS_NAME,
+        osVersion: WINDOWS_OS_VERSION,
+        local: true,
+        debug: true,
+        seleniumVersion: SELENIUM_VERSION,
         localIdentifier,
         networkLogs: true,
       },
@@ -94,7 +129,7 @@ export const config = {
     },
   ],
   onPrepare() {
-    console.log("Connecting local Browserstack");
+    console.log("Connecting to local Browserstack");
 
     return new Promise((resolve, reject) => {
       bsLocal = new browserstack.Local();
@@ -104,6 +139,7 @@ export const config = {
           localIdentifier,
           verbose: true,
           forcelocal: true,
+          force: true,
         },
         (error?: Error) => {
           if (error)
@@ -140,11 +176,17 @@ export const config = {
     });
   },
   onComplete() {
-    if (bsLocal) {
-      bsLocal.stop(() => {
-        // cleanup complete
-      });
-    }
+    return new Promise<void>((resolve) => {
+      if (bsLocal) {
+        bsLocal.stop(() => {
+          console.log("BrowserStack Local stopped");
+
+          resolve();
+        });
+      }
+
+      setTimeout(() => resolve(), 10000); // Just resolve if Browserstack hasn't yet
+    });
   },
   maxInstances: 10,
 };

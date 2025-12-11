@@ -1,11 +1,25 @@
 import { expect } from "@wdio/globals";
-import { getWorkflowUrl } from "./helper";
+import { createTestServer, type TestServerResult } from "./helper";
+import http from "node:http";
 
 describe("Hosted Fields Accessibility", function () {
   const standardUrl =
     "/iframe.html?id=braintree-hosted-fields--standard-hosted-fields&viewMode=story";
   const lightThemeUrl =
     "/iframe.html?id=braintree-hosted-fields-custom-styling--light-theme&viewMode=story";
+
+  let server: http.Server;
+  let serverPort: number;
+
+  const getTestUrl = (path: string) => {
+    let url = `http://localhost:${serverPort}${path}`;
+    if (process.env.LOCAL_BUILD === "true") {
+      const hasQuery = url.includes("?");
+      const separator = hasQuery ? "&" : "?";
+      url = `${url}${separator}globals=sdkVersion:dev`;
+    }
+    return encodeURI(url);
+  };
 
   beforeEach(async function () {
     await browser.reloadSessionOnRetry(this.currentTest);
@@ -15,9 +29,21 @@ describe("Hosted Fields Accessibility", function () {
       implicit: 15000,
       script: 60000,
     });
+
+    // Create per-test server
+    const result: TestServerResult = await createTestServer();
+    server = result.server;
+    serverPort = result.port;
   });
 
   afterEach(async function () {
+    // Close server
+    if (server) {
+      await new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      });
+    }
+
     // Reset browser session after each test to prevent popup dialogs and state leakage
     try {
       await browser.reloadSession();
@@ -28,7 +54,7 @@ describe("Hosted Fields Accessibility", function () {
   });
 
   it("should have proper aria-describedby attributes", async function () {
-    await browser.url(getWorkflowUrl(standardUrl));
+    await browser.url(getTestUrl(standardUrl));
     await browser.waitForHostedFieldsReady();
 
     await browser.waitForHostedField("number");
@@ -46,7 +72,7 @@ describe("Hosted Fields Accessibility", function () {
   });
 
   it("should support keyboard navigation between fields", async function () {
-    await browser.url(getWorkflowUrl(standardUrl));
+    await browser.url(getTestUrl(standardUrl));
     await browser.waitForHostedFieldsReady();
 
     const expectedTabOrder = [
@@ -82,7 +108,7 @@ describe("Hosted Fields Accessibility", function () {
   });
 
   it("should support field focus via label click", async function () {
-    await browser.url(getWorkflowUrl(standardUrl));
+    await browser.url(getTestUrl(standardUrl));
     await browser.waitForHostedFieldsReady();
 
     // Set up a tracker to detect field focus
@@ -138,7 +164,7 @@ describe("Hosted Fields Accessibility", function () {
   });
 
   it("should properly handle invalid field states for screen readers", async function () {
-    await browser.url(getWorkflowUrl(standardUrl));
+    await browser.url(getTestUrl(standardUrl));
     await browser.waitForHostedFieldsReady();
 
     await browser.waitForHostedField("number");
@@ -224,7 +250,7 @@ describe("Hosted Fields Accessibility", function () {
   });
 
   it("should support custom aria labels", async function () {
-    await browser.url(getWorkflowUrl(lightThemeUrl));
+    await browser.url(getTestUrl(lightThemeUrl));
     await browser.waitForHostedFieldsReady();
 
     await browser.waitForHostedField("number");

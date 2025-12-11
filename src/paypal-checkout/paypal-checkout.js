@@ -1028,8 +1028,8 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
       var frameCommunicationPromise = new ExtendedPromise();
       var startVaultInitiatedCheckoutPromise = self
         ._createPaymentResource(options, {
-          returnUrl: self._constructVaultCheckutUrl("redirect-frame"),
-          cancelUrl: self._constructVaultCheckutUrl("cancel-frame"),
+          returnUrl: self._constructVaultCheckoutUrl("redirect-frame"),
+          cancelUrl: self._constructVaultCheckoutUrl("cancel-frame"),
         })
         .then(function (response) {
           var redirectUrl = response.paymentResource.redirectUrl;
@@ -1242,7 +1242,7 @@ PayPalCheckout.prototype._waitForVaultInitiatedCheckoutDependencies =
     });
   };
 
-PayPalCheckout.prototype._constructVaultCheckutUrl = function (frameName) {
+PayPalCheckout.prototype._constructVaultCheckoutUrl = function (frameName) {
   var serviceId = this._frameService._serviceId;
 
   return (

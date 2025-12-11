@@ -29,6 +29,13 @@ function constructAttributes(options) {
     attributes.type = "text";
     attributes.pattern = "\\d*";
     attributes.inputmode = "numeric";
+
+    if (
+      name === "expiration" &&
+      (browserDetection.isSafari() || browserDetection.isIosSafari())
+    ) {
+      attributes.pattern = "[0-9/ ]*";
+    }
   }
 
   if (!options.shouldAutofill) {

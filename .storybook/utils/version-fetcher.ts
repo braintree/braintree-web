@@ -1,6 +1,4 @@
 /* eslint-disable no-console */
-// Dynamic version fetching from npm registry
-
 export interface NpmVersionData {
   versions: string[];
   latest: string;
@@ -13,7 +11,7 @@ export interface NpmVersionData {
 /**
  * Fetch Braintree Web SDK versions from npm registry
  */
-export const fetchBraintreeVersionsFromNpm = async (): Promise<string[]> => {
+export async function fetchBraintreeVersionsFromNpm(): Promise<string[]> {
   try {
     console.log("Fetching Braintree SDK versions from npm...");
 
@@ -66,19 +64,19 @@ export const fetchBraintreeVersionsFromNpm = async (): Promise<string[]> => {
     console.warn("Failed to fetch versions from npm:", error);
     return [];
   }
-};
+}
 
 /**
  * Get fallback versions if npm fetch fails
  */
-export const getFallbackVersions = (): string[] => {
+export function getFallbackVersions(): string[] {
   return ["3.124.0", "3.123.0", "3.122.0"];
-};
+}
 
 /**
  * Get Braintree SDK versions with npm fallback
  */
-export const getBraintreeVersions = async (): Promise<string[]> => {
+export async function getBraintreeVersions(): Promise<string[]> {
   try {
     const npmVersions = await fetchBraintreeVersionsFromNpm();
 
@@ -92,7 +90,7 @@ export const getBraintreeVersions = async (): Promise<string[]> => {
     console.warn("Error fetching versions, using fallback:", error);
     return getFallbackVersions();
   }
-};
+}
 
 /**
  * Cache versions to avoid repeated npm calls
@@ -102,7 +100,7 @@ let cacheTimestamp: number = 0;
 let fetchPromise: Promise<string[]> | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export const getCachedBraintreeVersions = (): Promise<string[]> => {
+export function getCachedBraintreeVersions(): Promise<string[]> {
   const now = Date.now();
 
   // Return cached versions if still valid
@@ -131,4 +129,4 @@ export const getCachedBraintreeVersions = (): Promise<string[]> => {
     });
 
   return fetchPromise;
-};
+}

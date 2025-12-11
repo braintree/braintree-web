@@ -11,3 +11,5 @@ export const DEFAULT_HOSTED_FIELDS_VALUES = {
   cvv: "123",
   postalCode: "12345",
 };
+
+export const BASE_URL = "https://127.0.0.1:8080";

@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 3.134.0 (2025-12-11)
+
+- Instant Verification
+  - add `getAchMandateDetails` method
+- Hosted Fields
+  - Change regex pattern for expirationDate field
+  - Adding CSP meta tag with SRI hashes
+- Documentation
+  - Add cardinaltrusted.com to required Content-Security-Policy directives, when using 3D Secure
+
 ## 3.133.0 (2025-11-13)
 
 - Hosted Fields

@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/html";
-import { createSimpleBraintreeStory } from "../../utils/simple-sdk-loader";
-import "../../shared.css";
+import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import "./threeDSecure.css";
 
 const meta: Meta = {
   title: "Braintree/3D Secure",
   parameters: {
     layout: "centered",
+    braintreeScripts: ["hosted-fields", "three-d-secure"],
     docs: {
       description: {
         component: `

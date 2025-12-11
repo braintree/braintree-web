@@ -1,16 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/html";
-import { createSimpleBraintreeStory } from "../../utils/simple-sdk-loader";
+import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import { TEST_CARDS } from "../../utils/test-data";
 import { SUCCESS_MESSAGES } from "../../constants";
-
-import "../../shared.css";
 import "./hostedFields.css";
 
 const meta: Meta = {
   title: "Braintree/Hosted Fields",
   parameters: {
     layout: "centered",
+    braintreeScripts: ["hosted-fields"],
     docs: {
       description: {
         component: `
@@ -140,13 +139,15 @@ const createHostedFieldsForm = (args?: Record<string, string>): HTMLElement => {
 
 const setupBraintreeHostedFields = (
   container,
-  args?: Record<string, string>
+  args?: Record<string, string>,
+  debugMode?: boolean
 ) => {
   const authorization = getAuthorizationToken();
 
   window.braintree.client
     .create({
       authorization: authorization,
+      ...(debugMode !== undefined && { debug: debugMode }),
     })
     .then((clientInstance) => {
       // Configure fields based on args
@@ -591,4 +592,34 @@ export const SeparateExpirationFields: StoryObj = {
     },
     ["client.min.js", "hosted-fields.min.js"]
   ),
+};
+
+/**
+ * CSP Testing Story
+ *
+ * Dynamically loads minified or non-minified iframe based on useMinified URL param.
+ * Used by: .storybook/tests/hosted-fields-csp.test.ts
+ *
+ * Query Parameters:
+ * - useMinified=true: Loads hosted-fields-frame.min.html (debug: false)
+ * - useMinified=false: Loads hosted-fields-frame.html (debug: true)
+ */
+export const HostedFieldsCSPTest: StoryObj = {
+  name: "CSP Testing",
+  render: createSimpleBraintreeStory(
+    (container, args) => {
+      // Read useMinified from URL params to control which iframe HTML file loads
+      const urlParams = new URLSearchParams(window.location.search);
+      const useMinified = urlParams.get("useMinified") === "true";
+      const debugMode = !useMinified; // debug=true loads .html, debug=false loads .min.html
+
+      const formContainer = createHostedFieldsForm(args);
+      container.appendChild(formContainer);
+      setupBraintreeHostedFields(formContainer, args, debugMode);
+    },
+    ["client.js", "hosted-fields.js"]
+  ),
+  args: {
+    includePostalCode: true,
+  },
 };
