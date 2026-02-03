@@ -1,0 +1,7913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+      PayPalCheckoutV6 - Documentation
+  </title>
+
+  <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+  <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+  
+
+  <!-- start Mixpanel -->
+  <script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+  0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+  for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+  mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script>
+  <!-- end Mixpanel -->
+</head>
+
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="linkIcon" fill="#706d77" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+  <label for="nav-trigger" class="navicon-button x">
+    <div class="navicon"></div>
+  </label>
+
+  <label for="nav-trigger" class="overlay"></label>
+
+  <div class="top-nav-wrapper">
+    <ul>
+      <li >
+        <a href="index.html">
+          
+            <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+          
+          
+        </a>
+      </li>
+
+      
+      <li>
+        <div class="search-wrapper">
+          <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            <path d="M0 0h24v24H0z" fill="none"/>
+
+          </svg>
+          <input type="text" placeholder="Search" class="search-input">
+        </div>
+      </li>
+      
+
+    </ul>
+  </div>
+
+  <nav>
+    <h3 class="reference-title">
+      Braintree SDK Client Reference
+    </h3>
+
+    <h3>Classes</h3><ul><li id="AmericanExpress-nav"><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type="method" id="AmericanExpress-getExpressCheckoutProfile-nav"><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type="method" id="AmericanExpress-getRewardsBalance-nav"><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li><li data-type="method" id="AmericanExpress-teardown-nav"><a href="AmericanExpress.html#teardown">teardown</a></li></ul></li><li id="ApplePay-nav"><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type="method" id="ApplePay-createPaymentRequest-nav"><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type="method" id="ApplePay-performValidation-nav"><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type="method" id="ApplePay-teardown-nav"><a href="ApplePay.html#teardown">teardown</a></li><li data-type="method" id="ApplePay-tokenize-nav"><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li id="BraintreeError-nav"><a href="BraintreeError.html">BraintreeError</a></li><li id="Client-nav"><a href="Client.html">Client</a><ul class='methods'><li data-type="method" id="Client-getConfiguration-nav"><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type="method" id="Client-getVersion-nav"><a href="Client.html#getVersion">getVersion</a></li><li data-type="method" id="Client-request-nav"><a href="Client.html#request">request</a></li></ul></li><li id="DataCollector-nav"><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type="method" id="DataCollector-getDeviceData-nav"><a href="DataCollector.html#getDeviceData">getDeviceData</a></li><li data-type="method" id="DataCollector-teardown-nav"><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li id="GooglePayment-nav"><a href="GooglePayment.html">GooglePayment</a><ul class='methods'><li data-type="method" id="GooglePayment-createPaymentDataRequest-nav"><a href="GooglePayment.html#createPaymentDataRequest">createPaymentDataRequest</a></li><li data-type="method" id="GooglePayment-parseResponse-nav"><a href="GooglePayment.html#parseResponse">parseResponse</a></li><li data-type="method" id="GooglePayment-teardown-nav"><a href="GooglePayment.html#teardown">teardown</a></li></ul></li><li id="HostedFields-nav"><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type="method" id="HostedFields-addClass-nav"><a href="HostedFields.html#addClass">addClass</a></li><li data-type="method" id="HostedFields-clear-nav"><a href="HostedFields.html#clear">clear</a></li><li data-type="method" id="HostedFields-focus-nav"><a href="HostedFields.html#focus">focus</a></li><li data-type="method" id="HostedFields-getChallenges-nav"><a href="HostedFields.html#getChallenges">getChallenges</a></li><li data-type="method" id="HostedFields-getState-nav"><a href="HostedFields.html#getState">getState</a></li><li data-type="method" id="HostedFields-getSupportedCardTypes-nav"><a href="HostedFields.html#getSupportedCardTypes">getSupportedCardTypes</a></li><li data-type="method" id="HostedFields-off-nav"><a href="HostedFields.html#off">off</a></li><li data-type="method" id="HostedFields-on-nav"><a href="HostedFields.html#on">on</a></li><li data-type="method" id="HostedFields-removeAttribute-nav"><a href="HostedFields.html#removeAttribute">removeAttribute</a></li><li data-type="method" id="HostedFields-removeClass-nav"><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type="method" id="HostedFields-setAttribute-nav"><a href="HostedFields.html#setAttribute">setAttribute</a></li><li data-type="method" id="HostedFields-setMessage-nav"><a href="HostedFields.html#setMessage">setMessage</a></li><li data-type="method" id="HostedFields-setMonthOptions-nav"><a href="HostedFields.html#setMonthOptions">setMonthOptions</a></li><li data-type="method" id="HostedFields-setPlaceholder-nav"><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type="method" id="HostedFields-teardown-nav"><a href="HostedFields.html#teardown">teardown</a></li><li data-type="method" id="HostedFields-tokenize-nav"><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li id="InstantVerification-nav"><a href="InstantVerification.html">InstantVerification</a><ul class='methods'><li data-type="method" id="InstantVerification-getAchMandateDetails-nav"><a href="InstantVerification.html#getAchMandateDetails">getAchMandateDetails</a></li><li data-type="method" id="InstantVerification-handleRedirect-nav"><a href="InstantVerification.html#handleRedirect">handleRedirect</a></li><li data-type="method" id="InstantVerification-startPayment-nav"><a href="InstantVerification.html#startPayment">startPayment</a></li></ul></li><li id="LocalPayment-nav"><a href="LocalPayment.html">LocalPayment</a><ul class='methods'><li data-type="method" id="LocalPayment-closeWindow-nav"><a href="LocalPayment.html#closeWindow">closeWindow</a></li><li data-type="method" id="LocalPayment-focusWindow-nav"><a href="LocalPayment.html#focusWindow">focusWindow</a></li><li data-type="method" id="LocalPayment-hasTokenizationParams-nav"><a href="LocalPayment.html#hasTokenizationParams">hasTokenizationParams</a></li><li data-type="method" id="LocalPayment-startPayment-nav"><a href="LocalPayment.html#startPayment">startPayment</a></li><li data-type="method" id="LocalPayment-teardown-nav"><a href="LocalPayment.html#teardown">teardown</a></li><li data-type="method" id="LocalPayment-tokenize-nav"><a href="LocalPayment.html#tokenize">tokenize</a></li></ul></li><li id="Masterpass-nav"><a href="Masterpass.html">Masterpass</a><ul class='methods'><li data-type="method" id="Masterpass-teardown-nav"><a href="Masterpass.html#teardown">teardown</a></li><li data-type="method" id="Masterpass-tokenize-nav"><a href="Masterpass.html#tokenize">tokenize</a></li></ul></li><li id="PaymentReady-nav"><a href="PaymentReady.html">PaymentReady</a><ul class='methods'><li data-type="method" id="PaymentReady-createCustomerSession-nav"><a href="PaymentReady.html#createCustomerSession">createCustomerSession</a></li><li data-type="method" id="PaymentReady-getCustomerRecommendations-nav"><a href="PaymentReady.html#getCustomerRecommendations">getCustomerRecommendations</a></li><li data-type="method" id="PaymentReady-sendPresentedEvent-nav"><a href="PaymentReady.html#sendPresentedEvent">sendPresentedEvent</a></li><li data-type="method" id="PaymentReady-sendSelectedEvent-nav"><a href="PaymentReady.html#sendSelectedEvent">sendSelectedEvent</a></li><li data-type="method" id="PaymentReady-updateCustomerSession-nav"><a href="PaymentReady.html#updateCustomerSession">updateCustomerSession</a></li></ul></li><li id="PaymentRequestComponent-nav"><a href="PaymentRequestComponent.html">PaymentRequestComponent</a><ul class='methods'><li data-type="method" id="PaymentRequestComponent-canMakePayment-nav"><a href="PaymentRequestComponent.html#canMakePayment">canMakePayment</a></li><li data-type="method" id="PaymentRequestComponent-createSupportedPaymentMethodsConfiguration-nav"><a href="PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration">createSupportedPaymentMethodsConfiguration</a></li><li data-type="method" id="PaymentRequestComponent-off-nav"><a href="PaymentRequestComponent.html#off">off</a></li><li data-type="method" id="PaymentRequestComponent-on-nav"><a href="PaymentRequestComponent.html#on">on</a></li><li data-type="method" id="PaymentRequestComponent-teardown-nav"><a href="PaymentRequestComponent.html#teardown">teardown</a></li><li data-type="method" id="PaymentRequestComponent-tokenize-nav"><a href="PaymentRequestComponent.html#tokenize">tokenize</a></li></ul></li><li id="PayPal-nav"><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type="method" id="PayPal-closeWindow-nav"><a href="PayPal.html#closeWindow">closeWindow</a></li><li data-type="method" id="PayPal-focusWindow-nav"><a href="PayPal.html#focusWindow">focusWindow</a></li><li data-type="method" id="PayPal-tokenize-nav"><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li id="PayPalCheckout-nav"><a href="PayPalCheckout.html">PayPalCheckout</a><ul class='methods'><li data-type="method" id="PayPalCheckout-createPayment-nav"><a href="PayPalCheckout.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckout-getClientId-nav"><a href="PayPalCheckout.html#getClientId">getClientId</a></li><li data-type="method" id="PayPalCheckout-loadPayPalSDK-nav"><a href="PayPalCheckout.html#loadPayPalSDK">loadPayPalSDK</a></li><li data-type="method" id="PayPalCheckout-teardown-nav"><a href="PayPalCheckout.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckout-tokenizePayment-nav"><a href="PayPalCheckout.html#tokenizePayment">tokenizePayment</a></li><li data-type="method" id="PayPalCheckout-updatePayment-nav"><a href="PayPalCheckout.html#updatePayment">updatePayment</a></li></ul></li><li id="PayPalCheckoutV6-nav"><a href="PayPalCheckoutV6.html">PayPalCheckoutV6</a><ul class='methods'><li data-type="method" id="PayPalCheckoutV6-createBillingAgreementSession-nav"><a href="PayPalCheckoutV6.html#createBillingAgreementSession">createBillingAgreementSession</a></li><li data-type="method" id="PayPalCheckoutV6-createOneTimePaymentSession-nav"><a href="PayPalCheckoutV6.html#createOneTimePaymentSession">createOneTimePaymentSession</a></li><li data-type="method" id="PayPalCheckoutV6-createPayment-nav"><a href="PayPalCheckoutV6.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckoutV6-getClientId-nav"><a href="PayPalCheckoutV6.html#getClientId">getClientId</a></li><li data-type="method" id="PayPalCheckoutV6-loadPayPalSDK-nav"><a href="PayPalCheckoutV6.html#loadPayPalSDK">loadPayPalSDK</a></li><li data-type="method" id="PayPalCheckoutV6-teardown-nav"><a href="PayPalCheckoutV6.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckoutV6-tokenizePayment-nav"><a href="PayPalCheckoutV6.html#tokenizePayment">tokenizePayment</a></li><li data-type="method" id="PayPalCheckoutV6-updatePayment-nav"><a href="PayPalCheckoutV6.html#updatePayment">updatePayment</a></li></ul></li><li id="SEPA-nav"><a href="SEPA.html">SEPA</a><ul class='methods'><li data-type="method" id="SEPA-tokenize-nav"><a href="SEPA.html#tokenize">tokenize</a></li></ul></li><li id="ThreeDSecure-nav"><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type="method" id="ThreeDSecure-cancelVerifyCard-nav"><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type="method" id="ThreeDSecure-initializeChallengeWithLookupResponse-nav"><a href="ThreeDSecure.html#initializeChallengeWithLookupResponse">initializeChallengeWithLookupResponse</a></li><li data-type="method" id="ThreeDSecure-off-nav"><a href="ThreeDSecure.html#off">off</a></li><li data-type="method" id="ThreeDSecure-on-nav"><a href="ThreeDSecure.html#on">on</a></li><li data-type="method" id="ThreeDSecure-prepareLookup-nav"><a href="ThreeDSecure.html#prepareLookup">prepareLookup</a></li><li data-type="method" id="ThreeDSecure-teardown-nav"><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type="method" id="ThreeDSecure-verifyCard-nav"><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li id="USBankAccount-nav"><a href="USBankAccount.html">USBankAccount</a><ul class='methods'><li data-type="method" id="USBankAccount-teardown-nav"><a href="USBankAccount.html#teardown">teardown</a></li><li data-type="method" id="USBankAccount-tokenize-nav"><a href="USBankAccount.html#tokenize">tokenize</a></li></ul></li><li id="VaultManager-nav"><a href="VaultManager.html">VaultManager</a><ul class='methods'><li data-type="method" id="VaultManager-deletePaymentMethod-nav"><a href="VaultManager.html#deletePaymentMethod">deletePaymentMethod</a></li><li data-type="method" id="VaultManager-fetchPaymentMethods-nav"><a href="VaultManager.html#fetchPaymentMethods">fetchPaymentMethods</a></li><li data-type="method" id="VaultManager-teardown-nav"><a href="VaultManager.html#teardown">teardown</a></li></ul></li><li id="Venmo-nav"><a href="Venmo.html">Venmo</a><ul class='methods'><li data-type="method" id="Venmo-hasTokenizationResult-nav"><a href="Venmo.html#hasTokenizationResult">hasTokenizationResult</a></li><li data-type="method" id="Venmo-isBrowserSupported-nav"><a href="Venmo.html#isBrowserSupported">isBrowserSupported</a></li><li data-type="method" id="Venmo-teardown-nav"><a href="Venmo.html#teardown">teardown</a></li><li data-type="method" id="Venmo-tokenize-nav"><a href="Venmo.html#tokenize">tokenize</a></li><li data-type="method" id="Venmo-cancelTokenization-nav"><a href="Venmo.html#~cancelTokenization">cancelTokenization</a></li></ul></li><li id="VisaCheckout-nav"><a href="VisaCheckout.html">VisaCheckout</a><ul class='methods'><li data-type="method" id="VisaCheckout-createInitOptions-nav"><a href="VisaCheckout.html#createInitOptions">createInitOptions</a></li><li data-type="method" id="VisaCheckout-teardown-nav"><a href="VisaCheckout.html#teardown">teardown</a></li><li data-type="method" id="VisaCheckout-tokenize-nav"><a href="VisaCheckout.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li id="braintree-web-nav"><a href="module-braintree-web.html">braintree-web</a></li><li id="braintree-web_american-express-nav"><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type="method" id="braintree-web_american-express-create-nav"><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li id="braintree-web_apple-pay-nav"><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type="method" id="braintree-web_apple-pay-create-nav"><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li id="braintree-web_client-nav"><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type="method" id="braintree-web_client-create-nav"><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li id="braintree-web_data-collector-nav"><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type="method" id="braintree-web_data-collector-create-nav"><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li id="braintree-web_fastlane-nav"><a href="module-braintree-web_fastlane.html">braintree-web/fastlane</a><ul class='methods'><li data-type="method" id="braintree-web_fastlane-create-nav"><a href="module-braintree-web_fastlane.html#.create">create</a></li></ul></li><li id="braintree-web_google-payment-nav"><a href="module-braintree-web_google-payment.html">braintree-web/google-payment</a><ul class='methods'><li data-type="method" id="braintree-web_google-payment-create-nav"><a href="module-braintree-web_google-payment.html#.create">create</a></li></ul></li><li id="braintree-web_hosted-fields-nav"><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type="method" id="braintree-web_hosted-fields-create-nav"><a href="module-braintree-web_hosted-fields.html#.create">create</a></li><li data-type="method" id="braintree-web_hosted-fields-supportsInputFormatting-nav"><a href="module-braintree-web_hosted-fields.html#.supportsInputFormatting">supportsInputFormatting</a></li></ul></li><li id="braintree-web_instant-verification-nav"><a href="module-braintree-web_instant-verification.html">braintree-web/instant-verification</a><ul class='methods'><li data-type="method" id="braintree-web_instant-verification-create-nav"><a href="module-braintree-web_instant-verification.html#.create">create</a></li></ul></li><li id="braintree-web_local-payment-nav"><a href="module-braintree-web_local-payment.html">braintree-web/local-payment</a><ul class='methods'><li data-type="method" id="braintree-web_local-payment-create-nav"><a href="module-braintree-web_local-payment.html#.create">create</a></li></ul></li><li id="braintree-web_masterpass-nav"><a href="module-braintree-web_masterpass.html">braintree-web/masterpass</a><ul class='methods'><li data-type="method" id="braintree-web_masterpass-create-nav"><a href="module-braintree-web_masterpass.html#.create">create</a></li><li data-type="method" id="braintree-web_masterpass-isSupported-nav"><a href="module-braintree-web_masterpass.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_payment-ready-nav"><a href="module-braintree-web_payment-ready.html">braintree-web/payment-ready</a><ul class='methods'><li data-type="method" id="braintree-web_payment-ready-create-nav"><a href="module-braintree-web_payment-ready.html#.create">create</a></li></ul></li><li id="braintree-web_payment-request-nav"><a href="module-braintree-web_payment-request.html">braintree-web/payment-request</a><ul class='methods'><li data-type="method" id="braintree-web_payment-request-create-nav"><a href="module-braintree-web_payment-request.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-nav"><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-create-nav"><a href="module-braintree-web_paypal.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-isSupported-nav"><a href="module-braintree-web_paypal.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-nav"><a href="module-braintree-web_paypal-checkout.html">braintree-web/paypal-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-create-nav"><a href="module-braintree-web_paypal-checkout.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-isSupported-nav"><a href="module-braintree-web_paypal-checkout.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-v6-nav"><a href="module-braintree-web_paypal-checkout-v6.html">braintree-web/paypal-checkout-v6</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-v6-create-nav"><a href="module-braintree-web_paypal-checkout-v6.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-v6-isSupported-nav"><a href="module-braintree-web_paypal-checkout-v6.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_sepa-nav"><a href="module-braintree-web_sepa.html">braintree-web/sepa</a><ul class='methods'><li data-type="method" id="braintree-web_sepa-create-nav"><a href="module-braintree-web_sepa.html#.create">create</a></li></ul></li><li id="braintree-web_three-d-secure-nav"><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type="method" id="braintree-web_three-d-secure-create-nav"><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li id="braintree-web_us-bank-account-nav"><a href="module-braintree-web_us-bank-account.html">braintree-web/us-bank-account</a><ul class='methods'><li data-type="method" id="braintree-web_us-bank-account-create-nav"><a href="module-braintree-web_us-bank-account.html#.create">create</a></li></ul></li><li id="braintree-web_vault-manager-nav"><a href="module-braintree-web_vault-manager.html">braintree-web/vault-manager</a><ul class='methods'><li data-type="method" id="braintree-web_vault-manager-create-nav"><a href="module-braintree-web_vault-manager.html#.create">create</a></li></ul></li><li id="braintree-web_venmo-nav"><a href="module-braintree-web_venmo.html">braintree-web/venmo</a><ul class='methods'><li data-type="method" id="braintree-web_venmo-create-nav"><a href="module-braintree-web_venmo.html#.create">create</a></li><li data-type="method" id="braintree-web_venmo-isBrowserSupported-nav"><a href="module-braintree-web_venmo.html#.isBrowserSupported">isBrowserSupported</a></li></ul></li><li id="braintree-web_visa-checkout-nav"><a href="module-braintree-web_visa-checkout.html">braintree-web/visa-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_visa-checkout-create-nav"><a href="module-braintree-web_visa-checkout.html#.create">create</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#injectQrCode">injectQrCode</a></li><li><a href="global.html#Modal">Modal</a></li><li><a href="global.html#start">start</a></li></ul>
+  </nav>
+
+  <div id="main">
+    
+      <h1 class="page-title">
+        PayPalCheckoutV6
+      </h1>
+    
+
+    
+
+<section>
+  <header>
+    
+      <h2>
+        
+        PayPalCheckoutV6
+        
+      </h2>
+
+      
+        <div class="class-description">
+          <p>This class represents a PayPal Checkout V6 component that coordinates with the PayPal Web SDK v6. Instances of this class can load the PayPal SDK, create payment sessions, and tokenize payments.</p>
+        </div>
+      
+    
+  </header>
+
+  <article>
+    <div class="container-overview">
+      
+        
+
+
+  
+    <h2>Constructor</h2>
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#PayPalCheckoutV6">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="PayPalCheckoutV6">
+      <span class="type-signature"></span>new PayPalCheckoutV6<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p><strong>Do not use this constructor directly. Use <a href="module-braintree-web_paypal-checkout-v6.html#.create">braintree-web.paypal-checkout-v6.create</a> instead.</strong></p>
+<h4>Integrate One-Time Payment Flow with PayPal V6</h4>
+<pre class="prettyprint source lang-javascript"><code>braintree.client.create({
+  authorization: 'client-token'
+}).then(function (clientInstance) {
+  return braintree.paypalCheckoutV6.create({
+    client: clientInstance
+  });
+}).then(function (paypalCheckoutV6Instance) {
+  // Load the PayPal V6 SDK
+  return paypalCheckoutV6Instance.loadPayPalSDK();
+}).then(function (paypalCheckoutV6Instance) {
+  // Create a one-time payment session
+  var session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+    amount: '10.00',
+    currency: 'USD',
+    intent: 'capture',
+
+    onApprove: function (data) {
+      return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+        // Submit payload.nonce to your server
+      });
+    },
+
+    onCancel: function () {
+      // Handle case where user cancels
+    },
+
+    onError: function (err) {
+      // Handle case where error occurs
+    }
+  });
+
+  // Trigger the payment flow when user clicks a button
+  document.getElementById('paypal-button').addEventListener('click', function () {
+    session.start();
+  });
+}).catch(function (err) {
+ console.error('Error!', err);
+});
+</code></pre>
+<h4>Integrate Vault Flow (Billing Agreement) with PayPal V6</h4>
+<pre class="prettyprint source lang-javascript"><code>braintree.client.create({
+  authorization: 'client-token'
+}).then(function (clientInstance) {
+  return braintree.paypalCheckoutV6.create({
+    client: clientInstance
+  });
+}).then(function (paypalCheckoutV6Instance) {
+  // Load the PayPal V6 SDK
+  return paypalCheckoutV6Instance.loadPayPalSDK();
+}).then(function (paypalCheckoutV6Instance) {
+  // Create a billing agreement session
+  var session = paypalCheckoutV6Instance.createBillingAgreementSession({
+    billingAgreementDescription: 'Monthly subscription',
+
+    onApprove: function (data) {
+      return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+        // Submit payload.nonce to your server for vaulting
+      });
+    },
+
+    onCancel: function () {
+      // Handle case where user cancels
+    },
+
+    onError: function (err) {
+      // Handle case where error occurs
+    }
+  });
+
+  // Trigger the vault flow when user clicks a button
+  document.getElementById('save-paypal-button').addEventListener('click', function () {
+    session.start();
+  });
+}).catch(function (err) {
+ console.error('Error!', err);
+});
+</code></pre>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>see <a href="module-braintree-web_paypal-checkout-v6.html#.create">paypal-checkout-v6.create</a></p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line112">line 112</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+      <h3 class="subsection-title">Methods</h3>
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#createBillingAgreementSession">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="createBillingAgreementSession">
+      <span class="type-signature"></span>createBillingAgreementSession<span class="signature">(options)</span><span class="type-signature"> &rarr; {object}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Creates a billing agreement session for vault flow.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Options for creating a billing agreement session.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>billingAgreementDescription</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Description for the billing agreement.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>planType</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Type of plan: RECURRING, SUBSCRIPTION, UNSCHEDULED, or INSTALLMENTS.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>planMetadata</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Metadata about the plan including billing cycles.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>billingCycles</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      array
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Array of billing cycle objects.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>currencyIsoCode</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Currency ISO code for the plan.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>name</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Name of the plan.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>productDescription</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Description of the product.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>amount</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Amount for vault with purchase flow.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>currency</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Currency for vault with purchase flow.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>offerCredit</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              false
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Whether to offer PayPal Credit.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>shippingAddressOverride</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Shipping address to override.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>userAction</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>User action: CONTINUE, COMMIT, or SETUP_NOW.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displayName</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>returnUrl</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>URL to return to after billing agreement approval. This parameter is required when using app switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>cancelUrl</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>URL to return to after billing agreement cancellation. This parameter is required when using app switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>onApprove</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Callback when customer approves the billing agreement.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>onCancel</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Callback when customer cancels.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>onError</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Callback when an error occurs.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>presentationMode</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Presentation mode: auto, popup, modal, redirect, or payment-handler.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line1374">line 1374</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#createBillingAgreementSession-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="createBillingAgreementSession-examples">Example</h5>
+    
+
+  <pre class="prettyprint"><code>var session = paypalCheckoutV6Instance.createBillingAgreementSession({
+  billingAgreementDescription: 'Monthly subscription for premium service',
+  planType: 'SUBSCRIPTION',
+  planMetadata: {
+    currencyIsoCode: 'USD',
+    name: 'Premium Subscription',
+    productDescription: 'Monthly premium access',
+    billingCycles: [{
+      billingFrequency: 1,
+      billingFrequencyUnit: 'MONTH',
+      numberOfExecutions: 0,
+      sequence: 1,
+      startDate: '2025-12-01T00:00:00Z',
+      trial: false,
+      pricingScheme: {
+        pricingModel: 'FIXED',
+        price: '9.99'
+      }
+    }]
+  },
+  onApprove: function (data) {
+    console.log('Billing agreement approved:', data);
+  },
+  onCancel: function () {
+    console.log('Billing agreement canceled');
+  },
+  onError: function (err) {
+    console.error('Billing agreement error:', err);
+  }
+});
+
+session.start();</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#createOneTimePaymentSession">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="createOneTimePaymentSession">
+      <span class="type-signature"></span>createOneTimePaymentSession<span class="signature">(options)</span><span class="type-signature"> &rarr; {object}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Creates a one-time PayPal payment session.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Payment session options.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>amount</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The payment amount (e.g., '10.00').</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>currency</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The currency code (e.g., 'USD').</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>intent</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              'capture'
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Payment intent: 'authorize', 'capture', or 'order'.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>offerCredit</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              false
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>onApprove</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Called when the customer approves the payment.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>onCancel</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Called when the customer cancels the payment.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>onError</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Called when an error occurs.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>onShippingAddressChange</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Called when the customer changes their shipping address. Return a Promise to update the payment details.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>lineItems</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      Array.&lt;lineItem>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Line items for this transaction.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>shippingOptions</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      Array.&lt;shippingOption>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Shipping options.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>userAuthenticationEmail</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Pre-fill the PayPal login email.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>amountBreakdown</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Breakdown of the amount.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>returnUrl</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>URL to return to after payment completion. This parameter is required when using app switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>cancelUrl</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>URL to return to after payment cancellation. This parameter is required when using app switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displayName</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>presentationMode</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              'auto'
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler'.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line1165">line 1165</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#createOneTimePaymentSession-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="createOneTimePaymentSession-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>// Standard PayPal payment
+var session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+  amount: '10.00',
+  currency: 'USD',
+  intent: 'capture',
+  onApprove: function (data) {
+    return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+      // Send payload.nonce to your server
+    });
+  },
+  onCancel: function () {
+    console.log('Payment canceled');
+  },
+  onError: function (err) {
+    console.error('Payment error:', err);
+  }
+});</code></pre>
+
+
+  <pre class="prettyprint"><code>// PayPal payment with direct app switch
+async function initializePayPal() {
+  try {
+    // Create client and PayPal Checkout v6 instances
+    const clientInstance = await braintree.client.create({
+      authorization: 'your_client_token'
+    });
+
+    const paypalCheckoutV6Instance = await braintree.paypalCheckoutV6.create({
+      client: clientInstance
+    });
+
+    // Load the PayPal SDK
+    await paypalCheckoutV6Instance.loadPayPalSDK();
+
+    // Create a one-time payment session
+    const session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+      amount: '10.00',
+      currency: 'USD',
+      intent: 'capture',
+      // When using app switch, returnUrl and cancelUrl must be specified
+      // These should be URLs in your application that can handle the return flow
+      returnUrl: 'https://example.com/return',
+      cancelUrl: 'https://example.com/cancel',
+      onApprove: function (data) {
+        return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+          // Send payload.nonce to your server
+          console.log('Payment approved, nonce:', payload.nonce);
+        });
+      },
+      onCancel: function () {
+        console.log('Payment canceled');
+      },
+      onError: function (err) {
+        console.error('Payment error:', err);
+      }
+    });
+
+    // First, check if returning from app switch using the hasReturned() method
+    // This should be done when your page loads, before showing any UI
+    if (session.hasReturned()) {
+      // Resume the payment session to complete the flow
+      await session.resume();
+    } else {
+      // Initial flow - set up button click handler
+      document.getElementById('paypal-button').addEventListener('click', async () => {
+        try {
+          // Start the payment with app switch configuration
+          const { redirectURL } = await session.start({
+            // Use direct-app-switch mode to enable app switch flow
+            presentationMode: 'direct-app-switch',
+            autoRedirect: {
+              enabled: true
+            }
+          });
+
+          // If autoRedirect is disabled or fails, manually redirect
+          if (redirectURL) {
+            window.location.assign(redirectURL);
+          }
+        } catch (error) {
+          console.error('Error starting payment:', error);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Initialization error:', error);
+  }
+}
+
+// Initialize on page load
+initializePayPal();</code></pre>
+
+
+  <pre class="prettyprint"><code>// PayPal Credit payment
+var session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+  amount: '10.00',
+  currency: 'USD',
+  offerCredit: true, // Offer PayPal Credit
+  onApprove: function (data) {
+    return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+      // payload will include creditFinancingOffered if customer used PayPal Credit
+      // Send payload.nonce to your server
+    });
+  }
+});</code></pre>
+
+
+  <pre class="prettyprint"><code>// Dynamic shipping price calculation with onShippingAddressChange
+var session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+  amount: '10.00',
+  currency: 'USD',
+  lineItems: [
+    {
+      quantity: '1',
+      unitAmount: '10.00',
+      name: 'Product Name',
+      kind: 'debit'
+    }
+  ],
+  shippingOptions: [
+    {
+      id: 'economy',
+      label: 'Economy Shipping (5-7 days)',
+      selected: true,
+      type: 'SHIPPING',
+      amount: {
+        currency: 'USD',
+        value: '0.00'
+      }
+    },
+    {
+      id: 'express',
+      label: 'Express Shipping (2-3 days)',
+      selected: false,
+      type: 'SHIPPING',
+      amount: {
+        currency: 'USD',
+        value: '5.00'
+      }
+    }
+  ],
+  amountBreakdown: {
+    itemTotal: '10.00',
+    shipping: '0.00'
+  },
+  onShippingAddressChange: function (data, actions) {
+    // Calculate shipping cost based on selected option and shipping address
+    var newShippingCost = '0.00';
+    var newTotal = '10.00';
+
+    // Example: determine shipping cost based on selected option
+    if (data.selectedShippingOption) {
+      if (data.selectedShippingOption.id === 'express') {
+        newShippingCost = '5.00';
+        newTotal = '15.00';
+      }
+    }
+
+    // Example: determine shipping cost based on country
+    if (data.shippingAddress &amp;&amp; data.shippingAddress.countryCode) {
+      if (data.shippingAddress.countryCode === 'CA') {
+        newShippingCost = '7.50';
+        newTotal = '17.50';
+      }
+    }
+
+    // Update the payment with new amount and breakdown
+    return paypalCheckoutV6Instance.updatePayment({
+      paymentId: data.orderId,
+      amount: newTotal,
+      currency: 'USD',
+      shippingOptions: [
+        {
+          id: 'economy',
+          label: 'Economy Shipping (5-7 days)',
+          selected: data.selectedShippingOption &amp;&amp; data.selectedShippingOption.id === 'economy',
+          type: 'SHIPPING',
+          amount: {
+            currency: 'USD',
+            value: '0.00'
+          }
+        },
+        {
+          id: 'express',
+          label: 'Express Shipping (2-3 days)',
+          selected: data.selectedShippingOption &amp;&amp; data.selectedShippingOption.id === 'express',
+          type: 'SHIPPING',
+          amount: {
+            currency: 'USD',
+            value: '5.00'
+          }
+        }
+      ],
+      amountBreakdown: {
+        itemTotal: '10.00',
+        shipping: newShippingCost
+      }
+    });
+  },
+  onApprove: function (data) {
+    return paypalCheckoutV6Instance.tokenizePayment(data);
+  }
+});
+
+// Later, trigger the payment flow
+button.addEventListener('click', function () {
+  session.start();
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#createPayment">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="createPayment">
+      <span class="type-signature"></span>createPayment<span class="signature">(options)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Creates a payment or billing agreement.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Payment options.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>flow</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>'checkout' for one-time payment or 'vault' for billing agreement.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>amount</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Amount (required for checkout flow).</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>currency</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Currency code (required for checkout flow).</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>intent</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Payment intent: 'authorize', 'capture', or 'order'.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>offerCredit</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Whether to offer PayPal Credit.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>billingAgreementDescription</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Description for vault flow.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>planType</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Plan type for vault flow.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>planMetadata</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Plan metadata for vault flow.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>shippingAddressOverride</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Shipping address override.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>userAction</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User action (CONTINUE, COMMIT, SETUP_NOW).</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displayName</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line1278">line 1278</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#createPayment-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="createPayment-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>// Basic checkout flow
+paypalCheckoutV6Instance.createPayment({
+  flow: 'checkout',
+  amount: '10.00',
+  currency: 'USD',
+  intent: 'capture'
+}).then(function(orderId) {
+  console.log('Order ID:', orderId);
+});</code></pre>
+
+
+  <pre class="prettyprint"><code>// Basic vault flow
+paypalCheckoutV6Instance.createPayment({
+  flow: 'vault'
+}).then(function(billingToken) {
+  console.log('BA Token:', billingToken);
+});</code></pre>
+
+  <p class="code-caption">
+    use the new plan features
+  </p>
+
+
+  <pre class="prettyprint"><code>// Plan and plan metadata are passed to createPayment
+paypalCheckoutV6Instance.createPayment({
+  flow: 'vault',
+  planType: 'RECURRING',
+  planMetadata: {
+    billingCycles: [
+      {
+         billingFrequency: "1",
+         billingFrequencyUnit: "MONTH",
+         numberOfExecutions: "1",
+         sequence: "1",
+         startDate: "2024-04-06T00:00:00Z",
+         trial: true,
+         pricingScheme: {
+           pricingModel: "FIXED",
+       },
+     },
+     ],
+    currencyIsoCode: "USD",
+    name: "Netflix with Ads",
+    productDescription: "iPhone 13",
+    productQuantity: "1.0",
+    oneTimeFeeAmount: "10",
+    shippingAmount: "3.0",
+    productPrice: "200",
+    taxAmount: "20",
+ };
+});</code></pre>
+
+  <p class="code-caption">
+    Vault Flow with Purchase (Billing Agreement with Recurring Payment)
+  </p>
+
+
+  <pre class="prettyprint"><code>paypalCheckoutV6Instance.createPayment({
+  flow: 'vault',
+  amount: '12.50',
+  currency: 'USD',
+  planType: 'SUBSCRIPTION',
+  planMetadata: {
+    billingCycles: [{
+      billingFrequency: 1,
+      billingFrequencyUnit: "MONTH",
+      sequence: 1,
+      pricingScheme: {
+        pricingModel: "FIXED",
+        price: "10.00"
+      },
+    }],
+    currencyIsoCode: "USD",
+    totalAmount: "10.00",
+    name: "My Recurring Product"
+  }
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#getClientId">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="getClientId">
+      <span class="type-signature"></span>getClientId<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Retrieves the PayPal client ID from the Braintree configuration.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line198">line 198</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#getClientId-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="getClientId-examples">Example</h5>
+    
+
+  <pre class="prettyprint"><code>paypalCheckoutV6Instance.getClientId().then(function (clientId) {
+  console.log('Client ID:', clientId);
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#loadPayPalSDK">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="loadPayPalSDK">
+      <span class="type-signature"></span>loadPayPalSDK<span class="signature">(options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Loads the PayPal Web SDK v6 onto the page.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Options for loading the PayPal SDK.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>env</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Environment override. Accepts 'stage' (msmaster) or 'teBraintree'.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line322">line 322</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#loadPayPalSDK-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="loadPayPalSDK-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>paypalCheckoutV6Instance.loadPayPalSDK().then(function () {
+  // PayPal V6 SDK is now loaded
+});</code></pre>
+
+
+  <pre class="prettyprint"><code>var options = {
+  env: 'stage'
+};
+paypalCheckoutV6Instance.loadPayPalSDK(options).then(function () {
+  // PayPal V6 SDK is now loaded from the stage environment
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#teardown">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="teardown">
+      <span class="type-signature"></span>teardown<span class="signature">()</span><span class="type-signature"> &rarr; {Promise}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Cleanly tears down the PayPal Checkout V6 component.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line2011">line 2011</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#teardown-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="teardown-examples">Example</h5>
+    
+
+  <pre class="prettyprint"><code>paypalCheckoutV6Instance.teardown();</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#tokenizePayment">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="tokenizePayment">
+      <span class="type-signature"></span>tokenizePayment<span class="signature">(options)</span><span class="type-signature"> &rarr; {Promise}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Tokenizes a PayPal payment or billing agreement.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Options for tokenizing the payment.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>payerID</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Payer ID returned by PayPal for one-time payments.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>orderID</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Order ID returned by PayPal for one-time payments.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>billingToken</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Billing token returned by PayPal for vault flow.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>vault</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              true
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Whether or not to vault the resulting PayPal account (if using a client token generated with a customer id and the vault flow).</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line1564">line 1564</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#tokenizePayment-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="tokenizePayment-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>// One-time payment tokenization
+paypalCheckoutV6Instance.tokenizePayment({
+  payerID: data.payerID,
+  orderID: data.orderID
+}).then(function (payload) {
+  console.log('Payment method nonce:', payload.nonce);
+});</code></pre>
+
+  <p class="code-caption">
+    Vault flow tokenization
+  </p>
+
+
+  <pre class="prettyprint"><code>paypalCheckoutV6Instance.tokenizePayment({
+  billingToken: data.billingToken
+}).then(function (payload) {
+  console.log('Vaulted payment method nonce:', payload.nonce);
+});</code></pre>
+
+  <p class="code-caption">
+    Opt out of auto-vaulting behavior
+  </p>
+
+
+  <pre class="prettyprint"><code>paypalCheckoutV6Instance.tokenizePayment({
+  billingToken: data.billingToken,
+  vault: false
+}).then(function (payload) {
+  console.log('Payment method nonce (not vaulted):', payload.nonce);
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#updatePayment">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="updatePayment">
+      <span class="type-signature"></span>updatePayment<span class="signature">(options, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise|undefined}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Updates a PayPal payment with new amounts or options.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Update options</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>paymentId</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The ID of the payment to update (orderId from session creation)</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>amount</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The new payment amount</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>currency</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The currency code (must match original currency)</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>lineItems</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      Array.&lt;lineItem>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Updated line items for the payment</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>shippingOptions</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      Array.&lt;shippingOption>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Updated shipping options</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>amountBreakdown</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Breakdown of the amount</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>callback</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#callback">callback</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Optional callback. The callback is called with an error object as the first argument and the server response data as the second argument.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line1907">line 1907</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#updatePayment-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="updatePayment-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>// Promise-based approach - often used in onShippingAddressChange
+paypal.Buttons({
+  // ... other configuration ...
+  onShippingAddressChange: function (data) {
+    return paypalCheckoutV6Instance.updatePayment({
+      paymentId: data.orderId,
+      amount: '15.00',  // Updated total amount
+      currency: 'USD',
+      lineItems: [
+        {
+          quantity: '1',
+          unitAmount: '10.00',
+          name: 'Product Name',
+          kind: 'debit'
+        }
+      ],
+      shippingOptions: [
+        {
+          id: 'shipping-speed-fast',
+          type: 'SHIPPING',
+          label: 'Fast Shipping',
+          selected: true,
+          amount: {
+            value: '5.00',
+            currency: 'USD'
+          }
+        }
+      ],
+      amountBreakdown: {
+        itemTotal: '10.00',
+        shipping: '5.00',
+        handling: '0.00',
+        taxTotal: '0.00',
+        insurance: '0.00',
+        shippingDiscount: '0.00',
+        discount: '0.00'
+      }
+    }).then(function(response) {
+      console.log('Server response:', response);
+    }).catch(function(err) {
+      console.error('Update failed:', err);
+    });
+  }
+});</code></pre>
+
+
+  <pre class="prettyprint"><code>// Callback-based approach
+paypalCheckoutV6Instance.updatePayment({
+  paymentId: orderId,
+  amount: '15.00',
+  currency: 'USD',
+  lineItems: [{ ... }],
+  shippingOptions: [{ ... }],
+  amountBreakdown: { ... }
+}, function (err, response) {
+  if (err) {
+    console.error('Update failed:', err);
+    return;
+  }
+  console.log('Payment updated successfully:', response);
+});</code></pre>
+
+
+  </div>
+
+
+      
+    
+
+    
+      <h3 class="subsection-title">Type Definitions</h3>
+
+      
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~billingCycles">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~billingCycles">
+      <span class="type-signature"></span>billingCycles<span class="type-signature"> :Object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>billingFrequency</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The frequency of billing. This value must be a whole number and can't be negative or zero.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>billingFrequencyUnit</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The unit of billing frequency. Options are <code>DAY</code>, <code>WEEK</code>, <code>MONTH</code>, or <code>YEAR</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>numberOfExecutions</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The number of executions for the billing cycle.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>sequence</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The order in the upcoming billing cycles.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>startDate</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The start date in ISO 8601 format (<code>2024-04-06T00:00:00Z</code>). If populated and the intent is to charge the buyer for the billing cycle at the checkout, it should be populated as current time in ISO 8601 format.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>trial</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Indicates if the billing cycle is a trial.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>pricingScheme</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      pricingScheme
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The <a href="PayPalCheckoutV6.html#~pricingScheme">pricing scheme object</a> for this billing cycle.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line469">line 469</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~lineItem">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~lineItem">
+      <span class="type-signature"></span>lineItem<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>quantity</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Number of units of the item purchased.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>unitAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Per-unit price of the item.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>name</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Item name. Maximum 127 characters.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>kind</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Indicates whether the line item is a debit (sale) or credit (refund). Accepted values: <code>debit</code> and <code>credit</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>unitTaxAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Per-unit tax price of the item.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>description</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Item description. Maximum 127 characters.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line441">line 441</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~planMetadata">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~planMetadata">
+      <span class="type-signature"></span>planMetadata<span class="type-signature"> :Object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>billingCycles</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      Array.&lt;billingCycles>
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>An array of <a href="PayPalCheckoutV6.html#~billingCycles">billing cycles</a> for this plan.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currencyIsoCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The ISO code for the currency, for example <code>USD</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>name</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The name of the plan.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>oneTimeFeeAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The one-time fee amount.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>productDescription</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A description of the product. (Accepts only one element)</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>productPrice</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The price of the product.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>productQuantity</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The quantity of the product. (Accepts only one element)</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>shippingAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The amount for shipping.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>taxAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The amount of tax.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>totalAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>This field is for vault with purchase only. Can include up to 2 decimal places. This value can't be negative or zero.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line480">line 480</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~pricingScheme">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~pricingScheme">
+      <span class="type-signature"></span>pricingScheme<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>pricingModel</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The pricing model. Options are <code>FIXED</code>, <code>VARIABLE</code>, or <code>AUTO_RELOAD</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>price</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The price for the billing cycle.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>reloadThresholdAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The amount at which to reload on auto_reload plans.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line462">line 462</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~shippingOption">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~shippingOption">
+      <span class="type-signature"></span>shippingOption<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>id</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>A unique ID that identifies a shipping option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>label</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>A description for the shipping option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>selected</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Whether this option is pre-selected.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>type</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The shipping type: <code>SHIPPING</code> or <code>PICKUP</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>amount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The shipping cost.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>currency</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The currency code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>value</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The shipping cost amount.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line451">line 451</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~tokenizePayload">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~tokenizePayload">
+      <span class="type-signature"></span>tokenizePayload<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>nonce</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The payment method nonce.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>type</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The payment method type, always <code>PayPalAccount</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>details</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Additional PayPal account details.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>email</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's email address.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>payerId</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's payer ID, the unique identifier for each PayPal account.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>firstName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's given name.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>lastName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's surname.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>countryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's 2 character country code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>phone</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's phone number (e.g. 555-867-5309).</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>shippingAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's shipping address details, only available if shipping address is enabled.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>recipientName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Recipient of postage.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>line1</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Street number and name.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>line2</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Extended address.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>city</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>City or locality.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>state</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>State or region.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>postalCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Postal code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>countryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>2 character country code (e.g. US).</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>billingAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>User's billing address details.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>line1</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Street number and name.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>line2</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Extended address.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>city</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>City or locality.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>state</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>State or region.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>postalCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Postal code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>countryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>2 character country code (e.g. US).</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>creditFinancingOffered</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>This property will only be present when the customer pays with PayPal Credit.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>totalCost</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>This is the estimated total payment amount including interest and fees the user will pay during the lifetime of the loan.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>value</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An amount defined by ISO 4217 for the given currency.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currency</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The currency code for the amount.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>term</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>This is the estimated amount per month that the customer will need to pay including fees and interest.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>term</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The number of months that the customer has to pay off this transaction.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>monthlyPayment</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The estimated amount per month.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>value</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An amount defined by ISO 4217 for the given currency.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currency</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The currency code for the amount.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>totalInterest</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Estimated interest or fees amount the payer will have to pay during the lifetime of the loan.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>value</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>An amount defined by ISO 4217 for the given currency.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currency</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The currency code for the amount.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>payerAcceptance</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Status on whether the customer ultimately was approved for and chose to make the payment using the approved installment credit.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>cartAmountImmutable</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Indicates whether the cart amount is editable after payer's acceptance on PayPal side.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>shippingOptionId</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The ID of the selected shipping option.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>cobrandedCardLabel</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+              &lt;nullable><br>
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The label of the co-branded card used.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="paypal-checkout-v6_paypal-checkout-v6.js.html">paypal-checkout-v6/paypal-checkout-v6.js</a>, <a href="paypal-checkout-v6_paypal-checkout-v6.js.html#line494">line 494</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+    
+  </article>
+</section>
+
+
+
+
+  </div>
+
+  <br class="clear">
+
+  <footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.11</a>
+  </footer>
+
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/pagelocation.js"></script>
+
+  
+  <script>
+    $(function () {
+      window.docsearch({
+        apiKey: '1097a5c904574f31dd6d5d174a658739',
+        indexName: 'braintree',
+        inputSelector: '.search-input',
+        debug: false, // Set debug to true if you want to inspect the dropdown
+        algoliaOptions: {
+          hitsPerPage: 7
+        }
+      });
+    });
+  </script>
+  
+  
+</body>
+</html>
