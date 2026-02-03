@@ -146,6 +146,76 @@ describe("HostedFields", () => {
       expect(error.code).toBe("INSTANTIATION_OPTION_REQUIRED");
     });
 
+    it("throws error if binVerificationLength is not a number", () => {
+      let error;
+
+      testContext.defaultConfiguration.binVerificationLength = "8";
+
+      try {
+        new HostedFields(testContext.defaultConfiguration);
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeInstanceOf(BraintreeError);
+      expect(error.code).toBe("INSTANTIATION_OPTION_INVALID");
+      expect(error.message).toBe(
+        "options.binVerificationLength must be either 6 or 8."
+      );
+    });
+
+    it("throws error if binVerificationLength is not 6 or 8", () => {
+      let error;
+
+      testContext.defaultConfiguration.binVerificationLength = 10;
+
+      try {
+        new HostedFields(testContext.defaultConfiguration);
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeInstanceOf(BraintreeError);
+      expect(error.code).toBe("INSTANTIATION_OPTION_INVALID");
+      expect(error.message).toBe(
+        "options.binVerificationLength must be either 6 or 8."
+      );
+    });
+
+    it("does not throw error if binVerificationLength is 6", () => {
+      let error;
+
+      testContext.defaultConfiguration.binVerificationLength = 6;
+
+      try {
+        testContext.instance = new HostedFields(
+          testContext.defaultConfiguration
+        );
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
+      expect(testContext.instance).toBeDefined();
+    });
+
+    it("does not throw error if binVerificationLength is 8", () => {
+      let error;
+
+      testContext.defaultConfiguration.binVerificationLength = 8;
+
+      try {
+        testContext.instance = new HostedFields(
+          testContext.defaultConfiguration
+        );
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error).toBeUndefined();
+      expect(testContext.instance).toBeDefined();
+    });
+
     it("sends a timeout event if the fields take too long to set up", () => {
       jest.useFakeTimers();
 
@@ -168,13 +238,13 @@ describe("HostedFields", () => {
       jest.useFakeTimers();
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest.spyOn(testContext.instance, "_emit").mockImplementation();
+      jest.spyOn(testContext.instance, "emit").mockImplementation();
 
       jest.advanceTimersByTime(59999);
-      expect(testContext.instance._emit).not.toHaveBeenCalledWith("timeout");
+      expect(testContext.instance.emit).not.toHaveBeenCalledWith("timeout");
 
       jest.advanceTimersByTime(1);
-      expect(testContext.instance._emit).toHaveBeenCalledWith("timeout");
+      expect(testContext.instance.emit).toHaveBeenCalledWith("timeout");
     });
 
     it("subscribes to FRAME_READY", () => {
@@ -512,12 +582,30 @@ describe("HostedFields", () => {
         testContext.instance._bus.on.mock.calls
       );
 
-      jest.spyOn(testContext.instance, "_emit");
+      jest.spyOn(testContext.instance, "emit");
 
       handler("123456");
 
-      expect(testContext.instance._emit).toHaveBeenCalledWith("binAvailable", {
+      expect(testContext.instance.emit).toHaveBeenCalledWith("binAvailable", {
         bin: "123456",
+      });
+    });
+
+    it("sends binAvailable event with 8-digit BIN when enabled", () => {
+      let handler;
+
+      testContext.instance = new HostedFields(testContext.defaultConfiguration);
+      handler = findFirstEventCallback(
+        events.BIN_AVAILABLE,
+        testContext.instance._bus.on.mock.calls
+      );
+
+      jest.spyOn(testContext.instance, "emit");
+
+      handler("12345678");
+
+      expect(testContext.instance.emit).toHaveBeenCalledWith("binAvailable", {
+        bin: "12345678",
       });
     });
 
@@ -854,7 +942,7 @@ describe("HostedFields", () => {
       };
 
       testContext.instance = new HostedFields(configuration);
-      jest.spyOn(testContext.instance, "_emit").mockImplementation();
+      jest.spyOn(testContext.instance, "emit").mockImplementation();
 
       testContext.inputEventHandler = findFirstEventCallback(
         events.INPUT_EVENT,
@@ -948,8 +1036,8 @@ describe("HostedFields", () => {
     it("calls emit with the type and merchant payload", () => {
       testContext.inputEventHandler(testContext.eventData);
 
-      expect(testContext.instance._emit).toHaveBeenCalledTimes(1);
-      expect(testContext.instance._emit).toHaveBeenCalledWith(
+      expect(testContext.instance.emit).toHaveBeenCalledTimes(1);
+      expect(testContext.instance.emit).toHaveBeenCalledWith(
         "foo",
         testContext.eventData.merchantPayload
       );

@@ -579,15 +579,39 @@ describe("AJAXDriver", () => {
   });
 
   describe("API latency tracking", () => {
-    afterEach(() => {
-      server._routes = {};
+    beforeEach(() => {
+      if (!window.performance.getEntriesByName) {
+        window.performance.getEntriesByName = jest.fn();
+      }
     });
 
-    it("sends analytics event for create_payment_resource endpoint", (done) => {
+    afterEach(() => {
+      server._routes = {};
+      jest.restoreAllMocks();
+    });
+
+    it("sends analytics event for all endpoints with Performance API data", (done) => {
       const sendAnalyticsEventSpy = jest.fn();
 
+      const getEntriesByNameSpy = jest
+        .spyOn(window.performance, "getEntriesByName")
+        .mockImplementation((url) => {
+          expect(url).toBe(
+            "https://api.braintreegateway.com/merchants/test/client_api/v1/payment_methods/credit_cards"
+          );
+          return [
+            {
+              connectStart: 100,
+              requestStart: 150,
+              startTime: 50,
+              responseEnd: 500,
+              duration: 450,
+            },
+          ];
+        });
+
       server.post(
-        "/merchants/test/client_api/v1/paypal_hermes/create_payment_resource",
+        "/merchants/test/client_api/v1/payment_methods/credit_cards",
         {
           status: 200,
           body: '{"success":true}',
@@ -596,20 +620,26 @@ describe("AJAXDriver", () => {
 
       AJAXDriver.request(
         {
-          url: "https://api.braintreegateway.com/merchants/test/client_api/v1/paypal_hermes/create_payment_resource",
+          url: "https://api.braintreegateway.com:443/merchants/test/client_api/v1/payment_methods/credit_cards",
           method: "POST",
           data: {},
           graphQL: testContext.fakeGraphQL,
           sendAnalyticsEvent: sendAnalyticsEventSpy,
         },
         () => {
+          expect(getEntriesByNameSpy).toHaveBeenCalledWith(
+            "https://api.braintreegateway.com/merchants/test/client_api/v1/payment_methods/credit_cards"
+          );
           expect(sendAnalyticsEventSpy).toHaveBeenCalledWith(
             "core.api-request-latency",
             expect.objectContaining({
+              connection_start_time: 100,
               domain: "api.braintreegateway.com",
-              endpoint: "/v1/paypal_hermes/create_payment_resource",
-              startTime: expect.any(Number),
-              endTime: expect.any(Number),
+              duration: 450,
+              endpoint: "/v1/payment_methods/credit_cards",
+              end_time: 500,
+              request_start_time: 150,
+              start_time: 50,
             })
           );
           done();

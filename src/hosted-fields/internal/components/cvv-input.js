@@ -39,7 +39,7 @@ function CVVInput() {
       "change:possibleCardTypes",
       function (possibleCardTypes) {
         this.maxLength =
-          possibleCardTypes.reduce(function (accum, cardType) {
+          possibleCardTypes.newValue.reduce(function (accum, cardType) {
             return Math.max(accum, cardType.code.size);
           }, 0) || DEFAULT_MAX_LENGTH;
 

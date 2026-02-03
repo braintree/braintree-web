@@ -2,18 +2,15 @@
 
 var gulp = require("gulp");
 var envify = require("@ladjs/gulp-envify");
-var rename = require("gulp-rename");
 var removeCode = require("gulp-remove-code");
 var replace = require("gulp-replace");
 var mkdirp = require("mkdirp");
 var browserify = require("./browserify");
 var clone = require("../src/lib/json-clone");
 var COMPONENTS = require("../components");
-var merge = require("merge-stream");
 var VERSION = require("../package.json").version;
 var JS_PATH = "dist/hosted/web/" + VERSION + "/js/";
 var HTML_PATH = "dist/hosted/web/" + VERSION + "/html/";
-var BOWER_DIST = "dist/bower";
 var NPM_DIST = "dist/npm";
 var fs = require("fs");
 
@@ -31,19 +28,6 @@ gulp.task("build:index", function (done) {
     },
     done
   );
-});
-
-gulp.task("build:bower:statics", function () {
-  return gulp
-    .src([
-      "./publishing/.gitignore",
-      "./publishing/bower.json",
-      "./CHANGELOG.md",
-      "./LICENSE",
-      "./README.md",
-    ])
-    .pipe(replace("@VERSION", VERSION))
-    .pipe(gulp.dest(BOWER_DIST));
 });
 
 gulp.task("build:npm:packagejson", function (done) {
@@ -111,44 +95,6 @@ gulp.task("build:npm:browser", function () {
   return gulp.src(files).pipe(gulp.dest(NPM_DIST + "/dist/browser"));
 });
 
-gulp.task("build:bower:js", function () {
-  var files = COMPONENTS.concat("index").map(function (component) {
-    return JS_PATH + component + ".min.js";
-  });
-
-  return gulp
-    .src(files)
-    .pipe(
-      rename(function (path) {
-        path.basename = path.basename.replace(/\.min$/, "");
-      })
-    )
-    .pipe(gulp.dest(BOWER_DIST));
-});
-
-gulp.task("build:bower:debugs", function () {
-  var components = gulp
-    .src(COMPONENTS.map((name) => JS_PATH + name + ".js"))
-    .pipe(
-      rename({
-        extname: ".debug.js",
-      })
-    )
-    .pipe(gulp.dest(BOWER_DIST));
-
-  var debug = gulp
-    .src(JS_PATH + "index.js")
-    .pipe(rename("debug.js"))
-    .pipe(gulp.dest(BOWER_DIST));
-
-  return merge(components, debug);
-});
-
-gulp.task(
-  "build:bower",
-  gulp.series("build:bower:js", "build:bower:debugs", "build:bower:statics")
-);
-
 gulp.task("build:html:unmin", function () {
   return gulp
     .src([HTML_PATH + "*.html", "!" + HTML_PATH + "*.min.html"])
@@ -182,7 +128,4 @@ gulp.task(
   gulp.series("build:npm:statics", "build:npm:src", "build:npm:browser")
 );
 
-gulp.task(
-  "build",
-  gulp.series("clean", "build:hosted", "build:npm", "build:bower")
-);
+gulp.task("build", gulp.series("clean", "build:hosted", "build:npm"));

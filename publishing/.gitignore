@@ -1,5 +1,3 @@
-# this ends up in BRAINTREE_JS_BOWER_DEST
-node_modules/
 npm-debug.log
 .npmignore
 package.json

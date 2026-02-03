@@ -21,9 +21,8 @@ Throughout this page, replace `<component>` with the name of any SDK component (
 ```
 braintree.js
 ├── dist/hosted        <- assets output
-├── dist/bower/        <- bower package output
 ├── dist/npm/          <- npm package output
-├── publishing/        <- npm/bower-specific sources
+├── publishing/        <- npm-specific sources
 ├── scripts/           <- build helper scripts
 ├── src/               <- source code
 │   ├── <component>/
@@ -47,7 +46,6 @@ BRAINTREE_JS_API_HOST=development.gateway.hostname
 BRAINTREE_JS_API_PORT=443
 BRAINTREE_JS_API_PROTOCOL=https
 BRAINTREE_JS_HOSTED_DEST=/absolute/path/to/assets/directory
-BRAINTREE_JS_BOWER_DEST=/absolute/path/to/braintree-web-bower/repository
 BRAINTREE_JS_SOURCE_DEST=/absolute/path/to/braintree-web/repository
 ```
 
@@ -55,7 +53,6 @@ BRAINTREE_JS_SOURCE_DEST=/absolute/path/to/braintree-web/repository
 - **BRAINTREE_JS_API_PORT** identifies the port where a development gateway is running.
 - **BRAINTREE_JS_API_PROTOCOL** identifies the protocol where a development gateway is running.
 - **BRAINTREE_JS_HOSTED_DEST** identifies where to copy `dist/hosted` assets for release.
-- **BRAINTREE_JS_BOWER_DEST** identifies where to copy `dist/bower` assets for bower release.
 - **BRAINTREE_JS_SOURCE_DEST** identifies where to patch code deltas as a source release.
 
 ## Building
@@ -77,13 +74,6 @@ This will create the following `dist` structure:
 ```
 ├── dist/npm/
 │   └── ... (mirrors src/)
-├── dist/bower/
-│   ├── index.js
-│   ├── LICENSE
-│   ├── bower.json
-│   ├── <component>.js
-│   ├── <component>.min.js
-│   └── ...
 └── dist/hosted/
     └── web/
         ├── 3.0.0/
@@ -95,8 +85,6 @@ This will create the following `dist` structure:
 ```
 
 `dist/npm` contains the pre-processed src tree that is published to npm, ready for use within a CommonJS environment.
-
-`dist/bower` contains exactly what the `braintree-web-bower` bower module will contain: the externally linkable and `require`able javascript files. These will also be present in `dist/hosted` under `dist/hosted/web/@VERSION/js`.
 
 `dist/hosted` has a file structure that mirrors what will be available at https://assets.braintreegateway.com. All component libraries' `js`, `css`, and `html` will be merged under a common, versioned path at https://assets.braintreegateway.com:
 
@@ -212,12 +200,6 @@ The following will build and copy all appropriate files into `BRAINTREE_JS_HOSTE
 
 ```
 npm run release -- hosted
-```
-
-The following will build and copy all appropriate files into `BRAINTREE_JS_BOWER_DEST`
-
-```
-npm run release -- bower
 ```
 
 The following will build and deploy the appropriate [JSDocs](https://braintree.github.io/braintree-web/).

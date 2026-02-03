@@ -29,13 +29,6 @@ export function loadScript(url: string): Promise<void> {
   });
 }
 
-export function removeScript(url: string): void {
-  const script = document.querySelector(`script[src="${url}"]`);
-  if (script) {
-    script.remove();
-  }
-}
-
 export function removeScriptsByPattern(patterns: string[]): void {
   const selector = patterns
     .map((pattern) => `script[src*="${pattern}"]`)
@@ -44,11 +37,5 @@ export function removeScriptsByPattern(patterns: string[]): void {
   if (selector) {
     const scripts = document.querySelectorAll(selector);
     scripts.forEach((script) => script.remove());
-  }
-}
-
-export async function loadScriptsSequentially(urls: string[]): Promise<void> {
-  for (const url of urls) {
-    await loadScript(url);
   }
 }

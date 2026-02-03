@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
+import { IBraintreeClient } from "../../types/global";
 import "./vaultManager.css";
 
 const meta: Meta = {
@@ -52,27 +53,6 @@ interface IVaultManager {
       cancelUrl: string;
     };
   }) => Promise<UpdatePayload>;
-}
-
-interface IBraintreeClient {
-  [key: string]: unknown;
-}
-
-declare global {
-  interface Window {
-    braintree: {
-      client: {
-        create: (_options: {
-          authorization: string;
-        }) => Promise<IBraintreeClient>;
-      };
-      vaultManager: {
-        create: (_options: {
-          client: IBraintreeClient;
-        }) => Promise<IVaultManager>;
-      };
-    };
-  }
 }
 
 const createVaultManagerForm = (): HTMLElement => {

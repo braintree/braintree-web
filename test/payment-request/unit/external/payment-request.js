@@ -51,7 +51,7 @@ describe("Payment Request component", () => {
     testContext.instance = new PaymentRequestComponent({
       client: testContext.fakeClient,
     });
-    jest.spyOn(testContext.instance, "_emit");
+    jest.spyOn(testContext.instance, "emit");
     jest.spyOn(testContext.instance, "on");
   });
 
@@ -440,7 +440,7 @@ describe("Payment Request component", () => {
           events.SHIPPING_ADDRESS_CHANGE,
           expect.any(Function)
         );
-        expect(testContext.instance._emit).toHaveBeenCalledWith(
+        expect(testContext.instance.emit).toHaveBeenCalledWith(
           "shippingAddressChange",
           {
             target: {
@@ -449,7 +449,7 @@ describe("Payment Request component", () => {
             updateWith: expect.any(Function),
           }
         );
-        expect(testContext.instance._emit).toHaveBeenCalledWith(
+        expect(testContext.instance.emit).toHaveBeenCalledWith(
           "shippingaddresschange",
           {
             target: {
@@ -474,7 +474,7 @@ describe("Payment Request component", () => {
           events.SHIPPING_OPTION_CHANGE,
           expect.any(Function)
         );
-        expect(testContext.instance._emit).toHaveBeenCalledWith(
+        expect(testContext.instance.emit).toHaveBeenCalledWith(
           "shippingOptionChange",
           {
             target: {

@@ -139,7 +139,7 @@ const createHostedFieldsForm = (args?: Record<string, string>): HTMLElement => {
 
 const setupBraintreeHostedFields = (
   container,
-  args?: Record<string, string>,
+  args?: Record<string, string | boolean | number>,
   debugMode?: boolean
 ) => {
   const authorization = getAuthorizationToken();
@@ -186,7 +186,7 @@ const setupBraintreeHostedFields = (
         }),
       };
 
-      return window.braintree.hostedFields.create({
+      const hostedFieldsConfig: Record<string, unknown> = {
         client: clientInstance,
         styles: {
           input: {
@@ -204,7 +204,13 @@ const setupBraintreeHostedFields = (
           },
         },
         fields: fields,
-      });
+      };
+
+      if (args?.binVerificationLength) {
+        hostedFieldsConfig.binVerificationLength = args.binVerificationLength;
+      }
+
+      return window.braintree.hostedFields.create(hostedFieldsConfig);
     })
     .then((hostedFieldsInstance) => {
       const form = container.querySelector("#checkout-form") as HTMLElement;
@@ -220,6 +226,10 @@ const setupBraintreeHostedFields = (
         "#submit-button"
       ) as HTMLButtonElement;
       const resultDiv = container.querySelector("#result") as HTMLElement;
+      const teardownButton = container.querySelector(
+        "#teardown-button"
+      ) as HTMLButtonElement;
+      const teardownStatus = container.querySelector("#teardown-status");
 
       hostedFieldsInstance.on("validityChange", (event) => {
         const allFieldsValid = Object.keys(event.fields).every((key) => {
@@ -235,7 +245,6 @@ const setupBraintreeHostedFields = (
       });
 
       // Enable the teardown button now that the hosted fields are fully initialized
-      const teardownButton = container.querySelector("#teardown-button");
       teardownButton.disabled = false;
 
       hostedFieldsInstance.on("cardTypeChange", (event) => {
@@ -272,8 +281,11 @@ const setupBraintreeHostedFields = (
         inputSubmitRequestContainer.classList.add(event.emittedBy);
       });
 
-      hostedFieldsInstance.on("binAvailable", () => {
-        binAvailableContainer.setAttribute("binAvailable", true);
+      hostedFieldsInstance.on("binAvailable", (event) => {
+        binAvailableContainer.setAttribute("binAvailable", "true");
+        binAvailableContainer.setAttribute("data-bin", event.bin);
+        binAvailableContainer.textContent =
+          "BIN Available: " + event.bin + " (" + event.bin.length + " digits)";
       });
 
       // Add clear field button functionality
@@ -357,8 +369,6 @@ const setupBraintreeHostedFields = (
         stateContainer.textContent = JSON.stringify(state, null, 2);
         stateContainer.setAttribute("data-state", JSON.stringify(state));
       });
-
-      const teardownStatus = container.querySelector("#teardown-status");
 
       teardownButton.addEventListener("click", () => {
         teardownStatus.textContent = "Tearing down...";
@@ -544,11 +554,16 @@ export const StandardHostedFields: StoryObj = {
       options: Object.keys(TEST_CARDS),
       description: "Pre-fill with test card data",
     },
+    binVerificationLength: {
+      control: { type: "number", min: 6, max: 8, step: 1 },
+      description: "BIN verification length (6 or 8 digits)",
+    },
   },
   args: {
     includePostalCode: true,
     autoFillTestData: false,
     cardType: "visa",
+    binVerificationLength: 6,
   },
 };
 

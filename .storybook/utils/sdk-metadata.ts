@@ -39,20 +39,3 @@ export function clearVersionMetadata(): void {
     )
     .forEach((element) => element.remove());
 }
-
-/**
- * Get the current SDK version from metadata
- * @returns The version string or null if not set
- */
-export function getVersionFromMetadata(): string | null {
-  const meta = document.querySelector(`meta[name="${VERSION_META_NAME}"]`);
-  return meta ? meta.getAttribute("content") : null;
-}
-
-/**
- * Check if currently using a local build based on metadata
- */
-export function isUsingLocalBuild(): boolean {
-  const meta = document.querySelector(`meta[name="${LOCAL_BUILD_META_NAME}"]`);
-  return meta !== null && meta.getAttribute("content") === "true";
-}

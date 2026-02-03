@@ -22,3 +22,4 @@ key.pem
 browserstack.err
 local.log
 logs/
+.storybook/certs/

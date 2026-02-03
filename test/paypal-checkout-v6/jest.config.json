@@ -1,0 +1,11 @@
+{
+  "testEnvironment": "jsdom",
+  "clearMocks": true,
+  "coverageDirectory": "<rootDir>/../../test/paypal-checkout-v6/coverage",
+  "displayName": "paypal-checkout-v6",
+  "//": "In the future, tests should live in the same directory as the files they are testing",
+  "restoreMocks": true,
+  "rootDir": "../../src/paypal-checkout-v6",
+  "roots": ["<rootDir>", "<rootDir>/../../test/paypal-checkout-v6"],
+  "testMatch": ["**/unit/**/*.js"]
+}

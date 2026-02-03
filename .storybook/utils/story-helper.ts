@@ -57,7 +57,10 @@ export interface LoadedData {
  * ```
  */
 export function createSimpleBraintreeStory(
-  renderFunction: (_container: HTMLElement, _args?: StoryArgs) => void,
+  renderFunction: (
+    _container: HTMLElement,
+    _args?: StoryArgs
+  ) => void | Promise<void>,
   requiredScripts: string[] = ["client.min.js"]
 ) {
   return (
@@ -84,8 +87,8 @@ export function createSimpleBraintreeStory(
         // Wait for braintree to be on window
         await braintreeWebSDKLoader.waitForBraintree();
 
-        // Call the render function
-        renderFunction(container, args);
+        // Call the render function (await if it returns a Promise)
+        await renderFunction(container, args);
       } catch (error) {
         console.error("Failed to initialize Braintree SDK:", error);
         displayError(container, error as Error);

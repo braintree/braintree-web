@@ -286,8 +286,7 @@ Client.prototype.request = function (options, callback) {
     var optionName, api, baseUrl, requestOptions;
     var shouldCollectData = Boolean(
       options.endpoint === "payment_methods/credit_cards" &&
-        self.getConfiguration().gatewayConfiguration.creditCards
-          .collectDeviceData
+      self.getConfiguration().gatewayConfiguration.creditCards.collectDeviceData
     );
 
     if (options.api !== "graphQLApi") {

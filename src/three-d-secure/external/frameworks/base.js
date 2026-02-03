@@ -40,7 +40,9 @@ function BaseFramework(options) {
   this._assetsUrl = this._assetsUrl + "/web/" + VERSION;
 }
 
-EventEmitter.createChild(BaseFramework);
+BaseFramework.prototype = Object.create(EventEmitter.prototype, {
+  constructor: BaseFramework,
+});
 
 BaseFramework.prototype._waitForClient = function () {
   if (this._client) {

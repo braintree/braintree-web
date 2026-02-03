@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
 import { EventEmitter } from "events";
 import browserstack from "browserstack-local";
-import { loadHelpers } from "./tests/helper";
+import { loadHelpers } from "./tests/helpers/browser-commands";
+import { name as projectName } from "../package.json";
 
 type BrowserStackCapability = {
   browserName: string;
@@ -31,7 +32,7 @@ const localIdentifier = `local-${Date.now()}`;
 // Common capabilities that can be merged with specific capabilities
 const commonCapabilities = {
   "bstack:options": {
-    projectName: "Braintree Web SDK",
+    projectName: projectName,
     buildName: "Web SDK Storybook",
   },
 };
@@ -46,14 +47,14 @@ export const config = {
   user: process.env.BROWSERSTACK_USERNAME,
   key: process.env.BROWSERSTACK_ACCESS_KEY,
   hostname: "hub.browserstack.com",
-  logLevel: "error", // set to error to reduce noise when running tests, set to info or debug for more verbose logging
+  logLevel: "error", // Options in order of less to more verbosity: "error", "info", "debug"
   bail: 0,
   waitforTimeout: process.env.LOCAL_BUILD === "true" ? 40000 : 20000,
   connectionRetryTimeout: process.env.LOCAL_BUILD === "true" ? 120000 : 90000,
   connectionRetryCount: 1,
   framework: "mocha",
   mochaOpts: {
-    timeout: 60000,
+    timeout: 120000,
   },
   reporters: ["spec"],
   services: [
@@ -66,6 +67,7 @@ export const config = {
         forcedStop: true,
       },
     ],
+    "intercept",
   ],
   specs: ["./tests/**/*.test.ts"],
   // Available browsers and versions:
@@ -82,7 +84,9 @@ export const config = {
         seleniumVersion: SELENIUM_VERSION,
         localIdentifier,
         networkLogs: true,
+        consoleLogs: "verbose", // Options in order of less to more verbosity: "disable", "errors", "warnings", "info", "verbose"
       },
+      "wdio:exclude": ["./tests/ApplePay/*"],
       acceptInsecureCerts: true,
     },
     {
@@ -96,6 +100,7 @@ export const config = {
         seleniumVersion: SELENIUM_VERSION,
         localIdentifier,
         networkLogs: true,
+        consoleLogs: "verbose", // Options in order of less to more verbosity: "disable", "errors", "warnings", "info", "verbose"
       },
       acceptInsecureCerts: true,
     },
@@ -110,7 +115,9 @@ export const config = {
         seleniumVersion: SELENIUM_VERSION,
         localIdentifier,
         networkLogs: true,
+        consoleLogs: "verbose", // Options in order of less to more verbosity: "disable", "errors", "warnings", "info", "verbose"
       },
+      "wdio:exclude": ["./tests/ApplePay/*"],
       acceptInsecureCerts: true,
     },
     {
@@ -124,7 +131,9 @@ export const config = {
         seleniumVersion: SELENIUM_VERSION,
         localIdentifier,
         networkLogs: true,
+        consoleLogs: "verbose", // Options in order of less to more verbosity: "disable", "errors", "warnings", "info", "verbose"
       },
+      "wdio:exclude": ["./tests/ApplePay/*"],
       acceptInsecureCerts: true,
     },
   ],

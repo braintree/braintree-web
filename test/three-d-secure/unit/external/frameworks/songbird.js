@@ -128,12 +128,14 @@ describe("SongbirdFramework", () => {
 
       jest
         .spyOn(framework, "on")
-        .mockImplementationOnce(yieldsAsync("some data", "a fake function"));
+        .mockImplementationOnce(
+          yieldsAsync({ data: "some data", next: "a fake function" })
+        );
 
-      framework.setUpEventListeners((eventName, data, fakeFunction) => {
+      framework.setUpEventListeners((eventName, data, next) => {
         expect(eventName).toBe("lookup-complete");
         expect(data).toBe("some data");
-        expect(fakeFunction).toBe("a fake function");
+        expect(next).toBe("a fake function");
 
         done();
       });
@@ -234,8 +236,8 @@ describe("SongbirdFramework", () => {
 
         jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
 
-        framework.on(SongbirdFramework.events.LOOKUP_COMPLETE, (data, next) => {
-          next();
+        framework.on(SongbirdFramework.events.LOOKUP_COMPLETE, (data) => {
+          data.next();
         });
 
         return framework
@@ -1757,7 +1759,7 @@ describe("SongbirdFramework", () => {
           }
         });
 
-      jest.spyOn(SongbirdFramework.prototype, "_emit");
+      jest.spyOn(SongbirdFramework.prototype, "emit");
 
       return createFramework()
         .setupSongbird()
@@ -1765,7 +1767,7 @@ describe("SongbirdFramework", () => {
           expect(
             SongbirdFramework.prototype.setCardinalListener
           ).toHaveBeenCalledWith(eventName, expect.any(Function));
-          expect(SongbirdFramework.prototype._emit).toBeCalledWith(
+          expect(SongbirdFramework.prototype.emit).toBeCalledWith(
             `songbird-framework:${eventName.toUpperCase()}`
           );
         });

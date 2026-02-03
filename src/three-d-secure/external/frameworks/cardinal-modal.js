@@ -16,9 +16,9 @@ CardinalModalFramework.prototype._createV1IframeModalElement = function (
   var modal = document.createElement("div");
   var addCloseButton = Boolean(
     this._createOptions &&
-      this._createOptions.cardinalSDKConfig &&
-      this._createOptions.cardinalSDKConfig.payment &&
-      this._createOptions.cardinalSDKConfig.payment.displayExitButton
+    this._createOptions.cardinalSDKConfig &&
+    this._createOptions.cardinalSDKConfig.payment &&
+    this._createOptions.cardinalSDKConfig.payment.displayExitButton
   );
 
   modal.innerHTML =

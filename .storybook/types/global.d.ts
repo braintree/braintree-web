@@ -900,6 +900,230 @@ interface IPayPalSDK {
 }
 
 // ============================================================================
+// PayPal Checkout V6 Instance
+// ============================================================================
+
+/**
+ * Pricing scheme for billing cycles
+ */
+interface IPricingScheme {
+  pricingModel: string;
+  price: string;
+  reloadThresholdAmount?: string;
+}
+
+/**
+ * Billing cycle configuration for billing agreements
+ */
+interface IBillingCycle {
+  billingFrequency: string;
+  billingFrequencyUnit: string;
+  numberOfExecutions: string;
+  sequence: string;
+  startDate: string;
+  trial: boolean;
+  pricingScheme: IPricingScheme;
+}
+
+/**
+ * Plan metadata for billing agreements
+ */
+interface IBillingAgreementPlanMetadata {
+  billingCycles?: IBillingCycle[];
+  currencyIsoCode: string;
+  name: string;
+  productDescription: string;
+  productQuantity?: string;
+  oneTimeFeeAmount?: string;
+  shippingAmount?: string;
+  productPrice?: string;
+  taxAmount?: string;
+  totalAmount?: string;
+}
+
+/**
+ * Configuration for billing agreement plan stories
+ */
+interface IBillingAgreementPlanConfig {
+  billingAgreementDescription: string;
+  planType: string;
+  amount?: string;
+  currency?: string;
+  planMetadata?: IBillingAgreementPlanMetadata;
+}
+
+/**
+ * PayPal V6 Approve Data from onApprove callback
+ */
+interface IPayPalV6ApproveData {
+  payerID?: string;
+  payerId?: string;
+  PayerID?: string;
+  orderID?: string;
+  orderId?: string;
+  OrderID?: string;
+  billingToken?: string;
+}
+
+/**
+ * PayPal Checkout V6 Session returned by createOneTimePaymentSession and createBillingAgreementSession
+ */
+interface IPayPalCheckoutV6Session {
+  start: (options?: {
+    presentationMode?:
+      | "auto"
+      | "popup"
+      | "modal"
+      | "redirect"
+      | "payment-handler"
+      | "direct-app-switch";
+    autoRedirect?: { enabled: boolean };
+  }) => Promise<{ redirectURL?: string } | undefined | false>;
+  hasReturned?: () => boolean;
+  resume: () => Promise<void>;
+}
+
+/**
+ * PayPal Checkout V6 Tokenize Payload
+ */
+interface IPayPalCheckoutV6TokenizePayload {
+  nonce: string;
+  type: string;
+  details: {
+    email?: string;
+    payerEmail?: string;
+    payerId?: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+/**
+ * PayPal Checkout V6 Instance
+ */
+interface IPayPalCheckoutV6Instance {
+  loadPayPalSDK: () => Promise<unknown>;
+  getClientId: () => Promise<string>;
+  createPayment: (options: {
+    flow: string;
+    amount?: string;
+    currency?: string;
+    intent?: string;
+  }) => Promise<string>;
+  createOneTimePaymentSession: (options: {
+    amount: string;
+    currency: string;
+    intent?: "capture" | "authorize" | "order";
+    returnUrl?: string;
+    cancelUrl?: string;
+    lineItems?: Array<{
+      quantity: string;
+      unitAmount: string;
+      name: string;
+      kind: "debit" | "credit";
+      unitTaxAmount?: string;
+      description?: string;
+    }>;
+    shippingOptions?: Array<{
+      id: string;
+      label: string;
+      selected: boolean;
+      type: "SHIPPING" | "PICKUP";
+      amount: { currency: string; value: string };
+    }>;
+    amountBreakdown?: {
+      itemTotal?: string;
+      shipping?: string;
+      handling?: string;
+      taxTotal?: string;
+      insurance?: string;
+      shippingDiscount?: string;
+      discount?: string;
+    };
+    offerCredit?: boolean;
+    displayName?: string;
+    userAuthenticationEmail?: string;
+    presentationMode?: string;
+    onShippingAddressChange?: (data: {
+      shippingAddress?: { city?: string; state?: string };
+      orderID?: string;
+      orderId?: string;
+    }) => void | Promise<unknown>;
+    onShippingOptionsChange?: (data: {
+      selectedShippingOption?: {
+        id: string;
+        label: string;
+        amount: { currency: string; value: string };
+      };
+      orderID?: string;
+      orderId?: string;
+    }) => void | Promise<unknown>;
+    onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
+    onCancel?: () => void;
+    onError?: (err: IBraintreeError) => void;
+  }) => IPayPalCheckoutV6Session;
+  createBillingAgreementSession: (options: {
+    billingAgreementDescription?: string;
+    planType?: "RECURRING" | "SUBSCRIPTION" | "UNSCHEDULED" | "INSTALLMENTS";
+    planMetadata?: IBillingAgreementPlanMetadata;
+    amount?: string;
+    currency?: string;
+    offerCredit?: boolean;
+    shippingAddressOverride?: {
+      recipientName?: string;
+      line1?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      countryCode?: string;
+    };
+    userAction?: "CONTINUE" | "COMMIT" | "SETUP_NOW";
+    displayName?: string;
+    presentationMode?: string;
+    onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
+    onCancel?: () => void;
+    onError?: (err: IBraintreeError) => void;
+  }) => IPayPalCheckoutV6Session;
+  tokenizePayment: (data: {
+    billingToken?: string;
+    payerID?: string;
+    orderID?: string;
+  }) => Promise<IPayPalCheckoutV6TokenizePayload>;
+  updatePayment: (options: {
+    paymentId: string;
+    amount: string;
+    currency: string;
+    lineItems?: Array<{
+      quantity: string;
+      unitAmount: string;
+      name: string;
+      kind: string;
+    }>;
+    shippingOptions?: Array<{
+      id: string;
+      label: string;
+      selected: boolean;
+      type: string;
+      amount: {
+        currency: string;
+        value: string;
+      };
+    }>;
+    amountBreakdown?: {
+      itemTotal?: string;
+      shipping?: string;
+      handling?: string;
+      taxTotal?: string;
+      insurance?: string;
+      shippingDiscount?: string;
+      discount?: string;
+    };
+  }) => Promise<unknown>;
+  teardown: () => Promise<void>;
+}
+
+// ============================================================================
 // Global Window Extension
 // ============================================================================
 
@@ -932,6 +1156,12 @@ declare global {
           client?: IBraintreeClient;
           authorization?: string;
         }): Promise<IPayPalCheckoutInstance>;
+        VERSION?: string;
+      };
+      paypalCheckoutV6: {
+        create(options: {
+          client: IBraintreeClient;
+        }): Promise<IPayPalCheckoutV6Instance>;
         VERSION?: string;
       };
       threeDSecure: {
@@ -1026,4 +1256,12 @@ export {
   IPayPalButtons,
   IPayPalButtonsConfig,
   IPayPalFunding,
+  IPayPalCheckoutV6Instance,
+  IPayPalCheckoutV6Session,
+  IPayPalCheckoutV6TokenizePayload,
+  IPayPalV6ApproveData,
+  IPricingScheme,
+  IBillingCycle,
+  IBillingAgreementPlanMetadata,
+  IBillingAgreementPlanConfig,
 };

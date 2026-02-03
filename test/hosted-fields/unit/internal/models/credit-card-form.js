@@ -1092,104 +1092,243 @@ describe("credit card model", () => {
     });
   });
 
+  describe("binVerificationLength configuration", () => {
+    it("defaults to 6-digit BIN when binVerificationLength is not specified", () => {
+      const card = new CreditCardForm(getModelConfig(["number"]));
+
+      card.set("number.value", "411111");
+      expect(window.bus.emit).toHaveBeenCalledWith(
+        events.BIN_AVAILABLE,
+        "411111"
+      );
+    });
+
+    it("uses 6-digit BIN when binVerificationLength is 6", () => {
+      const config = Object.assign({}, getModelConfig(["number"]), {
+        binVerificationLength: 6,
+      });
+      const card = new CreditCardForm(config);
+
+      card.set("number.value", "411111");
+      expect(window.bus.emit).toHaveBeenCalledWith(
+        events.BIN_AVAILABLE,
+        "411111"
+      );
+    });
+
+    it("uses 8-digit BIN when binVerificationLength is 8", () => {
+      const config = Object.assign({}, getModelConfig(["number"]), {
+        binVerificationLength: 8,
+      });
+      const card = new CreditCardForm(config);
+
+      card.set("number.value", "4111111");
+      expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
+
+      card.set("number.value", "41111111");
+      expect(window.bus.emit).toHaveBeenCalledWith(
+        events.BIN_AVAILABLE,
+        "41111111"
+      );
+    });
+  });
+
   describe("bin available", () => {
-    it("emits a targetted BIN_AVAILABLE event when number goes from 5 digits to 6", () => {
-      testContext.card.set("number.value", "41111");
+    describe("6-digit BIN (default)", () => {
+      it("emits a targetted BIN_AVAILABLE event when number goes from 5 digits to 6", () => {
+        testContext.card.set("number.value", "41111");
 
-      expect(window.bus.emit).not.toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE"
-      );
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
 
-      testContext.card.set("number.value", "411111");
+        testContext.card.set("number.value", "411111");
 
-      expect(window.bus.emit).toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE",
-        "411111"
-      );
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "411111"
+        );
+      });
+
+      it("does not emit BIN_AVAILABLE event when number goes from 4 digits to 5", () => {
+        testContext.card.set("number.value", "4111");
+
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
+
+        testContext.card.set("number.value", "41111");
+
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
+      });
+
+      it("emits BIN_AVAILABLE event when number goes from non-existent to 6 digits", () => {
+        testContext.card.set("number.value", "411111");
+
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "411111"
+        );
+      });
+
+      it("emits BIN_AVAILABLE event when number goes from non-existent to more than 6 digits", () => {
+        testContext.card.set("number.value", "4111111111111");
+
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "411111"
+        );
+      });
+
+      it("emits BIN_AVAILABLE event when number starts with more than 6 digits, dips below 6, and then receives 6 again", () => {
+        testContext.card.set("number.value", "123456789");
+
+        window.bus.emit.mockReset();
+
+        testContext.card.set("number.value", "12345");
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
+
+        testContext.card.set("number.value", "123456");
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "123456"
+        );
+      });
+
+      it("does not emit BIN_AVAILABLE event when number starts with more than 6 digits and additional digits are added", () => {
+        testContext.card.set("number.value", "123456789");
+
+        window.bus.emit.mockReset();
+
+        testContext.card.set("number.value", "1234567890");
+
+        expect(window.bus.emit).not.toBeCalledWith(
+          events.BIN_AVAILABLE,
+          "123456"
+        );
+      });
+
+      it("emits BIN_AVAILABLE event when number starts with more than 6 digits, does not dip below 6, and then receives 6 new digits", () => {
+        testContext.card.set("number.value", "123456789");
+
+        window.bus.emit.mockReset();
+
+        testContext.card.set("number.value", "411111111");
+
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "411111"
+        );
+      });
+
+      it("emits only the first 6 digits of the number when emitting even when more than 6 digits are set", () => {
+        testContext.card.set("number.value", "1234567890");
+
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "123456"
+        );
+      });
     });
 
-    it("does not emit BIN_AVAILABLE event when number goes from 4 digits to 5", () => {
-      testContext.card.set("number.value", "4111");
+    describe("8-digit BIN (binVerificationLength: 8)", () => {
+      beforeEach(() => {
+        const config = Object.assign(
+          {},
+          getModelConfig(["number", "cvv", "expirationDate", "postalCode"]),
+          {
+            binVerificationLength: 8,
+          }
+        );
+        testContext.card8Digit = new CreditCardForm(config);
+      });
 
-      expect(window.bus.emit).not.toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE"
-      );
+      it("emits a targetted BIN_AVAILABLE event when number goes from 7 digits to 8", () => {
+        testContext.card8Digit.set("number.value", "4111111");
 
-      testContext.card.set("number.value", "41111");
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
 
-      expect(window.bus.emit).not.toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE"
-      );
-    });
+        testContext.card8Digit.set("number.value", "41111111");
 
-    it("emits BIN_AVAILABLE event when number goes from non-existent to 6 digits", () => {
-      testContext.card.set("number.value", "411111");
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "41111111"
+        );
+      });
 
-      expect(window.bus.emit).toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE",
-        "411111"
-      );
-    });
+      it("does not emit BIN_AVAILABLE event when number goes from 6 digits to 7", () => {
+        testContext.card8Digit.set("number.value", "411111");
 
-    it("emits BIN_AVAILABLE event when number goes from non-existent to more than 6 digits", () => {
-      testContext.card.set("number.value", "4111111111111");
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
 
-      expect(window.bus.emit).toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE",
-        "411111"
-      );
-    });
+        testContext.card8Digit.set("number.value", "4111111");
 
-    it("emits BIN_AVAILABLE event when number starts with more than 6 digits, dips below 6, and then receives 6 again", () => {
-      testContext.card.set("number.value", "123456789");
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
+      });
 
-      window.bus.emit.mockReset();
+      it("emits BIN_AVAILABLE event when number goes from non-existent to 8 digits", () => {
+        testContext.card8Digit.set("number.value", "41111111");
 
-      testContext.card.set("number.value", "12345");
-      expect(window.bus.emit).not.toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE"
-      );
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "41111111"
+        );
+      });
 
-      testContext.card.set("number.value", "123456");
-      expect(window.bus.emit).toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE",
-        "123456"
-      );
-    });
+      it("emits BIN_AVAILABLE event when number goes from non-existent to more than 8 digits", () => {
+        testContext.card8Digit.set("number.value", "4111111111111");
 
-    it("does not emit BIN_AVAILABLE event when number starts with more than 6 digits and additional digits are added", () => {
-      testContext.card.set("number.value", "123456789");
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "41111111"
+        );
+      });
 
-      window.bus.emit.mockReset();
+      it("emits BIN_AVAILABLE event when number starts with more than 8 digits, dips below 8, and then receives 8 again", () => {
+        testContext.card8Digit.set("number.value", "123456789");
 
-      testContext.card.set("number.value", "1234567890");
+        window.bus.emit.mockReset();
 
-      expect(window.bus.emit).not.toBeCalledWith(
-        "hosted-fields:BIN_AVAILABLE",
-        "123456"
-      );
-    });
+        testContext.card8Digit.set("number.value", "1234567");
+        expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
 
-    it("emits BIN_AVAILABLE event when number starts with more than 6 digits, does not dip below 6, and then receives 6 new digits", () => {
-      testContext.card.set("number.value", "123456789");
+        testContext.card8Digit.set("number.value", "12345678");
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "12345678"
+        );
+      });
 
-      window.bus.emit.mockReset();
+      it("does not emit BIN_AVAILABLE event when number starts with more than 8 digits and additional digits are added", () => {
+        testContext.card8Digit.set("number.value", "123456789");
 
-      testContext.card.set("number.value", "411111111");
+        window.bus.emit.mockReset();
 
-      expect(window.bus.emit).toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE",
-        "411111"
-      );
-    });
+        testContext.card8Digit.set("number.value", "1234567890");
 
-    it("emits only the first 6 digits of the number when emitting even when more than 6 digits are set", () => {
-      testContext.card.set("number.value", "1234567890");
+        expect(window.bus.emit).not.toBeCalledWith(
+          events.BIN_AVAILABLE,
+          "12345678"
+        );
+      });
 
-      expect(window.bus.emit).toHaveBeenCalledWith(
-        "hosted-fields:BIN_AVAILABLE",
-        "123456"
-      );
+      it("emits BIN_AVAILABLE event when number starts with more than 8 digits, does not dip below 8, and then receives 8 new digits", () => {
+        testContext.card8Digit.set("number.value", "123456789");
+
+        window.bus.emit.mockReset();
+
+        testContext.card8Digit.set("number.value", "411111111");
+
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "41111111"
+        );
+      });
+
+      it("emits only the first 8 digits of the number when emitting even when more than 8 digits are set", () => {
+        testContext.card8Digit.set("number.value", "12345678901234");
+
+        expect(window.bus.emit).toHaveBeenCalledWith(
+          events.BIN_AVAILABLE,
+          "12345678"
+        );
+      });
     });
   });
 
@@ -1268,7 +1407,7 @@ describe("credit card model", () => {
       ]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      jest.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1278,19 +1417,19 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(5);
-      expect(cardForm._emit).toBeCalledWith("autofill:cardholderName", "name");
-      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
-      expect(cardForm._emit).toBeCalledWith("autofill:cvv", "123");
-      expect(cardForm._emit).toBeCalledWith("autofill:expirationMonth", "12");
-      expect(cardForm._emit).toBeCalledWith("autofill:expirationYear", "34");
+      expect(cardForm.emit).toBeCalledTimes(5);
+      expect(cardForm.emit).toBeCalledWith("autofill:cardholderName", "name");
+      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm.emit).toBeCalledWith("autofill:cvv", "123");
+      expect(cardForm.emit).toBeCalledWith("autofill:expirationMonth", "12");
+      expect(cardForm.emit).toBeCalledWith("autofill:expirationYear", "34");
     });
 
     it("does not emit event for key that does not exist in autofill data", () => {
       const configuration = getModelConfig(["number", "postalCode"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      jest.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1300,15 +1439,15 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(1);
-      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm.emit).toBeCalledTimes(1);
+      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
     });
 
     it("emits expiration date autofill event with data from expiration month and year", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      jest.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1318,8 +1457,8 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(1);
-      expect(cardForm._emit).toBeCalledWith(
+      expect(cardForm.emit).toBeCalledTimes(1);
+      expect(cardForm.emit).toBeCalledWith(
         "autofill:expirationDate",
         "12 / 34"
       );
@@ -1329,7 +1468,7 @@ describe("credit card model", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      jest.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1339,14 +1478,14 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).not.toBeCalled();
+      expect(cardForm.emit).not.toBeCalled();
     });
 
     it("does not emit expiration date autofill event when expiration year is missing", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      jest.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1356,7 +1495,7 @@ describe("credit card model", () => {
         expirationYear: "",
       });
 
-      expect(cardForm._emit).not.toBeCalled();
+      expect(cardForm.emit).not.toBeCalled();
     });
 
     it("does not emit event for value that is an empty string", () => {
@@ -1369,7 +1508,7 @@ describe("credit card model", () => {
       ]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      jest.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "",
@@ -1379,8 +1518,8 @@ describe("credit card model", () => {
         expirationYear: "",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(1);
-      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm.emit).toBeCalledTimes(1);
+      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
     });
   });
 });

@@ -11,18 +11,18 @@ var DefaultRequest = require("./default-request");
 
 var MAX_TCP_RETRYCOUNT = 1;
 var TCP_PRECONNECT_BUG_STATUS_CODE = 408;
-var PAYPAL_HERMES_CREATE_PAYMENT_RESOURCE_PATTERN =
-  /\/client_api\/v1\/paypal_hermes\/create_payment_resource/;
 var MERCHANT_ID_PATTERN = /\/merchants\/[A-Za-z0-9_-]+\/client_api/;
+var THREE_D_SECURE_PAYMENT_METHOD_PATTERN =
+  /payment_methods\/.*\/three_d_secure/;
 
 function requestShouldRetry(status) {
   return !status || status === TCP_PRECONNECT_BUG_STATUS_CODE;
 }
 
-function sendApiLatencyAnalytics(url, analyticsStartTime, options) {
-  var domain, path, cleanedPath, parsedUrl;
+function sendApiLatencyAnalytics(url, options) {
+  var domain, path, cleanedPath, parsedUrl, normalizedUrl;
   var analyticsConnectionStartTime, analyticsRequestStartTime, analyticsEndTime;
-  var finalStartTime;
+  var finalStartTime, duration;
   var entries, entry;
 
   try {
@@ -34,17 +34,26 @@ function sendApiLatencyAnalytics(url, analyticsStartTime, options) {
     domain = (url.match(/^https?:\/\/([^\/]+)/) || [])[1] || "";
     path = (url.match(/^https?:\/\/[^\/]+(\/.*)$/) || [])[1] || url;
   }
-  cleanedPath = path.replace(MERCHANT_ID_PATTERN, "");
+  cleanedPath = path
+    .replace(MERCHANT_ID_PATTERN, "")
+    .replace(
+      THREE_D_SECURE_PAYMENT_METHOD_PATTERN,
+      "payment_methods/three_d_secure"
+    );
 
-  finalStartTime = analyticsStartTime;
-  analyticsEndTime = Date.now();
+  if (cleanedPath === "/v1/tracking/batch/events") {
+    return;
+  }
+
+  // Remove default HTTPS port (:443) to match Performance API entries
+  normalizedUrl = url.replace(/:443(\/|$)/, "$1");
 
   if (
     typeof window !== "undefined" &&
     window.performance &&
     window.performance.getEntriesByName
   ) {
-    entries = window.performance.getEntriesByName(url);
+    entries = window.performance.getEntriesByName(normalizedUrl);
     if (entries && entries.length > 0) {
       entry = entries[entries.length - 1];
       analyticsConnectionStartTime = entry.connectStart
@@ -55,17 +64,21 @@ function sendApiLatencyAnalytics(url, analyticsStartTime, options) {
         : null;
       finalStartTime = Math.round(entry.startTime);
       analyticsEndTime = Math.round(entry.responseEnd);
+      duration = entry.duration ? Math.round(entry.duration) : null;
+
+      /* eslint-disable camelcase */
+      options.sendAnalyticsEvent("core.api-request-latency", {
+        connection_start_time: analyticsConnectionStartTime,
+        domain: domain,
+        duration: duration,
+        endpoint: cleanedPath,
+        end_time: analyticsEndTime,
+        request_start_time: analyticsRequestStartTime,
+        start_time: finalStartTime,
+      });
+      /* eslint-enable camelcase */
     }
   }
-
-  options.sendAnalyticsEvent("core.api-request-latency", {
-    connectionStartTime: analyticsConnectionStartTime,
-    domain: domain,
-    endpoint: cleanedPath,
-    endTime: analyticsEndTime,
-    requestStartTime: analyticsRequestStartTime,
-    startTime: finalStartTime,
-  });
 }
 
 function graphQLRequestShouldRetryWithClientApi(body) {
@@ -81,7 +94,6 @@ function graphQLRequestShouldRetryWithClientApi(body) {
 
 function _requestWithRetry(options, tcpRetryCount, cb) {
   var status, resBody, ajaxRequest, body, method, headers, parsedBody;
-  var analyticsStartTime = Date.now();
   var url = options.url;
   var graphQL = options.graphQL;
   var timeout = options.timeout;
@@ -133,11 +145,8 @@ function _requestWithRetry(options, tcpRetryCount, cb) {
       resBody = ajaxRequest.adaptResponseBody(parsedBody);
       status = ajaxRequest.determineStatus(req.status, parsedBody);
 
-      if (
-        PAYPAL_HERMES_CREATE_PAYMENT_RESOURCE_PATTERN.test(url) &&
-        options.sendAnalyticsEvent
-      ) {
-        sendApiLatencyAnalytics(url, analyticsStartTime, options);
+      if (options.sendAnalyticsEvent) {
+        sendApiLatencyAnalytics(url, options);
       }
 
       if (status >= 400 || status < 200) {

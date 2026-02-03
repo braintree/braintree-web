@@ -60,7 +60,7 @@ function CreditCardInput() {
   this.model.on(
     "change:possibleCardTypes",
     function (possibleCardTypes) {
-      var result = this._parseCardTypes(possibleCardTypes);
+      var result = this._parseCardTypes(possibleCardTypes.newValue);
 
       this.setPattern(result.card);
       this.updateModel("value", this.formatter.getUnformattedValue());

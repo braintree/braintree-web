@@ -8,7 +8,7 @@ interface WindowWithBraintree {
 export function isBraintreeReady(): boolean {
   return Boolean(
     typeof window !== "undefined" &&
-      (window as unknown as WindowWithBraintree).braintree
+    (window as unknown as WindowWithBraintree).braintree
   );
 }
 

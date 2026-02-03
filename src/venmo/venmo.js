@@ -376,8 +376,8 @@ Venmo.prototype._popupBridgeIsInstalled = function () {
 Venmo.prototype._venmoNativeAppIsInstalled = function () {
   return Boolean(
     window.popupBridge &&
-      ((window.parent && window.parent.popupBridge.isVenmoInstalled) ||
-        window.popupBridge.isVenmoInstalled)
+    ((window.parent && window.parent.popupBridge.isVenmoInstalled) ||
+      window.popupBridge.isVenmoInstalled)
   );
 };
 

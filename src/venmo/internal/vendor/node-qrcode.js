@@ -93,7 +93,7 @@ var QRCode = (function (t) {
     putBit: function (t) {
       var r = Math.floor(this.length / 8);
       (this.buffer.length <= r && this.buffer.push(0),
-        t && (this.buffer[r] |= 128 >>> this.length % 8),
+        t && (this.buffer[r] |= 128 >>> (this.length % 8)),
         this.length++);
     },
   };
@@ -954,7 +954,6 @@ var QRCode = (function (t) {
     for (
       n.getLengthInBits() + 4 <= o && n.put(0, 4);
       n.getLengthInBits() % 8 != 0;
-
     )
       n.putBit(0);
     for (var a = (o - n.getLengthInBits()) / 8, u = 0; u < a; u++)

@@ -182,10 +182,56 @@ release_source() {
     CP_CMD="gcp"
   fi
 
+  # Check if the destination repo has the correct username in its remote URL
+  local current_dir="$(pwd)"
+  cd "$BRAINTREE_JS_SOURCE_DEST"
+  local remote_url="$(git remote get-url origin 2>/dev/null)"
+
+  if [[ -n "$remote_url" ]]; then
+    # Check if it's an HTTPS URL
+    if [[ "$remote_url" =~ ^https:// ]]; then
+      # Check if it contains braintreeps username
+      if ! echo "$remote_url" | grep -q "://braintreeps@"; then
+        echo -e "${RED}Error: The Git remote URL must use the 'braintreeps' username for authentication.${RESET}"
+        echo -e "${RED}Current URL: $remote_url${RESET}"
+
+        # Provide specific fix based on current URL format
+        if echo "$remote_url" | grep -q "://[^/]*@"; then
+          # Has a different username
+          local fixed_url=$(echo "$remote_url" | sed 's|://[^@]*@|://braintreeps@|')
+          echo -e "${YELLOW}The URL has a different username. Please update it to use 'braintreeps':${RESET}"
+        else
+          # No username at all
+          local fixed_url=$(echo "$remote_url" | sed 's|://|://braintreeps@|')
+          echo -e "${YELLOW}The URL needs the 'braintreeps' username. Please update it:${RESET}"
+        fi
+
+        echo -e "${GREEN}In the $BRAINTREE_JS_SOURCE_DEST directory, run: git remote set-url origin $fixed_url${RESET}"
+        echo
+        echo -en "${CYAN}Do you want to set the correct URL now (y/n)? ${RESET}"
+        read fix_url_response
+
+        if [[ "$fix_url_response" =~ $YES ]]; then
+          # Fix the URL in the destination repo
+          git remote set-url origin "$fixed_url"
+          echo -e "${GREEN}✔ Remote URL updated to use 'braintreeps' username${RESET}"
+          echo -e "${GREEN}New URL: $fixed_url${RESET}"
+        else
+          # User chose not to fix, exit with error
+          cd "$current_dir"
+          echo -e "${RED}Aborting release. Please fix the remote URL before proceeding.${RESET}"
+          exit 1
+        fi
+      fi
+    fi
+    # SSH URLs (git@) don't need username checks as they use SSH keys
+  fi
+  cd "$current_dir"
+
   git ls-files | egrep -v "$(join '|' $SOURCE_IGNORES)" | xargs "$CP_CMD" --parents -t "$BRAINTREE_JS_SOURCE_DEST"
   echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
+
   exit 0
-  set -e
 }
 
 main() {
@@ -206,12 +252,6 @@ main() {
       confirm_version
       env BRAINTREE_JS_ENV=production gulp release:hosted
       ;;
-    bower)
-      confirm_destination "$BRAINTREE_JS_BOWER_DEST"
-      reinstall_dependencies
-      confirm_version
-      env BRAINTREE_JS_ENV=production gulp release:bower
-      ;;
     npm)
       reinstall_dependencies
       confirm_version
@@ -228,7 +268,6 @@ main() {
       echo "${YELLOW}${TASK}${RED} is not a valid option. Choose from the following:${RESET}"
       echo "* hosted"
       echo "* npm"
-      echo "* bower"
       echo "* jsdoc"
       echo "* source"
       exit 1

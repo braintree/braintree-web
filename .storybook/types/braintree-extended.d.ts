@@ -193,6 +193,10 @@ declare module "braintree-web" {
     function create(_options: { client: Client }): Promise<unknown>;
   }
 
+  namespace paypalCheckoutV6 {
+    function create(_options: { client: Client }): Promise<unknown>;
+  }
+
   namespace venmo {
     function create(_options: {
       client: Client;

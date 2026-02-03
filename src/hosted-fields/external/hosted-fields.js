@@ -95,7 +95,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
 /**
  * @typedef {object} HostedFields~binPayload
  * @description The event payload sent from {@link HostedFields#on|on} when the {@link HostedFields#event:binAvailable|binAvailable} event is emitted.
- * @property {string} bin The first 6 digits of the card number.
+ * @property {string} bin The first 6 or 8 digits (BIN) of the card number, depending on configuration.
  */
 
 /**
@@ -305,14 +305,24 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  */
 
 /**
- * This event is emitted when the first 6 digits of the card number have been entered by the customer.
+ * This event is emitted when the first 6 or 8 digits (BIN) of the card number have been entered by the customer. The number of digits depends on the `binVerificationLength` option (default is 6).
  * @event HostedFields#binAvailable
- * @type {string}
+ * @type {HostedFields~binPayload}
  * @example
- * <caption>Listening to a `binAvailable` event</caption>
+ * <caption>Listening to a `binAvailable` event (6-digit BIN by default)</caption>
  * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
  *   hostedFieldsInstance.on('binAvailable', function (event) {
- *     event.bin // send bin to 3rd party bin service
+ *     event.bin // 6 digits by default, e.g. "411111"
+ *   });
+ * });
+ * @example
+ * <caption>Listening to a `binAvailable` event with 8-digit BIN</caption>
+ * hostedFields.create({
+ *   binVerificationLength: 8,
+ *   fields: { ... }
+ * }, function (createErr, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('binAvailable', function (event) {
+ *     event.bin // 8 digits, e.g. "41111111"
  *   });
  * });
  */
@@ -346,7 +356,7 @@ function createInputEventHandler(fields) {
       fields: merchantPayload.fields,
     };
 
-    this._emit(eventData.type, merchantPayload);
+    this.emit(eventData.type, merchantPayload);
   };
 }
 
@@ -425,6 +435,20 @@ function HostedFields(options) {
       code: sharedErrors.INSTANTIATION_OPTION_REQUIRED.code,
       message: "options.fields is required when instantiating Hosted Fields.",
     });
+  }
+
+  if (options.binVerificationLength !== undefined) {
+    if (
+      typeof options.binVerificationLength !== "number" ||
+      (options.binVerificationLength !== 6 &&
+        options.binVerificationLength !== 8)
+    ) {
+      throw new BraintreeError({
+        type: sharedErrors.INSTANTIATION_OPTION_INVALID.type,
+        code: sharedErrors.INSTANTIATION_OPTION_INVALID.code,
+        message: "options.binVerificationLength must be either 6 or 8.",
+      });
+    }
   }
 
   EventEmitter.call(this);
@@ -621,7 +645,7 @@ function HostedFields(options) {
   });
 
   this._bus.on(events.BIN_AVAILABLE, function (bin) {
-    self._emit("binAvailable", {
+    self.emit("binAvailable", {
       bin: bin,
     });
   });
@@ -631,7 +655,7 @@ function HostedFields(options) {
       self._clientPromise,
       "custom.hosted-fields.load.timed-out"
     );
-    self._emit("timeout");
+    self.emit("timeout");
   }, INTEGRATION_TIMEOUT_MS);
 
   Promise.all(frameReadyPromises).then(function (results) {
@@ -644,7 +668,7 @@ function HostedFields(options) {
 
     self._cleanUpFocusIntercepts();
 
-    self._emit("ready");
+    self.emit("ready");
   });
 
   this._bus.on(events.FRAME_READY, function (data, reply) {
@@ -683,7 +707,9 @@ function HostedFields(options) {
   });
 }
 
-EventEmitter.createChild(HostedFields);
+HostedFields.prototype = Object.create(EventEmitter.prototype, {
+  constructor: HostedFields,
+});
 
 HostedFields.prototype._setupLabelFocus = function (type, container) {
   var labels, i;

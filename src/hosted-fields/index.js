@@ -131,6 +131,7 @@ var VERSION = process.env.npm_package_version;
  * @param {fieldOptions} options.fields A {@link module:braintree-web/hosted-fields~fieldOptions set of options for each field}.
  * @param {styleOptions} [options.styles] {@link module:braintree-web/hosted-fields~styleOptions Styles} applied to each field.
  * @param {boolean} [options.preventAutofill=false] When true, browsers will not try to prompt the customer to autofill their credit card information.
+ * @param {number} [options.binVerificationLength=6] The number of digits to use for BIN verification. Must be either 6 or 8. Default is 6.
  * @param {string} [options.sessionId] Used in specific cases where associating SDK events with a specific external id is required.
  * @param {callback} [callback] The second argument, `data`, is the {@link HostedFields} instance. If no callback is provided, `create` returns a promise that resolves with the {@link HostedFields} instance.
  * @returns {void}
@@ -291,6 +292,28 @@ var VERSION = process.env.npm_package_version;
  *     }
  *   },
  * }, callback);
+ * @example <caption>Using 8-digit BIN support</caption>
+ * braintree.hostedFields.create({
+ *   client: clientInstance,
+ *   binVerificationLength: 8, // Enable 8-digit BIN detection
+ *   fields: {
+ *     number: {
+ *       container: '#card-number'
+ *     },
+ *     cvv: {
+ *       container: '#cvv',
+ *       placeholder: '•••'
+ *     },
+ *     expirationDate: {
+ *       container: '#expiration-date'
+ *     }
+ *   }
+ * }, function(err, hostedFieldsInstance) {
+ *   hostedFieldsInstance.on('binAvailable', function(event) {
+ *     console.log('BIN:', event.bin); // Will be 8 digits when binVerificationLength is 8
+ *     // Use the BIN for more accurate card identification
+ *   });
+ * });
  */
 function create(options) {
   return basicComponentVerification

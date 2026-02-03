@@ -17,6 +17,26 @@ interface TestResult {
 }
 
 /**
+ * Result object returned by the getPayPalResult custom command
+ */
+interface PayPalTestResult {
+  success: boolean;
+  cancelled: boolean;
+  error: boolean;
+  text: string;
+}
+
+/**
+ * Result object returned by the getBillingAgreementResult custom command
+ * Extends PayPalTestResult with billing agreement specific fields
+ */
+interface BillingAgreementTestResult extends PayPalTestResult {
+  hasNonce: boolean;
+  hasEmail: boolean;
+  hasPlanType: boolean;
+}
+
+/**
  * Mocha test object passed to reloadSessionOnRetry
  * This represents the Mocha test context with retry information
  *
@@ -129,5 +149,65 @@ declare namespace WebdriverIO {
      * const result = await browser.getResult();
      */
     submitPay: () => Promise<void>;
+
+    // PayPal Checkout V6 Commands
+
+    /**
+     * Wait for PayPal button to be ready for interaction
+     * Waits until the .paypal-button element is clickable
+     *
+     * @example
+     * await browser.waitForPayPalButtonReady();
+     * await browser.clickPayPalButton();
+     */
+    waitForPayPalButtonReady: () => Promise<void>;
+
+    /**
+     * Click the PayPal button to initiate checkout
+     * Waits for button to be ready, then clicks it
+     *
+     * @example
+     * await browser.clickPayPalButton();
+     * // PayPal popup will open
+     */
+    clickPayPalButton: () => Promise<void>;
+
+    /**
+     * Get the PayPal test result from the result container
+     * Waits for result to become visible and returns status information
+     *
+     * @returns Object with success, cancelled, error booleans and raw text
+     * @example
+     * const result = await browser.getPayPalResult();
+     * expect(result.success).toBe(true);
+     * expect(result.text).toContain("Nonce:");
+     */
+    getPayPalResult: () => Promise<PayPalTestResult>;
+
+    /**
+     * Get the billing agreement test result with additional validation
+     * Waits for result to become visible and checks for nonce and plan type
+     *
+     * @returns Object with success, cancelled, error, hasNonce, hasPlanType booleans
+     * @example
+     * const result = await browser.getBillingAgreementResult();
+     * expect(result.success).toBe(true);
+     * expect(result.hasNonce).toBe(true);
+     * expect(result.hasPlanType).toBe(true);
+     */
+    getBillingAgreementResult: () => Promise<BillingAgreementTestResult>;
+
+    // Vault-Initiated Checkout Commands
+
+    /**
+     * Wait for the vault step to complete successfully
+     * Waits until #vault-result has shared-result--success class
+     *
+     * @example
+     * await browser.clickPayPalButton();
+     * // Complete PayPal flow...
+     * await browser.waitForVaultComplete();
+     */
+    waitForVaultComplete: () => Promise<void>;
   }
 }

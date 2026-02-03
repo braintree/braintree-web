@@ -27,7 +27,8 @@
       "applepayjs",
       "@wdio/globals/types",
       "@wdio/mocha-framework",
-      "@wdio/browserstack-service"
+      "@wdio/browserstack-service",
+      "wdio-intercept-service"
     ],
     "paths": {
       "@/*": ["./stories/*"]

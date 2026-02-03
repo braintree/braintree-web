@@ -87,9 +87,9 @@ describe("ThreeDSecure", () => {
         SongbirdFramework.prototype.setUpEventListeners
       ).toHaveBeenCalledTimes(1);
 
-      dddS.on("foo", (data, otherData) => {
-        expect(data).toBe("some data");
-        expect(otherData).toBe("other data");
+      dddS.on("foo", (payload) => {
+        expect(payload.old).toBe("some data");
+        expect(payload.newValue).toBe("other data");
 
         done();
       });
@@ -97,7 +97,7 @@ describe("ThreeDSecure", () => {
       handler =
         SongbirdFramework.prototype.setUpEventListeners.mock.calls[0][0];
 
-      handler("foo", "some data", "other data");
+      handler("foo", { old: "some data", newValue: "other data" });
     });
   });
 
@@ -302,7 +302,7 @@ describe("ThreeDSecure", () => {
 
       return instance.teardown().then(() => {
         methods(ThreeDSecure.prototype)
-          .concat("on", "_emit")
+          .concat("on", "emit")
           .forEach((method) => {
             let error;
 

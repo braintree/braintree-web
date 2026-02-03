@@ -388,15 +388,18 @@ function ThreeDSecure(options) {
   var self = this;
   var Framework = FRAMEWORKS[options.framework];
 
-  EventEmitter.call(this);
+  EventEmitter.call(this, this);
 
   this._framework = new Framework(options);
   this._framework.setUpEventListeners(function () {
-    self._emit.apply(self, arguments);
+    self.emit.apply(self, arguments);
   });
 }
 
-EventEmitter.createChild(ThreeDSecure);
+ThreeDSecure.prototype = Object.create(EventEmitter.prototype, {
+  constructor: ThreeDSecure,
+});
+
 // NEXT_MAJOR_VERSION remove exemptionRequested entirely in favor of `requestedExemptionType`
 /**
  * Launch the 3D Secure login flow, returning a nonce payload.

@@ -13,6 +13,7 @@
  * @property {MERCHANT} INSTANTIATION_OPTION_REQUIRED Occurs when a component is created that is missing a required option.
  * @property {MERCHANT} INCOMPATIBLE_VERSIONS Occurs when a component is created with a client with a different version than the component.
  * @property {NETWORK} CLIENT_SCRIPT_FAILED_TO_LOAD Occurs when a component attempts to load the Braintree client script, but the request fails.
+ * @property {MERCHANT} INSTANTIATION_OPTION_INVALID Occurs when a component is created with an invalid option value.
  */
 
 /**
@@ -44,5 +45,9 @@ module.exports = {
   METHOD_CALLED_AFTER_TEARDOWN: {
     type: BraintreeError.types.MERCHANT,
     code: "METHOD_CALLED_AFTER_TEARDOWN",
+  },
+  INSTANTIATION_OPTION_INVALID: {
+    type: BraintreeError.types.MERCHANT,
+    code: "INSTANTIATION_OPTION_INVALID",
   },
 };

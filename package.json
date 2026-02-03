@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.134.0",
+  "version": "3.135.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -16,6 +16,10 @@
     "lint": "eslint . --cache --fix",
     "lint-no-cache-no-fix": "eslint .",
     "release": "./scripts/release",
+    "safe-publish": "node scripts/safe-publish.mjs",
+    "safe-publish:dry": "node scripts/safe-publish.mjs --dry-run",
+    "prepare-release": "node scripts/prepare-release.mjs",
+    "verify-deploy": "node scripts/verify-deploy.mjs",
     "posttest": "npm run lint",
     "prettier": "prettier --write . --cache",
     "test": "BRAINTREE_JS_ENV=development jest --config=jest.config.json",
@@ -30,24 +34,24 @@
     "storybook:run-build": "http-server ./storybook-static -S -p 8080",
     "build:integration": "./scripts/build-for-integration.sh",
     "pretest:integration": "npm run build:integration",
+    "pretest:integration:local": "npm run pretest:integration",
     "test:integration": "env BRAINTREE_JS_ENV=development wdio .storybook/wdio.conf.ts",
-    "test:integration:local": "env BRAINTREE_JS_ENV=development LOCAL_BUILD=true wdio .storybook/wdio.conf.ts",
-    "pretest:integration:local": "npm run build && npm run storybook:copy-local-build && npm run storybook:build"
+    "test:integration:local": "env BRAINTREE_JS_ENV=development LOCAL_BUILD=true wdio .storybook/wdio.conf.ts"
   },
   "dependencies": {
     "@braintree/asset-loader": "2.0.3",
     "@braintree/browser-detection": "2.1.0",
-    "@braintree/event-emitter": "0.4.1",
+    "@braintree/event-emitter": "2.0.2",
     "@braintree/extended-promise": "1.0.0",
     "@braintree/iframer": "2.0.1",
     "@braintree/sanitize-url": "7.0.4",
-    "@braintree/uuid": "1.0.1",
+    "@braintree/uuid": "2.0.0",
     "@braintree/wrap-promise": "2.1.0",
     "@paypal/accelerated-checkout-loader": "1.2.1",
     "card-validator": "10.0.3",
     "credit-card-type": "10.1.0",
     "framebus": "6.0.3",
-    "inject-stylesheet": "6.0.2",
+    "inject-stylesheet": "7.0.0",
     "promise-polyfill": "8.2.3",
     "restricted-input": "4.0.3"
   },
@@ -98,7 +102,6 @@
     "json5": "2.2.3",
     "lint-staged": "^15.2.11",
     "loose-envify": "^1.0.0",
-    "merge-stream": "^2.0.0",
     "minimist": "1.2.8",
     "mkdirp": "^1.0.4",
     "mock-xmlhttprequest": "^7.0.4",
@@ -115,7 +118,8 @@
     "typescript": "^5.8.3",
     "uglify-js": "^3.19.3",
     "unreachable-branch-transform": "0.5.1",
-    "watchify": "^4.0.0"
+    "watchify": "^4.0.0",
+    "wdio-intercept-service": "^4.4.1"
   },
   "browserify": {
     "transform": [

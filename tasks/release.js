@@ -4,7 +4,6 @@ var gulp = require("gulp");
 var chalk = require("chalk");
 var VERSION = require("../package.json").version;
 var HOSTED_DEST = process.env.BRAINTREE_JS_HOSTED_DEST;
-var BOWER_DEST = process.env.BRAINTREE_JS_BOWER_DEST;
 var NPM_DEST = "./dist/npm";
 
 gulp.task("release:hosted:copy", function () {
@@ -30,23 +29,6 @@ gulp.task(
     "release:hosted-static:copy",
     "release:hosted:copy",
     endingMessage(HOSTED_DEST)
-  )
-);
-
-gulp.task("release:bower:copy", function () {
-  return gulp
-    .src(["dist/bower/*", "dist/bower/.*"])
-    .pipe(gulp.dest(BOWER_DEST));
-});
-
-gulp.task(
-  "release:bower",
-  gulp.series(
-    "clean",
-    "build:hosted",
-    "build:bower",
-    "release:bower:copy",
-    endingMessage(BOWER_DEST)
   )
 );
 

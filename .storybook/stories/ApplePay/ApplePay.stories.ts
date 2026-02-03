@@ -201,12 +201,12 @@ const initializeApplePay = (container: HTMLElement): void => {
   setupApplePay();
 
   function setupApplePay() {
-    window.braintree.client
+    window.braintree?.client
       .create({
         authorization: authorization,
       })
       .then((clientInstance) => {
-        return window.braintree.applePay.create({
+        return window.braintree?.applePay.create({
           client: clientInstance,
         });
       })
@@ -301,7 +301,7 @@ const initializeApplePay = (container: HTMLElement): void => {
 
       console.log("Payment Request: ", paymentRequest);
 
-      const session = new window.ApplePaySession(
+      const session = new window.ApplePaySession!(
         APPLE_PAY_VERSION,
         paymentRequest
       );
@@ -344,14 +344,14 @@ const initializeApplePay = (container: HTMLElement): void => {
 
             // After you have transacted with the payload.nonce,
             // call 'completePayment' to dismiss the Apple Pay sheet.
-            session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
+            session.completePayment(window.ApplePaySession!.STATUS_SUCCESS);
             button.disabled = false;
             button.innerHTML = "🍎 Apple Pay";
             showSuccess(payload);
           })
           .catch((tokenizeErr) => {
             console.error("Error tokenizing Apple Pay:", tokenizeErr);
-            session.completePayment(window.ApplePaySession.STATUS_FAILURE);
+            session.completePayment(window.ApplePaySession!.STATUS_FAILURE);
             button.disabled = false;
             button.innerHTML = "🍎 Apple Pay";
             showError("Apple Pay tokenization failed: " + tokenizeErr.message);

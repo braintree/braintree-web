@@ -49,6 +49,7 @@ var paymentRequest = require("./payment-request");
 var paymentReady = require("./payment-ready");
 var paypal = require("./paypal");
 var paypalCheckout = require("./paypal-checkout");
+var paypalCheckoutV6 = require("./paypal-checkout-v6");
 var googlePayment = require("./google-payment");
 var sepa = require("./sepa");
 var threeDSecure = require("./three-d-secure");
@@ -89,6 +90,8 @@ module.exports = {
   paypal: paypal,
   /** @type {module:braintree-web/paypal-checkout} */
   paypalCheckout: paypalCheckout,
+  /** @type {module:braintree-web/paypal-checkout-v6} */
+  paypalCheckoutV6: paypalCheckoutV6,
   /** @type {module:braintree-web/three-d-secure} */
   threeDSecure: threeDSecure,
   /** @type {module:braintree-web/unionpay} */

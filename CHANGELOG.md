@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 3.135.0 (2026-02-03)
+
+- Adding PayPal Checkout v6 component
+- Hosted Fields
+  - Add 8-digit BIN support verification
+- Remove Bower package manager & all references to it
+- Update dependencies
+  - inject-stylesheet to 7.0.0
+- Update Node to v24
+- Update dependencies
+  - @braintree/event-emitter to 2.0.2
+  - @braintree/uuid to 2.0.0
+
 ## 3.134.0 (2025-12-11)
 
 - Instant Verification
