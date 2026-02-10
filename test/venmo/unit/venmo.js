@@ -240,6 +240,23 @@ describe("Venmo", () => {
     );
   });
 
+  it("configures venmo desktop with riskCorrelationId (if passed)", async () => {
+    createVenmoDesktop.mockResolvedValue({});
+    new Venmo({
+      allowDesktop: true,
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      riskCorrelationId: "custom-risk-id",
+    });
+
+    await flushPromises();
+
+    expect(createVenmoDesktop).toBeCalledWith(
+      expect.objectContaining({
+        venmoRiskCorrelationId: "custom-risk-id",
+      })
+    );
+  });
+
   it("sets up a payment context using legacy mutation when mobile polling flow is used without paymentMethodUsage when in an iframe", async () => {
     testContext.client.request.mockResolvedValue({
       data: {
@@ -511,6 +528,52 @@ describe("Venmo", () => {
         },
       },
     });
+  });
+
+  it("includes riskCorrelationId in payment context when provided", async () => {
+    testContext.client.request.mockResolvedValue({
+      data: {
+        createVenmoPaymentContext: {
+          venmoPaymentContext: {
+            status: "CREATED",
+            id: "context-id",
+            createdAt: "2021-01-20T03:25:37.522000Z",
+            expiresAt: "2021-01-20T03:30:37.522000Z",
+          },
+        },
+      },
+    });
+    inIframe.mockReturnValue(true);
+    const venmo = new Venmo({
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
+      riskCorrelationId: "custom-risk-id",
+    });
+
+    await flushPromises();
+
+    expect(testContext.client.request).toBeCalledWith({
+      api: "graphQLApi",
+      data: {
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+        variables: {
+          input: {
+            venmoRiskCorrelationId: "custom-risk-id",
+            paymentMethodUsage: "SINGLE_USE",
+            intent: "CONTINUE",
+            customerClient: "MOBILE_WEB",
+            isFinalAmount: false,
+            paysheetDetails: {
+              collectCustomerBillingAddress: false,
+              collectCustomerShippingAddress: false,
+            },
+          },
+        },
+      },
+    });
+
+    expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
+    expect(venmo._venmoPaymentContextId).toBe("context-id");
   });
 
   it("ignores display name when not configured with paymentMethodUsage", async () => {
@@ -1145,6 +1208,56 @@ describe("Venmo", () => {
       return venmo.getUrl().then((url) => {
         expect(url.indexOf(venmoConstants.VENMO_APP_OR_MOBILE_AUTH_URL)).toBe(
           0
+        );
+      });
+    });
+
+    it("uses sandbox url when allowDesktopWebLogin and enableVenmoSandbox are enabled", () => {
+      const venmoConfig = {
+        allowDesktopWebLogin: true,
+        enableVenmoSandbox: true,
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+      };
+
+      venmo = new Venmo(venmoConfig);
+
+      return venmo.getUrl().then((url) => {
+        expect(url.indexOf(venmoConstants.VENMO_WEB_LOGIN_SANDBOX_URL)).toBe(0);
+      });
+    });
+
+    it("uses production url when enableVenmoSandbox is true but environment is production", () => {
+      const productionClient = Object.assign({}, testContext.client);
+
+      productionClient.getConfiguration = jest.fn().mockReturnValue({
+        gatewayConfiguration: {
+          assetsUrl: "https://assets.braintreegateway.com",
+          payWithVenmo: {
+            accessToken: "access-token",
+            merchantId: "merchant-id",
+            environment: "production",
+          },
+        },
+        analyticsMetadata: {
+          sdkVersion: "1.0.0",
+          integration: "custom",
+          platform: "web",
+          sessionId: "session-id",
+        },
+      });
+
+      const venmoConfig = {
+        allowDesktopWebLogin: true,
+        enableVenmoSandbox: true,
+        createPromise: new Promise((resolve) => resolve(productionClient)),
+      };
+
+      venmo = new Venmo(venmoConfig);
+
+      return venmo.getUrl().then((url) => {
+        expect(url.indexOf(venmoConstants.VENMO_WEB_LOGIN_URL)).toBe(0);
+        expect(url.indexOf(venmoConstants.VENMO_WEB_LOGIN_SANDBOX_URL)).toBe(
+          -1
         );
       });
     });

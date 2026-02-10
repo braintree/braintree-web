@@ -14,6 +14,7 @@
  * @property {NETWORK} PAYPAL_CHECKOUT_V6_SDK_SCRIPT_LOAD_FAILED Occurs when the PayPal v6 SDK script fails to load.
  * @property {NETWORK} PAYPAL_CHECKOUT_V6_SDK_INITIALIZATION_FAILED Occurs when the PayPal V6 SDK instance creation fails.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_CLIENT_TOKEN_INVALID Occurs when the client token is invalid or expired.
+ * @property {MERCHANT} PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED Occurs when a method is called before loading the PayPal SDK.
  */
 
 /**
@@ -24,6 +25,7 @@
  * @property {CUSTOMER} PAYPAL_CHECKOUT_V6_PAYMENT_CANCELED Occurs when a customer cancels the payment flow.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS Occurs when session options are invalid or missing required fields.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED Occurs when returnUrl or cancelUrl is missing for direct-app-switch mode.
+ * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY Occurs when start() is called before the PayPal SDK instance is ready.
  */
 
 /**
@@ -93,6 +95,25 @@ module.exports = {
     code: "PAYPAL_CHECKOUT_V6_CLIENT_TOKEN_INVALID",
     message: "Client token is invalid or expired.",
   },
+  PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED",
+    message:
+      "PayPal SDK has not been initialized. Call loadPayPalSDK() before using this method.",
+  },
+
+  // Eligibility Check Errors
+  PAYPAL_CHECKOUT_V6_ELIGIBILITY_CHECK_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: "PAYPAL_CHECKOUT_V6_ELIGIBILITY_CHECK_FAILED",
+    message: "Failed to check payment method eligibility.",
+  },
+  PAYPAL_CHECKOUT_V6_INVALID_ELIGIBILITY_OPTIONS: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_INVALID_ELIGIBILITY_OPTIONS",
+    message:
+      "Eligibility check options are invalid or missing required fields (amount, currency).",
+  },
 
   // Session/Payment Errors
   PAYPAL_CHECKOUT_V6_SESSION_CREATION_FAILED: {
@@ -120,6 +141,12 @@ module.exports = {
     code: "PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED",
     message:
       "returnUrl and cancelUrl are required when using direct-app-switch presentation mode.",
+  },
+  PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY",
+    message:
+      "PayPal SDK instance is not ready. Ensure loadPayPalSDK() has completed before calling start().",
   },
 
   // Order Creation Errors

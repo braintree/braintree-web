@@ -136,31 +136,6 @@ new BraintreeError({
 });
 ```
 
-### Inheritance Patterns
-
-When extending classes or using prototypal inheritance:
-
-**CRITICAL:** Always use `.prototype` when setting up prototype chains with `Object.create()`:
-
-```javascript
-// CORRECT
-ChildClass.prototype = Object.create(ParentClass.prototype, {
-  constructor: ChildClass,
-});
-
-// WRONG - This breaks the prototype chain
-ChildClass.prototype = Object.create(ParentClass, {
-  constructor: ChildClass,
-});
-```
-
-Example from the codebase:
-
-- `BaseFramework` extends `EventEmitter` at `src/three-d-secure/external/frameworks/base.js:43`
-- `SongbirdFramework` extends `BaseFramework` at `src/three-d-secure/external/frameworks/songbird.js:50`
-
-Always verify inheritance chains are correctly established so child instances can access parent methods.
-
 ## Build Process Details
 
 ### Browserify Pipeline
@@ -377,53 +352,3 @@ PAYPAL_SANDBOX_OTP_CODE=111111
 8. For components requiring secure UI (popups/modals), use Frame Service (see `/src/lib/frame-service/CLAUDE.md`)
 9. For components requiring card input, use Hosted Fields (see `/src/hosted-fields/CLAUDE.md`)
 10. For transactions requiring 3DS authentication, integrate with 3D Secure component (see `/src/three-d-secure/CLAUDE.md`)
-
-## Planning and Response Format
-
-### Planning Phase
-
-Before implementing code changes, always start with a planning phase that includes:
-
-- A high-level overview of the problem to be solved
-- All functions, sections, and files that need modification or creation
-- The order in which changes will be applied
-- A breakdown of the solution into smaller, manageable components
-- Consideration of edge cases and error handling
-- Definition of expected input and output for each function
-
-### Response Structure
-
-- Use headings and subheadings to separate different sections
-- Use bullet points or numbered lists for clarity
-- Include code snippets where necessary, properly formatted
-- Provide explanations for complex logic or decisions
-- Do not include emojis in responses
-
-## Coding Guidelines
-
-### Clean and Readable Code
-
-- Follow consistent naming conventions (camelCase for variables/functions in JavaScript)
-- Maintain proper indentation (2 spaces)
-- Adhere to Single Responsibility Principle (SRP)
-
-### Semantic Naming
-
-- Variables, functions, classes, and methods should have meaningful names that clearly describe their purpose
-
-### Testing
-
-- Write meaningful unit tests using Jest
-- Ensure tests verify actual functionality, edge cases, and error handling
-- Use ES5 Promises for functional code, async for tests
-
-### Security
-
-- Follow OWASP best practices for secure coding
-- Protect sensitive data using environment variables
-- Regularly update dependencies to patch vulnerabilities
-
-### Documentation
-
-- Write clear, concise JSDocs for new functionality
-- Include comments only when necessary to explain non-obvious or complicated logic

@@ -580,6 +580,310 @@ describe("PayPalCheckoutV6", () => {
           .catch(done);
       });
     });
+
+    describe("session callbacks", () => {
+      it("does not include onShippingAddressChange when user does not provide one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onApprove).toBeDefined();
+            expect(capturedCallbacks.onCancel).toBeDefined();
+            expect(
+              Object.prototype.hasOwnProperty.call(
+                capturedCallbacks,
+                "onShippingAddressChange"
+              )
+            ).toBe(false);
+            done();
+          })
+          .catch(done);
+      });
+
+      it("does not include onError when user does not provide one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(
+              Object.prototype.hasOwnProperty.call(capturedCallbacks, "onError")
+            ).toBe(false);
+            done();
+          })
+          .catch(done);
+      });
+
+      it("includes onShippingAddressChange when user provides one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+          onShippingAddressChange: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onShippingAddressChange).toBeDefined();
+            done();
+          })
+          .catch(done);
+      });
+
+      it("includes onError when user provides one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+          onError: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onError).toBeDefined();
+            done();
+          })
+          .catch(done);
+      });
+
+      it("always includes onCancel for analytics tracking", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onCancel).toBeDefined();
+            done();
+          })
+          .catch(done);
+      });
+    });
+  });
+
+  describe("Transient Activation - Synchronous Start", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      testContext.paypalInstance = {
+        createPayPalOneTimePaymentSession: jest.fn().mockReturnValue({
+          start: jest.fn().mockResolvedValue(),
+        }),
+        createPayPalCreditOneTimePaymentSession: jest.fn().mockReturnValue({
+          start: jest.fn().mockResolvedValue(),
+        }),
+        createPayPalBillingAgreementWithoutPurchase: jest.fn().mockReturnValue({
+          start: jest.fn().mockResolvedValue(),
+        }),
+      };
+
+      window.paypal = {
+        createInstance: jest.fn().mockResolvedValue(testContext.paypalInstance),
+      };
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    afterEach(() => {
+      delete window.paypal;
+    });
+
+    it("creates eager checkout instance promise when session is created", () => {
+      testContext.instance.createOneTimePaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      // Instance creation should have started since window.paypal exists
+      expect(testContext.instance._checkoutInstancePromise).toBeDefined();
+    });
+
+    it("creates eager vault instance promise when billing agreement session is created", () => {
+      testContext.instance.createBillingAgreementSession({
+        billingAgreementDescription: "Monthly subscription",
+        onApprove: jest.fn(),
+      });
+
+      // Instance creation should have started since window.paypal exists
+      expect(testContext.instance._vaultInstancePromise).toBeDefined();
+    });
+
+    it("does not create eager instance if window.paypal is not loaded", () => {
+      delete window.paypal;
+
+      testContext.instance.createOneTimePaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      // Instance creation should not start if SDK isn't loaded
+      expect(testContext.instance._checkoutInstancePromise).toBeUndefined();
+    });
+
+    it("calls PayPal session.start() synchronously when checkout instance is ready", () => {
+      // Pre-set the instance as ready (simulating SDK already loaded and instance created)
+      testContext.instance._paypalInstance = testContext.paypalInstance;
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      var mockSession = {
+        start: jest.fn().mockResolvedValue(),
+      };
+
+      testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        .fn()
+        .mockReturnValue(mockSession);
+
+      var session = testContext.instance.createOneTimePaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      // Start the session - this should be synchronous path
+      session.start();
+
+      // session.start on PayPal SDK should be called immediately (synchronously)
+      expect(mockSession.start).toHaveBeenCalledTimes(1);
+
+      // Second arg should be a Promise (the order creation promise)
+      var secondArg = mockSession.start.mock.calls[0][1];
+
+      expect(secondArg).toBeInstanceOf(Promise);
+    });
+
+    it("calls PayPal session.start() synchronously when vault instance is ready", () => {
+      // Pre-set the vault instance as ready
+      testContext.instance._paypalVaultInstance = testContext.paypalInstance;
+
+      jest.spyOn(testContext.instance, "createPayment").mockResolvedValue({
+        billingToken: "BA-TOKEN-123",
+      });
+
+      var mockSession = {
+        start: jest.fn().mockResolvedValue(),
+      };
+
+      testContext.paypalInstance.createPayPalBillingAgreementWithoutPurchase =
+        jest.fn().mockReturnValue(mockSession);
+
+      var session = testContext.instance.createBillingAgreementSession({
+        billingAgreementDescription: "Monthly subscription",
+        onApprove: jest.fn(),
+      });
+
+      // Start the session - this should be synchronous path
+      session.start();
+
+      // session.start on PayPal SDK should be called immediately
+      expect(mockSession.start).toHaveBeenCalledTimes(1);
+
+      // Second arg should be a Promise (the billing token promise)
+      var secondArg = mockSession.start.mock.calls[0][1];
+
+      expect(secondArg).toBeInstanceOf(Promise);
+    });
+
+    it("returns INSTANCE_NOT_READY error when start() called without SDK loaded", () => {
+      delete window.paypal;
+
+      // Create session (no eager instance creation happens since SDK not loaded)
+      var session = testContext.instance.createOneTimePaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      // Neither sync path nor async path available
+      testContext.instance._paypalInstance = null;
+      testContext.instance._checkoutInstancePromise = null;
+
+      return session.start().catch(function (err) {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe("PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY");
+      });
+    });
   });
 
   describe("_verifyConsistentCurrency", () => {
@@ -2481,6 +2785,295 @@ describe("PayPalCheckoutV6", () => {
       expect(result.name).toBe("Premium Plan");
       expect(result.unrelatedProperty).toBeUndefined();
       expect(result.anotherProperty).toBeUndefined();
+    });
+  });
+
+  describe("findEligibleMethods", () => {
+    let mockPayPalInstance;
+
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      mockPayPalInstance = {
+        findEligibleMethods: jest.fn().mockResolvedValue({
+          paypal: true,
+          paylater: true,
+          credit: true,
+        }),
+      };
+
+      window.paypal = {
+        createInstance: jest.fn().mockResolvedValue(mockPayPalInstance),
+        version: "6.0.0",
+      };
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("rejects if PayPal SDK is not loaded", () => {
+      delete window.paypal;
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          // When window.paypal is undefined, accessing createInstance throws TypeError
+          // This is expected since loadPayPalSDK() should be called first
+          expect(err).toBeInstanceOf(TypeError);
+        });
+    });
+
+    it("rejects if findEligibleMethods is not available on instance", () => {
+      window.paypal = {
+        createInstance: jest.fn().mockResolvedValue({
+          // No findEligibleMethods method
+          version: "6.0.0",
+        }),
+        version: "6.0.0",
+      };
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("MERCHANT");
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED");
+        });
+    });
+
+    it("rejects if options are not provided", () => {
+      return testContext.instance
+        .findEligibleMethods()
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("MERCHANT");
+          expect(err.code).toBe(
+            "PAYPAL_CHECKOUT_V6_INVALID_ELIGIBILITY_OPTIONS"
+          );
+        });
+    });
+
+    it("rejects if currency is missing", () => {
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("MERCHANT");
+          expect(err.code).toBe(
+            "PAYPAL_CHECKOUT_V6_INVALID_ELIGIBILITY_OPTIONS"
+          );
+        });
+    });
+
+    it("calls PayPal instance findEligibleMethods with currencyCode", () => {
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          expect(mockPayPalInstance.findEligibleMethods).toHaveBeenCalledWith({
+            currencyCode: "USD",
+            amount: "10.00",
+          });
+        });
+    });
+
+    it("returns eligibility result with all methods eligible (direct boolean response)", () => {
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue({
+        paypal: true,
+        paylater: true,
+        credit: true,
+      });
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then((result) => {
+          expect(result.paypal).toBe(true);
+          expect(result.paylater).toBe(true);
+          expect(result.credit).toBe(true);
+        });
+    });
+
+    it("returns eligibility result using isEligible method when available", () => {
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue({
+        isEligible: jest.fn().mockImplementation((method) => {
+          if (method === "paypal") return true;
+          if (method === "paylater") return false;
+          if (method === "credit") return true;
+        }),
+      });
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then((result) => {
+          expect(result.paypal).toBe(true);
+          expect(result.paylater).toBe(false);
+          expect(result.credit).toBe(true);
+        });
+    });
+
+    it("returns eligibility result with only PayPal eligible", () => {
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue({
+        paypal: true,
+        paylater: false,
+        credit: false,
+      });
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "5.00",
+          currency: "USD",
+        })
+        .then((result) => {
+          expect(result.paypal).toBe(true);
+          expect(result.paylater).toBe(false);
+          expect(result.credit).toBe(false);
+        });
+    });
+
+    it("handles undefined values in eligibility response", () => {
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue({});
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then((result) => {
+          expect(result.paypal).toBe(false);
+          expect(result.paylater).toBe(false);
+          expect(result.credit).toBe(false);
+        });
+    });
+
+    it("handles null eligibility response", () => {
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue(null);
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then((result) => {
+          expect(result.paypal).toBe(false);
+          expect(result.paylater).toBe(false);
+          expect(result.credit).toBe(false);
+        });
+    });
+
+    it("sends started analytics event", () => {
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.find-eligible-methods.started"
+          );
+        });
+    });
+
+    it("sends succeeded analytics event on success", () => {
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.find-eligible-methods.succeeded"
+          );
+        });
+    });
+
+    it("sends failed analytics event on error", () => {
+      mockPayPalInstance.findEligibleMethods.mockRejectedValue(
+        new Error("API Error")
+      );
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.find-eligible-methods.failed"
+          );
+        });
+    });
+
+    it("rejects with BraintreeError on PayPal SDK error", () => {
+      mockPayPalInstance.findEligibleMethods.mockRejectedValue(
+        new Error("Network error")
+      );
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("NETWORK");
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_ELIGIBILITY_CHECK_FAILED");
+        });
+    });
+
+    it("uses existing paypalInstance if already created", () => {
+      // Pre-set the _paypalInstance
+      testContext.instance._paypalInstance = mockPayPalInstance;
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          // Should not call createInstance since we already have one
+          expect(window.paypal.createInstance).not.toHaveBeenCalled();
+          expect(mockPayPalInstance.findEligibleMethods).toHaveBeenCalledWith({
+            currencyCode: "USD",
+            amount: "10.00",
+          });
+        });
     });
   });
 });

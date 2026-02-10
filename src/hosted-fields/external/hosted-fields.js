@@ -356,7 +356,7 @@ function createInputEventHandler(fields) {
       fields: merchantPayload.fields,
     };
 
-    this.emit(eventData.type, merchantPayload);
+    this._emit(eventData.type, merchantPayload);
   };
 }
 
@@ -645,7 +645,7 @@ function HostedFields(options) {
   });
 
   this._bus.on(events.BIN_AVAILABLE, function (bin) {
-    self.emit("binAvailable", {
+    self._emit("binAvailable", {
       bin: bin,
     });
   });
@@ -655,7 +655,7 @@ function HostedFields(options) {
       self._clientPromise,
       "custom.hosted-fields.load.timed-out"
     );
-    self.emit("timeout");
+    self._emit("timeout");
   }, INTEGRATION_TIMEOUT_MS);
 
   Promise.all(frameReadyPromises).then(function (results) {
@@ -668,7 +668,7 @@ function HostedFields(options) {
 
     self._cleanUpFocusIntercepts();
 
-    self.emit("ready");
+    self._emit("ready");
   });
 
   this._bus.on(events.FRAME_READY, function (data, reply) {
@@ -707,9 +707,7 @@ function HostedFields(options) {
   });
 }
 
-HostedFields.prototype = Object.create(EventEmitter.prototype, {
-  constructor: HostedFields,
-});
+EventEmitter.createChild(HostedFields);
 
 HostedFields.prototype._setupLabelFocus = function (type, container) {
   var labels, i;

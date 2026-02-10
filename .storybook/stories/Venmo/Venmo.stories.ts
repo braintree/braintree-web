@@ -17,6 +17,7 @@ interface BraintreeWithVenmo {
       allowDesktopWebLogin?: boolean;
       mobileWebFallBack?: boolean;
       paymentMethodUsage?: "single_use" | "multi_use";
+      riskCorrelationId?: string;
       [key: string]: unknown;
     }) => Promise<{
       isBrowserSupported(): boolean;
@@ -35,6 +36,7 @@ interface VenmoOptions {
   allowDesktopWebLogin?: boolean;
   mobileWebFallBack?: boolean;
   paymentMethodUsage?: "single_use" | "multi_use";
+  riskCorrelationId?: string;
   [key: string]: unknown;
 }
 
@@ -104,6 +106,7 @@ const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
     .then((clientInstance) => {
       return (window.braintree as unknown as BraintreeWithVenmo).venmo.create({
         client: clientInstance,
+        riskCorrelationId: "foo-bar-test",
         ...venmoOptions,
       });
     })

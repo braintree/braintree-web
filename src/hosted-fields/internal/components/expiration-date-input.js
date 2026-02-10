@@ -35,11 +35,7 @@ function ExpirationDateInput() {
   this.model.on(
     "change:expirationDate.value",
     function (date) {
-      if (
-        date.newValue.length === 0 ||
-        date.newValue[0] === "0" ||
-        date.newValue[0] === "1"
-      ) {
+      if (date.length === 0 || date[0] === "0" || date[0] === "1") {
         this.formatter.setPattern(DEFAULT_PATTERN);
       } else {
         this.formatter.setPattern(ZERO_PADDED_PATTERN);

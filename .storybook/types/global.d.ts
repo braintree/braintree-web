@@ -312,6 +312,7 @@ interface IVenmoCreateOptions {
   paymentMethodUsage?: "single_use" | "multi_use";
   profileId?: string;
   deepLinkReturnUrl?: string;
+  riskCorrelationId?: string;
   requireManualReturn?: boolean;
   useRedirectForIOS?: boolean;
   useWebLogin?: boolean;

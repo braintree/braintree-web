@@ -196,12 +196,12 @@ CreditCardForm.prototype._onSplitDateChange = function () {
   }
 };
 
-CreditCardForm.prototype._onNumberChange = function (metadata) {
+CreditCardForm.prototype._onNumberChange = function (number, metadata) {
   var binLength = this.configuration.binVerificationLength || 6;
 
-  var newPossibleCardTypes = this.getCardTypes(metadata.newValue);
+  var newPossibleCardTypes = this.getCardTypes(number);
   var oldPossibleCardTypes = this.get("possibleCardTypes");
-  var newBin = getBinFromNumber(metadata.newValue, binLength);
+  var newBin = getBinFromNumber(number, binLength);
   var newNumberIsLongEnoughForBinEvent = newBin.length === binLength;
   var oldBin = getBinFromNumber(metadata.old, binLength);
   var oldNumberIsShortEnoughForBinEvent = oldBin.length < binLength;
@@ -400,7 +400,7 @@ CreditCardForm.prototype.applyAutofillValues = function (data) {
         return;
       }
 
-      this.emit("autofill:" + key, value);
+      this._emit("autofill:" + key, value);
     }.bind(this)
   );
 };
@@ -444,7 +444,7 @@ function onFieldFocusChange(form, field) {
 
     form.emitEvent(
       field,
-      isFocused.newValue ? externalEvents.FOCUS : externalEvents.BLUR
+      isFocused ? externalEvents.FOCUS : externalEvents.BLUR
     );
   };
 }

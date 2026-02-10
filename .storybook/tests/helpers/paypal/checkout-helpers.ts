@@ -22,7 +22,7 @@ interface WaitForElementOptions {
   interval?: number;
 }
 
-// TODO: For some reason ESLint doesn't think we're using the enum properties
+// For some reason ESLint doesn't think we're using the enum properties
 // There could be a fix here: https://stackoverflow.com/questions/57802057/eslint-configuring-no-unused-vars-for-typescript
 enum LoginStyle {
   // eslint-disable-next-line no-unused-vars

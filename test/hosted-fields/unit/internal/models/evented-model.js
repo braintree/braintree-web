@@ -77,8 +77,8 @@ describe("EventedModel", () => {
   });
 
   it("emits a scoped change event when a property changes", (done) => {
-    testContext.model.on("change:foo", (metadata) => {
-      expect(metadata.newValue).toBe(789);
+    testContext.model.on("change:foo", (newValue) => {
+      expect(newValue).toBe(789);
       done();
     });
 
@@ -88,9 +88,9 @@ describe("EventedModel", () => {
   it("emits metadata with the old value as second argument for a scoped change event when a property changes", (done) => {
     testContext.model.set("foo", 123);
 
-    testContext.model.on("change:foo", (metadata) => {
+    testContext.model.on("change:foo", (newValue, metadata) => {
       expect(metadata.old).toBe(123);
-      expect(metadata.newValue).toBe(789);
+      expect(newValue).toBe(789);
       done();
     });
 
@@ -98,8 +98,8 @@ describe("EventedModel", () => {
   });
 
   it("emits an intermediate-scope change event when a nested property changes", (done) => {
-    testContext.model.on("change:foo", (metadata) => {
-      expect(metadata.newValue).toEqual({ bar: "yas" });
+    testContext.model.on("change:foo", (newValue) => {
+      expect(newValue).toEqual({ bar: "yas" });
       done();
     });
 
@@ -109,9 +109,9 @@ describe("EventedModel", () => {
   it("emits metadata with only the old value that changed, not the whole object when a nested property changes", (done) => {
     testContext.model.set("foo.bar", "foo");
 
-    testContext.model.on("change:foo", (metadata) => {
+    testContext.model.on("change:foo", (newValue, metadata) => {
       expect(metadata.old).toEqual("foo");
-      expect(metadata.newValue).toEqual({ bar: "yas" });
+      expect(newValue).toEqual({ bar: "yas" });
       done();
     });
 
@@ -119,8 +119,8 @@ describe("EventedModel", () => {
   });
 
   it("emits a scoped change event when a nested property changes", (done) => {
-    testContext.model.on("change:foo.bar", (metadata) => {
-      expect(metadata.newValue).toBe("yas");
+    testContext.model.on("change:foo.bar", (newValue) => {
+      expect(newValue).toBe("yas");
       done();
     });
 
@@ -130,9 +130,9 @@ describe("EventedModel", () => {
   it("emits metadata with the old value as a second argument for a scoped change event when a nested property changes", (done) => {
     testContext.model.set("foo.bar", "foo");
 
-    testContext.model.on("change:foo.bar", (metadata) => {
+    testContext.model.on("change:foo.bar", (newValue, metadata) => {
       expect(metadata.old).toBe("foo");
-      expect(metadata.newValue).toBe("yas");
+      expect(newValue).toBe("yas");
       done();
     });
 
@@ -146,9 +146,7 @@ describe("EventedModel", () => {
       EventedModel.apply(this, arguments);
     }
 
-    Child.prototype = Object.create(EventedModel.prototype, {
-      constructor: Child,
-    });
+    util.inherits(Child, EventedModel);
 
     Child.prototype.resetAttributes = () => ({
       foo: {

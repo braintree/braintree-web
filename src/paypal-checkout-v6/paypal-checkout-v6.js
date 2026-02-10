@@ -242,6 +242,38 @@ PayPalCheckoutV6.prototype._setupFrameService = function (client) {
 };
 
 /**
+ * Checks if the PayPal SDK is loaded and ready for use.
+ * @private
+ * @returns {boolean} True if PayPal SDK is available.
+ */
+PayPalCheckoutV6.prototype._isPayPalSdkAvailable = function () {
+  return Boolean(window.paypal && window.paypal.createInstance);
+};
+
+/**
+ * Validates that returnUrl and cancelUrl are provided for app-switch mode.
+ * @private
+ * @param {object} options Payment session options.
+ * @param {string} presentationMode The presentation mode.
+ * @returns {BraintreeError|null} Error if validation fails, null otherwise.
+ */
+PayPalCheckoutV6.prototype._validateAppSwitchUrls = function (
+  options,
+  presentationMode
+) {
+  if (
+    presentationMode === "direct-app-switch" &&
+    (!options.returnUrl || !options.cancelUrl)
+  ) {
+    return new BraintreeError(
+      errors.PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED
+    );
+  }
+
+  return null;
+};
+
+/**
  * Formats plan metadata for billing agreement creation.
  * @private
  * @param {object} plan - Plan metadata object containing billing cycles and other properties.
@@ -386,7 +418,7 @@ PayPalCheckoutV6.prototype._createPayPalInstance = function (options) {
 
   return this._clientPromise.then(function (client) {
     var config = client.getConfiguration();
-    var clientToken = config.authorization;
+    var clientId = config.gatewayConfiguration.paypal.clientId;
     var isVaultFlow = options && options.flow === "vault";
 
     // Use paypal-billing-agreements component for vault flow (Braintree merchants)
@@ -397,7 +429,7 @@ PayPalCheckoutV6.prototype._createPayPalInstance = function (options) {
 
     options = assign(
       {
-        clientToken: clientToken,
+        clientId: clientId,
         components: components,
         pageType: "checkout",
       },
@@ -782,6 +814,224 @@ PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
 };
 
 /**
+ * Creates session callback handlers for checkout flow with analytics.
+ * @private
+ * @param {object} client The Braintree client instance.
+ * @param {object} options Payment session options containing callbacks.
+ * @returns {object} Callback configuration for PayPal session.
+ */
+PayPalCheckoutV6.prototype._createCheckoutSessionCallbacks = function (
+  client,
+  options
+) {
+  var sessionCallbacks = {
+    onApprove: function (data) {
+      analytics.sendEvent(client, constants.ANALYTICS_EVENTS.PAYMENT_APPROVED);
+
+      return options.onApprove(data);
+    },
+    onCancel: function (data) {
+      analytics.sendEvent(client, constants.ANALYTICS_EVENTS.PAYMENT_CANCELED);
+      if (options && typeof options.onCancel === "function") {
+        return options.onCancel(data);
+      }
+
+      return undefined;
+    },
+  };
+
+  if (options && typeof options.onError === "function") {
+    sessionCallbacks.onError = function (err) {
+      return options.onError(err);
+    };
+  }
+
+  if (options && typeof options.onShippingAddressChange === "function") {
+    sessionCallbacks.onShippingAddressChange = function (data) {
+      return options.onShippingAddressChange(data);
+    };
+  }
+
+  return sessionCallbacks;
+};
+
+/**
+ * Creates order promise for checkout flow with error handling.
+ * @private
+ * @param {object} paymentOptions Payment resource options.
+ * @param {function} [onError] Optional error callback.
+ * @returns {Promise} Promise resolving to { orderId }.
+ */
+PayPalCheckoutV6.prototype._createOrderPromise = function (
+  paymentOptions,
+  onError
+) {
+  return this._createPaymentResource(paymentOptions)
+    .then(function (orderData) {
+      return { orderId: orderData.orderId };
+    })
+    .catch(function (err) {
+      if (onError) {
+        onError(err);
+      }
+      throw err;
+    });
+};
+
+/**
+ * Starts a checkout payment session with the given instance and client.
+ * @private
+ * @param {object} instance PayPal SDK instance.
+ * @param {object} client Braintree client instance.
+ * @param {string} presentationMode How to present the PayPal flow.
+ * @param {string} sessionType Type of session: 'paypal' or 'paypal-credit'.
+ * @param {object} options Payment session options.
+ * @param {object} paymentOptions Payment resource options.
+ * @returns {Promise} Promise from PayPal session.start().
+ */
+PayPalCheckoutV6.prototype._startCheckoutSession = function (
+  instance,
+  client,
+  presentationMode,
+  sessionType,
+  options,
+  paymentOptions
+) {
+  var sessionMethod =
+    sessionType === "paypal-credit"
+      ? "createPayPalCreditOneTimePaymentSession"
+      : "createPayPalOneTimePaymentSession";
+
+  analytics.sendEvent(client, constants.ANALYTICS_EVENTS.PAYMENT_STARTED);
+
+  var session = instance[sessionMethod](
+    this._createCheckoutSessionCallbacks(client, options)
+  );
+
+  return session.start(
+    {
+      presentationMode: presentationMode,
+    },
+    this._createOrderPromise(paymentOptions, options.onError)
+  );
+};
+
+/**
+ * Creates session callback handlers for billing agreement flow with analytics.
+ * @private
+ * @param {object} client The Braintree client instance.
+ * @param {object} options Billing agreement session options containing callbacks.
+ * @returns {object} Callback configuration for PayPal session.
+ */
+PayPalCheckoutV6.prototype._createBillingSessionCallbacks = function (
+  client,
+  options
+) {
+  return {
+    onApprove: function (data) {
+      analytics.sendEvent(
+        client,
+        constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_APPROVED
+      );
+
+      return options.onApprove(data);
+    },
+    onCancel: function (data) {
+      analytics.sendEvent(
+        client,
+        constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_CANCELED
+      );
+      if (options.onCancel && typeof options.onCancel === "function") {
+        options.onCancel(data);
+      }
+    },
+    onError: function (err) {
+      analytics.sendEvent(
+        client,
+        constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_FAILED
+      );
+      if (options.onError && typeof options.onError === "function") {
+        options.onError(err);
+      }
+    },
+  };
+};
+
+/**
+ * Creates billing token promise for vault flow.
+ * @private
+ * @param {object} billingAgreementRequest Billing agreement request data.
+ * @param {object} options Billing agreement session options.
+ * @returns {Promise} Promise resolving to { billingToken }.
+ */
+PayPalCheckoutV6.prototype._createBillingTokenPromise = function (
+  billingAgreementRequest,
+  options
+) {
+  return this.createPayment({
+    flow: "vault",
+    billingAgreementDescription: billingAgreementRequest.description,
+    planType: billingAgreementRequest.planType,
+    planMetadata: billingAgreementRequest.planMetadata,
+    amount: billingAgreementRequest.amount,
+    currency: billingAgreementRequest.currency,
+    shippingAddressOverride: billingAgreementRequest.shippingAddressOverride,
+    userAction: billingAgreementRequest.userAction,
+    offerCredit: options.offerCredit,
+  }).then(function (billingToken) {
+    return { billingToken: billingToken };
+  });
+};
+
+/**
+ * Starts a billing agreement session with the given instance and client.
+ * @private
+ * @param {object} instance PayPal SDK instance.
+ * @param {object} client Braintree client instance.
+ * @param {string} presentationMode How to present the PayPal flow.
+ * @param {object} billingAgreementRequest Billing agreement request data.
+ * @param {object} options Billing agreement session options.
+ * @returns {Promise} Promise from PayPal session.start().
+ */
+PayPalCheckoutV6.prototype._startBillingSession = function (
+  instance,
+  client,
+  presentationMode,
+  billingAgreementRequest,
+  options
+) {
+  var self = this;
+
+  analytics.sendEvent(
+    client,
+    constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_STARTED
+  );
+
+  var paypalSession = instance.createPayPalBillingAgreementWithoutPurchase(
+    this._createBillingSessionCallbacks(client, options)
+  );
+
+  analytics.sendEvent(
+    client,
+    constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_SESSION_CREATED
+  );
+
+  var billingTokenPromise = self
+    ._createBillingTokenPromise(billingAgreementRequest, options)
+    .catch(function (err) {
+      if (options.onError) {
+        options.onError(err);
+      }
+      throw err;
+    });
+
+  return paypalSession.start(
+    { presentationMode: presentationMode },
+    billingTokenPromise
+  );
+};
+
+/**
  * @private
  * @param {object} options Payment session options.
  * @param {string} sessionType Type of session: 'paypal' or 'paypal-credit'.
@@ -792,14 +1042,9 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
   sessionType
 ) {
   var self = this;
-  var instancePromise;
 
   this._flow = "checkout";
   this._sessionType = sessionType;
-
-  instancePromise = this._paypalInstance
-    ? Promise.resolve(this._paypalInstance)
-    : this._createPayPalInstance();
 
   var paymentOptions = {
     amount: options.amount,
@@ -848,76 +1093,44 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
         presentationOptions.presentationMode ||
         options.presentationMode ||
         "auto";
+      var paypalInstance = self._paypalInstance;
 
-      // Validate URLs are provided for app switch mode
-      if (presentationMode === "direct-app-switch") {
-        if (!options.returnUrl || !options.cancelUrl) {
-          return Promise.reject(
-            new BraintreeError(
-              errors.PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED
-            )
-          );
-        }
+      var appSwitchError = self._validateAppSwitchUrls(
+        options,
+        presentationMode
+      );
+
+      if (appSwitchError) {
+        return Promise.reject(appSwitchError);
       }
 
-      return self._clientPromise.then(function (client) {
-        analytics.sendEvent(client, constants.ANALYTICS_EVENTS.PAYMENT_STARTED);
+      // If the PayPal instance is ready, start synchronously to preserve Safari's transient activation
+      if (paypalInstance && self._client) {
+        return self._startCheckoutSession(
+          paypalInstance,
+          self._client,
+          presentationMode,
+          sessionType,
+          options,
+          paymentOptions
+        );
+      }
 
-        return instancePromise
-          .then(function (paypalInstance) {
-            return self
-              ._createPaymentResource(paymentOptions)
-              .then(function (orderData) {
-                var sessionMethod =
-                  sessionType === "paypal-credit"
-                    ? "createPayPalCreditOneTimePaymentSession"
-                    : "createPayPalOneTimePaymentSession";
-                var session;
-
-                session = paypalInstance[sessionMethod]({
-                  onApprove: function (data) {
-                    analytics.sendEvent(
-                      client,
-                      constants.ANALYTICS_EVENTS.PAYMENT_APPROVED
-                    );
-                    return options.onApprove(data);
-                  },
-                  onCancel: function (data) {
-                    analytics.sendEvent(
-                      client,
-                      constants.ANALYTICS_EVENTS.PAYMENT_CANCELED
-                    );
-                    if (options && typeof options.onCancel === "function") {
-                      return options.onCancel(data);
-                    }
-
-                    return undefined;
-                  },
-                  onError: function (err) {
-                    if (options && typeof options.onError === "function") {
-                      return options.onError(err);
-                    }
-
-                    return undefined;
-                  },
-                  onShippingAddressChange: function (data) {
-                    if (
-                      options &&
-                      typeof options.onShippingAddressChange === "function"
-                    ) {
-                      return options.onShippingAddressChange(data);
-                    }
-
-                    return undefined;
-                  },
-                });
-
-                // Start the session with the order ID
-                return session.start(
-                  { presentationMode: presentationMode },
-                  Promise.resolve({ orderId: orderData.orderId })
-                );
-              });
+      // If instance isn't ready yet, wait for it. This path may _not_ work in Safari
+      // due to transient activation expiring, but works in Chrome/Firefox/Edge
+      if (self._checkoutInstancePromise) {
+        return self._checkoutInstancePromise
+          .then(function (instance) {
+            return self._clientPromise.then(function (client) {
+              return self._startCheckoutSession(
+                instance,
+                client,
+                presentationMode,
+                sessionType,
+                options,
+                paymentOptions
+              );
+            });
           })
           .catch(function (err) {
             if (options.onError) {
@@ -925,7 +1138,12 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
             }
             throw err;
           });
-      });
+      }
+
+      // No instance and no promise - this shouldn't happen if loadPayPalSDK() was called
+      return Promise.reject(
+        new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY)
+      );
     },
   };
 };
@@ -1184,6 +1402,22 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
     );
   }
 
+  // Eagerly create PayPal instance so start() can run synchronously (required for Safari)
+  if (
+    !self._paypalInstance &&
+    !self._checkoutInstancePromise &&
+    self._isPayPalSdkAvailable()
+  ) {
+    self._checkoutInstancePromise = self._clientPromise
+      .then(function () {
+        return self._createPayPalInstance();
+      })
+      .then(function (instance) {
+        // _paypalInstance is set by _createPayPalInstance, but we also need the promise
+        return instance;
+      });
+  }
+
   return this._createPaymentSession(options, sessionType);
 };
 
@@ -1368,7 +1602,10 @@ PayPalCheckoutV6.prototype.createPayment = function (options) {
  *   }
  * });
  *
- * session.start();
+ * // Trigger the vault flow when user clicks a button
+ * document.getElementById('paypal-button').addEventListener('click', function () {
+ *   session.start();
+ * });
  * @returns {object} Session object with start() method.
  */
 PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
@@ -1392,31 +1629,105 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
     constants.ANALYTICS_EVENTS.SESSION_VAULT_CREATED
   );
 
+  // Eagerly create PayPal instance so start() can run synchronously (required for Safari).
+  if (
+    !self._paypalVaultInstance &&
+    !self._vaultInstancePromise &&
+    self._isPayPalSdkAvailable()
+  ) {
+    self._vaultInstancePromise = self._clientPromise
+      .then(function () {
+        return self._createPayPalInstance({ flow: "vault" });
+      })
+      .then(function (instance) {
+        self._paypalVaultInstance = instance;
+
+        return instance;
+      });
+  }
+
+  var billingAgreementRequest = self._buildBillingAgreementRequest(options);
+
   session.start = function (presentationOptions) {
     presentationOptions = presentationOptions || {};
     var presentationMode =
       presentationOptions.presentationMode ||
       options.presentationMode ||
       "auto";
+    var paypalInstance = self._paypalVaultInstance;
 
-    // Validate URLs are provided for app switch mode
-    if (presentationMode === "direct-app-switch") {
-      if (!options.returnUrl || !options.cancelUrl) {
-        return Promise.reject(
-          new BraintreeError(errors.PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED)
-        );
-      }
+    var appSwitchError = self._validateAppSwitchUrls(options, presentationMode);
+
+    if (appSwitchError) {
+      return Promise.reject(appSwitchError);
     }
 
-    return self._clientPromise.then(function (client) {
-      var paypalInstance, billingAgreementRequest;
-
-      analytics.sendEvent(
-        client,
-        constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_STARTED
+    // If the PayPal vault instance is ready,
+    // start synchronously to preserve Safari's transient activation
+    if (paypalInstance && self._client) {
+      return self._startBillingSession(
+        paypalInstance,
+        self._client,
+        presentationMode,
+        billingAgreementRequest,
+        options
       );
+    }
 
-      if (!window.paypal || !window.paypal.createInstance) {
+    // If instance isn't ready yet, wait for it. This path may _not_ work in Safari
+    // due to transient activation expiring, but works in Chrome/Firefox/Edge
+    if (self._vaultInstancePromise) {
+      return self._vaultInstancePromise
+        .then(function (instance) {
+          return self._clientPromise.then(function (client) {
+            if (!self._isPayPalSdkAvailable()) {
+              analytics.sendEvent(
+                client,
+                constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_SDK_NOT_LOADED
+              );
+              throw new BraintreeError(
+                errors.PAYPAL_CHECKOUT_V6_SDK_INITIALIZATION_FAILED
+              );
+            }
+
+            analytics.sendEvent(
+              client,
+              constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_INSTANCE_CREATED
+            );
+
+            return self._startBillingSession(
+              instance,
+              client,
+              presentationMode,
+              billingAgreementRequest,
+              options
+            );
+          });
+        })
+        .catch(function (err) {
+          return self._clientPromise.then(function (client) {
+            analytics.sendEvent(
+              client,
+              constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_FAILED
+            );
+
+            throw new BraintreeError({
+              type: errors.PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED
+                .type,
+              code: errors.PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED
+                .code,
+              message:
+                errors.PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED
+                  .message,
+              details: { originalError: err },
+            });
+          });
+        });
+    }
+
+    // No instance and no promise. Check if SDK wasn't loaded
+    if (!self._isPayPalSdkAvailable()) {
+      return self._clientPromise.then(function (client) {
         analytics.sendEvent(
           client,
           constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_SDK_NOT_LOADED
@@ -1424,104 +1735,13 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
         throw new BraintreeError(
           errors.PAYPAL_CHECKOUT_V6_SDK_INITIALIZATION_FAILED
         );
-      }
+      });
+    }
 
-      billingAgreementRequest = self._buildBillingAgreementRequest(options);
-
-      // Create PayPal instance with billing-agreements component for vault flow
-      return self
-        ._createPayPalInstance({ flow: "vault" })
-        .then(function (instance) {
-          paypalInstance = instance;
-          analytics.sendEvent(
-            client,
-            constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_INSTANCE_CREATED
-          );
-
-          var sessionConfig = {
-            onApprove: function (data) {
-              analytics.sendEvent(
-                client,
-                constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_APPROVED
-              );
-              return options.onApprove(data);
-            },
-            onCancel: function (data) {
-              analytics.sendEvent(
-                client,
-                constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_CANCELED
-              );
-              if (options.onCancel && typeof options.onCancel === "function") {
-                options.onCancel(data);
-              }
-            },
-            onError: function (err) {
-              analytics.sendEvent(
-                client,
-                constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_FAILED
-              );
-              if (options.onError && typeof options.onError === "function") {
-                options.onError(err);
-              }
-            },
-          };
-
-          var paypalSession =
-            paypalInstance.createPayPalBillingAgreementWithoutPurchase(
-              sessionConfig
-            );
-
-          analytics.sendEvent(
-            client,
-            constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_SESSION_CREATED
-          );
-
-          var startOptions = {
-            presentationMode: presentationMode,
-          };
-
-          // Create an async function that returns the billing token
-          // This matches the PayPal V6 SDK pattern from their example
-          function createOrder() {
-            return self
-              .createPayment({
-                flow: "vault",
-                billingAgreementDescription:
-                  billingAgreementRequest.description,
-                planType: billingAgreementRequest.planType,
-                planMetadata: billingAgreementRequest.planMetadata,
-                amount: billingAgreementRequest.amount,
-                currency: billingAgreementRequest.currency,
-                shippingAddressOverride:
-                  billingAgreementRequest.shippingAddressOverride,
-                userAction: billingAgreementRequest.userAction,
-                offerCredit: options.offerCredit,
-              })
-              .then(function (billingToken) {
-                return { billingToken: billingToken };
-              });
-          }
-
-          return paypalSession.start(startOptions, createOrder());
-        })
-        .catch(function (err) {
-          analytics.sendEvent(
-            client,
-            constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_FAILED
-          );
-
-          throw new BraintreeError({
-            type: errors.PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED
-              .type,
-            code: errors.PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED
-              .code,
-            message:
-              errors.PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED
-                .message,
-            details: { originalError: err },
-          });
-        });
-    });
+    // Otherwise, this shouldn't happen if loadPayPalSDK() was called properly
+    return Promise.reject(
+      new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY)
+    );
   };
 
   return session;
@@ -1998,6 +2218,135 @@ PayPalCheckoutV6.prototype.updatePayment = function (options) {
           })
         );
       });
+  });
+};
+
+/**
+ * @typedef {object} PayPalCheckoutV6~eligibilityResult
+ * @property {boolean} paypal Whether standard PayPal payments are eligible.
+ * @property {boolean} paylater Whether Pay Later (BNPL) is eligible.
+ * @property {boolean} credit Whether PayPal Credit is eligible.
+ */
+
+/**
+ * Finds eligible payment methods for the given amount and currency.
+ * This allows merchants to check which payment methods (PayPal, Pay Later, PayPal Credit)
+ * are eligible before rendering buttons, enabling dynamic UI that shows only available options.
+ *
+ * Eligibility depends on: currency, amount, merchant configuration, buyer location, and PayPal account features.
+ *
+ * @public
+ * @param {object} options Eligibility check options.
+ * @param {string} [options.amount] Optional payment amount (e.g., '10.00').
+ * @param {string} options.currency The currency code (e.g., 'USD').
+ * @example
+ * // Check eligibility before rendering buttons
+ * paypalCheckoutV6Instance.findEligibleMethods({
+ *   amount: '10.00',
+ *   currency: 'USD'
+ * }).then(function (eligibility) {
+ *   if (eligibility.paylater) {
+ *     // Show Pay Later button
+ *     document.getElementById('paylater-button').style.display = 'block';
+ *   }
+ *   if (eligibility.credit) {
+ *     // Show PayPal Credit button
+ *     document.getElementById('credit-button').style.display = 'block';
+ *   }
+ *   if (eligibility.paypal) {
+ *     // Show standard PayPal button
+ *     document.getElementById('paypal-button').style.display = 'block';
+ *   }
+ * }).catch(function (err) {
+ *   console.error('Eligibility check failed:', err);
+ * });
+ *
+ * @example
+ * // Conditionally offer Pay Later messaging
+ * paypalCheckoutV6Instance.findEligibleMethods({
+ *   amount: '150.00',
+ *   currency: 'USD'
+ * }).then(function (eligibility) {
+ *   if (eligibility.paylater) {
+ *     // Show "Pay in 4" promotional messaging
+ *     showPayLaterPromo();
+ *   }
+ * });
+ *
+ * @returns {Promise<PayPalCheckoutV6~eligibilityResult>} A promise that resolves with eligibility flags for each payment method.
+ */
+PayPalCheckoutV6.prototype.findEligibleMethods = function (options) {
+  var self = this;
+
+  return this._clientPromise.then(function (client) {
+    if (!options || !options.currency) {
+      return Promise.reject(
+        new BraintreeError(
+          errors.PAYPAL_CHECKOUT_V6_INVALID_ELIGIBILITY_OPTIONS
+        )
+      );
+    }
+
+    // Get or create the PayPal instance
+    var instancePromise = self._paypalInstance
+      ? Promise.resolve(self._paypalInstance)
+      : self._createPayPalInstance();
+
+    return instancePromise.then(function (paypalInstance) {
+      if (
+        !paypalInstance ||
+        typeof paypalInstance.findEligibleMethods !== "function"
+      ) {
+        return Promise.reject(
+          new BraintreeError(errors.PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED)
+        );
+      }
+
+      analytics.sendEvent(
+        client,
+        constants.ANALYTICS_EVENTS.FIND_ELIGIBLE_METHODS_STARTED
+      );
+
+      return paypalInstance
+        .findEligibleMethods({
+          currencyCode: options.currency,
+          amount: options.amount,
+        })
+        .then(function (paymentMethods) {
+          analytics.sendEvent(
+            client,
+            constants.ANALYTICS_EVENTS.FIND_ELIGIBLE_METHODS_SUCCEEDED
+          );
+
+          // Check if SDK returns isEligible method or direct boolean properties
+          var hasIsEligible =
+            paymentMethods && typeof paymentMethods.isEligible === "function";
+
+          return {
+            paypal: hasIsEligible
+              ? paymentMethods.isEligible("paypal")
+              : Boolean(paymentMethods && paymentMethods.paypal),
+            paylater: hasIsEligible
+              ? paymentMethods.isEligible("paylater")
+              : Boolean(paymentMethods && paymentMethods.paylater),
+            credit: hasIsEligible
+              ? paymentMethods.isEligible("credit")
+              : Boolean(paymentMethods && paymentMethods.credit),
+          };
+        })
+        .catch(function (err) {
+          analytics.sendEvent(
+            client,
+            constants.ANALYTICS_EVENTS.FIND_ELIGIBLE_METHODS_FAILED
+          );
+
+          throw convertToBraintreeError(err, {
+            type: errors.PAYPAL_CHECKOUT_V6_ELIGIBILITY_CHECK_FAILED.type,
+            code: errors.PAYPAL_CHECKOUT_V6_ELIGIBILITY_CHECK_FAILED.code,
+            message: errors.PAYPAL_CHECKOUT_V6_ELIGIBILITY_CHECK_FAILED.message,
+          });
+        });
+    });
   });
 };
 

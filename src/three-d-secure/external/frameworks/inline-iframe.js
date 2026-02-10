@@ -23,8 +23,8 @@ InlineIframeFramework.prototype.setUpEventListeners = function (reply) {
 
   this.on(
     InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE,
-    function (payload) {
-      reply("authentication-iframe-available", payload.element, payload.next);
+    function (payload, next) {
+      reply("authentication-iframe-available", payload, next);
     }
   );
 };
@@ -44,12 +44,15 @@ InlineIframeFramework.prototype._createCardinalConfigurationOptions = function (
 };
 
 InlineIframeFramework.prototype._addV1IframeToPage = function () {
-  this.emit(InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE, {
-    element: this._v1Modal,
-    next: function () {
-      // NOOP
+  this._emit(
+    InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE,
+    {
+      element: this._v1Modal,
     },
-  });
+    function () {
+      // NOOP
+    }
+  );
 };
 
 InlineIframeFramework.prototype._setupFrameworkSpecificListeners = function () {
@@ -88,10 +91,15 @@ InlineIframeFramework.prototype._onInlineSetup = function (
     document.body.appendChild(container);
     resolve();
   } else if (details.data.mode === "static") {
-    this.emit(InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE, {
-      element: container,
-      next: resolve,
-    });
+    this._emit(
+      InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE,
+      {
+        element: container,
+      },
+      function () {
+        resolve();
+      }
+    );
   }
 };
 

@@ -83,14 +83,15 @@ describe("InlineIframeFramework", () => {
         .mockImplementation(
           yieldsByEventAsync(
             "inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE",
-            { element: "some data", next: "a fake function" }
+            "some data",
+            "a fake function"
           )
         );
 
-      framework.setUpEventListeners((eventName, element, next) => {
+      framework.setUpEventListeners((eventName, data, fakeFunction) => {
         expect(eventName).toBe("authentication-iframe-available");
-        expect(element).toBe("some data");
-        expect(next).toBe("a fake function");
+        expect(data).toBe("some data");
+        expect(fakeFunction).toBe("a fake function");
 
         done();
       });
@@ -319,11 +320,12 @@ describe("InlineIframeFramework", () => {
 
       testContext.instance.on(
         "inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE",
-        (payload) => {
+        (payload, next) => {
           expect(testContext.resolveFunction).not.toHaveBeenCalled();
           expect(payload.element.querySelector("iframe")).toBeDefined();
 
-          payload.next();
+          next();
+
           expect(testContext.resolveFunction).toHaveBeenCalledTimes(1);
 
           done();

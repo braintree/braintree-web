@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 3.136.0 (2026-02-10)
+
+- Venmo
+  - Add `riskCorrelationId` option for custom risk correlation tracking
+- PayPal Checkout v6
+  - Mitigating issue from the small window for transient activation in Safari
+  - Add findEligibleMethods
+  - `onShippingAddressChange` and `onError` are no longer passed to the PayPal SDK when not supplied by the user
+- Dependencies
+  - Revert update of @braintree/event-emitter to 2.0.2
+
 ## 3.135.0 (2026-02-03)
 
 - Adding PayPal Checkout v6 component

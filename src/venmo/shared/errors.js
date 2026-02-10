@@ -5,6 +5,8 @@
  * @description Errors that occur when [creating the Venmo component](./module-braintree-web_venmo.html#.create).
  * @property {MERCHANT} VENMO_NOT_ENABLED Occurs when Venmo is not enabled on the Braintree control panel.
  * @property {MERCHANT} VENMO_INVALID_PROFILE_ID Occurs when Venmo is initialized with a profile id, but it is invalid.
+ * @property {MERCHANT} VENMO_INVALID_RISK_CORRELATION_ID Occurs when Venmo is initialized with a riskCorrelationId (A.K.A. a clientMetadataId), but it is invalid.
+ * @property {MERCHANT} VENMO_INVALID_DEEP_LINK_RETURN_URL Occurs when Venmo is initialized with a deep link return URL, but it is invalid.
  * @property {UNKNOWN} VENMO_MOBILE_POLLING_SETUP_FAILED __Deprecated__ No longer returned. Use `VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED` instead.
  * @property {UNKNOWN} VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED Occurs when the request to set up a Venmo Payment Context object fails.
  */
@@ -136,6 +138,11 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: "VENMO_INVALID_DEEP_LINK_RETURN_URL",
     message: "Venmo deep link return URL is invalid.",
+  },
+  VENMO_INVALID_RISK_CORRELATION_ID: {
+    type: BraintreeError.types.MERCHANT,
+    code: "VENMO_INVALID_RISK_CORRELATION_ID",
+    message: "Venmo risk correlation ID is invalid.",
   },
   VENMO_TOKENIZATION_FAILED: {
     type: BraintreeError.types.UNKNOWN,

@@ -65,8 +65,8 @@ SongbirdFramework.events = enumerate(
 );
 
 SongbirdFramework.prototype.setUpEventListeners = function (reply) {
-  this.on(SongbirdFramework.events.LOOKUP_COMPLETE, function (data) {
-    reply("lookup-complete", data.data, data.next);
+  this.on(SongbirdFramework.events.LOOKUP_COMPLETE, function (data, next) {
+    reply("lookup-complete", data, next);
   });
   this.on(SongbirdFramework.events.CUSTOMER_CANCELED, function () {
     reply("customer-canceled");
@@ -315,7 +315,7 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
 
       SONGBIRD_UI_EVENTS.forEach(function (eventName) {
         self.setCardinalListener(eventName, function () {
-          self.emit(SongbirdFramework.events[eventName.toUpperCase()]);
+          self._emit(SongbirdFramework.events[eventName.toUpperCase()]);
         });
       });
       self.setCardinalListener(
@@ -465,7 +465,7 @@ SongbirdFramework.prototype._performJWTValidation = function (
     );
 
     if (cancelCode === CUSTOMER_CANCELED_SONGBIRD_MODAL) {
-      this.emit(SongbirdFramework.events.CUSTOMER_CANCELED);
+      this._emit(SongbirdFramework.events.CUSTOMER_CANCELED);
     }
   }
 
@@ -719,10 +719,7 @@ SongbirdFramework.prototype._onLookupComplete = function (
         if (options.onLookupComplete) {
           options.onLookupComplete(response, next);
         } else {
-          self.emit(SongbirdFramework.events.LOOKUP_COMPLETE, {
-            data: response,
-            next,
-          });
+          self._emit(SongbirdFramework.events.LOOKUP_COMPLETE, response, next);
         }
       });
     });

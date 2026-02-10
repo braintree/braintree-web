@@ -206,9 +206,7 @@ function PaymentRequestComponent(options) {
   this._bus = new Bus({ channel: this._componentId });
 }
 
-PaymentRequestComponent.prototype = Object.create(EventEmitter.prototype, {
-  constructor: PaymentRequestComponent,
-});
+EventEmitter.createChild(PaymentRequestComponent);
 
 PaymentRequestComponent.prototype._constructDefaultSupportedPaymentMethods =
   function () {
@@ -298,8 +296,8 @@ PaymentRequestComponent.prototype.initialize = function () {
           },
         };
 
-        self.emit("shippingAddressChange", shippingAddressChangeEvent);
-        self.emit("shippingaddresschange", shippingAddressChangeEvent);
+        self._emit("shippingAddressChange", shippingAddressChangeEvent);
+        self._emit("shippingaddresschange", shippingAddressChangeEvent);
       });
       self._bus.on(events.SHIPPING_OPTION_CHANGE, function (shippingOption) {
         var shippingOptionChangeEvent = {
@@ -311,8 +309,8 @@ PaymentRequestComponent.prototype.initialize = function () {
           },
         };
 
-        self.emit("shippingOptionChange", shippingOptionChangeEvent);
-        self.emit("shippingoptionchange", shippingOptionChangeEvent);
+        self._emit("shippingOptionChange", shippingOptionChangeEvent);
+        self._emit("shippingoptionchange", shippingOptionChangeEvent);
       });
       resolve(self);
     });

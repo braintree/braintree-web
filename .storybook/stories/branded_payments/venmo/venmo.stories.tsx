@@ -5,9 +5,11 @@ type VenmoClientArgs = {
   allowDesktop?: boolean;
   allowDesktopWebLogin?: boolean;
   authorization: string;
+  enableVenmoSandbox: boolean;
   label: string;
   mobileWebFallBack?: boolean;
   paymentMethodUsage?: "single_use" | "multi_use";
+  riskCorrelationId?: string;
 };
 
 const meta: Meta<VenmoClientArgs> = {
@@ -18,13 +20,13 @@ const meta: Meta<VenmoClientArgs> = {
         authorization: args.authorization,
       });
 
-      await venmoIntegration.init();
+      await venmoIntegration.init(args);
 
       return { venmoIntegration };
     },
   ],
   parameters: {
-    scripts: ["venmo"],
+    braintreeScripts: ["venmo"],
   },
 };
 
@@ -45,9 +47,11 @@ export const Primary: Story = {
     allowDesktop: false,
     allowDesktopWebLogin: false,
     authorization: import.meta.env.STORYBOOK_BRAINTREE_TOKENIZATION_KEY,
+    enableVenmoSandbox: false,
     label: "Pay with Venmo",
     mobileWebFallBack: false,
     paymentMethodUsage: "multi_use",
+    riskCorrelationId: "foo-bar-test",
   },
 };
 

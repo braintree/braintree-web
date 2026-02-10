@@ -1407,7 +1407,7 @@ describe("credit card model", () => {
       ]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "emit");
+      jest.spyOn(cardForm, "_emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1417,19 +1417,19 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm.emit).toBeCalledTimes(5);
-      expect(cardForm.emit).toBeCalledWith("autofill:cardholderName", "name");
-      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
-      expect(cardForm.emit).toBeCalledWith("autofill:cvv", "123");
-      expect(cardForm.emit).toBeCalledWith("autofill:expirationMonth", "12");
-      expect(cardForm.emit).toBeCalledWith("autofill:expirationYear", "34");
+      expect(cardForm._emit).toBeCalledTimes(5);
+      expect(cardForm._emit).toBeCalledWith("autofill:cardholderName", "name");
+      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm._emit).toBeCalledWith("autofill:cvv", "123");
+      expect(cardForm._emit).toBeCalledWith("autofill:expirationMonth", "12");
+      expect(cardForm._emit).toBeCalledWith("autofill:expirationYear", "34");
     });
 
     it("does not emit event for key that does not exist in autofill data", () => {
       const configuration = getModelConfig(["number", "postalCode"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "emit");
+      jest.spyOn(cardForm, "_emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1439,15 +1439,15 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm.emit).toBeCalledTimes(1);
-      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm._emit).toBeCalledTimes(1);
+      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
     });
 
     it("emits expiration date autofill event with data from expiration month and year", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "emit");
+      jest.spyOn(cardForm, "_emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1457,8 +1457,8 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm.emit).toBeCalledTimes(1);
-      expect(cardForm.emit).toBeCalledWith(
+      expect(cardForm._emit).toBeCalledTimes(1);
+      expect(cardForm._emit).toBeCalledWith(
         "autofill:expirationDate",
         "12 / 34"
       );
@@ -1468,7 +1468,7 @@ describe("credit card model", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "emit");
+      jest.spyOn(cardForm, "_emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1478,14 +1478,14 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm.emit).not.toBeCalled();
+      expect(cardForm._emit).not.toBeCalled();
     });
 
     it("does not emit expiration date autofill event when expiration year is missing", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "emit");
+      jest.spyOn(cardForm, "_emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1495,7 +1495,7 @@ describe("credit card model", () => {
         expirationYear: "",
       });
 
-      expect(cardForm.emit).not.toBeCalled();
+      expect(cardForm._emit).not.toBeCalled();
     });
 
     it("does not emit event for value that is an empty string", () => {
@@ -1508,7 +1508,7 @@ describe("credit card model", () => {
       ]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "emit");
+      jest.spyOn(cardForm, "_emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "",
@@ -1518,8 +1518,8 @@ describe("credit card model", () => {
         expirationYear: "",
       });
 
-      expect(cardForm.emit).toBeCalledTimes(1);
-      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm._emit).toBeCalledTimes(1);
+      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
     });
   });
 });

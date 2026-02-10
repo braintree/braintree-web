@@ -3,13 +3,12 @@
 var EventEmitter = require("@braintree/event-emitter");
 
 function EventedModel() {
-  EventEmitter.call(this, this);
+  EventEmitter.call(this);
 
   this._attributes = this.resetAttributes();
 }
 
-EventedModel.prototype = Object.create(EventEmitter.prototype);
-EventedModel.prototype.constructor = EventedModel;
+EventEmitter.createChild(EventedModel);
 
 EventedModel.prototype.get = function get(compoundKey) {
   var i, key, keys;
@@ -54,11 +53,10 @@ EventedModel.prototype.set = function set(compoundKey, value) {
   if (traversal[key] !== value) {
     oldValue = traversal[key];
     traversal[key] = value;
-    this.emit("change");
+    this._emit("change");
     for (i = 1; i <= keys.length; i++) {
       key = keys.slice(0, i).join(".");
-      this.emit("change:" + key, {
-        newValue: this.get(key),
+      this._emit("change:" + key, this.get(key), {
         old: oldValue,
       });
     }

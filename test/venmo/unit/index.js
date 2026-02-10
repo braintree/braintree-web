@@ -102,6 +102,26 @@ describe("venmo static methods", () => {
         expect(err.message).toBe("Venmo deep link return URL is invalid.");
       }));
 
+    it("errors out if options.riskCorrelationId is present but not a string", () =>
+      create({
+        client: testContext.client,
+        riskCorrelationId: 1234,
+      }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("MERCHANT");
+        expect(err.code).toBe("VENMO_INVALID_RISK_CORRELATION_ID");
+        expect(err.message).toBe("Venmo risk correlation ID is invalid.");
+      }));
+
+    it("accepts a valid riskCorrelationId string", () =>
+      create({
+        client: testContext.client,
+        riskCorrelationId: "my-custom-risk-id",
+      }).then((instance) => {
+        expect(instance).toBeInstanceOf(Venmo);
+        expect(instance._riskCorrelationId).toBe("my-custom-risk-id");
+      }));
+
     it("sends an analytics event when successful", () =>
       create({ client: testContext.client }).then(() => {
         expect(analytics.sendEvent).toBeCalledWith(

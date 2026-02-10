@@ -433,7 +433,8 @@ if (needsNewTab && !allowNewBrowserTab) return false;
 {
   paymentMethodUsage: 'single_use',  // or 'multi_use'
   profileId: 'venmo_profile_id',  // Merchant Venmo profile
-  displayName: 'My Business'  // Business name in app
+  displayName: 'My Business',  // Business name in app
+  riskCorrelationId: 'custom-risk-id'  // Custom risk correlation ID for tracking
 }
 ```
 
@@ -463,6 +464,21 @@ if (needsNewTab && !allowNewBrowserTab) return false;
   ]
 }
 ```
+
+**Risk Management:**
+
+```javascript
+{
+  riskCorrelationId: "custom-risk-correlation-id"; // Custom ID for risk tracking
+}
+```
+
+The `riskCorrelationId` option allows you to pass a custom identifier for risk correlation tracking. This ID is used by PayPal's risk management systems to correlate Venmo transactions with other risk signals.
+
+- Must be a string value
+- Passed to both VenmoDesktop and payment context creation
+- Used for fraud detection and risk assessment
+- Optional parameter
 
 ## Error Handling
 
@@ -748,4 +764,27 @@ cancelButton.addEventListener("click", function () {
     }
   });
 });
+```
+
+### With Custom Risk Correlation ID
+
+```javascript
+braintree.venmo
+  .create({
+    client: clientInstance,
+    allowDesktop: true,
+    paymentMethodUsage: "single_use",
+    riskCorrelationId: "session-" + Date.now(), // Custom risk tracking ID
+  })
+  .then(function (venmoInstance) {
+    payButton.addEventListener("click", function () {
+      venmoInstance.tokenize(function (err, payload) {
+        if (err) return console.error(err);
+
+        // The riskCorrelationId is sent with the payment context
+        // and used by PayPal's risk management systems
+        sendNonceToServer(payload.nonce);
+      });
+    });
+  });
 ```

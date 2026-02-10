@@ -31,9 +31,9 @@ class VenmoIntegration extends BaseIntegration {
     super(options);
   }
 
-  async init() {
+  async init(args = {}) {
     await super.init();
-    await this.initializeVenmoClient();
+    await this.initializeVenmoClient(args);
   }
 
   render(buttonElement: HTMLButtonElement) {
@@ -54,10 +54,10 @@ class VenmoIntegration extends BaseIntegration {
     });
   }
 
-  async initializeVenmoClient(options = {}) {
+  async initializeVenmoClient(args = {}) {
     this.client = await window.braintree.venmo.create({
       client: this.getBraintreeClient(),
-      ...options,
+      ...args,
     });
   }
 }

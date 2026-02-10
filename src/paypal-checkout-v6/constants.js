@@ -71,6 +71,14 @@ var ANALYTICS_EVENTS = {
   // Credit
   CREDIT_OFFERED: ANALYTICS_PREFIX + ".credit.offered",
   CREDIT_ACCEPTED: ANALYTICS_PREFIX + ".credit.accepted",
+
+  // Eligibility Check
+  FIND_ELIGIBLE_METHODS_STARTED:
+    ANALYTICS_PREFIX + ".find-eligible-methods.started",
+  FIND_ELIGIBLE_METHODS_SUCCEEDED:
+    ANALYTICS_PREFIX + ".find-eligible-methods.succeeded",
+  FIND_ELIGIBLE_METHODS_FAILED:
+    ANALYTICS_PREFIX + ".find-eligible-methods.failed",
 };
 
 module.exports = {

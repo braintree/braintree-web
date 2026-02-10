@@ -68,14 +68,33 @@ const installAndVerify = () => {
 };
 
 /**
+ * Detects if a version is a custom version
+ * Custom versions have additional identifiers (e.g., 3.135.0-beta-pwv-sandbox.1)
+ *
+ * @param {string} version - The version string to check
+ * @returns {boolean} True if this is a custom version
+ */
+const isCustomVersion = (version) => {
+  const customVersionPattern =
+    /^\d+\.\d+\.\d+-(beta|alpha|rc)-[a-z0-9-]+\.\d+$/i;
+  return customVersionPattern.test(version);
+};
+
+/**
  * Step 4: Update CHANGELOG.md with actual version from package.json
  * Replaces UNRELEASED header with versioned header
+ *
+ * @param {string} version - The version string to use
+ * @returns {boolean} True if CHANGELOG was updated
  */
-const updateChangelog = () => {
+const updateChangelog = (version) => {
   console.log("Step 4: Updating CHANGELOG.md...");
 
-  // Read version from package.json
-  const version = readVersionFromPackage();
+  // Skip changelog update for custom beta versions
+  if (isCustomVersion(version)) {
+    console.log(`  Skipping changelog update for custom version: ${version}\n`);
+    return false;
+  }
 
   let changelog = readFileSync(CHANGELOG_PATH, "utf8");
 
@@ -103,6 +122,8 @@ const updateChangelog = () => {
 /**
  * Step 3: Run npm version
  * Creates version commit with updated package.json and package-lock.json
+ *
+ * @param {string} type - The kind of version we're updating, or an explicit version
  */
 const runNpmVersion = (type) => {
   console.log("Step 3: Creating version tag...");
@@ -132,14 +153,23 @@ const runNpmVersion = (type) => {
 /**
  * Step 5: Amend version commit to include changelog
  * Adds CHANGELOG.md to the commit created by npm version
+ * Moves the Git tag to the amended commit
+ *
+ * @param {string} version - The version string (e.g., "3.135.0")
  */
-const commitChangelog = () => {
+const commitChangelog = (version) => {
   console.log("Step 5: Committing changelog...");
+
+  const tagName = `v${version}`;
 
   execSync("git add CHANGELOG.md");
   execSync("git commit --amend --no-edit");
 
-  console.log("  Changelog committed (amended version commit)\n");
+  // Move tag to the amended commit
+  execSync(`git tag -f ${tagName}`);
+
+  console.log("  Changelog committed (amended version commit)");
+  console.log(`  Moved tag ${tagName} to amended commit\n`);
 };
 
 /**
@@ -191,16 +221,16 @@ const main = () => {
     // Step 3: Run npm version (creates commit with package.json + package-lock.json)
     runNpmVersion(type);
 
+    const finalVersion = readVersionFromPackage();
+
     // Step 4: Update changelog with actual version from package.json
-    const changelogUpdated = updateChangelog();
+    const changelogUpdated = updateChangelog(finalVersion);
 
     // Step 5: If changelog was updated, amend the commit to include it
     if (changelogUpdated) {
-      commitChangelog();
+      commitChangelog(finalVersion);
     }
 
-    // Success - read final version for display
-    const finalVersion = readVersionFromPackage();
     console.log("=".repeat(50));
     console.log("Release prepared successfully!");
     console.log(`  Version: ${currentVersion} → ${finalVersion}\n`);

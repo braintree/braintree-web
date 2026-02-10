@@ -238,13 +238,13 @@ describe("HostedFields", () => {
       jest.useFakeTimers();
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest.spyOn(testContext.instance, "emit").mockImplementation();
+      jest.spyOn(testContext.instance, "_emit").mockImplementation();
 
       jest.advanceTimersByTime(59999);
-      expect(testContext.instance.emit).not.toHaveBeenCalledWith("timeout");
+      expect(testContext.instance._emit).not.toHaveBeenCalledWith("timeout");
 
       jest.advanceTimersByTime(1);
-      expect(testContext.instance.emit).toHaveBeenCalledWith("timeout");
+      expect(testContext.instance._emit).toHaveBeenCalledWith("timeout");
     });
 
     it("subscribes to FRAME_READY", () => {
@@ -582,11 +582,11 @@ describe("HostedFields", () => {
         testContext.instance._bus.on.mock.calls
       );
 
-      jest.spyOn(testContext.instance, "emit");
+      jest.spyOn(testContext.instance, "_emit");
 
       handler("123456");
 
-      expect(testContext.instance.emit).toHaveBeenCalledWith("binAvailable", {
+      expect(testContext.instance._emit).toHaveBeenCalledWith("binAvailable", {
         bin: "123456",
       });
     });
@@ -600,11 +600,11 @@ describe("HostedFields", () => {
         testContext.instance._bus.on.mock.calls
       );
 
-      jest.spyOn(testContext.instance, "emit");
+      jest.spyOn(testContext.instance, "_emit");
 
       handler("12345678");
 
-      expect(testContext.instance.emit).toHaveBeenCalledWith("binAvailable", {
+      expect(testContext.instance._emit).toHaveBeenCalledWith("binAvailable", {
         bin: "12345678",
       });
     });
@@ -942,7 +942,7 @@ describe("HostedFields", () => {
       };
 
       testContext.instance = new HostedFields(configuration);
-      jest.spyOn(testContext.instance, "emit").mockImplementation();
+      jest.spyOn(testContext.instance, "_emit").mockImplementation();
 
       testContext.inputEventHandler = findFirstEventCallback(
         events.INPUT_EVENT,
@@ -1036,8 +1036,8 @@ describe("HostedFields", () => {
     it("calls emit with the type and merchant payload", () => {
       testContext.inputEventHandler(testContext.eventData);
 
-      expect(testContext.instance.emit).toHaveBeenCalledTimes(1);
-      expect(testContext.instance.emit).toHaveBeenCalledWith(
+      expect(testContext.instance._emit).toHaveBeenCalledTimes(1);
+      expect(testContext.instance._emit).toHaveBeenCalledWith(
         "foo",
         testContext.eventData.merchantPayload
       );

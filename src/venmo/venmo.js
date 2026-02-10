@@ -92,11 +92,13 @@ function Venmo(options) {
   this._mobilePollingInterval = DEFAULT_MOBILE_POLLING_INTERVAL;
   this._mobilePollingExpiresThreshold = DEFAULT_MOBILE_EXPIRING_THRESHOLD;
   this._pollCount = 0;
+  this._riskCorrelationId = options.riskCorrelationId;
 
   this._shouldCreateVenmoPaymentContext =
     this._cannotHaveReturnUrls || !this._shouldUseLegacyFlow;
 
   this._isIncognito = options._isIncognito;
+  this._enableVenmoSandbox = options.enableVenmoSandbox || false;
 
   analytics.sendEvent(
     this._createPromise,
@@ -134,6 +136,7 @@ function Venmo(options) {
           config.environment === "production" ? "PRODUCTION" : "SANDBOX",
         profileId: self._profileId || config.payWithVenmo.merchantId,
         paymentMethodUsage: self._paymentMethodUsage,
+        venmoRiskCorrelationId: self._riskCorrelationId,
         displayName: self._displayName,
         Promise: Promise,
         apiRequest: function (query, data) {
@@ -322,6 +325,7 @@ Venmo.prototype._createVenmoPaymentContext = function (
           query: graphqlQueries.CREATE_PAYMENT_CONTEXT_QUERY,
           variables: {
             input: {
+              venmoRiskCorrelationId: this._riskCorrelationId,
               paymentMethodUsage: this._paymentMethodUsage,
               intent: "CONTINUE",
               customerClient: customerClientChannel,
@@ -575,6 +579,8 @@ Venmo.prototype.getUrl = function () {
         getVenmoUrl({
           useAllowDesktopWebLogin: this._useAllowDesktopWebLogin,
           mobileWebFallBack: this._mobileWebFallBack,
+          enableVenmoSandbox: this._enableVenmoSandbox,
+          environment: venmoConfiguration.environment,
         }) +
         "?" +
         querystring.stringify(params)

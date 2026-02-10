@@ -35,6 +35,7 @@ var VenmoDesktop = /** @class */ (function () {
     this.profileId = options.profileId;
     this.displayName = options.displayName;
     this.paymentMethodUsage = options.paymentMethodUsage;
+    this.riskCorrelationId = options.riskCorrelationId;
     this.shouldUseLegacyQRCodeMutation = !this.paymentMethodUsage;
     var frameUrl = options.url + "#" + this.env + "_" + this.id;
     this.bus = new framebus_1.default({
@@ -335,6 +336,7 @@ var VenmoDesktop = /** @class */ (function () {
     var input = {
       intent: intent,
       paymentMethodUsage: this.paymentMethodUsage,
+      venmoRiskCorrelationId: this.riskCorrelationId,
       customerClient: "DESKTOP",
     };
     if (this.profileId) {

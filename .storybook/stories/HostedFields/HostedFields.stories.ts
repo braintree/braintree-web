@@ -149,6 +149,7 @@ const setupBraintreeHostedFields = (
       authorization: authorization,
       ...(debugMode !== undefined && { debug: debugMode }),
     })
+    // eslint-disable-next-line complexity
     .then((clientInstance) => {
       // Configure fields based on args
       const fields = {

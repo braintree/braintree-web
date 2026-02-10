@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.135.0",
+  "version": "3.136.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -41,7 +41,7 @@
   "dependencies": {
     "@braintree/asset-loader": "2.0.3",
     "@braintree/browser-detection": "2.1.0",
-    "@braintree/event-emitter": "2.0.2",
+    "@braintree/event-emitter": "0.4.1",
     "@braintree/extended-promise": "1.0.0",
     "@braintree/iframer": "2.0.1",
     "@braintree/sanitize-url": "7.0.4",
