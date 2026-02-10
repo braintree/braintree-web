@@ -1,0 +1,6024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+      LocalPayment - Documentation
+  </title>
+
+  <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+  <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css" />
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+  
+
+  <!-- start Mixpanel -->
+  <script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+  0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+  for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+  mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script>
+  <!-- end Mixpanel -->
+</head>
+
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="linkIcon" fill="#706d77" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+  <label for="nav-trigger" class="navicon-button x">
+    <div class="navicon"></div>
+  </label>
+
+  <label for="nav-trigger" class="overlay"></label>
+
+  <div class="top-nav-wrapper">
+    <ul>
+      <li >
+        <a href="index.html">
+          
+            <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+          
+          
+        </a>
+      </li>
+
+      
+      <li>
+        <div class="search-wrapper">
+          <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            <path d="M0 0h24v24H0z" fill="none"/>
+
+          </svg>
+          <input type="text" placeholder="Search" class="search-input">
+        </div>
+      </li>
+      
+
+    </ul>
+  </div>
+
+  <nav>
+    <h3 class="reference-title">
+      Braintree SDK Client Reference
+    </h3>
+
+    <h3>Classes</h3><ul><li id="AmericanExpress-nav"><a href="AmericanExpress.html">AmericanExpress</a><ul class='methods'><li data-type="method" id="AmericanExpress-getExpressCheckoutProfile-nav"><a href="AmericanExpress.html#getExpressCheckoutProfile">getExpressCheckoutProfile</a></li><li data-type="method" id="AmericanExpress-getRewardsBalance-nav"><a href="AmericanExpress.html#getRewardsBalance">getRewardsBalance</a></li><li data-type="method" id="AmericanExpress-teardown-nav"><a href="AmericanExpress.html#teardown">teardown</a></li></ul></li><li id="ApplePay-nav"><a href="ApplePay.html">ApplePay</a><ul class='methods'><li data-type="method" id="ApplePay-createPaymentRequest-nav"><a href="ApplePay.html#createPaymentRequest">createPaymentRequest</a></li><li data-type="method" id="ApplePay-performValidation-nav"><a href="ApplePay.html#performValidation">performValidation</a></li><li data-type="method" id="ApplePay-teardown-nav"><a href="ApplePay.html#teardown">teardown</a></li><li data-type="method" id="ApplePay-tokenize-nav"><a href="ApplePay.html#tokenize">tokenize</a></li></ul></li><li id="BraintreeError-nav"><a href="BraintreeError.html">BraintreeError</a></li><li id="Client-nav"><a href="Client.html">Client</a><ul class='methods'><li data-type="method" id="Client-getConfiguration-nav"><a href="Client.html#getConfiguration">getConfiguration</a></li><li data-type="method" id="Client-getVersion-nav"><a href="Client.html#getVersion">getVersion</a></li><li data-type="method" id="Client-request-nav"><a href="Client.html#request">request</a></li></ul></li><li id="DataCollector-nav"><a href="DataCollector.html">DataCollector</a><ul class='methods'><li data-type="method" id="DataCollector-getDeviceData-nav"><a href="DataCollector.html#getDeviceData">getDeviceData</a></li><li data-type="method" id="DataCollector-teardown-nav"><a href="DataCollector.html#teardown">teardown</a></li></ul></li><li id="GooglePayment-nav"><a href="GooglePayment.html">GooglePayment</a><ul class='methods'><li data-type="method" id="GooglePayment-createPaymentDataRequest-nav"><a href="GooglePayment.html#createPaymentDataRequest">createPaymentDataRequest</a></li><li data-type="method" id="GooglePayment-parseResponse-nav"><a href="GooglePayment.html#parseResponse">parseResponse</a></li><li data-type="method" id="GooglePayment-teardown-nav"><a href="GooglePayment.html#teardown">teardown</a></li></ul></li><li id="HostedFields-nav"><a href="HostedFields.html">HostedFields</a><ul class='methods'><li data-type="method" id="HostedFields-addClass-nav"><a href="HostedFields.html#addClass">addClass</a></li><li data-type="method" id="HostedFields-clear-nav"><a href="HostedFields.html#clear">clear</a></li><li data-type="method" id="HostedFields-focus-nav"><a href="HostedFields.html#focus">focus</a></li><li data-type="method" id="HostedFields-getChallenges-nav"><a href="HostedFields.html#getChallenges">getChallenges</a></li><li data-type="method" id="HostedFields-getState-nav"><a href="HostedFields.html#getState">getState</a></li><li data-type="method" id="HostedFields-getSupportedCardTypes-nav"><a href="HostedFields.html#getSupportedCardTypes">getSupportedCardTypes</a></li><li data-type="method" id="HostedFields-off-nav"><a href="HostedFields.html#off">off</a></li><li data-type="method" id="HostedFields-on-nav"><a href="HostedFields.html#on">on</a></li><li data-type="method" id="HostedFields-removeAttribute-nav"><a href="HostedFields.html#removeAttribute">removeAttribute</a></li><li data-type="method" id="HostedFields-removeClass-nav"><a href="HostedFields.html#removeClass">removeClass</a></li><li data-type="method" id="HostedFields-setAttribute-nav"><a href="HostedFields.html#setAttribute">setAttribute</a></li><li data-type="method" id="HostedFields-setMessage-nav"><a href="HostedFields.html#setMessage">setMessage</a></li><li data-type="method" id="HostedFields-setMonthOptions-nav"><a href="HostedFields.html#setMonthOptions">setMonthOptions</a></li><li data-type="method" id="HostedFields-setPlaceholder-nav"><a href="HostedFields.html#setPlaceholder">setPlaceholder</a></li><li data-type="method" id="HostedFields-teardown-nav"><a href="HostedFields.html#teardown">teardown</a></li><li data-type="method" id="HostedFields-tokenize-nav"><a href="HostedFields.html#tokenize">tokenize</a></li></ul></li><li id="InstantVerification-nav"><a href="InstantVerification.html">InstantVerification</a><ul class='methods'><li data-type="method" id="InstantVerification-getAchMandateDetails-nav"><a href="InstantVerification.html#getAchMandateDetails">getAchMandateDetails</a></li><li data-type="method" id="InstantVerification-handleRedirect-nav"><a href="InstantVerification.html#handleRedirect">handleRedirect</a></li><li data-type="method" id="InstantVerification-startPayment-nav"><a href="InstantVerification.html#startPayment">startPayment</a></li></ul></li><li id="LocalPayment-nav"><a href="LocalPayment.html">LocalPayment</a><ul class='methods'><li data-type="method" id="LocalPayment-closeWindow-nav"><a href="LocalPayment.html#closeWindow">closeWindow</a></li><li data-type="method" id="LocalPayment-focusWindow-nav"><a href="LocalPayment.html#focusWindow">focusWindow</a></li><li data-type="method" id="LocalPayment-hasTokenizationParams-nav"><a href="LocalPayment.html#hasTokenizationParams">hasTokenizationParams</a></li><li data-type="method" id="LocalPayment-startPayment-nav"><a href="LocalPayment.html#startPayment">startPayment</a></li><li data-type="method" id="LocalPayment-teardown-nav"><a href="LocalPayment.html#teardown">teardown</a></li><li data-type="method" id="LocalPayment-tokenize-nav"><a href="LocalPayment.html#tokenize">tokenize</a></li></ul></li><li id="Masterpass-nav"><a href="Masterpass.html">Masterpass</a><ul class='methods'><li data-type="method" id="Masterpass-teardown-nav"><a href="Masterpass.html#teardown">teardown</a></li><li data-type="method" id="Masterpass-tokenize-nav"><a href="Masterpass.html#tokenize">tokenize</a></li></ul></li><li id="PaymentReady-nav"><a href="PaymentReady.html">PaymentReady</a><ul class='methods'><li data-type="method" id="PaymentReady-createCustomerSession-nav"><a href="PaymentReady.html#createCustomerSession">createCustomerSession</a></li><li data-type="method" id="PaymentReady-getCustomerRecommendations-nav"><a href="PaymentReady.html#getCustomerRecommendations">getCustomerRecommendations</a></li><li data-type="method" id="PaymentReady-sendPresentedEvent-nav"><a href="PaymentReady.html#sendPresentedEvent">sendPresentedEvent</a></li><li data-type="method" id="PaymentReady-sendSelectedEvent-nav"><a href="PaymentReady.html#sendSelectedEvent">sendSelectedEvent</a></li><li data-type="method" id="PaymentReady-updateCustomerSession-nav"><a href="PaymentReady.html#updateCustomerSession">updateCustomerSession</a></li></ul></li><li id="PaymentRequestComponent-nav"><a href="PaymentRequestComponent.html">PaymentRequestComponent</a><ul class='methods'><li data-type="method" id="PaymentRequestComponent-canMakePayment-nav"><a href="PaymentRequestComponent.html#canMakePayment">canMakePayment</a></li><li data-type="method" id="PaymentRequestComponent-createSupportedPaymentMethodsConfiguration-nav"><a href="PaymentRequestComponent.html#createSupportedPaymentMethodsConfiguration">createSupportedPaymentMethodsConfiguration</a></li><li data-type="method" id="PaymentRequestComponent-off-nav"><a href="PaymentRequestComponent.html#off">off</a></li><li data-type="method" id="PaymentRequestComponent-on-nav"><a href="PaymentRequestComponent.html#on">on</a></li><li data-type="method" id="PaymentRequestComponent-teardown-nav"><a href="PaymentRequestComponent.html#teardown">teardown</a></li><li data-type="method" id="PaymentRequestComponent-tokenize-nav"><a href="PaymentRequestComponent.html#tokenize">tokenize</a></li></ul></li><li id="PayPal-nav"><a href="PayPal.html">PayPal</a><ul class='methods'><li data-type="method" id="PayPal-closeWindow-nav"><a href="PayPal.html#closeWindow">closeWindow</a></li><li data-type="method" id="PayPal-focusWindow-nav"><a href="PayPal.html#focusWindow">focusWindow</a></li><li data-type="method" id="PayPal-tokenize-nav"><a href="PayPal.html#tokenize">tokenize</a></li></ul></li><li id="PayPalCheckout-nav"><a href="PayPalCheckout.html">PayPalCheckout</a><ul class='methods'><li data-type="method" id="PayPalCheckout-createPayment-nav"><a href="PayPalCheckout.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckout-getClientId-nav"><a href="PayPalCheckout.html#getClientId">getClientId</a></li><li data-type="method" id="PayPalCheckout-loadPayPalSDK-nav"><a href="PayPalCheckout.html#loadPayPalSDK">loadPayPalSDK</a></li><li data-type="method" id="PayPalCheckout-teardown-nav"><a href="PayPalCheckout.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckout-tokenizePayment-nav"><a href="PayPalCheckout.html#tokenizePayment">tokenizePayment</a></li><li data-type="method" id="PayPalCheckout-updatePayment-nav"><a href="PayPalCheckout.html#updatePayment">updatePayment</a></li></ul></li><li id="PayPalCheckoutV6-nav"><a href="PayPalCheckoutV6.html">PayPalCheckoutV6</a><ul class='methods'><li data-type="method" id="PayPalCheckoutV6-createBillingAgreementSession-nav"><a href="PayPalCheckoutV6.html#createBillingAgreementSession">createBillingAgreementSession</a></li><li data-type="method" id="PayPalCheckoutV6-createOneTimePaymentSession-nav"><a href="PayPalCheckoutV6.html#createOneTimePaymentSession">createOneTimePaymentSession</a></li><li data-type="method" id="PayPalCheckoutV6-createPayment-nav"><a href="PayPalCheckoutV6.html#createPayment">createPayment</a></li><li data-type="method" id="PayPalCheckoutV6-findEligibleMethods-nav"><a href="PayPalCheckoutV6.html#findEligibleMethods">findEligibleMethods</a></li><li data-type="method" id="PayPalCheckoutV6-getClientId-nav"><a href="PayPalCheckoutV6.html#getClientId">getClientId</a></li><li data-type="method" id="PayPalCheckoutV6-loadPayPalSDK-nav"><a href="PayPalCheckoutV6.html#loadPayPalSDK">loadPayPalSDK</a></li><li data-type="method" id="PayPalCheckoutV6-teardown-nav"><a href="PayPalCheckoutV6.html#teardown">teardown</a></li><li data-type="method" id="PayPalCheckoutV6-tokenizePayment-nav"><a href="PayPalCheckoutV6.html#tokenizePayment">tokenizePayment</a></li><li data-type="method" id="PayPalCheckoutV6-updatePayment-nav"><a href="PayPalCheckoutV6.html#updatePayment">updatePayment</a></li></ul></li><li id="SEPA-nav"><a href="SEPA.html">SEPA</a><ul class='methods'><li data-type="method" id="SEPA-tokenize-nav"><a href="SEPA.html#tokenize">tokenize</a></li></ul></li><li id="ThreeDSecure-nav"><a href="ThreeDSecure.html">ThreeDSecure</a><ul class='methods'><li data-type="method" id="ThreeDSecure-cancelVerifyCard-nav"><a href="ThreeDSecure.html#cancelVerifyCard">cancelVerifyCard</a></li><li data-type="method" id="ThreeDSecure-initializeChallengeWithLookupResponse-nav"><a href="ThreeDSecure.html#initializeChallengeWithLookupResponse">initializeChallengeWithLookupResponse</a></li><li data-type="method" id="ThreeDSecure-off-nav"><a href="ThreeDSecure.html#off">off</a></li><li data-type="method" id="ThreeDSecure-on-nav"><a href="ThreeDSecure.html#on">on</a></li><li data-type="method" id="ThreeDSecure-prepareLookup-nav"><a href="ThreeDSecure.html#prepareLookup">prepareLookup</a></li><li data-type="method" id="ThreeDSecure-teardown-nav"><a href="ThreeDSecure.html#teardown">teardown</a></li><li data-type="method" id="ThreeDSecure-verifyCard-nav"><a href="ThreeDSecure.html#verifyCard">verifyCard</a></li></ul></li><li id="USBankAccount-nav"><a href="USBankAccount.html">USBankAccount</a><ul class='methods'><li data-type="method" id="USBankAccount-teardown-nav"><a href="USBankAccount.html#teardown">teardown</a></li><li data-type="method" id="USBankAccount-tokenize-nav"><a href="USBankAccount.html#tokenize">tokenize</a></li></ul></li><li id="VaultManager-nav"><a href="VaultManager.html">VaultManager</a><ul class='methods'><li data-type="method" id="VaultManager-deletePaymentMethod-nav"><a href="VaultManager.html#deletePaymentMethod">deletePaymentMethod</a></li><li data-type="method" id="VaultManager-fetchPaymentMethods-nav"><a href="VaultManager.html#fetchPaymentMethods">fetchPaymentMethods</a></li><li data-type="method" id="VaultManager-teardown-nav"><a href="VaultManager.html#teardown">teardown</a></li></ul></li><li id="Venmo-nav"><a href="Venmo.html">Venmo</a><ul class='methods'><li data-type="method" id="Venmo-hasTokenizationResult-nav"><a href="Venmo.html#hasTokenizationResult">hasTokenizationResult</a></li><li data-type="method" id="Venmo-isBrowserSupported-nav"><a href="Venmo.html#isBrowserSupported">isBrowserSupported</a></li><li data-type="method" id="Venmo-teardown-nav"><a href="Venmo.html#teardown">teardown</a></li><li data-type="method" id="Venmo-tokenize-nav"><a href="Venmo.html#tokenize">tokenize</a></li><li data-type="method" id="Venmo-cancelTokenization-nav"><a href="Venmo.html#~cancelTokenization">cancelTokenization</a></li></ul></li><li id="VisaCheckout-nav"><a href="VisaCheckout.html">VisaCheckout</a><ul class='methods'><li data-type="method" id="VisaCheckout-createInitOptions-nav"><a href="VisaCheckout.html#createInitOptions">createInitOptions</a></li><li data-type="method" id="VisaCheckout-teardown-nav"><a href="VisaCheckout.html#teardown">teardown</a></li><li data-type="method" id="VisaCheckout-tokenize-nav"><a href="VisaCheckout.html#tokenize">tokenize</a></li></ul></li></ul><h3>Modules</h3><ul><li id="braintree-web-nav"><a href="module-braintree-web.html">braintree-web</a></li><li id="braintree-web_american-express-nav"><a href="module-braintree-web_american-express.html">braintree-web/american-express</a><ul class='methods'><li data-type="method" id="braintree-web_american-express-create-nav"><a href="module-braintree-web_american-express.html#.create">create</a></li></ul></li><li id="braintree-web_apple-pay-nav"><a href="module-braintree-web_apple-pay.html">braintree-web/apple-pay</a><ul class='methods'><li data-type="method" id="braintree-web_apple-pay-create-nav"><a href="module-braintree-web_apple-pay.html#.create">create</a></li></ul></li><li id="braintree-web_client-nav"><a href="module-braintree-web_client.html">braintree-web/client</a><ul class='methods'><li data-type="method" id="braintree-web_client-create-nav"><a href="module-braintree-web_client.html#.create">create</a></li></ul></li><li id="braintree-web_data-collector-nav"><a href="module-braintree-web_data-collector.html">braintree-web/data-collector</a><ul class='methods'><li data-type="method" id="braintree-web_data-collector-create-nav"><a href="module-braintree-web_data-collector.html#.create">create</a></li></ul></li><li id="braintree-web_fastlane-nav"><a href="module-braintree-web_fastlane.html">braintree-web/fastlane</a><ul class='methods'><li data-type="method" id="braintree-web_fastlane-create-nav"><a href="module-braintree-web_fastlane.html#.create">create</a></li></ul></li><li id="braintree-web_google-payment-nav"><a href="module-braintree-web_google-payment.html">braintree-web/google-payment</a><ul class='methods'><li data-type="method" id="braintree-web_google-payment-create-nav"><a href="module-braintree-web_google-payment.html#.create">create</a></li></ul></li><li id="braintree-web_hosted-fields-nav"><a href="module-braintree-web_hosted-fields.html">braintree-web/hosted-fields</a><ul class='methods'><li data-type="method" id="braintree-web_hosted-fields-create-nav"><a href="module-braintree-web_hosted-fields.html#.create">create</a></li><li data-type="method" id="braintree-web_hosted-fields-supportsInputFormatting-nav"><a href="module-braintree-web_hosted-fields.html#.supportsInputFormatting">supportsInputFormatting</a></li></ul></li><li id="braintree-web_instant-verification-nav"><a href="module-braintree-web_instant-verification.html">braintree-web/instant-verification</a><ul class='methods'><li data-type="method" id="braintree-web_instant-verification-create-nav"><a href="module-braintree-web_instant-verification.html#.create">create</a></li></ul></li><li id="braintree-web_local-payment-nav"><a href="module-braintree-web_local-payment.html">braintree-web/local-payment</a><ul class='methods'><li data-type="method" id="braintree-web_local-payment-create-nav"><a href="module-braintree-web_local-payment.html#.create">create</a></li></ul></li><li id="braintree-web_masterpass-nav"><a href="module-braintree-web_masterpass.html">braintree-web/masterpass</a><ul class='methods'><li data-type="method" id="braintree-web_masterpass-create-nav"><a href="module-braintree-web_masterpass.html#.create">create</a></li><li data-type="method" id="braintree-web_masterpass-isSupported-nav"><a href="module-braintree-web_masterpass.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_payment-ready-nav"><a href="module-braintree-web_payment-ready.html">braintree-web/payment-ready</a><ul class='methods'><li data-type="method" id="braintree-web_payment-ready-create-nav"><a href="module-braintree-web_payment-ready.html#.create">create</a></li></ul></li><li id="braintree-web_payment-request-nav"><a href="module-braintree-web_payment-request.html">braintree-web/payment-request</a><ul class='methods'><li data-type="method" id="braintree-web_payment-request-create-nav"><a href="module-braintree-web_payment-request.html#.create">create</a></li></ul></li><li id="braintree-web_paypal-nav"><a href="module-braintree-web_paypal.html">braintree-web/paypal</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-create-nav"><a href="module-braintree-web_paypal.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-isSupported-nav"><a href="module-braintree-web_paypal.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-nav"><a href="module-braintree-web_paypal-checkout.html">braintree-web/paypal-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-create-nav"><a href="module-braintree-web_paypal-checkout.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-isSupported-nav"><a href="module-braintree-web_paypal-checkout.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_paypal-checkout-v6-nav"><a href="module-braintree-web_paypal-checkout-v6.html">braintree-web/paypal-checkout-v6</a><ul class='methods'><li data-type="method" id="braintree-web_paypal-checkout-v6-create-nav"><a href="module-braintree-web_paypal-checkout-v6.html#.create">create</a></li><li data-type="method" id="braintree-web_paypal-checkout-v6-isSupported-nav"><a href="module-braintree-web_paypal-checkout-v6.html#.isSupported">isSupported</a></li></ul></li><li id="braintree-web_sepa-nav"><a href="module-braintree-web_sepa.html">braintree-web/sepa</a><ul class='methods'><li data-type="method" id="braintree-web_sepa-create-nav"><a href="module-braintree-web_sepa.html#.create">create</a></li></ul></li><li id="braintree-web_three-d-secure-nav"><a href="module-braintree-web_three-d-secure.html">braintree-web/three-d-secure</a><ul class='methods'><li data-type="method" id="braintree-web_three-d-secure-create-nav"><a href="module-braintree-web_three-d-secure.html#.create">create</a></li></ul></li><li id="braintree-web_us-bank-account-nav"><a href="module-braintree-web_us-bank-account.html">braintree-web/us-bank-account</a><ul class='methods'><li data-type="method" id="braintree-web_us-bank-account-create-nav"><a href="module-braintree-web_us-bank-account.html#.create">create</a></li></ul></li><li id="braintree-web_vault-manager-nav"><a href="module-braintree-web_vault-manager.html">braintree-web/vault-manager</a><ul class='methods'><li data-type="method" id="braintree-web_vault-manager-create-nav"><a href="module-braintree-web_vault-manager.html#.create">create</a></li></ul></li><li id="braintree-web_venmo-nav"><a href="module-braintree-web_venmo.html">braintree-web/venmo</a><ul class='methods'><li data-type="method" id="braintree-web_venmo-create-nav"><a href="module-braintree-web_venmo.html#.create">create</a></li><li data-type="method" id="braintree-web_venmo-isBrowserSupported-nav"><a href="module-braintree-web_venmo.html#.isBrowserSupported">isBrowserSupported</a></li></ul></li><li id="braintree-web_visa-checkout-nav"><a href="module-braintree-web_visa-checkout.html">braintree-web/visa-checkout</a><ul class='methods'><li data-type="method" id="braintree-web_visa-checkout-create-nav"><a href="module-braintree-web_visa-checkout.html#.create">create</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#injectQrCode">injectQrCode</a></li><li><a href="global.html#Modal">Modal</a></li><li><a href="global.html#start">start</a></li></ul>
+  </nav>
+
+  <div id="main">
+    
+      <h1 class="page-title">
+        LocalPayment
+      </h1>
+    
+
+    
+
+<section>
+  <header>
+    
+      <h2>
+        
+        LocalPayment
+        
+      </h2>
+
+      
+        <div class="class-description">
+          <p>This class represents a LocalPayment component. Instances of this class can open a LocalPayment window for paying with alternate payments local to a specific country. Any additional UI, such as disabling the page while authentication is taking place, is up to the developer.</p>
+        </div>
+      
+    
+  </header>
+
+  <article>
+    <div class="container-overview">
+      
+        
+
+
+  
+    <h2>Constructor</h2>
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#LocalPayment">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="LocalPayment">
+      <span class="type-signature"></span>new LocalPayment<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p><strong>Do not use this constructor directly. Use <a href="module-braintree-web_local-payment.html#.create">braintree-web.local-payment.create</a> instead.</strong></p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>see <a href="module-braintree-web_local-payment.html#.create">local-payment.create</a></p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line35">line 35</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+      <h3 class="subsection-title">Methods</h3>
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#closeWindow">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="closeWindow">
+      <span class="type-signature"></span>closeWindow<span class="signature">()</span><span class="type-signature"> &rarr; {void}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Closes the LocalPayment window if it is open.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line928">line 928</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#closeWindow-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="closeWindow-examples">Example</h5>
+    
+
+  <pre class="prettyprint"><code>localPaymentInstance.closeWindow();</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#focusWindow">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="focusWindow">
+      <span class="type-signature"></span>focusWindow<span class="signature">()</span><span class="type-signature"> &rarr; {void}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Focuses the LocalPayment window if it is open.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line945">line 945</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#focusWindow-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="focusWindow-examples">Example</h5>
+    
+
+  <pre class="prettyprint"><code>localPaymentInstance.focusWindow();</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#hasTokenizationParams">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="hasTokenizationParams">
+      <span class="type-signature"></span>hasTokenizationParams<span class="signature">()</span><span class="type-signature"> &rarr; {Boolean}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Checks if required tokenization parameters are available in querystring for manual tokenization requests.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line1059">line 1059</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#hasTokenizationParams-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="hasTokenizationParams-examples">Example</h5>
+    
+
+  <pre class="prettyprint"><code>// if query string contains
+// ?btLpToken=token&amp;btLpPaymentId=payment-id&amp;btLpPayerId=payer-id
+localPaymentInstance.hasTokenizationParams(); // true
+
+// if query string has token: (full page redirect flow)
+// ?token=abcdefg123456789
+localPaymentInstance.hasTokenizationParams(); // true
+
+// if query string is missing required params
+localPaymentInstance.hasTokenizationParams(); // false
+
+if (localPaymentInstance.hasTokenizationParams()) {
+  localPaymentInstance.tokenize();
+}</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#startPayment">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="startPayment">
+      <span class="type-signature"></span>startPayment<span class="signature">(options, callback)</span><span class="type-signature"> &rarr; {Promise|void}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Launches the local payment flow and returns a nonce payload. Only one local payment flow should be active at a time. One way to achieve this is to disable your local payment button while the flow is open.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="LocalPayment.html#~StartPaymentOptions">LocalPayment~StartPaymentOptions</a>
+    </span>
+
+    |
+
+    <span class="param-type">
+      <a href="LocalPayment.html#~StartPaymentPayUponInvoiceOptions">LocalPayment~StartPaymentPayUponInvoiceOptions</a>
+    </span>
+
+    |
+
+    <span class="param-type">
+      <a href="LocalPayment.html#~StartPaymentSwishOptions">LocalPayment~StartPaymentSwishOptions</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Options for initiating the local payment payment flow.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>callback</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#callback">callback</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The second argument, <code>data</code>, is a startPaymentPayload. If no callback is provided, the method will return a Promise that resolves with a startPaymentPayload.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line480">line 480</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#startPayment-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="startPayment-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'ideal',
+  paymentTypeCountryCode: 'NL',
+  fallback: {
+    buttonText: 'Return to Merchant',
+    url: 'https://example.com/my-checkout-page'
+  },
+  amount: '10.00',
+  currencyCode: 'EUR',
+  givenName: 'Joe',
+  surname: 'Doe',
+  address: {
+    countryCode: 'NL'
+  },
+  onPaymentStart: function (data, continueCallback) {
+    // Do any preprocessing before starting the flow
+    // data.paymentId is the ID of the localPayment
+    continueCallback();
+  }
+}).then(function (payload) {
+  // Submit payload.nonce to your server
+}).catch(function (startPaymentError) {
+  // Handle flow errors or premature flow closure
+  console.error('Error!', startPaymentError);
+});</code></pre>
+
+  <p class="code-caption">
+    Pay Upon Invoice
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'pay_upon_invoice',
+  amount: '100.00',
+  currencyCode: 'EUR',
+  givenName: 'Max',
+  surname: 'Mustermann',
+  address: { // This is used as the shipping address.
+    streetAddress: 'Taunusanlage 12',
+    locality: 'Frankfurt',
+    postalCode: '60325',
+    countryCode: 'DE',
+  },
+  billingAddress: {
+    streetAddress: 'Schönhauser Allee 84',
+    locality: 'Berlin',
+    postalCode: '10439',
+    countryCode: 'DE'
+  },
+  birthDate: '1990-01-01',
+  email: 'buyer@example.com',
+  locale: 'en-DE',
+  customerServiceInstructions: 'Customer service phone is +49 6912345678.',
+  lineItems: [{
+    category: 'PHYSICAL_GOODS',
+    name: 'Basketball Shoes',
+    quantity: '1',
+    unitAmount: '81.00',
+    unitTaxAmount: '19.00',
+  }],
+  phone: '6912345678',
+  phoneCountryCode: '49',
+  correlationId: correlationId,
+  onPaymentStart: function (data) {
+    // NOTE: It is critical here to store data.paymentId on your server
+    //       so it can be mapped to a webhook sent by Braintree once the
+    //       buyer completes their payment.
+    console.log('Payment ID:', data.paymentId);
+  },
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+  <p class="code-caption">
+    BLIK seamless
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'blik',
+  paymentTypeCountryCode: 'PL',
+  amount: '10.00',
+  currencyCode: 'PLN',
+  givenName: 'Joe',
+  surname: 'Doe',
+  phone: '1234566789',
+  address: {
+    streetAddress: 'Mokotowska 1234',
+    locality: 'Warsaw',
+    postalCode: '02-697',
+    countryCode: 'PL',
+  },
+  blikOptions: {
+    level_0: {
+      authCode: "123456",
+    },
+  },
+  onPaymentStart: function (data) {
+    // NOTE: It is critical here to store data.paymentId on your server
+    //       so it can be mapped to a webhook sent by Braintree once the
+    //       buyer completes their payment.
+    console.log('Payment ID:', data.paymentId);
+  },
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+  <p class="code-caption">
+    BLIK oneclick first payment
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'blik',
+  paymentTypeCountryCode: 'PL',
+  amount: '10.00',
+  currencyCode: 'PLN',
+  givenName: 'Joe',
+  surname: 'Doe',
+  phone: '1234566789',
+  address: {
+    streetAddress: 'Mokotowska 1234',
+    locality: 'Warsaw',
+    postalCode: '02-697',
+    countryCode: 'PL',
+  },
+  blikOptions: {
+    oneClick: {
+      authCode: "123456",
+      consumerReference: "ABCde123",
+      aliasLabel: "my uniq alias",
+    },
+  },
+  onPaymentStart: function (data) {
+    // NOTE: It is critical here to store data.paymentId on your server
+    //       so it can be mapped to a webhook sent by Braintree once the
+    //       buyer completes their payment.
+    console.log('Payment ID:', data.paymentId);
+  },
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+  <p class="code-caption">
+    BLIK oneclick subsequent payment
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'blik',
+  paymentTypeCountryCode: 'PL',
+  amount: '10.00',
+  currencyCode: 'PLN',
+  givenName: 'Joe',
+  surname: 'Doe',
+  phone: '1234566789',
+  address: {
+    streetAddress: 'Mokotowska 1234',
+    locality: 'Warsaw',
+    postalCode: '02-697',
+    countryCode: 'PL',
+  },
+  blikOptions: {
+    oneClick: {
+      consumerReference: "ABCde123",
+      aliasKey: "123456789",
+    },
+  },
+  onPaymentStart: function (data) {
+    // NOTE: It is critical here to store data.paymentId on your server
+    //       so it can be mapped to a webhook sent by Braintree once the
+    //       buyer completes their payment.
+    console.log('Payment ID:', data.paymentId);
+  },
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+  <p class="code-caption">
+    MB WAY
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'mbway',
+  amount: '10.00',
+  currencyCode: 'EUR',
+  givenName: 'Joe',
+  surname: 'Doe',
+  phone: '1234566789',
+  phoneCountryCode: '351'
+  address: {
+    streetAddress: 'Rua Escura 12',
+    locality: 'Porto',
+    postalCode: '4465-283',
+    countryCode: 'PT',
+  },
+  onPaymentStart: function (data) {
+    // NOTE: It is critical here to store data.paymentId on your server
+    //       so it can be mapped to a webhook sent by Braintree once the
+    //       buyer completes their payment.
+    console.log('Payment ID:', data.paymentId);
+  },
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+  <p class="code-caption">
+    BANCOMAT PAY
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'bancomatpay',
+  amount: '10.00',
+  currencyCode: 'EUR',
+  givenName: 'Joe',
+  surname: 'Doe',
+  phone: '1234566789',
+  phoneCountryCode: '49'
+  address: {
+    streetAddress: 'Via del Corso 12',
+    locality: 'Roma',
+    postalCode: '00100',
+    countryCode: 'IT',
+  },
+  onPaymentStart: function (data) {
+    // NOTE: It is critical here to store data.paymentId on your server
+    //       so it can be mapped to a webhook sent by Braintree once the
+    //       buyer completes their payment.
+    console.log('Payment ID:', data.paymentId);
+  },
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+  <p class="code-caption">
+    Swish with QR Code (for desktop)
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'swish',
+  paymentTypeCountryCode: 'SE',
+  amount: '10.00',
+  currencyCode: 'SEK',
+  givenName: 'Joe',
+  surname: 'Doe',
+  phone: '1234566789',
+  email: 'joe.doe@example.com',
+  swishOptions: {
+    requestQrCode: true,
+    qrContainer: '#qr-code-container' // QR code will be automatically injected here
+  },
+  onPaymentStart: function (data) {
+    console.log('Payment ID:', data.paymentId);
+    // QR code is already displayed in the container
+  },
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+  <p class="code-caption">
+    Swish with redirect
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.startPayment({
+  paymentType: 'swish',
+  paymentTypeCountryCode: 'SE',
+  amount: '10.00',
+  currencyCode: 'SEK',
+  givenName: 'Joe',
+  surname: 'Doe',
+  phone: '1234566789',
+  email: 'joe.doe@example.com',
+  swishOptions: {
+    returnUrl: 'https://example.com/return'
+  },
+  fallback: {
+    buttonText: 'Return to Store',
+    url: 'https://example.com/my-checkout-page'
+  },
+  onPaymentStart: function (data, continueCallback) {
+    // On desktop, this follows standard redirect flow
+    console.log('Payment ID:', data.paymentId);
+    continueCallback();
+  }
+}).then(function (payload) {
+  // Submit payload.nonce to your server
+}).catch(function (err) {
+  // Handle any error calling startPayment.
+  console.error(err);
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#teardown">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="teardown">
+      <span class="type-signature"></span>teardown<span class="signature">(callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise|void}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Cleanly remove anything set up by <a href="module-braintree-web_local-payment.html#.create">create</a>.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>callback</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#callback">callback</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Called on completion.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line1348">line 1348</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#teardown-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="teardown-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>localPaymentInstance.teardown();</code></pre>
+
+  <p class="code-caption">
+    With callback
+  </p>
+
+
+  <pre class="prettyprint"><code>localPaymentInstance.teardown(function () {
+  // teardown is complete
+});</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#tokenize">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="tokenize">
+      <span class="type-signature"></span>tokenize<span class="signature">(params<span class="signature-attributes">opt</span>, callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise|void}</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Manually tokenizes params for a local payment received from PayPal.When app switching back from a mobile application (such as a bank application for an iDEAL payment), the window may lose context with the parent page. In that case, a fallback url is used, and this method can be used to finish the flow.</p>
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>params</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>All options for tokenizing local payment parameters. If no params are passed in, the params will be pulled off of the query string of the page.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>btLpToken</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The token representing the local payment. Aliased to <code>token</code> if <code>btLpToken</code> is not present.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>btLpPaymentId</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The payment id for the local payment. Aliased to <code>paymentId</code> if <code>btLpPaymentId</code> is not present.</p>
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>btLpPayerId</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The payer id for the local payment. Aliased to <code>PayerID</code> if <code>btLpPayerId</code> is not present.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>callback</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#callback">callback</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The second argument, <code>data</code>, is a startPaymentPayload. If no callback is provided, the method will return a Promise that resolves with a startPaymentPayload.</p>
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line840">line 840</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#tokenize-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="tokenize-examples">Example</h5>
+    
+
+  <pre class="prettyprint"><code>localPaymentInstance.tokenize().then(function (payload) {
+  // send payload.nonce to your server
+}).catch(function (err) {
+  // handle tokenization error
+});</code></pre>
+
+
+  </div>
+
+
+      
+    
+
+    
+      <h3 class="subsection-title">Type Definitions</h3>
+
+      
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~StartPaymentOptions">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~StartPaymentOptions">
+      <span class="type-signature"></span>StartPaymentOptions<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Options used for most local payment types.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>fallback</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Configuration for what to do when app switching back from a Bank app on a mobile device. Only applicable to the popup flow.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>buttonText</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The text to display in a button to redirect back to the merchant page.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>url</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The url to redirect to when the redirect button is pressed. Query params will be added to the url to process the data returned from the bank.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>cancelButtonText</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The text to display in a button to redirect back to the merchant page when the customer cancels. If no <code>cancelButtonText</code> is provided, <code>buttonText</code> will be used.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>cancelUrl</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The url to redirect to when the redirect button is pressed when the customer cancels. Query params will be added to the url to check the state of the payment. If no <code>cancelUrl</code> is provided, <code>url</code> will be used.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>windowOptions</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The options for configuring the window that is opened when starting the payment. Only applicable to the popup flow.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>width</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              1282
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The width in pixels of the window opened when starting the payment. The default width size is this large to allow various banking partner landing pages to display the QR Code to be scanned by the bank's mobile app. Many will not display the QR code when the window size is smaller than a standard desktop screen.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>height</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              720
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>The height in pixels of the window opened when starting the payment.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>amount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The amount to authorize for the transaction.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currencyCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The currency to process the payment (three-character ISO-4217).</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>displayName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The merchant name displayed inside of the window that is opened when starting the payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentType</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The type of local payment. See https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentTypeCountryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed <a href="https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons">here</a>. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>email</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Payer email of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>givenName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>First name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>surname</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Last name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>phone</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Phone number of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>recurrent</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Enable recurrent payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>customerId</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The customer's id in merchant's system (required for recurrent payments).</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>shippingAddressRequired</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Indicates whether or not the payment needs to be shipped. For digital goods, this should be false. Defaults to false.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>address</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The shipping address.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>streetAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>extendedAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Line 2 of the Address (eg. suite, apt #, etc.). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>locality</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's city.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>region</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's region or state.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>postalCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's postal code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>countryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's country code (two-character ISO 3166-1 code).</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>onPaymentStart</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A function that will be called with two parameters: an object containing the  <code>paymentId</code> and a <code>continueCallback</code> that must be called to launch the flow. You can use method to do any preprocessing on your server before the flow begins..</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line84">line 84</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~StartPaymentOptions">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~StartPaymentOptions">
+      <span class="type-signature"></span>StartPaymentOptions<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Options used for the seamless/oneclick BLIK local payment type.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>amount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The amount to authorize for the transaction.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currencyCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The currency to process the payment (three-character ISO-4217).</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>displayName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The merchant name displayed inside of the window that is opened when starting the payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentType</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The type of local payment. Must be <code>blik</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentTypeCountryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed <a href="https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons">here</a>. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>email</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Payer email of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>givenName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>First name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>surname</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Last name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>phone</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Phone number of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>shippingAddressRequired</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Indicates whether or not the payment needs to be shipped. For digital goods, this should be false. Defaults to false.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>address</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The shipping address.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>streetAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>extendedAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Line 2 of the Address (eg. suite, apt #, etc.). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>locality</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's city.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>region</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's region or state.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>postalCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's postal code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>countryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's country code (two-character ISO 3166-1 code).</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>blikOptions</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Blik seamless/oneclick specific options. Should contain only one object: <code>level_0</code> or <code>oneClick</code>.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>level_0</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Blik seamless specific options.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>authCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>6-digit code used to authenticate a consumer within BLIK.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>oneClick</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Blik oneclick specific options.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>authCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>6-digit code used to authenticate a consumer within BLIK.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>consumerReference</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The merchant generated, unique reference serving as a primary identifier for accounts connected between Blik and a merchant.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>aliasLabel</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>A bank defined identifier used as a display name to allow the payer to differentiate between multiple registered bank accounts.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>aliasKey</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>A Blik-defined identifier for a specific Blik-enabled bank account that is associated with a given merchant. Used only in conjunction with a Consumer Reference.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>onPaymentStart</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A function that will be called with an object containing the <code>paymentId</code>. The <code>continueCallback</code> is not provided as it is not needed for this use case.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line178">line 178</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~StartPaymentPayUponInvoiceOptions">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~StartPaymentPayUponInvoiceOptions">
+      <span class="type-signature"></span>StartPaymentPayUponInvoiceOptions<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Options used for the Pay Upon Invoice local payment type.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>amount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The amount to authorize for the transaction.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currencyCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The currency to process the payment (three-character ISO-4217).</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>displayName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The merchant name displayed inside of the window that is opened when starting the payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentType</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The type of local payment. Must be <code>pay_upon_invoice</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentTypeCountryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The country code of the local payment. This value must be one of the supported country codes for a given local payment type listed <a href="https://developer.paypal.com/braintree/docs/guides/local-payment-methods/client-side-custom/javascript/v3#render-local-payment-method-buttons">here</a>. For local payments supported in multiple countries, this value may determine which banks are presented to the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>email</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Payer email of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>givenName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>First name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>surname</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Last name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>phone</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Phone number of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>phoneCountryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The country calling code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>birthDate</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The birth date of the customer in <code>YYYY-MM-DD</code> format.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>address</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The shipping address.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>streetAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>extendedAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Line 2 of the Address (eg. suite, apt #, etc.). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>locality</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's city.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>region</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's region or state.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>postalCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's postal code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>countryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's country code (two-character ISO 3166-1 code).</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>shippingAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The shipping fee for all items. This value can not be a negative number.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>discountAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The discount for all items. This value can not be a negative number.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>billingAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The billing address.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>streetAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>extendedAddress</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Line 2 of the Address (eg. suite, apt #, etc.). An error will occur if this address is not valid.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>locality</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's city.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>region</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's region or state.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>postalCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's postal code.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>countryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Customer's country code (two-character ISO 3166-1 code).</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>lineItems</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      Array.&lt;object>
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>List of line items.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>category</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>The item category type: <code>'DIGITAL_GOODS'</code>, <code>'PHYSICAL_GOODS'</code>, or <code>'DONATION'</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>name</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Item name. Maximum 127 characters.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>quantity</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Number of units of the item purchased. This value must be a whole number and can't be negative or zero.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>unitAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Per-unit price of the item. Can include up to 2 decimal places. This value can't be negative or zero.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>unitTaxAmount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+
+        
+
+        <td class="description last">
+          <p>Per-unit tax price of the item. Can include up to 2 decimal places. This value can't be negative.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>locale</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The BCP 47-formatted locale. PayPal supports a five-character code. For example, <code>en-DE</code>, <code>da-DK</code>, <code>he-IL</code>, <code>id-ID</code>, <code>ja-JP</code>, <code>no-NO</code>, <code>pt-BR</code>, <code>ru-RU</code>, <code>sv-SE</code>, <code>th-TH</code>, <code>zh-CN</code>, <code>zh-HK</code>, or <code>zh-TW</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>customerServiceInstructions</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Instructions for how to contact the merchant's customer service. Maximum 4,000 characters.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>correlationId</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Used to correlate user sessions with server transactions.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>onPaymentStart</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A function that will be called with an object containing the <code>paymentId</code>. The <code>continueCallback</code> is not provided as it is not needed for this use case.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line136">line 136</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~StartPaymentSwishOptions">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~StartPaymentSwishOptions">
+      <span class="type-signature"></span>StartPaymentSwishOptions<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    <p>Options used for the Swish local payment type.</p>
+  </div>
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>amount</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The amount to authorize for the transaction.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>currencyCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The currency to process the payment (three-character ISO-4217).</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>displayName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The merchant name displayed inside of the window that is opened when starting the payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentType</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The type of local payment. Must be <code>swish</code>.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>paymentTypeCountryCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>The country code of the local payment. Must be <code>SE</code> for Swish payments.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>email</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Payer email of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>givenName</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>First name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>surname</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Last name of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>phone</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Phone number of the customer.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>swishOptions</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>Swish-specific options.</p>
+          
+            <h6>Properties</h6>
+            
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+        <th>Default</th>
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>requestQrCode</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      boolean
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+              false
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>For non-mobile devices, whether to use QR code data from the response with the intent of rendering the QR code on your page instead of following the standard redirect flow. Note: When using this option, it is important to store data.paymentId on your server so it can be mapped to a webhook sent by Braintree once the buyer completes their payment.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>qrContainer</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    |
+
+    <span class="param-type">
+      HTMLElement
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Required when <code>swishOptions.requestQrCode</code> is set to <code>true</code>. A CSS selector string or HTML element where the QR code image will be automatically injected.</p>
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>returnUrl</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+          <td class="default">
+            
+          </td>
+        
+
+        <td class="description last">
+          <p>Required when using Swish Standard flow on mobile devices. The URL where users will be redirected after completing the Swish payment.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>onPaymentStart</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      function
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          <p>A function that will be called with an object containing the <code>paymentId</code>.</p>
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="local-payment_external_local-payment.js.html">local-payment/external/local-payment.js</a>, <a href="local-payment_external_local-payment.js.html#line117">line 117</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+    
+  </article>
+</section>
+
+
+
+
+  </div>
+
+  <br class="clear">
+
+  <footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.11</a>
+  </footer>
+
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/pagelocation.js"></script>
+
+  
+  <script>
+    $(function () {
+      window.docsearch({
+        apiKey: '1097a5c904574f31dd6d5d174a658739',
+        indexName: 'braintree',
+        inputSelector: '.search-input',
+        debug: false, // Set debug to true if you want to inspect the dropdown
+        algoliaOptions: {
+          hitsPerPage: 7
+        }
+      });
+    });
+  </script>
+  
+  
+</body>
+</html>
