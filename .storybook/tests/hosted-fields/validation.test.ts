@@ -1,157 +1,125 @@
-import { expect } from "@wdio/globals";
-import {
-  createTestServer,
-  type TestServerResult,
-} from "../helpers/test-server";
-import http from "node:http";
+import { expect } from "@playwright/test";
 
-describe("Hosted Fields Validation States", function () {
-  const standardUrl =
-    "/iframe.html?id=braintree-hosted-fields--standard-hosted-fields&viewMode=story";
+import { test } from "../helpers/playwright-helpers";
 
-  let server: http.Server;
-  let serverPort: number;
-
-  const getTestUrl = (path: string) => {
-    let url = `http://localhost:${serverPort}${path}`;
-    if (process.env.LOCAL_BUILD === "true") {
-      const hasQuery = url.includes("?");
-      const separator = hasQuery ? "&" : "?";
-      url = `${url}${separator}globals=sdkVersion:dev`;
-    }
-    return encodeURI(url);
-  };
-
-  beforeEach(async function () {
-    await browser.reloadSessionOnRetry(this.currentTest);
-
-    await browser.setTimeout({
-      pageLoad: 30000,
-      implicit: 15000,
-      script: 60000,
+test.describe("Hosted Fields Validation States", function () {
+  test.beforeEach(async ({ hostedFieldsPage, getTestUrl, page }) => {
+    await page.goto(getTestUrl({}), {
+      waitUntil: "domcontentloaded",
     });
-
-    // Create per-test server
-    const result: TestServerResult = await createTestServer();
-    server = result.server;
-    serverPort = result.port;
-
-    await browser.url(getTestUrl(standardUrl));
-    await browser.waitForHostedFieldsReady();
+    await hostedFieldsPage.waitForHostedFieldsReady();
   });
 
-  afterEach(async function () {
-    // Close server
-    if (server) {
-      await new Promise<void>((resolve) => {
-        server.close(() => resolve());
-      });
-    }
-
+  test.afterEach(async ({ page }) => {
     // Reset browser session after each test to prevent popup dialogs and state leakage
     try {
-      await browser.reloadSession();
+      await page?.reload({ waitUntil: "domcontentloaded" });
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.log("Error reloading session:", err.message);
+      console.log("Error reloading session:", (err as Error).message);
     }
   });
 
-  it("should show invalid state for incorrect card number", async function () {
-    await browser.hostedFieldSendInput("number", "4111 1111 1111 1111111");
+  test("should show invalid state for incorrect card number", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.hostedFieldSendInput("number", "7893489743789789");
+    await hostedFieldsPage.clickHostedFieldInput("number");
 
-    await browser.waitForHostedField("number");
-    const cardNumberContainer = await $("#card-number");
-    const containerClasses = await cardNumberContainer.getAttribute("class");
+    const cardNumberContainer =
+      await hostedFieldsPage.findAndWaitFor("card-number");
 
-    await expect(containerClasses).toContain("braintree-hosted-fields-invalid");
-    await expect(containerClasses).not.toContain(
-      "braintree-hosted-fields-valid"
+    await expect(cardNumberContainer).toHaveClass(
+      /braintree-hosted-fields-invalid/
+    );
+    await expect(cardNumberContainer).not.toHaveClass(
+      /braintree-hosted-fields-valid/
     );
 
-    const submitButton = await $('button[type="submit"]');
-    const isButtonDisabled = await submitButton.getAttribute("disabled");
-    await expect(isButtonDisabled).toBe("true");
+    const submitButton = await hostedFieldsPage.findAndWaitFor("submit-button");
+    await expect(submitButton).toBeDisabled();
   });
 
-  it("should show valid state for correct inputs", async function () {
-    await browser.hostedFieldSendInput("number");
+  test("should show valid state for correct inputs", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.hostedFieldSendInput("number");
 
-    await browser.waitForHostedField("number");
-    const cardNumberContainer = await $("#card-number");
-    const containerClasses = await cardNumberContainer.getAttribute("class");
+    const cardNumberContainer =
+      await hostedFieldsPage.findAndWaitFor("card-number");
 
-    await expect(containerClasses).toContain("braintree-hosted-fields-valid");
-    await expect(containerClasses).not.toContain(
-      "braintree-hosted-fields-invalid"
+    await expect(cardNumberContainer).toHaveClass(
+      /braintree-hosted-fields-valid/
+    );
+    await expect(cardNumberContainer).not.toHaveClass(
+      /braintree-hosted-fields-invalid/
     );
   });
 
-  it("should validate expired date", async function () {
+  test("should validate expired date", async ({ hostedFieldsPage }) => {
     const pastDate = "12/21";
-    await browser.hostedFieldSendInput("expirationDate", pastDate);
+    await hostedFieldsPage.hostedFieldSendInput("expirationDate", pastDate);
 
-    await browser.waitForHostedField("expirationDate");
-    const expirationContainer = await $("#expiration-date");
-    const containerClasses = await expirationContainer.getAttribute("class");
+    const expirationContainer =
+      await hostedFieldsPage.findAndWaitFor("expiration-date");
 
-    await expect(containerClasses).toContain("braintree-hosted-fields-invalid");
-
-    const submitButton = await $('button[type="submit"]');
-    const isButtonDisabled = await submitButton.getAttribute("disabled");
-    await expect(isButtonDisabled).toBe("true");
-  });
-
-  it("should validate CVV length based on card type", async function () {
-    await browser.hostedFieldSendInput("number", "4111111111111111");
-    await browser.hostedFieldSendInput("cvv", "123");
-
-    const cvvContainer = await $("#cvv");
-    let containerClasses = await cvvContainer.getAttribute("class");
-
-    await expect(containerClasses).toContain("braintree-hosted-fields-valid");
-
-    await browser.hostedFieldSendInput("number", "378282246310005");
-
-    containerClasses = await cvvContainer.getAttribute("class");
-    await expect(containerClasses).not.toContain(
-      "braintree-hosted-fields-valid"
+    await expect(expirationContainer).toHaveClass(
+      /braintree-hosted-fields-invalid/
     );
 
-    await browser.hostedFieldSendInput("cvv", "1234");
-
-    containerClasses = await cvvContainer.getAttribute("class");
-    await expect(containerClasses).toContain("braintree-hosted-fields-valid");
+    const submitButton = await hostedFieldsPage.findAndWaitFor("submit-button");
+    await expect(submitButton).toBeDisabled();
   });
 
-  it("should enforce postal code format validation", async function () {
-    await browser.hostedFieldSendInput("postalCode", "1");
+  test("should validate CVV length based on card type", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.hostedFieldSendInput("number", "4111111111111111");
+    await hostedFieldsPage.hostedFieldSendInput("cvv", "123");
 
-    const postalCodeContainer = await $("#postal-code");
-    let containerClasses = await postalCodeContainer.getAttribute("class");
+    const cvvContainer = await hostedFieldsPage.findAndWaitFor("cvv");
 
-    await expect(containerClasses).not.toContain(
-      "braintree-hosted-fields-valid"
+    await expect(cvvContainer).toHaveClass(/braintree-hosted-fields-valid/);
+
+    await hostedFieldsPage.hostedFieldClearWithKeypress("number", 16);
+    await hostedFieldsPage.hostedFieldSendInput("number", "378282246310005");
+
+    await expect(cvvContainer).not.toHaveClass(/braintree-hosted-fields-valid/);
+
+    await hostedFieldsPage.hostedFieldSendInput("cvv", "1234");
+
+    await expect(cvvContainer).toHaveClass(/braintree-hosted-fields-valid/);
+  });
+
+  test("should enforce postal code format validation", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.hostedFieldSendInput("postalCode", "1");
+
+    const postalCodeContainer =
+      await hostedFieldsPage.findAndWaitFor("postal-code");
+
+    await expect(postalCodeContainer).not.toHaveClass(
+      /braintree-hosted-fields-valid/
     );
 
-    await browser.hostedFieldSendInput("postalCode", "12345");
+    await hostedFieldsPage.hostedFieldSendInput("postalCode", "12345");
 
-    containerClasses = await postalCodeContainer.getAttribute("class");
-    await expect(containerClasses).toContain("braintree-hosted-fields-valid");
+    await expect(postalCodeContainer).toHaveClass(
+      /braintree-hosted-fields-valid/
+    );
   });
 
-  it("should show focus state on active field", async function () {
-    await browser.waitForHostedField("number");
-    await browser.switchFrame(await $("#braintree-hosted-field-number"));
+  test("should show focus state on active field", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.clickHostedFieldInput("number");
 
-    const inputField = await $("input");
-    await inputField.click();
+    const numberContainer =
+      await hostedFieldsPage.findAndWaitFor("card-number");
 
-    await browser.switchFrame(null);
-
-    const numberContainer = await $("#card-number");
-    const containerClasses = await numberContainer.getAttribute("class");
-
-    await expect(containerClasses).toContain("braintree-hosted-fields-focused");
+    await expect(numberContainer).toHaveClass(
+      /braintree-hosted-fields-focused/
+    );
   });
 });

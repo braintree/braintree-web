@@ -2,7 +2,7 @@ name: Security
 
 on:
   pull_request:
-    branches: [master]
+    branches: [master, v3.x]
   workflow_dispatch:
 
 jobs:

@@ -134,6 +134,14 @@ LocalPayment.prototype._initialize = function () {
  */
 
 /**
+ * Options used for the Crypto local payment type.
+ * @typedef {object} LocalPayment~StartPaymentCryptoOptions
+ * @property {string} paymentType The type of local payment. Must be `crypto`.
+ * @property {object} cryptoOptions Crypto-specific options.
+ * @property {string} cryptoOptions.approvalUrl The URL where users will be redirected to approve the crypto payment.
+ */
+
+/**
  * Options used for the Pay Upon Invoice local payment type.
  * @typedef {object} LocalPayment~StartPaymentPayUponInvoiceOptions
  * @property {string} amount The amount to authorize for the transaction.
@@ -475,6 +483,16 @@ LocalPayment.prototype._initialize = function () {
  *   // Handle any error calling startPayment.
  *   console.error(err);
  * });
+ * @example <caption>Crypto</caption>
+ * localPaymentInstance.startPayment({
+ *  paymentType: 'crypto',
+ *  cryptoOptions: {
+ *    approvalUrl: 'https://example.com/approval'
+ *   }
+ * })
+ * .catch((error) => {
+ *   console.error(error);
+ * });
  */
 // eslint-disable-next-line complexity
 LocalPayment.prototype.startPayment = function (options) {
@@ -591,6 +609,10 @@ LocalPayment.prototype.startPayment = function (options) {
     }
   }
 
+  if (self._paymentType === "crypto") {
+    self._isRedirectFlow = true;
+  }
+
   if (self._isRedirectFlow) {
     if (
       self._paymentType === "swish" &&
@@ -670,6 +692,17 @@ LocalPayment.prototype.startPayment = function (options) {
       },
       self._startPaymentCallback
     );
+  }
+
+  if (self._paymentType === "crypto") {
+    analytics.sendEvent(
+      self._client,
+      self._paymentType + ".local-payment.start-payment.redirected"
+    );
+    self._redirectToPaymentResource(options.cryptoOptions.approvalUrl);
+    promise.resolve();
+
+    return promise;
   }
 
   self._client
@@ -1215,6 +1248,16 @@ function hasMissingBlikOptions(options) {
   return false;
 }
 
+function hasMissingCryptoOptions(options) {
+  var cryptoOptions = options.cryptoOptions || {};
+
+  if (!cryptoOptions.approvalUrl) {
+    return "cryptoOptions.approvalUrl";
+  }
+
+  return false;
+}
+
 function hasMissingSwishOptions(options) {
   var i, option;
   var swishOptions = options.swishOptions || {};
@@ -1275,6 +1318,10 @@ function hasMissingOption(options) {
   }
 
   paymentType = options.paymentType || "";
+
+  if (paymentType.toLowerCase() === "crypto") {
+    return hasMissingCryptoOptions(options);
+  }
 
   if (paymentType.toLowerCase() === "swish") {
     return hasMissingSwishOptions(options);

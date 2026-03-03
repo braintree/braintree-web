@@ -1,13 +1,14 @@
+import { expect } from "@playwright/test";
 import path from "path";
 import fs from "fs";
+
+import { test } from "../helpers/playwright-helpers";
 import {
-  createTestServer,
   extractScriptSrcFromHTML,
   type CspReport,
 } from "../helpers/test-server";
-import http from "node:http";
 
-describe("Hosted Fields CSP", () => {
+test.describe("Hosted Fields CSP", () => {
   const htmlDir = path.resolve(
     process.cwd(),
     `.storybook/static/local-build/html`
@@ -21,112 +22,70 @@ describe("Hosted Fields CSP", () => {
   for (const fileConfig of htmlFiles) {
     const { filename, useMinified } = fileConfig;
     const originalHtmlFilePath = path.join(htmlDir, filename);
-    const urlPath = `/iframe.html?globals=&args=&id=braintree-hosted-fields--hosted-fields-csp-test&viewMode=story&useMinified=${useMinified}`;
 
-    const getTestUrl = (serverPort: number, path: string) => {
-      let url = `http://localhost:${serverPort}${path}`;
+    test.describe(`CSP tests for ${filename}`, () => {
+      const cspReports: CspReport[] = [];
 
-      if (process.env.LOCAL_BUILD === "true") {
-        const hasQuery = url.includes("?");
-        const separator = hasQuery ? "&" : "?";
-        url = `${url}${separator}globals=sdkVersion:dev`;
+      if (!fs.existsSync(originalHtmlFilePath)) {
+        throw new Error(`Original HTML not found: ${originalHtmlFilePath}`);
       }
 
-      return encodeURI(url);
-    };
+      const htmlContent = fs.readFileSync(originalHtmlFilePath).toString();
+      const scriptSrc = extractScriptSrcFromHTML(htmlContent);
 
-    describe(`CSP tests for ${filename}`, () => {
-      const cspReports: CspReport[] = [];
-      let server: http.Server;
-      let serverPort: number;
-
-      beforeEach(async () => {
-        if (!fs.existsSync(originalHtmlFilePath)) {
-          throw new Error(`Original HTML not found: ${originalHtmlFilePath}`);
-        }
-
-        const htmlContent = fs.readFileSync(originalHtmlFilePath).toString();
-        const scriptSrc = extractScriptSrcFromHTML(htmlContent);
-
-        // Reset the array before passing it to the HTTP server
-        cspReports.splice(0);
-
-        const result = await createTestServer({
+      // Configure server options for all tests in this describe block
+      test.use({
+        testServerOptions: {
           enableCsp: true,
           cspReports,
           cspScriptSrc: scriptSrc,
           modifyMetaTag: false,
-          // When testing minified file, force server to serve .min.html
-          // even when SDK requests .html (works around the SDK not allowing minified files when not in dev mode)
           forceServeMinified: useMinified,
-        });
-
-        server = result.server;
-        serverPort = result.port;
+        },
       });
 
-      afterEach(async () => {
-        if (server) {
-          await new Promise<void>((resolve) => {
-            server.close(() => resolve());
-          });
-        }
+      test.beforeEach(async ({ hostedFieldsPage, getTestUrl, page }) => {
+        // Reset the array before each test
+        cspReports.splice(0);
+
+        const url = getTestUrl({ csp: true, useMinified });
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+
+        await hostedFieldsPage.waitForHostedFieldsReady();
       });
 
-      it("loads JS when CSP hash is correct", async () => {
-        await browser.url(getTestUrl(serverPort, urlPath));
-
-        await browser.waitUntil(
-          () => {
-            return browser.execute(() => {
-              // Look for form inside the hosted-fields iframe
-              const iframe = document.querySelector(
-                'iframe[id^="braintree-hosted-field"]'
-              ) as HTMLIFrameElement;
-
-              if (iframe?.contentDocument) {
-                return iframe.contentDocument.querySelector("form") !== null;
-              }
-
-              return false;
-            });
-          },
-          {
-            timeout: 10000,
-            interval: 100,
-            timeoutMsg:
-              "Script did not execute - form element not found in iframe",
-          }
+      test("loads JS when CSP hash is correct", async ({ page }) => {
+        const numberFrame = page.frameLocator(
+          'iframe[id^="braintree-hosted-field-number"]'
         );
+        await numberFrame
+          .locator("form")
+          .waitFor({ state: "visible", timeout: 10000 });
 
-        await browser.pause(500);
+        await page.waitForTimeout(500);
 
         expect(cspReports.length).toBe(0);
       });
     });
 
-    describe(`Bad CSP tests for ${filename}`, () => {
+    test.describe(`Bad CSP tests for ${filename}`, () => {
       const cspReports: CspReport[] = [];
-      let server: http.Server;
-      let serverPort: number;
 
-      beforeEach(async () => {
-        if (!fs.existsSync(originalHtmlFilePath)) {
-          throw new Error(`Original HTML not found: ${originalHtmlFilePath}`);
-        }
+      if (!fs.existsSync(originalHtmlFilePath)) {
+        throw new Error(`Original HTML not found: ${originalHtmlFilePath}`);
+      }
 
-        const htmlContent = fs.readFileSync(originalHtmlFilePath).toString();
-        const originalScriptSrc = extractScriptSrcFromHTML(htmlContent);
+      const htmlContent = fs.readFileSync(originalHtmlFilePath).toString();
+      const originalScriptSrc = extractScriptSrcFromHTML(htmlContent);
 
-        const invalidScriptSrc = originalScriptSrc.replace(
-          /sha256-[^'"]+/g,
-          "sha256-INVALIDHASH"
-        );
+      const invalidScriptSrc = originalScriptSrc.replace(
+        /sha256-[^'"]+/g,
+        "sha256-INVALIDHASH"
+      );
 
-        // Reset the array before passing it to the HTTP server
-        cspReports.splice(0);
-
-        const result = await createTestServer({
+      // Configure server options for all tests in this describe block
+      test.use({
+        testServerOptions: {
           enableCsp: true,
           cspReports,
           cspScriptSrc: invalidScriptSrc,
@@ -134,27 +93,29 @@ describe("Hosted Fields CSP", () => {
           // When testing minified file, force server to serve .min.html
           // even when SDK requests .html (works around the SDK not allowing minified files when not in dev mode)
           forceServeMinified: useMinified,
-        });
-        server = result.server;
-        serverPort = result.port;
+        },
       });
 
-      afterEach(async () => {
-        if (server) {
-          await new Promise<void>((resolve) => {
-            server.close(() => resolve());
-          });
-        }
+      test.beforeEach(() => {
+        // Reset the array before each test
+        cspReports.splice(0);
       });
 
-      it("blocks JS when CSP hash is invalid", async function () {
-        await browser.url(getTestUrl(serverPort, urlPath));
+      test("blocks JS when CSP hash is invalid", async ({
+        getTestUrl,
+        page,
+      }) => {
+        const url = getTestUrl({ csp: true, useMinified });
+        await page.goto(url, { waitUntil: "domcontentloaded" });
 
-        await browser.waitUntil(() => cspReports.length > 0, {
-          timeout: 10000,
-          interval: 100,
-          timeoutMsg: "Expected CSP violation reports but none were received",
-        });
+        // Wait for CSP violations to be reported
+        // Don't wait for hosted fields to be ready - they should be blocked by CSP
+        await expect
+          .poll(() => cspReports.length, {
+            timeout: 10000,
+            message: "Expected CSP violation reports but none were received",
+          })
+          .toBeGreaterThan(0);
 
         const allViolationsAreScriptSrc = cspReports.every(
           (report) =>

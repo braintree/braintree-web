@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 3.137.0 (2026-03-02)
+
+- Alternative Payment Method
+  - Add support for Alternative Payment Method `crypto`
+
 ## 3.136.0 (2026-02-10)
 
 - Venmo

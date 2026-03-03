@@ -22,14 +22,7 @@
     "strictNullChecks": true,
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "types": [
-      "node",
-      "applepayjs",
-      "@wdio/globals/types",
-      "@wdio/mocha-framework",
-      "@wdio/browserstack-service",
-      "wdio-intercept-service"
-    ],
+    "types": ["node", "applepayjs", "jest"],
     "paths": {
       "@/*": ["./stories/*"]
     }

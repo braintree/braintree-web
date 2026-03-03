@@ -15,6 +15,9 @@
  *   - DTBTWEB-123-fix-payment-bug
  *   - PAYPL-1234-add-new-feature
  *   - ABC-99-hotfix.1
+ *   - v3.x
+ *   - backport/fix-bug
+ *   - backport/DTBTWEB-123-fix-bug
  *
  * Invalid examples:
  *   - FeatureName (contains uppercase without Jira prefix)
@@ -32,6 +35,14 @@ function validateBranchName(branchName) {
   const cleanBranchName = branchName.replace("refs/heads/", "");
 
   if (EXEMPT_BRANCHES.includes(cleanBranchName)) {
+    return { valid: true, branch: cleanBranchName };
+  }
+
+  if (/^v\d+\.x$/.test(cleanBranchName)) {
+    return { valid: true, branch: cleanBranchName };
+  }
+
+  if (/^backport\/([A-Z]+-\d+-)?[a-z0-9-]*(\.\d+)?$/.test(cleanBranchName)) {
     return { valid: true, branch: cleanBranchName };
   }
 
@@ -109,11 +120,18 @@ if (require.main === module) {
     console.error("   - PAYPL-1234-add-new-feature");
     console.error("   - beta.1");
     console.error("   - ABC-99-hotfix.2");
+    console.error("   - v3.x");
+    console.error("   - v10.x");
+    console.error("   - backport/fix-bug");
+    console.error("   - backport/DTBTWEB-123-fix-bug");
     console.error("");
-    console.error("📏 Pattern: [JIRA-123-]kebab-case[.version]");
+    console.error(
+      "📏 Pattern: [JIRA-123-]kebab-case[.version] or vN.x or backport/..."
+    );
     console.error("   Optional Jira prefix: LETTERS-NUMBERS-");
     console.error("   Main part: lowercase letters, numbers, and hyphens");
     console.error("   Optional version suffix: .NUMBER");
+    console.error("   Major version branches: v3.x, v4.x, etc.");
 
     process.exit(1);
   }

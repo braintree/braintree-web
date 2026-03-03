@@ -48,7 +48,7 @@ const verifyRegistry = () => {
 const installAndVerify = () => {
   console.log("Step 2: Installing dependencies...");
 
-  execSync("npm install --registry=https://registry.npmjs.org", {
+  execSync("npm ci", {
     stdio: "inherit",
   });
 
@@ -56,7 +56,7 @@ const installAndVerify = () => {
 
   if (status) {
     throw new Error(
-      "Working tree is not clean after npm install!\n" +
+      "Working tree is not clean after 'npm ci'\n" +
         "Unstaged changes:\n" +
         status +
         "\n\n" +

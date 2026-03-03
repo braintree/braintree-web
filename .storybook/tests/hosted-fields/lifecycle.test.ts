@@ -1,283 +1,198 @@
-import { expect } from "@wdio/globals";
-import {
-  createTestServer,
-  type TestServerResult,
-} from "../helpers/test-server";
-import http from "node:http";
+import { expect } from "@playwright/test";
 
-describe("Hosted Fields Lifecycle Management", function () {
-  const standardUrl =
-    "/iframe.html?id=braintree-hosted-fields--standard-hosted-fields&viewMode=story";
+import { test } from "../helpers/playwright-helpers";
 
-  let server: http.Server;
-  let serverPort: number;
-
-  const getTestUrl = (path: string) => {
-    let url = `http://localhost:${serverPort}${path}`;
-    if (process.env.LOCAL_BUILD === "true") {
-      const hasQuery = url.includes("?");
-      const separator = hasQuery ? "&" : "?";
-      url = `${url}${separator}globals=sdkVersion:dev`;
-    }
-    return encodeURI(url);
-  };
-
-  beforeEach(async function () {
-    await browser.reloadSessionOnRetry(this.currentTest);
-
-    await browser.setTimeout({
-      pageLoad: 30000,
-      implicit: 15000,
-      script: 60000,
+test.describe("Hosted Fields Lifecycle Management", function () {
+  test.beforeEach(async ({ hostedFieldsPage, getTestUrl, page }) => {
+    await page.goto(getTestUrl({}), {
+      waitUntil: "domcontentloaded",
     });
-
-    // Create per-test server
-    const result: TestServerResult = await createTestServer();
-    server = result.server;
-    serverPort = result.port;
-
-    // Common setup for all tests
-    await browser.url(getTestUrl(standardUrl));
-    await browser.waitForHostedFieldsReady();
+    await hostedFieldsPage.waitForHostedFieldsReady();
   });
 
-  afterEach(async function () {
-    // Close server
-    if (server) {
-      await new Promise<void>((resolve) => {
-        server.close(() => resolve());
-      });
+  test.afterEach(async ({ page }) => {
+    // Reset browser session after each test to prevent popup dialogs and state leakage
+    try {
+      await page?.reload({ waitUntil: "domcontentloaded" });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log("Error reloading session:", (err as Error).message);
     }
   });
 
-  it("should clear field values programmatically", async function () {
-    await browser.hostedFieldSendInput("number", "4111111111111111");
+  test("should clear field values programmatically", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.hostedFieldSendInput("number", "4111111111111111");
 
-    const fieldToClearSelect = await $("#field-to-clear");
-    await fieldToClearSelect.selectByAttribute("value", "number");
+    const fieldToClearSelect =
+      await hostedFieldsPage.findAndWaitFor("field-to-clear");
+    await fieldToClearSelect.selectOption("number");
 
-    const clearFieldButton = await $("#clear-field-button");
+    const clearFieldButton =
+      await hostedFieldsPage.findAndWaitFor("clear-field-button");
     await clearFieldButton.click();
 
-    await browser.pause(300);
+    const emptyEventContainer = await hostedFieldsPage.findAndWaitFor(
+      "emptyEvent",
+      "hidden"
+    );
+    await hostedFieldsPage.waitForElementToHaveAttribute(
+      "emptyEvent",
+      "className",
+      "number"
+    );
+    await expect(emptyEventContainer).toHaveClass(/number/);
 
-    const emptyEventContainer = await $("#emptyEvent");
-    const emptyContainerClasses =
-      await emptyEventContainer.getAttribute("class");
-    expect(emptyContainerClasses).toContain("number");
-
-    await browser.waitForHostedField("number");
-    await browser.switchFrame(await $("#braintree-hosted-field-number"));
-    const inputField = await $("input");
-    const fieldValue = await inputField.getValue();
-    await browser.switchFrame(null);
-    expect(fieldValue).toBe("");
+    const inputField = await hostedFieldsPage.findInputInFrame("number");
+    await expect(inputField).toHaveValue("");
   });
 
-  it("should add and remove field classes programmatically", async function () {
-    const classActionFieldSelect = await $("#class-action-field");
-    const classNameInput = await $("#class-name-input");
-    const addClassButton = await $("#add-class-button");
-    const removeClassButton = await $("#remove-class-button");
+  test("should add and remove field classes programmatically", async ({
+    hostedFieldsPage,
+  }) => {
+    const classActionFieldSelect =
+      await hostedFieldsPage.findAndWaitFor("class-action-field");
+    const classNameInput =
+      await hostedFieldsPage.findAndWaitFor("class-name-input");
+    const addClassButton =
+      await hostedFieldsPage.findAndWaitFor("add-class-button");
+    const removeClassButton = await hostedFieldsPage.findAndWaitFor(
+      "remove-class-button"
+    );
 
-    await classActionFieldSelect.selectByAttribute("value", "number");
-    await classNameInput.setValue("custom-class");
+    await classActionFieldSelect.selectOption("number");
+    await classNameInput.fill("custom-class");
     await addClassButton.click();
 
-    await browser.pause(100);
-
-    await browser.waitForHostedField("number");
-    await browser.switchFrame(await $("#braintree-hosted-field-number"));
-
-    const inputField = await $("input");
-    const hasClass = await browser.execute((el) => {
-      return el.classList.contains("custom-class");
-    }, inputField);
-
-    await browser.switchFrame(null);
-
-    expect(hasClass).toBe(true);
+    const inputElement = await hostedFieldsPage.findInputInFrame("number");
+    await expect(inputElement).toHaveClass(/custom-class/);
 
     await removeClassButton.click();
-
-    await browser.pause(100);
-
-    await browser.waitForHostedField("number");
-    await browser.switchFrame(await $("#braintree-hosted-field-number"));
-
-    const inputFieldAfterRemove = await $("input");
-    const hasClassAfterRemove = await browser.execute((el) => {
-      return el.classList.contains("custom-class");
-    }, inputFieldAfterRemove);
-
-    await browser.switchFrame(null);
-
-    expect(hasClassAfterRemove).toBe(false);
+    await expect(inputElement).not.toHaveClass(/custom-class/);
   });
 
-  it("should set and remove attributes programmatically", async function () {
-    const attributeFieldSelect = await $("#attribute-field");
-    const attributeNameInput = await $("#attribute-name-input");
-    const attributeValueInput = await $("#attribute-value-input");
-    const setAttributeButton = await $("#set-attribute-button");
-    const removeAttributeButton = await $("#remove-attribute-button");
+  test("should set and remove attributes programmatically", async ({
+    hostedFieldsPage,
+  }) => {
+    const attributeFieldSelect =
+      await hostedFieldsPage.findAndWaitFor("attribute-field");
+    const attributeNameInput = await hostedFieldsPage.findAndWaitFor(
+      "attribute-name-input"
+    );
+    const attributeValueInput = await hostedFieldsPage.findAndWaitFor(
+      "attribute-value-input"
+    );
+    const setAttributeButton = await hostedFieldsPage.findAndWaitFor(
+      "set-attribute-button"
+    );
+    const removeAttributeButton = await hostedFieldsPage.findAndWaitFor(
+      "remove-attribute-button"
+    );
 
-    await attributeFieldSelect.selectByAttribute("value", "cvv");
-    await attributeNameInput.setValue("placeholder");
-    await attributeValueInput.setValue("Security Code");
+    await attributeFieldSelect.selectOption("cvv");
+    await attributeNameInput.fill("placeholder");
+    await attributeValueInput.fill("Security Code");
     await setAttributeButton.click();
 
-    await browser.pause(100);
+    await hostedFieldsPage.waitForHostedField("cvv");
 
-    await browser.waitForHostedField("cvv");
-    await browser.switchFrame(await $("#braintree-hosted-field-cvv"));
+    const inputElement = await hostedFieldsPage.findInputInFrame("cvv");
+    await expect(inputElement).toHaveAttribute("placeholder", "Security Code");
 
-    const inputField = await $("input");
-    const placeholder = await inputField.getAttribute("placeholder");
-
-    await browser.switchFrame(null);
-
-    expect(placeholder).toBe("Security Code");
-
-    await attributeNameInput.setValue("disabled");
+    await attributeNameInput.fill("disabled");
     await setAttributeButton.click();
 
-    await browser.pause(100);
-
-    await browser.waitForHostedField("cvv");
-    await browser.switchFrame(await $("#braintree-hosted-field-cvv"));
-
-    const disabledInputField = await $("input");
-    const isDisabled = await disabledInputField.getAttribute("disabled");
-
-    await browser.switchFrame(null);
-
-    expect(isDisabled).not.toBe(null);
+    await expect(inputElement).toBeDisabled();
 
     await removeAttributeButton.click();
 
-    await browser.pause(100);
-
-    await browser.waitForHostedField("cvv");
-    await browser.switchFrame(await $("#braintree-hosted-field-cvv"));
-
-    const enabledInputField = await $("input");
-    const isEnabled = await enabledInputField.getAttribute("disabled");
-
-    await browser.switchFrame(null);
-
-    expect(isEnabled).toBe(null);
+    await expect(inputElement).toBeEnabled();
   });
 
-  it("should handle component teardown properly", async function () {
-    const iframesBeforeTeardown = await $$(
-      "iframe[id^=braintree-hosted-field]"
-    );
-    expect(iframesBeforeTeardown.length).toBeGreaterThan(0);
+  test("should focus fields programmatically", async ({ hostedFieldsPage }) => {
+    const focusFieldSelect =
+      await hostedFieldsPage.findAndWaitFor("focus-field");
+    const focusFieldButton =
+      await hostedFieldsPage.findAndWaitFor("focus-field-button");
 
-    const teardownButton = await $("#teardown-button");
-    const teardownStatus = await $("#teardown-status");
-    await teardownButton.click();
-    await browser.waitUntil(
-      async () => {
-        const statusText = await teardownStatus.getText();
-        return statusText === "Teardown complete";
-      },
-      {
-        timeout: 10000,
-        timeoutMsg: "Teardown status did not update to 'Teardown complete'",
-        interval: 500,
-      }
-    );
-
-    await browser.waitUntil(
-      async () => {
-        const iframes = await $$("iframe[id^=braintree-hosted-field]");
-        return iframes.length === 0;
-      },
-      {
-        timeout: 10000,
-        timeoutMsg: "Hosted Fields iframes were not removed after teardown",
-        interval: 500,
-      }
-    );
-
-    const iframesAfterTeardown = await $$("iframe[id^=braintree-hosted-field]");
-    expect(iframesAfterTeardown.length).toBe(0);
-  });
-
-  it("should focus fields programmatically", async function () {
-    const focusFieldSelect = await $("#focus-field");
-    const focusFieldButton = await $("#focus-field-button");
-
-    await focusFieldSelect.selectByAttribute("value", "cvv");
+    await focusFieldSelect.selectOption("cvv");
     await focusFieldButton.click();
+    const focusEventContainer = await hostedFieldsPage.findAndWaitFor(
+      "focus",
+      "hidden"
+    );
+    await hostedFieldsPage.waitForElementToHaveAttribute(
+      "focus",
+      "className",
+      "cvv"
+    );
+    await expect(focusEventContainer).toHaveClass(/cvv/);
 
-    await browser.pause(500);
-
-    const focusEventContainer = await $("#focus");
-    const focusContainerClasses =
-      await focusEventContainer.getAttribute("class");
-    expect(focusContainerClasses).toContain("cvv");
-
-    const cvvContainer = await $("#cvv");
-    const containerClasses = await cvvContainer.getAttribute("class");
-    expect(containerClasses).toContain("braintree-hosted-fields-focused");
+    const cvvContainer = await hostedFieldsPage.findAndWaitFor("cvv");
+    await hostedFieldsPage.waitForElementToHaveAttribute(
+      "cvv",
+      "className",
+      "braintree-hosted-fields-focused"
+    );
+    await expect(cvvContainer).toHaveClass(/braintree-hosted-fields-focused/);
   });
 
-  it("should retrieve accurate field state with getState", async function () {
-    const getStateButton = await $("#get-state-button");
-    const stateContainer = await $("#state-container");
+  test("should retrieve accurate field state with getState", async ({
+    hostedFieldsPage,
+  }) => {
+    const getStateButton =
+      await hostedFieldsPage.findAndWaitFor("get-state-button");
 
     await getStateButton.click();
 
-    await browser.waitUntil(
-      async () => {
-        try {
-          const dataAttr = await stateContainer.getAttribute("data-state");
-          return dataAttr && dataAttr.includes("fields");
-        } catch {
-          return false;
-        }
-      },
-      {
-        timeout: 10000,
-        timeoutMsg: "State data was not populated within timeout",
-        interval: 500,
-      }
-    );
-
+    const stateContainer =
+      await hostedFieldsPage.findAndWaitFor("state-container");
     let stateData = await stateContainer.getAttribute("data-state");
-    const initialState = JSON.parse(stateData);
+    const initialState = JSON.parse(stateData!);
 
     expect(initialState.fields.number.isEmpty).toBe(true);
     expect(initialState.fields.number.isValid).toBe(false);
     expect(initialState.fields.number.isPotentiallyValid).toBe(true);
 
-    await browser.hostedFieldSendInput("number", "4111111111111111");
+    await hostedFieldsPage.hostedFieldSendInput("number", "4111111111111111");
+
     await getStateButton.click();
-
-    await browser.waitUntil(
-      async () => {
-        try {
-          const dataAttr = await stateContainer.getAttribute("data-state");
-          const state = JSON.parse(dataAttr);
-          return state.fields.number.isEmpty === false;
-        } catch {
-          return false;
-        }
-      },
-      {
-        timeout: 10000,
-        timeoutMsg: "Updated state data was not populated within timeout",
-        interval: 500,
-      }
-    );
-
     stateData = await stateContainer.getAttribute("data-state");
-    const updatedState = JSON.parse(stateData);
+    const updatedState = JSON.parse(stateData!);
 
     expect(updatedState.fields.number.isEmpty).toBe(false);
     expect(updatedState.fields.number.isValid).toBe(true);
+  });
+
+  test("should handle component teardown properly", async ({
+    hostedFieldsPage,
+    page,
+  }) => {
+    await hostedFieldsPage.waitForHostedFieldsReady();
+    const iframesBeforeTeardown = await page.evaluate(() => {
+      const iframes = document.querySelectorAll(
+        'iframe[id^="braintree-hosted-field"]'
+      );
+      return iframes.length;
+    });
+    expect(iframesBeforeTeardown).toBeGreaterThan(0);
+    const teardownButton =
+      await hostedFieldsPage.findAndWaitFor("teardown-button");
+    await teardownButton.click();
+
+    const teardownStatus =
+      await hostedFieldsPage.findAndWaitFor("teardown-status");
+
+    expect(await teardownStatus.innerText()).toBe("Teardown complete");
+
+    const iframesAfterTeardown = await page.evaluate(() => {
+      const iframes = document.querySelectorAll(
+        'iframe[id^="braintree-hosted-field"]'
+      );
+      return iframes.length;
+    });
+
+    expect(iframesAfterTeardown).toBe(0);
   });
 });

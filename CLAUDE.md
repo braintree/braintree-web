@@ -28,10 +28,10 @@ Each component has its own CLAUDE.md with detailed guidance. These are automatic
 
 - `npm run build` - Build all components
 - `npm run build <component>` - Build a single component (e.g., `npm run build client`)
-- `npm run watch:integration` - Watch for changes and rebuild automatically
 
 ### Local Build Testing
 
+- `npm run build:integration` - Build SDK, copy to Storybook static dir, build Storybook, and start HTTPS server at https://127.0.0.1:8080
 - `npm run storybook:dev-local` - Start Storybook with your local builds (copies build files automatically)
 - `npm run storybook:copy-local-build` - Copy local builds to Storybook static directory
 
@@ -309,7 +309,7 @@ npm run test:integration -- --spec .storybook/tests/your-test.test.ts
 Required in `.env` file:
 
 ```bash
-# Local development (not committed to git)
+# Local development(not committed to git)
 BRAINTREE_JS_API_HOST=development.gateway.hostname
 BRAINTREE_JS_API_PORT=443
 BRAINTREE_JS_API_PROTOCOL=https
@@ -324,13 +324,24 @@ PAYPAL_SANDBOX_OTP_CODE=111111
 
 ### Code Style
 
-- 2-space indentation
+- 2-space indentation, semicolons at end of statements, single quotes for strings
 - ES5 syntax (for browser compatibility) - use `function` not arrow functions, `var` not `const/let`
 - ES5 Promises for functional code; async/await allowed only in tests
+- Use `===` and `!==` for equality checks (never `==`/`!=`)
+- Trailing commas in multi-line objects and arrays
 - JSDoc comments for public APIs
-- Prettier for consistent formatting
-- ESLint with Braintree configuration
+- Prettier for consistent formatting; ESLint with Braintree configuration
 - Never use emojis in code or comments
+
+### Naming Conventions
+
+- `camelCase` for variables and functions
+- `PascalCase` for classes
+- `UPPER_SNAKE_CASE` for constants
+- Boolean variables: prefix with `is`, `has`, `can`, or `should`
+- Event handlers: prefix with `on` (e.g., `onClick`)
+- CRUD functions: prefix with `create`, `update`, `delete`, or `fetch`
+- Initialization functions: use `init` or `initialize`
 
 ### Dependencies
 
@@ -339,6 +350,16 @@ PAYPAL_SANDBOX_OTP_CODE=111111
 - Uses framebus for iframe communication (see Frame Service and Hosted Fields docs)
 - Cardinal Commerce Songbird.js for 3D Secure (loaded dynamically)
 - SJCL crypto library (custom build) for data-collector component
+
+### Branch Naming Convention
+
+Branch names are validated by pre-push hooks and CI. Valid formats:
+
+- Standard: `lowercase-kebab-case` (e.g., `fix-payment-bug`)
+- Jira: `TICKET-123-lowercase-kebab-case` (e.g., `DTBTWEB-123-fix-bug`)
+- Versioned: `feature-name.1` or `TICKET-123-feature.1`
+
+Jira prefix must be uppercase (`DTBTWEB-123`, not `dtbtweb-123`). Validate manually with: `node scripts/validate-branch-name.js "your-branch-name"`
 
 ### Development Workflow
 

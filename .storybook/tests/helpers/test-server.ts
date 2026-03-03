@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import http from "node:http";
+import https from "node:https";
 import path from "path";
 import fs from "fs";
 
@@ -24,10 +25,11 @@ export interface TestServerOptions {
   modifyMetaTag?: boolean;
   customHeaders?: Record<string, string>;
   forceServeMinified?: boolean;
+  useHttps?: boolean;
 }
 
 export interface TestServerResult {
-  server: http.Server;
+  server: http.Server | https.Server;
   port: number;
   url: string;
 }
@@ -246,37 +248,63 @@ export const createTestServer = (
     modifyMetaTag = false,
     customHeaders = {},
     forceServeMinified = false,
+    useHttps = false,
   } = options;
 
   return new Promise((resolve) => {
-    const server = http.createServer((request, response) => {
-      if (handleFaviconRequest(request.url, response)) {
+    const requestHandler = (
+      req: http.IncomingMessage,
+      res: http.ServerResponse
+    ) => {
+      if (handleFaviconRequest(req.url, res)) {
         return;
       }
 
-      if (
-        handleCspReport(request.url, enableCsp, cspReports, request, response)
-      ) {
+      if (handleCspReport(req.url, enableCsp, cspReports, req, res)) {
         return;
       }
 
-      const filePath = normalizeFilePath(request.url, forceServeMinified);
-
+      const filePath = normalizeFilePath(req.url, forceServeMinified);
       serveFile(
         filePath,
-        response,
+        res,
         enableCsp,
         modifyMetaTag,
         cspScriptSrc,
         customHeaders
       );
-    });
+    };
+
+    let server: http.Server | https.Server;
+
+    if (useHttps) {
+      // Load SSL certificates for HTTPS server
+      const certPath = path.join(process.cwd(), ".storybook/certs");
+      const keyPath = path.join(certPath, "localhost.key");
+      const certFilePath = path.join(certPath, "localhost.crt");
+
+      if (!fs.existsSync(keyPath) || !fs.existsSync(certFilePath)) {
+        throw new Error(
+          `SSL certificates not found. Run: .storybook/scripts/generate-test-certs.sh`
+        );
+      }
+
+      const httpsOptions = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certFilePath),
+      };
+
+      server = https.createServer(httpsOptions, requestHandler);
+    } else {
+      server = http.createServer(requestHandler);
+    }
 
     server.listen(0, () => {
       const address = server.address();
       const port = typeof address === "object" && address ? address.port : 0;
-      const url = `http://localhost:${port}`;
 
+      const protocol = useHttps ? "https" : "http";
+      const url = `${protocol}://localhost:${port}`;
       resolve({ server, port, url });
     });
   });

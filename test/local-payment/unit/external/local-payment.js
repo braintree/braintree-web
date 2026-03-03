@@ -1990,6 +1990,96 @@ describe("LocalPayment", () => {
     });
   });
 
+  describe("startPayment Crypto", () => {
+    beforeEach(() => {
+      testContext.localPayment = new LocalPayment({
+        client: testContext.client,
+        merchantAccountId: "merchant-account-id",
+      });
+      testContext.frameServiceInstance = {
+        _serviceId: "service-id",
+        close: jest.fn(),
+        open: jest.fn(
+          yieldsAsync(null, {
+            token: "token",
+            paymentId: "payment-id",
+            PayerID: "PayerId",
+          })
+        ),
+        redirect: jest.fn(),
+      };
+
+      testContext.baseCryptoOptions = {
+        paymentType: "crypto",
+      };
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect-url",
+          paymentToken: "payment-token",
+        },
+      });
+
+      jest
+        .spyOn(frameService, "create")
+        .mockImplementation(yields(testContext.frameServiceInstance));
+
+      return testContext.localPayment._initialize();
+    });
+
+    it("errors when cryptoOptions.approvalUrl is missing", () => {
+      const options = {
+        ...testContext.baseCryptoOptions,
+        cryptoOptions: {},
+      };
+
+      return testContext.localPayment.startPayment(options).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe(
+          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+        );
+        expect(err.message).toContain(
+          "Missing required option for startPayment."
+        );
+      });
+    });
+
+    it("errors when cryptoOptions is missing", () => {
+      const options = {
+        ...testContext.baseCryptoOptions,
+      };
+
+      return testContext.localPayment.startPayment(options).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe(
+          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+        );
+        expect(err.message).toContain(
+          "Missing required option for startPayment."
+        );
+      });
+    });
+
+    it("should redirect to the approvalUrl", async () => {
+      const options = {
+        ...testContext.baseCryptoOptions,
+        cryptoOptions: {
+          approvalUrl: "https://example.com/approval-url",
+        },
+      };
+
+      jest.spyOn(testContext.localPayment, "_redirectToPaymentResource");
+
+      await testContext.localPayment.startPayment(options);
+
+      expect(
+        testContext.localPayment._redirectToPaymentResource
+      ).toHaveBeenCalledWith("https://example.com/approval-url");
+    });
+  });
+
   describe("startPayment Swish", () => {
     beforeEach(() => {
       testContext.localPayment = new LocalPayment({
