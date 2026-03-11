@@ -997,6 +997,7 @@ interface IPayPalCheckoutV6TokenizePayload {
     firstName?: string;
     lastName?: string;
   };
+  shippingOptionId?: string;
 }
 
 /**
@@ -1082,6 +1083,51 @@ interface IPayPalCheckoutV6Instance {
     userAction?: "CONTINUE" | "COMMIT" | "SETUP_NOW";
     displayName?: string;
     presentationMode?: string;
+    onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
+    onCancel?: () => void;
+    onError?: (err: IBraintreeError) => void;
+  }) => IPayPalCheckoutV6Session;
+  createCheckoutWithVaultSession: (options: {
+    amount: string;
+    currency: string;
+    intent?: "capture" | "authorize" | "order";
+    billingAgreementDetails?: {
+      description: string;
+    };
+    returnUrl?: string;
+    cancelUrl?: string;
+    lineItems?: Array<{
+      quantity: string;
+      unitAmount: string;
+      name: string;
+      kind: "debit" | "credit";
+      unitTaxAmount?: string;
+      description?: string;
+    }>;
+    shippingOptions?: Array<{
+      id: string;
+      label: string;
+      selected: boolean;
+      type: "SHIPPING" | "PICKUP";
+      amount: { currency: string; value: string };
+    }>;
+    amountBreakdown?: {
+      itemTotal?: string;
+      shipping?: string;
+      handling?: string;
+      taxTotal?: string;
+      insurance?: string;
+      shippingDiscount?: string;
+      discount?: string;
+    };
+    displayName?: string;
+    userAuthenticationEmail?: string;
+    presentationMode?: string;
+    onShippingAddressChange?: (data: {
+      shippingAddress?: { city?: string; state?: string };
+      orderID?: string;
+      orderId?: string;
+    }) => void | Promise<unknown>;
     onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
     onCancel?: () => void;
     onError?: (err: IBraintreeError) => void;

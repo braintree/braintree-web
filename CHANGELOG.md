@@ -1,9 +1,15 @@
 # CHANGELOG
 
+## 3.138.0 (2026-03-10)
+
+- PayPal Checkout v6
+  - Add `createCheckoutWithVaultSession` method to enable charging and vaulting in a single session
+
 ## 3.137.0 (2026-03-02)
 
 - Alternative Payment Method
   - Add support for Alternative Payment Method `crypto`
+- Update Data Collector error object
 
 ## 3.136.0 (2026-02-10)
 

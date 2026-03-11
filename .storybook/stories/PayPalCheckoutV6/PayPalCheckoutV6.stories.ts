@@ -17,12 +17,14 @@ PayPal Checkout V6 - Payment integration with multiple flow types.
 
 **Payment Flow Types:**
 - **One-Time Payments**: Best for infrequent payments with higher AOV (retail, e-commerce)
+- **Checkout with Vault**: Single flow for payment + vault consent (subscriptions with initial charge)
 - **Vaulted Payments**: Ideal for high-frequency, low-AOV purchases (food delivery, marketplaces)
 - **Recurring Payments**: Perfect for subscriptions and automated billing (SaaS, streaming, utilities)
 - **Vault-Initiated Checkout**: Use a previously vaulted PayPal account for subsequent payments
 
 **Implementation Features:**
 - One-time payment session creation
+- Checkout with vault session (payment + save)
 - Billing agreement/vault flow
 - Vault-initiated checkout
 - Payment tokenization
@@ -1089,6 +1091,214 @@ export const LineItemsAndShipping: StoryObj = {
       const formContainer = createLineItemsForm();
       container.appendChild(formContainer);
       setupLineItemsPayment(formContainer);
+    },
+    ["client.min.js", "paypal-checkout-v6.min.js"]
+  ),
+};
+
+// Checkout with Vault Story
+const createCheckoutWithVaultForm = (): HTMLElement => {
+  const container = document.createElement("div");
+  container.innerHTML = `
+    <div class="shared-container paypal-container">
+      <h2>PayPal V6 Checkout with Vault</h2>
+
+      <div class="paypal-description">
+        <p class="shared-description">
+          Create a one-time payment while simultaneously saving the PayPal account
+          for future transactions. The returned nonce can be used for both the
+          immediate charge and future recurring payments.
+        </p>
+
+        <div class="paypal-form-group">
+          <label class="paypal-checkbox-label">
+            <input type="checkbox" id="advancedOptionsToggle" class="paypal-checkbox" />
+            <span class="paypal-checkbox-text">Include line items and shipping options</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="paypal-button" class="paypal-button-container"></div>
+
+      <div id="result" class="shared-result"></div>
+    </div>
+  `;
+
+  return container;
+};
+
+const CHECKOUT_WITH_VAULT_BASIC = {
+  amount: "10.00",
+  currency: "USD",
+  intent: "capture",
+  billingAgreementDetails: {
+    description: "Monthly subscription to Totally Real Products!",
+  },
+};
+
+const CHECKOUT_WITH_VAULT_ADVANCED = {
+  amount: "20.00",
+  currency: "USD",
+  intent: "capture",
+  billingAgreementDetails: {
+    description: "Premium subscription service with initial payment",
+  },
+  lineItems: [
+    {
+      quantity: "1",
+      unitAmount: "15.00",
+      name: "Premium Subscription (First Month)",
+      kind: "debit",
+    },
+  ],
+  shippingOptions: [
+    {
+      id: "standard",
+      label: "Standard Shipping",
+      selected: true,
+      type: "SHIPPING",
+      amount: {
+        currency: "USD",
+        value: "5.00",
+      },
+    },
+    {
+      id: "express",
+      label: "Express Shipping",
+      selected: false,
+      type: "SHIPPING",
+      amount: {
+        currency: "USD",
+        value: "10.00",
+      },
+    },
+  ],
+  amountBreakdown: {
+    itemTotal: "15.00",
+    shipping: "5.00",
+  },
+};
+
+const setupCheckoutWithVault = async (
+  container: HTMLElement
+): Promise<void> => {
+  const clientToken = await getClientToken();
+  const resultDiv = container.querySelector("#result") as HTMLElement;
+  const advancedToggle = container.querySelector(
+    "#advancedOptionsToggle"
+  ) as HTMLInputElement;
+
+  if (!clientToken) {
+    resultDiv.className =
+      "shared-result shared-result--visible shared-result--error";
+    resultDiv.innerHTML = `
+      <strong>Configuration Error</strong><br>
+      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
+    `;
+    return;
+  }
+
+  try {
+    const braintree = getBraintreeSDK(resultDiv);
+    const clientInstance = await braintree.client.create({
+      authorization: clientToken,
+    });
+
+    const paypalCheckoutV6Instance = await braintree.paypalCheckoutV6.create({
+      client: clientInstance,
+    });
+
+    await paypalCheckoutV6Instance.loadPayPalSDK();
+
+    const getSessionOptions = () => {
+      const baseOptions = advancedToggle.checked
+        ? CHECKOUT_WITH_VAULT_ADVANCED
+        : CHECKOUT_WITH_VAULT_BASIC;
+
+      return {
+        ...baseOptions,
+        onApprove: async (data: IPayPalV6ApproveData) => {
+          const tokenizeData = {
+            payerID: data.payerID || data.payerId || data.PayerID,
+            orderID: getOrderId(data),
+          };
+
+          const payload =
+            await paypalCheckoutV6Instance.tokenizePayment(tokenizeData);
+
+          const email =
+            payload.details?.email || payload.details?.payerEmail || "N/A";
+          const mode = advancedToggle.checked
+            ? "with line items and shipping"
+            : "basic payment";
+
+          resultDiv.className =
+            "shared-result shared-result--visible shared-result--success";
+          resultDiv.innerHTML = `
+            <strong>Payment authorized & account vaulted!</strong><br>
+            <small>Nonce: ${payload.nonce}</small><br>
+            <small>Payer Email: ${email}</small><br>
+            <small>Amount: $${advancedToggle.checked ? "20.00" : "10.00"}</small><br>
+            <small>Mode: ${mode}</small>
+          `;
+        },
+
+        onCancel: () => {
+          resultDiv.className = "shared-result shared-result--visible";
+          resultDiv.innerHTML = `
+            <strong>Payment Cancelled</strong><br>
+            <small>Customer cancelled the checkout with vault flow.</small>
+          `;
+        },
+
+        onError: (err: IBraintreeError) => {
+          showDetailedError(resultDiv, "PayPal Error", err);
+        },
+      };
+    };
+
+    const paypalButtonContainer = container.querySelector(
+      "#paypal-button"
+    ) as HTMLElement;
+    const button = document.createElement("button");
+    button.textContent = "Checkout with Vault";
+    button.className = "paypal-button";
+    button.style.cssText = `
+      background-color: #0070ba;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      width: 100%;
+    `;
+
+    button.addEventListener("click", () => {
+      const session =
+        paypalCheckoutV6Instance.createCheckoutWithVaultSession(
+          getSessionOptions()
+        );
+      session.start();
+    });
+
+    paypalButtonContainer.appendChild(button);
+  } catch (error) {
+    showDetailedError(
+      resultDiv,
+      "Initialization Error",
+      error as IBraintreeError
+    );
+  }
+};
+
+export const CheckoutWithVault: StoryObj = {
+  render: createSimpleBraintreeStory(
+    async (container) => {
+      const formContainer = createCheckoutWithVaultForm();
+      container.appendChild(formContainer);
+      await setupCheckoutWithVault(formContainer);
     },
     ["client.min.js", "paypal-checkout-v6.min.js"]
   ),

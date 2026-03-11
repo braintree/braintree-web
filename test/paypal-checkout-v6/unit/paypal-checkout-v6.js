@@ -2400,6 +2400,665 @@ describe("PayPalCheckoutV6", () => {
     });
   });
 
+  describe("createCheckoutWithVaultSession", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      testContext.paypalInstance = {
+        createPayPalOneTimePaymentSession: jest.fn().mockReturnValue({
+          start: jest.fn().mockResolvedValue(),
+        }),
+      };
+      testContext.instance._paypalInstance = testContext.paypalInstance;
+
+      window.paypal = {
+        createInstance: jest.fn().mockResolvedValue(testContext.paypalInstance),
+      };
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("returns a session object", () => {
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      expect(typeof session.start).toBe("function");
+    });
+
+    it("requires amount option", () => {
+      expect(() => {
+        testContext.instance.createCheckoutWithVaultSession({
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("requires currency option", () => {
+      expect(() => {
+        testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          onApprove: jest.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("requires onApprove callback", () => {
+      expect(() => {
+        testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("forces requestBillingAgreement to true", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              requestBillingAgreement: true,
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("defaults intent to capture", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              intent: "sale",
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("sends analytics event when session is created", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      session
+        .start()
+        .then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.checkout-with-vault.started"
+          );
+          done();
+        })
+        .catch(done);
+    });
+
+    it("supports billingAgreementDetails option", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        billingAgreementDetails: {
+          description: "Monthly subscription to Totally Real Products!",
+        },
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              billingAgreementDetails: {
+                description: "Monthly subscription to Totally Real Products!",
+              },
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("supports lineItems option", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const lineItems = [
+        {
+          quantity: "1",
+          unitAmount: "10.00",
+          name: "Premium Subscription",
+          kind: "debit",
+        },
+      ];
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        lineItems: lineItems,
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              lineItems: lineItems,
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("supports shippingOptions option", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const shippingOptions = [
+        {
+          id: "standard",
+          label: "Standard Shipping",
+          selected: true,
+          type: "SHIPPING",
+          amount: {
+            currency: "USD",
+            value: "5.00",
+          },
+        },
+      ];
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "15.00",
+        currency: "USD",
+        shippingOptions: shippingOptions,
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              shippingOptions: shippingOptions,
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("supports amountBreakdown option", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const amountBreakdown = {
+        itemTotal: "10.00",
+        shipping: "5.00",
+      };
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "15.00",
+        currency: "USD",
+        amountBreakdown: amountBreakdown,
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              amountBreakdown: amountBreakdown,
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("supports userAuthenticationEmail option", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        userAuthenticationEmail: "buyer@example.com",
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              payer_email: "buyer@example.com",
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("supports intent option", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        intent: "authorize",
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              intent: "authorize",
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("converts capture intent to sale", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        intent: "capture",
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              intent: "sale",
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    it("supports displayName option", (done) => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        displayName: "My Custom Store Name",
+        onApprove: jest.fn(),
+      });
+
+      session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                brandName: "My Custom Store Name",
+              }),
+            }),
+          })
+        );
+        done();
+      });
+    });
+
+    describe("direct-app-switch URL validation", () => {
+      it("rejects when returnUrl is missing for direct-app-switch mode", () => {
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .start({ presentationMode: "direct-app-switch" })
+          .then(() => {
+            throw new Error("should not resolve");
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.code).toBe(
+              "PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED"
+            );
+            expect(err.type).toBe("MERCHANT");
+          });
+      });
+
+      it("rejects when cancelUrl is missing for direct-app-switch mode", () => {
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          returnUrl: "https://example.com/return",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .start({ presentationMode: "direct-app-switch" })
+          .then(() => {
+            throw new Error("should not resolve");
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.code).toBe(
+              "PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED"
+            );
+            expect(err.type).toBe("MERCHANT");
+          });
+      });
+
+      it("rejects when both URLs are missing for direct-app-switch mode", () => {
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .start({ presentationMode: "direct-app-switch" })
+          .then(() => {
+            throw new Error("should not resolve");
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.code).toBe(
+              "PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED"
+            );
+          });
+      });
+
+      it("does not reject for direct-app-switch mode when both URLs are provided", (done) => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue({
+            start: jest
+              .fn()
+              .mockResolvedValue({ redirectURL: "https://paypal.com" }),
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "direct-app-switch" })
+          .then(() => {
+            done();
+          })
+          .catch(done);
+      });
+
+      it("does not validate URLs for non-app-switch presentation modes", (done) => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue({
+            start: jest.fn().mockResolvedValue({}),
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            done();
+          })
+          .catch(done);
+      });
+
+      it("does not validate URLs for auto presentation mode", (done) => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue({
+            start: jest.fn().mockResolvedValue({}),
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start()
+          .then(() => {
+            done();
+          })
+          .catch(done);
+      });
+    });
+
+    describe("session callbacks", () => {
+      it("does not include onShippingAddressChange when user does not provide one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onApprove).toBeDefined();
+            expect(capturedCallbacks.onCancel).toBeDefined();
+            expect(
+              Object.prototype.hasOwnProperty.call(
+                capturedCallbacks,
+                "onShippingAddressChange"
+              )
+            ).toBe(false);
+            done();
+          })
+          .catch(done);
+      });
+
+      it("does not include onError when user does not provide one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(
+              Object.prototype.hasOwnProperty.call(capturedCallbacks, "onError")
+            ).toBe(false);
+            done();
+          })
+          .catch(done);
+      });
+
+      it("includes onShippingAddressChange when user provides one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+          onShippingAddressChange: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onShippingAddressChange).toBeDefined();
+            done();
+          })
+          .catch(done);
+      });
+
+      it("includes onError when user provides one", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+          onError: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onError).toBeDefined();
+            done();
+          })
+          .catch(done);
+      });
+
+      it("always includes onCancel for analytics tracking", (done) => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: jest.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        session
+          .start({ presentationMode: "popup" })
+          .then(() => {
+            expect(capturedCallbacks).toBeDefined();
+            expect(capturedCallbacks.onCancel).toBeDefined();
+            done();
+          })
+          .catch(done);
+      });
+    });
+  });
+
   describe("_createBillingAgreementToken", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
