@@ -17,15 +17,16 @@ description: Google Pay v2 integration via Google Pay API - PaymentsClient, paym
 
 ```javascript
 var paymentsClient = new google.payments.api.PaymentsClient({
-  environment: 'TEST'   // 'TEST' or 'PRODUCTION'
+  environment: "TEST", // 'TEST' or 'PRODUCTION'
 });
 
-braintree.client.create({ authorization: CLIENT_TOKEN })
+braintree.client
+  .create({ authorization: CLIENT_TOKEN })
   .then(function (clientInstance) {
     return braintree.googlePayment.create({
       client: clientInstance,
-      googlePayVersion: 2,                    // Required: use v2
-      googleMerchantId: 'your-merchant-id'    // Required for PRODUCTION
+      googlePayVersion: 2, // Required: use v2
+      googleMerchantId: "your-merchant-id", // Required for PRODUCTION
     });
   })
   .then(function (googlePaymentInstance) {
@@ -36,47 +37,53 @@ braintree.client.create({ authorization: CLIENT_TOKEN })
 ### 3. Check Readiness
 
 ```javascript
-paymentsClient.isReadyToPay({
-  apiVersion: 2,
-  apiVersionMinor: 0,
-  allowedPaymentMethods: googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods
-}).then(function (response) {
-  if (response.result) {
-    document.getElementById('google-pay-button').style.display = 'block';
-  }
-});
+paymentsClient
+  .isReadyToPay({
+    apiVersion: 2,
+    apiVersionMinor: 0,
+    allowedPaymentMethods:
+      googlePaymentInstance.createPaymentDataRequest().allowedPaymentMethods,
+  })
+  .then(function (response) {
+    if (response.result) {
+      document.getElementById("google-pay-button").style.display = "block";
+    }
+  });
 ```
 
 ### 4. Handle Payment
 
 ```javascript
-document.getElementById('google-pay-button').addEventListener('click', function () {
-  var paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
-    transactionInfo: {
-      currencyCode: 'USD',
-      totalPriceStatus: 'FINAL',
-      totalPrice: '100.00'    // Must be a string
-    }
-  });
-
-  paymentsClient.loadPaymentData(paymentDataRequest)
-    .then(function (paymentData) {
-      return googlePaymentInstance.parseResponse(paymentData);
-    })
-    .then(function (result) {
-      // result.nonce -- send to server
-      // result.type -- 'AndroidPayCard' or 'PayPalAccount'
-      // result.details.cardType, result.details.lastFour, result.details.bin
-      submitNonceToServer(result.nonce);
-    })
-    .catch(function (err) {
-      if (err.statusCode === 'CANCELED') {
-        console.log('User cancelled');
-      } else {
-        console.error(err);
-      }
+document
+  .getElementById("google-pay-button")
+  .addEventListener("click", function () {
+    var paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
+      transactionInfo: {
+        currencyCode: "USD",
+        totalPriceStatus: "FINAL",
+        totalPrice: "100.00", // Must be a string
+      },
     });
-});
+
+    paymentsClient
+      .loadPaymentData(paymentDataRequest)
+      .then(function (paymentData) {
+        return googlePaymentInstance.parseResponse(paymentData);
+      })
+      .then(function (result) {
+        // result.nonce -- send to server
+        // result.type -- 'AndroidPayCard' or 'PayPalAccount'
+        // result.details.cardType, result.details.lastFour, result.details.bin
+        submitNonceToServer(result.nonce);
+      })
+      .catch(function (err) {
+        if (err.statusCode === "CANCELED") {
+          console.log("User cancelled");
+        } else {
+          console.error(err);
+        }
+      });
+  });
 ```
 
 ## Adding Billing/Shipping Address
@@ -85,20 +92,24 @@ document.getElementById('google-pay-button').addEventListener('click', function 
 
 ```javascript
 var request = googlePaymentInstance.createPaymentDataRequest({
-  transactionInfo: { currencyCode: 'USD', totalPriceStatus: 'FINAL', totalPrice: '25.00' }
+  transactionInfo: {
+    currencyCode: "USD",
+    totalPriceStatus: "FINAL",
+    totalPrice: "25.00",
+  },
 });
 
 // Add billing address requirement
 var cardMethod = request.allowedPaymentMethods[0];
 cardMethod.parameters.billingAddressRequired = true;
 cardMethod.parameters.billingAddressParameters = {
-  format: 'FULL',
-  phoneNumberRequired: true
+  format: "FULL",
+  phoneNumberRequired: true,
 };
 
 // Add shipping
 request.shippingAddressRequired = true;
-request.shippingAddressParameters = { allowedCountryCodes: ['US', 'CA'] };
+request.shippingAddressParameters = { allowedCountryCodes: ["US", "CA"] };
 request.emailRequired = true;
 
 paymentsClient.loadPaymentData(request).then(/* ... */);
@@ -123,11 +134,11 @@ No additional configuration needed -- PayPal is automatically available if enabl
 
 ## Common Errors
 
-| Code | Type | Fix |
-|------|------|-----|
-| `GOOGLE_PAYMENT_NOT_ENABLED` | MERCHANT | Enable Google Pay in Braintree control panel |
-| `GOOGLE_PAYMENT_UNSUPPORTED_VERSION` | MERCHANT | Use `googlePayVersion: 2` (or 1) |
-| `GOOGLE_PAYMENT_GATEWAY_ERROR` | UNKNOWN | Check authorization validity, inspect err.details |
+| Code                                 | Type     | Fix                                               |
+| ------------------------------------ | -------- | ------------------------------------------------- |
+| `GOOGLE_PAYMENT_NOT_ENABLED`         | MERCHANT | Enable Google Pay in Braintree control panel      |
+| `GOOGLE_PAYMENT_UNSUPPORTED_VERSION` | MERCHANT | Use `googlePayVersion: 2` (or 1)                  |
+| `GOOGLE_PAYMENT_GATEWAY_ERROR`       | UNKNOWN  | Check authorization validity, inspect err.details |
 
 ## Common issues
 
@@ -147,7 +158,7 @@ braintree.googlePayment.create({ client: clientInstance });
 braintree.googlePayment.create({
   client: clientInstance,
   googlePayVersion: 2,
-  googleMerchantId: 'your-id'  // Required for production
+  googleMerchantId: "your-id", // Required for production
 });
 ```
 
