@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "braintree-3d-secure",
+      "type": "skill-md",
+      "description": "3D Secure v2 authentication with Cardinal Commerce Songbird - verifyCard flow, challenge handling, SCA exemptions",
+      "url": "skills/braintree-3d-secure.md",
+      "digest": "sha256:5b807410a5694e234e73185a2cac1fb1d45c37eb24b878628f2565be376fb1ea"
+    },
+    {
+      "name": "braintree-advanced-patterns",
+      "type": "skill-md",
+      "description": "SDK internals and shared patterns - dual API, events, deferred client, Frame Service, CSP, analytics, teardown",
+      "url": "skills/braintree-advanced-patterns.md",
+      "digest": "sha256:8ab4d44f6cef1dd2421e636800cfb6766e46b392d8fc9e6fee994a85b9b981cd"
+    },
+    {
+      "name": "braintree-alternative-payments",
+      "type": "skill-md",
+      "description": "Local payment methods (iDEAL, Sofort, Bancontact, BLIK), SEPA Direct Debit, and US Bank Account (ACH) integration",
+      "url": "skills/braintree-alternative-payments.md",
+      "digest": "sha256:67867e5232e430227d7056ab3613ae4ba798db3b17ec87de4f90b6793785bb89"
+    },
+    {
+      "name": "braintree-apple-pay",
+      "type": "skill-md",
+      "description": "Apple Pay web integration via ApplePaySession - payment requests, merchant validation, and tokenization",
+      "url": "skills/braintree-apple-pay.md",
+      "digest": "sha256:6d4ee46921c133af0515995b382e0671aab8191a5ba1b1a76962884c4765818e"
+    },
+    {
+      "name": "braintree-card-payment-full",
+      "type": "skill-md",
+      "description": "End-to-end card payment orchestration combining Hosted Fields, 3D Secure, and Data Collector",
+      "url": "skills/braintree-card-payment-full.md",
+      "digest": "sha256:4eb571d4a9d87f15c918f6098e5d8f4473f42e7a2954d942e6c09f43e6e918ee"
+    },
+    {
+      "name": "braintree-card-payments",
+      "type": "skill-md",
+      "description": "Hosted Fields PCI-compliant card collection via iframes - field configuration, styling, events, and tokenization",
+      "url": "skills/braintree-card-payments.md",
+      "digest": "sha256:a662207e5040e64e455f075a53d066a4fcac95be0285fe4a13a3c7ee3b3b5ff8"
+    },
+    {
+      "name": "braintree-error-resolution",
+      "type": "skill-md",
+      "description": "Complete error code reference and resolution guide for all Braintree Web SDK components - maps every error to its fix",
+      "url": "skills/braintree-error-resolution.md",
+      "digest": "sha256:d697316db3fc81fd5beef25133c3a6b07c091d641457bfe9f2cc3c48c0982c91"
+    },
+    {
+      "name": "braintree-google-pay",
+      "type": "skill-md",
+      "description": "Google Pay v2 integration via Google Pay API - PaymentsClient, payment data request, and response parsing",
+      "url": "skills/braintree-google-pay.md",
+      "digest": "sha256:8c89174cd639e7867c6c4dd50d51eec5fd11454cd2ab600b58fd84286527f792"
+    },
+    {
+      "name": "braintree-migration-guide",
+      "type": "skill-md",
+      "description": "Version migration paths, deprecated component replacements, and breaking changes for Braintree Web SDK",
+      "url": "skills/braintree-migration-guide.md",
+      "digest": "sha256:5c2a1b95a9a8c23a8804aa27dd0e323ba4e24ba22d09174c3ac23f5e18224064"
+    },
+    {
+      "name": "braintree-paypal",
+      "type": "skill-md",
+      "description": "PayPal integration via paypal-checkout and paypal-checkout-v6 - checkout, vault, and VIC flows",
+      "url": "skills/braintree-paypal.md",
+      "digest": "sha256:a4db50a4ccf463153d8166c640cbb63d68945d436b036e6c86952e713e95b90b"
+    },
+    {
+      "name": "braintree-sdk-overview",
+      "type": "skill-md",
+      "description": "Braintree Web SDK v3 architecture, component lifecycle, authorization types, and integration guide",
+      "url": "skills/braintree-sdk-overview.md",
+      "digest": "sha256:e714abd86ce28fc337c239ceb2fb6259ba730837bd30d19cba7118b3ac18bddf"
+    },
+    {
+      "name": "braintree-venmo",
+      "type": "skill-md",
+      "description": "Venmo payments across mobile and desktop - app deep-link, QR code, web login, polling, and browser detection",
+      "url": "skills/braintree-venmo.md",
+      "digest": "sha256:281c113e8d6b5cff528e1b534d4d533ba957471cb710819ecbd2ec3fac82d128"
+    }
+  ]
+}
