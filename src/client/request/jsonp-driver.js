@@ -42,7 +42,8 @@ function _createScriptTag(url, callbackName) {
 function _cleanupGlobal(callbackName) {
   try {
     delete window[callbackName];
-  } catch (_) {
+    // eslint-disable-next-line no-unused-vars
+  } catch (e) {
     window[callbackName] = null;
   }
 }

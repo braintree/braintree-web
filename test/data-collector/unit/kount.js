@@ -190,8 +190,8 @@ describe("kount", () => {
       });
 
       expect(actual).toEqual({
-        device_session_id: "my_device_session_id", // eslint-disable-line camelcase
-        fraud_merchant_id: "id", // eslint-disable-line camelcase
+        device_session_id: "my_device_session_id",
+        fraud_merchant_id: "id",
       });
     });
   });

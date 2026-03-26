@@ -321,7 +321,6 @@ describe("LegacyFramework", () => {
             );
 
             authenticationCompleteHandler({
-              // eslint-disable-next-line camelcase
               auth_response:
                 '{"paymentMethod":{"type":"CreditCard","nonce":"some-fake-nonce","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}',
             });
@@ -354,7 +353,6 @@ describe("LegacyFramework", () => {
             );
 
             authenticationCompleteHandler({
-              // eslint-disable-next-line camelcase
               auth_response:
                 '{"paymentMethod":{"type":"CreditCard","nonce":"some-fake-nonce","description":"ending+in+00","consumed":false,"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true,"status":"authenticate_successful","enrolled":"Y"},"details":{"lastTwo":"00","cardType":"Visa"}},"threeDSecureInfo":{"liabilityShifted":true,"liabilityShiftPossible":true},"success":true}',
             });
@@ -490,7 +488,6 @@ describe("LegacyFramework", () => {
           );
 
           authenticationCompleteHandler({
-            // eslint-disable-next-line camelcase
             auth_response: JSON.stringify(authResponse),
           });
         };
