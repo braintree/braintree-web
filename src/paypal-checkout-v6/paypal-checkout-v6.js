@@ -606,6 +606,14 @@ PayPalCheckoutV6.prototype._buildBillingAgreementRequest = function (options) {
     billingAgreementRequest.offerCredit = options.offerCredit;
   }
 
+  if (options.returnUrl) {
+    billingAgreementRequest.returnUrl = options.returnUrl;
+  }
+
+  if (options.cancelUrl) {
+    billingAgreementRequest.cancelUrl = options.cancelUrl;
+  }
+
   return billingAgreementRequest;
 };
 
@@ -635,8 +643,8 @@ PayPalCheckoutV6.prototype._createBillingAgreementToken = function (options) {
     payload.planType = options.planType;
   }
 
-  if (options.billingAgreementDescription) {
-    payload.description = options.billingAgreementDescription;
+  if (options.description) {
+    payload.description = options.description;
   }
 
   if (options.planMetadata) {
@@ -760,6 +768,14 @@ PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
     payload.offerPaypalCredit = true;
   }
 
+  if (options.requestBillingAgreement) {
+    payload.requestBillingAgreement = true;
+  }
+
+  if (options.billingAgreementDetails) {
+    payload.billingAgreementDetails = options.billingAgreementDetails;
+  }
+
   return this._clientPromise.then(function (client) {
     analytics.sendEvent(
       client,
@@ -814,24 +830,35 @@ PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
 };
 
 /**
- * Creates session callback handlers for checkout flow with analytics.
+ * Creates session options for checkout flow including callbacks and commit flag.
  * @private
  * @param {object} client The Braintree client instance.
  * @param {object} options Payment session options containing callbacks.
- * @returns {object} Callback configuration for PayPal session.
+ * @param {boolean} [isCheckoutWithVault=false] Whether this is a checkout-with-vault flow.
+ * @returns {object} Session options for PayPal session including commit and callbacks.
  */
-PayPalCheckoutV6.prototype._createCheckoutSessionCallbacks = function (
+PayPalCheckoutV6.prototype._createCheckoutSessionOptions = function (
   client,
-  options
+  options,
+  isCheckoutWithVault
 ) {
-  var sessionCallbacks = {
+  var approveEvent = isCheckoutWithVault
+    ? constants.ANALYTICS_EVENTS.CHECKOUT_WITH_VAULT_APPROVED
+    : constants.ANALYTICS_EVENTS.PAYMENT_APPROVED;
+  var cancelEvent = isCheckoutWithVault
+    ? constants.ANALYTICS_EVENTS.CHECKOUT_WITH_VAULT_CANCELED
+    : constants.ANALYTICS_EVENTS.PAYMENT_CANCELED;
+  var commit = typeof options.commit === "boolean" ? options.commit : true;
+
+  var sessionOptions = {
+    commit: commit,
     onApprove: function (data) {
-      analytics.sendEvent(client, constants.ANALYTICS_EVENTS.PAYMENT_APPROVED);
+      analytics.sendEvent(client, approveEvent);
 
       return options.onApprove(data);
     },
     onCancel: function (data) {
-      analytics.sendEvent(client, constants.ANALYTICS_EVENTS.PAYMENT_CANCELED);
+      analytics.sendEvent(client, cancelEvent);
       if (options && typeof options.onCancel === "function") {
         return options.onCancel(data);
       }
@@ -841,18 +868,24 @@ PayPalCheckoutV6.prototype._createCheckoutSessionCallbacks = function (
   };
 
   if (options && typeof options.onError === "function") {
-    sessionCallbacks.onError = function (err) {
+    sessionOptions.onError = function (err) {
       return options.onError(err);
     };
   }
 
   if (options && typeof options.onShippingAddressChange === "function") {
-    sessionCallbacks.onShippingAddressChange = function (data) {
+    sessionOptions.onShippingAddressChange = function (data) {
       return options.onShippingAddressChange(data);
     };
   }
 
-  return sessionCallbacks;
+  if (options && typeof options.onShippingOptionsChange === "function") {
+    sessionOptions.onShippingOptionsChange = function (data) {
+      return options.onShippingOptionsChange(data);
+    };
+  }
+
+  return sessionOptions;
 };
 
 /**
@@ -884,7 +917,7 @@ PayPalCheckoutV6.prototype._createOrderPromise = function (
  * @param {object} instance PayPal SDK instance.
  * @param {object} client Braintree client instance.
  * @param {string} presentationMode How to present the PayPal flow.
- * @param {string} sessionType Type of session: 'paypal' or 'paypal-credit'.
+ * @param {string} sessionType Type of session: 'paypal', 'paypal-credit', or 'pay-later'.
  * @param {object} options Payment session options.
  * @param {object} paymentOptions Payment resource options.
  * @returns {Promise} Promise from PayPal session.start().
@@ -897,15 +930,25 @@ PayPalCheckoutV6.prototype._startCheckoutSession = function (
   options,
   paymentOptions
 ) {
-  var sessionMethod =
-    sessionType === "paypal-credit"
-      ? "createPayPalCreditOneTimePaymentSession"
-      : "createPayPalOneTimePaymentSession";
+  var sessionMethod;
 
-  analytics.sendEvent(client, constants.ANALYTICS_EVENTS.PAYMENT_STARTED);
+  if (sessionType === "paypal-credit") {
+    sessionMethod = "createPayPalCreditOneTimePaymentSession";
+  } else if (sessionType === "pay-later") {
+    sessionMethod = "createPayLaterOneTimePaymentSession";
+  } else {
+    sessionMethod = "createPayPalOneTimePaymentSession";
+  }
+
+  var isCheckoutWithVault = Boolean(paymentOptions.requestBillingAgreement);
+  var startEvent = isCheckoutWithVault
+    ? constants.ANALYTICS_EVENTS.CHECKOUT_WITH_VAULT_STARTED
+    : constants.ANALYTICS_EVENTS.PAYMENT_STARTED;
+
+  analytics.sendEvent(client, startEvent);
 
   var session = instance[sessionMethod](
-    this._createCheckoutSessionCallbacks(client, options)
+    this._createCheckoutSessionOptions(client, options, isCheckoutWithVault)
   );
 
   return session.start(
@@ -961,12 +1004,10 @@ PayPalCheckoutV6.prototype._createBillingSessionCallbacks = function (
  * Creates billing token promise for vault flow.
  * @private
  * @param {object} billingAgreementRequest Billing agreement request data.
- * @param {object} options Billing agreement session options.
  * @returns {Promise} Promise resolving to { billingToken }.
  */
 PayPalCheckoutV6.prototype._createBillingTokenPromise = function (
-  billingAgreementRequest,
-  options
+  billingAgreementRequest
 ) {
   return this.createPayment({
     flow: "vault",
@@ -977,7 +1018,9 @@ PayPalCheckoutV6.prototype._createBillingTokenPromise = function (
     currency: billingAgreementRequest.currency,
     shippingAddressOverride: billingAgreementRequest.shippingAddressOverride,
     userAction: billingAgreementRequest.userAction,
-    offerCredit: options.offerCredit,
+    offerCredit: billingAgreementRequest.offerCredit,
+    returnUrl: billingAgreementRequest.returnUrl,
+    cancelUrl: billingAgreementRequest.cancelUrl,
   }).then(function (billingToken) {
     return { billingToken: billingToken };
   });
@@ -989,6 +1032,7 @@ PayPalCheckoutV6.prototype._createBillingTokenPromise = function (
  * @param {object} instance PayPal SDK instance.
  * @param {object} client Braintree client instance.
  * @param {string} presentationMode How to present the PayPal flow.
+ * @param {string} sessionType Type of session: 'paypal' or 'paypal-credit'.
  * @param {object} billingAgreementRequest Billing agreement request data.
  * @param {object} options Billing agreement session options.
  * @returns {Promise} Promise from PayPal session.start().
@@ -997,17 +1041,22 @@ PayPalCheckoutV6.prototype._startBillingSession = function (
   instance,
   client,
   presentationMode,
+  sessionType,
   billingAgreementRequest,
   options
 ) {
   var self = this;
+  var sessionMethod =
+    sessionType === "paypal-credit"
+      ? "createPayPalCreditBillingAgreementWithoutPurchase"
+      : "createPayPalBillingAgreementWithoutPurchase";
 
   analytics.sendEvent(
     client,
     constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_STARTED
   );
 
-  var paypalSession = instance.createPayPalBillingAgreementWithoutPurchase(
+  var paypalSession = instance[sessionMethod](
     this._createBillingSessionCallbacks(client, options)
   );
 
@@ -1017,7 +1066,7 @@ PayPalCheckoutV6.prototype._startBillingSession = function (
   );
 
   var billingTokenPromise = self
-    ._createBillingTokenPromise(billingAgreementRequest, options)
+    ._createBillingTokenPromise(billingAgreementRequest)
     .catch(function (err) {
       if (options.onError) {
         options.onError(err);
@@ -1078,6 +1127,18 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
 
   if (options.cancelUrl) {
     paymentOptions.cancelUrl = options.cancelUrl;
+  }
+
+  if (options.requestBillingAgreement) {
+    paymentOptions.requestBillingAgreement = options.requestBillingAgreement;
+  }
+
+  if (options.billingAgreementDetails) {
+    paymentOptions.billingAgreementDetails = options.billingAgreementDetails;
+  }
+
+  if (options.displayName) {
+    paymentOptions.displayName = options.displayName;
   }
 
   return {
@@ -1155,19 +1216,21 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  * @param {string} options.amount The payment amount (e.g., '10.00').
  * @param {string} options.currency The currency code (e.g., 'USD').
  * @param {string} [options.intent='capture'] Payment intent: 'authorize', 'capture', or 'order'.
+ * @param {boolean} [options.commit=true] Controls the flow type: `true` for "Pay Now" (immediate payment), `false` for "Continue" (review and confirm). Defaults to `true`.
  * @param {boolean} [options.offerCredit=false] Offers PayPal Credit as the default funding instrument for the transaction. If the customer isn't pre-approved for PayPal Credit, they will be prompted to apply for it.
  * @param {function} options.onApprove Called when the customer approves the payment.
  * @param {function} [options.onCancel] Called when the customer cancels the payment.
  * @param {function} [options.onError] Called when an error occurs.
- * @param {function} [options.onShippingAddressChange] Called when the customer changes their shipping address. Return a Promise to update the payment details.
+ * @param {function} [options.onShippingAddressChange] Called when the customer changes their shipping address. Receives data with errors (object), orderId (string), and shippingAddress (object with city, countryCode, postalCode, state). Return a Promise to update the payment details.
+ * @param {function} [options.onShippingOptionsChange] Called when the customer selects a different shipping option. Receives data with errors (object), orderId (string), and selectedShippingOption (object with id, label, amount, type, selected). Return a Promise to update the payment details.
  * @param {lineItem[]} [options.lineItems] Line items for this transaction.
  * @param {shippingOption[]} [options.shippingOptions] Shipping options.
  * @param {string} [options.userAuthenticationEmail] Pre-fill the PayPal login email.
  * @param {object} [options.amountBreakdown] Breakdown of the amount.
- * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using app switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
- * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using app switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
+ * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
+ * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
- * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler'.
+ * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
  * @example
  * // Standard PayPal payment
  * var session = paypalCheckoutV6Instance.createOneTimePaymentSession({
@@ -1314,25 +1377,15 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  *     itemTotal: '10.00',
  *     shipping: '0.00'
  *   },
- *   onShippingAddressChange: function (data, actions) {
- *     // Calculate shipping cost based on selected option and shipping address
+ *   onShippingAddressChange: function (data) {
+ *     // Calculate shipping cost based on shipping address
  *     var newShippingCost = '0.00';
  *     var newTotal = '10.00';
  *
- *     // Example: determine shipping cost based on selected option
- *     if (data.selectedShippingOption) {
- *       if (data.selectedShippingOption.id === 'express') {
- *         newShippingCost = '5.00';
- *         newTotal = '15.00';
- *       }
- *     }
- *
  *     // Example: determine shipping cost based on country
- *     if (data.shippingAddress && data.shippingAddress.countryCode) {
- *       if (data.shippingAddress.countryCode === 'CA') {
- *         newShippingCost = '7.50';
- *         newTotal = '17.50';
- *       }
+ *     if (data.shippingAddress.countryCode === 'CA') {
+ *       newShippingCost = '7.50';
+ *       newTotal = '17.50';
  *     }
  *
  *     // Update the payment with new amount and breakdown
@@ -1344,7 +1397,7 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  *         {
  *           id: 'economy',
  *           label: 'Economy Shipping (5-7 days)',
- *           selected: data.selectedShippingOption && data.selectedShippingOption.id === 'economy',
+ *           selected: true,
  *           type: 'SHIPPING',
  *           amount: {
  *             currency: 'USD',
@@ -1354,7 +1407,7 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  *         {
  *           id: 'express',
  *           label: 'Express Shipping (2-3 days)',
- *           selected: data.selectedShippingOption && data.selectedShippingOption.id === 'express',
+ *           selected: false,
  *           type: 'SHIPPING',
  *           amount: {
  *             currency: 'USD',
@@ -1419,6 +1472,330 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
   }
 
   return this._createPaymentSession(options, sessionType);
+};
+
+/**
+ * Creates a Pay Later payment session.
+ * @public
+ * @param {object} options Payment session options.
+ * @param {string} options.amount The payment amount (e.g., '10.00').
+ * @param {string} options.currency The currency code (e.g., 'USD').
+ * @param {string} [options.intent='capture'] Payment intent: 'authorize', 'capture', or 'order'.
+ * @param {function} options.onApprove Called when the customer approves the payment.
+ * @param {function} [options.onCancel] Called when the customer cancels the payment.
+ * @param {function} [options.onComplete] Called when the payment flow is complete.
+ * @param {function} [options.onError] Called when an error occurs.
+ * @param {function} [options.onShippingAddressChange] Called when the customer changes their shipping address. Return a Promise to update the payment details.
+ * @param {function} [options.onShippingOptionsChange] Called when the customer selects a different shipping option.
+ * @param {lineItem[]} [options.lineItems] Line items for this transaction.
+ * @param {shippingOption[]} [options.shippingOptions] Shipping options.
+ * @param {string} [options.userAuthenticationEmail] Pre-fill the PayPal login email.
+ * @param {object} [options.amountBreakdown] Breakdown of the amount.
+ * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
+ * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
+ * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
+ * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
+ * @example
+ * // Standard Pay Later payment
+ * var session = paypalCheckoutV6Instance.createPayLaterSession({
+ *   amount: '100.00',
+ *   currency: 'USD',
+ *   intent: 'capture',
+ *   onApprove: function (data) {
+ *     return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+ *       // Send payload.nonce to your server
+ *     });
+ *   },
+ *   onCancel: function () {
+ *     console.log('Payment canceled');
+ *   },
+ *   onError: function (err) {
+ *     console.error('Payment error:', err);
+ *   }
+ * });
+ *
+ * // Trigger the payment flow when user clicks a button
+ * document.getElementById('pay-later-button').addEventListener('click', function () {
+ *   session.start();
+ * });
+ *
+ * @example
+ * // Pay Later with auto presentation mode
+ * braintree.client.create({
+ *   authorization: 'client-token'
+ * }).then(function (clientInstance) {
+ *   return braintree.paypalCheckoutV6.create({
+ *     client: clientInstance
+ *   });
+ * }).then(function (paypalCheckoutV6Instance) {
+ *   return paypalCheckoutV6Instance.loadPayPalSDK();
+ * }).then(function (paypalCheckoutV6Instance) {
+ *   var session = paypalCheckoutV6Instance.createPayLaterSession({
+ *     amount: '100.00',
+ *     currency: 'USD',
+ *     intent: 'capture',
+ *     onApprove: function (data) {
+ *       return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+ *         console.log('Payment approved, nonce:', payload.nonce);
+ *       });
+ *     },
+ *     onCancel: function () {
+ *       console.log('Payment canceled');
+ *     },
+ *     onError: function (err) {
+ *       console.error('Payment error:', err);
+ *     },
+ *     onShippingAddressChange: function (data) {
+ *       console.log('Shipping address changed:', data.shippingAddress);
+ *     }
+ *   });
+ *
+ *   document.getElementById('pay-later-button').addEventListener('click', function () {
+ *     session.start({ presentationMode: 'auto' });
+ *   });
+ * }).catch(function (err) {
+ *   console.error('Error!', err);
+ * });
+ *
+ * @example
+ * // Pay Later with shipping options and dynamic amount calculation
+ * var session = paypalCheckoutV6Instance.createPayLaterSession({
+ *   amount: '100.00',
+ *   currency: 'USD',
+ *   lineItems: [
+ *     {
+ *       quantity: '1',
+ *       unitAmount: '100.00',
+ *       name: 'Product Name',
+ *       kind: 'debit'
+ *     }
+ *   ],
+ *   shippingOptions: [
+ *     {
+ *       id: 'SHIP_FRE',
+ *       label: 'Free Shipping',
+ *       type: 'SHIPPING',
+ *       selected: true,
+ *       amount: {
+ *         value: '0.00',
+ *         currency: 'USD'
+ *       }
+ *     },
+ *     {
+ *       id: 'SHIP_EXP',
+ *       label: 'Expedited Shipping',
+ *       type: 'SHIPPING',
+ *       selected: false,
+ *       amount: {
+ *         value: '5.00',
+ *         currency: 'USD'
+ *       }
+ *     }
+ *   ],
+ *   amountBreakdown: {
+ *     itemTotal: '100.00',
+ *     shipping: '0.00'
+ *   },
+ *   onShippingAddressChange: function (data) {
+ *     console.log('Shipping address changed:', data.shippingAddress);
+ *   },
+ *   onApprove: function (data) {
+ *     return paypalCheckoutV6Instance.tokenizePayment(data);
+ *   }
+ * });
+ *
+ * button.addEventListener('click', function () {
+ *   session.start();
+ * });
+ *
+ * @returns {object} Payment session object with `start()` method.
+ */
+PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
+  var self = this;
+
+  // Validate required options
+  if (!options || !options.amount || !options.currency || !options.onApprove) {
+    throw new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS);
+  }
+
+  analytics.sendEvent(
+    self._clientPromise,
+    constants.ANALYTICS_EVENTS.SESSION_CHECKOUT_CREATED
+  );
+  analytics.sendEvent(
+    self._clientPromise,
+    constants.ANALYTICS_EVENTS.PAY_LATER_OFFERED
+  );
+
+  // Eagerly create PayPal instance so start() can run synchronously (required for Safari)
+  if (
+    !self._paypalInstance &&
+    !self._checkoutInstancePromise &&
+    self._isPayPalSdkAvailable()
+  ) {
+    self._checkoutInstancePromise = self._clientPromise
+      .then(function () {
+        return self._createPayPalInstance();
+      })
+      .then(function (instance) {
+        // _paypalInstance is set by _createPayPalInstance, but we also need the promise
+        return instance;
+      });
+  }
+
+  return this._createPaymentSession(options, "pay-later");
+};
+
+/**
+ * Creates a one-time payment session with billing agreement consent.
+ * This enables merchants to charge a customer and save their payment method in a single flow.
+ * @public
+ * @param {object} options Payment session options.
+ * @param {string} options.amount The payment amount (e.g., '10.00').
+ * @param {string} options.currency The currency code (e.g., 'USD').
+ * @param {string} [options.intent='capture'] Payment intent: 'authorize', 'capture', or 'order'.
+ * @param {boolean} [options.commit=true] Controls the flow type: `true` for "Pay Now" (immediate payment), `false` for "Continue" (review and confirm). Defaults to `true`.
+ * @param {object} [options.billingAgreementDetails] Details for the billing agreement.
+ * @param {string} [options.billingAgreementDetails.description] Description for the billing agreement (e.g., 'Monthly subscription to Totally Real Products!').
+ * @param {function} options.onApprove Called when the customer approves the payment.
+ * @param {function} [options.onCancel] Called when the customer cancels the payment.
+ * @param {function} [options.onError] Called when an error occurs.
+ * @param {function} [options.onShippingAddressChange] Called when the customer changes their shipping address. Receives data with errors (object), orderId (string), and shippingAddress (object with city, countryCode, postalCode, state). Return a Promise to update the payment details.
+ * @param {function} [options.onShippingOptionsChange] Called when the customer selects a different shipping option. Receives data with errors (object), orderId (string), and selectedShippingOption (object with id, label, amount, type, selected). Return a Promise to update the payment details.
+ * @param {lineItem[]} [options.lineItems] Line items for this transaction.
+ * @param {shippingOption[]} [options.shippingOptions] Shipping options.
+ * @param {string} [options.userAuthenticationEmail] Pre-fill the PayPal login email.
+ * @param {object} [options.amountBreakdown] Breakdown of the amount.
+ * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
+ * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
+ * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
+ * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
+ * @example
+ * // Create a checkout session with vault consent
+ * braintree.client.create({
+ *   authorization: 'client-token'
+ * }).then(function (clientInstance) {
+ *   return braintree.paypalCheckoutV6.create({
+ *     client: clientInstance
+ *   });
+ * }).then(function (paypalCheckoutV6Instance) {
+ *   return paypalCheckoutV6Instance.loadPayPalSDK();
+ * }).then(function (paypalCheckoutV6Instance) {
+ *   var session = paypalCheckoutV6Instance.createCheckoutWithVaultSession({
+ *     amount: '10.00',
+ *     currency: 'USD',
+ *     billingAgreementDetails: {
+ *       description: 'Monthly subscription to Totally Real Products!'
+ *     },
+ *     onApprove: function (data) {
+ *       return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+ *         // payload.nonce contains vaulted payment method
+ *         // Submit payload.nonce to your server
+ *         console.log('Nonce:', payload.nonce);
+ *       });
+ *     },
+ *     onCancel: function () {
+ *       console.log('Payment canceled');
+ *     },
+ *     onError: function (err) {
+ *       console.error('Payment error:', err);
+ *     }
+ *   });
+ *
+ *   // Trigger the payment flow when user clicks a button
+ *   document.getElementById('paypal-button').addEventListener('click', function () {
+ *     session.start();
+ *   });
+ * }).catch(function (err) {
+ *   console.error('Error!', err);
+ * });
+ *
+ * @example
+ * // With line items and shipping
+ * var session = paypalCheckoutV6Instance.createCheckoutWithVaultSession({
+ *   amount: '15.00',
+ *   currency: 'USD',
+ *   billingAgreementDetails: {
+ *     description: 'Subscription for Premium Services'
+ *   },
+ *   lineItems: [
+ *     {
+ *       quantity: '1',
+ *       unitAmount: '10.00',
+ *       name: 'Premium Subscription',
+ *       kind: 'debit'
+ *     }
+ *   ],
+ *   shippingOptions: [
+ *     {
+ *       id: 'standard',
+ *       label: 'Standard Shipping',
+ *       selected: true,
+ *       type: 'SHIPPING',
+ *       amount: {
+ *         currency: 'USD',
+ *         value: '5.00'
+ *       }
+ *     }
+ *   ],
+ *   amountBreakdown: {
+ *     itemTotal: '10.00',
+ *     shipping: '5.00'
+ *   },
+ *   onApprove: function (data) {
+ *     return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+ *       // Send nonce to server for both charging and vaulting
+ *       submitToServer(payload.nonce);
+ *     });
+ *   },
+ *   onCancel: function () {
+ *     console.log('Canceled');
+ *   },
+ *   onError: function (err) {
+ *     console.error(err);
+ *   }
+ * });
+ *
+ * button.addEventListener('click', function () {
+ *   session.start({ presentationMode: 'auto' });
+ * });
+ *
+ * @returns {object} Payment session object with `start()` method.
+ */
+PayPalCheckoutV6.prototype.createCheckoutWithVaultSession = function (options) {
+  var self = this;
+
+  // Validate required options
+  if (!options || !options.amount || !options.currency || !options.onApprove) {
+    throw new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS);
+  }
+
+  analytics.sendEvent(
+    self._clientPromise,
+    constants.ANALYTICS_EVENTS.SESSION_CHECKOUT_WITH_VAULT_CREATED
+  );
+
+  // Force requestBillingAgreement for this flow
+  var checkoutWithVaultOptions = assign({}, options, {
+    requestBillingAgreement: true,
+  });
+
+  // Eagerly create PayPal instance so start() can run synchronously (required for Safari)
+  if (
+    !self._paypalInstance &&
+    !self._checkoutInstancePromise &&
+    self._isPayPalSdkAvailable()
+  ) {
+    self._checkoutInstancePromise = self._clientPromise
+      .then(function () {
+        return self._createPayPalInstance();
+      })
+      .then(function (instance) {
+        return instance;
+      });
+  }
+
+  return this._createPaymentSession(checkoutWithVaultOptions, "paypal");
 };
 
 /**
@@ -1629,6 +2006,15 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
     constants.ANALYTICS_EVENTS.SESSION_VAULT_CREATED
   );
 
+  var sessionType = options.offerCredit === true ? "paypal-credit" : "paypal";
+
+  if (options.offerCredit === true) {
+    analytics.sendEvent(
+      self._clientPromise,
+      constants.ANALYTICS_EVENTS.CREDIT_OFFERED
+    );
+  }
+
   // Eagerly create PayPal instance so start() can run synchronously (required for Safari).
   if (
     !self._paypalVaultInstance &&
@@ -1669,6 +2055,7 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
         paypalInstance,
         self._client,
         presentationMode,
+        sessionType,
         billingAgreementRequest,
         options
       );
@@ -1699,6 +2086,7 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
               instance,
               client,
               presentationMode,
+              sessionType,
               billingAgreementRequest,
               options
             );
@@ -1853,6 +2241,7 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
         })
         .then(function (response) {
           var payload;
+          var creditAnalyticsEvent;
 
           payload = self._formatTokenizePayload(response);
 
@@ -1860,9 +2249,15 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
             analytics.sendEvent(client, analyticsPrefix + ".succeeded");
           } else {
             if (payload.creditFinancingOffered) {
+              // Send appropriate analytics event based on session type
+              creditAnalyticsEvent =
+                self._sessionType === "pay-later"
+                  ? constants.ANALYTICS_EVENTS.PAY_LATER_ACCEPTED
+                  : constants.ANALYTICS_EVENTS.CREDIT_ACCEPTED;
+
               analytics.sendEventPlus(
                 self._clientPromise,
-                constants.ANALYTICS_EVENTS.CREDIT_ACCEPTED,
+                creditAnalyticsEvent,
                 {
                   flow: self._flow,
                   context_id: self._contextId, // eslint-disable-line camelcase
@@ -2226,6 +2621,7 @@ PayPalCheckoutV6.prototype.updatePayment = function (options) {
  * @property {boolean} paypal Whether standard PayPal payments are eligible.
  * @property {boolean} paylater Whether Pay Later (BNPL) is eligible.
  * @property {boolean} credit Whether PayPal Credit is eligible.
+ * @property {function(string): (object|null)} getDetails Function to get additional details about a specific payment method. Takes a method name ('paypal', 'paylater', or 'credit') as parameter and returns an object with method-specific details (e.g., countryCode, productCode) when available, or null if the method isn't supported.
  */
 
 /**
@@ -2239,6 +2635,8 @@ PayPalCheckoutV6.prototype.updatePayment = function (options) {
  * @param {object} options Eligibility check options.
  * @param {string} [options.amount] Optional payment amount (e.g., '10.00').
  * @param {string} options.currency The currency code (e.g., 'USD').
+ * @param {string} [options.countryCode] Optional country code (e.g., 'US'). Used to refine eligibility based on buyer location.
+ * @param {string} [options.paymentFlow] Optional payment flow type: 'ONE_TIME_PAYMENT', 'VAULT_WITH_PAYMENT', 'VAULT_WITHOUT_PAYMENT', or 'RECURRING_PAYMENT'. Helps determine eligibility for different payment scenarios.
  * @example
  * // Check eligibility before rendering buttons
  * paypalCheckoutV6Instance.findEligibleMethods({
@@ -2262,18 +2660,26 @@ PayPalCheckoutV6.prototype.updatePayment = function (options) {
  * });
  *
  * @example
- * // Conditionally offer Pay Later messaging
+ * // Check Pay Later eligibility with country and payment flow
  * paypalCheckoutV6Instance.findEligibleMethods({
  *   amount: '150.00',
- *   currency: 'USD'
+ *   currency: 'USD',
+ *   countryCode: 'US',
+ *   paymentFlow: 'ONE_TIME_PAYMENT'
  * }).then(function (eligibility) {
  *   if (eligibility.paylater) {
  *     // Show "Pay in 4" promotional messaging
  *     showPayLaterPromo();
+ *
+ *     // Get additional details about Pay Later offers
+ *     var details = eligibility.getDetails('paylater');
+ *     if (details && details.productCode) {
+ *       console.log('Pay Later product:', details.productCode);
+ *     }
  *   }
  * });
  *
- * @returns {Promise<PayPalCheckoutV6~eligibilityResult>} A promise that resolves with eligibility flags for each payment method.
+ * @returns {Promise<PayPalCheckoutV6~eligibilityResult>} A promise that resolves with eligibility flags for each payment method (paypal, paylater, credit). The result also includes a getDetails(method) function for retrieving additional eligibility information from the PayPal SDK.
  */
 PayPalCheckoutV6.prototype.findEligibleMethods = function (options) {
   var self = this;
@@ -2307,11 +2713,22 @@ PayPalCheckoutV6.prototype.findEligibleMethods = function (options) {
         constants.ANALYTICS_EVENTS.FIND_ELIGIBLE_METHODS_STARTED
       );
 
+      var eligibilityOptions = {
+        currencyCode: options.currency,
+      };
+
+      if (options.amount) {
+        eligibilityOptions.amount = options.amount;
+      }
+      if (options.countryCode) {
+        eligibilityOptions.countryCode = options.countryCode;
+      }
+      if (options.paymentFlow) {
+        eligibilityOptions.paymentFlow = options.paymentFlow;
+      }
+
       return paypalInstance
-        .findEligibleMethods({
-          currencyCode: options.currency,
-          amount: options.amount,
-        })
+        .findEligibleMethods(eligibilityOptions)
         .then(function (paymentMethods) {
           analytics.sendEvent(
             client,
@@ -2322,7 +2739,7 @@ PayPalCheckoutV6.prototype.findEligibleMethods = function (options) {
           var hasIsEligible =
             paymentMethods && typeof paymentMethods.isEligible === "function";
 
-          return {
+          var result = {
             paypal: hasIsEligible
               ? paymentMethods.isEligible("paypal")
               : Boolean(paymentMethods && paymentMethods.paypal),
@@ -2333,6 +2750,12 @@ PayPalCheckoutV6.prototype.findEligibleMethods = function (options) {
               ? paymentMethods.isEligible("credit")
               : Boolean(paymentMethods && paymentMethods.credit),
           };
+
+          result.getDetails = function (method) {
+            return paymentMethods.getDetails(method);
+          };
+
+          return result;
         })
         .catch(function (err) {
           analytics.sendEvent(

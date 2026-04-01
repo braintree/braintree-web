@@ -3,6 +3,7 @@ import type { IPayPalV6ApproveData, IBraintreeError } from "../../types/global";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getClientToken } from "../../utils/sdk-config";
 import { getBraintreeSDK } from "../../utils/braintree-sdk";
+import { showDetailedError } from "./common";
 import "../../css/main.css";
 import "../PayPalCheckout/payPalCheckout.css";
 
@@ -46,124 +47,6 @@ const PRESENTATION_MODES = ["payment-handler", "popup", "modal"] as const;
  */
 const getOrderId = (data: { orderID?: string; orderId?: string }): string => {
   return data.orderID || data.orderId || "";
-};
-
-/**
- * Extract all properties from an error object, including nested ones
- */
-const extractErrorDetails = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  errorObj: any,
-  prefix = ""
-): string[] => {
-  const parts: string[] = [];
-
-  if (!errorObj || typeof errorObj !== "object") {
-    return parts;
-  }
-
-  const propsToCheck = [
-    "message",
-    "error",
-    "name",
-    "code",
-    "type",
-    "description",
-    "debug_id",
-    "debugId",
-    "httpStatus",
-    "statusCode",
-    "status",
-    "reason",
-    "errorName",
-    "errorMessage",
-    "isRecoverable",
-  ];
-
-  for (const prop of propsToCheck) {
-    if (errorObj[prop] !== undefined && errorObj[prop] !== null) {
-      const label = prefix ? `${prefix}.${prop}` : prop;
-      parts.push(`${label}: ${errorObj[prop]}`);
-    }
-  }
-
-  const nestedProps = [
-    "details",
-    "originalError",
-    "error",
-    "data",
-    "body",
-    "response",
-  ];
-  for (const prop of nestedProps) {
-    if (
-      errorObj[prop] &&
-      typeof errorObj[prop] === "object" &&
-      !Array.isArray(errorObj[prop])
-    ) {
-      const nested = extractErrorDetails(
-        errorObj[prop],
-        prefix ? `${prefix}.${prop}` : prop
-      );
-      parts.push(...nested);
-    }
-  }
-
-  return parts;
-};
-
-/**
- * Display detailed error information for debugging
- */
-const showDetailedError = (
-  resultDiv: HTMLElement,
-  title: string,
-  err: IBraintreeError
-): void => {
-  const errorCode = err.code || "UNKNOWN";
-  const errorMessage = err.message || "An error occurred";
-  const errorType = err.type || "Unknown";
-
-  const extractedDetails = extractErrorDetails(err);
-
-  let fullErrorJson = "";
-  try {
-    fullErrorJson = JSON.stringify(err, null, 2);
-    if (fullErrorJson === "{}") {
-      const errorProps: Record<string, unknown> = {};
-      for (const key of Object.getOwnPropertyNames(err)) {
-        errorProps[key] = (err as unknown as Record<string, unknown>)[key];
-      }
-      if (err.details) {
-        errorProps["details"] = err.details;
-      }
-      fullErrorJson = JSON.stringify(errorProps, null, 2);
-    }
-  } catch {
-    fullErrorJson = "[Could not serialize error]";
-  }
-
-  resultDiv.className =
-    "shared-result shared-result--visible shared-result--error";
-  resultDiv.innerHTML = `
-    <strong>${title}</strong><br>
-    <small><strong>Code:</strong> ${errorCode}</small><br>
-    <small><strong>Type:</strong> ${errorType}</small><br>
-    <small><strong>Message:</strong> ${errorMessage}</small><br>
-    ${
-      extractedDetails.length > 0
-        ? `<small><strong>Details:</strong></small>
-    <pre style="margin: 5px 0; white-space: pre-wrap; font-size: 11px; background: #f5f5f5; padding: 8px; border-radius: 4px; overflow-x: auto; max-height: 200px; overflow-y: auto;">${extractedDetails.join("\n")}</pre>`
-        : ""
-    }
-    <details style="margin-top: 10px;">
-      <summary style="cursor: pointer; font-size: 12px; color: #666;">Show Full Error Object</summary>
-      <pre style="margin: 5px 0; white-space: pre-wrap; font-size: 10px; background: #f0f0f0; padding: 8px; border-radius: 4px; overflow-x: auto; max-height: 300px; overflow-y: auto;">${fullErrorJson}</pre>
-    </details>
-  `;
-
-  // eslint-disable-next-line no-console
-  console.error(`${title}:`, err);
 };
 
 const createPaymentHandlerForm = (): HTMLElement => {

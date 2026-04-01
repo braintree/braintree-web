@@ -29,11 +29,21 @@ var ANALYTICS_EVENTS = {
   // Session Creation
   SESSION_CHECKOUT_CREATED: ANALYTICS_PREFIX + ".session.checkout.created",
   SESSION_VAULT_CREATED: ANALYTICS_PREFIX + ".session.vault.created",
+  SESSION_CHECKOUT_WITH_VAULT_CREATED:
+    ANALYTICS_PREFIX + ".session.checkout-with-vault.created",
 
   // Payment Flow
   PAYMENT_STARTED: ANALYTICS_PREFIX + ".payment.started",
   PAYMENT_APPROVED: ANALYTICS_PREFIX + ".payment.approved",
   PAYMENT_CANCELED: ANALYTICS_PREFIX + ".payment.canceled",
+
+  // Checkout with Vault Flow
+  CHECKOUT_WITH_VAULT_STARTED:
+    ANALYTICS_PREFIX + ".checkout-with-vault.started",
+  CHECKOUT_WITH_VAULT_APPROVED:
+    ANALYTICS_PREFIX + ".checkout-with-vault.approved",
+  CHECKOUT_WITH_VAULT_CANCELED:
+    ANALYTICS_PREFIX + ".checkout-with-vault.canceled",
 
   // Order Creation
   CREATE_ORDER_STARTED: ANALYTICS_PREFIX + ".create-order.started",
@@ -71,6 +81,10 @@ var ANALYTICS_EVENTS = {
   // Credit
   CREDIT_OFFERED: ANALYTICS_PREFIX + ".credit.offered",
   CREDIT_ACCEPTED: ANALYTICS_PREFIX + ".credit.accepted",
+
+  // Pay Later
+  PAY_LATER_OFFERED: ANALYTICS_PREFIX + ".pay-later.offered",
+  PAY_LATER_ACCEPTED: ANALYTICS_PREFIX + ".pay-later.accepted",
 
   // Eligibility Check
   FIND_ELIGIBLE_METHODS_STARTED:

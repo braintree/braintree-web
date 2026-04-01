@@ -61,3 +61,32 @@ export const PAYPAL_SELECTORS = {
   CANCEL_LINK: "#cancelLink",
   ALT_CANCEL_LINK: "a*=Cancel",
 };
+
+export const browsers = [
+  {
+    browserName: "chrome",
+    osName: "Windows",
+    osVersion: "10",
+    browserVersion: "latest",
+  },
+  {
+    browserName: "Edge",
+    osName: "Windows",
+    osVersion: "10",
+    browserVersion: "latest",
+  },
+  {
+    browserName: "Safari",
+    playwrightName: "playwright-webkit",
+    osName: "OS X",
+    osVersion: "Tahoe",
+    browserVersion: "latest",
+  },
+  {
+    browserName: "firefox",
+    playwrightName: "playwright-firefox",
+    osName: "Windows",
+    osVersion: "10",
+    browserVersion: "latest",
+  },
+];

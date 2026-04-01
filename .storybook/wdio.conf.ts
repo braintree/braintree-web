@@ -69,7 +69,7 @@ export const config = {
     ],
     "intercept",
   ],
-  specs: ["./tests/**/*.test.ts"],
+  specs: ["./tests/hosted-fields/csp.test.ts", "./tests/ApplePay/**.test.ts"],
   // Available browsers and versions:
   // https://www.browserstack.com/docs/automate-turboscale/getting-started/browsers-and-versions
   capabilities: [

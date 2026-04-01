@@ -23,7 +23,11 @@ function camelCaseToSnakeCase(input) {
     converted = Object.keys(input).reduce(function (newObj, key) {
       var transformedKey = transformKey(key);
 
-      if (typeof input[key] === "object") {
+      if (
+        input[key] !== null &&
+        input[key] !== undefined &&
+        typeof input[key] === "object"
+      ) {
         newObj[transformedKey] = camelCaseToSnakeCase(input[key]);
       } else {
         newObj[transformedKey] = input[key];

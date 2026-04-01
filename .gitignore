@@ -23,3 +23,8 @@ browserstack.err
 local.log
 logs/
 .storybook/certs/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

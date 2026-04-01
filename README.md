@@ -16,7 +16,7 @@ npm install braintree-web
 
 For more thorough documentation, visit [the JavaScript client SDK docs](https://developer.paypal.com/braintree/docs/guides/client-sdk/setup/javascript/v3).
 
-If you are upgrading from version 2.x, take a look at our [migration guide](https://developer.paypal.com/braintree/docs/guides/client-sdk/migration/javascript/v3).
+If you are upgrading from version 2.x, take a look at our [migration guide](https://developer.paypal.com/braintree/docs/guides/client-sdk/migration/javascript/v3). For migrations related to removed components (e.g., the deprecated PayPal component), see [MIGRATION.md](MIGRATION.md).
 
 ### Hosted Fields integration
 
@@ -185,7 +185,7 @@ braintree.client
 
 Retrieve your sandbox tokenization key from your Braintree sandbox account and add it to `.env`.
 
-For full functionality, add the following to your `.env` file:
+For full functionality, add _at least_ the following to your `.env` file:
 
 ```shell
 BRAINTREE_JS_ENV=development
@@ -198,7 +198,7 @@ The `BRAINTREE_JS_ENV=development` setting is required for:
 - Making hosted-fields iframe URLs load from local resources
 - Running integration tests with local builds
 
-Ensure the sandbox account used for testing is fully configured to use any payment methods that will be tested.
+Ensure the sandbox account used for testing is fully configured to use any payment methods that will be tested. For full testing capabilities, follow the steps in [Integration Tests (via Browserstack)](#integration-tests-via-browserstack).
 
 ### Development server
 
@@ -247,6 +247,14 @@ Start the secure server
 npm run storybook:run-build
 ```
 
+## Unit Tests (with Jest)
+
+Unit tests can be run to test the functionality of each individual component. These tests can be run with:
+
+```shell
+npm run test
+```
+
 ## Browserstack Testing
 
 ### Setup for Integration Tests
@@ -264,9 +272,9 @@ npm run storybook:run-build
 
 2. Create SSL certificates for local HTTPS server:
 
-   ```shell
-   openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem -subj "/CN=127.0.0.1"
-   ```
+```shell
+ .storybook/scripts/generate-test-certs.sh
+```
 
 ### Testing with CDN versions (default)
 
@@ -330,13 +338,13 @@ When testing with local builds, the Storybook version selector will show "Assets
 To run a single test file instead of the entire test suite:
 
 ```shell
-npm run test:integration -- --spec .storybook/tests/your-test-file.test.ts
+npm run test:integration -- .storybook/tests/your-test-file.test.ts
 ```
 
 With local builds:
 
 ```shell
-npm run test:integration:local -- --spec .storybook/tests/your-test-file.test.ts
+npm run test:integration:local -- .storybook/tests/your-test-file.test.ts
 ```
 
 To run only a specific test case within a file, temporarily add `.only` to the test:
@@ -393,10 +401,9 @@ You may wish to run the test server on HTTPs. This is necessary for specific wor
 
 #### 1. Setting BrowserStack to Self-Signed Certificates
 
-Set the capability in the configuration. Note that these are already configured for our tests.
+Set the capability in the Playwright configuration. Note that these are already configured for our tests.
 
 ```typescript
-// wdio.conf.ts
 capabilities: [
   {
     browserName: "Safari",
@@ -407,7 +414,7 @@ capabilities: [
 
 #### 2. Generate SSL Certificates
 
-```bash
+```sh
 .storybook/scripts/generate-test-certs.sh
 ```
 

@@ -59,6 +59,13 @@ get_version_for_prompt() {
   echo "$commit_or_tag"
 }
 
+confirm_no_development_in_environment() {
+  if [ "$BRAINTREE_JS_ENV" = "development" ]; then
+    echo "${RED}BRAINTREE_JS_ENV is set to 'development'. Please unset it or set it to 'production' before releasing.${RESET}"
+    exit 1
+  fi
+}
+
 confirm_destination() {
   DEST="$1"
 
@@ -244,6 +251,7 @@ main() {
 
   case "$TASK" in
     hosted)
+      confirm_no_development_in_environment
       confirm_destination "$BRAINTREE_JS_HOSTED_DEST"
       confirm_error_code_documentation
       reinstall_dependencies
@@ -253,6 +261,7 @@ main() {
       env BRAINTREE_JS_ENV=production gulp release:hosted
       ;;
     npm)
+      confirm_no_development_in_environment
       reinstall_dependencies
       confirm_version
       env BRAINTREE_JS_ENV=production gulp release:npm

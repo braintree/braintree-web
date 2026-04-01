@@ -204,6 +204,7 @@ braintree.client
 | `onCancel`                | function | No       | Called when customer cancels                                                 |
 | `onError`                 | function | No       | Called on error                                                              |
 | `onShippingAddressChange` | function | No       | Called when shipping address changes                                         |
+| `onShippingOptionsChange` | function | No       | Called when shipping option is selected                                      |
 
 ### 2. Billing Agreement (Vault Flow)
 
@@ -351,7 +352,8 @@ var session = paypalCheckoutV6Instance.createOneTimePaymentSession({
   ],
 
   onShippingAddressChange: function (data) {
-    var newTotal = calculateNewTotal(data.selectedShippingOption);
+    // Calculate new total based on shipping address (e.g., country-specific rates)
+    var newTotal = calculateShippingCost(data.shippingAddress);
 
     return paypalCheckoutV6Instance.updatePayment({
       paymentId: data.orderId,

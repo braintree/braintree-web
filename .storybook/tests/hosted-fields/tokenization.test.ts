@@ -1,90 +1,56 @@
-import { expect } from "@wdio/globals";
-import {
-  createTestServer,
-  type TestServerResult,
-} from "../helpers/test-server";
-import http from "node:http";
+import { expect } from "@playwright/test";
 
-describe("Tokenize Card", function () {
-  const standardUrl =
-    "/iframe.html?id=braintree-hosted-fields--standard-hosted-fields&viewMode=story";
-  const noPostalCodeUrl =
-    "/iframe.html?globals=&args=includePostalCode:!false&id=braintree-hosted-fields--standard-hosted-fields&viewMode=story";
+import { test } from "../helpers/playwright-helpers";
 
-  let server: http.Server;
-  let serverPort: number;
-
-  const getTestUrl = (path: string) => {
-    let url = `http://localhost:${serverPort}${path}`;
-    if (process.env.LOCAL_BUILD === "true") {
-      const hasQuery = url.includes("?");
-      const separator = hasQuery ? "&" : "?";
-      url = `${url}${separator}globals=sdkVersion:dev`;
-    }
-    return encodeURI(url);
-  };
-
-  beforeEach(async function () {
-    await browser.reloadSessionOnRetry(this.currentTest);
-
-    await browser.setTimeout({
-      pageLoad: 30000,
-      implicit: 15000,
-      script: 60000,
+test.describe("Tokenize Card", function () {
+  test.beforeEach(async ({ hostedFieldsPage, getTestUrl, page }) => {
+    await page.goto(getTestUrl({}), {
+      waitUntil: "domcontentloaded",
     });
-
-    // Create per-test server
-    const result: TestServerResult = await createTestServer();
-    server = result.server;
-    serverPort = result.port;
+    await hostedFieldsPage.waitForHostedFieldsReady();
   });
 
-  afterEach(async function () {
-    // Close server
-    if (server) {
-      await new Promise<void>((resolve) => {
-        server.close(() => resolve());
-      });
-    }
-
+  test.afterEach(async ({ page }) => {
     // Reset browser session after each test to prevent popup dialogs and state leakage
     try {
-      await browser.reloadSession();
+      await page?.reload({ waitUntil: "domcontentloaded" });
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.log("Error reloading session:", err.message);
+      console.log("Error reloading session:", (err as Error).message);
     }
   });
 
-  it("should tokenize card successfully with postal code field", async function () {
-    await browser.url(getTestUrl(standardUrl));
-    await browser.waitForHostedFieldsReady();
+  test("should tokenize card successfully with postal code field", async function ({
+    hostedFieldsPage,
+  }) {
+    await hostedFieldsPage.hostedFieldSendInput("number");
+    await hostedFieldsPage.hostedFieldSendInput("cvv");
+    await hostedFieldsPage.hostedFieldSendInput("expirationDate");
+    await hostedFieldsPage.hostedFieldSendInput("postalCode");
 
-    await browser.hostedFieldSendInput("number");
-    await browser.hostedFieldSendInput("cvv");
-    await browser.hostedFieldSendInput("expirationDate");
-    await browser.hostedFieldSendInput("postalCode");
+    await hostedFieldsPage.submitPay();
 
-    await browser.submitPay();
-
-    const result = await browser.getResult();
-
-    await expect(result.success).toBe(true);
+    const result = await hostedFieldsPage.getResult();
+    expect(result.success).toBe(true);
   });
 
-  it("should tokenize card successfully without postal code field", async function () {
-    await browser.url(getTestUrl(noPostalCodeUrl));
-    await browser.waitForHostedFieldsReady();
+  test("should tokenize card successfully without postal code field", async function ({
+    hostedFieldsPage,
+    page,
+    getTestUrl,
+  }) {
+    await page.goto(getTestUrl({ noPostalCode: true }), {
+      waitUntil: "domcontentloaded",
+    });
+    await hostedFieldsPage.waitForHostedFieldsReady();
+    await hostedFieldsPage.waitForHostedFieldsReady();
+    await hostedFieldsPage.hostedFieldSendInput("number");
+    await hostedFieldsPage.hostedFieldSendInput("cvv");
+    await hostedFieldsPage.hostedFieldSendInput("expirationDate");
 
-    await browser.hostedFieldSendInput("number");
-    await browser.hostedFieldSendInput("cvv");
-    await browser.hostedFieldSendInput("expirationDate");
+    await hostedFieldsPage.submitPay();
 
-    await browser.waitForFormReady();
-    await browser.submitPay();
-
-    const result = await browser.getResult();
-
-    await expect(result.success).toBe(true);
+    const result = await hostedFieldsPage.getResult();
+    expect(result.success).toBe(true);
   });
 });

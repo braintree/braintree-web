@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## 3.139.0 (2026-04-01)
+
+- PayPal Checkout v6
+  - Add `commit` parameter to `createOneTimePaymentSession` and `createCheckoutWithVaultSession` to control button text and payment flow (defaults to `true` for "Pay Now" behavior)
+  - Add `onShippingOptionsChange` callback support for handling shipping option changes in checkout flow
+  - Add `createPayLaterSession` method to enable PayPal Pay Later payments
+  - Add PayPal Credit billing agreement session support: when `offerCredit` is set in `createBillingAgreementSession`, the SDK now routes to PayPal's credit-specific billing agreement session method
+  - Fix bug where the returnUrl and cancelUrl were not being correctly passed through in the createPayment() function
+  - Add `getDetails` method to `findEligibleMethods` result for retrieving additional payment method details (e.g., countryCode, productCode) from the PayPal SDK
+  - Fix bug where the `returnUrl` and `cancelUrl` were not being correctly passed through in the `createPayment()` function
+
+## 3.138.0 (2026-03-10)
+
+- PayPal Checkout v6
+  - Add `createCheckoutWithVaultSession` method to enable charging and vaulting in a single session
+
+## 3.137.0 (2026-03-02)
+
+- Alternative Payment Method
+  - Add support for Alternative Payment Method `crypto`
+
 ## 3.136.0 (2026-02-10)
 
 - Venmo

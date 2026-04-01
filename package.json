@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.136.0",
+  "version": "3.139.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -9,6 +9,7 @@
     "url": "https://github.com/braintree/braintree-web"
   },
   "scripts": {
+    "clean:playwright": "rm -rf test-results/ && rm -rf log*/ && rm -rf playwright-report/ && rm local.log",
     "jsdoc": "./scripts/npm-to-gulp jsdoc",
     "prebuild": "npm run prettier",
     "build": "./scripts/npm-to-gulp build",
@@ -34,9 +35,13 @@
     "storybook:run-build": "http-server ./storybook-static -S -p 8080",
     "build:integration": "./scripts/build-for-integration.sh",
     "pretest:integration": "npm run build:integration",
-    "pretest:integration:local": "npm run pretest:integration",
     "test:integration": "env BRAINTREE_JS_ENV=development wdio .storybook/wdio.conf.ts",
-    "test:integration:local": "env BRAINTREE_JS_ENV=development LOCAL_BUILD=true wdio .storybook/wdio.conf.ts"
+    "test:playwright": "env BRAINTREE_JS_ENV=development playwright test --config=.storybook/tests/playwright.browserstack.config.ts",
+    "test:playwright:local": "env BRAINTREE_JS_ENV=development playwright test --config=.storybook/tests/playwright.browserstack.local.ts --headed",
+    "test:integration:local": "env BRAINTREE_JS_ENV=development LOCAL_BUILD=true wdio .storybook/wdio.conf.ts",
+    "pretest:integration:local": "npm run build && npm run storybook:copy-local-build && npm run storybook:build",
+    "posttest:playwright": "npm run clean:playwright",
+    "posttest:playwright:local": "npm run clean:playwright"
   },
   "dependencies": {
     "@braintree/asset-loader": "2.0.3",
@@ -57,6 +62,7 @@
   },
   "devDependencies": {
     "@ladjs/gulp-envify": "^2.0.1",
+    "@playwright/test": "^1.58.0",
     "@storybook/addon-docs": "^9.1.2",
     "@storybook/addon-styling-webpack": "^2.0.0",
     "@storybook/html-vite": "^9.1.2",
@@ -68,6 +74,7 @@
     "@wdio/mocha-framework": "^9.20.0",
     "@wdio/spec-reporter": "^9.20.0",
     "@wdio/types": "^9.20.0",
+    "@types/jest": "^29.5.14",
     "browserify": "^17.0.0",
     "browserify-derequire": "^1.1.1",
     "browserstack-local": "^1.5.8",
@@ -105,6 +112,7 @@
     "minimist": "1.2.8",
     "mkdirp": "^1.0.4",
     "mock-xmlhttprequest": "^7.0.4",
+    "playwright": "^1.58.0",
     "posix-getopt": "^1.2.1",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",

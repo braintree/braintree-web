@@ -6,6 +6,12 @@ import type {
 import { createSimpleBraintreeStory } from "../../../utils/story-helper";
 import { getClientToken } from "../../../utils/sdk-config";
 import { getBraintreeSDK } from "../../../utils/braintree-sdk";
+import {
+  FUNDING_SOURCE_CONFIG,
+  createPayPalButton,
+  showSimpleError,
+  showDetailedError,
+} from "../common";
 import "../../../css/main.css";
 import "../../PayPalCheckout/payPalCheckout.css";
 
@@ -30,28 +36,6 @@ Examples: Pay-as-you-go services, usage-based billing, top-up payments.
 
 export default meta;
 
-const showDetailedError = (
-  resultDiv: HTMLElement,
-  title: string,
-  err: IBraintreeError
-): void => {
-  const errorCode = err.code || "UNKNOWN";
-  const errorMessage = err.message || "An error occurred";
-  const errorType = err.type || "Unknown";
-
-  resultDiv.className =
-    "shared-result shared-result--visible shared-result--error";
-  resultDiv.innerHTML = `
-    <strong>${title}</strong><br>
-    <small><strong>Code:</strong> ${errorCode}</small><br>
-    <small><strong>Type:</strong> ${errorType}</small><br>
-    <small><strong>Message:</strong> ${errorMessage}</small>
-  `;
-
-  // eslint-disable-next-line no-console
-  console.error(`${title}:`, err);
-};
-
 const createUnscheduledForm = (): HTMLElement => {
   const container = document.createElement("div");
   container.innerHTML = `
@@ -74,7 +58,10 @@ const createUnscheduledForm = (): HTMLElement => {
   return container;
 };
 
-const setupUnscheduledFlow = async (container: HTMLElement): Promise<void> => {
+const setupUnscheduledFlow = async (
+  container: HTMLElement,
+  args?: { fundingSource?: string }
+): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
 
@@ -100,9 +87,67 @@ const setupUnscheduledFlow = async (container: HTMLElement): Promise<void> => {
 
     await paypalCheckoutV6Instance.loadPayPalSDK();
 
-    const session = paypalCheckoutV6Instance.createBillingAgreementSession({
-      billingAgreementDescription: "On-demand payments authorization",
-      planType: "UNSCHEDULED",
+    // Check eligibility for unscheduled vault flow
+    const eligibilityResult =
+      await paypalCheckoutV6Instance.findEligibleMethods({
+        amount: "0.00",
+        currency: "USD",
+        paymentFlow: "VAULT_WITHOUT_PAYMENT",
+      });
+
+    // Extract funding source and get configuration
+    const selectedFundingSource = args?.fundingSource || "PayPal";
+    const fundingSourceConfig =
+      FUNDING_SOURCE_CONFIG[selectedFundingSource as string];
+
+    // Handle unexpected or unsupported funding source values gracefully
+    if (!fundingSourceConfig) {
+      showSimpleError(
+        resultDiv,
+        "Invalid Funding Source",
+        `The funding source "${selectedFundingSource}" is not supported.`
+      );
+      return;
+    }
+
+    const fundingSource = fundingSourceConfig.fundingSource;
+    const componentTag = fundingSourceConfig.componentTag;
+
+    // Check if selected funding source is eligible
+    const isEligible = eligibilityResult[fundingSource];
+
+    if (!isEligible) {
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Not Available`,
+        `${selectedFundingSource} is not eligible for unscheduled billing agreements.`
+      );
+      return;
+    }
+
+    const fundingSourceDetails =
+      eligibilityResult.getDetails(fundingSource) || {};
+
+    // Check if funding source can be vaulted
+    if (
+      fundingSourceDetails.canBeVaulted !== undefined &&
+      !fundingSourceDetails.canBeVaulted
+    ) {
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Ineligible for Vaulting`,
+        `${selectedFundingSource} is not eligible to be saved for unscheduled billing agreements.`
+      );
+      return;
+    }
+
+    const isPayPalCredit = fundingSource === "credit";
+
+    const sessionConfig = {
+      billingAgreementDescription: isPayPalCredit
+        ? "On-demand payments authorization (PayPal Credit)"
+        : "On-demand payments authorization",
+      planType: "UNSCHEDULED" as const,
 
       onApprove: async (data: IPayPalV6ApproveData) => {
         const payload = await paypalCheckoutV6Instance.tokenizePayment({
@@ -117,6 +162,7 @@ const setupUnscheduledFlow = async (container: HTMLElement): Promise<void> => {
         resultDiv.innerHTML = `
           <strong>PayPal account vaulted!</strong><br>
           <small>Plan Type: UNSCHEDULED</small><br>
+          <small>Funding Source: ${selectedFundingSource}</small><br>
           <small>Nonce: ${payload.nonce}</small><br>
           <small>Email: ${email}</small><br>
           <small>Authorized for on-demand payments</small>
@@ -134,25 +180,23 @@ const setupUnscheduledFlow = async (container: HTMLElement): Promise<void> => {
       onError: (err: IBraintreeError) => {
         showDetailedError(resultDiv, "PayPal Error", err);
       },
-    });
+    };
 
+    // Add offerCredit for PayPal Credit
+    if (isPayPalCredit) {
+      Object.assign(sessionConfig, { offerCredit: true });
+    }
+
+    // Create billing agreement session
+    const session =
+      paypalCheckoutV6Instance.createBillingAgreementSession(sessionConfig);
+
+    // Render PayPal button using web components
     const paypalButtonContainer = container.querySelector(
       "#paypal-button"
     ) as HTMLElement;
-    const button = document.createElement("button");
-    button.textContent = "Authorize On-Demand Payments";
-    button.className = "paypal-button";
-    button.style.cssText = `
-      background-color: #0070ba;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-      width: 100%;
-    `;
+
+    const button = createPayPalButton(componentTag, fundingSourceDetails);
 
     button.addEventListener("click", () => {
       session.start();
@@ -170,11 +214,22 @@ const setupUnscheduledFlow = async (container: HTMLElement): Promise<void> => {
 
 export const UnscheduledPlanType: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container) => {
+    async (container, args) => {
       const formContainer = createUnscheduledForm();
       container.appendChild(formContainer);
-      await setupUnscheduledFlow(formContainer);
+      await setupUnscheduledFlow(formContainer, args);
     },
     ["client.min.js", "paypal-checkout-v6.min.js"]
   ),
+  argTypes: {
+    fundingSource: {
+      control: { type: "select" },
+      options: ["PayPal", "PayPal Credit"],
+      description:
+        "Funding source for the billing agreement (PayPal or PayPal Credit)",
+    },
+  },
+  args: {
+    fundingSource: "PayPal",
+  },
 };

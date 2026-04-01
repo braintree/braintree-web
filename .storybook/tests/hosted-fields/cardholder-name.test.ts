@@ -1,127 +1,75 @@
-import { expect } from "@wdio/globals";
-import {
-  createTestServer,
-  type TestServerResult,
-} from "../helpers/test-server";
-import http from "node:http";
+import { expect } from "@playwright/test";
 
-describe("Hosted Fields with Cardholder Name", function () {
-  const cardholderNameUrl =
-    "/iframe.html?id=braintree-hosted-fields-cardholder-name--cardholder-name-field&viewMode=story";
+import { test } from "../helpers/playwright-helpers";
 
-  let server: http.Server;
-  let serverPort: number;
-
-  const getTestUrl = (path: string) => {
-    let url = `http://localhost:${serverPort}${path}`;
-    if (process.env.LOCAL_BUILD === "true") {
-      const hasQuery = url.includes("?");
-      const separator = hasQuery ? "&" : "?";
-      url = `${url}${separator}globals=sdkVersion:dev`;
-    }
-    return encodeURI(url);
-  };
-
-  beforeEach(async function () {
-    await browser.reloadSessionOnRetry(this.currentTest);
-
-    await browser.setTimeout({
-      pageLoad: 30000,
-      implicit: 15000,
-      script: 60000,
+test.describe("Hosted Fields Lifecycle Management", function () {
+  test.beforeEach(async ({ hostedFieldsPage, getTestUrl, page }) => {
+    await page.goto(getTestUrl({ cardholderName: true }), {
+      waitUntil: "domcontentloaded",
     });
-
-    // Create per-test server
-    const result: TestServerResult = await createTestServer();
-    server = result.server;
-    serverPort = result.port;
-
-    await browser.url(getTestUrl(cardholderNameUrl));
-    await browser.waitForHostedFieldsReady();
+    await hostedFieldsPage.waitForHostedFieldsReady();
   });
 
-  afterEach(async function () {
-    // Close server
-    if (server) {
-      await new Promise<void>((resolve) => {
-        server.close(() => resolve());
-      });
-    }
-
+  test.afterEach(async ({ page }) => {
     // Reset browser session after each test to prevent popup dialogs and state leakage
     try {
-      await browser.reloadSession();
+      await page?.reload({ waitUntil: "domcontentloaded" });
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.log("Error reloading session:", err.message);
+      console.log("Error reloading session:", (err as Error).message);
     }
   });
 
-  it("should tokenize card with cardholder name successfully", async function () {
-    // Fill all fields
-    await browser.hostedFieldSendInput("cardholderName", "John Doe");
-    await browser.hostedFieldSendInput("number");
-    await browser.hostedFieldSendInput("cvv");
-    await browser.hostedFieldSendInput("expirationDate");
-    await browser.hostedFieldSendInput("postalCode");
+  test("should tokenize card with cardholder name successfully", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.hostedFieldSendInput("cardholderName", "John Doe");
+    await hostedFieldsPage.hostedFieldSendInput("number");
+    await hostedFieldsPage.hostedFieldSendInput("cvv");
+    await hostedFieldsPage.hostedFieldSendInput("expirationDate");
+    await hostedFieldsPage.hostedFieldSendInput("postalCode");
 
-    await browser.submitPay();
+    await hostedFieldsPage.submitPay();
 
-    const result = await browser.getResult();
+    const result = await hostedFieldsPage.getResult();
     await expect(result.success).toBe(true);
 
-    // Check if result contains cardholder name
-    const resultText = await $("#result").getText();
-    await expect(resultText).toContain("Cardholder Name: John Doe");
+    const resultContainer = await hostedFieldsPage.findAndWaitFor("result");
+    await expect(resultContainer).toContainText("Cardholder Name: John Doe");
   });
 
-  it("should show cardholder name validation states", async function () {
-    // Test empty state
-    await browser.waitForHostedField("cardholderName");
-    await browser.switchFrame(
-      await $("#braintree-hosted-field-cardholderName")
-    );
-    const isEmpty = (await $("input").getValue()) === "";
-    await browser.switchFrame(null);
-    await expect(isEmpty).toBe(true);
+  test("should show cardholder name validation states", async ({
+    hostedFieldsPage,
+  }) => {
+    const cardholderNameInput =
+      await hostedFieldsPage.findInputInFrame("cardholderName");
+    await expect(cardholderNameInput).toBeEmpty();
 
-    // Fill cardholder name and check valid state
-    await browser.hostedFieldSendInput("cardholderName", "John Doe");
+    await hostedFieldsPage.hostedFieldSendInput("cardholderName", "John Doe");
+    await hostedFieldsPage.hostedFieldSendInput("number");
+    await hostedFieldsPage.hostedFieldSendInput("cvv");
+    await hostedFieldsPage.hostedFieldSendInput("expirationDate");
+    await hostedFieldsPage.hostedFieldSendInput("postalCode");
 
-    // Fill other fields for form completion
-    await browser.hostedFieldSendInput("number");
-    await browser.hostedFieldSendInput("cvv");
-    await browser.hostedFieldSendInput("expirationDate");
-    await browser.hostedFieldSendInput("postalCode");
+    const submitButton = await hostedFieldsPage.findAndWaitFor("submit-button");
+    await expect(submitButton).toBeEnabled();
 
-    // The form should be valid now
-    const submitButton = await $('button[type="submit"]');
-    await submitButton.waitForEnabled({ timeout: 5000 });
-
-    // Button should have the success class when form is valid
-    const hasSuccessClass = await submitButton.getAttribute("class");
-    await expect(hasSuccessClass).toContain("submit-button--success");
-  });
-
-  it("should verify button remains disabled when cardholder name is empty", async function () {
-    // Fill all fields except cardholder name
-    await browser.hostedFieldSendInput("number");
-    await browser.hostedFieldSendInput("cvv");
-    await browser.hostedFieldSendInput("expirationDate");
-    await browser.hostedFieldSendInput("postalCode");
-
-    // Wait to ensure validation has time to run
-    await browser.pause(1000);
-
-    // Verify the button is still disabled
-    const submitButton = await $('button[type="submit"]');
-    const isDisabled = await submitButton.getAttribute("disabled");
-
-    // Button should be disabled when cardholder name is empty
-    await expect(isDisabled).toBe("true");
-
-    // Verify button doesn't have success class
     const buttonClasses = await submitButton.getAttribute("class");
-    await expect(buttonClasses).not.toContain("submit-button--success");
+    expect(buttonClasses).toContain("submit-button--success");
+  });
+
+  test("should verify button remains disabled when cardholder name is empty", async ({
+    hostedFieldsPage,
+  }) => {
+    await hostedFieldsPage.hostedFieldSendInput("number");
+    await hostedFieldsPage.hostedFieldSendInput("cvv");
+    await hostedFieldsPage.hostedFieldSendInput("expirationDate");
+    await hostedFieldsPage.hostedFieldSendInput("postalCode");
+
+    const submitButton = await hostedFieldsPage.findAndWaitFor("submit-button");
+    expect(submitButton).toBeDisabled();
+
+    const buttonClasses = await submitButton.getAttribute("class");
+    expect(buttonClasses).not.toContain("submit-button--success");
   });
 });

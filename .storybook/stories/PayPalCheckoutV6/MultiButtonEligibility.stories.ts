@@ -3,6 +3,7 @@ import type { IPayPalV6ApproveData, IBraintreeError } from "../../types/global";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getClientToken } from "../../utils/sdk-config";
 import { getBraintreeSDK } from "../../utils/braintree-sdk";
+import { showDetailedError } from "./common";
 import "../../css/main.css";
 import "../PayPalCheckout/payPalCheckout.css";
 
@@ -44,92 +45,6 @@ export default meta;
  */
 const getOrderId = (data: { orderID?: string; orderId?: string }): string => {
   return data.orderID || data.orderId || "";
-};
-
-/**
- * Extract error details for debugging
- */
-const extractErrorDetails = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  errorObj: any,
-  prefix = ""
-): string[] => {
-  const parts: string[] = [];
-
-  if (!errorObj || typeof errorObj !== "object") {
-    return parts;
-  }
-
-  const propsToCheck = [
-    "message",
-    "error",
-    "name",
-    "code",
-    "type",
-    "description",
-    "debug_id",
-    "debugId",
-    "httpStatus",
-    "statusCode",
-    "status",
-    "reason",
-  ];
-
-  for (const prop of propsToCheck) {
-    if (errorObj[prop] !== undefined && errorObj[prop] !== null) {
-      const label = prefix ? `${prefix}.${prop}` : prop;
-      parts.push(`${label}: ${errorObj[prop]}`);
-    }
-  }
-
-  const nestedProps = ["details", "originalError", "error", "data", "body"];
-  for (const prop of nestedProps) {
-    if (
-      errorObj[prop] &&
-      typeof errorObj[prop] === "object" &&
-      !Array.isArray(errorObj[prop])
-    ) {
-      const nested = extractErrorDetails(
-        errorObj[prop],
-        prefix ? `${prefix}.${prop}` : prop
-      );
-      parts.push(...nested);
-    }
-  }
-
-  return parts;
-};
-
-/**
- * Display detailed error information
- */
-const showDetailedError = (
-  resultDiv: HTMLElement,
-  title: string,
-  err: IBraintreeError
-): void => {
-  const errorCode = err.code || "UNKNOWN";
-  const errorMessage = err.message || "An error occurred";
-  const errorType = err.type || "Unknown";
-  const extractedDetails = extractErrorDetails(err);
-
-  resultDiv.className =
-    "shared-result shared-result--visible shared-result--error";
-  resultDiv.innerHTML = `
-    <strong>${title}</strong><br>
-    <small><strong>Code:</strong> ${errorCode}</small><br>
-    <small><strong>Type:</strong> ${errorType}</small><br>
-    <small><strong>Message:</strong> ${errorMessage}</small><br>
-    ${
-      extractedDetails.length > 0
-        ? `<small><strong>Details:</strong></small>
-    <pre style="margin: 5px 0; white-space: pre-wrap; font-size: 11px; background: #f5f5f5; padding: 8px; border-radius: 4px;">${extractedDetails.join("\n")}</pre>`
-        : ""
-    }
-  `;
-
-  // eslint-disable-next-line no-console
-  console.error(`${title}:`, err);
 };
 
 /**
@@ -236,6 +151,8 @@ interface PayPalCheckoutV6Instance {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createOneTimePaymentSession: (_options: any) => any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createPayLaterSession: (_options: any) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tokenizePayment: (_options: any) => Promise<any>;
   loadPayPalSDK: () => Promise<PayPalCheckoutV6Instance>;
 }
@@ -320,15 +237,16 @@ const setupMultiButtonEligibility = async (
   /**
    * Create a payment session and handle the flow
    */
-  const createPaymentAndStart = (offerCredit: boolean): void => {
+  const createPaymentAndStart = (
+    paymentType: "paypal" | "paylater" | "credit"
+  ): void => {
     const amount = amountInput.value.trim();
     const currency = currencySelect.value;
 
-    const session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+    const sessionOptions = {
       amount,
       currency,
       intent: "capture",
-      offerCredit,
 
       onApprove: async (data: IPayPalV6ApproveData) => {
         try {
@@ -340,11 +258,16 @@ const setupMultiButtonEligibility = async (
           const payload =
             await paypalCheckoutV6Instance.tokenizePayment(tokenizeData);
 
-          const paymentType = offerCredit ? "PayPal Credit" : "PayPal";
+          const paymentTypeLabel =
+            paymentType === "credit"
+              ? "PayPal Credit"
+              : paymentType === "paylater"
+                ? "Pay Later"
+                : "PayPal";
           resultDiv.className =
             "shared-result shared-result--visible shared-result--success";
           resultDiv.innerHTML = `
-            <strong>${paymentType} payment authorized!</strong><br>
+            <strong>${paymentTypeLabel} payment authorized!</strong><br>
             <small>Nonce: ${payload.nonce}</small><br>
             <small>Payer Email: ${payload.details.email}</small><br>
             <small>Amount: $${amount} ${currency}</small>
@@ -370,7 +293,20 @@ const setupMultiButtonEligibility = async (
       onError: (err: IBraintreeError) => {
         showDetailedError(resultDiv, "PayPal Error", err);
       },
-    });
+    };
+
+    let session;
+    if (paymentType === "paylater") {
+      session = paypalCheckoutV6Instance.createPayLaterSession(sessionOptions);
+    } else if (paymentType === "credit") {
+      session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+        ...sessionOptions,
+        offerCredit: true,
+      });
+    } else {
+      session =
+        paypalCheckoutV6Instance.createOneTimePaymentSession(sessionOptions);
+    }
 
     session.start();
   };
@@ -459,16 +395,15 @@ const setupMultiButtonEligibility = async (
   checkEligibilityButton.addEventListener("click", checkEligibility);
 
   paypalButton.addEventListener("click", () => {
-    createPaymentAndStart(false);
+    createPaymentAndStart("paypal");
   });
 
   paylaterButton.addEventListener("click", () => {
-    // Pay Later uses standard PayPal session (eligibility determines availability)
-    createPaymentAndStart(false);
+    createPaymentAndStart("paylater");
   });
 
   creditButton.addEventListener("click", () => {
-    createPaymentAndStart(true);
+    createPaymentAndStart("credit");
   });
 };
 

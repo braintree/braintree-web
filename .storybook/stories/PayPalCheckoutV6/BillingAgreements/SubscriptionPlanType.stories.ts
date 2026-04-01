@@ -6,16 +6,15 @@ import type {
 import { createSimpleBraintreeStory } from "../../../utils/story-helper";
 import { getClientToken } from "../../../utils/sdk-config";
 import { getBraintreeSDK } from "../../../utils/braintree-sdk";
+import {
+  FUNDING_SOURCE_CONFIG,
+  formatPayPalDate,
+  createPayPalButton,
+  showSimpleError,
+  showDetailedError,
+} from "../common";
 import "../../../css/main.css";
 import "../../PayPalCheckout/payPalCheckout.css";
-
-/**
- * Format date for PayPal billing cycles
- * PayPal expects format: YYYY-MM-DD (date only, no time)
- */
-const formatPayPalDate = (date: Date): string => {
-  return date.toISOString().split("T")[0];
-};
 
 const meta: Meta = {
   title: "Braintree/PayPal Checkout V6/Billing Agreements",
@@ -36,28 +35,6 @@ Examples: SaaS with free trial, streaming service with introductory pricing.
 };
 
 export default meta;
-
-const showDetailedError = (
-  resultDiv: HTMLElement,
-  title: string,
-  err: IBraintreeError
-): void => {
-  const errorCode = err.code || "UNKNOWN";
-  const errorMessage = err.message || "An error occurred";
-  const errorType = err.type || "Unknown";
-
-  resultDiv.className =
-    "shared-result shared-result--visible shared-result--error";
-  resultDiv.innerHTML = `
-    <strong>${title}</strong><br>
-    <small><strong>Code:</strong> ${errorCode}</small><br>
-    <small><strong>Type:</strong> ${errorType}</small><br>
-    <small><strong>Message:</strong> ${errorMessage}</small>
-  `;
-
-  // eslint-disable-next-line no-console
-  console.error(`${title}:`, err);
-};
 
 const createSubscriptionForm = (): HTMLElement => {
   const container = document.createElement("div");
@@ -81,7 +58,10 @@ const createSubscriptionForm = (): HTMLElement => {
   return container;
 };
 
-const setupSubscriptionFlow = async (container: HTMLElement): Promise<void> => {
+const setupSubscriptionFlow = async (
+  container: HTMLElement,
+  args?: { fundingSource?: string }
+): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
 
@@ -107,11 +87,69 @@ const setupSubscriptionFlow = async (container: HTMLElement): Promise<void> => {
 
     await paypalCheckoutV6Instance.loadPayPalSDK();
 
+    // Check eligibility for subscription billing agreements
+    const eligibilityResult =
+      await paypalCheckoutV6Instance.findEligibleMethods({
+        amount: "19.99",
+        currency: "USD",
+        paymentFlow: "RECURRING_PAYMENT",
+      });
+
+    // Extract funding source and get configuration
+    const selectedFundingSource = args?.fundingSource || "PayPal";
+    const fundingSourceConfig =
+      FUNDING_SOURCE_CONFIG[selectedFundingSource as string];
+
+    // Handle unexpected or unsupported funding source values gracefully
+    if (!fundingSourceConfig) {
+      showSimpleError(
+        resultDiv,
+        "Invalid Funding Source",
+        `The funding source "${selectedFundingSource}" is not supported.`
+      );
+      return;
+    }
+
+    const fundingSource = fundingSourceConfig.fundingSource;
+    const componentTag = fundingSourceConfig.componentTag;
+
+    // Check if selected funding source is eligible
+    const isEligible = eligibilityResult[fundingSource];
+
+    if (!isEligible) {
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Not Available`,
+        `${selectedFundingSource} is not eligible for subscription billing agreements.`
+      );
+      return;
+    }
+
+    const fundingSourceDetails =
+      eligibilityResult.getDetails(fundingSource) || {};
+
+    // Check if funding source can be vaulted
+    if (
+      fundingSourceDetails.canBeVaulted !== undefined &&
+      !fundingSourceDetails.canBeVaulted
+    ) {
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Ineligible for Vaulting`,
+        `${selectedFundingSource} is not eligible to be saved for subscription billing agreements.`
+      );
+      return;
+    }
+
+    const isPayPalCredit = fundingSource === "credit";
+
     const regularStartDate = new Date(Date.now() + 8 * 86400000); // 8 days from now (after trial)
 
-    const session = paypalCheckoutV6Instance.createBillingAgreementSession({
-      billingAgreementDescription: "Subscription with 7-day free trial",
-      planType: "SUBSCRIPTION",
+    const sessionConfig = {
+      billingAgreementDescription: isPayPalCredit
+        ? "Subscription with 7-day free trial (PayPal Credit)"
+        : "Subscription with 7-day free trial",
+      planType: "SUBSCRIPTION" as const,
       amount: "19.99",
       currency: "USD",
       planMetadata: {
@@ -162,6 +200,7 @@ const setupSubscriptionFlow = async (container: HTMLElement): Promise<void> => {
         resultDiv.innerHTML = `
           <strong>PayPal account vaulted!</strong><br>
           <small>Plan Type: SUBSCRIPTION</small><br>
+          <small>Funding Source: ${selectedFundingSource}</small><br>
           <small>Nonce: ${payload.nonce}</small><br>
           <small>Email: ${email}</small><br>
           <small>Trial: 7 days free, then $19.99/month</small>
@@ -179,25 +218,23 @@ const setupSubscriptionFlow = async (container: HTMLElement): Promise<void> => {
       onError: (err: IBraintreeError) => {
         showDetailedError(resultDiv, "PayPal Error", err);
       },
-    });
+    };
 
+    // Add offerCredit for PayPal Credit
+    if (isPayPalCredit) {
+      Object.assign(sessionConfig, { offerCredit: true });
+    }
+
+    // Create billing agreement session
+    const session =
+      paypalCheckoutV6Instance.createBillingAgreementSession(sessionConfig);
+
+    // Render PayPal button using web components
     const paypalButtonContainer = container.querySelector(
       "#paypal-button"
     ) as HTMLElement;
-    const button = document.createElement("button");
-    button.textContent = "Start Subscription";
-    button.className = "paypal-button";
-    button.style.cssText = `
-      background-color: #0070ba;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-      width: 100%;
-    `;
+
+    const button = createPayPalButton(componentTag, fundingSourceDetails);
 
     button.addEventListener("click", () => {
       session.start();
@@ -215,11 +252,22 @@ const setupSubscriptionFlow = async (container: HTMLElement): Promise<void> => {
 
 export const SubscriptionPlanType: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container) => {
+    async (container, args) => {
       const formContainer = createSubscriptionForm();
       container.appendChild(formContainer);
-      await setupSubscriptionFlow(formContainer);
+      await setupSubscriptionFlow(formContainer, args);
     },
     ["client.min.js", "paypal-checkout-v6.min.js"]
   ),
+  argTypes: {
+    fundingSource: {
+      control: { type: "select" },
+      options: ["PayPal", "PayPal Credit"],
+      description:
+        "Funding source for the billing agreement (PayPal or PayPal Credit)",
+    },
+  },
+  args: {
+    fundingSource: "PayPal",
+  },
 };

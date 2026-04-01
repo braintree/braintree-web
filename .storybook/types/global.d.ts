@@ -967,6 +967,38 @@ interface IPayPalV6ApproveData {
 }
 
 /**
+ * PayPal V6 Shipping Address Change Data from onShippingAddressChange callback
+ */
+interface IPayPalV6ShippingAddressChangeData {
+  errors: Record<string, string>;
+  orderId: string;
+  shippingAddress: {
+    city?: string;
+    countryCode?: string;
+    postalCode?: string;
+    state?: string;
+  };
+}
+
+/**
+ * PayPal V6 Shipping Options Change Data from onShippingOptionsChange callback
+ */
+interface IPayPalV6ShippingOptionsChangeData {
+  errors: Record<string, string>;
+  orderId: string;
+  selectedShippingOption: {
+    amount: {
+      currencyCode: string;
+      value: string;
+    };
+    id: string;
+    label: string;
+    selected: boolean;
+    type: string;
+  };
+}
+
+/**
  * PayPal Checkout V6 Session returned by createOneTimePaymentSession and createBillingAgreementSession
  */
 interface IPayPalCheckoutV6Session {
@@ -997,6 +1029,7 @@ interface IPayPalCheckoutV6TokenizePayload {
     firstName?: string;
     lastName?: string;
   };
+  shippingOptionId?: string;
 }
 
 /**
@@ -1015,6 +1048,7 @@ interface IPayPalCheckoutV6Instance {
     amount: string;
     currency: string;
     intent?: "capture" | "authorize" | "order";
+    commit?: boolean;
     returnUrl?: string;
     cancelUrl?: string;
     lineItems?: Array<{
@@ -1045,20 +1079,12 @@ interface IPayPalCheckoutV6Instance {
     displayName?: string;
     userAuthenticationEmail?: string;
     presentationMode?: string;
-    onShippingAddressChange?: (data: {
-      shippingAddress?: { city?: string; state?: string };
-      orderID?: string;
-      orderId?: string;
-    }) => void | Promise<unknown>;
-    onShippingOptionsChange?: (data: {
-      selectedShippingOption?: {
-        id: string;
-        label: string;
-        amount: { currency: string; value: string };
-      };
-      orderID?: string;
-      orderId?: string;
-    }) => void | Promise<unknown>;
+    onShippingAddressChange?: (
+      data: IPayPalV6ShippingAddressChangeData
+    ) => void | Promise<unknown>;
+    onShippingOptionsChange?: (
+      data: IPayPalV6ShippingOptionsChangeData
+    ) => void | Promise<unknown>;
     onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
     onCancel?: () => void;
     onError?: (err: IBraintreeError) => void;
@@ -1082,6 +1108,53 @@ interface IPayPalCheckoutV6Instance {
     userAction?: "CONTINUE" | "COMMIT" | "SETUP_NOW";
     displayName?: string;
     presentationMode?: string;
+    onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
+    onCancel?: () => void;
+    onError?: (err: IBraintreeError) => void;
+  }) => IPayPalCheckoutV6Session;
+  createCheckoutWithVaultSession: (options: {
+    amount: string;
+    currency: string;
+    intent?: "capture" | "authorize" | "order";
+    commit?: boolean;
+    billingAgreementDetails?: {
+      description: string;
+    };
+    returnUrl?: string;
+    cancelUrl?: string;
+    lineItems?: Array<{
+      quantity: string;
+      unitAmount: string;
+      name: string;
+      kind: "debit" | "credit";
+      unitTaxAmount?: string;
+      description?: string;
+    }>;
+    shippingOptions?: Array<{
+      id: string;
+      label: string;
+      selected: boolean;
+      type: "SHIPPING" | "PICKUP";
+      amount: { currency: string; value: string };
+    }>;
+    amountBreakdown?: {
+      itemTotal?: string;
+      shipping?: string;
+      handling?: string;
+      taxTotal?: string;
+      insurance?: string;
+      shippingDiscount?: string;
+      discount?: string;
+    };
+    displayName?: string;
+    userAuthenticationEmail?: string;
+    presentationMode?: string;
+    onShippingAddressChange?: (
+      data: IPayPalV6ShippingAddressChangeData
+    ) => void | Promise<unknown>;
+    onShippingOptionsChange?: (
+      data: IPayPalV6ShippingOptionsChangeData
+    ) => void | Promise<unknown>;
     onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
     onCancel?: () => void;
     onError?: (err: IBraintreeError) => void;
@@ -1121,6 +1194,25 @@ interface IPayPalCheckoutV6Instance {
       discount?: string;
     };
   }) => Promise<unknown>;
+  findEligibleMethods: (options: {
+    currency: string;
+    amount?: string;
+    countryCode?: string;
+    paymentFlow?:
+      | "ONE_TIME_PAYMENT"
+      | "VAULT_WITH_PAYMENT"
+      | "VAULT_WITHOUT_PAYMENT"
+      | "RECURRING_PAYMENT";
+  }) => Promise<{
+    paypal: boolean;
+    paylater: boolean;
+    credit: boolean;
+    getDetails: (method: "paypal" | "paylater" | "credit") => {
+      productCode?: string;
+      countryCode?: string;
+      canBeVaulted?: boolean;
+    } | null;
+  }>;
   teardown: () => Promise<void>;
 }
 
@@ -1261,6 +1353,8 @@ export {
   IPayPalCheckoutV6Session,
   IPayPalCheckoutV6TokenizePayload,
   IPayPalV6ApproveData,
+  IPayPalV6ShippingAddressChangeData,
+  IPayPalV6ShippingOptionsChangeData,
   IPricingScheme,
   IBillingCycle,
   IBillingAgreementPlanMetadata,

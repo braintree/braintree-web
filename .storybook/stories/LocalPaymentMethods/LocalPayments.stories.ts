@@ -26,7 +26,8 @@ export default meta;
 
 const createLocalPaymentForm = (
   title: string,
-  description: string
+  description: string,
+  paymentType: string
 ): HTMLElement => {
   const container = document.createElement("div");
   container.innerHTML = `
@@ -39,6 +40,9 @@ const createLocalPaymentForm = (
         </p>
       </div>
 
+      ${
+        paymentType !== "crypto"
+          ? `
       <div class="local-payment-form-section">
         <div class="shared-form-group">
           <label class="shared-label">Amount</label>
@@ -61,6 +65,10 @@ const createLocalPaymentForm = (
             <option value="IT">Italy (IT)</option>
           </select>
         </div>
+      `
+          : ""
+      }
+
       </div>
 
       <button type="button" id="payment-button" class="shared-button" disabled>Initializing...</button>
@@ -147,20 +155,22 @@ const initializeLocalPayments = (
       | Record<string, string>
       | boolean
       | ((_data: unknown, _start: () => void) => void)
-    > = {
-      paymentType: paymentType.toLowerCase(),
-      amount: amountInput.value,
-      currencyCode: currencySelect.value,
-      address: {
+    > = {};
+
+    if (paymentType !== "crypto") {
+      paymentOptions.paymentType = paymentType.toLowerCase();
+      paymentOptions.amount = amountInput.value;
+      paymentOptions.currencyCode = currencySelect.value;
+      paymentOptions.address = {
         countryCode: countrySelect.value,
-      },
-      givenName: "John",
-      surname: "Doe",
-      fallback: {
+      };
+      paymentOptions.givenName = "John";
+      paymentOptions.surname = "Doe";
+      paymentOptions.fallback = {
         url: "https://your-domain.com/page-to-complete-checkout",
         buttonText: "Complete Payment",
-      },
-      onPaymentStart: function (_data, start) {
+      };
+      paymentOptions.onPaymentStart = function (_data, start) {
         // NOTE: It is critical here to store data.paymentId on your server
         //       so it can be mapped to a webhook sent by Braintree once the
         //       buyer completes their payment. See Start the payment
@@ -168,12 +178,17 @@ const initializeLocalPayments = (
 
         // Call start to initiate the popup
         start();
-      },
-    };
+      };
+    }
 
     // Add payment type specific options
     if (paymentType === "iDEAL") {
       paymentOptions.paymentType = "ideal";
+    } else if (paymentType === "crypto") {
+      paymentOptions.paymentType = "crypto";
+      paymentOptions.cryptoOptions = {
+        approvalUrl: "https://example.com/crypto-approval",
+      };
     } else if (paymentType === "Pay Upon Invoice") {
       paymentOptions.paymentType = "payuponinvoice";
       paymentOptions.shippingAddressRequired = true;
@@ -187,18 +202,24 @@ const initializeLocalPayments = (
       paymentOptions.countryCode = "DE";
     }
 
-    localPaymentInstance
-      .startPayment(paymentOptions)
-      .then(function (payload) {
-        // Submit payload.nonce to your server
-        console.log("nonce", payload.nonce);
-        paymentButton.disabled = false;
-        paymentButton.textContent = `Pay with ${paymentType}`;
-        showSuccess(resultDiv, payload);
-      })
-      .catch((error) => {
+    if (paymentType !== "crypto") {
+      localPaymentInstance
+        .startPayment(paymentOptions)
+        .then(function (payload) {
+          // Submit payload.nonce to your server
+          console.log("nonce", payload.nonce);
+          paymentButton.disabled = false;
+          paymentButton.textContent = `Pay with ${paymentType}`;
+          showSuccess(resultDiv, payload);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else {
+      localPaymentInstance.startPayment(paymentOptions).catch((error) => {
         console.error(error);
       });
+    }
   });
 };
 
@@ -207,10 +228,30 @@ export const iDEAL: StoryObj = {
     (container) => {
       const formContainer = createLocalPaymentForm(
         "iDEAL Local Payment",
-        "iDEAL is a popular payment method in the Netherlands. Select your bank and complete the payment."
+        "iDEAL is a popular payment method in the Netherlands. Select your bank and complete the payment.",
+        "ideal"
       );
       container.appendChild(formContainer);
       initializeLocalPayments(formContainer, "iDEAL");
+    },
+    ["client.min.js", "local-payment.min.js"]
+  ),
+  args: {
+    // Example args that could be used to customize the payment flow
+    debugMode: false,
+  },
+};
+
+export const payWithCrypto: StoryObj = {
+  render: createSimpleBraintreeStory(
+    (container) => {
+      const formContainer = createLocalPaymentForm(
+        "Pay with Crypto Local Payment",
+        "Pay with Crypto is a payment solution that allows you to accept cryptocurrency (crypto) payments from global buyers and receive automatic settlement in local currency.",
+        "crypto"
+      );
+      container.appendChild(formContainer);
+      initializeLocalPayments(formContainer, "crypto");
     },
     ["client.min.js", "local-payment.min.js"]
   ),

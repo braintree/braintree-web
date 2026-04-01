@@ -106,7 +106,15 @@ describe("camelCaseToSnakeCase", () => {
     expect(camelCaseToSnakeCase(arrayOfValues)).toEqual(expectedArrayOfValues);
   });
 
-  it("handles null values", () => {
+  it("returns null when given null as input", () => {
+    expect(camelCaseToSnakeCase(null)).toBeNull();
+  });
+
+  it("returns undefined when given undefined as input", () => {
+    expect(camelCaseToSnakeCase(undefined)).toBeUndefined();
+  });
+
+  it("handles null values within objects", () => {
     const input = {
       nullableValue: null,
     };
@@ -117,7 +125,7 @@ describe("camelCaseToSnakeCase", () => {
     expect(camelCaseToSnakeCase(input)).toEqual(expectedOutput);
   });
 
-  it("handles undefined values", () => {
+  it("handles undefined values within objects", () => {
     const input = {
       undefinedValue: undefined,
     };

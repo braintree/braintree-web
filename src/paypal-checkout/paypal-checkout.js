@@ -191,7 +191,7 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
  * }).then(function (paypalCheckoutInstance) {
  *   const buttons = paypal.Buttons({
  *
- *      appSwitchPreference: { launchPaypalApp: true }, // Need an indicator to trigger app switch
+ *     appSwitchWhenAvailable: true, // Need an indicator to trigger App Switch
  *
  *     createOrder: function () {
  *       return paypalCheckoutInstance.createPayment({
@@ -470,7 +470,9 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.billingAgreementDetails.description] Description of the billing agreement to display to the customer.
  * @param {string} [options.vaultInitiatedCheckoutPaymentMethodToken] Use the payment method nonce representing a PayPal account with a Billing Agreement ID to create the payment and redirect the customer to select a new financial instrument. This option is only applicable to the `checkout` flow.
  * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
+ * * Note: `shippingOptions` cannot be combined with either `enableShippingAddress: false` or `shippingAddressEditable: false`. The PayPal Orders API does not support combining shipping options with `NO_SHIPPING` or `SET_PROVIDED_ADDRESS` shipping preferences. When `shippingOptions` are provided alongside either of those settings, the gateway overrides the address restrictions to prevent a PayPal API error, meaning the shipping address will remain editable regardless of those settings.
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
+ * * Note: When `enableShippingAddress` is set to `false`, it is mutually exclusive with `shippingOptions`. In that configuration, if both are provided, the gateway overrides `enableShippingAddress: false` in favor of `shippingOptions`. See `shippingOptions` for details.
  * @param {string} [options.contactPreference] Optional field but required if using different recipient via `shippingAddressOverride`. Can be 'NO_CONTACT_INFO', 'RETAIN_CONTACT_INFO' or 'UPDATE_CONTACT_INFO'. If null, will default to 'NO_CONTACT_INFO'.
  * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
@@ -486,6 +488,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.shippingAddressOverride.internationalPhone.countryCode] Phone country code of the recipient.
  * @param {string} [options.shippingAddressOverride.internationalPhone.nationalNumber] Phone national number of the recipient.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
+ * * Note: Setting this to `false` is not compatible with `shippingOptions`. When both are provided, the gateway overrides this setting in favor of `shippingOptions`. See `shippingOptions` for details.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
  * @param {string} [options.landingPageType] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.
  * * `login` - A PayPal account login page is used.
@@ -495,10 +498,8 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.planType] Determines the charge pattern for the Recurring Billing Agreement. Can be 'RECURRING', 'SUBSCRIPTION', 'UNSCHEDULED', or 'INSTALLMENTS'.
  * @param {planMetadata} [options.planMetadata] When plan type is defined, allows for {@link PayPalCheckout~planMetadata|plan metadata} to be set for the Billing Agreement.
  * @param {string} [options.userAuthenticationEmail] Optional merchant-provided buyer email, used to streamline the sign-in process for both one-time checkout and vault flows.
- * @param {string} [options.returnUrl] The URL that the PayPal app will open after a successful authentication in the app switch flow
- * @param {string} [options.cancelUrl] The URL that the PayPal app will open after an unsuccessful authentication in the app switch flow
- * @param {object} [options.appSwitchPreference] Sets options for the app switch flow. Must use `returnUrl` and `cancelUrl` with this option.
- * @param {boolean} options.appSwitchPreference.launchPaypalApp Opts into the app switch flow.
+ * @param {string} [options.returnUrl] The URL that the PayPal app will open after a successful authentication in the app switch flow. Required when using `appSwitchWhenAvailable: true` on `paypal.Buttons()`.
+ * @param {string} [options.cancelUrl] The URL that the PayPal app will open after an unsuccessful authentication in the app switch flow. Required when using `appSwitchWhenAvailable: true` on `paypal.Buttons()`.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
  * @param {string} [options.paymentReadySessionId] Optional session identifier returned from PaymentReady.createCustomerSession that can be used to track a specific checkout attempt. This ID is used for analytics and to connect multiple API calls associated with a single checkout flow.

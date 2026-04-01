@@ -47,7 +47,17 @@ const createPayPalForm = (): HTMLElement => {
   return container;
 };
 
-const setupPayPalCheckout = (container: HTMLElement): void => {
+/**
+ * Arguments for OneTimePayment story
+ */
+interface OneTimePaymentArgs {
+  commit?: boolean;
+}
+
+const setupPayPalCheckout = (
+  container: HTMLElement,
+  args?: OneTimePaymentArgs
+): void => {
   const authorization = getAuthorizationToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
   const braintree = getBraintreeSDK(resultDiv);
@@ -60,6 +70,16 @@ const setupPayPalCheckout = (container: HTMLElement): void => {
       return braintree.paypalCheckout.create({
         client: clientInstance,
       });
+    })
+    .then((paypalCheckoutInstance) => {
+      // Use V5's built-in loadPayPalSDK method
+      return paypalCheckoutInstance
+        .loadPayPalSDK({
+          intent: "capture",
+          currency: "USD",
+          commit: args?.commit ?? true,
+        })
+        .then(() => paypalCheckoutInstance);
     })
     .then((paypalCheckoutInstance) => {
       return window.paypal
@@ -281,21 +301,30 @@ const setupRecurringBilling = (container: HTMLElement): void => {
 
 export const OneTimePayment: StoryObj = {
   render: createSimpleBraintreeStory(
-    (container) => {
+    (container, args) => {
       const formContainer = createPayPalForm();
       container.appendChild(formContainer);
 
-      // Load PayPal SDK and initialize PayPal checkout
-      const paypalSDKScript = document.createElement("script");
-      paypalSDKScript.src =
-        "https://www.paypal.com/sdk/js?client-id=AZDxjDScFpQtjWTOUtWKbyN_bDt4OgqaF4eYXlewfBP4-8aqX3PiV8e1GWU6liB2CUXlkA59kJXE7M6R&currency=USD";
-      paypalSDKScript.onload = () => {
-        setupPayPalCheckout(formContainer);
-      };
-      document.head.appendChild(paypalSDKScript);
+      const typedArgs = args as OneTimePaymentArgs;
+      setupPayPalCheckout(formContainer, typedArgs);
     },
     ["client.min.js", "paypal-checkout.min.js"]
   ),
+  argTypes: {
+    commit: {
+      control: { type: "boolean" },
+      description:
+        'Controls the PayPal flow type: true for "Pay Now" (immediate payment), false for "Continue" (review and confirm). Defaults to true.',
+      table: {
+        category: "Payment Options",
+        type: { summary: "boolean" },
+        defaultValue: { summary: "true" },
+      },
+    },
+  },
+  args: {
+    commit: true,
+  },
 };
 
 export const VaultFlow: StoryObj = {
