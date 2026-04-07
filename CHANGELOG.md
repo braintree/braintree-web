@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## unreleased
+
+- PayPal Checkout v6
+  - Fix `tokenizePayment` to accept camelCase `payerId`/`orderId` from `onApprove` callback payload in addition to `payerID`/`orderID`
+
 ## 3.138.0 (2026-03-10)
 
 - PayPal Checkout v6
