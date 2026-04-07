@@ -1980,7 +1980,12 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
     }
 
     // Validate required parameters
-    if (!isBillingAgreement && (!options.payerID || !options.orderID)) {
+    // Accept both payerID/orderID (legacy) and payerId/orderId (onApprove payload)
+    if (
+      !isBillingAgreement &&
+      (!(options.payerID || options.payerId) ||
+        !(options.orderID || options.orderId))
+    ) {
       reject(
         new BraintreeError(errors.PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA)
       );
@@ -2022,8 +2027,8 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
         );
 
         data = self._formatTokenizeData({
-          payerId: options.payerID,
-          orderId: options.orderID,
+          payerId: options.payerID || options.payerId,
+          orderId: options.orderID || options.orderId,
         });
         endpoint = "payment_methods/paypal_accounts";
       }

@@ -1228,6 +1228,72 @@ describe("PayPalCheckoutV6", () => {
         });
     });
 
+    it("accepts camelCase payerId from onApprove payload", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerId: "PAYER123",
+          orderId: "ORDER123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith({
+            endpoint: "payment_methods/paypal_accounts",
+            method: "post",
+            data: {
+              paypalAccount: {
+                paymentToken: "ORDER123",
+                payerId: "PAYER123",
+                unilateral: expect.any(Boolean),
+              },
+            },
+          });
+        });
+    });
+
+    it("prefers uppercase payerID/orderID over camelCase", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "UPPERCASE_PAYER",
+          orderID: "UPPERCASE_ORDER",
+          payerId: "lowercase_payer",
+          orderId: "lowercase_order",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith({
+            endpoint: "payment_methods/paypal_accounts",
+            method: "post",
+            data: {
+              paypalAccount: {
+                paymentToken: "UPPERCASE_ORDER",
+                payerId: "UPPERCASE_PAYER",
+                unilateral: expect.any(Boolean),
+              },
+            },
+          });
+        });
+    });
+
     it("sends tokenization request to client", () => {
       jest.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
