@@ -82,6 +82,7 @@ describe("Venmo", () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     window.location.href = originalLocationHref;
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -252,7 +253,7 @@ describe("Venmo", () => {
 
     expect(createVenmoDesktop).toBeCalledWith(
       expect.objectContaining({
-        venmoRiskCorrelationId: "custom-risk-id",
+        riskCorrelationId: "custom-risk-id",
       })
     );
   });
@@ -1705,6 +1706,33 @@ describe("Venmo", () => {
       });
     });
 
+    it("applies venmoRiskCorrelationId to client-metadata-id param when passed", () => {
+      testContext.client.request.mockResolvedValue({
+        data: {
+          createVenmoPaymentContext: {
+            venmoPaymentContext: {
+              status: "CREATED",
+              id: "context-id",
+              createdAt: "2021-01-20T03:25:37.522000Z",
+              expiresAt: "2021-01-20T03:30:37.522000Z",
+              venmoRiskCorrelationId: "foo-bar-test",
+            },
+          },
+        },
+      });
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "multi_use",
+        riskCorrelationId: "foo-bar-test",
+      });
+
+      return venmo.getUrl().then((url) => {
+        expect(url).toEqual(
+          expect.stringContaining("client-metadata-id=foo-bar-test")
+        );
+      });
+    });
+
     it("applies mobile polling context id to resource id param when paymentMethodUsage is passed", () => {
       testContext.client.request.mockResolvedValue({
         data: {
@@ -2551,6 +2579,7 @@ describe("Venmo", () => {
 
     afterEach(() => {
       history.replaceState({}, "", testContext.location);
+      urlParams.getUrlParams.mockReturnValue({});
     });
 
     it.each([["Success"], ["Error"], ["Cancel"]])(
@@ -2591,6 +2620,139 @@ describe("Venmo", () => {
       venmo.hasTokenizationResult();
 
       expect(venmo._venmoPaymentContextId).toBe("test-hash-id");
+    });
+
+    it("sets the _venmoPaymentContextId from top window hash fragment", () => {
+      let originalTop;
+
+      urlParams.getUrlParams.mockReturnValue({});
+
+      originalTop = window.top;
+      delete window.top;
+      window.top = {
+        location: {
+          hash: "#venmoSuccess=1&resource_id=test-top-hash-id",
+        },
+      };
+
+      venmo.hasTokenizationResult();
+
+      expect(venmo._venmoPaymentContextId).toBe("test-top-hash-id");
+
+      window.top = originalTop;
+    });
+
+    it("prioritizes current window params over top window hash", () => {
+      let originalTop;
+
+      urlParams.getUrlParams.mockReturnValue({
+        resource_id: "current-query-id",
+      });
+
+      originalTop = window.top;
+      delete window.top;
+      window.top = {
+        location: {
+          hash: "#venmoSuccess=1&resource_id=test-top-hash-id",
+        },
+      };
+
+      venmo.hasTokenizationResult();
+
+      expect(venmo._venmoPaymentContextId).toBe("current-query-id");
+
+      window.top = originalTop;
+    });
+
+    it("prioritizes top window query params over top window hash", () => {
+      let originalTop;
+
+      // Since getUrlParams now internally checks top window,
+      // mock it to return the top window param
+      urlParams.getUrlParams.mockReturnValue({
+        resource_id: "top-query-id",
+      });
+
+      originalTop = window.top;
+      delete window.top;
+      window.top = {
+        location: {
+          hash: "#venmoSuccess=1&resource_id=test-top-hash-id",
+        },
+      };
+
+      venmo.hasTokenizationResult();
+
+      expect(venmo._venmoPaymentContextId).toBe("top-query-id");
+
+      window.top = originalTop;
+    });
+
+    it.each([["Success"], ["Error"], ["Cancel"]])(
+      "returns true when top window hash has venmo%p payload",
+      (payload) => {
+        let originalTop;
+
+        urlParams.getUrlParams.mockReturnValue({});
+
+        originalTop = window.top;
+        delete window.top;
+        window.top = {
+          location: {
+            hash: `#venmo${payload}=1`,
+          },
+        };
+
+        expect(venmo.hasTokenizationResult()).toBe(true);
+
+        window.top = originalTop;
+      }
+    );
+
+    it("handles cross-origin iframe gracefully when accessing window.top.location throws", () => {
+      let originalTop;
+
+      urlParams.getUrlParams.mockReturnValue({});
+      history.replaceState(
+        {},
+        "",
+        `${testContext.location}#venmoSuccess=1&resource_id=current-hash-id`
+      );
+
+      originalTop = window.top;
+      delete window.top;
+      window.top = {
+        get location() {
+          throw new Error("SecurityError: Blocked a frame with origin");
+        },
+      };
+
+      // Should not throw and should use current window hash
+      expect(() => venmo.hasTokenizationResult()).not.toThrow();
+      expect(venmo.hasTokenizationResult()).toBe(true);
+      expect(venmo._venmoPaymentContextId).toBe("current-hash-id");
+
+      window.top = originalTop;
+    });
+
+    it("returns false gracefully when cross-origin and no current window tokenization result", () => {
+      let originalTop;
+
+      urlParams.getUrlParams.mockReturnValue({});
+
+      originalTop = window.top;
+      delete window.top;
+      window.top = {
+        get location() {
+          throw new Error("SecurityError: Blocked a frame with origin");
+        },
+      };
+
+      // Should not throw and should return false
+      expect(() => venmo.hasTokenizationResult()).not.toThrow();
+      expect(venmo.hasTokenizationResult()).toBe(false);
+
+      window.top = originalTop;
     });
   });
 
@@ -3362,6 +3524,7 @@ describe("Venmo", () => {
         const mockWindow = { closed: true };
         venmo._venmoWindow = mockWindow;
         venmo._venmoPaymentContextStatus = "CREATED";
+        venmo._cancelOnReturnToBrowser = true;
 
         await venmo.tokenize().catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
@@ -3484,6 +3647,111 @@ describe("Venmo", () => {
         });
 
         await promise;
+      });
+    });
+
+    // Note: These iframe breakout tests test appSwitch behavior but are placed here
+    // (after mobile polling tests) rather than in the describe('appSwitch') section
+    // above to avoid test pollution. When placed before the mobile polling tests,
+    // Android Chrome mocks appear to pollute the "sends an analytics event for each
+    // status change" test despite cleanup attempts with jest.restoreAllMocks() and
+    // explicit mock resets.
+    describe("appSwitch iframe breakout on android chrome", () => {
+      let venmo, venmoOptions, originalNavigator, originalLocation, originalTop;
+
+      beforeEach(() => {
+        originalNavigator = window.navigator;
+        originalLocation = window.location;
+        originalTop = window.top;
+
+        delete window.navigator;
+        delete window.location;
+        delete window.top;
+
+        window.navigator = {
+          platform: "platform",
+        };
+        window.location = {
+          href: "old",
+          hash: "",
+        };
+        window.top = {
+          location: {
+            href: "top-old",
+          },
+        };
+
+        venmoOptions = {
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+        };
+
+        venmo = new Venmo(venmoOptions);
+      });
+
+      afterEach(() => {
+        window.navigator = originalNavigator;
+        window.location = originalLocation;
+        window.top = originalTop;
+      });
+
+      it("breaks out of iframe when in iframe and using android chrome without mobileWebFallBack", async () => {
+        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+        inIframe.mockReturnValue(true);
+
+        await venmo.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).not.toBe("https://venmo.com/braintree");
+        expect(window.top.location.href).toBe("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.browser"
+        );
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.chrome-android-iframe-breakout"
+        );
+      });
+
+      it("breaks out of iframe when in iframe and using android chrome with mobileWebFallBack true", async () => {
+        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        jest.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+        inIframe.mockReturnValue(true);
+
+        testContext.client.request.mockResolvedValue({
+          data: {
+            createVenmoQRCodePaymentContext: {
+              venmoQRCodePaymentContext: {
+                status: "CREATED",
+                id: "context-id",
+                createdAt: "2021-01-20T03:25:37.522000Z",
+                expiresAt: "2021-01-20T03:30:37.522000Z",
+              },
+            },
+          },
+        });
+
+        const venmoWithFallback = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          mobileWebFallBack: true,
+        });
+
+        await flushPromises();
+
+        await venmoWithFallback.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).not.toBe("https://venmo.com/braintree");
+        expect(window.top.location.href).toBe("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.browser"
+        );
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.chrome-android-iframe-breakout"
+        );
       });
     });
 
@@ -4626,6 +4894,62 @@ describe("Venmo", () => {
       jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
 
       expect(instance._shouldIncludeReturnUrls()).toBe(false);
+    });
+
+    describe("non-default browser with deepLinkReturnUrl and redirect strategy", () => {
+      beforeEach(() => {
+        supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
+        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+      });
+
+      it("returns true when deepLinkReturnUrl is set and redirect strategy is enabled (iOS + mobileWebFallBack)", () => {
+        jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+        const instance = new Venmo({
+          client: testContext.client,
+          deepLinkReturnUrl: "myapp://return",
+          mobileWebFallBack: true,
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(true);
+      });
+
+      it("returns true when deepLinkReturnUrl is set and redirect strategy is enabled (iOS + useRedirectForIOS)", () => {
+        jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+        const instance = new Venmo({
+          client: testContext.client,
+          deepLinkReturnUrl: "myapp://return",
+          useRedirectForIOS: true,
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(true);
+      });
+
+      it("returns false when deepLinkReturnUrl is set but redirect strategy is disabled (iOS)", () => {
+        jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+        const instance = new Venmo({
+          client: testContext.client,
+          deepLinkReturnUrl: "myapp://return",
+          mobileWebFallBack: false,
+          useRedirectForIOS: false,
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(false);
+      });
+
+      it("returns false when deepLinkReturnUrl is set but not on iOS (Android excluded earlier)", () => {
+        jest.spyOn(browserDetection, "isIos").mockReturnValue(false);
+
+        const instance = new Venmo({
+          client: testContext.client,
+          deepLinkReturnUrl: "myapp://return",
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(false);
+      });
     });
   });
 

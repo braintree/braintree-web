@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 3.140.0 (2026-04-09)
+
+- Venmo
+  - Pass `venmoRiskCorrelationId` as a url parameter as `client-metadata-id`
+  - Fix misnamed `riskCorrelationId` variable in the Venmo createDesktop flow
+  - Fix Android Chrome in iframes to use breakout strategy instead of `window.open`
+  - Fix duplicate app-switch attempts when both hash-change and manual-return flows are enabled
+  - Fix return URL handling for non-default browsers on Android
+  - Fix `_handleWindowClosure` to only auto-cancel when `cancelOnReturnToBrowser` is `true`
+  - Fix tokenization result detection in same-origin iframes by reading hash/params from `window.top`
+  - Fix `getUrlParams` to prefer top window URL in same-origin iframe contexts
+  - Add polling de-duplication to prevent concurrent polling loops during tokenization
+
 ## 3.139.0 (2026-04-01)
 
 - PayPal Checkout v6

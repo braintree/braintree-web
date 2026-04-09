@@ -136,7 +136,7 @@ function Venmo(options) {
           config.environment === "production" ? "PRODUCTION" : "SANDBOX",
         profileId: self._profileId || config.payWithVenmo.merchantId,
         paymentMethodUsage: self._paymentMethodUsage,
-        venmoRiskCorrelationId: self._riskCorrelationId,
+        riskCorrelationId: self._riskCorrelationId,
         displayName: self._displayName,
         Promise: Promise,
         apiRequest: function (query, data) {
@@ -407,6 +407,17 @@ Venmo.prototype._handleDeepLinkAppSwitch = function (url) {
     } else {
       window.location.href = url;
     }
+  } else if (browserDetection.isAndroid() && !browserDetection.isWebview()) {
+    analytics.sendEvent(
+      this._createPromise,
+      "venmo.appswitch.start.android-browser-redirect"
+    );
+
+    if (inIframe()) {
+      this._handleIFrameBreakout(url);
+    } else {
+      window.location.href = url;
+    }
   } else {
     analytics.sendEvent(this._createPromise, "venmo.appswitch.start.webview");
     this._venmoWindow = window.open(url);
@@ -480,6 +491,18 @@ Venmo.prototype._handleBrowserAppSwitch = function (url) {
   ) {
     window.location.href = url;
   } else if (
+    inIframe() &&
+    browserDetection.isAndroid() &&
+    browserDetection.isChrome()
+  ) {
+    // Chrome Android in iframe cannot use window.open()
+    // due to popup blocking. Break out to parent page to enable app switch.
+    analytics.sendEvent(
+      this._createPromise,
+      "venmo.appswitch.start.chrome-android-iframe-breakout"
+    );
+    this._handleIFrameBreakout(url);
+  } else if (
     this._mobileWebFallBack &&
     browserDetection.isAndroid() &&
     browserDetection.isChrome()
@@ -546,6 +569,10 @@ Venmo.prototype.getUrl = function () {
         } else {
           params.resource_id = this._venmoPaymentContextId; // eslint-disable-line camelcase
         }
+      }
+
+      if (this._riskCorrelationId) {
+        params["client-metadata-id"] = this._riskCorrelationId;
       }
 
       if (this._shouldIncludeReturnUrls() || this._useAllowDesktopWebLogin) {
@@ -623,17 +650,38 @@ Venmo.prototype.hasTokenizationResult = function () {
 // when listening on a hashchange event
 Venmo.prototype._hasTokenizationResult = function (hash) {
   var params = getFragmentParameters(hash);
+  var hashFromTopUrl = {};
   var paramsFromUrl = urlParams.getUrlParams();
+  var targetWindow = window;
+
+  // If in same-origin iframe, also check top window hash (where redirect params are)
+  try {
+    if (window.top && window.top !== window && window.top.location) {
+      targetWindow = window.top;
+      hashFromTopUrl = getFragmentParameters(targetWindow.location.hash);
+    }
+    // eslint-disable-next-line no-unused-vars
+  } catch (_e) {
+    // Cross-origin iframe - silently ignore
+  }
 
   if (paramsFromUrl.resource_id) {
     this._venmoPaymentContextId = paramsFromUrl.resource_id;
   } else if (params.id) {
     this._venmoPaymentContextId = params.id;
+  } else if (hashFromTopUrl.id) {
+    this._venmoPaymentContextId = hashFromTopUrl.id;
   }
 
   return (
-    typeof (params.venmoSuccess || params.venmoError || params.venmoCancel) !==
-    "undefined"
+    typeof (
+      params.venmoSuccess ||
+      params.venmoError ||
+      params.venmoCancel ||
+      hashFromTopUrl.venmoSuccess ||
+      hashFromTopUrl.venmoError ||
+      hashFromTopUrl.venmoCancel
+    ) !== "undefined"
   );
 };
 
@@ -652,12 +700,14 @@ Venmo.prototype._shouldIncludeReturnUrls = function () {
     !browserDetection.isWebview() &&
     !browserDetection.isAndroid()
   ) {
-    return false;
+    return (
+      Boolean(this._deepLinkReturnUrl) && this._shouldUseRedirectStrategy()
+    );
   }
 
-  // When we do support non-default browsers, and a deep link
-  // return url is passed, we should always respect it and
-  // include the return urls so the venmo app can app switch back to it
+  // For all other cases (webviews, Android, default browsers), if a deep link
+  // return URL is provided, always include return URLs so the Venmo app can
+  // deep link back
   if (this._deepLinkReturnUrl) {
     return true;
   }
@@ -885,6 +935,9 @@ Venmo.prototype.cancelTokenization = function () {
     );
   }
 
+  // Clear polling flag
+  this._pollingInProgress = false;
+
   return Promise.all([
     this._cancelMobilePaymentContext(),
     this._cancelVenmoDesktopContext(),
@@ -1075,7 +1128,8 @@ Venmo.prototype._handleWindowClosure = function () {
   if (
     self._venmoWindow &&
     self._venmoWindow.closed &&
-    self._venmoPaymentContextStatus === "CREATED"
+    self._venmoPaymentContextStatus === "CREATED" &&
+    self._cancelOnReturnToBrowser === true
   ) {
     analytics.sendEventPlus(
       self._createPromise,
@@ -1259,23 +1313,19 @@ Venmo.prototype._pollForStatusChange = function () {
   return this._queryAndProcessStatus();
 };
 
-Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
+Venmo.prototype._startPolling = function () {
   var self = this;
 
-  analytics.sendEventPlus(
-    this._createPromise,
-    "venmo.tokenize.manual-return.start",
-    {
-      context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
-    }
-  );
+  // Prevent multiple concurrent polling loops
+  if (this._pollingInProgress) {
+    return this._tokenizePromise;
+  }
 
-  this._mobilePollingContextExpiresIn =
-    Date.now() + this._mobilePollingExpiresThreshold;
-  this._tokenizePromise = new ExtendedPromise();
+  this._pollingInProgress = true;
 
   this._pollForStatusChange()
     .then(function (payload) {
+      self._pollingInProgress = false;
       analytics.sendEventPlus(
         self._createPromise,
         "venmo.tokenize.manual-return.success",
@@ -1292,6 +1342,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
       });
     })
     .catch(function (err) {
+      self._pollingInProgress = false;
       analytics.sendEventPlus(
         self._createPromise,
         "venmo.tokenize.manual-return.failure",
@@ -1303,7 +1354,41 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
       self._tokenizePromise.reject(err);
     });
 
+  return this._tokenizePromise;
+};
+
+Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
+  var self = this;
+
+  // Set polling expiry before checking for tokenization result
+  // in case processHashChangeFlowResults triggers polling
+  this._mobilePollingContextExpiresIn =
+    Date.now() + this._mobilePollingExpiresThreshold;
+
+  if (this.hasTokenizationResult()) {
+    return this.processHashChangeFlowResults();
+  }
+
+  analytics.sendEventPlus(
+    this._createPromise,
+    "venmo.tokenize.manual-return.start",
+    {
+      context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+    }
+  );
+
+  this._tokenizePromise = new ExtendedPromise();
+
+  // Start polling immediately (uses _pollingInProgress flag to prevent duplicates)
+  this._startPolling();
+
   return this.getUrl().then(function (url) {
+    // Check again before app switch in case result appeared during getUrl()
+    // This prevents double app-switching if page already has tokenization result
+    if (self.hasTokenizationResult()) {
+      return self.processHashChangeFlowResults();
+    }
+
     self.appSwitch(url);
 
     return self._tokenizePromise;
@@ -1396,6 +1481,13 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
   };
 
   return this.getUrl().then(function (url) {
+    if (self.hasTokenizationResult()) {
+      // If result appeared during getUrl(), use completeFlow to ensure proper cleanup
+      // of listeners and _tokenizePromise
+      completeFlow();
+      return self._tokenizePromise;
+    }
+
     self.appSwitch(url);
 
     // Add a brief delay to ignore visibility change events that occur right before app switch
@@ -1568,9 +1660,15 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
 
   return new Promise(function (resolve, reject) {
     if (!self._shouldUseLegacyFlow) {
+      // Prevent multiple concurrent polling loops
+      if (!self._pollingInProgress) {
+        self._pollingInProgress = true;
+      }
+
       self
         ._pollForStatusChange()
         .then(function (payload) {
+          self._pollingInProgress = false;
           analytics.sendEventPlus(
             self._createPromise,
             "venmo.appswitch.handle.payment-context-status-query.success",
@@ -1594,6 +1692,7 @@ Venmo.prototype.processHashChangeFlowResults = function (hash) {
           });
         })
         .catch(function (err) {
+          self._pollingInProgress = false;
           if (
             err.code === errors.VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED.code
           ) {
@@ -1695,7 +1794,32 @@ Venmo.prototype._clearFragmentParameters = function () {
 };
 
 function getFragmentParameters(hash) {
-  var keyValuesArray = (hash || window.location.hash.substring(1)).split("&");
+  var targetHash = "";
+  var topHash = "";
+
+  // If explicit hash provided, use it
+  if (hash) {
+    targetHash = hash;
+  } else {
+    // No hash provided - prefer top window hash in same-origin iframes
+    targetHash = window.location.hash.substring(1);
+
+    try {
+      if (window.top && window.top !== window && window.top.location) {
+        // In same-origin iframe, prefer top window hash (where redirect params are)
+        topHash = window.top.location.hash.substring(1);
+
+        if (topHash) {
+          targetHash = topHash;
+        }
+      }
+      // eslint-disable-next-line no-unused-vars
+    } catch (_e) {
+      // Cross-origin iframe - use current window hash
+    }
+  }
+
+  var keyValuesArray = targetHash.split("&");
 
   var parsedParams = keyValuesArray.reduce(function (toReturn, keyValue) {
     var parts = keyValue.split("=");

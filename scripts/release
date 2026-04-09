@@ -8,7 +8,8 @@ MAGENTA="$(tput setaf 5)"
 CYAN="$(tput setaf 6)"
 RESET="$(tput sgr0)"
 YES="^(y|yes|yas)$"
-SOURCE_IGNORES="Jenkinsfile Drakefile Dockerfile .dockerignore btjsenv .github/PULL_REQUEST_TEMPLATE.md .github/CODEOWNERS"
+SOURCE_IGNORES="Jenkinsfile Drakefile Dockerfile .dockerignore btjsenv .github/"
+SOURCE_KEEP=".github/workflows/unit-tests.yml"
 
 dotenv() {
   if [ ! -f .env ]; then
@@ -236,6 +237,9 @@ release_source() {
   cd "$current_dir"
 
   git ls-files | egrep -v "$(join '|' $SOURCE_IGNORES)" | xargs "$CP_CMD" --parents -t "$BRAINTREE_JS_SOURCE_DEST"
+  for f in $SOURCE_KEEP; do
+    "$CP_CMD" --parents -t "$BRAINTREE_JS_SOURCE_DEST" "$f"
+  done
   echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
 
   exit 0
