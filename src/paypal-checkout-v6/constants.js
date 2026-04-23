@@ -93,6 +93,11 @@ var ANALYTICS_EVENTS = {
     ANALYTICS_PREFIX + ".find-eligible-methods.succeeded",
   FIND_ELIGIBLE_METHODS_FAILED:
     ANALYTICS_PREFIX + ".find-eligible-methods.failed",
+
+  // Messages
+  CREATE_MESSAGES_STARTED: ANALYTICS_PREFIX + ".create-messages.started",
+  CREATE_MESSAGES_SUCCEEDED: ANALYTICS_PREFIX + ".create-messages.succeeded",
+  CREATE_MESSAGES_FAILED: ANALYTICS_PREFIX + ".create-messages.failed",
 };
 
 module.exports = {

@@ -1079,6 +1079,7 @@ interface IPayPalCheckoutV6Instance {
     displayName?: string;
     userAuthenticationEmail?: string;
     presentationMode?: string;
+    shippingCallbackUrl?: string;
     onShippingAddressChange?: (
       data: IPayPalV6ShippingAddressChangeData
     ) => void | Promise<unknown>;
@@ -1089,12 +1090,61 @@ interface IPayPalCheckoutV6Instance {
     onCancel?: () => void;
     onError?: (err: IBraintreeError) => void;
   }) => IPayPalCheckoutV6Session;
+  createPayLaterSession: (options: {
+    amount: string;
+    currency: string;
+    intent?: "capture" | "authorize" | "order";
+    returnUrl?: string;
+    cancelUrl?: string;
+    lineItems?: Array<{
+      quantity: string;
+      unitAmount: string;
+      name: string;
+      kind: "debit" | "credit";
+      unitTaxAmount?: string;
+      description?: string;
+    }>;
+    shippingOptions?: Array<{
+      id: string;
+      label: string;
+      selected: boolean;
+      type: "SHIPPING" | "PICKUP";
+      amount: { currency: string; value: string };
+    }>;
+    amountBreakdown?: {
+      itemTotal?: string;
+      shipping?: string;
+      handling?: string;
+      taxTotal?: string;
+      insurance?: string;
+      shippingDiscount?: string;
+      discount?: string;
+    };
+    displayName?: string;
+    userAuthenticationEmail?: string;
+    presentationMode?: string;
+    shippingCallbackUrl?: string;
+    onShippingAddressChange?: (
+      data: IPayPalV6ShippingAddressChangeData
+    ) => void | Promise<unknown>;
+    onShippingOptionsChange?: (
+      data: IPayPalV6ShippingOptionsChangeData
+    ) => void | Promise<unknown>;
+    onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
+    onCancel?: () => void;
+    onComplete?: () => void;
+    onError?: (err: IBraintreeError) => void;
+  }) => IPayPalCheckoutV6Session;
   createBillingAgreementSession: (options: {
     billingAgreementDescription?: string;
     planType?: "RECURRING" | "SUBSCRIPTION" | "UNSCHEDULED" | "INSTALLMENTS";
     planMetadata?: IBillingAgreementPlanMetadata;
     amount?: string;
     currency?: string;
+    locale?: string;
+    landingPageType?: "login" | "billing";
+    enableShippingAddress?: boolean;
+    shippingAddressEditable?: boolean;
     offerCredit?: boolean;
     shippingAddressOverride?: {
       recipientName?: string;
@@ -1107,6 +1157,7 @@ interface IPayPalCheckoutV6Instance {
     };
     userAction?: "CONTINUE" | "COMMIT" | "SETUP_NOW";
     displayName?: string;
+    riskCorrelationId?: string;
     presentationMode?: string;
     onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
     onCancel?: () => void;
@@ -1149,6 +1200,7 @@ interface IPayPalCheckoutV6Instance {
     displayName?: string;
     userAuthenticationEmail?: string;
     presentationMode?: string;
+    shippingCallbackUrl?: string;
     onShippingAddressChange?: (
       data: IPayPalV6ShippingAddressChangeData
     ) => void | Promise<unknown>;
@@ -1212,6 +1264,13 @@ interface IPayPalCheckoutV6Instance {
       countryCode?: string;
       canBeVaulted?: boolean;
     } | null;
+  }>;
+  createMessages: (options?: {
+    buyerCountry?: string;
+    currencyCode?: string;
+  }) => Promise<{
+    fetchContent: (options: unknown) => Promise<unknown>;
+    [key: string]: unknown;
   }>;
   teardown: () => Promise<void>;
 }

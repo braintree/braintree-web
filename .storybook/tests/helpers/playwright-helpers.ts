@@ -1,4 +1,4 @@
-import { test as base } from "playwright/test";
+import { test as base } from "@playwright/test";
 
 import {
   createTestServer,
@@ -6,9 +6,11 @@ import {
   type TestServerResult,
 } from "./test-server";
 import { HostedFieldsPage } from "./hosted-fields-page";
+import { PayPalCheckoutPage } from "./paypal-checkout-page";
 
 export const test = base.extend<{
   hostedFieldsPage: HostedFieldsPage;
+  paypalCheckoutPage: PayPalCheckoutPage;
   testServerOptions: TestServerOptions;
   testServer: TestServerResult;
   getTestUrl: (_urlOpts: {
@@ -22,6 +24,7 @@ export const test = base.extend<{
     cardholderName?: boolean;
     applePay?: boolean;
     useHttps?: boolean;
+    storyUrl?: string;
   }) => string;
 }>({
   testServerOptions: [
@@ -53,6 +56,7 @@ export const test = base.extend<{
       cardholderName?: boolean;
       applePay?: boolean;
       useHttps?: boolean;
+      storyUrl?: string;
     }) => {
       const protocol = urlOpts.useHttps ? "https" : "http";
       // default path is the standard url
@@ -82,6 +86,8 @@ export const test = base.extend<{
         path = `/iframe.html?globals=&args=&id=braintree-hosted-fields--hosted-fields-csp-test&viewMode=story&useMinified=${useMinified}`;
       } else if (urlOpts.applePay) {
         path = "/iframe.html?id=braintree-apple-pay--apple-pay&viewMode=story";
+      } else if (urlOpts.storyUrl) {
+        path = urlOpts.storyUrl;
       }
 
       let url = `${protocol}://localhost:${testServer.port}${path}`;
@@ -99,5 +105,11 @@ export const test = base.extend<{
 
   hostedFieldsPage: async ({ page }, use) => {
     await use(new HostedFieldsPage(page));
+  },
+
+  paypalCheckoutPage: async ({ page }, use) => {
+    const paypalPage = new PayPalCheckoutPage(page);
+    await use(paypalPage);
+    await paypalPage.closePopup();
   },
 });

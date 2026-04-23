@@ -15,6 +15,8 @@ module.exports = [
       "src/venmo/internal",
       "src/venmo/external",
       "**/coverage/",
+      "test-results",
+      "playwright-report",
     ],
   },
   ...eslintBraintreeClientConfig.default,

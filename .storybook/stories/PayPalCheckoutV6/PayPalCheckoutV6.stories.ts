@@ -11,6 +11,7 @@ import { getBraintreeSDK } from "../../utils/braintree-sdk";
 import {
   FUNDING_SOURCE_CONFIG,
   createPayPalButton,
+  showSimpleError,
   showDetailedError,
 } from "./common";
 import "../../css/main.css";
@@ -106,12 +107,11 @@ const setupOneTimePayment = async (
   ) as HTMLElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 
@@ -141,14 +141,11 @@ const setupOneTimePayment = async (
 
     // Handle unexpected or unsupported funding source values gracefully
     if (!fundingSourceConfig) {
-      // eslint-disable-next-line require-atomic-updates
-      resultDiv.className =
-        "shared-result shared-result--visible shared-result--error";
-      // eslint-disable-next-line require-atomic-updates
-      resultDiv.innerHTML = `
-      <strong>Invalid Funding Source</strong><br>
-      <small>The funding source "${selectedFundingSource}" is not supported.</small>
-    `;
+      showSimpleError(
+        resultDiv,
+        "Invalid Funding Source",
+        `The funding source "${selectedFundingSource}" is not supported.`
+      );
       return;
     }
 
@@ -158,14 +155,11 @@ const setupOneTimePayment = async (
     const isEligible = eligibilityResult[fundingSource];
 
     if (!isEligible) {
-      // eslint-disable-next-line require-atomic-updates
-      resultDiv.className =
-        "shared-result shared-result--visible shared-result--error";
-      // eslint-disable-next-line require-atomic-updates
-      resultDiv.innerHTML = `
-      <strong>${selectedFundingSource} Not Available</strong><br>
-      <small>${selectedFundingSource} is not eligible for this transaction.</small>
-    `;
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Not Available`,
+        `${selectedFundingSource} is not eligible for this transaction.`
+      );
       return;
     }
 
@@ -443,12 +437,11 @@ const setupRecurringBilling = async (container: HTMLElement): Promise<void> => {
   ) as HTMLInputElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 
@@ -841,12 +834,11 @@ const setupLineItemsPayment = async (container: HTMLElement): Promise<void> => {
   ) as HTMLElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 
@@ -1253,12 +1245,11 @@ const setupCheckoutWithVault = async (
   ) as HTMLInputElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 

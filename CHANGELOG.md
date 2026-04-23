@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 3.141.0 (2026-04-23)
+
+- Venmo
+  - Fix `SecurityError` when initializing Venmo in a cross-origin iframe
+  - Fix `cancelOnReturnToBrowser` being incorrectly applied on Android, where `venmoWindow.closed` returns a false positive during app-switch
+- PayPal Checkout v6
+  - Fix: Remove incorrect default `planType: 'UNSCHEDULED'` value in billing agreement requests. `planType` is now only included when explicitly provided by the merchant, matching V5 behavior
+  - Fix: Remove incorrect default `planType: 'UNSCHEDULED'` value in billing agreement requests. `planType` is now only included when explicitly provided by the merchant, matching V5 behavior
+  - Add V5 parity options to `createBillingAgreementSession`: `locale`, `landingPageType`, `enableShippingAddress`, `shippingAddressEditable`, and `riskCorrelationId`
+  - Add `createMessages` method for displaying PayPal promotional messaging using the `<paypal-message>` web component
+- 3D Secure
+  - Add `applySmartAuthentication` option to `verifyCard`
+
 ## 3.140.0 (2026-04-09)
 
 - Venmo
@@ -18,6 +31,7 @@
 - PayPal Checkout v6
   - Add `commit` parameter to `createOneTimePaymentSession` and `createCheckoutWithVaultSession` to control button text and payment flow (defaults to `true` for "Pay Now" behavior)
   - Add `onShippingOptionsChange` callback support for handling shipping option changes in checkout flow
+  - Add `shippingCallbackUrl` parameter support for server-side shipping callbacks. When provided, PayPal will send shipping address updates to the specified URL instead of using client-side callbacks. Cannot be used with `onShippingAddressChange` or `onShippingOptionsChange`
   - Add `createPayLaterSession` method to enable PayPal Pay Later payments
   - Add PayPal Credit billing agreement session support: when `offerCredit` is set in `createBillingAgreementSession`, the SDK now routes to PayPal's credit-specific billing agreement session method
   - Fix bug where the returnUrl and cancelUrl were not being correctly passed through in the createPayment() function

@@ -3,19 +3,19 @@
 var querystring = require("./querystring");
 
 function getUrlParams() {
-  var targetWindow = window;
+  var targetUrl = window.location.href;
 
   // If in same-origin iframe, prefer top window (where redirect params are)
   try {
     if (window.top && window.top !== window && window.top.location) {
-      targetWindow = window.top;
+      targetUrl = window.top.location.href;
     }
     // eslint-disable-next-line no-unused-vars
   } catch (_e) {
     // Cross-origin iframe - fall back to current window
   }
 
-  return querystring.parse(targetWindow.location.href);
+  return querystring.parse(targetUrl);
 }
 
 module.exports = {

@@ -1,16 +1,5 @@
-import { $, expect } from "@wdio/globals";
-import { getWorkflowUrl } from "../helpers/url-utils";
-import {
-  getPayPalBuyerCredentials,
-  switchToPayPalPopup,
-  switchToOriginalWindow,
-  completePayPalLogin,
-  approvePayPalPayment,
-  waitForPopupToClose,
-  cancelPayPalPayment,
-  closePayPalPopup,
-  completePayPalCheckoutFlow,
-} from "../helpers/paypal/checkout-helpers";
+import { expect } from "@playwright/test";
+import { test } from "../helpers/playwright-helpers";
 import { getResultContainerState } from "./helpers";
 import { TEST_TIMEOUTS, STORY_URLS } from "./constants";
 
@@ -75,46 +64,42 @@ const EXPECTED_LINE_ITEMS: LineItem[] = [
   },
 ];
 
-describe("PayPal Checkout V6", function () {
-  beforeEach(async function () {
-    await browser.reloadSessionOnRetry(this.currentTest);
+test.describe("PayPal Checkout V6", function () {
+  test.describe("Button Rendering", function () {
+    test("should render PayPal button correctly", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.oneTimePayment }), {
+        waitUntil: "domcontentloaded",
+      });
 
-    await browser.setTimeout({
-      pageLoad: TEST_TIMEOUTS.pageLoad,
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+
+      const paypalButton = page.locator(".paypal-button");
+      await expect(paypalButton).toBeVisible();
+      await expect(paypalButton).toBeEnabled();
     });
   });
 
-  describe("Button Rendering", function () {
-    it("should render PayPal button correctly", async function () {
-      await browser.url(getWorkflowUrl(STORY_URLS.oneTimePayment));
+  test.describe("Complete Checkout", function () {
+    test("should complete PayPal payment successfully", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.oneTimePayment }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completePayPalLogin();
+      await paypalCheckoutPage.approvePayPalPayment();
+      await paypalCheckoutPage.waitForPopupToClose();
 
-      const paypalButton = $(".paypal-button");
-      const isDisplayed = await paypalButton.isDisplayed();
-      const isClickable = await paypalButton.isClickable();
-
-      expect(isDisplayed).toBe(true);
-      expect(isClickable).toBe(true);
-    });
-  });
-
-  describe("Complete Checkout", function () {
-    it("should complete PayPal payment successfully", async function () {
-      getPayPalBuyerCredentials();
-
-      await browser.url(getWorkflowUrl(STORY_URLS.oneTimePayment));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
-
-      const originalWindow = await switchToPayPalPopup();
-
-      await completePayPalLogin();
-      await approvePayPalPayment();
-      await waitForPopupToClose();
-      await switchToOriginalWindow(originalWindow);
-
-      const paypalResult = await browser.getPayPalResult();
+      const paypalResult = await paypalCheckoutPage.getPayPalResult();
 
       expect(paypalResult.success).toBe(true);
       expect(paypalResult.text).toContain("PayPal payment authorized!");
@@ -123,43 +108,46 @@ describe("PayPal Checkout V6", function () {
     });
   });
 
-  describe("Cancel Flow", function () {
-    it("should handle customer cancellation during PayPal authentication", async function () {
-      getPayPalBuyerCredentials();
+  test.describe("Cancel Flow", function () {
+    test("should handle customer cancellation during PayPal authentication", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.oneTimePayment }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.url(getWorkflowUrl(STORY_URLS.oneTimePayment));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completePayPalLogin();
+      await paypalCheckoutPage.cancelPayPalPayment();
 
-      const originalWindow = await switchToPayPalPopup();
-
-      await completePayPalLogin();
-      await cancelPayPalPayment();
-      await switchToOriginalWindow(originalWindow);
-
-      const paypalResult = await browser.getPayPalResult();
+      const paypalResult = await paypalCheckoutPage.getPayPalResult();
 
       expect(paypalResult.cancelled).toBe(true);
       expect(paypalResult.text).toContain("Payment Cancelled");
     });
   });
 
-  describe("Popup Handling", function () {
-    it("should handle popup being closed manually", async function () {
-      getPayPalBuyerCredentials();
+  test.describe("Popup Handling", function () {
+    test("should handle popup being closed manually", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.oneTimePayment }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.url(getWorkflowUrl(STORY_URLS.oneTimePayment));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      const popup = await paypalCheckoutPage.waitForPopup();
 
-      const originalWindow = await switchToPayPalPopup();
+      await popup.close();
 
-      await browser.closeWindow();
-      await browser.switchToWindow(originalWindow);
+      await page.waitForTimeout(TEST_TIMEOUTS.callbackDelay);
 
-      await browser.pause(TEST_TIMEOUTS.callbackDelay);
-
-      const { isVisible, resultText } = await getResultContainerState();
+      const { isVisible, resultText } = await getResultContainerState(page);
 
       if (isVisible) {
         const containsCancel =
@@ -170,26 +158,32 @@ describe("PayPal Checkout V6", function () {
     });
   });
 
-  describe("Line Items and Shipping - SDK Payload Verification", function () {
-    it("should send line items to create_payment_resource API", async function () {
-      await browser.url(getWorkflowUrl(STORY_URLS.lineItemsAndShipping));
-      await browser.setupInterceptor();
-      await browser.waitForPayPalButtonReady();
+  test.describe("Line Items and Shipping - SDK Payload Verification", function () {
+    test("should send line items to create_payment_resource API", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      const captured = await paypalCheckoutPage.setupNetworkCapture();
 
-      const originalWindowHandle = await browser.getWindowHandle();
+      await page.goto(
+        getTestUrl({ storyUrl: STORY_URLS.lineItemsAndShipping }),
+        { waitUntil: "domcontentloaded" }
+      );
 
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.clickPayPalButton();
 
-      await browser.pause(TEST_TIMEOUTS.callbackDelay);
+      await page.waitForTimeout(TEST_TIMEOUTS.callbackDelay);
 
-      const requests = await browser.getRequests();
-      const createPaymentRequest = requests.find((r) =>
-        r.url.includes("create_payment_resource")
+      const createPaymentRequest = captured.findByUrl(
+        "create_payment_resource"
       );
 
       expect(createPaymentRequest).toBeDefined();
 
-      const payload = createPaymentRequest?.body as CreatePaymentPayload;
+      const payload =
+        createPaymentRequest?.body as unknown as CreatePaymentPayload;
 
       expect(payload.lineItems).toBeDefined();
       expect(payload.lineItems?.length).toBe(EXPECTED_LINE_ITEMS.length);
@@ -209,110 +203,127 @@ describe("PayPal Checkout V6", function () {
       expect(discountItem).toBeDefined();
       expect(discountItem?.name).toBe("Early Bird Discount");
       expect(discountItem?.unitAmount).toBe("10.00");
-
-      await closePayPalPopup(originalWindowHandle);
     });
 
-    it("should send shipping options to create_payment_resource API", async function () {
-      await browser.url(getWorkflowUrl(STORY_URLS.lineItemsAndShipping));
-      await browser.setupInterceptor();
-      await browser.waitForPayPalButtonReady();
+    test("should send shipping options to create_payment_resource API", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      const captured = await paypalCheckoutPage.setupNetworkCapture();
 
-      const originalWindowHandle = await browser.getWindowHandle();
+      await page.goto(
+        getTestUrl({ storyUrl: STORY_URLS.lineItemsAndShipping }),
+        { waitUntil: "domcontentloaded" }
+      );
 
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.clickPayPalButton();
 
-      await browser.pause(TEST_TIMEOUTS.callbackDelay);
+      await page.waitForTimeout(TEST_TIMEOUTS.callbackDelay);
 
-      const requests = await browser.getRequests();
-      const createPaymentRequest = requests.find((r) =>
-        r.url.includes("create_payment_resource")
+      const createPaymentRequest = captured.findByUrl(
+        "create_payment_resource"
       );
 
       expect(createPaymentRequest).toBeDefined();
 
-      const payload = createPaymentRequest?.body as CreatePaymentPayload;
+      const payload =
+        createPaymentRequest?.body as unknown as CreatePaymentPayload;
 
       expect(payload.shippingOptions).toBeDefined();
       expect(Array.isArray(payload.shippingOptions)).toBe(true);
       expect(payload.shippingOptions?.length).toBeGreaterThan(0);
-
-      await closePayPalPopup(originalWindowHandle);
     });
 
-    it("should send amount breakdown to create_payment_resource API", async function () {
-      await browser.url(getWorkflowUrl(STORY_URLS.lineItemsAndShipping));
-      await browser.setupInterceptor();
-      await browser.waitForPayPalButtonReady();
+    test("should send amount breakdown to create_payment_resource API", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      const captured = await paypalCheckoutPage.setupNetworkCapture();
 
-      const originalWindowHandle = await browser.getWindowHandle();
+      await page.goto(
+        getTestUrl({ storyUrl: STORY_URLS.lineItemsAndShipping }),
+        { waitUntil: "domcontentloaded" }
+      );
 
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.clickPayPalButton();
 
-      await browser.pause(TEST_TIMEOUTS.callbackDelay);
+      await page.waitForTimeout(TEST_TIMEOUTS.callbackDelay);
 
-      const requests = await browser.getRequests();
-      const createPaymentRequest = requests.find((r) =>
-        r.url.includes("create_payment_resource")
+      const createPaymentRequest = captured.findByUrl(
+        "create_payment_resource"
       );
 
       expect(createPaymentRequest).toBeDefined();
 
-      const payload = createPaymentRequest?.body as CreatePaymentPayload;
+      const payload =
+        createPaymentRequest?.body as unknown as CreatePaymentPayload;
 
       expect(payload.amountBreakdown).toBeDefined();
       expect(payload.amountBreakdown?.itemTotal).toBe("80.00");
       expect(payload.amountBreakdown?.shipping).toBe("5.00");
       expect(payload.amountBreakdown?.taxTotal).toBe("8.00");
       expect(payload.amountBreakdown?.discount).toBe("10.00");
-
-      await closePayPalPopup(originalWindowHandle);
     });
 
-    it("should send correct total amount matching breakdown", async function () {
-      await browser.url(getWorkflowUrl(STORY_URLS.lineItemsAndShipping));
-      await browser.setupInterceptor();
-      await browser.waitForPayPalButtonReady();
+    test("should send correct total amount matching breakdown", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      const captured = await paypalCheckoutPage.setupNetworkCapture();
 
-      const originalWindowHandle = await browser.getWindowHandle();
+      await page.goto(
+        getTestUrl({ storyUrl: STORY_URLS.lineItemsAndShipping }),
+        { waitUntil: "domcontentloaded" }
+      );
 
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.clickPayPalButton();
 
-      await browser.pause(TEST_TIMEOUTS.callbackDelay);
+      await page.waitForTimeout(TEST_TIMEOUTS.callbackDelay);
 
-      const requests = await browser.getRequests();
-      const createPaymentRequest = requests.find((r) =>
-        r.url.includes("create_payment_resource")
+      const createPaymentRequest = captured.findByUrl(
+        "create_payment_resource"
       );
 
       expect(createPaymentRequest).toBeDefined();
 
-      const payload = createPaymentRequest?.body as CreatePaymentPayload;
+      const payload =
+        createPaymentRequest?.body as unknown as CreatePaymentPayload;
 
       expect(payload.amount).toBe("83.00");
       expect(payload.currencyIsoCode).toBe("USD");
-
-      await closePayPalPopup(originalWindowHandle);
     });
 
-    it("should complete payment with line items and receive nonce", async function () {
-      await browser.url(getWorkflowUrl(STORY_URLS.lineItemsAndShipping));
-      await browser.setupInterceptor();
-      await browser.waitForPayPalButtonReady();
+    test("should complete payment with line items and receive nonce", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      const captured = await paypalCheckoutPage.setupNetworkCapture();
 
-      await browser.clickPayPalButton();
+      await page.goto(
+        getTestUrl({ storyUrl: STORY_URLS.lineItemsAndShipping }),
+        { waitUntil: "domcontentloaded" }
+      );
 
-      await browser.pause(TEST_TIMEOUTS.callbackDelay);
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.clickPayPalButton();
 
-      const requests = await browser.getRequests();
-      const createPaymentRequest = requests.find((r) =>
-        r.url.includes("create_payment_resource")
+      await page.waitForTimeout(TEST_TIMEOUTS.callbackDelay);
+
+      const createPaymentRequest = captured.findByUrl(
+        "create_payment_resource"
       );
       expect(createPaymentRequest).toBeDefined();
 
-      await completePayPalCheckoutFlow();
+      await paypalCheckoutPage.completePayPalCheckoutFlow();
 
-      const paypalResult = await browser.getPayPalResult();
+      const paypalResult = await paypalCheckoutPage.getPayPalResult();
 
       expect(paypalResult.success).toBe(true);
       expect(paypalResult.text).toContain("PayPal payment authorized!");

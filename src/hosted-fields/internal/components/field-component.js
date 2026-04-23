@@ -12,6 +12,14 @@ var directions = constants.navigationDirections;
 module.exports = {
   FieldComponent: function FieldComponent(options) {
     var type = options.type;
+
+    if (
+      !Object.prototype.hasOwnProperty.call(InputComponents, type) ||
+      typeof InputComponents[type] !== "function"
+    ) {
+      throw new Error("Invalid field type: " + type);
+    }
+
     var attribution = assign({}, allowedFields[type]);
     var customLabel = options.cardForm.configuration.fields[type].internalLabel;
     var componentId = options.componentId;

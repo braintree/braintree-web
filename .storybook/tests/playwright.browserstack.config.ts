@@ -64,10 +64,7 @@ module.exports = defineConfig({
   projects: browsers.map((browser: BrowserSpecification) => {
     return {
       name: `playwright-${browser.browserName}`,
-      testIgnore:
-        browser.browserName === "Safari"
-          ? ["**/paypal-checkout-v6/**"]
-          : ["**/apple-pay/**", "**/paypal-checkout-v6/**"],
+      testIgnore: browser.browserName === "Safari" ? [] : ["**/apple-pay/**"],
       use: {
         build: build,
         project: projectName,

@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Locator, Page } from "playwright/test";
+import { Locator, Page } from "@playwright/test";
 import {
   SUCCESS_MESSAGES,
   DEFAULT_HOSTED_FIELDS_VALUES,

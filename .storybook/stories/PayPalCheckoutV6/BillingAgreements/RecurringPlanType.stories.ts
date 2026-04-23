@@ -13,10 +13,19 @@ import {
   showSimpleError,
   showDetailedError,
 } from "../common";
+import {
+  billingAgreementArgTypes,
+  applyBillingAgreementOptions,
+  type BillingAgreementArgs,
+} from "./common";
 import "../../../css/main.css";
 import "../../PayPalCheckout/payPalCheckout.css";
 
-const meta: Meta = {
+interface RecurringPlanTypeArgs extends BillingAgreementArgs {
+  fundingSource?: string;
+}
+
+const meta: Meta<RecurringPlanTypeArgs> = {
   title: "Braintree/PayPal Checkout V6/Billing Agreements",
   parameters: {
     layout: "centered",
@@ -30,6 +39,15 @@ Examples: Monthly gym membership, weekly subscription box, annual software licen
         `,
       },
     },
+  },
+  argTypes: billingAgreementArgTypes,
+  args: {
+    locale: "en_US",
+    landingPageType: "none",
+    enableShippingAddress: false,
+    shippingAddressEditable: true,
+    displayName: "Recurring Subscription Service",
+    riskCorrelationId: "",
   },
 };
 
@@ -59,7 +77,7 @@ const createRecurringForm = (): HTMLElement => {
 
 const setupRecurringFlow = async (
   container: HTMLElement,
-  args?: { fundingSource?: string }
+  args: RecurringPlanTypeArgs
 ): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
@@ -143,7 +161,7 @@ const setupRecurringFlow = async (
     const isPayPalCredit = fundingSource === "credit";
 
     // Session configuration shared between both funding sources
-    const sessionConfig = {
+    const sessionOptions = {
       billingAgreementDescription: isPayPalCredit
         ? "Monthly recurring subscription with PayPal Credit"
         : "Monthly recurring subscription",
@@ -206,14 +224,17 @@ const setupRecurringFlow = async (
       },
     };
 
+    // Apply additional billing agreement options from Storybook controls
+    applyBillingAgreementOptions(sessionOptions, args);
+
     // Add offerCredit for PayPal Credit
     if (isPayPalCredit) {
-      Object.assign(sessionConfig, { offerCredit: true });
+      Object.assign(sessionOptions, { offerCredit: true });
     }
 
     // Create billing agreement session
     const session =
-      paypalCheckoutV6Instance.createBillingAgreementSession(sessionConfig);
+      paypalCheckoutV6Instance.createBillingAgreementSession(sessionOptions);
 
     // Render PayPal button using web components
     const paypalButtonContainer = container.querySelector(
@@ -238,7 +259,8 @@ const setupRecurringFlow = async (
 
 export const RecurringPlanType: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container, args) => {
+    async (container, storyArgs) => {
+      const args = storyArgs as unknown as RecurringPlanTypeArgs;
       const formContainer = createRecurringForm();
       container.appendChild(formContainer);
       await setupRecurringFlow(formContainer, args);

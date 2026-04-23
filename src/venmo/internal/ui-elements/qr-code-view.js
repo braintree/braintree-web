@@ -98,7 +98,20 @@ var QRCodeView = /** @class */ (function (_super) {
     );
   };
   QRCodeView.prototype.isNotValidDomain = function (url) {
-    return url.indexOf("https://venmo.com") !== 0;
+    var protocol, hostname;
+
+    try {
+      var parsed = new URL(url);
+      protocol = parsed.protocol;
+      hostname = parsed.hostname;
+    } catch (e) {
+      var protocolMatch = url.match(/^(https?):/);
+      var hostnameMatch = url.match(/^https?:\/\/([^/?#]+)/);
+      protocol = protocolMatch ? protocolMatch[1] + ":" : "";
+      hostname = hostnameMatch ? hostnameMatch[1] : "";
+    }
+
+    return protocol !== "https:" || hostname !== "venmo.com";
   };
   QRCodeView.prototype.constructElement = function () {
     var container = document.createElement("div");

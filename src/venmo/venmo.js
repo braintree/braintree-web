@@ -52,8 +52,8 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
 function Venmo(options) {
   var self = this;
 
-  this._allowDesktopWebLogin = options.allowDesktopWebLogin || false;
-  this._mobileWebFallBack = options.mobileWebFallBack || false;
+  this._allowDesktopWebLogin = Boolean(options.allowDesktopWebLogin);
+  this._mobileWebFallBack = Boolean(options.mobileWebFallBack);
   this._createPromise = options.createPromise;
   this._allowNewBrowserTab = options.allowNewBrowserTab !== false;
   this._allowWebviews = options.allowWebviews !== false;
@@ -78,7 +78,8 @@ function Venmo(options) {
     options.collectCustomerBillingAddress || false;
   this._collectCustomerShippingAddress =
     options.collectCustomerShippingAddress || false;
-  this._cancelOnReturnToBrowser = options.cancelOnReturnToBrowser === true;
+  this._cancelOnReturnToBrowser =
+    options.cancelOnReturnToBrowser === true && !browserDetection.isAndroid();
   this._isFinalAmount = options.isFinalAmount || false;
   this._lineItems = options.lineItems;
   this._subTotalAmount = options.subTotalAmount;

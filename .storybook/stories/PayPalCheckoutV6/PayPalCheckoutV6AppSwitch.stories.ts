@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getClientToken } from "../../utils/sdk-config";
 import { getBraintreeSDK } from "../../utils/braintree-sdk";
+import { showSimpleError, showDetailedError } from "./common";
 import "../../css/main.css";
 import "../PayPalCheckout/payPalCheckout.css";
 
@@ -101,12 +102,11 @@ const setupAppSwitchPayment = async (
   ) as HTMLInputElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 
@@ -169,11 +169,7 @@ const setupAppSwitchPayment = async (
         },
 
         onError: function (err) {
-          resultDiv.className =
-            "shared-result shared-result--visible shared-result--error";
-          resultDiv.innerHTML = `
-            <strong>PayPal Error:</strong> ${err.message || "An error occurred"}
-          `;
+          showDetailedError(resultDiv, "PayPal Error", err);
         },
       });
 
@@ -190,11 +186,11 @@ const setupAppSwitchPayment = async (
 
         // Resume the payment session
         session.resume().catch((error) => {
-          resultDiv.className =
-            "shared-result shared-result--visible shared-result--error";
-          resultDiv.innerHTML = `
-            <strong>Resume Error:</strong> ${error.message || "An error occurred while resuming the session"}
-          `;
+          showSimpleError(
+            resultDiv,
+            "Resume Error",
+            error.message || "An error occurred while resuming the session"
+          );
         });
       } else {
         // Initial flow - render a PayPal button
@@ -268,11 +264,7 @@ const setupAppSwitchPayment = async (
       }
     })
     .catch((error) => {
-      resultDiv.className =
-        "shared-result shared-result--visible shared-result--error";
-      resultDiv.innerHTML = `
-        <strong>Initialization Error:</strong> ${error.message}
-      `;
+      showSimpleError(resultDiv, "Initialization Error", error.message);
     });
 };
 

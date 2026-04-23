@@ -13,11 +13,29 @@ import {
   showSimpleError,
   showDetailedError,
 } from "../common";
+import {
+  billingAgreementArgTypes,
+  applyBillingAgreementOptions,
+  type BillingAgreementArgs,
+} from "./common";
 import "../../../css/main.css";
 import "../../PayPalCheckout/payPalCheckout.css";
 
-const meta: Meta = {
+interface SubscriptionPlanTypeArgs extends BillingAgreementArgs {
+  fundingSource?: string;
+}
+
+const meta: Meta<SubscriptionPlanTypeArgs> = {
   title: "Braintree/PayPal Checkout V6/Billing Agreements",
+  argTypes: billingAgreementArgTypes,
+  args: {
+    locale: "en_US",
+    landingPageType: "none",
+    enableShippingAddress: false,
+    shippingAddressEditable: true,
+    displayName: "Premium Subscription Service",
+    riskCorrelationId: "",
+  },
   parameters: {
     layout: "centered",
     docs: {
@@ -60,7 +78,7 @@ const createSubscriptionForm = (): HTMLElement => {
 
 const setupSubscriptionFlow = async (
   container: HTMLElement,
-  args?: { fundingSource?: string }
+  args: SubscriptionPlanTypeArgs
 ): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
@@ -145,7 +163,7 @@ const setupSubscriptionFlow = async (
 
     const regularStartDate = new Date(Date.now() + 8 * 86400000); // 8 days from now (after trial)
 
-    const sessionConfig = {
+    const sessionOptions = {
       billingAgreementDescription: isPayPalCredit
         ? "Subscription with 7-day free trial (PayPal Credit)"
         : "Subscription with 7-day free trial",
@@ -180,7 +198,7 @@ const setupSubscriptionFlow = async (
           },
         ],
         currencyIsoCode: "USD",
-        name: "Premium Subscription",
+        name: args.displayName || "Premium Subscription Service",
         productDescription: "Premium subscription with trial period",
         productQuantity: "1.0",
         productPrice: "19.99",
@@ -220,14 +238,17 @@ const setupSubscriptionFlow = async (
       },
     };
 
+    // Apply additional billing agreement options from Storybook controls
+    applyBillingAgreementOptions(sessionOptions, args);
+
     // Add offerCredit for PayPal Credit
     if (isPayPalCredit) {
-      Object.assign(sessionConfig, { offerCredit: true });
+      Object.assign(sessionOptions, { offerCredit: true });
     }
 
     // Create billing agreement session
     const session =
-      paypalCheckoutV6Instance.createBillingAgreementSession(sessionConfig);
+      paypalCheckoutV6Instance.createBillingAgreementSession(sessionOptions);
 
     // Render PayPal button using web components
     const paypalButtonContainer = container.querySelector(
@@ -252,7 +273,8 @@ const setupSubscriptionFlow = async (
 
 export const SubscriptionPlanType: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container, args) => {
+    async (container, storyArgs) => {
+      const args = storyArgs as unknown as SubscriptionPlanTypeArgs;
       const formContainer = createSubscriptionForm();
       container.appendChild(formContainer);
       await setupSubscriptionFlow(formContainer, args);

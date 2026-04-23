@@ -994,6 +994,8 @@ describe("Venmo", () => {
   });
 
   it("shows the right error message in case of a validation error during Payment Context creation", async () => {
+    expect.assertions(2);
+
     const error = {
       details: {
         originalError: [
@@ -1014,7 +1016,7 @@ describe("Venmo", () => {
       paymentMethodUsage: "single_use",
     });
 
-    venmo.getUrl().catch((err) => {
+    await venmo.getUrl().catch((err) => {
       expect(err.message).toBe("Amount must be positive");
       expect(err.code).toBe("VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED");
     });
@@ -4950,6 +4952,58 @@ describe("Venmo", () => {
 
         expect(instance._shouldIncludeReturnUrls()).toBe(false);
       });
+    });
+  });
+
+  describe("cancelOnReturnToBrowser Android override", () => {
+    beforeEach(() => {
+      testContext.client.request.mockResolvedValue({
+        data: {
+          createVenmoPaymentContext: {
+            venmoPaymentContext: {
+              status: "CREATED",
+              id: "context-id",
+              createdAt: "2021-01-20T03:25:37.522000Z",
+              expiresAt: "2021-01-20T03:30:37.522000Z",
+            },
+          },
+        },
+      });
+    });
+
+    it("forces _cancelOnReturnToBrowser to false on Android even when merchant sets it to true", () => {
+      jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+
+      var instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+        cancelOnReturnToBrowser: true,
+      });
+
+      expect(instance._cancelOnReturnToBrowser).toBe(false);
+    });
+
+    it("preserves cancelOnReturnToBrowser on non-Android platforms", () => {
+      jest.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+
+      var instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+        cancelOnReturnToBrowser: true,
+      });
+
+      expect(instance._cancelOnReturnToBrowser).toBe(true);
+    });
+
+    it("keeps _cancelOnReturnToBrowser false on Android when merchant does not set the option", () => {
+      jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+
+      var instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+      });
+
+      expect(instance._cancelOnReturnToBrowser).toBe(false);
     });
   });
 

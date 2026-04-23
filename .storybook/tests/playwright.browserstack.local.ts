@@ -25,26 +25,25 @@ module.exports = defineConfig({
   projects: [
     {
       name: "chrome",
-      testIgnore: ["**/paypal-checkout-v6/**", "**/apple-pay/**"],
+      testIgnore: ["**/apple-pay/**"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "firefox",
-      testIgnore: ["**/paypal-checkout-v6/**", "**/apple-pay/**"],
+      testIgnore: ["**/apple-pay/**"],
       use: {
         ...devices["Desktop Firefox"],
       },
     },
     {
       name: "edge",
-      testIgnore: ["**/paypal-checkout-v6/**", "**/apple-pay/**"],
+      testIgnore: ["**/apple-pay/**"],
       use: {
         ...devices["Desktop Edge"],
       },
     },
     {
       name: "safari",
-      testIgnore: "**/paypal-checkout-v6/**",
       use: {
         ...devices["Desktop Safari"],
       },

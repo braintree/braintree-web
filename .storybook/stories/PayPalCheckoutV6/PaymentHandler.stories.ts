@@ -3,7 +3,7 @@ import type { IPayPalV6ApproveData, IBraintreeError } from "../../types/global";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getClientToken } from "../../utils/sdk-config";
 import { getBraintreeSDK } from "../../utils/braintree-sdk";
-import { showDetailedError } from "./common";
+import { showSimpleError, showDetailedError } from "./common";
 import "../../css/main.css";
 import "../PayPalCheckout/payPalCheckout.css";
 
@@ -143,12 +143,11 @@ const setupPaymentHandler = async (container: HTMLElement): Promise<void> => {
   const statusLog = container.querySelector("#status-log") as HTMLElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 

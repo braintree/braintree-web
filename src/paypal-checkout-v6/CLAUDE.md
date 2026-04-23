@@ -11,6 +11,7 @@ PayPal Checkout V6 integrates with the [PayPal Web SDK v6](https://developer.pay
 - Integration with PayPal Web SDK v6 (not checkout.js)
 - Session-based API pattern (`createOneTimePaymentSession`, `createBillingAgreementSession`)
 - Dynamic SDK loading via `loadPayPalSDK()`
+- **PayPal Messages component support** for Pay Later messaging and promotional content
 - Checkout flow (one-time payments)
 - Vault flow (billing agreements for subscriptions)
 - PayPal Credit support
@@ -54,9 +55,10 @@ paypalCheckoutV6Instance.loadPayPalSDK().then(function () {
 V6 uses `window.paypal.createInstance()` with the client token to create a PayPal instance:
 
 ```javascript
-// Internal method - uses different components for checkout vs vault
-this._createPayPalInstance({ flow: "vault" }); // Uses 'paypal-billing-agreements'
-this._createPayPalInstance(); // Uses 'paypal-payments'
+// Internal method - uses different components for different flows
+this._createPayPalInstance({ components: ["paypal-billing-agreements"] }); // Vault flow
+this._createPayPalInstance({ components: ["paypal-payments"] }); // Checkout flow
+this._createPayPalInstance({ components: ["paypal-messages"] }); // Messages
 ```
 
 ### Integration Flow
@@ -80,6 +82,178 @@ this._createPayPalInstance(); // Uses 'paypal-payments'
    ↓
 9. Send nonce to server
 ```
+
+## PayPal Messages Component
+
+### Loading Messages for Pay Later Messaging
+
+The PayPal Messages component enables merchants to display promotional messaging about Pay Later options, installment plans, and PayPal Credit using web components. Messages are displayed using `<paypal-message>` HTML elements and content is fetched and updated programmatically.
+
+**Key Use Cases:**
+
+- Product detail pages: Show Pay Later messaging near price
+- Cart pages: Display financing options based on cart total
+- Category pages: Promote financing availability
+- Homepage: General PayPal Credit awareness
+
+**Required PayPal API Scopes:**
+
+To use PayPal Messages, your PayPal REST API application must include these scopes:
+
+- `https://uri.paypal.com/services/credit/offer-presentment/read`
+- `https://uri.paypal.com/services/credit/client-offer-presentment/read`
+
+Without these scopes, the Messages API will return a **403 Forbidden** error. Configure these in the [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/) under your REST API app settings.
+
+### Using createMessages() - Programmatic Approach
+
+The V6 wrapper provides a convenient `createMessages()` method that handles SDK instance creation and returns a Messages instance that can fetch content for `<paypal-message>` web components:
+
+```html
+<!-- Add paypal-message web component to HTML -->
+<paypal-message id="paypal-message"></paypal-message>
+```
+
+```javascript
+// Load the SDK first
+paypalCheckoutV6Instance
+  .loadPayPalSDK()
+  .then(function () {
+    // Create a messages instance
+    return paypalCheckoutV6Instance.createMessages({
+      buyerCountry: "US",
+      currencyCode: "USD",
+    });
+  })
+  .then(function (messagesInstance) {
+    // Get the message element
+    var messageEl = document.querySelector("#paypal-message");
+
+    // Fetch and display content - pass configuration to fetchContent()
+    return messagesInstance.fetchContent({
+      amount: "99.99",
+      placement: "product",
+      style: {
+        layout: "text",
+      },
+      logoType: "INLINE",
+      textColor: "MONOCHROME",
+      onReady: function (content) {
+        messageEl.setContent(content);
+      },
+    });
+  })
+  .then(function (content) {
+    // Content is now displayed
+    // You can update the amount later:
+    // content.update({ amount: '149.99' });
+  });
+```
+
+**Important:** When using the programmatic approach, pass all configuration (placement, style, logoType, textColor) to `fetchContent()`, NOT as HTML attributes on the web component.
+
+### Using Auto-Bootstrap (Simplest Approach)
+
+For static amounts, use the `auto-bootstrap` attribute for the simplest integration:
+
+```html
+<paypal-message
+  auto-bootstrap
+  amount="99.99"
+  currency-code="USD"
+  data-pp-placement="product"
+  data-pp-style-layout="text"
+  logo-type="INLINE"
+  text-color="MONOCHROME"
+></paypal-message>
+```
+
+```javascript
+// Just load the SDK - messages render automatically
+paypalCheckoutV6Instance.loadPayPalSDK();
+```
+
+**Updating auto-bootstrap messages:**
+
+```javascript
+// Update amount by setting element property
+var messageEl = document.querySelector("paypal-message");
+messageEl.amount = "149.99"; // Updates automatically
+```
+
+**Important:** Only use HTML attributes for configuration when using `auto-bootstrap`. Configuration updates happen by setting element properties directly.
+
+**createMessages() Options:**
+
+- `buyerCountry` (string): Buyer's country code, defaults to 'US'
+- `currencyCode` (string): Currency code, defaults to 'USD'
+
+**fetchContent() Options:**
+
+- `amount` (string): Transaction amount to display financing options for
+- `placement` (string): Where the message appears ('product', 'cart', 'home', 'category')
+- `style` (object): Styling options
+  - `layout` (string): Layout style ('text', 'flex', 'custom')
+- `logoType` (string): PayPal logo type ('INLINE', 'PRIMARY', 'ALTERNATIVE', 'NONE')
+- `textColor` (string): Text color ('BLACK', 'WHITE', 'MONOCHROME', 'GRAYSCALE')
+- `onReady` (function): Callback when content is ready
+
+**Benefits:**
+
+1. **Automatic Instance Management**: Handles PayPal SDK instance creation with correct components
+2. **Instance Reuse**: Reuses the same SDK instance for multiple messages
+3. **Dynamic Updates**: Update amounts without re-fetching via `content.update()`
+4. **Analytics**: Automatically sends analytics events
+5. **Error Handling**: Consistent BraintreeError handling
+
+### Updating Messages Dynamically (e.g., Quantity Changes)
+
+```javascript
+var messagesInstance;
+var messageContent;
+var basePrice = 99.99;
+var quantity = 1;
+
+paypalCheckoutV6Instance
+  .loadPayPalSDK()
+  .then(function () {
+    return paypalCheckoutV6Instance.createMessages({
+      buyerCountry: "US",
+      currencyCode: "USD",
+    });
+  })
+  .then(function (instance) {
+    messagesInstance = instance;
+    var messageEl = document.querySelector("paypal-message");
+
+    // Initial fetch
+    return messagesInstance.fetchContent({
+      amount: String(basePrice * quantity),
+      onReady: function (content) {
+        messageEl.setContent(content);
+      },
+    });
+  })
+  .then(function (content) {
+    messageContent = content;
+
+    // Update when quantity changes
+    document
+      .getElementById("increase-qty")
+      .addEventListener("click", function () {
+        quantity++;
+        messageContent.update({ amount: String(basePrice * quantity) });
+      });
+  });
+```
+
+### Important Notes
+
+- Messages use **web components** (`<paypal-message>` elements)
+- The wrapper's `createMessages()` returns an instance with `fetchContent()` method
+- Content is applied to elements via `messageEl.setContent(content)`
+- Use `content.update()` to dynamically update amounts without re-fetching
+- See [PayPal Messages docs](https://developer.paypal.com/docs/business/pay-later/messaging/) for full API
 
 ## Eligibility Checking
 
@@ -246,22 +420,22 @@ session.start();
 
 **createBillingAgreementSession Options:**
 
-| Option                        | Type     | Required | Description                                                          |
-| ----------------------------- | -------- | -------- | -------------------------------------------------------------------- |
-| `onApprove`                   | function | Yes      | Called when customer approves                                        |
-| `billingAgreementDescription` | string   | No       | Description shown to customer                                        |
-| `planType`                    | string   | No       | 'UNSCHEDULED' (default), 'RECURRING', 'SUBSCRIPTION', 'INSTALLMENTS' |
-| `planMetadata`                | object   | No       | Plan details with billing cycles                                     |
-| `amount`                      | string   | No       | For vault-with-purchase flow                                         |
-| `currency`                    | string   | No       | For vault-with-purchase flow                                         |
-| `offerCredit`                 | boolean  | No       | Offer PayPal Credit                                                  |
-| `shippingAddressOverride`     | object   | No       | Override shipping address                                            |
-| `userAction`                  | string   | No       | 'CONTINUE', 'COMMIT', or 'SETUP_NOW'                                 |
-| `returnUrl`                   | string   | No\*     | Required for app-switch                                              |
-| `cancelUrl`                   | string   | No\*     | Required for app-switch                                              |
-| `presentationMode`            | string   | No       | Presentation mode                                                    |
-| `onCancel`                    | function | No       | Called on cancel                                                     |
-| `onError`                     | function | No       | Called on error                                                      |
+| Option                        | Type     | Required | Description                                                   |
+| ----------------------------- | -------- | -------- | ------------------------------------------------------------- |
+| `onApprove`                   | function | Yes      | Called when customer approves                                 |
+| `billingAgreementDescription` | string   | No       | Description shown to customer                                 |
+| `planType`                    | string   | No       | 'RECURRING', 'SUBSCRIPTION', 'UNSCHEDULED', or 'INSTALLMENTS' |
+| `planMetadata`                | object   | No       | Plan details with billing cycles                              |
+| `amount`                      | string   | No       | For vault-with-purchase flow                                  |
+| `currency`                    | string   | No       | For vault-with-purchase flow                                  |
+| `offerCredit`                 | boolean  | No       | Offer PayPal Credit                                           |
+| `shippingAddressOverride`     | object   | No       | Override shipping address                                     |
+| `userAction`                  | string   | No       | 'CONTINUE', 'COMMIT', or 'SETUP_NOW'                          |
+| `returnUrl`                   | string   | No\*     | Required for app-switch                                       |
+| `cancelUrl`                   | string   | No\*     | Required for app-switch                                       |
+| `presentationMode`            | string   | No       | Presentation mode                                             |
+| `onCancel`                    | function | No       | Called on cancel                                              |
+| `onError`                     | function | No       | Called on error                                               |
 
 ### 3. Legacy createPayment API
 

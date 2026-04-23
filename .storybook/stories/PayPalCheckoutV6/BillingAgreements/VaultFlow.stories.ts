@@ -12,10 +12,19 @@ import {
   showSimpleError,
   showDetailedError,
 } from "../common";
+import {
+  billingAgreementArgTypes,
+  applyBillingAgreementOptions,
+  type BillingAgreementArgs,
+} from "./common";
 import "../../../css/main.css";
 import "../../PayPalCheckout/payPalCheckout.css";
 
-const meta: Meta = {
+interface VaultFlowArgs extends BillingAgreementArgs {
+  fundingSource?: string;
+}
+
+const meta: Meta<VaultFlowArgs> = {
   title: "Braintree/PayPal Checkout V6/Billing Agreements",
   parameters: {
     layout: "centered",
@@ -29,6 +38,15 @@ for future transactions without specifying a plan type.
         `,
       },
     },
+  },
+  argTypes: billingAgreementArgTypes,
+  args: {
+    locale: "en_US",
+    landingPageType: "none",
+    enableShippingAddress: false,
+    shippingAddressEditable: true,
+    displayName: "PayPal Vault Service",
+    riskCorrelationId: "",
   },
 };
 
@@ -58,7 +76,7 @@ const createVaultForm = (): HTMLElement => {
 
 const setupVaultFlow = async (
   container: HTMLElement,
-  args?: { fundingSource?: string }
+  args: VaultFlowArgs
 ): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
@@ -142,11 +160,10 @@ const setupVaultFlow = async (
 
     const isPayPalCredit = fundingSource === "credit";
 
-    const sessionConfig = {
+    const sessionOptions = {
       billingAgreementDescription: isPayPalCredit
         ? "Save PayPal Credit account for future payments"
         : "Save PayPal account for future payments",
-
       onApprove: async (data: IPayPalV6ApproveData) => {
         const payload = await paypalCheckoutV6Instance.tokenizePayment({
           billingToken: data.billingToken,
@@ -184,14 +201,16 @@ const setupVaultFlow = async (
       },
     };
 
+    applyBillingAgreementOptions(sessionOptions, args);
+
     // Add offerCredit for PayPal Credit
     if (isPayPalCredit) {
-      Object.assign(sessionConfig, { offerCredit: true });
+      Object.assign(sessionOptions, { offerCredit: true });
     }
 
     // Create billing agreement session
     const session =
-      paypalCheckoutV6Instance.createBillingAgreementSession(sessionConfig);
+      paypalCheckoutV6Instance.createBillingAgreementSession(sessionOptions);
 
     // Render PayPal button using web components
     const paypalButtonContainer = container.querySelector(
@@ -216,7 +235,8 @@ const setupVaultFlow = async (
 
 export const VaultFlow: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container, args) => {
+    async (container, storyArgs) => {
+      const args = storyArgs as unknown as VaultFlowArgs;
       const formContainer = createVaultForm();
       container.appendChild(formContainer);
       await setupVaultFlow(formContainer, args);

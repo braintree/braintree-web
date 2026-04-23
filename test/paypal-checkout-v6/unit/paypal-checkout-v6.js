@@ -318,6 +318,351 @@ describe("PayPalCheckoutV6", () => {
     });
   });
 
+  describe("_initializePayPalInstance", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      window.paypal = {
+        createInstance: jest.fn().mockResolvedValue({ mockInstance: true }),
+      };
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("creates and caches a promise when instance and promise don't exist", () => {
+      testContext.instance._initializePayPalInstance("checkout");
+
+      expect(testContext.instance._checkoutInstancePromise).toBeDefined();
+      expect(testContext.instance._checkoutInstancePromise).toBeInstanceOf(
+        Promise
+      );
+    });
+
+    it("does nothing when instance already exists", () => {
+      testContext.instance._paypalInstance = { existing: true };
+
+      testContext.instance._initializePayPalInstance("checkout");
+
+      expect(testContext.instance._checkoutInstancePromise).toBeUndefined();
+    });
+
+    it("does nothing when promise already exists", () => {
+      testContext.instance._checkoutInstancePromise = Promise.resolve({
+        existing: true,
+      });
+
+      testContext.instance._initializePayPalInstance("checkout");
+
+      // Should not create a new promise
+      expect(window.paypal.createInstance).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when PayPal SDK is not available", () => {
+      delete window.paypal;
+
+      testContext.instance._initializePayPalInstance("checkout");
+
+      expect(testContext.instance._checkoutInstancePromise).toBeUndefined();
+    });
+
+    it("stores resolved instance in the instance key", () => {
+      testContext.instance._initializePayPalInstance("vault");
+
+      return testContext.instance._vaultInstancePromise.then(() => {
+        expect(testContext.instance._paypalVaultInstance).toEqual({
+          mockInstance: true,
+        });
+      });
+    });
+
+    it("configures correct components for each instance type", () => {
+      testContext.instance._initializePayPalInstance("messages");
+
+      return testContext.instance._messagesInstancePromise.then(() => {
+        expect(window.paypal.createInstance).toHaveBeenCalledWith(
+          expect.objectContaining({
+            components: ["paypal-messages"],
+          })
+        );
+      });
+    });
+
+    it("clears promise cache on rejection to allow retry", () => {
+      var error = new Error("SDK initialization failed");
+
+      window.paypal.createInstance = jest.fn().mockRejectedValue(error);
+
+      testContext.instance._initializePayPalInstance("messages");
+
+      return testContext.instance._messagesInstancePromise.catch(() => {
+        // Promise should be cleared after rejection
+        expect(testContext.instance._messagesInstancePromise).toBeNull();
+
+        // Reset mock to succeed on retry
+        window.paypal.createInstance = jest.fn().mockResolvedValue({
+          mockInstance: true,
+        });
+
+        // Should be able to retry after clearing
+        testContext.instance._initializePayPalInstance("messages");
+
+        expect(testContext.instance._messagesInstancePromise).toBeDefined();
+        expect(testContext.instance._messagesInstancePromise).toBeInstanceOf(
+          Promise
+        );
+      });
+    });
+  });
+
+  describe("createMessages", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      testContext.mockMessagesInstance = {
+        render: jest.fn(),
+      };
+      testContext.mockPayPalInstance = {
+        createPayPalMessages: jest
+          .fn()
+          .mockReturnValue(testContext.mockMessagesInstance),
+      };
+
+      window.paypal = {
+        createInstance: jest
+          .fn()
+          .mockResolvedValue(testContext.mockPayPalInstance),
+      };
+
+      // Clear analytics mock to avoid false positives from earlier tests
+      analytics.sendEvent.mockClear();
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("creates a PayPal instance with paypal-messages component", () => {
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          expect(window.paypal.createInstance).toHaveBeenCalledWith(
+            expect.objectContaining({
+              components: ["paypal-messages"],
+            })
+          );
+        });
+    });
+
+    it("calls createPayPalMessages on the PayPal SDK instance", () => {
+      const options = {
+        buyerCountry: "US",
+        currencyCode: "USD",
+      };
+
+      return testContext.instance.createMessages(options).then(() => {
+        expect(
+          testContext.mockPayPalInstance.createPayPalMessages
+        ).toHaveBeenCalledWith(options);
+      });
+    });
+
+    it("returns the messages instance from createPayPalMessages", () => {
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then((messagesInstance) => {
+          expect(messagesInstance).toBe(testContext.mockMessagesInstance);
+        });
+    });
+
+    it("reuses PayPal SDK instance on subsequent calls", () => {
+      return testContext.instance
+        .createMessages({ buyerCountry: "US", currencyCode: "USD" })
+        .then(() => {
+          window.paypal.createInstance.mockClear();
+
+          return testContext.instance.createMessages({
+            buyerCountry: "GB",
+            currencyCode: "GBP",
+          });
+        })
+        .then(() => {
+          expect(window.paypal.createInstance).not.toHaveBeenCalled();
+          expect(
+            testContext.mockPayPalInstance.createPayPalMessages
+          ).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    it("deduplicates concurrent calls to createMessages", () => {
+      // Call createMessages twice concurrently without waiting
+      const promise1 = testContext.instance.createMessages({
+        buyerCountry: "US",
+        currencyCode: "USD",
+      });
+      const promise2 = testContext.instance.createMessages({
+        buyerCountry: "GB",
+        currencyCode: "GBP",
+      });
+
+      return Promise.all([promise1, promise2]).then(() => {
+        // Should only create one PayPal SDK instance despite concurrent calls
+        expect(window.paypal.createInstance).toHaveBeenCalledTimes(1);
+        // Should call createPayPalMessages twice (once per createMessages call)
+        expect(
+          testContext.mockPayPalInstance.createPayPalMessages
+        ).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it("allows retry after SDK initialization failure", () => {
+      var error = new Error("Network error");
+      var createInstanceMock = jest
+        .fn()
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(testContext.mockPayPalInstance);
+
+      // Create a fresh instance for this test
+      var freshInstance = new PayPalCheckoutV6({});
+
+      window.paypal.createInstance = createInstanceMock;
+
+      return freshInstance
+        ._initialize({ client: testContext.client })
+        .then(() => {
+          return freshInstance.createMessages({
+            buyerCountry: "US",
+            currencyCode: "USD",
+          });
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err.message).toContain("PayPal");
+
+          // Verify the promise was cleared
+          expect(freshInstance._messagesInstancePromise).toBeNull();
+
+          // Retry should succeed
+          return freshInstance.createMessages({
+            buyerCountry: "US",
+            currencyCode: "USD",
+          });
+        })
+        .then((messagesInstance) => {
+          expect(messagesInstance).toBe(testContext.mockMessagesInstance);
+          // Should have attempted createInstance twice (once failed, once succeeded)
+          expect(createInstanceMock).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    it("sends analytics events when creating messages", () => {
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.started"
+          );
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.succeeded"
+          );
+        });
+    });
+
+    it("rejects if PayPal SDK is not loaded", () => {
+      delete window.paypal;
+
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED");
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.failed"
+          );
+        });
+    });
+
+    it("rejects if PayPal SDK instance does not support createPayPalMessages", () => {
+      window.paypal.createInstance.mockResolvedValue({});
+
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED");
+        });
+    });
+
+    it("rejects with BraintreeError on PayPal SDK error", () => {
+      testContext.mockPayPalInstance.createPayPalMessages.mockImplementation(
+        function () {
+          throw new Error("SDK error");
+        }
+      );
+
+      return testContext.instance
+        .createMessages({
+          amount: 99.99,
+          placement: "product",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED");
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.failed"
+          );
+        });
+    });
+
+    it("passes style options to createPayPalMessages", () => {
+      const options = {
+        amount: 99.99,
+        placement: "product",
+        style: {
+          layout: "flex",
+          logo: {
+            type: "inline",
+          },
+        },
+      };
+
+      return testContext.instance.createMessages(options).then(() => {
+        expect(
+          testContext.mockPayPalInstance.createPayPalMessages
+        ).toHaveBeenCalledWith(options);
+      });
+    });
+  });
+
   describe("createOneTimePaymentSession", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
@@ -375,6 +720,55 @@ describe("PayPalCheckoutV6", () => {
           currency: "USD",
         });
       }).toThrow(BraintreeError);
+    });
+
+    it("throws error when both shippingCallbackUrl and onShippingAddressChange are provided", () => {
+      expect(() => {
+        testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+          shippingCallbackUrl: "https://example.com/shipping-callback",
+          onShippingAddressChange: jest.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("throws error when both shippingCallbackUrl and onShippingOptionsChange are provided", () => {
+      expect(() => {
+        testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+          shippingCallbackUrl: "https://example.com/shipping-callback",
+          onShippingOptionsChange: jest.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("allows shippingCallbackUrl without client-side shipping callbacks", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createOneTimePaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+        shippingCallbackUrl: "https://example.com/shipping-callback",
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              shippingCallbackUrl: "https://example.com/shipping-callback",
+            }),
+          })
+        );
+      });
     });
 
     it("sets flow to checkout", () => {
@@ -1791,6 +2185,155 @@ describe("PayPalCheckoutV6", () => {
             expect(payload.nonce).toBe("vault-nonce-no-vault");
           });
       });
+
+      it("includes correlationId in billing agreement tokenization when riskCorrelationId was set", () => {
+        // Set riskCorrelationId on instance (as would happen during billing agreement creation)
+        testContext.instance._riskCorrelationId = "risk-correlation-id-789";
+
+        jest.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "vault-nonce-with-risk",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            billingToken: "BA-TOKEN-WITH-RISK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    billingAgreementToken: "BA-TOKEN-WITH-RISK",
+                    correlationId: "risk-correlation-id-789",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("vault-nonce-with-risk");
+          });
+      });
+
+      it("uses billingToken as fallback for correlationId when riskCorrelationId is not set", () => {
+        jest.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "vault-nonce-fallback",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            billingToken: "BA-TOKEN-FALLBACK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    billingAgreementToken: "BA-TOKEN-FALLBACK",
+                    correlationId: "BA-TOKEN-FALLBACK",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("vault-nonce-fallback");
+          });
+      });
+    });
+
+    describe("checkout flow", () => {
+      it("includes correlationId in one-time payment tokenization when riskCorrelationId was set", () => {
+        // Set riskCorrelationId on instance (as would happen during payment creation)
+        testContext.instance._riskCorrelationId =
+          "risk-correlation-id-one-time";
+
+        jest.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "checkout-nonce-with-risk",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            payerID: "PAYER123",
+            orderID: "ORDER-WITH-RISK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    paymentToken: "ORDER-WITH-RISK",
+                    payerId: "PAYER123",
+                    correlationId: "risk-correlation-id-one-time",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("checkout-nonce-with-risk");
+          });
+      });
+
+      it("uses orderID as fallback for correlationId when riskCorrelationId is not set", () => {
+        jest.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "checkout-nonce-fallback",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            payerID: "PAYER456",
+            orderID: "ORDER-FALLBACK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    paymentToken: "ORDER-FALLBACK",
+                    payerId: "PAYER456",
+                    correlationId: "ORDER-FALLBACK",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("checkout-nonce-fallback");
+          });
+      });
     });
   });
 
@@ -1993,6 +2536,30 @@ describe("PayPalCheckoutV6", () => {
         })
         .then((result) => {
           expect(result.orderId).toBe("ORDER123");
+        });
+    });
+
+    it("includes shippingCallbackUrl when provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          shippingCallbackUrl: "https://example.com/shipping-callback",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                shippingCallbackUrl: "https://example.com/shipping-callback",
+              }),
+            })
+          );
         });
     });
   });
@@ -2261,7 +2828,7 @@ describe("PayPalCheckoutV6", () => {
         });
       });
 
-      it("creates PayPal instance with vault flow", () => {
+      it("creates PayPal instance with billing agreements component", () => {
         const session = testContext.instance.createBillingAgreementSession({
           billingAgreementDescription: "Monthly subscription",
           onApprove: () => {},
@@ -2271,7 +2838,7 @@ describe("PayPalCheckoutV6", () => {
           expect(
             testContext.instance._createPayPalInstance
           ).toHaveBeenCalledWith({
-            flow: "vault",
+            components: ["paypal-billing-agreements"],
           });
         });
       });
@@ -2349,6 +2916,25 @@ describe("PayPalCheckoutV6", () => {
           );
           expect(createPaymentArgs.cancelUrl).toBe(
             "https://merchant.com/cancel"
+          );
+        });
+      });
+
+      it("passes returnUrl and cancelUrl through to createPayment", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          // Verify returnUrl and cancelUrl were passed through the chain
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              returnUrl: "https://example.com/return",
+              cancelUrl: "https://example.com/cancel",
+            })
           );
         });
       });
@@ -2555,6 +3141,102 @@ describe("PayPalCheckoutV6", () => {
           expect(testContext.instance.createPayment).toHaveBeenCalledWith(
             expect.objectContaining({
               shippingAddressOverride: shippingAddress,
+            })
+          );
+        });
+      });
+
+      it("supports locale option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          locale: "fr_FR",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              locale: "fr_FR",
+            })
+          );
+        });
+      });
+
+      it("supports landingPageType option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          landingPageType: "login",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              landingPageType: "login",
+            })
+          );
+        });
+      });
+
+      it("supports enableShippingAddress option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          enableShippingAddress: true,
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              enableShippingAddress: true,
+            })
+          );
+        });
+      });
+
+      it("supports shippingAddressEditable option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          shippingAddressEditable: false,
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              shippingAddressEditable: false,
+            })
+          );
+        });
+      });
+
+      it("supports riskCorrelationId option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          riskCorrelationId: "risk-correlation-id-123",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              riskCorrelationId: "risk-correlation-id-123",
+            })
+          );
+        });
+      });
+
+      it("supports displayName option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          displayName: "Custom Merchant Name",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              displayName: "Custom Merchant Name",
             })
           );
         });
@@ -3848,6 +4530,97 @@ describe("PayPalCheckoutV6", () => {
     });
   });
 
+  describe("_buildBillingAgreementRequest", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("does not include planType when not provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        billingAgreementDescription: "Monthly subscription",
+      });
+
+      expect(result.planType).toBeUndefined();
+    });
+
+    it("includes planType when provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        billingAgreementDescription: "Monthly subscription",
+        planType: "RECURRING",
+      });
+
+      expect(result.planType).toBe("RECURRING");
+    });
+
+    it("includes description when billingAgreementDescription is provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        billingAgreementDescription: "Monthly subscription",
+      });
+
+      expect(result.description).toBe("Monthly subscription");
+    });
+
+    it("includes planMetadata when provided", () => {
+      var planMetadata = {
+        name: "Premium Plan",
+        currencyIsoCode: "USD",
+        billingCycles: [
+          {
+            billingFrequency: 1,
+            billingFrequencyUnit: "MONTH",
+            numberOfExecutions: 12,
+            sequence: 1,
+            trial: false,
+            pricingScheme: {
+              pricingModel: "FIXED",
+              price: "10.00",
+            },
+          },
+        ],
+      };
+      var result = testContext.instance._buildBillingAgreementRequest({
+        planType: "SUBSCRIPTION",
+        planMetadata: planMetadata,
+      });
+
+      expect(result.planMetadata).toBeDefined();
+      expect(result.planMetadata.name).toBe("Premium Plan");
+      expect(result.planMetadata.currencyIsoCode).toBe("USD");
+      expect(result.planMetadata.billingCycles).toHaveLength(1);
+      expect(result.planMetadata.billingCycles[0].billingFrequency).toBe(1);
+      expect(result.planMetadata.billingCycles[0].billingFrequencyUnit).toBe(
+        "MONTH"
+      );
+      expect(result.planMetadata.billingCycles[0].numberOfExecutions).toBe(12);
+      expect(result.planMetadata.billingCycles[0].sequence).toBe(1);
+      expect(result.planMetadata.billingCycles[0].trial).toBe(false);
+      expect(result.planMetadata.billingCycles[0].pricingScheme).toEqual({
+        pricingModel: "FIXED",
+        price: "10.00",
+      });
+    });
+
+    it("includes amount and currency when provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        amount: "10.00",
+        currency: "USD",
+      });
+
+      expect(result.amount).toBe("10.00");
+      expect(result.currency).toBe("USD");
+    });
+
+    it("builds a minimal request with no optional fields", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({});
+
+      expect(result).toEqual({});
+    });
+  });
+
   describe("_createBillingAgreementToken", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
@@ -3955,6 +4728,44 @@ describe("PayPalCheckoutV6", () => {
         });
     });
 
+    it("includes description in request when billingAgreementDescription is provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+        })
+        .then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+
+          expect(requestData.description).toBe("Monthly subscription");
+        });
+    });
+
+    it("includes description in request when description property is provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          description: "Premium subscription plan",
+        })
+        .then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+
+          expect(requestData.description).toBe("Premium subscription plan");
+        });
+    });
+
     it("does not send planMetadata if it does not exist", () => {
       const planType = "RECURRING";
 
@@ -4055,6 +4866,30 @@ describe("PayPalCheckoutV6", () => {
         });
     });
 
+    it("includes offerPaypalCredit: false when offerCredit is explicitly set to false", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          offerCredit: false,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                offerPaypalCredit: false,
+              }),
+            })
+          );
+        });
+    });
+
     it("includes plan metadata in request", () => {
       const planMetadata = {
         name: "Premium Plan",
@@ -4098,6 +4933,252 @@ describe("PayPalCheckoutV6", () => {
               }),
             })
           );
+        });
+    });
+
+    it("includes locale in request when provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          locale: "fr_FR",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  localeCode: "fr_FR",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes landingPageType in experienceProfile when provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          landingPageType: "login",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  landingPageType: "login",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.noShipping to false when enableShippingAddress is true", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          enableShippingAddress: true,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  noShipping: "false",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.noShipping to true when enableShippingAddress is false", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          enableShippingAddress: false,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  noShipping: "true",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.addressOverride to true when shippingAddressEditable is false", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          shippingAddressEditable: false,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  addressOverride: true,
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.addressOverride to false when shippingAddressEditable is true", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          shippingAddressEditable: true,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  addressOverride: false,
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes correlationId in request when riskCorrelationId is provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          riskCorrelationId: "risk-id-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                correlationId: "risk-id-123",
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes displayName in experienceProfile.brandName when provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          displayName: "Custom Merchant Name",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  brandName: "Custom Merchant Name",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("stores riskCorrelationId on instance for later use in tokenization", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          riskCorrelationId: "risk-id-456",
+        })
+        .then(() => {
+          expect(testContext.instance._riskCorrelationId).toBe("risk-id-456");
+        });
+    });
+
+    it("resets riskCorrelationId to undefined when not provided to prevent stale values", () => {
+      // Set initial riskCorrelationId
+      testContext.instance._riskCorrelationId = "old-risk-id";
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          // riskCorrelationId intentionally not provided
+        })
+        .then(() => {
+          // Should be reset to undefined to prevent using stale value in tokenization
+          expect(testContext.instance._riskCorrelationId).toBeUndefined();
         });
     });
 

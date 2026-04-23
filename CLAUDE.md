@@ -53,9 +53,10 @@ Each component has its own CLAUDE.md with detailed guidance. These are automatic
 - `npm run jsdoc` - Generate JSDoc documentation
 - `npm run storybook:dev` - Start Storybook development server on port 6006
 - `npm run storybook:build` - Build Storybook static files
-- `npm run test:integration` - Run BrowserStack integration tests with CDN versions
-- `npm run test:integration:local` - Run tests with your local build (`LOCAL_BUILD=true`)
-- `npm run test:integration -- --spec .storybook/tests/your-test.test.ts` - Run single test file
+- `npm run test:playwright` - Run Playwright integration tests on BrowserStack
+- `npm run test:playwright:local` - Run Playwright tests locally with headed browsers
+- `npm run test:integration` - Alias for `test:playwright` (backward compat)
+- `npm run test:integration:local` - Alias for `test:playwright:local` (backward compat)
 
 ## Architecture
 
@@ -79,7 +80,7 @@ Each component has its own CLAUDE.md with detailed guidance. These are automatic
 
 - Jest for unit testing with component-specific configurations
 - Tests mirror src/ structure in test/ directory
-- Integration tests using WebDriver with Browserstack
+- Integration tests using Playwright with BrowserStack
 - Storybook for component development and testing
 
 ## Component Implementation Patterns
@@ -234,72 +235,30 @@ For Hosted Fields iframe issues, see `/src/hosted-fields/CLAUDE.md`.
 
 ### Test Structure
 
-Integration tests use WebDriverIO with BrowserStack across multiple browsers:
+Integration tests use Playwright with BrowserStack across multiple browsers:
 
 - Chrome (Windows 10)
 - Safari (macOS Monterey)
 - Firefox (macOS Monterey)
 - Edge (Windows 10)
 
-### Custom Browser Commands
-
-Commands are registered via `loadHelpers()` in `.storybook/tests/helpers/browser-commands/index.ts`:
-
-**Common Commands:**
-
-- `browser.getResult()` - Extract success/failure from result div
-
-**Hosted Fields Commands:**
-
-- `browser.waitForHostedFieldsReady()` - Wait for SDK and all hosted field iframes
-- `browser.hostedFieldSendInput(key, value)` - Type into hosted field iframe
-- `browser.submitPay()` - Submit form and wait for result
-
-**PayPal Commands:**
-
-- `completePayPalCheckoutFlow()` - Full PayPal login and approval flow
-- `switchToPayPalPopup()` - Switch to PayPal popup window
-
-**Network Interception:**
-
-- Uses `wdio-intercept-service` for network request verification
-- `browser.setupInterceptor()` - Setup network interception
-- `browser.getRequests()` - Get intercepted HTTP requests
-
-### Writing Integration Tests
-
-```typescript
-import { browser } from "@wdio/globals";
-import { expect } from "chai";
-import { getWorkflowUrl } from "./helpers/url-utils";
-import { loadHelpers } from "./helpers/browser-commands";
-
-describe("Component Integration", () => {
-  before(() => loadHelpers());
-
-  it("should complete flow", async () => {
-    const url = getWorkflowUrl("/iframe.html?id=story-id");
-    await browser.url(url);
-    await browser.setupInterceptor();
-
-    // Test implementation
-    const requests = await browser.getRequests();
-    expect(requests).to.have.length.greaterThan(0);
-  });
-});
-```
+Tests use custom fixtures and the page object model pattern. See `.storybook/CLAUDE.md` for detailed Playwright test patterns, fixtures, and page objects.
 
 ### Running Integration Tests
 
 ```bash
-# All tests
+# All tests on BrowserStack
+npm run test:playwright
+
+# Run locally with headed browsers
+npm run test:playwright:local
+
+# Single test file locally
+npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts .storybook/tests/hosted-fields/tokenization.test.ts
+
+# Legacy aliases (backward compat)
 npm run test:integration
-
-# With local build
 npm run test:integration:local
-
-# Single test file
-npm run test:integration -- --spec .storybook/tests/your-test.test.ts
 ```
 
 ## Important Notes

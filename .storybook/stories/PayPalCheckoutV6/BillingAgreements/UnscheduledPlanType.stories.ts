@@ -12,10 +12,19 @@ import {
   showSimpleError,
   showDetailedError,
 } from "../common";
+import {
+  billingAgreementArgTypes,
+  applyBillingAgreementOptions,
+  type BillingAgreementArgs,
+} from "./common";
 import "../../../css/main.css";
 import "../../PayPalCheckout/payPalCheckout.css";
 
-const meta: Meta = {
+interface UnscheduledPlanTypeArgs extends BillingAgreementArgs {
+  fundingSource?: string;
+}
+
+const meta: Meta<UnscheduledPlanTypeArgs> = {
   title: "Braintree/PayPal Checkout V6/Billing Agreements",
   parameters: {
     layout: "centered",
@@ -31,6 +40,15 @@ Examples: Pay-as-you-go services, usage-based billing, top-up payments.
         `,
       },
     },
+  },
+  argTypes: billingAgreementArgTypes,
+  args: {
+    locale: "en_US",
+    landingPageType: "login",
+    enableShippingAddress: false,
+    shippingAddressEditable: true,
+    displayName: "On-Demand Payment Service",
+    riskCorrelationId: "",
   },
 };
 
@@ -60,7 +78,7 @@ const createUnscheduledForm = (): HTMLElement => {
 
 const setupUnscheduledFlow = async (
   container: HTMLElement,
-  args?: { fundingSource?: string }
+  args: UnscheduledPlanTypeArgs
 ): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
@@ -143,12 +161,11 @@ const setupUnscheduledFlow = async (
 
     const isPayPalCredit = fundingSource === "credit";
 
-    const sessionConfig = {
+    const sessionOptions = {
       billingAgreementDescription: isPayPalCredit
         ? "On-demand payments authorization (PayPal Credit)"
         : "On-demand payments authorization",
       planType: "UNSCHEDULED" as const,
-
       onApprove: async (data: IPayPalV6ApproveData) => {
         const payload = await paypalCheckoutV6Instance.tokenizePayment({
           billingToken: data.billingToken,
@@ -182,14 +199,17 @@ const setupUnscheduledFlow = async (
       },
     };
 
+    // Apply additional billing agreement options from Storybook controls
+    applyBillingAgreementOptions(sessionOptions, args);
+
     // Add offerCredit for PayPal Credit
     if (isPayPalCredit) {
-      Object.assign(sessionConfig, { offerCredit: true });
+      Object.assign(sessionOptions, { offerCredit: true });
     }
 
     // Create billing agreement session
     const session =
-      paypalCheckoutV6Instance.createBillingAgreementSession(sessionConfig);
+      paypalCheckoutV6Instance.createBillingAgreementSession(sessionOptions);
 
     // Render PayPal button using web components
     const paypalButtonContainer = container.querySelector(
@@ -214,7 +234,8 @@ const setupUnscheduledFlow = async (
 
 export const UnscheduledPlanType: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container, args) => {
+    async (container, storyArgs) => {
+      const args = storyArgs as unknown as UnscheduledPlanTypeArgs;
       const formContainer = createUnscheduledForm();
       container.appendChild(formContainer);
       await setupUnscheduledFlow(formContainer, args);

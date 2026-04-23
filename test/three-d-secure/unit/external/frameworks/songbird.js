@@ -994,6 +994,41 @@ describe("SongbirdFramework", () => {
           });
       });
 
+      it("makes a request to the 3DS lookup endpoint with applySmartAuthentication", () => {
+        const framework = createFramework();
+
+        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        testContext.client.request.mockResolvedValue({
+          paymentMethod: {},
+          threeDSecureInfo: {},
+          lookup: {
+            threeDSecureVersion: "2.1.0",
+            transactionId: "txn-id",
+          },
+        });
+
+        return framework
+          .verifyCard({
+            nonce: testContext.tokenizedCard.nonce,
+            bin: testContext.tokenizedCard.details.bin,
+            applySmartAuthentication: true,
+            amount: 100,
+            onLookupComplete: yieldsAsync(),
+          })
+          .then(() => {
+            expect(testContext.client.request).toHaveBeenCalledTimes(1);
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
+              method: "post",
+              data: {
+                applySmartAuthentication: true,
+                dfReferenceId: "df-id",
+                amount: 100,
+              },
+            });
+          });
+      });
+
       it("calls initializeChallengeWithLookupResponse with lookup response and options", () => {
         const framework = createFramework();
         const lookupResponse = testContext.lookupResponse;

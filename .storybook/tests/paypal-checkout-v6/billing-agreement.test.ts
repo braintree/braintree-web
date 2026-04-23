@@ -1,16 +1,5 @@
-/* eslint-disable no-console */
-import { expect } from "@wdio/globals";
-import { getWorkflowUrl } from "../helpers/url-utils";
-import {
-  getPayPalBuyerCredentials,
-  switchToPayPalPopup,
-  switchToOriginalWindow,
-  closePayPalPopup,
-  completeBillingAgreementLogin,
-  approveBillingAgreement,
-  waitForPopupToClose,
-  cancelPayPalPayment,
-} from "../helpers/paypal/checkout-helpers";
+import { expect } from "@playwright/test";
+import { test } from "../helpers/playwright-helpers";
 import { getResultContainerState } from "./helpers";
 import {
   TEST_TIMEOUTS,
@@ -18,100 +7,67 @@ import {
   BILLING_AGREEMENT_MESSAGES,
 } from "./constants";
 
-describe("PayPal Checkout V6 - Billing Agreement", function () {
-  let originalWindowHandle: string;
+test.describe("PayPal Checkout V6 - Billing Agreement", function () {
+  test.describe("Basic Vault Flow", function () {
+    test("should create a simple vault billing agreement", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.vaultFlow }), {
+        waitUntil: "domcontentloaded",
+      });
 
-  beforeEach(async function () {
-    await browser.reloadSessionOnRetry(this.currentTest);
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completeBillingAgreementLogin();
+      await paypalCheckoutPage.approveBillingAgreement();
+      await paypalCheckoutPage.waitForPopupToClose();
 
-    await browser.setTimeout({
-      pageLoad: TEST_TIMEOUTS.pageLoad,
-    });
-
-    originalWindowHandle = await browser.getWindowHandle();
-  });
-
-  afterEach(async function () {
-    try {
-      // Ensure we're on a valid window before cleanup (prevents Firefox context issues)
-      const handles = await browser.getWindowHandles();
-
-      if (handles.length > 0) {
-        await browser.switchToWindow(handles[0]);
-      }
-      await closePayPalPopup(originalWindowHandle);
-    } catch (error) {
-      console.log("Cleanup warning:", (error as Error).message);
-    }
-
-    try {
-      // Force session reload to prevent browser context corruption
-      await browser.reloadSession();
-    } catch (error) {
-      console.log("Error reloading session:", (error as Error).message);
-    }
-  });
-
-  describe("Basic Vault Flow", function () {
-    it("should create a simple vault billing agreement", async function () {
-      getPayPalBuyerCredentials();
-
-      await browser.url(getWorkflowUrl(STORY_URLS.vaultFlow));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
-
-      // Complete billing agreement popup flow
-      const originalWindow = await switchToPayPalPopup();
-
-      await completeBillingAgreementLogin();
-      await approveBillingAgreement();
-      await waitForPopupToClose();
-      await switchToOriginalWindow(originalWindow);
-
-      const result = await browser.getBillingAgreementResult();
+      const result = await paypalCheckoutPage.getBillingAgreementResult();
 
       expect(result.success).toBe(true);
       expect(result.text).toContain(BILLING_AGREEMENT_MESSAGES.VAULT_SUCCESS);
       expect(result.hasNonce).toBe(true);
     });
 
-    it("should handle cancellation during vault flow", async function () {
-      getPayPalBuyerCredentials();
+    test("should handle cancellation during vault flow", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.vaultFlow }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.url(getWorkflowUrl(STORY_URLS.vaultFlow));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completeBillingAgreementLogin();
+      await paypalCheckoutPage.cancelPayPalPayment();
 
-      // Cancel billing agreement popup flow
-      const originalWindow = await switchToPayPalPopup();
-
-      await completeBillingAgreementLogin();
-      await cancelPayPalPayment();
-      await switchToOriginalWindow(originalWindow);
-
-      const result = await browser.getBillingAgreementResult();
+      const result = await paypalCheckoutPage.getBillingAgreementResult();
 
       expect(result.cancelled).toBe(true);
     });
   });
 
-  describe("RECURRING Plan Type", function () {
-    it("should create RECURRING billing agreement with fixed pricing", async function () {
-      getPayPalBuyerCredentials();
+  test.describe("RECURRING Plan Type", function () {
+    test("should create RECURRING billing agreement with fixed pricing", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.recurringPlanType }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.url(getWorkflowUrl(STORY_URLS.recurringPlanType));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completeBillingAgreementLogin();
+      await paypalCheckoutPage.approveBillingAgreement();
+      await paypalCheckoutPage.waitForPopupToClose();
 
-      // Complete billing agreement popup flow
-      const originalWindow = await switchToPayPalPopup();
-
-      await completeBillingAgreementLogin();
-      await approveBillingAgreement();
-      await waitForPopupToClose();
-      await switchToOriginalWindow(originalWindow);
-
-      const result = await browser.getBillingAgreementResult();
+      const result = await paypalCheckoutPage.getBillingAgreementResult();
 
       expect(result.success).toBe(true);
       expect(result.hasNonce).toBe(true);
@@ -120,23 +76,24 @@ describe("PayPal Checkout V6 - Billing Agreement", function () {
     });
   });
 
-  describe("SUBSCRIPTION Plan Type", function () {
-    it("should create SUBSCRIPTION billing agreement with trial period", async function () {
-      getPayPalBuyerCredentials();
+  test.describe("SUBSCRIPTION Plan Type", function () {
+    test("should create SUBSCRIPTION billing agreement with trial period", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(
+        getTestUrl({ storyUrl: STORY_URLS.subscriptionPlanType }),
+        { waitUntil: "domcontentloaded" }
+      );
 
-      await browser.url(getWorkflowUrl(STORY_URLS.subscriptionPlanType));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completeBillingAgreementLogin();
+      await paypalCheckoutPage.approveBillingAgreement();
+      await paypalCheckoutPage.waitForPopupToClose();
 
-      // Complete billing agreement popup flow
-      const originalWindow = await switchToPayPalPopup();
-
-      await completeBillingAgreementLogin();
-      await approveBillingAgreement();
-      await waitForPopupToClose();
-      await switchToOriginalWindow(originalWindow);
-
-      const result = await browser.getBillingAgreementResult();
+      const result = await paypalCheckoutPage.getBillingAgreementResult();
 
       expect(result.success).toBe(true);
       expect(result.hasNonce).toBe(true);
@@ -145,23 +102,24 @@ describe("PayPal Checkout V6 - Billing Agreement", function () {
     });
   });
 
-  describe("UNSCHEDULED Plan Type", function () {
-    it("should create UNSCHEDULED billing agreement for on-demand payments", async function () {
-      getPayPalBuyerCredentials();
+  test.describe("UNSCHEDULED Plan Type", function () {
+    test("should create UNSCHEDULED billing agreement for on-demand payments", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(
+        getTestUrl({ storyUrl: STORY_URLS.unscheduledPlanType }),
+        { waitUntil: "domcontentloaded" }
+      );
 
-      await browser.url(getWorkflowUrl(STORY_URLS.unscheduledPlanType));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completeBillingAgreementLogin();
+      await paypalCheckoutPage.approveBillingAgreement();
+      await paypalCheckoutPage.waitForPopupToClose();
 
-      // Complete billing agreement popup flow
-      const originalWindow = await switchToPayPalPopup();
-
-      await completeBillingAgreementLogin();
-      await approveBillingAgreement();
-      await waitForPopupToClose();
-      await switchToOriginalWindow(originalWindow);
-
-      const result = await browser.getBillingAgreementResult();
+      const result = await paypalCheckoutPage.getBillingAgreementResult();
 
       expect(result.success).toBe(true);
       expect(result.hasNonce).toBe(true);
@@ -170,73 +128,72 @@ describe("PayPal Checkout V6 - Billing Agreement", function () {
     });
   });
 
-  describe("Vault Token Validation", function () {
-    it("should return a valid nonce structure from billing agreement", async function () {
-      getPayPalBuyerCredentials();
+  test.describe("Vault Token Validation", function () {
+    test("should return a valid nonce structure from billing agreement", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.vaultFlow }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.url(getWorkflowUrl(STORY_URLS.vaultFlow));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completeBillingAgreementLogin();
+      await paypalCheckoutPage.approveBillingAgreement();
+      await paypalCheckoutPage.waitForPopupToClose();
 
-      // Complete billing agreement popup flow
-      const originalWindow = await switchToPayPalPopup();
-
-      await completeBillingAgreementLogin();
-      await approveBillingAgreement();
-      await waitForPopupToClose();
-      await switchToOriginalWindow(originalWindow);
-
-      const result = await browser.getBillingAgreementResult();
+      const result = await paypalCheckoutPage.getBillingAgreementResult();
 
       expect(result.success).toBe(true);
 
-      // Validate nonce is present and has reasonable length
       const nonceMatch = result.text.match(/Nonce:\s*(\S+)/i);
 
       expect(nonceMatch).not.toBeNull();
       expect(nonceMatch![1].length).toBeGreaterThan(10);
     });
 
-    it("should include payer email in vault response", async function () {
-      getPayPalBuyerCredentials();
+    test("should include payer email in vault response", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.vaultFlow }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.url(getWorkflowUrl(STORY_URLS.vaultFlow));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      await paypalCheckoutPage.waitForPopup();
+      await paypalCheckoutPage.completeBillingAgreementLogin();
+      await paypalCheckoutPage.approveBillingAgreement();
+      await paypalCheckoutPage.waitForPopupToClose();
 
-      // Complete billing agreement popup flow
-      const originalWindow = await switchToPayPalPopup();
-
-      await completeBillingAgreementLogin();
-      await approveBillingAgreement();
-      await waitForPopupToClose();
-      await switchToOriginalWindow(originalWindow);
-
-      const result = await browser.getBillingAgreementResult();
+      const result = await paypalCheckoutPage.getBillingAgreementResult();
 
       expect(result.success).toBe(true);
       expect(result.hasEmail).toBe(true);
     });
   });
 
-  describe("Error Handling", function () {
-    it("should handle popup closed manually during flow", async function () {
-      getPayPalBuyerCredentials();
+  test.describe("Error Handling", function () {
+    test("should handle popup closed manually during flow", async ({
+      paypalCheckoutPage,
+      page,
+      getTestUrl,
+    }) => {
+      await page.goto(getTestUrl({ storyUrl: STORY_URLS.vaultFlow }), {
+        waitUntil: "domcontentloaded",
+      });
 
-      await browser.url(getWorkflowUrl(STORY_URLS.vaultFlow));
-      await browser.waitForPayPalButtonReady();
-      await browser.clickPayPalButton();
+      await paypalCheckoutPage.waitForPayPalButtonReady();
+      const popup = await paypalCheckoutPage.waitForPopup();
 
-      // Close popup manually without completing login
-      const originalWindow = await switchToPayPalPopup();
+      await popup.close();
 
-      await browser.closeWindow();
-      await browser.switchToWindow(originalWindow);
+      await page.waitForTimeout(TEST_TIMEOUTS.callbackDelay);
 
-      await browser.pause(TEST_TIMEOUTS.callbackDelay);
-
-      // Verify cancel/error handling
-      const { isVisible, resultText } = await getResultContainerState();
+      const { isVisible, resultText } = await getResultContainerState(page);
 
       if (isVisible) {
         const isCancelledOrError =

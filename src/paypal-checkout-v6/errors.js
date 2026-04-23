@@ -136,6 +136,12 @@ module.exports = {
     code: "PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS",
     message: "PayPal session options are invalid or missing required fields.",
   },
+  PAYPAL_CHECKOUT_V6_SHIPPING_CALLBACK_CONFLICT: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_SHIPPING_CALLBACK_CONFLICT",
+    message:
+      "Cannot use both shippingCallbackUrl and client-side shipping callbacks (onShippingAddressChange/onShippingOptionsChange).",
+  },
   PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED",
@@ -217,5 +223,12 @@ module.exports = {
     type: BraintreeError.types.CUSTOMER,
     code: "PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CANCELED",
     message: "Customer canceled the billing agreement.",
+  },
+
+  // Messages Errors
+  PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: "PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED",
+    message: "Could not create PayPal Messages instance.",
   },
 };

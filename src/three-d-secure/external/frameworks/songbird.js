@@ -799,6 +799,9 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
       if (options.merchantName) {
         data.merchantName = options.merchantName;
       }
+      if (options.applySmartAuthentication) {
+        data.applySmartAuthentication = options.applySmartAuthentication;
+      }
 
       return self.prepareLookup(data);
     });

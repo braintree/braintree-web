@@ -27,11 +27,26 @@ describe("FieldComponent", () => {
     testContext.focusForwardElement.id = "forward-element";
 
     focusIntercept.generate
+      .mockReset()
       .mockReturnValueOnce(testContext.focusBackElement)
       .mockReturnValueOnce(testContext.focusForwardElement);
   });
 
   it.todo("tests filling out logic in Field Component file");
+
+  it("throws an error immediately when type is not a valid InputComponent", () => {
+    const modelConfig = getModelConfig(["number", "cvv", "expirationDate"]);
+
+    expect(() => {
+      new FieldComponent({
+        componentId: "unique-id",
+        cardForm: new CreditCardForm(modelConfig),
+        type: "invalidType",
+      });
+    }).toThrow("Invalid field type: invalidType");
+
+    expect(focusIntercept.generate).not.toHaveBeenCalled();
+  });
 
   it("can set a custom label", () => {
     const modelConfig = getModelConfig(["number", "cvv", "expirationDate"]);
