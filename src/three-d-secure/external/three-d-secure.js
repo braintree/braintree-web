@@ -417,7 +417,7 @@ EventEmitter.createChild(ThreeDSecure);
  * @param {string} [options.requestedExemptionType] If an exemption is requested and the exemption's conditions are satisfied, then it will be applied. The following supported exemptions are defined as per PSD2 regulation: `low_value`, `transaction_risk_analysis`
  * @param {boolean} [options.applySmartAuthentication] If set to `true`, an AI-driven decision will be made to determine the authentication strategy which will try to balance fraud protection with a frictionless user experience. These strategies include requesting a challenge, data-only, exemptions, etc.
  * @param {object} [options.customFields] Object where each key is the name of a custom field which has been configured in the Control Panel. In the Control Panel you can configure 3D Secure Rules which trigger on certain values.
- * @param {function} [options.onLookupComplete] *Deprecated:* Use {@link ThreeDSecure#event:lookup-complete|`threeDSecureInstance.on('lookup-complete')`} instead. Function to execute when lookup completes. The first argument, `data`, is a {@link ThreeDSecure~verificationData|verificationData} object, and the second argument, `next`, is a callback. `next` must be called to continue.
+ * @param {function} [options.onLookupComplete] Function to execute when lookup completes. The first argument, `data`, is a {@link ThreeDSecure~verificationData|verificationData} object, and the second argument, `next`, is a callback. `next` must be called to continue.
  * @param {string} [options.email] The email used for verification. (maximum length 255)
  * @param {string} [options.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, parenthesis and other characters. (maximum length 25)
  * @param {object} [options.billingAddress] An {@link ThreeDSecure~billingAddress|billingAddress} object for verification.
@@ -433,18 +433,11 @@ EventEmitter.createChild(ThreeDSecure);
  * <caption>Verifying a payment method nonce with 3DS 2.0</caption>
  * var my3DSContainer;
  *
- * // set up listener after initialization
- * threeDSecure.on(('lookup-complete', function (data, next) {
- *   // use `data` here, then call `next()`
- *   next();
- * });
- *
- * // call verifyCard after tokenizing a card
  * threeDSecure.verifyCard({
  *   amount: '123.45',
  *   nonce: hostedFieldsTokenizationPayload.nonce,
  *   bin: hostedFieldsTokenizationPayload.details.bin,
- *   email: 'test@example.com'
+ *   email: 'test@example.com',
  *   billingAddress: {
  *     givenName: 'Jill',
  *     surname: 'Doe',
@@ -467,58 +460,7 @@ EventEmitter.createChild(ThreeDSecure);
  *       region: 'CA',
  *       postalCode: '12345',
  *       countryCodeAlpha2: 'US'
- *     }
- *     shippingPhone: '8101234567'
- *   }
- * }, function (err, payload) {
- *   if (err) {
- *     console.error(err);
- *     return;
- *   }
- *
- *   if (payload.liabilityShifted) {
- *     // Liability has shifted
- *     submitNonceToServer(payload.nonce);
- *   } else if (payload.liabilityShiftPossible) {
- *     // Liability may still be shifted
- *     // Decide if you want to submit the nonce
- *   } else {
- *     // Liability has not shifted and will not shift
- *     // Decide if you want to submit the nonce
- *   }
- * });
- * @example
- * <caption>Verifying a payment method nonce with 3DS 2.0 with onLookupComplete callback</caption>
- * var my3DSContainer;
- *
- * threeDSecure.verifyCard({
- *   amount: '123.45',
- *   nonce: hostedFieldsTokenizationPayload.nonce,
- *   bin: hostedFieldsTokenizationPayload.details.bin,
- *   email: 'test@example.com'
- *   billingAddress: {
- *     givenName: 'Jill',
- *     surname: 'Doe',
- *     phoneNumber: '8101234567',
- *     streetAddress: '555 Smith St.',
- *     extendedAddress: '#5',
- *     locality: 'Oakland',
- *     region: 'CA',
- *     postalCode: '12345',
- *     countryCodeAlpha2: 'US'
- *   },
- *   additionalInformation: {
- *     workPhoneNumber: '5555555555',
- *     shippingGivenName: 'Jill',
- *     shippingSurname: 'Doe',
- *     shippingAddress: {
- *       streetAddress: '555 Smith st',
- *       extendedAddress: '#5',
- *       locality: 'Oakland',
- *       region: 'CA',
- *       postalCode: '12345',
- *       countryCodeAlpha2: 'US'
- *     }
+ *     },
  *     shippingPhone: '8101234567'
  *   },
  *   onLookupComplete: function (data, next) {

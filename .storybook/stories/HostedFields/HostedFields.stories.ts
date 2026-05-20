@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import { TEST_CARDS } from "../../utils/test-data";
@@ -436,6 +437,7 @@ const setupSeparateExpirationFields = (container) => {
   window.braintree.client
     .create({
       authorization: authorization,
+      ...(isIntegrationCoverageRun() && { debug: true }),
     })
     .then((clientInstance) => {
       return window.braintree.hostedFields.create({
@@ -537,7 +539,11 @@ export const StandardHostedFields: StoryObj = {
     (container, args) => {
       const formContainer = createHostedFieldsForm(args);
       container.appendChild(formContainer);
-      setupBraintreeHostedFields(formContainer, args);
+      setupBraintreeHostedFields(
+        formContainer,
+        args,
+        isIntegrationCoverageRun() ? true : undefined
+      );
     },
     ["client.min.js", "hosted-fields.min.js"]
   ),
@@ -627,7 +633,7 @@ export const HostedFieldsCSPTest: StoryObj = {
       // Read useMinified from URL params to control which iframe HTML file loads
       const urlParams = new URLSearchParams(window.location.search);
       const useMinified = urlParams.get("useMinified") === "true";
-      const debugMode = !useMinified; // debug=true loads .html, debug=false loads .min.html
+      const debugMode = isIntegrationCoverageRun() ? true : !useMinified; // debug=true loads .html, debug=false loads .min.html
 
       const formContainer = createHostedFieldsForm(args);
       container.appendChild(formContainer);

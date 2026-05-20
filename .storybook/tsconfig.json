@@ -27,7 +27,7 @@
       "@/*": ["./stories/*"]
     }
   },
-  "include": ["./**/*"],
+  "include": ["./**/*", "../playwright.config.ts"],
   "exclude": [],
   "ts-node": {
     "esm": true

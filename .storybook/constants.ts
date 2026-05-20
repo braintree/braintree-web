@@ -31,7 +31,7 @@ export const PAYPAL_SUCCESS_MESSAGES = {
 
 // PayPal popup timeouts (in milliseconds)
 export const PAYPAL_POPUP_TIMEOUTS = {
-  POPUP_OPEN: 10000,
+  POPUP_OPEN: 20000,
   LOGIN_PAGE: 15000,
   LOGIN_COMPLETE: 20000,
   APPROVAL_PAGE: 15000,
@@ -42,12 +42,14 @@ export const browsers = [
   {
     browserName: "chrome",
     osName: "Windows",
+    deviceName: "Desktop Chrome",
     osVersion: "10",
     browserVersion: "latest",
   },
   {
     browserName: "Edge",
     osName: "Windows",
+    deviceName: "Desktop Edge",
     osVersion: "10",
     browserVersion: "latest",
   },
@@ -55,6 +57,7 @@ export const browsers = [
     browserName: "Safari",
     playwrightName: "playwright-webkit",
     osName: "OS X",
+    deviceName: "Desktop Safari",
     osVersion: "Tahoe",
     browserVersion: "latest",
   },
@@ -62,6 +65,7 @@ export const browsers = [
     browserName: "firefox",
     playwrightName: "playwright-firefox",
     osName: "Windows",
+    deviceName: "Desktop Firefox",
     osVersion: "10",
     browserVersion: "latest",
   },

@@ -364,14 +364,7 @@ const setupOneTimePayment = async (
       },
 
       onApprove: async (data: IPayPalV6ApproveData) => {
-        // Normalize data - PayPal V6 returns camelCase (payerId/orderId)
-        const tokenizeData = {
-          payerID: data.payerID || data.payerId || data.PayerID,
-          orderID: getOrderId(data),
-        };
-
-        const payload =
-          await paypalCheckoutV6Instance.tokenizePayment(tokenizeData);
+        const payload = await paypalCheckoutV6Instance.tokenizePayment(data);
         resultDiv.className =
           "shared-result shared-result--visible shared-result--success";
         resultDiv.innerHTML = `

@@ -11,7 +11,7 @@ dotenv.config({
   path: path.resolve(__dirname, "../../.env"),
 });
 
-const type = process.env.GITHUB_REF ? "CI" : "Local";
+const type = process.env.CI ? "CI" : "Local";
 
 const build = `"Braintree.js" - ${type}-${getLocalIdentifier()}`;
 

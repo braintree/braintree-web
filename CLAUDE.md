@@ -57,6 +57,9 @@ Each component has its own CLAUDE.md with detailed guidance. These are automatic
 - `npm run test:playwright:local` - Run Playwright tests locally with headed browsers
 - `npm run test:integration` - Alias for `test:playwright` (backward compat)
 - `npm run test:integration:local` - Alias for `test:playwright:local` (backward compat)
+- Integration coverage (see `.storybook/CLAUDE.md` "Integration Test Coverage" section):
+  1. `npm run build:integration:coverage` - Build SDK with source maps, copy to Storybook, build Storybook
+  2. `npm run test:integration:coverage` - Chromium-only Playwright run → `coverage/integration/html/index.html`
 
 ## Architecture
 

@@ -1,0 +1,43 @@
+.client-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.client-info-item {
+  padding: 8px 12px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.client-info-item strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.client-config-display {
+  background-color: #f5f7fa;
+  border: 1px solid #e0e4ea;
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.client-config-display pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+}

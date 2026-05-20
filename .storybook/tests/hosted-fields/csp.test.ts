@@ -3,10 +3,7 @@ import path from "path";
 import fs from "fs";
 
 import { test } from "../helpers/playwright-helpers";
-import {
-  extractScriptSrcFromHTML,
-  type CspReport,
-} from "../helpers/test-server";
+import { extractScriptSrcFromHTML } from "../helpers/test-server";
 
 test.describe("Hosted Fields CSP", () => {
   const htmlDir = path.resolve(
@@ -24,8 +21,6 @@ test.describe("Hosted Fields CSP", () => {
     const originalHtmlFilePath = path.join(htmlDir, filename);
 
     test.describe(`CSP tests for ${filename}`, () => {
-      const cspReports: CspReport[] = [];
-
       if (!fs.existsSync(originalHtmlFilePath)) {
         throw new Error(`Original HTML not found: ${originalHtmlFilePath}`);
       }
@@ -37,40 +32,50 @@ test.describe("Hosted Fields CSP", () => {
       test.use({
         testServerOptions: {
           enableCsp: true,
-          cspReports,
           cspScriptSrc: scriptSrc,
           modifyMetaTag: false,
           forceServeMinified: useMinified,
         },
       });
 
-      test.beforeEach(async ({ hostedFieldsPage, getTestUrl, page }) => {
-        // Reset the array before each test
-        cspReports.splice(0);
+      test("loads JS when CSP hash is correct", async ({
+        testServer,
+        page,
+      }) => {
+        // Navigate directly to the frame HTML served by the test server.
+        // The SDK constructs the hosted-fields iframe URL from assetsUrl, which
+        // resolves to the CDN in CI (BRAINTREE_JS_ASSET_URL is not set at build
+        // time). By navigating to the file directly we ensure the test server's
+        // CSP headers and meta-tag modifications are actually applied to the page
+        // under test.
+        await page.addInitScript(() => {
+          (window as any).__cspViolations = [];
+          document.addEventListener(
+            "securitypolicyviolation",
+            (e: SecurityPolicyViolationEvent) => {
+              (window as any).__cspViolations.push(
+                e.effectiveDirective || e.violatedDirective
+              );
+            }
+          );
+        });
 
-        const url = getTestUrl({ csp: true, useMinified });
-        await page.goto(url, { waitUntil: "domcontentloaded" });
+        const frameUrl = `http://localhost:${testServer.port}/local-build/html/${filename}`;
 
-        await hostedFieldsPage.waitForHostedFieldsReady();
-      });
+        await page.goto(frameUrl, { waitUntil: "domcontentloaded" });
 
-      test("loads JS when CSP hash is correct", async ({ page }) => {
-        const numberFrame = page.frameLocator(
-          'iframe[id^="braintree-hosted-field-number"]'
+        // Allow time for any delayed violation reports to arrive
+        await page.waitForTimeout(1000);
+
+        const violations: string[] = await page.evaluate(
+          () => (window as any).__cspViolations ?? []
         );
-        await numberFrame
-          .locator("form")
-          .waitFor({ state: "visible", timeout: 10000 });
 
-        await page.waitForTimeout(500);
-
-        expect(cspReports.length).toBe(0);
+        expect(violations.length).toBe(0);
       });
     });
 
     test.describe(`Bad CSP tests for ${filename}`, () => {
-      const cspReports: CspReport[] = [];
-
       if (!fs.existsSync(originalHtmlFilePath)) {
         throw new Error(`Original HTML not found: ${originalHtmlFilePath}`);
       }
@@ -87,40 +92,68 @@ test.describe("Hosted Fields CSP", () => {
       test.use({
         testServerOptions: {
           enableCsp: true,
-          cspReports,
           cspScriptSrc: invalidScriptSrc,
           modifyMetaTag: true,
-          // When testing minified file, force server to serve .min.html
-          // even when SDK requests .html (works around the SDK not allowing minified files when not in dev mode)
           forceServeMinified: useMinified,
         },
       });
 
-      test.beforeEach(() => {
-        // Reset the array before each test
-        cspReports.splice(0);
-      });
-
       test("blocks JS when CSP hash is invalid", async ({
-        getTestUrl,
+        testServer,
         page,
       }) => {
-        const url = getTestUrl({ csp: true, useMinified });
-        await page.goto(url, { waitUntil: "domcontentloaded" });
+        // Navigate directly to the frame HTML served by the test server.
+        // The SDK constructs the hosted-fields iframe URL from assetsUrl, which
+        // resolves to the CDN in CI (BRAINTREE_JS_ASSET_URL is not set at build
+        // time). By navigating to the file directly we ensure the test server's
+        // CSP headers and meta-tag modifications are actually applied to the page
+        // under test.
+        //
+        // We use securitypolicyviolation DOM events (via addInitScript +
+        // page.evaluate) rather than report-uri. This event fires synchronously
+        // in the browser when a violation is detected and requires no network
+        // round-trip, making it reliable in remote BrowserStack sessions where
+        // report-uri POSTs are dropped by the tunnel.
+        //
+        // Because we navigate directly (not inside an SDK-created iframe), the
+        // violation fires on window itself — no window.top cross-frame writes
+        // needed.
+        await page.addInitScript(() => {
+          (window as any).__cspViolations = [];
+          document.addEventListener(
+            "securitypolicyviolation",
+            (e: SecurityPolicyViolationEvent) => {
+              (window as any).__cspViolations.push(
+                e.effectiveDirective || e.violatedDirective
+              );
+            }
+          );
+        });
 
-        // Wait for CSP violations to be reported
-        // Don't wait for hosted fields to be ready - they should be blocked by CSP
+        const frameUrl = `http://localhost:${testServer.port}/local-build/html/${filename}`;
+
+        await page.goto(frameUrl, { waitUntil: "domcontentloaded" });
+
+        // Wait for at least one CSP violation to be detected.
+        // Don't wait for hosted fields to be ready — they should be blocked by CSP.
         await expect
-          .poll(() => cspReports.length, {
-            timeout: 10000,
-            message: "Expected CSP violation reports but none were received",
-          })
+          .poll(
+            () =>
+              page.evaluate(() => (window as any).__cspViolations?.length ?? 0),
+            {
+              timeout: 10000,
+              message: "Expected CSP violation events but none were received",
+            }
+          )
           .toBeGreaterThan(0);
 
-        const allViolationsAreScriptSrc = cspReports.every(
-          (report) =>
-            report["csp-report"]["violated-directive"] === "script-src-elem" ||
-            report["csp-report"]["effective-directive"] === "script-src-elem"
+        const violations: string[] = await page.evaluate(
+          () => (window as any).__cspViolations ?? []
+        );
+
+        const allViolationsAreScriptSrc = violations.every(
+          (directive) =>
+            directive === "script-src-elem" || directive === "script-src"
         );
 
         expect(allViolationsAreScriptSrc).toBe(true);

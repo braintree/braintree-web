@@ -16,6 +16,9 @@ function forkBrowserify(options, done) {
   var prependFiles = "";
   var appendFiles = "";
   var flags = options.flags || "";
+  var coverageBuild = process.env.BRAINTREE_JS_COVERAGE_BUILD === "true";
+  var browserifyDebugFlag = coverageBuild ? "-d " : "";
+  var mapBasename;
   // uglify could be set to false. Otherwise it would be undefined and should default to true.
   var uglify = options.uglify !== false;
   var transforms =
@@ -37,16 +40,32 @@ function forkBrowserify(options, done) {
   }
 
   buildCmdArray = [
-    `browserify -p browserify-derequire --no-builtins --insert-global-vars global ${flags} ${standalone} ${transforms} "${options.main}"`,
+    `browserify ${browserifyDebugFlag}-p browserify-derequire --no-builtins --insert-global-vars global ${flags} ${standalone} ${transforms} "${options.main}"`,
     "|",
     `cat ${prependFiles} - ${appendFiles} > ${unminifiedFile}`,
   ];
 
   if (uglify) {
     buildCmdArray.push("&&");
-    buildCmdArray.push(
-      `uglifyjs ${unminifiedFile} -m --compress arrows=false -o "${minifiedFile}"`
-    );
+    if (coverageBuild) {
+      mapBasename = path.basename(minifiedFile) + ".map";
+
+      buildCmdArray.push(
+        'uglifyjs "' +
+          unminifiedFile +
+          '" -m --compress arrows=false -o "' +
+          minifiedFile +
+          '" --source-map "includeSources=true,url=' +
+          mapBasename +
+          ",filename=" +
+          mapBasename +
+          '"'
+      );
+    } else {
+      buildCmdArray.push(
+        `uglifyjs ${unminifiedFile} -m --compress arrows=false -o "${minifiedFile}"`
+      );
+    }
   }
 
   buildCmd = buildCmdArray.join(" ");

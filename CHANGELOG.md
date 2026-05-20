@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 3.142.0 (2026-05-20)
+
+- PayPal Checkout v6
+  - Add `startVaultInitiatedCheckout` method for one-click repeat purchases using vaulted PayPal tokens. Includes `closeVaultInitiatedCheckoutWindow` and `focusVaultInitiatedCheckoutWindow` helper methods for managing the checkout popup
+  - Fix `tokenizePayment` to accept `paymentID`/`paymentId` (returned by PayPal for vault-initiated checkout flows) in addition to `orderID`/`orderId`
+  - Fix `tokenizePayment` to accept camelCase `payerId`/`orderId` from `onApprove` callback payload in addition to `payerID`/`orderID`
+  - Add Contact Module support: `contactPreference` parameter to control contact information collection and `shippingAddressOverride` parameter to pre-populate shipping/contact address fields in `createOneTimePaymentSession` and `createPayLaterSession`
+- 3D Secure
+  - Remove `Deprecated` note from `onLookupComplete` docs
+
 ## 3.141.0 (2026-04-23)
 
 - Venmo

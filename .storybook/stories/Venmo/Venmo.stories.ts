@@ -1,56 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
+import type {
+  IBraintreeError,
+  IVenmoCreateOptions,
+  IVenmoTokenizePayload,
+} from "../../types/global";
+import venmoLogoUrl from "../../assets/venmo-logo.svg?url";
 import "./venmo.css";
-
-// cSpell:ignore venmo Venmo
-
-// Type assertion for window.braintree to include venmo
-interface BraintreeWithVenmo {
-  client: {
-    create: (_options: { authorization: string }) => Promise<unknown>;
-  };
-  venmo: {
-    create: (_options: {
-      client: unknown;
-      allowDesktop?: boolean;
-      allowDesktopWebLogin?: boolean;
-      mobileWebFallBack?: boolean;
-      paymentMethodUsage?: "single_use" | "multi_use";
-      riskCorrelationId?: string;
-      [key: string]: unknown;
-    }) => Promise<{
-      isBrowserSupported(): boolean;
-      hasTokenizationResult(): boolean;
-      tokenize(): Promise<{
-        nonce: string;
-        details: { username: string };
-      }>;
-      cancelTokenization(): Promise<void>;
-      teardown(): Promise<void>;
-    }>;
-  };
-}
-interface VenmoOptions {
-  allowDesktop?: boolean;
-  allowDesktopWebLogin?: boolean;
-  mobileWebFallBack?: boolean;
-  paymentMethodUsage?: "single_use" | "multi_use";
-  riskCorrelationId?: string;
-  [key: string]: unknown;
-}
-
-interface VenmoPayload {
-  nonce: string;
-  details: {
-    username: string;
-  };
-}
-
-interface VenmoError {
-  message: string;
-  code?: string;
-}
 
 const meta: Meta = {
   title: "Braintree/Venmo",
@@ -82,7 +39,9 @@ const createVenmoForm = (title: string, description: string): HTMLElement => {
         </p>
       </div>
 
-      <img id="venmo-button" class="venmo-button" src=".storybook/assets/venmo-logo.svg" />
+      <button id="venmo-button" class="venmo-button" type="button" style="display:none">
+        <img src="${venmoLogoUrl}" alt="Pay with Venmo" />
+      </button>
       <div id="result" class="shared-result"></div>
       <div id="loading" class="shared-loading">Initializing Venmo...</div>
     </div>
@@ -91,7 +50,10 @@ const createVenmoForm = (title: string, description: string): HTMLElement => {
   return container;
 };
 
-const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
+const setupVenmo = (
+  container: HTMLElement,
+  venmoOptions: IVenmoCreateOptions
+) => {
   const authorization = getAuthorizationToken();
   const venmoButton = container.querySelector(
     "#venmo-button"
@@ -99,12 +61,12 @@ const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
   const resultDiv = container.querySelector("#result") as HTMLDivElement;
   const loadingDiv = container.querySelector("#loading") as HTMLDivElement;
 
-  (window.braintree as unknown as BraintreeWithVenmo).client
-    .create({
+  window
+    .braintree!.client.create({
       authorization: authorization,
     })
     .then((clientInstance) => {
-      return (window.braintree as unknown as BraintreeWithVenmo).venmo.create({
+      return window.braintree!.venmo.create({
         client: clientInstance,
         riskCorrelationId: "foo-bar-test",
         ...venmoOptions,
@@ -116,6 +78,8 @@ const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
         return;
       }
 
+      window.__venmoInstance = venmoInstance;
+
       loadingDiv.style.display = "none";
       venmoButton.style.display = "block";
 
@@ -123,10 +87,10 @@ const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
       if (venmoInstance.hasTokenizationResult()) {
         venmoInstance
           .tokenize()
-          .then((payload: VenmoPayload) => {
+          .then((payload: IVenmoTokenizePayload) => {
             handleVenmoSuccess(resultDiv, payload);
           })
-          .catch((tokenizeError: VenmoError) => {
+          .catch((tokenizeError: IBraintreeError) => {
             handleVenmoError(resultDiv, tokenizeError);
           });
         return;
@@ -134,19 +98,22 @@ const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
 
       venmoButton.addEventListener("click", () => {
         venmoButton.disabled = true;
-        venmoButton.textContent = "Processing...";
+        venmoButton.setAttribute("aria-busy", "true");
+        venmoButton.setAttribute("aria-label", "Processing...");
 
         venmoInstance
           .tokenize()
-          .then((payload: VenmoPayload) => {
+          .then((payload: IVenmoTokenizePayload) => {
             handleVenmoSuccess(resultDiv, payload);
             venmoButton.disabled = false;
-            venmoButton.textContent = "Pay with Venmo";
+            venmoButton.setAttribute("aria-busy", "false");
+            venmoButton.setAttribute("aria-label", "Pay with Venmo");
           })
-          .catch((tokenizeError: VenmoError) => {
+          .catch((tokenizeError: IBraintreeError) => {
             handleVenmoError(resultDiv, tokenizeError);
             venmoButton.disabled = false;
-            venmoButton.textContent = "Pay with Venmo";
+            venmoButton.setAttribute("aria-busy", "false");
+            venmoButton.setAttribute("aria-label", "Pay with Venmo");
           });
       });
     })
@@ -168,7 +135,7 @@ const showError = (
 
 const handleVenmoSuccess = (
   resultDiv: HTMLDivElement,
-  payload: VenmoPayload
+  payload: IVenmoTokenizePayload
 ) => {
   resultDiv.className =
     "shared-result shared-result--success shared-result--visible";
@@ -179,7 +146,10 @@ const handleVenmoSuccess = (
   `;
 };
 
-const handleVenmoError = (resultDiv: HTMLDivElement, error: VenmoError) => {
+const handleVenmoError = (
+  resultDiv: HTMLDivElement,
+  error: IBraintreeError
+) => {
   let message = error.message;
 
   if (error.code === "VENMO_CANCELED") {
@@ -205,6 +175,7 @@ export const DesktopWeb: StoryObj = {
         mobileWebFallBack: true,
         allowDesktopWebLogin: true,
         paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
       });
     },
     ["client.min.js", "venmo.min.js"]
@@ -221,7 +192,8 @@ export const DesktopQR: StoryObj = {
       container.appendChild(formContainer);
       setupVenmo(formContainer, {
         allowDesktop: true,
-        paymentMethodUsage: "multi_use",
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
       });
     },
     ["client.min.js", "venmo.min.js"]

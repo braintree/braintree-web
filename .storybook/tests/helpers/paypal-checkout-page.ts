@@ -1,8 +1,21 @@
-import { Page } from "@playwright/test";
+import { expect, Page } from "@playwright/test";
 import {
   PAYPAL_POPUP_TIMEOUTS,
   PAYPAL_SUCCESS_MESSAGES,
 } from "../../constants";
+
+const PAYPAL_SDK_SCRIPT_SUBSTRING = "paypal.com/sdk/js";
+const LEGACY_BUTTON_HOST_SELECTOR = "#paypal-button";
+/**
+ * PayPal.js (zoid) injects **several** iframes into `#paypal-button` — not only
+ * the smart button. Each iframe gets a `name` like `__zoid__paypal_buttons__…`
+ * or `__zoid_prerender_frame__…` with a long encoded payload in the `name`
+ * (serialized props for cross-frame messaging; it is *not* an error, just noisy
+ * in Playwright’s element dump). A broad `#paypal-button iframe` selector
+ * therefore matches 3+ nodes and breaks strict mode — use a single frame here.
+ * @see https://github.com/krakenjs/zoid
+ */
+const LEGACY_ZOID_PRERENDER_IFRAME = `${LEGACY_BUTTON_HOST_SELECTOR} iframe[name^="__zoid_prerender_frame__"]`;
 
 const LOGIN_TIMEOUTS = {
   pageLoad: PAYPAL_POPUP_TIMEOUTS.LOGIN_PAGE,
@@ -107,6 +120,7 @@ export class PayPalCheckoutPage {
         const rect = btn.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
       },
+      undefined,
       { timeout: 20000 }
     );
   }
@@ -209,15 +223,20 @@ export class PayPalCheckoutPage {
     // Wait for any OTP form processing to complete
     await this.handleStepUpVerification(popup);
 
+    // PayPal billing-agreement UIs vary by region / experiment (e.g. Agree and
+    // Continue, Subscribe, Link account).
     const approvalButton = popup
       .getByRole("button", { name: /Agree/i })
+      .or(popup.getByRole("button", { name: /Agree and Continue/i }))
       .or(popup.getByRole("button", { name: /Continue/i }))
       .or(popup.getByRole("button", { name: /Set Up/i }))
+      .or(popup.getByRole("button", { name: /Subscribe/i }))
+      .or(popup.getByRole("button", { name: /Link( account)?/i }))
       .first();
 
     await approvalButton.waitFor({
       state: "visible",
-      timeout: 30000,
+      timeout: 45000,
     });
 
     await approvalButton.click();
@@ -225,8 +244,15 @@ export class PayPalCheckoutPage {
 
   async cancelPayPalPayment(): Promise<void> {
     const popup = this.getPopup();
-    await popup.close();
+    try {
+      await popup.close();
+    } catch {
+      // may already be closed
+    }
     this.popup = null;
+    // PayPal (zoid) may deliver onCancel to the parent shortly after the popup
+    // is torn down; a raw window close can be slightly racy in CI.
+    await this.page.waitForTimeout(2000);
   }
 
   // ----- Results (on main page) -----
@@ -238,6 +264,7 @@ export class PayPalCheckoutPage {
         const classes = resultDiv?.getAttribute("class");
         return classes && classes.includes("shared-result--visible");
       },
+      undefined,
       { timeout: 30000 }
     );
 
@@ -260,6 +287,7 @@ export class PayPalCheckoutPage {
         const classes = resultDiv?.getAttribute("class");
         return classes && classes.includes("shared-result--visible");
       },
+      undefined,
       { timeout: 60000 }
     );
 
@@ -294,6 +322,104 @@ export class PayPalCheckoutPage {
       ? ((await resultContainer.textContent()) ?? "")
       : "";
     return { isVisible, resultText };
+  }
+
+  // ----- Legacy PayPal Checkout (iframe in #paypal-button) -----
+
+  /**
+   * Waits until the Braintree + PayPal SDK has injected a PayPal.js script.
+   * Legacy stories do not add `.paypal-button`; the smart button lives in
+   * `#paypal-button` iframe.
+   */
+  async waitForPayPalSDKLoaded(): Promise<void> {
+    const fragment = PAYPAL_SDK_SCRIPT_SUBSTRING;
+    await this.page.waitForFunction(
+      (sdkFragment) => {
+        const list = document.querySelectorAll("script");
+        for (let i = 0; i < list.length; i += 1) {
+          const el = list[i] as HTMLScriptElement;
+          const src = el.getAttribute("src") || "";
+          if (src.indexOf(sdkFragment) !== -1) {
+            return true;
+          }
+        }
+        return false;
+      },
+      fragment,
+      { timeout: 20000 }
+    );
+  }
+
+  /**
+   * Returns the `src` of the first PayPal JS SDK script, or `null` if none.
+   */
+  getPayPalSDKScriptSrc(): Promise<string | null> {
+    return this.page.evaluate((fragment: string) => {
+      const list = document.querySelectorAll("script");
+      for (let i = 0; i < list.length; i += 1) {
+        const el = list[i] as HTMLScriptElement;
+        const src = el.getAttribute("src") || "";
+        if (src.indexOf(fragment) !== -1) {
+          return src;
+        }
+      }
+      return null;
+    }, PAYPAL_SDK_SCRIPT_SUBSTRING);
+  }
+
+  getPayPalSDKScriptCount(): Promise<number> {
+    return this.page.evaluate((fragment: string) => {
+      const list = document.querySelectorAll("script");
+      let n = 0;
+      for (let i = 0; i < list.length; i += 1) {
+        const el = list[i] as HTMLScriptElement;
+        if ((el.getAttribute("src") || "").indexOf(fragment) !== -1) {
+          n += 1;
+        }
+      }
+      return n;
+    }, PAYPAL_SDK_SCRIPT_SUBSTRING);
+  }
+
+  async toggleRecurringPurchase(checked: boolean): Promise<void> {
+    await this.page.locator("#vaultWithPurchaseToggle").setChecked(checked);
+  }
+
+  async waitForLegacyPayPalButtonReady(): Promise<void> {
+    await this.page
+      .locator(LEGACY_ZOID_PRERENDER_IFRAME)
+      .first()
+      .waitFor({ state: "visible", timeout: 20000 });
+  }
+
+  async clickLegacyPayPalButton(): Promise<void> {
+    await this.waitForLegacyPayPalButtonReady();
+    const frame = this.page.frameLocator(LEGACY_ZOID_PRERENDER_IFRAME);
+    const trigger = frame
+      .getByRole("link")
+      .or(frame.getByRole("button"))
+      .or(frame.locator("div[role='link']"));
+    await trigger.first().click({ timeout: 15000 });
+  }
+
+  async waitForLegacyPopup(): Promise<Page> {
+    const popupPromise = this.page.waitForEvent("popup", {
+      timeout: PAYPAL_POPUP_TIMEOUTS.POPUP_OPEN,
+    });
+    await this.clickLegacyPayPalButton();
+    this.popup = await popupPromise;
+    return this.popup;
+  }
+
+  async expectLegacyPayPalButtonVisible(): Promise<void> {
+    const iframe = this.page.locator(LEGACY_ZOID_PRERENDER_IFRAME).first();
+    await expect(iframe).toBeVisible({ timeout: 20000 });
+  }
+
+  async expectLegacyPayPalButtonEnabled(): Promise<void> {
+    await this.waitForPayPalSDKLoaded();
+    await this.waitForLegacyPayPalButtonReady();
+    await expect(this.page.locator(LEGACY_BUTTON_HOST_SELECTOR)).toBeVisible();
   }
 
   // ----- Network interception (on main page) -----
@@ -473,14 +599,13 @@ export class PayPalCheckoutPage {
   }
 
   private async detectLoginStyle(popup: Page): Promise<LoginStyle> {
-    const emailVisible = await popup
-      .locator("#email")
-      .isVisible()
-      .catch(() => false);
-    const passwordVisible = await popup
-      .locator("input#password")
-      .isVisible()
-      .catch(() => false);
+    const emailElement = popup.locator("#email");
+    const emailVisible = await emailElement.isVisible().catch(() => false);
+
+    const passwordElement = popup.locator("input#password");
+    const passwordVisible =
+      (await passwordElement.isVisible().catch(() => false)) &&
+      (await passwordElement.getAttribute("aria-hidden")) === "false";
 
     if (emailVisible && passwordVisible) {
       return LoginStyle.EMAIL_AND_PASSWORD;
@@ -505,6 +630,7 @@ export class PayPalCheckoutPage {
       .locator("input#password")
       .isVisible()
       .catch(() => false);
+
     return isPassword
       ? LoginStyle.EMAIL_THEN_PASSWORD
       : LoginStyle.EMAIL_THEN_OTP;

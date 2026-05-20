@@ -57,6 +57,10 @@ FRAMES.forEach(function (frame) {
   HTML_TASKS.push(htmlTaskName);
 
   gulp.task(jsDeleteTaskName, function () {
+    if (process.env.BRAINTREE_JS_COVERAGE_BUILD === "true") {
+      return Promise.resolve();
+    }
+
     var jsFilePath = DIST_DIR + "js/local-payment-" + frame + "-frame.js";
 
     return del(jsFilePath);

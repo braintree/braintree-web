@@ -288,6 +288,494 @@ describe("PayPalCheckoutV6", () => {
     });
   });
 
+  describe("startVaultInitiatedCheckout", () => {
+    beforeEach(() => {
+      testContext.options = {
+        amount: "100.00",
+        currency: "USD",
+        vaultInitiatedCheckoutPaymentMethodToken: "fake-nonce",
+      };
+      testContext.client.request.mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect",
+        },
+      });
+
+      jest
+        .spyOn(testContext.paypalCheckoutV6, "tokenizePayment")
+        .mockResolvedValue({
+          nonce: "new-fake-nonce",
+          type: "PayPalAccount",
+        });
+
+      jest
+        .spyOn(testContext.paypalCheckoutV6, "_createPaymentResource")
+        .mockResolvedValue({
+          paymentResource: {
+            redirectUrl: "https://example.com/redirect",
+          },
+        });
+    });
+
+    it("rejects if auth is already in progress", async () => {
+      const firstAttempt =
+        testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
+        );
+
+      await expect(
+        testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
+        )
+      ).rejects.toMatchObject({
+        code: "PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS",
+        message: "Vault initiated checkout already in progress.",
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.error.already-in-progress"
+      );
+
+      await firstAttempt;
+
+      // can run again when auth is completed
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+    });
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is not present",
+      async (param) => {
+        delete testContext.options[param];
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is null",
+      async (param) => {
+        testContext.options[param] = null;
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is undefined",
+      async (param) => {
+        testContext.options[param] = undefined;
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is an empty string",
+      async (param) => {
+        testContext.options[param] = "";
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it("requests a payment resource with VIC token", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        testContext.paypalCheckoutV6._createPaymentResource
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        testContext.paypalCheckoutV6._createPaymentResource
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: "100.00",
+          currency: "USD",
+          vaultInitiatedCheckoutPaymentMethodToken: "fake-nonce",
+          flow: "checkout",
+          returnUrl: expect.stringContaining(
+            "/redirect-frame.min.html?channel=service-id"
+          ),
+          cancelUrl: expect.stringContaining(
+            "/cancel-frame.min.html?channel=service-id"
+          ),
+        })
+      );
+    });
+
+    it("opens frame service and redirects", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(testContext.fakeFrameService.open).toHaveBeenCalledTimes(1);
+      expect(testContext.fakeFrameService.open).toHaveBeenCalledWith(
+        {},
+        expect.any(Function)
+      );
+      expect(testContext.fakeFrameService.redirect).toHaveBeenCalledTimes(2);
+      expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(
+        "https://example.com/redirect"
+      );
+      expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(
+        expect.stringContaining("/paypal-landing-frame.min.html")
+      );
+    });
+
+    it("tokenizes data from frameservice", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        testContext.paypalCheckoutV6.tokenizePayment
+      ).toHaveBeenCalledTimes(1);
+      expect(testContext.paypalCheckoutV6.tokenizePayment).toHaveBeenCalledWith(
+        {
+          paymentToken: "token",
+          payerID: "payer-id",
+          paymentID: "payment-id",
+          orderID: "order-id",
+        }
+      );
+    });
+
+    it("works when PayPal returns only paymentId (no orderId) for VIC", async () => {
+      // Simulate PayPal VIC response with paymentId but no orderId
+      testContext.fakeFrameService.open.mockImplementation(
+        yieldsAsync(null, {
+          token: "EC-TOKEN123",
+          PayerID: "PAYER123",
+          paymentId: "PAYID-NH6NK6Y4PF14329T4986581G",
+          // orderId is undefined for VIC flows
+        })
+      );
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(testContext.paypalCheckoutV6.tokenizePayment).toHaveBeenCalledWith(
+        {
+          paymentToken: "EC-TOKEN123",
+          payerID: "PAYER123",
+          paymentID: "PAYID-NH6NK6Y4PF14329T4986581G",
+          orderID: undefined,
+        }
+      );
+
+      // Verify tokenizePayment was successfully called and resolved
+      expect(
+        testContext.paypalCheckoutV6.tokenizePayment
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes frame service and resolves data from tokenization", async () => {
+      const data =
+        await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
+        );
+
+      expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+      expect(data.nonce).toBe("new-fake-nonce");
+      expect(data.type).toBe("PayPalAccount");
+    });
+
+    it("sends analytic event for started", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.started"
+      );
+    });
+
+    it("sends analytic event for success", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.succeeded"
+      );
+    });
+
+    it("opens a modal backdrop in the background", async () => {
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeTruthy();
+
+      await promise;
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("closes modal when user cancels", async () => {
+      testContext.fakeFrameService.open.mockImplementation(
+        yieldsAsync({
+          code: "FRAME_SERVICE_FRAME_CLOSED",
+        })
+      );
+
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeTruthy();
+
+      await expect(promise).rejects.toMatchObject({
+        code: "PAYPAL_CHECKOUT_V6_VIC_CANCELED",
+        message: "Customer closed PayPal popup before authorizing.",
+      });
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("closes modal when startVaultInitiatedCheckout fails", async () => {
+      testContext.paypalCheckoutV6.tokenizePayment.mockRejectedValue(
+        new Error("tokenization failed")
+      );
+
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeTruthy();
+
+      await expect(promise).rejects.toThrow("tokenization failed");
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("can opt out of the modal", async () => {
+      testContext.options.optOutOfModalBackdrop = true;
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+
+      await promise;
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("clicking on the modal focuses the PayPal window", async () => {
+      jest
+        .spyOn(
+          testContext.paypalCheckoutV6,
+          "focusVaultInitiatedCheckoutWindow"
+        )
+        .mockImplementation();
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      const modal = document.querySelector(
+        "[data-braintree-paypal-vault-initiated-checkout-modal]"
+      );
+
+      modal.click();
+
+      expect(
+        testContext.paypalCheckoutV6.focusVaultInitiatedCheckoutWindow
+      ).toHaveBeenCalledTimes(1);
+
+      await promise;
+    });
+
+    it("only creates the modal once", async () => {
+      jest.spyOn(document, "createElement");
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(document.createElement).toHaveBeenCalledTimes(1);
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(document.createElement).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects when popup fails to open", async () => {
+      testContext.fakeFrameService.open.mockImplementation(
+        yieldsAsync({
+          code: "FRAME_SERVICE_FRAME_OPEN_FAILED",
+        })
+      );
+
+      await expect(
+        testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
+        )
+      ).rejects.toMatchObject({
+        code: "PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED",
+        message:
+          "PayPal popup failed to open, make sure to initiate in response to a user action.",
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.failed.popup-not-opened"
+      );
+    });
+
+    it("passes through additional options", async () => {
+      testContext.options.intent = "authorize";
+      testContext.options.lineItems = [
+        {
+          quantity: "1",
+          unitAmount: "100.00",
+          name: "Item",
+          kind: "debit",
+        },
+      ];
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        testContext.paypalCheckoutV6._createPaymentResource
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          intent: "authorize",
+          lineItems: [
+            {
+              quantity: "1",
+              unitAmount: "100.00",
+              name: "Item",
+              kind: "debit",
+            },
+          ],
+          returnUrl: expect.stringContaining("/redirect-frame.min.html"),
+          cancelUrl: expect.stringContaining("/cancel-frame.min.html"),
+        })
+      );
+    });
+  });
+
+  describe("closeVaultInitiatedCheckoutWindow", () => {
+    beforeEach(() => {
+      testContext.paypalCheckoutV6._vaultInitiatedCheckoutInProgress = false;
+    });
+
+    it("closes the frame service", async () => {
+      await testContext.paypalCheckoutV6.closeVaultInitiatedCheckoutWindow();
+
+      expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+    });
+
+    it("sends analytics event if VIC is in progress", async () => {
+      testContext.paypalCheckoutV6._vaultInitiatedCheckoutInProgress = true;
+
+      await testContext.paypalCheckoutV6.closeVaultInitiatedCheckoutWindow();
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.canceled-by-merchant"
+      );
+    });
+  });
+
+  describe("focusVaultInitiatedCheckoutWindow", () => {
+    it("focuses the frame service", async () => {
+      await testContext.paypalCheckoutV6.focusVaultInitiatedCheckoutWindow();
+
+      expect(testContext.fakeFrameService.focus).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("_constructVaultCheckoutUrl", () => {
+    it("constructs redirect frame URL", () => {
+      const url =
+        testContext.paypalCheckoutV6._constructVaultCheckoutUrl(
+          "redirect-frame"
+        );
+
+      expect(url).toContain("/html/redirect-frame.min.html?channel=service-id");
+    });
+
+    it("constructs cancel frame URL", () => {
+      const url =
+        testContext.paypalCheckoutV6._constructVaultCheckoutUrl("cancel-frame");
+
+      expect(url).toContain("/html/cancel-frame.min.html?channel=service-id");
+    });
+  });
+
   describe("teardown", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
@@ -1823,6 +2311,179 @@ describe("PayPalCheckoutV6", () => {
         });
     });
 
+    it("accepts paymentID as alternative to orderID (for VIC flows)", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "PAYER123",
+          paymentID: "PAYID-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "PAYID-123",
+                  payerId: "PAYER123",
+                  correlationId: "PAYID-123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("accepts camelCase paymentId as alternative to orderID", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerId: "PAYER123",
+          paymentId: "PAYID-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "PAYID-123",
+                  payerId: "PAYER123",
+                  correlationId: "PAYID-123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("prefers paymentID over orderID when both provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "PAYER123",
+          orderID: "ORDER123",
+          paymentID: "PAYID-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "PAYID-123",
+                  payerId: "PAYER123",
+                  correlationId: "ORDER123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("accepts camelCase payerId from onApprove payload", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerId: "PAYER123",
+          orderId: "ORDER123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "ORDER123",
+                  payerId: "PAYER123",
+                  correlationId: "ORDER123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("prefers uppercase payerID/orderID over camelCase", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "UPPERCASE_PAYER",
+          orderID: "UPPERCASE_ORDER",
+          payerId: "lowercase_payer",
+          orderId: "lowercase_order",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "UPPERCASE_ORDER",
+                  payerId: "UPPERCASE_PAYER",
+                  correlationId: "UPPERCASE_ORDER",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
     it("sends tokenization request to client", () => {
       jest.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
@@ -2557,6 +3218,68 @@ describe("PayPalCheckoutV6", () => {
             expect.objectContaining({
               data: expect.objectContaining({
                 shippingCallbackUrl: "https://example.com/shipping-callback",
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes contactPreference when provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          contactPreference: "UPDATE_CONTACT_INFO",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                contactPreference: "UPDATE_CONTACT_INFO",
+              }),
+            })
+          );
+        });
+    });
+
+    it("spreads shippingAddressOverride properties onto payload", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          shippingAddressOverride: {
+            recipientName: "Jane Recipient",
+            recipientEmail: "jane@example.com",
+            line1: "456 Gift Lane",
+            city: "Seattle",
+            state: "WA",
+            postalCode: "98101",
+            countryCode: "US",
+          },
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                recipientName: "Jane Recipient",
+                recipientEmail: "jane@example.com",
+                line1: "456 Gift Lane",
+                city: "Seattle",
+                state: "WA",
+                postalCode: "98101",
+                countryCode: "US",
               }),
             })
           );

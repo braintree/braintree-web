@@ -18,6 +18,7 @@ export interface BrowserStackCapability {
 export interface BrowserSpecification {
   browserName: string;
   browserVersion: string;
+  deviceName: string;
   osName: string;
   osVersion: string;
   playwrightName?: string;

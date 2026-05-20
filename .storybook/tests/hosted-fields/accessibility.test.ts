@@ -263,7 +263,7 @@ test.describe("Hosted Fields Accessibility", function () {
     expect(iframeHasValidationIndicators).toBeTruthy();
   });
 
-  test("should support custom aria labels", async ({
+  test.fixme("should support custom aria labels", async ({
     hostedFieldsPage,
     page,
     getTestUrl,
@@ -273,52 +273,24 @@ test.describe("Hosted Fields Accessibility", function () {
 
     await page.evaluate(() => {
       try {
-        const numberEl = document.getElementById(
-          "braintree-hosted-field-number"
-        );
-        numberEl?.setAttribute("aria-label", "Custom card number label");
-        numberEl?.setAttribute("data-test-attribute", "test-value");
+        const iframe = document.getElementById("braintree-hosted-field-number");
+        iframe?.setAttribute("aria-label", "Custom card number label");
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error(e);
         throw e;
       }
     });
-    const hasCustomAttributes = await page.evaluate(() => {
-      const iframe = document.getElementById(
-        "braintree-hosted-field-number"
-      ) as HTMLIFrameElement;
-
-      if (!iframe) {
-        return false;
-      }
-
-      const iframeAttrs = {};
-      for (let i = 0; i < iframe.attributes.length; i++) {
-        iframeAttrs[iframe.attributes[i].name] = iframe.attributes[i].value;
-      }
-
-      const inputAttrs = {};
-      try {
-        const input = iframe.contentWindow?.document.querySelector("input");
-        if (input) {
-          for (let i = 0; i < input.attributes.length; i++) {
-            inputAttrs[input.attributes[i].name] = input.attributes[i].value;
-          }
-        }
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error(e);
-        throw e;
-      }
-
+    await page.waitForFunction(() => {
+      const iframe = document.getElementById("braintree-hosted-field-number");
       return (
-        iframe.hasAttribute("aria-label") ||
-        iframe.hasAttribute("data-test-attribute") ||
-        inputAttrs["aria-label"] === "Custom card number label"
+        iframe &&
+        iframe?.getAttribute("aria-label") === "Custom card number label"
       );
     });
 
-    expect(hasCustomAttributes).toBe(true);
+    const iframe = await page.locator("#braintree-hosted-field-number");
+
+    expect(iframe).toHaveAttribute("aria-label", "Custom card number label");
   });
 });

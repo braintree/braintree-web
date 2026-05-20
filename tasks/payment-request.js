@@ -38,6 +38,10 @@ gulp.task("build:payment-request:frame:js", function (done) {
 });
 
 gulp.task("build:payment-request:frame:js:delete", function () {
+  if (process.env.BRAINTREE_JS_COVERAGE_BUILD === "true") {
+    return Promise.resolve();
+  }
+
   var internalJsPath = DIST_PATH + "/js/payment-request-internal.js";
 
   return del([internalJsPath]);

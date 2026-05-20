@@ -132,6 +132,10 @@ gulp.task("build:hosted-fields:frame:js:polyfills-ie9", function (done) {
 });
 
 gulp.task("build:hosted-fields:frame:js:delete", function () {
+  if (process.env.BRAINTREE_JS_COVERAGE_BUILD === "true") {
+    return Promise.resolve();
+  }
+
   var internalJsPath = DIST_PATH + "/js/hosted-fields-internal.js";
   var ie9PolyfillJsPath =
     DIST_PATH + "/js/hosted-fields-internal-polyfills-ie9.js";

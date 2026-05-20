@@ -68,6 +68,16 @@ type HostedFieldKey =
   | "cardholderName";
 
 /**
+ * Element states for querying on a page
+ */
+export type AllowedElementState =
+  | "visible"
+  | "attached"
+  | "detached"
+  | "hidden"
+  | undefined;
+
+/**
  * Test URL configuration
  */
 interface TestUrlConfig {

@@ -19,6 +19,12 @@ var INTEGRATION_TIMEOUT_MS = require("../lib/constants").INTEGRATION_TIMEOUT_MS;
 
 ExtendedPromise.suppressUnhandledPromiseMessage = true;
 
+var REQUIRED_PARAMS_FOR_VIC = [
+  "amount",
+  "currency",
+  "vaultInitiatedCheckoutPaymentMethodToken",
+];
+
 /**
  * @class
  * @param {object} options see {@link module:braintree-web/paypal-checkout-v6.create|paypal-checkout-v6.create}
@@ -802,10 +808,12 @@ PayPalCheckoutV6.prototype._createBillingAgreementToken = function (options) {
  * @param {object} [config] Optional configuration overrides (returnUrl, cancelUrl).
  * @returns {Promise} Resolves with order data including orderId.
  */
+// eslint-disable-next-line complexity
 PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
   var self = this;
   var gatewayConfiguration = this._configuration.gatewayConfiguration;
   var intent = options.intent || "capture";
+  var key;
 
   if (intent === "capture") {
     intent = "sale";
@@ -862,6 +870,25 @@ PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
 
   if (options.shippingCallbackUrl) {
     payload.shippingCallbackUrl = options.shippingCallbackUrl;
+  }
+
+  // Spread shippingAddressOverride properties directly onto payload
+  // (used with contactPreference for Contact Module)
+  if (options.shippingAddressOverride) {
+    for (key in options.shippingAddressOverride) {
+      if (options.shippingAddressOverride.hasOwnProperty(key)) {
+        payload[key] = options.shippingAddressOverride[key];
+      }
+    }
+  }
+
+  if (options.contactPreference) {
+    payload.contactPreference = options.contactPreference;
+  }
+
+  if (options.vaultInitiatedCheckoutPaymentMethodToken) {
+    payload.vaultInitiatedCheckoutPaymentMethodToken =
+      options.vaultInitiatedCheckoutPaymentMethodToken;
   }
 
   return this._clientPromise.then(function (client) {
@@ -1251,6 +1278,8 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
     "billingAgreementDetails",
     "displayName",
     "shippingCallbackUrl",
+    "contactPreference",
+    "shippingAddressOverride",
   ];
 
   optionalProperties.forEach(function (property) {
@@ -1349,6 +1378,18 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
+ * @param {object} [options.shippingAddressOverride] Pre-collected shipping address to display in the PayPal flow. Used with contactPreference to show merchant-provided contact information.
+ * @param {string} options.shippingAddressOverride.line1 Street address.
+ * @param {string} [options.shippingAddressOverride.line2] Street address (extended).
+ * @param {string} options.shippingAddressOverride.city City.
+ * @param {string} options.shippingAddressOverride.state State.
+ * @param {string} options.shippingAddressOverride.postalCode Postal code.
+ * @param {string} options.shippingAddressOverride.countryCode Country code (e.g., 'US').
+ * @param {string} [options.shippingAddressOverride.phone] Phone number.
+ * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
+ * @param {string} [options.shippingAddressOverride.recipientEmail] Email address of the recipient.
+ * @param {string} [options.contactPreference] Optional field to control contact information display. Can be 'NO_CONTACT_INFO' (default, no contact info shown), 'RETAIN_CONTACT_INFO' (contact info shown but not editable), or 'UPDATE_CONTACT_INFO' (contact info shown and editable). Required if using different recipient via shippingAddressOverride.
+ * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
  * @example
  * // Standard PayPal payment
@@ -1601,6 +1642,18 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
  * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
+ * @param {object} [options.shippingAddressOverride] Pre-collected shipping address to display in the PayPal flow. Used with contactPreference to show merchant-provided contact information.
+ * @param {string} options.shippingAddressOverride.line1 Street address.
+ * @param {string} [options.shippingAddressOverride.line2] Street address (extended).
+ * @param {string} options.shippingAddressOverride.city City.
+ * @param {string} options.shippingAddressOverride.state State.
+ * @param {string} options.shippingAddressOverride.postalCode Postal code.
+ * @param {string} options.shippingAddressOverride.countryCode Country code (e.g., 'US').
+ * @param {string} [options.shippingAddressOverride.phone] Phone number.
+ * @param {string} [options.shippingAddressOverride.recipientName] Recipient's name.
+ * @param {string} [options.shippingAddressOverride.recipientEmail] Email address of the recipient.
+ * @param {string} [options.contactPreference] Optional field to control contact information display. Can be 'NO_CONTACT_INFO' (default, no contact info shown), 'RETAIN_CONTACT_INFO' (contact info shown but not editable), or 'UPDATE_CONTACT_INFO' (contact info shown and editable). Required if using different recipient via shippingAddressOverride.
+ * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
  * @example
  * // Standard Pay Later payment
@@ -2213,12 +2266,22 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
  * Tokenizes a PayPal payment or billing agreement.
  * @public
  * @param {object} options Options for tokenizing the payment.
- * @param {string} [options.payerID] Payer ID returned by PayPal for one-time payments.
- * @param {string} [options.orderID] Order ID returned by PayPal for one-time payments.
+ * @param {string} [options.payerID] Payer ID returned by PayPal for one-time payments (legacy uppercase format).
+ * @param {string} [options.payerId] Payer ID returned by PayPal for one-time payments (camelCase format from onApprove callback).
+ * @param {string} [options.orderID] Order ID returned by PayPal for one-time payments (legacy uppercase format).
+ * @param {string} [options.orderId] Order ID returned by PayPal for one-time payments (camelCase format from onApprove callback).
  * @param {string} [options.billingToken] Billing token returned by PayPal for vault flow.
  * @param {boolean} [options.vault=true] Whether or not to vault the resulting PayPal account (if using a client token generated with a customer id and the vault flow).
  * @example
- * // One-time payment tokenization
+ * // One-time payment tokenization with camelCase (from onApprove callback)
+ * paypalCheckoutV6Instance.tokenizePayment({
+ *   payerId: data.payerId,
+ *   orderId: data.orderId
+ * }).then(function (payload) {
+ *   console.log('Payment method nonce:', payload.nonce);
+ * });
+ *
+ * @example <caption>One-time payment tokenization with legacy uppercase</caption>
  * paypalCheckoutV6Instance.tokenizePayment({
  *   payerID: data.payerID,
  *   orderID: data.orderID
@@ -2259,7 +2322,18 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
     }
 
     // Validate required parameters
-    if (!isBillingAgreement && (!options.payerID || !options.orderID)) {
+    // Accept both payerID/orderID (legacy) and payerId/orderId (onApprove payload)
+    // Also accept paymentID as an alternative to orderID (used by VIC)
+    if (
+      !isBillingAgreement &&
+      (!(options.payerID || options.payerId) ||
+        !(
+          options.orderID ||
+          options.orderId ||
+          options.paymentID ||
+          options.paymentId
+        ))
+    ) {
       reject(
         new BraintreeError(errors.PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA)
       );
@@ -2305,8 +2379,9 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
         );
 
         data = self._formatTokenizeData({
-          payerId: options.payerID,
-          orderId: options.orderID,
+          payerId: options.payerID || options.payerId,
+          orderId: options.orderID || options.orderId,
+          paymentId: options.paymentID || options.paymentId,
         });
         endpoint = "payment_methods/paypal_accounts";
       }
@@ -2399,7 +2474,10 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
  */
 PayPalCheckoutV6.prototype._formatTokenizeData = function (params) {
   var correlationId =
-    this._riskCorrelationId || params.billingToken || params.orderId;
+    this._riskCorrelationId ||
+    params.billingToken ||
+    params.orderId ||
+    params.paymentId;
   var data = {
     paypalAccount: {
       correlationId: correlationId,
@@ -2992,6 +3070,315 @@ PayPalCheckoutV6.prototype.createMessages = function (options) {
         });
       });
   });
+};
+
+/**
+ * Starts a vault initiated checkout flow using a previously vaulted payment method token.
+ * This enables one-click repeat purchases without requiring the PayPal SDK buttons.
+ * @public
+ * @param {object} options Payment options for vault initiated checkout.
+ * @param {string} options.amount The amount of the transaction.
+ * @param {string} options.currency The currency code (e.g., 'USD').
+ * @param {string} options.vaultInitiatedCheckoutPaymentMethodToken The payment method token representing a vaulted PayPal account.
+ * @param {string} [options.intent] Payment intent: 'authorize', 'capture', or 'order'.
+ * @param {boolean} [options.optOutOfModalBackdrop=false] Set to true to disable the modal backdrop.
+ * @param {Array} [options.lineItems] Line items for the transaction.
+ * @param {Array} [options.shippingOptions] Shipping options for the transaction.
+ * @param {object} [options.shippingAddressOverride] Shipping address override.
+ * @param {object} [options.billingAgreementDetails] Billing agreement details.
+ * @param {string} [options.contactPreference] Contact preference setting.
+ * @example
+ * paypalCheckoutV6Instance.startVaultInitiatedCheckout({
+ *   vaultInitiatedCheckoutPaymentMethodToken: 'pm_abc123_vaulted_paypal_token',
+ *   amount: '10.00',
+ *   currency: 'USD',
+ *   intent: 'capture'
+ * }).then(function (payload) {
+ *   // Submit payload.nonce to your server
+ *   console.log('Payment nonce:', payload.nonce);
+ * }).catch(function (err) {
+ *   if (err.code === 'PAYPAL_CHECKOUT_V6_VIC_CANCELED') {
+ *     console.log('Customer closed the popup');
+ *   }
+ * });
+ * @returns {Promise} A promise that resolves with the tokenization payload.
+ */
+PayPalCheckoutV6.prototype.startVaultInitiatedCheckout = function (options) {
+  var self = this;
+  var missingRequiredParam;
+
+  if (this._vaultInitiatedCheckoutInProgress) {
+    return this._clientPromise.then(function (client) {
+      analytics.sendEvent(
+        client,
+        "paypal-checkout-v6.vic.error.already-in-progress"
+      );
+
+      return Promise.reject(
+        new BraintreeError(errors.PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS)
+      );
+    });
+  }
+
+  REQUIRED_PARAMS_FOR_VIC.forEach(function (param) {
+    if (!missingRequiredParam && (!options || !options[param])) {
+      missingRequiredParam = param;
+    }
+  });
+
+  if (missingRequiredParam) {
+    return Promise.reject(
+      new BraintreeError({
+        type: errors.PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED.type,
+        code: errors.PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED.code,
+        message: "Required param " + missingRequiredParam + " is missing.",
+      })
+    );
+  }
+
+  this._vaultInitiatedCheckoutInProgress = true;
+  this._addModalBackdrop(options);
+
+  return Promise.all([self._clientPromise, self._frameServicePromise])
+    .then(function (results) {
+      var client = results[0];
+      var paymentOptions = assign({}, options, {
+        flow: "checkout",
+        returnUrl: self._constructVaultCheckoutUrl("redirect-frame"),
+        cancelUrl: self._constructVaultCheckoutUrl("cancel-frame"),
+      });
+
+      analytics.sendEvent(client, "paypal-checkout-v6.vic.started");
+
+      var frameCommunicationPromise = new ExtendedPromise();
+
+      self._frameService.open(
+        {},
+        self._createFrameServiceCallback(frameCommunicationPromise)
+      );
+
+      return self
+        ._createPaymentResource(paymentOptions)
+        .then(function (response) {
+          self._frameService.redirect(response.paymentResource.redirectUrl);
+
+          return frameCommunicationPromise;
+        });
+    })
+    .then(function (payload) {
+      self._frameService.close();
+      self._vaultInitiatedCheckoutInProgress = false;
+      self._removeModalBackdrop();
+
+      return self._clientPromise.then(function (client) {
+        analytics.sendEvent(client, "paypal-checkout-v6.vic.succeeded");
+
+        return payload;
+      });
+    })
+    .catch(function (err) {
+      self._vaultInitiatedCheckoutInProgress = false;
+      self._removeModalBackdrop();
+
+      if (self._frameService) {
+        self._frameService.close();
+      }
+
+      if (err.code === "FRAME_SERVICE_FRAME_CLOSED") {
+        return self._clientPromise.then(function (client) {
+          analytics.sendEvent(
+            client,
+            "paypal-checkout-v6.vic.canceled-by-customer"
+          );
+
+          return Promise.reject(
+            new BraintreeError(errors.PAYPAL_CHECKOUT_V6_VIC_CANCELED)
+          );
+        });
+      }
+
+      if (
+        err.code &&
+        err.code.indexOf("FRAME_SERVICE_FRAME_OPEN_FAILED") > -1
+      ) {
+        return self._clientPromise.then(function (client) {
+          analytics.sendEvent(
+            client,
+            "paypal-checkout-v6.vic.failed.popup-not-opened"
+          );
+
+          return Promise.reject(
+            new BraintreeError({
+              code: errors.PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED.code,
+              type: errors.PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED.type,
+              message: errors.PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED.message,
+              details: {
+                originalError: err,
+              },
+            })
+          );
+        });
+      }
+
+      throw err;
+    });
+};
+
+/**
+ * Closes the PayPal window if it is opened via startVaultInitiatedCheckout.
+ * @public
+ * @example
+ * paypalCheckoutV6Instance.closeVaultInitiatedCheckoutWindow();
+ * @returns {Promise} Returns a promise that resolves when the window is closed.
+ */
+PayPalCheckoutV6.prototype.closeVaultInitiatedCheckoutWindow = function () {
+  var self = this;
+  var wasVaultInitiatedCheckoutInProgress =
+    this._vaultInitiatedCheckoutInProgress;
+
+  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
+    if (wasVaultInitiatedCheckoutInProgress) {
+      self._clientPromise.then(function (client) {
+        analytics.sendEvent(
+          client,
+          "paypal-checkout-v6.vic.canceled-by-merchant"
+        );
+      });
+    }
+
+    self._frameService.close();
+    self._vaultInitiatedCheckoutInProgress = false;
+    self._removeModalBackdrop();
+  });
+};
+
+/**
+ * Focuses the PayPal window if it is opened via startVaultInitiatedCheckout.
+ * @public
+ * @example
+ * paypalCheckoutV6Instance.focusVaultInitiatedCheckoutWindow();
+ * @returns {Promise} Returns a promise that resolves when the window is focused.
+ */
+PayPalCheckoutV6.prototype.focusVaultInitiatedCheckoutWindow = function () {
+  var self = this;
+
+  return this._waitForVaultInitiatedCheckoutDependencies().then(function () {
+    self._frameService.focus();
+  });
+};
+
+/**
+ * @private
+ * @param {object} options Options that may contain optOutOfModalBackdrop.
+ */
+PayPalCheckoutV6.prototype._addModalBackdrop = function (options) {
+  if (options.optOutOfModalBackdrop) {
+    return;
+  }
+
+  if (!this._modalBackdrop) {
+    this._modalBackdrop = document.createElement("div");
+    this._modalBackdrop.setAttribute(
+      "data-braintree-paypal-vault-initiated-checkout-modal",
+      true
+    );
+    this._modalBackdrop.style.position = "fixed";
+    this._modalBackdrop.style.top = 0;
+    this._modalBackdrop.style.bottom = 0;
+    this._modalBackdrop.style.left = 0;
+    this._modalBackdrop.style.right = 0;
+    this._modalBackdrop.style.zIndex = 9999;
+    this._modalBackdrop.style.background = "black";
+    this._modalBackdrop.style.opacity = "0.7";
+    this._modalBackdrop.addEventListener(
+      "click",
+      function () {
+        this.focusVaultInitiatedCheckoutWindow();
+      }.bind(this)
+    );
+  }
+
+  document.body.appendChild(this._modalBackdrop);
+};
+
+/**
+ * @private
+ */
+PayPalCheckoutV6.prototype._removeModalBackdrop = function () {
+  if (!(this._modalBackdrop && this._modalBackdrop.parentNode)) {
+    return;
+  }
+
+  this._modalBackdrop.parentNode.removeChild(this._modalBackdrop);
+};
+
+/**
+ * @private
+ * @param {string} frameName The frame name (redirect-frame or cancel-frame).
+ * @returns {string} The constructed URL for vault checkout redirects.
+ */
+PayPalCheckoutV6.prototype._constructVaultCheckoutUrl = function (frameName) {
+  var serviceId = this._frameService._serviceId;
+
+  return (
+    this._assetsUrl +
+    "/html/" +
+    frameName +
+    useMin(this._isDebug) +
+    ".html?channel=" +
+    serviceId
+  );
+};
+
+/**
+ * @private
+ * @returns {Promise} A promise that resolves when frame service dependencies are ready.
+ */
+PayPalCheckoutV6.prototype._waitForVaultInitiatedCheckoutDependencies =
+  function () {
+    var self = this;
+
+    return this._clientPromise.then(function () {
+      return self._frameServicePromise;
+    });
+  };
+
+/**
+ * @private
+ * @param {ExtendedPromise} frameCommunicationPromise The promise to resolve/reject based on frame communication.
+ * @returns {Function} Callback function for frame service.
+ */
+PayPalCheckoutV6.prototype._createFrameServiceCallback = function (
+  frameCommunicationPromise
+) {
+  var self = this;
+
+  return function (err, payload) {
+    var payerID, orderID, tokenizeOptions;
+
+    if (err) {
+      frameCommunicationPromise.reject(err);
+    } else if (payload) {
+      payerID = payload.PayerID || payload.payerId || payload.payerid;
+      orderID = payload.orderId || payload.orderid || payload.OrderID;
+      tokenizeOptions = {
+        paymentToken: payload.token,
+        payerID: payerID,
+        paymentID: payload.paymentId,
+        orderID: orderID,
+      };
+
+      self._frameService.redirect(self._loadingFrameUrl);
+      self
+        .tokenizePayment(tokenizeOptions)
+        .then(function (res) {
+          frameCommunicationPromise.resolve(res);
+        })
+        .catch(function (tokenizationError) {
+          frameCommunicationPromise.reject(tokenizationError);
+        });
+    }
+  };
 };
 
 /**

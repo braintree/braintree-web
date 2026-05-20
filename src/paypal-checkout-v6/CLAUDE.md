@@ -362,23 +362,25 @@ braintree.client
 
 **createOneTimePaymentSession Options:**
 
-| Option                    | Type     | Required | Description                                                                  |
-| ------------------------- | -------- | -------- | ---------------------------------------------------------------------------- |
-| `amount`                  | string   | Yes      | Payment amount (e.g., '10.00')                                               |
-| `currency`                | string   | Yes      | Currency code (e.g., 'USD')                                                  |
-| `onApprove`               | function | Yes      | Called when customer approves payment                                        |
-| `intent`                  | string   | No       | 'capture' (default), 'authorize', or 'order'                                 |
-| `offerCredit`             | boolean  | No       | Offer PayPal Credit                                                          |
-| `lineItems`               | array    | No       | Line items for transaction                                                   |
-| `shippingOptions`         | array    | No       | Shipping options                                                             |
-| `amountBreakdown`         | object   | No       | Breakdown of amount                                                          |
-| `returnUrl`               | string   | No\*     | Return URL (required for app-switch)                                         |
-| `cancelUrl`               | string   | No\*     | Cancel URL (required for app-switch)                                         |
-| `presentationMode`        | string   | No       | 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch' |
-| `onCancel`                | function | No       | Called when customer cancels                                                 |
-| `onError`                 | function | No       | Called on error                                                              |
-| `onShippingAddressChange` | function | No       | Called when shipping address changes                                         |
-| `onShippingOptionsChange` | function | No       | Called when shipping option is selected                                      |
+| Option                    | Type     | Required | Description                                                                                                                       |
+| ------------------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `amount`                  | string   | Yes      | Payment amount (e.g., '10.00')                                                                                                    |
+| `currency`                | string   | Yes      | Currency code (e.g., 'USD')                                                                                                       |
+| `onApprove`               | function | Yes      | Called when customer approves payment                                                                                             |
+| `intent`                  | string   | No       | 'capture' (default), 'authorize', or 'order'                                                                                      |
+| `offerCredit`             | boolean  | No       | Offer PayPal Credit                                                                                                               |
+| `lineItems`               | array    | No       | Line items for transaction                                                                                                        |
+| `shippingOptions`         | array    | No       | Shipping options                                                                                                                  |
+| `contactPreference`       | string   | No       | Contact info display: 'NO_CONTACT_INFO', 'RETAIN_CONTACT_INFO', 'UPDATE_CONTACT_INFO' (US only)                                   |
+| `shippingAddressOverride` | object   | No       | Pre-collected shipping/contact address (line1, line2, city, state, postalCode, countryCode, phone, recipientName, recipientEmail) |
+| `amountBreakdown`         | object   | No       | Breakdown of amount                                                                                                               |
+| `returnUrl`               | string   | No\*     | Return URL (required for app-switch)                                                                                              |
+| `cancelUrl`               | string   | No\*     | Cancel URL (required for app-switch)                                                                                              |
+| `presentationMode`        | string   | No       | 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'                                                      |
+| `onCancel`                | function | No       | Called when customer cancels                                                                                                      |
+| `onError`                 | function | No       | Called on error                                                                                                                   |
+| `onShippingAddressChange` | function | No       | Called when shipping address changes                                                                                              |
+| `onShippingOptionsChange` | function | No       | Called when shipping option is selected                                                                                           |
 
 ### 2. Billing Agreement (Vault Flow)
 

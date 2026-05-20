@@ -176,7 +176,8 @@ module.exports = {
   PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA: {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA",
-    message: "Missing required tokenization data (payerID or orderID).",
+    message:
+      "Missing required tokenization data (payerID and (orderID or paymentID)).",
   },
 
   // Update Payment Errors
@@ -230,5 +231,28 @@ module.exports = {
     type: BraintreeError.types.NETWORK,
     code: "PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED",
     message: "Could not create PayPal Messages instance.",
+  },
+
+  // Vault Initiated Checkout Errors
+  PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+    message: "A required vault initiated checkout parameter is missing.",
+  },
+  PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED",
+    message:
+      "PayPal popup failed to open, make sure to initiate in response to a user action.",
+  },
+  PAYPAL_CHECKOUT_V6_VIC_CANCELED: {
+    type: BraintreeError.types.CUSTOMER,
+    code: "PAYPAL_CHECKOUT_V6_VIC_CANCELED",
+    message: "Customer closed PayPal popup before authorizing.",
+  },
+  PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS",
+    message: "Vault initiated checkout already in progress.",
   },
 };

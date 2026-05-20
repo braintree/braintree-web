@@ -22,7 +22,6 @@ export function startBrowserStackLocal(): Promise<void> {
       key: process.env.BROWSERSTACK_ACCESS_KEY ?? "",
       localIdentifier,
       verbose: true,
-      forcelocal: true,
       force: true,
     };
     bsLocal.start(bsLocalArgs, (error) => {

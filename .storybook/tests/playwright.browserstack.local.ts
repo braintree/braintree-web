@@ -1,7 +1,8 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices, PlaywrightTestProject } from "@playwright/test";
 import * as path from "path";
 import * as dotenv from "dotenv";
-import { BASE_URL } from "../constants";
+import { BASE_URL, browsers } from "../constants";
+import { BrowserSpecification } from "../types/browserstack";
 
 dotenv.config({
   // eslint-disable-next-line no-undef
@@ -10,6 +11,7 @@ dotenv.config({
 
 module.exports = defineConfig({
   testDir: "./",
+  testMatch: "**/**.test.ts",
   fullyParallel: true,
   retries: process.env.BROWSERSTACK_DISABLE_RETRIES ? 0 : 4,
   workers: 4,
@@ -22,31 +24,13 @@ module.exports = defineConfig({
     trace: "on-first-retry",
     actionTimeout: 20000,
   },
-  projects: [
-    {
-      name: "chrome",
-      testIgnore: ["**/apple-pay/**"],
-      use: { ...devices["Desktop Chrome"] },
-    },
-    {
-      name: "firefox",
-      testIgnore: ["**/apple-pay/**"],
+  projects: browsers.map((browser: BrowserSpecification) => {
+    return {
+      name: browser.browserName,
+      testIgnore: browser.browserName === "Safari" ? [] : ["**/apple-pay/**"],
       use: {
-        ...devices["Desktop Firefox"],
+        ...devices[browser.deviceName],
       },
-    },
-    {
-      name: "edge",
-      testIgnore: ["**/apple-pay/**"],
-      use: {
-        ...devices["Desktop Edge"],
-      },
-    },
-    {
-      name: "safari",
-      use: {
-        ...devices["Desktop Safari"],
-      },
-    },
-  ],
+    };
+  }) as PlaywrightTestProject[],
 });

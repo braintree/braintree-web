@@ -1,3 +1,8 @@
+declare module "*.svg?url" {
+  const src: string;
+  export default src;
+}
+
 interface ImportMetaEnv {
   readonly VITE_YOUR_URL: string;
   readonly VITE_REALM: string;

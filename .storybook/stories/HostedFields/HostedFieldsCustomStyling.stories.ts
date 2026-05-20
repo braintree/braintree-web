@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import { SUCCESS_MESSAGES } from "../../constants";
@@ -96,6 +97,7 @@ const setupBraintreeHostedFields = (
   window.braintree.client
     .create({
       authorization: authorization,
+      ...(isIntegrationCoverageRun() && { debug: true }),
     })
     .then((clientInstance) => {
       const fields = {

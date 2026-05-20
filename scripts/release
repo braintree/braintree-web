@@ -17,7 +17,7 @@ dotenv() {
     exit 1
   else
     set -o allexport
-    . .env
+    . ./.env
     set +o allexport
   fi
 }

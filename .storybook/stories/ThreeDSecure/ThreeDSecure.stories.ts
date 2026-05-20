@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import "./threeDSecure.css";
 
@@ -51,7 +52,7 @@ const createThreeDSecureForm = (): HTMLElement => {
 
       <div id="three-ds-content" class="three-ds-content" style="display: none;">
         <div class="three-d-secure-intro">
-          <button id="autofill" type="button" class="autofill-button">Auto-fill form</button>
+          <button id="autofill" type="button" class="autofill-button">Auto-fill Billing Info</button>
         </div>
 
       <div class="form-grid">
@@ -332,13 +333,14 @@ const initialize3DSecure = (container: HTMLElement): void => {
   });
 
   const setupBraintree = () => {
-    window.braintree.client
+    window.braintree?.client
       .create({
         authorization: authorization,
+        ...(isIntegrationCoverageRun() && { debug: true }),
       })
       .then((clientInstance) => {
         return Promise.all([
-          window.braintree.hostedFields.create({
+          window.braintree?.hostedFields.create({
             client: clientInstance,
             styles: {
               input: {
@@ -361,13 +363,17 @@ const initialize3DSecure = (container: HTMLElement): void => {
               },
             },
           }),
-          window.braintree.threeDSecure.create({
+          window.braintree?.threeDSecure.create({
             authorization: authorization,
             version: "2-inline-iframe",
           }),
         ]);
       })
       .then(([hostedFields, threeDSecure]) => {
+        // Expose instances to window for testing
+        window.hostedFieldsInstance = hostedFields;
+        window.threeDSecureInstance = threeDSecure;
+
         hostedFieldsInstance = hostedFields;
         threeDSecureInstance = threeDSecure;
 
@@ -394,6 +400,8 @@ const initialize3DSecure = (container: HTMLElement): void => {
         resultDiv.className =
           "shared-result-display shared-result--error shared-result--visible";
         resultDiv.innerHTML = `<strong>Initialization Error:</strong> ${error.message}`;
+        initializeButton.disabled = false;
+        initializeButton.textContent = "Initialize 3D Secure";
       });
   };
 
@@ -403,10 +411,10 @@ const initialize3DSecure = (container: HTMLElement): void => {
       return;
     }
 
-    initializeButton.disabled = true;
-    initializeButton.textContent = "Initializing...";
-
     try {
+      initializeButton.disabled = true;
+      initializeButton.textContent = "Initializing...";
+
       const clientToken = await getClientToken();
       authorization = clientToken;
       setupBraintree();
@@ -414,10 +422,12 @@ const initialize3DSecure = (container: HTMLElement): void => {
       resultDiv.style.display = "block";
       resultDiv.className =
         "shared-result-display shared-result--error shared-result--visible";
-      resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+      resultDiv.innerHTML = `<strong>Error:</strong> ${(error as Error).message}`;
       initializeButton.disabled = false;
       initializeButton.textContent = "Initialize 3D Secure";
     }
+    initializeButton.disabled = false;
+    initializeButton.textContent = "Initialize 3D Secure";
   });
 
   // Payment flow

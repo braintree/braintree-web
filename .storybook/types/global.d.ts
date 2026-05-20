@@ -75,7 +75,12 @@ interface IBraintreeConfiguration {
  * Braintree Client instance
  */
 interface IBraintreeClient {
-  getConfiguration(): { gatewayConfiguration: IBraintreeConfiguration };
+  getConfiguration(): {
+    authorizationType: string;
+    analyticsMetadata: Record<string, unknown>;
+    gatewayConfiguration: IBraintreeConfiguration;
+  };
+  getVersion(): string;
   request(options: unknown): Promise<unknown>;
   teardown(): Promise<void>;
 }
@@ -201,8 +206,8 @@ interface IHostedFieldsInstance {
  * Hosted Fields field configuration
  */
 interface IHostedFieldConfig {
-  container: string | HTMLElement;
   placeholder?: string;
+  selector?: string;
   type?: string;
   formatInput?: boolean;
   maskInput?: boolean | { character?: string; showLastFour?: boolean };
@@ -211,7 +216,6 @@ interface IHostedFieldConfig {
   minlength?: number;
   maxlength?: number;
   prefill?: string;
-  rejectUnsupportedCards?: boolean;
   supportedCardBrands?: Record<string, boolean>;
 }
 
@@ -226,24 +230,19 @@ interface IHostedFieldsCreateOptions {
     cvv?: Omit<IHostedFieldConfig, "formatInput" | "maxCardLength">;
     expirationDate?: Pick<
       IHostedFieldConfig,
-      "container" | "placeholder" | "type" | "select" | "prefill"
+      "placeholder" | "type" | "selector" | "prefill"
     >;
     expirationMonth?: Pick<
       IHostedFieldConfig,
-      "container" | "placeholder" | "type" | "select" | "prefill"
+      "placeholder" | "type" | "selector" | "prefill"
     >;
     expirationYear?: Pick<
       IHostedFieldConfig,
-      "container" | "placeholder" | "type" | "select" | "prefill"
+      "placeholder" | "type" | "selector" | "prefill"
     >;
     postalCode?: Pick<
       IHostedFieldConfig,
-      | "container"
-      | "placeholder"
-      | "type"
-      | "minlength"
-      | "maxlength"
-      | "prefill"
+      "placeholder" | "type" | "minlength" | "maxlength" | "prefill"
     >;
     cardholderName?: Pick<
       IHostedFieldConfig,
@@ -292,7 +291,6 @@ interface IVenmoTokenizePayload {
  */
 interface IVenmoInstance {
   isBrowserSupported(): boolean;
-  hasTokenizationResult(): boolean;
   tokenize(options?: {
     processResultsDelay?: number;
   }): Promise<IVenmoTokenizePayload>;
@@ -309,7 +307,7 @@ interface IVenmoCreateOptions {
   allowDesktop?: boolean;
   allowDesktopWebLogin?: boolean;
   mobileWebFallBack?: boolean;
-  paymentMethodUsage?: "single_use" | "multi_use";
+  paymentMethodUsage: "single_use" | "multi_use";
   profileId?: string;
   deepLinkReturnUrl?: string;
   riskCorrelationId?: string;
@@ -459,10 +457,24 @@ interface IPayPalCheckoutTokenizePayload {
 }
 
 /**
+ * PayPal Checkout update payment (patch) options (subset; SDK allows more).
+ */
+interface IPayPalCheckoutUpdatePaymentOptions {
+  paymentId: string;
+  currency: string;
+  amount?: string;
+  lineItems?: unknown[];
+  shippingOptions?: unknown[];
+  amountBreakdown?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+/**
  * PayPal Checkout instance
  */
 interface IPayPalCheckoutInstance {
   createPayment(options: IPayPalCheckoutCreatePaymentOptions): Promise<string>;
+  updatePayment(options: IPayPalCheckoutUpdatePaymentOptions): Promise<unknown>;
   tokenizePayment(
     tokenizeOptions: unknown
   ): Promise<IPayPalCheckoutTokenizePayload>;
@@ -475,6 +487,13 @@ interface IPayPalCheckoutInstance {
     "enable-funding"?: string;
     [key: string]: unknown;
   }): Promise<void>;
+  startVaultInitiatedCheckout(options: {
+    vaultInitiatedCheckoutPaymentMethodToken: string;
+    amount: string;
+    currency: string;
+    optOutOfModalBackdrop?: boolean;
+    [key: string]: unknown;
+  }): Promise<IPayPalCheckoutTokenizePayload>;
   teardown(): Promise<void>;
 }
 
@@ -520,7 +539,6 @@ interface IThreeDSecureVerifyOptions {
     [key: string]: unknown;
   };
   challengeRequested?: boolean;
-  exemptionRequested?: boolean;
   requestedExemptionType?: string;
   dataOnlyRequested?: boolean;
   cardAddChallengeRequested?: boolean;
@@ -580,14 +598,7 @@ interface IThreeDSecureInstance {
 interface IThreeDSecureCreateOptions {
   client?: IBraintreeClient;
   authorization?: string;
-  version?:
-    | 1
-    | 2
-    | "1"
-    | "2"
-    | "2-bootstrap3ds-modal"
-    | "2-cardinal-modal"
-    | "2-inline-iframe";
+  version?: 1 | 2 | "1" | "2" | "2-cardinal-modal" | "2-inline-iframe";
   cardinalSDKConfig?: unknown;
 }
 
@@ -786,6 +797,66 @@ interface IApplePayInstance {
 }
 
 // ============================================================================
+// Google Payment Types
+// ============================================================================
+
+interface IGooglePaymentCreateOptions {
+  client?: IBraintreeClient;
+  authorization?: string;
+  googleMerchantId?: string;
+  googlePayVersion?: number;
+  useDeferredClient?: boolean;
+}
+
+interface IGooglePaymentTokenizePayload {
+  nonce: string;
+  type: string;
+  description: string;
+  details?: {
+    cardType: string;
+    lastFour: string;
+    lastTwo: string;
+    isNetworkTokenized: boolean;
+    bin: string;
+  };
+  binData?: {
+    commercial: string;
+    countryOfIssuance: string;
+    debit: string;
+    durbinRegulated: string;
+    healthcare: string;
+    issuingBank: string;
+    payroll: string;
+    prepaid: string;
+    productId: string;
+    business: string;
+    consumer: string;
+    purchase: string;
+    corporate: string;
+  };
+}
+
+interface IGooglePaymentInstance {
+  createPaymentDataRequest(
+    overrides?: Record<string, unknown>
+  ): Record<string, unknown>;
+  parseResponse(
+    response: Record<string, unknown>
+  ): Promise<IGooglePaymentTokenizePayload>;
+  teardown(): Promise<void>;
+}
+
+interface IGooglePaymentsClient {
+  isReadyToPay(
+    request: Record<string, unknown>
+  ): Promise<{ result: boolean; paymentMethodPresent?: boolean }>;
+  loadPaymentData(
+    request: Record<string, unknown>
+  ): Promise<Record<string, unknown>>;
+  createButton(options: Record<string, unknown>): HTMLElement;
+}
+
+// ============================================================================
 // Data Collector Types
 // ============================================================================
 
@@ -793,9 +864,60 @@ interface IApplePayInstance {
  * Data Collector instance
  */
 interface IDataCollectorInstance {
-  deviceData: string;
-  rawDeviceData: Record<string, unknown>;
-  getDeviceData(): string;
+  deviceData?: string;
+  rawDeviceData?: Record<string, unknown>;
+  getDeviceData(options?: {
+    raw?: boolean;
+  }): Promise<string | Record<string, unknown>>;
+  teardown(): Promise<void>;
+}
+
+// ============================================================================
+// American Express Types
+// ============================================================================
+
+/**
+ * American Express rewards balance response
+ */
+interface IAmexRewardsBalancePayload {
+  rewardsAmount?: string;
+  rewardsUnit?: string;
+  currencyAmount?: string;
+  currencyIsoCode?: string;
+  conversationId?: string;
+  requestId?: string;
+  error?: {
+    code: string;
+    message: string;
+  } | null;
+}
+
+/**
+ * American Express Express Checkout profile response
+ */
+interface IAmexExpressCheckoutProfilePayload {
+  amexExpressCheckoutCards?: Array<{
+    nonce: string;
+    cardType: string;
+    lastTwo: string;
+    expirationMonth: string;
+    expirationYear: string;
+    bin: string;
+    subscriberId?: string;
+  }>;
+}
+
+/**
+ * American Express instance
+ */
+interface IAmericanExpressInstance {
+  getRewardsBalance(options: {
+    nonce: string;
+    [key: string]: unknown;
+  }): Promise<IAmexRewardsBalancePayload>;
+  getExpressCheckoutProfile(options: {
+    nonce: string;
+  }): Promise<IAmexExpressCheckoutProfilePayload>;
   teardown(): Promise<void>;
 }
 
@@ -820,8 +942,6 @@ interface IBraintreeError extends Error {
 // ============================================================================
 // PayPal SDK Types
 // ============================================================================
-
-// cspell:ignore PAYLATER BANCONTACT BLIK GIROPAY MERCADOPAGO MYBANK SEPA SOFORT TRUSTLY ZIMPLER
 
 /**
  * PayPal Buttons configuration
@@ -1080,6 +1200,21 @@ interface IPayPalCheckoutV6Instance {
     userAuthenticationEmail?: string;
     presentationMode?: string;
     shippingCallbackUrl?: string;
+    contactPreference?:
+      | "NO_CONTACT_INFO"
+      | "RETAIN_CONTACT_INFO"
+      | "UPDATE_CONTACT_INFO";
+    shippingAddressOverride?: {
+      recipientName?: string;
+      recipientEmail?: string;
+      line1?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      countryCode?: string;
+      phone?: string;
+    };
     onShippingAddressChange?: (
       data: IPayPalV6ShippingAddressChangeData
     ) => void | Promise<unknown>;
@@ -1124,6 +1259,21 @@ interface IPayPalCheckoutV6Instance {
     userAuthenticationEmail?: string;
     presentationMode?: string;
     shippingCallbackUrl?: string;
+    contactPreference?:
+      | "NO_CONTACT_INFO"
+      | "RETAIN_CONTACT_INFO"
+      | "UPDATE_CONTACT_INFO";
+    shippingAddressOverride?: {
+      recipientName?: string;
+      recipientEmail?: string;
+      line1?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      countryCode?: string;
+      phone?: string;
+    };
     onShippingAddressChange?: (
       data: IPayPalV6ShippingAddressChangeData
     ) => void | Promise<unknown>;
@@ -1214,7 +1364,10 @@ interface IPayPalCheckoutV6Instance {
   tokenizePayment: (data: {
     billingToken?: string;
     payerID?: string;
+    payerId?: string;
     orderID?: string;
+    orderId?: string;
+    vault?: boolean;
   }) => Promise<IPayPalCheckoutV6TokenizePayload>;
   updatePayment: (options: {
     paymentId: string;
@@ -1272,6 +1425,56 @@ interface IPayPalCheckoutV6Instance {
     fetchContent: (options: unknown) => Promise<unknown>;
     [key: string]: unknown;
   }>;
+  startVaultInitiatedCheckout: (options: {
+    vaultInitiatedCheckoutPaymentMethodToken: string;
+    amount: string;
+    currency: string;
+    intent?: "capture" | "authorize" | "order";
+    lineItems?: Array<{
+      quantity: string;
+      unitAmount: string;
+      name: string;
+      kind: "debit" | "credit";
+      unitTaxAmount?: string;
+      description?: string;
+    }>;
+    shippingOptions?: Array<{
+      id: string;
+      label: string;
+      selected: boolean;
+      type: "SHIPPING" | "PICKUP";
+      amount: { currency: string; value: string };
+    }>;
+    amountBreakdown?: {
+      itemTotal?: string;
+      shipping?: string;
+      handling?: string;
+      taxTotal?: string;
+      insurance?: string;
+      shippingDiscount?: string;
+      discount?: string;
+    };
+    shippingAddressOverride?: {
+      recipientName?: string;
+      line1?: string;
+      line2?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      countryCode?: string;
+      phone?: string;
+    };
+    billingAgreementDetails?: {
+      description?: string;
+    };
+    contactPreference?:
+      | "NO_CONTACT_INFO"
+      | "RETAIN_CONTACT_INFO"
+      | "UPDATE_CONTACT_INFO";
+    optOutOfModalBackdrop?: boolean;
+  }) => Promise<IPayPalCheckoutV6TokenizePayload>;
+  closeVaultInitiatedCheckoutWindow: () => Promise<void>;
+  focusVaultInitiatedCheckoutWindow: () => Promise<void>;
   teardown: () => Promise<void>;
 }
 
@@ -1294,6 +1497,7 @@ declare global {
       };
       venmo: {
         create(options: IVenmoCreateOptions): Promise<IVenmoInstance>;
+        isBrowserSupported(options?: Partial<IVenmoCreateOptions>): boolean;
         VERSION?: string;
       };
       vaultManager: {
@@ -1337,19 +1541,58 @@ declare global {
         }): Promise<IApplePayInstance>;
         VERSION?: string;
       };
+      googlePayment: {
+        create(
+          options: IGooglePaymentCreateOptions
+        ): Promise<IGooglePaymentInstance>;
+        VERSION?: string;
+      };
+      americanExpress: {
+        create(options: {
+          client?: IBraintreeClient;
+          authorization?: string;
+        }): Promise<IAmericanExpressInstance>;
+        VERSION?: string;
+      };
       dataCollector: {
         create(options: {
           client?: IBraintreeClient;
           authorization?: string;
           kount?: boolean;
           paypal?: boolean;
+          riskCorrelationId?: string;
+          useDeferredClient?: boolean;
+          clientMetadataId?: string;
+          correlationId?: string;
+          cb1?: string;
+          beacon?: boolean;
         }): Promise<IDataCollectorInstance>;
         VERSION?: string;
       };
       VERSION?: string;
     };
     paypal?: IPayPalSDK;
+    google?: {
+      payments: {
+        api: {
+          PaymentsClient: new (config: {
+            environment: string;
+            paymentDataCallbacks?: Record<string, unknown>;
+          }) => IGooglePaymentsClient;
+        };
+      };
+    };
     ApplePaySession?: typeof ApplePaySession;
+    hostedFieldsInstance?: IHostedFieldsInstance;
+    threeDSecureInstance?: IThreeDSecureInstance;
+    __venmoInstance?: IVenmoInstance;
+    __testClient?: IBraintreeClient;
+    /**
+     * Test-only: `paypalCheckout.create` instance for Playwright API tests
+     * under `.storybook/tests/paypal-checkout/`. Set in PayPal legacy stories
+     * (not merchant API).
+     */
+    __btPayPalCheckout?: IPayPalCheckoutInstance;
   }
 
   // Global braintree reference (for convenience)
@@ -1387,6 +1630,7 @@ export {
   IPaymentMethod,
   IPayPalCheckoutInstance,
   IPayPalCheckoutCreatePaymentOptions,
+  IPayPalCheckoutUpdatePaymentOptions,
   IPayPalCheckoutTokenizePayload,
   IThreeDSecureInstance,
   IThreeDSecureCreateOptions,
@@ -1404,6 +1648,13 @@ export {
   IApplePayPaymentMethod,
   IApplePayPaymentToken,
   IDataCollectorInstance,
+  IAmericanExpressInstance,
+  IAmexRewardsBalancePayload,
+  IAmexExpressCheckoutProfilePayload,
+  IGooglePaymentCreateOptions,
+  IGooglePaymentInstance,
+  IGooglePaymentTokenizePayload,
+  IGooglePaymentsClient,
   IPayPalSDK,
   IPayPalButtons,
   IPayPalButtonsConfig,

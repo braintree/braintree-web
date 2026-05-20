@@ -1,7 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import type {
+  IPayPalCheckoutCreatePaymentOptions,
+  IPayPalCheckoutInstance,
+} from "../../types/global";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import { getBraintreeSDK } from "../../utils/braintree-sdk";
+import { PAYPAL_SUCCESS_MESSAGES } from "../../constants";
 import "./payPalCheckout.css";
 
 const meta: Meta = {
@@ -10,6 +15,14 @@ const meta: Meta = {
     layout: "centered",
     braintreeScripts: ["paypal-checkout"],
     docs: {
+      // Autodocs mounts every exported story on a single "Documentation" page
+      // (`/docs/.../documentation`). The default is inline: true, so all those
+      // stories run in one document: multiple PayPal SDK / zoid bootstraps in the
+      // same `window` cause "zoid destroyed all components". `inline: false` puts
+      // each embedded example in its own nested iframe (same as isolated Canvas).
+      // This controls docs rendering only; it does not change /story/... or Canvas
+      // URLs — those already run one story per main preview frame.
+      story: { inline: false },
       description: {
         component: `
 PayPal integration provides multiple payment flow options to suit different business models:
@@ -25,6 +38,27 @@ PayPal integration provides multiple payment flow options to suit different busi
 };
 
 export default meta;
+
+/**
+ * Returns the PayPal JS SDK object (`window.paypal` / `IPayPalSDK`) after
+ * the script has loaded, or throws if it is missing.
+ *
+ * In `.storybook/types/global.d.ts`, `window.paypal` is optional so
+ * `window.paypal.Buttons` does not type-check. This helper narrows the type
+ * to `NonNullable<typeof window.paypal>`.
+ *
+ * Use only when the story has already ensured the SDK is present: after
+ * `loadPayPalSDK` resolves, or in a manual `<script src="...paypal.com/sdk/js">`
+ * `onload` / equivalent. If it throws, the story ran PayPal code before
+ * the script was ready.
+ */
+const getWindowPayPalOrThrow = (): NonNullable<typeof window.paypal> => {
+  const paypal = window.paypal;
+  if (!paypal) {
+    throw new Error("PayPal JS SDK is not on window (expected after load).");
+  }
+  return paypal;
+};
 
 const createPayPalForm = (): HTMLElement => {
   const container = document.createElement("div");
@@ -72,6 +106,8 @@ const setupPayPalCheckout = (
       });
     })
     .then((paypalCheckoutInstance) => {
+      // Test-only: Playwright API tests (see .storybook/tests/paypal-checkout/api-coverage.test.ts)
+      window.__btPayPalCheckout = paypalCheckoutInstance;
       // Use V5's built-in loadPayPalSDK method
       return paypalCheckoutInstance
         .loadPayPalSDK({
@@ -82,9 +118,10 @@ const setupPayPalCheckout = (
         .then(() => paypalCheckoutInstance);
     })
     .then((paypalCheckoutInstance) => {
-      return window.paypal
+      const paypal = getWindowPayPalOrThrow();
+      return paypal
         .Buttons({
-          fundingSource: window.paypal.FUNDING.PAYPAL,
+          fundingSource: paypal.FUNDING.PAYPAL,
 
           createOrder() {
             return paypalCheckoutInstance.createPayment({
@@ -107,6 +144,13 @@ const setupPayPalCheckout = (
             <small>Payer Email: ${payload.details.email}</small><br>
             <small>Amount: $10.00</small>
           `;
+              })
+              .catch((err: Error) => {
+                resultDiv.className =
+                  "shared-result shared-result--visible shared-result--error";
+                resultDiv.innerHTML = `
+          <strong>PayPal Error:</strong> ${err.message || "An error occurred"}
+        `;
               });
           },
 
@@ -116,6 +160,11 @@ const setupPayPalCheckout = (
             resultDiv.innerHTML = `
           <strong>PayPal Error:</strong> ${err.message || "An error occurred"}
         `;
+          },
+
+          onCancel() {
+            resultDiv.className = "shared-result shared-result--visible";
+            resultDiv.innerHTML = `<strong>${PAYPAL_SUCCESS_MESSAGES.CANCELLED}</strong>`;
           },
         })
         .render("#paypal-button");
@@ -144,9 +193,12 @@ const setupPayPalVault = (container: HTMLElement): void => {
       });
     })
     .then((paypalCheckoutInstance) => {
-      return window.paypal
+      // Test-only: Playwright API tests (see .storybook/tests/paypal-checkout/api-coverage.test.ts)
+      window.__btPayPalCheckout = paypalCheckoutInstance;
+      const paypal = getWindowPayPalOrThrow();
+      return paypal
         .Buttons({
-          fundingSource: window.paypal.FUNDING.PAYPAL,
+          fundingSource: paypal.FUNDING.PAYPAL,
 
           createBillingAgreement() {
             return paypalCheckoutInstance.createPayment({
@@ -166,6 +218,13 @@ const setupPayPalVault = (container: HTMLElement): void => {
             <small>Payer Email: ${payload.details.email}</small><br>
             <small>This payment method can be reused for future transactions</small>
           `;
+              })
+              .catch((err: Error) => {
+                resultDiv.className =
+                  "shared-result shared-result--visible shared-result--error";
+                resultDiv.innerHTML = `
+          <strong>PayPal Error:</strong> ${err.message || "An error occurred"}
+        `;
               });
           },
 
@@ -175,6 +234,12 @@ const setupPayPalVault = (container: HTMLElement): void => {
             resultDiv.innerHTML = `
           <strong>PayPal Error:</strong> ${err.message || "An error occurred"}
         `;
+          },
+
+          onCancel() {
+            resultDiv.className = "shared-result shared-result--visible";
+            resultDiv.innerHTML =
+              "<strong>PayPal vault was cancelled.</strong>";
           },
         })
         .render("#paypal-button");
@@ -196,12 +261,12 @@ const setupRecurringBilling = (container: HTMLElement): void => {
   ) as HTMLInputElement;
   const braintree = getBraintreeSDK(resultDiv);
 
-  const PAYMENT_PARAMS_WITHOUT_PURCHASE = {
+  const PAYMENT_PARAMS_WITHOUT_PURCHASE: IPayPalCheckoutCreatePaymentOptions = {
     flow: "vault",
   };
 
-  const PAYMENT_PARAMS_WITH_PURCHASE = {
-    ...PAYMENT_PARAMS_WITHOUT_PURCHASE,
+  const PAYMENT_PARAMS_WITH_PURCHASE: IPayPalCheckoutCreatePaymentOptions = {
+    flow: "vault",
     planType: "SUBSCRIPTION",
     planMetadata: {
       billingCycles: [
@@ -242,15 +307,23 @@ const setupRecurringBilling = (container: HTMLElement): void => {
       });
     })
     .then((paypalCheckoutInstance) => {
-      paypalCheckoutInstance.loadPayPalSDK(
+      // Test-only: Playwright API tests (see .storybook/tests/paypal-checkout/api-coverage.test.ts)
+      window.__btPayPalCheckout = paypalCheckoutInstance;
+      (
+        paypalCheckoutInstance.loadPayPalSDK as (
+          _opts: { intent?: string; vault?: boolean },
+          _cb?: () => void
+        ) => void
+      )(
         {
           intent: "tokenize",
           vault: true,
         },
         () => {
-          window.paypal
+          const paypal = getWindowPayPalOrThrow();
+          paypal
             .Buttons({
-              fundingSource: window.paypal.FUNDING.PAYPAL,
+              fundingSource: paypal.FUNDING.PAYPAL,
 
               createBillingAgreement() {
                 const params = purchaseToggle.checked
@@ -275,6 +348,13 @@ const setupRecurringBilling = (container: HTMLElement): void => {
               <small>Payer Email: ${payload.details.email}</small><br>
               <small>Mode: ${purchaseToggle.checked ? "Subscription with metadata" : "Simple vault"}</small>
             `;
+                  })
+                  .catch((err: Error) => {
+                    resultDiv.className =
+                      "shared-result shared-result--visible shared-result--error";
+                    resultDiv.innerHTML = `
+            <strong>PayPal Error:</strong> ${err.message || "An error occurred"}
+          `;
                   });
               },
 
@@ -284,6 +364,12 @@ const setupRecurringBilling = (container: HTMLElement): void => {
                 resultDiv.innerHTML = `
             <strong>PayPal Error:</strong> ${err.message || "An error occurred"}
           `;
+              },
+
+              onCancel() {
+                resultDiv.className = "shared-result shared-result--visible";
+                resultDiv.innerHTML =
+                  "<strong>Recurring billing agreement was cancelled.</strong>";
               },
             })
             .render("#paypal-button");
@@ -401,39 +487,6 @@ type CreateClientTokenResponse = {
   };
 };
 
-interface TokenizePayload {
-  nonce: string;
-  type: string;
-  details: {
-    email?: string;
-    payerId?: string;
-    firstName?: string;
-    lastName?: string;
-  };
-}
-
-interface IPayPalCheckout {
-  createPayment: (_options: {
-    flow: string;
-    amount?: string;
-    currency?: string;
-    intent?: string;
-    planType?: string;
-    planMetadata?: object;
-  }) => Promise<string>;
-  tokenizePayment: (_data: object) => Promise<TokenizePayload>;
-  loadPayPalSDK: (
-    _options: { intent?: string; vault?: boolean },
-    _callback: () => void
-  ) => void;
-  startVaultInitiatedCheckout: (_options: {
-    vaultInitiatedCheckoutPaymentMethodToken: string;
-    amount: string;
-    currency: string;
-    optOutOfModalBackdrop?: boolean;
-  }) => Promise<TokenizePayload>;
-}
-
 const createVaultInitiatedCheckoutForm = (): HTMLElement => {
   const container = document.createElement("div");
   container.innerHTML = `
@@ -515,9 +568,9 @@ const createVaultInitiatedCheckoutForm = (): HTMLElement => {
 
 const setupVaultInitiatedCheckout = (
   container: HTMLElement,
-  paypalSDK: typeof window.paypal
+  paypalSDK: NonNullable<typeof window.paypal>
 ): void => {
-  let paypalCheckoutInstance: IPayPalCheckout;
+  let paypalCheckoutInstance: IPayPalCheckoutInstance;
   let vaultedNonce: string | null = null;
   let vaultedEmail: string | null = null;
 
@@ -769,7 +822,7 @@ export const VaultInitiatedCheckout: StoryObj = {
       paypalSDKScript.src =
         "https://www.paypal.com/sdk/js?client-id=AZDxjDScFpQtjWTOUtWKbyN_bDt4OgqaF4eYXlewfBP4-8aqX3PiV8e1GWU6liB2CUXlkA59kJXE7M6R&vault=true&intent=tokenize";
       paypalSDKScript.onload = () => {
-        setupVaultInitiatedCheckout(formContainer, window.paypal);
+        setupVaultInitiatedCheckout(formContainer, getWindowPayPalOrThrow());
       };
       document.head.appendChild(paypalSDKScript);
     },

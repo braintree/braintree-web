@@ -255,22 +255,33 @@ Unit tests can be run to test the functionality of each individual component. Th
 npm run test
 ```
 
-## Browserstack Testing
+## Integration Tests (via Browserstack)
 
-### Setup for Integration Tests
+### Credentials
 
-1. Follow the [setup](#setup) instructions to create your `.env` file, including your browserstack credentials:
+From your **Braintree sandbox account**, find your _merchant ID_, _public key_, _private key_, and _tokenization key_.
 
-   ```shell
-   BRAINTREE_JS_ENV=development
-   STORYBOOK_BRAINTREE_TOKENIZATION_KEY=<from_your_sandbox_account>
-   BROWSERSTACK_USERNAME=username
-   BROWSERSTACK_ACCESS_KEY=password
-   ```
+From **Browserstack**, you will need a _username_ and _access key_.
 
-   You can use your own Browserstack account or team credentials.
+To test PPCPv6 functionality, you will need to follow the steps [to link your Braintree Sandbox and Paypal developer account](https://developer.paypal.com/braintree/docs/guides/paypal/testing-go-live/javascript/v3/#linked-paypal-testing). From your **Paypal developer account**, you will need the _email_ and _password_.
 
-2. Create SSL certificates for local HTTPS server:
+### Setup
+
+Follow the [setup](#setup) instructions to create your `.env` file, update the file to include these credentials:
+
+```shell
+  BRAINTREE_JS_ENV=development
+  STORYBOOK_BRAINTREE_MERCHANT_ID=merchant_ID
+  STORYBOOK_BRAINTREE_PUBLIC_KEY=public_key
+  STORYBOOK_BRAINTREE_PRIVATE_KEY=private_key
+  STORYBOOK_BRAINTREE_TOKENIZATION_KEY=tokenization_key
+  BROWSERSTACK_USERNAME=browserstack_username
+  BROWSERSTACK_ACCESS_KEY=browserstack_access_key
+  PAYPAL_SANDBOX_BUYER_EMAIL=paypal_sandbox_email
+  PAYPAL_SANDBOX_BUYER_PASSWORD=paypal_sandbox_password
+```
+
+To run the Apple Pay tests, you will have to Create SSL certificates for a local HTTPS server:
 
 ```shell
  .storybook/scripts/generate-test-certs.sh

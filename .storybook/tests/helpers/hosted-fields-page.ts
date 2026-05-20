@@ -4,20 +4,7 @@ import {
   SUCCESS_MESSAGES,
   DEFAULT_HOSTED_FIELDS_VALUES,
 } from "../../constants";
-
-type HostedFieldKey =
-  | "number"
-  | "expirationDate"
-  | "cvv"
-  | "postalCode"
-  | "cardholderName";
-
-type AllowedElementState =
-  | "visible"
-  | "attached"
-  | "detached"
-  | "hidden"
-  | undefined;
+import { AllowedElementState, HostedFieldKey } from "../../types/test-types";
 
 export class HostedFieldsPage {
   private readonly page: Page;
