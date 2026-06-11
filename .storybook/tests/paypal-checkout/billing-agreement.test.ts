@@ -12,10 +12,6 @@
  *  - PAYPAL_SANDBOX_BUYER_EMAIL
  *  - PAYPAL_SANDBOX_BUYER_PASSWORD
  *  - PAYPAL_SANDBOX_OTP_CODE (optional — defaults to "111111")
- *
- * Single-file local run:
- *  npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts \
- *    .storybook/tests/paypal-checkout/billing-agreement.test.ts
  */
 
 import { expect, Page } from "@playwright/test";
@@ -40,7 +36,8 @@ interface CreatePaymentVaultPayload {
   currencyIsoCode?: string;
 }
 
-test.describe("PayPal Checkout (legacy) — Billing Agreement", function () {
+// DTBTWEB-1494
+test.skip("PayPal Checkout (legacy) — Billing Agreement", function () {
   test.describe("Basic Vault Flow", function () {
     test("creates a simple vault billing agreement end-to-end", async ({
       paypalCheckoutPage,

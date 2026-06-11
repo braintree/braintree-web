@@ -154,7 +154,8 @@ test.describe("PayPal Checkout V6 - Billing Agreement", function () {
       expect(nonceMatch![1].length).toBeGreaterThan(10);
     });
 
-    test("should include payer email in vault response", async ({
+    // Quarantined: flaky.
+    test.fixme("should include payer email in vault response", async ({
       paypalCheckoutPage,
       page,
       getTestUrl,

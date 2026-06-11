@@ -22,7 +22,7 @@ function requestShouldRetry(status) {
 function sendApiLatencyAnalytics(url, options) {
   var domain, path, cleanedPath, parsedUrl, normalizedUrl;
   var analyticsConnectionStartTime, analyticsRequestStartTime, analyticsEndTime;
-  var finalStartTime, duration;
+  var finalStartTime;
   var entries, entry;
 
   try {
@@ -64,13 +64,11 @@ function sendApiLatencyAnalytics(url, options) {
         : null;
       finalStartTime = Math.round(entry.startTime);
       analyticsEndTime = Math.round(entry.responseEnd);
-      duration = entry.duration ? Math.round(entry.duration) : null;
 
       /* eslint-disable camelcase */
       options.sendAnalyticsEvent("core.api-request-latency", {
-        connection_start_time: analyticsConnectionStartTime,
+        connect_start_time: analyticsConnectionStartTime,
         domain: domain,
-        duration: duration,
         endpoint: cleanedPath,
         end_time: analyticsEndTime,
         request_start_time: analyticsRequestStartTime,

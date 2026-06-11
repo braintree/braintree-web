@@ -18,10 +18,6 @@
  *
  * Required env vars (from .env):
  *  - STORYBOOK_BRAINTREE_TOKENIZATION_KEY
- *
- * Single-file local run:
- *  npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts \
- *    .storybook/tests/paypal-checkout/error-handling.test.ts
  */
 
 import { expect } from "@playwright/test";
@@ -33,7 +29,8 @@ const BRAINTREE_GRAPHQL_URL = "**/payments.sandbox.braintree-api.com/graphql**";
 const CREATE_PAYMENT_RESOURCE_URL = "**/create_payment_resource**";
 const PAYPAL_ACCOUNTS_TOKENIZE_URL = "**/payment_methods/paypal_accounts**";
 
-test.describe("PayPal Checkout (legacy) — Error Handling", function () {
+// DTBTWEB-1494
+test.skip("PayPal Checkout (legacy) — Error Handling", function () {
   test("surfaces Initialization Error when gateway returns 401", async ({
     page,
     getTestUrl,

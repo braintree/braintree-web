@@ -8,7 +8,7 @@ Storybook is used in this project for:
 
 - **Interactive Component Development** - Develop and test payment components in isolation
 - **Visual Testing** - Manually verify component behavior across different SDK versions
-- **Integration Testing** - Automated BrowserStack tests for real browser environments
+- **Integration Testing** - Automated Playwright tests on local Chromium
 - **Documentation** - Living documentation with interactive examples
 
 ## Commands
@@ -27,20 +27,17 @@ Storybook is used in this project for:
 
 ### Testing
 
-- `npm run test:playwright` - Run Playwright tests on BrowserStack
-- `npm run test:playwright:local` - Run Playwright tests locally with headed browsers
-- Integration coverage (see [Integration Test Coverage](#integration-test-coverage-playwright--v8) section below):
-  1. `npm run build:integration:coverage` - Build SDK with source maps, copy to Storybook, build Storybook
-  2. `npm run test:integration:coverage` - Chromium-only Playwright run → `coverage/integration/html/index.html`
-- `npm run test:integration` - Alias for `test:playwright` (backward compat)
-- `npm run test:integration:local` - Alias for `test:playwright:local` (backward compat)
-- `npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts .storybook/tests/hosted-fields/tokenization.test.ts` - Run a single Playwright test file locally
+- `npm run test:integration` - Build assets and run the Chromium Playwright suite
+- Opt-in coverage: `PLAYWRIGHT_INTEGRATION_COVERAGE=true npm run test:integration` → `coverage/integration/html/index.html`
+- Single test file (after one build): `npx playwright test --config=.storybook/tests/playwright.config.ts .storybook/tests/hosted-fields/tokenization.test.ts`
+
+See `README.md` § Integration Tests for canonical setup, env vars, and run details.
 
 ## Architecture
 
 ### Test Framework
 
-All integration tests use **Playwright** with BrowserStack (Chrome, Safari, Firefox, Edge). Tests use custom fixtures and the page object model pattern. Local execution is also supported.
+All integration tests use **Playwright** on local Chromium. Tests use custom fixtures and the page object model pattern.
 
 ### Directory Structure
 
@@ -48,7 +45,7 @@ All integration tests use **Playwright** with BrowserStack (Chrome, Safari, Fire
 .storybook/
 ├── main.ts                  # Storybook configuration
 ├── preview.ts               # Global decorators, loaders, and version toolbar
-├── constants.ts             # Shared constants (test data, selectors, browser matrix)
+├── constants.ts             # Shared constants (test data, selectors)
 ├── versions.json            # Available SDK versions for toolbar
 │
 ├── css/
@@ -56,11 +53,7 @@ All integration tests use **Playwright** with BrowserStack (Chrome, Safari, Fire
 │
 ├── scripts/
 │   ├── copy-local-build.js       # Copies SDK build to static directory
-│   ├── generate-test-certs.sh    # Generate SSL certs for HTTPS test server
-│   └── browserstack/
-│       ├── browserstack-local.ts # BrowserStack Local tunnel management
-│       ├── global-setup.ts       # Playwright globalSetup (starts tunnel)
-│       └── global-teardown.ts    # Playwright globalTeardown (stops tunnel)
+│   └── generate-test-certs.sh    # Generate SSL certs for HTTPS test server
 │
 ├── docs/                    # (staging area — may be removed)
 ├── stories/                 # Story files organized by component
@@ -86,11 +79,9 @@ All integration tests use **Playwright** with BrowserStack (Chrome, Safari, Fire
 │   └── test-data.ts              # Test card data
 │
 ├── tests/                   # Integration tests
-│   ├── playwright.browserstack.config.ts  # Playwright BrowserStack config
-│   ├── playwright.browserstack.local.ts   # Playwright local browser config
-│   ├── playwright.coverage.config.ts      # Chromium-only + V8 integration coverage
-│   ├── global-setup-coverage.ts           # Resets Istanbul map for coverage runs
-│   ├── global-teardown-coverage.ts        # Writes coverage/integration reports
+│   ├── playwright.config.ts               # Chromium-only Playwright config (V8 coverage opt-in)
+│   ├── global-setup.ts                    # Resets Istanbul map when coverage is on
+│   ├── global-teardown.ts                 # Writes coverage reports + cleans artifact dirs
 │   ├── helpers/
 │   │   ├── playwright-helpers.ts      # Playwright custom fixtures (test server, URLs, page object)
 │   │   ├── integration-coverage-store.ts  # V8 → Istanbul merge + lcov/html output
@@ -129,7 +120,6 @@ All integration tests use **Playwright** with BrowserStack (Chrome, Safari, Fire
 │
 ├── types/                   # TypeScript type definitions
 │   ├── global.d.ts               # Braintree/PayPal SDK interfaces
-│   ├── browserstack.d.ts         # BrowserStack capability types
 │   ├── braintree-extended.d.ts   # Extended Braintree types
 │   ├── test-types.d.ts           # Test-specific types
 │   └── story-utils.d.ts          # Story utility types
@@ -333,27 +323,10 @@ import {
 - `BASE_URL` - `https://127.0.0.1:8080`
 - `PAYPAL_SUCCESS_MESSAGES` - PayPal authorization/cancellation messages
 - `PAYPAL_POPUP_TIMEOUTS` - Timeout values for PayPal popup flow steps
-- `browsers` - BrowserStack test matrix (Chrome, Edge, Safari, Firefox)
 
-## Integration Testing with Playwright
+## Integration Testing
 
-All integration tests use Playwright.
-
-### Running Playwright Tests
-
-```bash
-# Run all Playwright tests on BrowserStack
-npm run test:playwright
-
-# Run locally with headed browsers
-npm run test:playwright:local
-
-# Run a single test file locally
-npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts .storybook/tests/hosted-fields/tokenization.test.ts
-
-# Run the legacy paypal-checkout suite locally
-npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts .storybook/tests/paypal-checkout/
-```
+See `README.md` § Integration Tests for canonical run instructions. This file documents Storybook-specific Playwright pieces only.
 
 The `paypal-checkout/` and `paypal-checkout-v6/` suites require PayPal sandbox credentials in `.env`:
 
@@ -363,19 +336,12 @@ PAYPAL_SANDBOX_BUYER_PASSWORD=your_sandbox_password
 PAYPAL_SANDBOX_OTP_CODE=111111  # optional, defaults to 111111
 ```
 
-### Playwright Configuration
-
-- **BrowserStack config:** `tests/playwright.browserstack.config.ts` - 4 workers, 3 retries, 90s timeout
-- **Local config:** `tests/playwright.browserstack.local.ts` - Uses Playwright device presets, 4 retries
-- **Global setup/teardown:** `scripts/browserstack/` manages BrowserStack Local tunnel lifecycle
-- **Test ignores:** Apple Pay tests only run on Safari
-
 ### Custom Fixtures (`tests/helpers/playwright-helpers.ts`)
 
 All Playwright tests import `test` from `playwright-helpers.ts` instead of directly from `@playwright/test`. This provides:
 
 - **`testServer`** - Auto-creates an isolated HTTP/HTTPS server per test, auto-closes after
-- **`getTestUrl`** - Builds story URLs with option flags; auto-appends `sdkVersion:dev` when `LOCAL_BUILD=true`
+- **`getTestUrl`** - Builds story URLs with option flags; always appends `globals=sdkVersion:dev` so the local build is used
 - **`hostedFieldsPage`** - `HostedFieldsPage` page object instance
 - **`paypalCheckoutPage`** - `PayPalCheckoutPage` page object instance (auto-closes popup after test)
 
@@ -540,10 +506,6 @@ STORYBOOK_BRAINTREE_CLIENT_TOKEN=eyJ...  # For V6 (client token required)
 # For PayPal V6 integration tests:
 PAYPAL_SANDBOX_BUYER_EMAIL=your_sandbox_buyer@example.com
 PAYPAL_SANDBOX_OTP_CODE=111111
-
-# For integration tests only:
-BROWSERSTACK_USERNAME=your_username
-BROWSERSTACK_ACCESS_KEY=your_access_key
 ```
 
 ## Using Local Builds
@@ -576,117 +538,56 @@ To add a new version, prepend it to the array after "dev":
 
 The versions are fetched from NPM CDN: `https://js.braintreegateway.com/web/{version}/js/`
 
-## CI/CD Pipeline (GitHub Actions)
-
-The integration tests run via `.github/workflows/integration-tests.yml` on every PR and `workflow_dispatch`.
-
-### Job Structure
-
-1. **`build`** - Builds SDK, copies local build, builds Storybook, generates SSL certs, and uploads artifacts (`storybook-static/`, `.storybook/certs/`, `dist/hosted/`)
-2. **`playwright-tests`** - Downloads artifacts, starts BrowserStack Local tunnel, starts HTTPS server, runs sharded tests
-3. **`merge-reports`** - Downloads all blob reports, merges into JSON, publishes PR comment with results
-
-### Test Sharding
-
-Tests are split across **8 parallel shards** using Playwright's `--shard` flag:
-
-```yaml
-strategy:
-  matrix:
-    shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-    shardTotal: [8]
-```
-
-Each shard runs: `npx playwright test --config=.storybook/tests/playwright.browserstack.config.ts --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}`
-
-### BrowserStack Local in CI
-
-In CI, BrowserStack Local tunnel is managed by the `browserstack/github-actions/setup-local@master` action (not the `global-setup.ts` script). Each shard gets a unique tunnel identifier:
-
-```yaml
-BROWSERSTACK_LOCAL_IDENTIFIER: ${{ github.sha }}-${{ matrix.shardIndex }}
-```
-
-This avoids tunnel conflicts between concurrent shards.
-
-### Report Merging
-
-Each shard uploads a `blob-report-{shardIndex}` artifact. The `merge-reports` job:
-
-1. Downloads all blob reports
-2. Merges them: `npx playwright merge-reports --reporter=json ./all-blob-reports`
-3. Publishes a PR comment via `daun/playwright-report-summary`
-
-### CI Environment Variables
-
-In addition to the local `.env` variables, CI uses these secrets:
-
-```bash
-BROWSERSTACK_USERNAME / BROWSERSTACK_ACCESS_KEY
-STORYBOOK_BRAINTREE_TOKENIZATION_KEY
-STORYBOOK_BRAINTREE_MERCHANT_ID
-STORYBOOK_BRAINTREE_PUBLIC_KEY
-STORYBOOK_BRAINTREE_PRIVATE_KEY
-STORYBOOK_BRAINTREE_CUSTOMER_ID
-PAYPAL_SANDBOX_BUYER_EMAIL / PAYPAL_SANDBOX_BUYER_PASSWORD
-```
-
 ## Integration Test Coverage (Playwright + V8)
 
 Integration test coverage measures how much of `src/` is exercised by the Playwright tests under `.storybook/tests/**/*.test.ts`. It uses Chromium V8 JavaScript coverage via CDP, converts V8 byte ranges to Istanbul format with `v8-to-istanbul`, and writes HTML/LCOV reports.
 
-Coverage is **Chromium-only** — Firefox, WebKit, and BrowserStack runs do not contribute.
-
-### Running Coverage Locally
-
-```bash
-# 1. Build SDK + copy to Storybook + build Storybook (one command)
-npm run build:integration:coverage
-
-# 2. Run Chromium-only Playwright suite with V8 coverage
-npm run test:integration:coverage
-```
-
-Step 1 only needs re-running when SDK source changes. Step 2 can be re-run alone.
-
-`build:integration:coverage` chains: `build` (with `BRAINTREE_JS_COVERAGE_BUILD=true`, retains `*-internal.js` files and generates source maps) → `storybook:copy-local-build` (copies `dist/` into `.storybook/static/local-build/`) → `storybook:build` (materializes `storybook-static/` with coverage-instrumented bundles) → `generate-test-certs`.
-
-To run sub-steps individually (e.g. rebuild Storybook without rebuilding SDK):
-
-```bash
-npm run build:coverage              # build SDK with coverage maps
-npm run storybook:copy-local-build  # copy dist/ into .storybook/static/local-build/
-npm run storybook:build             # build storybook-static/ from .storybook/static/
-```
+Coverage is **Chromium-only** and **opt-in**: set `PLAYWRIGHT_INTEGRATION_COVERAGE=true` on any `npm run test:integration` invocation. See `README.md` § Integration Tests > Coverage for run instructions.
 
 ### Running a Subset
 
+After one initial `npm run build:integration`, drive Playwright directly:
+
 ```bash
-# Single test file
-BRAINTREE_JS_ENV=development PLAYWRIGHT_INTEGRATION_COVERAGE=true LOCAL_BUILD=true \
-  npx playwright test --config=.storybook/tests/playwright.coverage.config.ts \
+# Single test file with coverage
+PLAYWRIGHT_INTEGRATION_COVERAGE=true \
+  npx playwright test --config=.storybook/tests/playwright.config.ts \
   .storybook/tests/hosted-fields/tokenization.test.ts
 
-# Grep pattern
-BRAINTREE_JS_ENV=development PLAYWRIGHT_INTEGRATION_COVERAGE=true LOCAL_BUILD=true \
-  npx playwright test --config=.storybook/tests/playwright.coverage.config.ts \
+# Grep pattern with coverage
+PLAYWRIGHT_INTEGRATION_COVERAGE=true \
+  npx playwright test --config=.storybook/tests/playwright.config.ts \
   --grep "tokenize"
+```
+
+### Parallelism and Debugging Serial Runs
+
+The config uses `workers: 2` and `fullyParallel: true`. Each test gets its own ephemeral-port
+server and CDP session, so parallel execution is safe. Coverage shards are written per worker
+PID and merged in global teardown.
+
+To reproduce a fully serial run for debugging, pass `--workers=1`:
+
+```bash
+PLAYWRIGHT_INTEGRATION_COVERAGE=true \
+  npx playwright test --config=.storybook/tests/playwright.config.ts --workers=1
 ```
 
 ### Output
 
-| File                                        | Format        | Use                                                                                          |
-| ------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------- |
-| `coverage/integration/html/index.html`      | Istanbul HTML | Per-file line/branch/function coverage; landing page shows `src/` with aggregate percentages |
-| `coverage/integration/lcov.info`            | LCOV          | Machine-readable for CI tools and IDE plugins                                                |
-| `coverage/integration/coverage-summary.txt` | Plain text    | Console-friendly summary table                                                               |
+| File                                        | Format        | Use                                                                                                                                                  |
+| ------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `coverage/integration/html/index.html`      | Istanbul HTML | Per-file line/branch/function coverage; landing page shows `src/` with aggregate percentages                                                         |
+| `coverage/integration/lcov.info`            | LCOV          | Machine-readable for CI tools and IDE plugins                                                                                                        |
+| `coverage/integration/coverage-summary.txt` | Plain text    | Console-friendly summary table (Istanbul `text` reporter)                                                                                            |
+| `coverage/integration/coverage-totals.txt`  | Plain text    | Top-line percentages only (Istanbul `text-summary` reporter); consumed by the PR coverage comment via `scripts/post-integration-coverage-comment.js` |
 
 ### Environment Variables
 
-| Variable                          | Default | Purpose                                                                                           |
-| --------------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
-| `PLAYWRIGHT_INTEGRATION_COVERAGE` | —       | Set to `true` to enable V8 coverage collection (set automatically by `test:integration:coverage`) |
-| `INTEGRATION_COVERAGE_ZERO_FILL`  | `true`  | Set to `false` to skip zero-fill; report only shows files V8 actually executed                    |
+| Variable                          | Default | Purpose                                                                                            |
+| --------------------------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `PLAYWRIGHT_INTEGRATION_COVERAGE` | —       | Set to `true` to enable V8 coverage collection. CI sets this in the `playwright-coverage` job env. |
+| `INTEGRATION_COVERAGE_ZERO_FILL`  | `true`  | Set to `false` to skip zero-fill; report only shows files V8 actually executed                     |
 
 ### How It Works
 
@@ -698,22 +599,26 @@ BRAINTREE_JS_ENV=development PLAYWRIGHT_INTEGRATION_COVERAGE=true LOCAL_BUILD=tr
 
 ### Common Pitfalls
 
-- **Skipping `storybook:build` after editing a story (`.stories.ts`)** — `storybook-static/` is what the integration server serves; e.g. new `onCancel` / mock hooks in a story will not run until the static bundle is rebuilt. (`build:integration:coverage` does this; ad-hoc runs need `npm run storybook:build` after story changes.)
+- **Skipping `storybook:build` after editing a story (`.stories.ts`)** — `storybook-static/` is what the integration server serves; e.g. new `onCancel` / mock hooks in a story will not run until the static bundle is rebuilt. (`build:integration` does this; ad-hoc runs need `npm run storybook:build` after story changes.)
 - **Skipping `storybook:build` after copy** — `storybook-static/` has stale bundles; CDP text won't match on-disk files and frame internals silently get 0%.
-- **Non-coverage build** — Without `BRAINTREE_JS_COVERAGE_BUILD=true`, `*-internal.js` files are deleted and source maps may be incomplete. `build:coverage` and `build:integration:coverage` set this automatically.
-- **Running on Firefox/WebKit** — V8 coverage is Chromium-only. The coverage config restricts to Desktop Chrome.
+- **Non-coverage build** — Without `BRAINTREE_JS_COVERAGE_BUILD=true` on the SDK build, `*-internal.js` files are deleted and source maps may be incomplete. `npm run build:integration` passes that variable to its first link (`npm run build`). Storybook steps reuse the `dist/` output; they do not need the env. For SDK-only rebuilds, run `env BRAINTREE_JS_COVERAGE_BUILD=true npm run build`.
+- **Running on Firefox/WebKit** — V8 coverage is Chromium-only. The Playwright config restricts to Desktop Chrome.
 
 ### Config Entry Points
 
-- Playwright config: `tests/playwright.coverage.config.ts`
+- Playwright config: `tests/playwright.config.ts`
 - V8 → Istanbul merge + reports: `tests/helpers/integration-coverage-store.ts`
 - Multi-frame CDP collection: `tests/helpers/integration-coverage-cdp.ts`
-- Global setup (shard reset): `tests/global-setup-coverage.ts`
-- Global teardown (report writing): `tests/global-teardown-coverage.ts`
+- Global setup (shard reset): `tests/global-setup.ts`
+- Global teardown (report writing): `tests/global-teardown.ts`
 
 ### CI
 
-A dedicated `playwright-coverage` job in `.github/workflows/integration-tests.yml` runs unsharded Chromium Playwright with coverage enabled and uploads `coverage/integration/` as an artifact. The BrowserStack matrix is unchanged and does not contribute to coverage.
+`.github/workflows/integration-test-run.yml` defines three jobs:
+
+1. `build` — builds the SDK with `BRAINTREE_JS_COVERAGE_BUILD=true` + `BRAINTREE_JS_ASSET_URL=/local-build`, copies local build, builds Storybook (which also runs `generate-test-certs`), uploads the `storybook-build` artifact.
+2. `playwright-coverage` — downloads the artifact, installs deps + Chromium, runs unsharded Playwright (`playwright.config.ts`) with `PLAYWRIGHT_INTEGRATION_COVERAGE=true`, uploads `coverage/integration/` and the `blob-report`, posts the PR coverage comment.
+3. `post-test-summary` — downloads `blob-report`, merges into JSON, publishes the test-summary PR comment via `daun/playwright-report-summary`.
 
 ## Troubleshooting
 
@@ -749,10 +654,9 @@ A dedicated `playwright-coverage` job in `.github/workflows/integration-tests.ym
 
 ### Test Debugging
 
-- Tests use 4 workers and 3-4 retries by default
+- Tests use 2 workers and 2 retries by default
 - Traces captured on first retry (`trace: "on-first-retry"`)
 - View traces: `npx playwright show-report`
-- Use `BROWSERSTACK_DISABLE_RETRIES=true` to disable retries for debugging
 
 <claude-mem-context>
 # Recent Activity

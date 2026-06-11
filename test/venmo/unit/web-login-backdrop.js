@@ -359,5 +359,90 @@ describe("web-login-backdrop", () => {
         expect(err).toBe("some error");
       });
     });
+
+    describe("analyticsCallback", () => {
+      let mockAnalyticsCallback;
+      let optionsWithCallback;
+
+      beforeEach(() => {
+        mockAnalyticsCallback = jest.fn();
+        optionsWithCallback = assign({}, openOptions, {
+          analyticsCallback: mockAnalyticsCallback,
+        });
+        mockFrameService.open = jest.fn((obj, callback) => {
+          callback();
+        });
+      });
+
+      it("calls login.start when runWebLogin is called", () => {
+        // Override open to not fire its callback so only login.start fires
+        mockFrameService.open = jest.fn();
+
+        runWebLogin(optionsWithCallback);
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith("login", "start");
+        expect(mockAnalyticsCallback).toHaveBeenCalledTimes(1);
+      });
+
+      it("calls login.succeeded and return-to-merchant.started when popup closes without error", async () => {
+        await openPopup(optionsWithCallback);
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "login",
+          "succeeded"
+        );
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "start"
+        );
+      });
+
+      it("calls return-to-merchant.succeeded when status check resolves", async () => {
+        mockStatusCheck.mockResolvedValueOnce({ status: "APPROVED" });
+
+        await openPopup(optionsWithCallback);
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "succeeded"
+        );
+      });
+
+      it("calls return-to-merchant.canceled when status is CREATED after status check rejects", async () => {
+        mockStatusCheck.mockRejectedValueOnce(new Error("some error"));
+        mockPaymentContextStatus.mockResolvedValueOnce({ status: "CREATED" });
+
+        await openPopup(optionsWithCallback).catch(() => {});
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "canceled"
+        );
+      });
+
+      it("calls return-to-merchant.failed when status check rejects with non-CREATED status", async () => {
+        mockStatusCheck.mockRejectedValueOnce(new Error("some error"));
+        mockPaymentContextStatus.mockResolvedValueOnce({ status: "FAILED" });
+
+        await openPopup(optionsWithCallback).catch(() => {});
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "failed"
+        );
+      });
+
+      it("calls login.failed when open returns an error", async () => {
+        mockFrameService.open = jest
+          .fn()
+          .mockImplementation((obj, callback) => {
+            return Promise.resolve(callback("some error"));
+          });
+
+        await openPopup(optionsWithCallback).catch(() => {});
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith("login", "failed");
+      });
+    });
   });
 });

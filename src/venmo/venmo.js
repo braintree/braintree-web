@@ -153,8 +153,8 @@ function Venmo(options) {
               return response.data;
             });
         },
-        sendEvent: function (eventName) {
-          analytics.sendEvent(self._createPromise, eventName);
+        sendEvent: function (eventName, params) {
+          analytics.sendEventPlus(self._createPromise, eventName, params || {});
         },
         verifyDomain: isVerifiedDomain,
       })
@@ -179,6 +179,7 @@ function Venmo(options) {
     });
   } else if (this._shouldCreateVenmoPaymentContext) {
     this._createPromise = this._createPromise.then(function (client) {
+      var platform = self._determineAnalyticsCategory();
       var paymentContextPromise, webLoginPromise;
       var analyticsCategory = self._cannotHaveReturnUrls
         ? "manual-return"
@@ -203,9 +204,12 @@ function Venmo(options) {
       paymentContextPromise = self
         ._createVenmoPaymentContext(client)
         .then(function () {
-          analytics.sendEvent(
+          analytics.sendEventPlus(
             self._createPromise,
-            "venmo." + analyticsCategory + ".presented"
+            "venmo." + analyticsCategory + ".presented",
+            {
+              platform: platform,
+            }
           );
 
           return client;
@@ -244,6 +248,26 @@ function Venmo(options) {
   }
 }
 
+/**
+ * Determines the calling workflow, defaulting to `'mobile'`.
+ * @returns `'mobile'` | `'popup-bridge'` | `'desktop-qr'` | `'web-login-flow'` | `'desktop'`
+ */
+Venmo.prototype._determineAnalyticsCategory = function () {
+  var category;
+  if (this._popupBridgeIsInstalled()) {
+    category = "popup-bridge";
+  } else if (this._useDesktopQRFlow) {
+    category = "desktop-qr";
+  } else if (this._useAllowDesktopWebLogin) {
+    category = "web-login-flow";
+  } else if (this._isDesktop()) {
+    category = "desktop";
+  } else {
+    category = "mobile";
+  }
+  return category;
+};
+
 function isValidationError(err) {
   return (
     err.details &&
@@ -262,6 +286,7 @@ Venmo.prototype._createVenmoPaymentContext = function (
   var self = this;
   var promise, transactionDetails;
   var configuration = client.getConfiguration();
+  var platform = self._determineAnalyticsCategory();
   var venmoConfiguration = configuration.gatewayConfiguration.payWithVenmo;
   var transactionDetailsPresent = false;
   var customerClientChannel = self._useAllowDesktopWebLogin
@@ -319,6 +344,14 @@ Venmo.prototype._createVenmoPaymentContext = function (
       }
     );
 
+    analytics.sendEventPlus(
+      self._createPromise,
+      "venmo.create-payment-context.started",
+      {
+        platform: platform,
+      }
+    );
+
     promise = client
       .request({
         api: "graphQLApi",
@@ -346,7 +379,28 @@ Venmo.prototype._createVenmoPaymentContext = function (
         },
       })
       .then(function (response) {
-        return response.data.createVenmoPaymentContext.venmoPaymentContext;
+        var context =
+          response.data.createVenmoPaymentContext.venmoPaymentContext;
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.create-payment-context.succeeded",
+          {
+            // eslint-disable-next-line camelcase
+            context_id: context.id,
+            platform: platform,
+          }
+        );
+        return context;
+      })
+      .catch(function (err) {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.create-payment-context.failed",
+          {
+            platform: platform,
+          }
+        );
+        throw err;
       });
   }
 
@@ -967,6 +1021,15 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
       venmoUrl: url,
       debug: self._isDebug,
       checkPaymentContextStatus: self._checkPaymentContextStatus.bind(self),
+      analyticsCallback: function (event, status) {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.desktop." + event + "." + status,
+          {
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          }
+        );
+      },
     };
     if (self._cspNonce) {
       webLoginOptions = assign({}, webLoginOptions, {
@@ -1010,6 +1073,14 @@ Venmo.prototype._tokenizeWebLoginWithRedirect = function () {
 Venmo.prototype._queryPaymentContextStatus = function (id) {
   var self = this;
 
+  analytics.sendEventPlus(
+    self._createPromise,
+    "venmo.query-payment-context.started",
+    {
+      context_id: id, // eslint-disable-line camelcase
+    }
+  );
+
   return this._createPromise
     .then(function (client) {
       var query = self._shouldUseLegacyFlow
@@ -1027,7 +1098,25 @@ Venmo.prototype._queryPaymentContextStatus = function (id) {
       });
     })
     .then(function (response) {
+      analytics.sendEventPlus(
+        self._createPromise,
+        "venmo.query-payment-context.succeeded",
+        {
+          context_id: id, // eslint-disable-line camelcase
+        }
+      );
+
       return response.data.node;
+    })
+    .catch(function (err) {
+      analytics.sendEventPlus(
+        self._createPromise,
+        "venmo.query-payment-context.failed",
+        {
+          context_id: id, // eslint-disable-line camelcase
+        }
+      );
+      throw err;
     });
 };
 
@@ -1051,7 +1140,7 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
 
       analytics.sendEventPlus(
         self._createPromise,
-        "venmo.tokenize.web-login.status-change",
+        "venmo.tokenize.web-login.status-change." + resultStatus.toLowerCase(),
         {
           context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
         }
@@ -1064,6 +1153,7 @@ Venmo.prototype._checkPaymentContextStatusAndProcessResult = function (
           return Promise.reject(
             new BraintreeError(errors.VENMO_CUSTOMER_CANCELED)
           );
+        case "EXPIRED":
         case "FAILED":
           return Promise.reject(
             new BraintreeError(errors.VENMO_TOKENIZATION_FAILED)
@@ -1125,6 +1215,7 @@ Venmo.prototype._validatePollingContext = function () {
 
 Venmo.prototype._handleWindowClosure = function () {
   var self = this;
+  var platform = self._determineAnalyticsCategory();
 
   if (
     self._venmoWindow &&
@@ -1148,6 +1239,7 @@ Venmo.prototype._handleWindowClosure = function () {
           "venmo.tokenize.manual-return.canceled",
           {
             context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            platform: platform,
           }
         );
       })
@@ -1157,6 +1249,7 @@ Venmo.prototype._handleWindowClosure = function () {
           "venmo.tokenize.manual-return.canceled.error",
           {
             context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            platform: platform,
           }
         );
       });
@@ -1238,6 +1331,7 @@ Venmo.prototype._handleStatusChange = function (node) {
       "venmo.tokenize.manual-return.status-change." + newStatus.toLowerCase(),
       {
         context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+        platform: self._determineAnalyticsCategory(),
       }
     );
 
@@ -1316,6 +1410,7 @@ Venmo.prototype._pollForStatusChange = function () {
 
 Venmo.prototype._startPolling = function () {
   var self = this;
+  var platform = self._determineAnalyticsCategory();
 
   // Prevent multiple concurrent polling loops
   if (this._pollingInProgress) {
@@ -1332,6 +1427,7 @@ Venmo.prototype._startPolling = function () {
         "venmo.tokenize.manual-return.success",
         {
           context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          platform: platform,
         }
       );
 
@@ -1349,6 +1445,7 @@ Venmo.prototype._startPolling = function () {
         "venmo.tokenize.manual-return.failure",
         {
           context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+          platform: platform,
         }
       );
 
@@ -1375,6 +1472,7 @@ Venmo.prototype._tokenizeForMobileWithManualReturn = function () {
     "venmo.tokenize.manual-return.start",
     {
       context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+      platform: self._determineAnalyticsCategory(),
     }
   );
 
@@ -1415,8 +1513,12 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
   if (this.hasTokenizationResult()) {
     return this.processHashChangeFlowResults();
   }
+  var platform = this._determineAnalyticsCategory();
 
-  analytics.sendEvent(this._createPromise, "venmo.tokenize.mobile.start");
+  analytics.sendEventPlus(this._createPromise, "venmo.tokenize.mobile.start", {
+    context_id: this._venmoPaymentContextId, // eslint-disable-line camelcase
+    platform: platform,
+  });
   this._tokenizePromise = new ExtendedPromise();
 
   this._previousHash = window.location.hash;
@@ -1427,9 +1529,25 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
     self
       .processHashChangeFlowResults(hash)
       .catch(function (err) {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.tokenize.mobile.failure",
+          {
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            platform: platform,
+          }
+        );
         error = err;
       })
       .then(function (res) {
+        analytics.sendEventPlus(
+          self._createPromise,
+          "venmo.tokenize.mobile.success",
+          {
+            context_id: self._venmoPaymentContextId, // eslint-disable-line camelcase
+            platform: platform,
+          }
+        );
         if (
           !self._ignoreHistoryChanges &&
           window.location.hash !== self._previousHash
@@ -1517,17 +1635,26 @@ Venmo.prototype._tokenizeForDesktopQRFlow = function () {
     .then(function (payload) {
       self._venmoDesktopInstance.hideDesktopFlow();
 
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._createPromise,
-        "venmo.tokenize.desktop.success"
+        "venmo.tokenize.desktop.success",
+        {
+          context_id: payload && payload.id, // eslint-disable-line camelcase
+        }
       );
 
       self._tokenizePromise.resolve(payload);
     })
     .catch(function (err) {
-      analytics.sendEvent(
+      analytics.sendEventPlus(
         self._createPromise,
-        "venmo.tokenize.desktop.failure"
+        "venmo.tokenize.desktop.failure",
+        {
+          // eslint-disable-next-line camelcase
+          context_id:
+            self._venmoDesktopInstance &&
+            self._venmoDesktopInstance.venmoContextId,
+        }
       );
 
       if (self._venmoDesktopInstance) {

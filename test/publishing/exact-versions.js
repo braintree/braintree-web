@@ -3,12 +3,12 @@
 const { dependencies: deps } = require("../../package.json");
 
 // loads the Fastlane SDK for the Fastlane component
-const NON_FIXED_DEPS = ["@paypal/accelerated-checkout-loader"];
+const NON_FIXED_DEPS = ["@paypal/fastlane-sdk-loader"];
 
 describe("exact npm versions", () => {
   it.each(Object.keys(deps))("uses an exact version for %s", (depName) => {
     if (NON_FIXED_DEPS.includes(depName)) {
-      // Certain packages are allowed to have a caret. Accelerated Checkout Loader is one of those.
+      // Certain packages are allowed to have a caret. Fastlane SDK Loader is one of those.
       // We want to be able to pull the assets for this module.
       return;
     }

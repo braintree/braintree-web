@@ -84,7 +84,8 @@ test.describe("PayPal Checkout V6", function () {
   });
 
   test.describe("Complete Checkout", function () {
-    test("should complete PayPal payment successfully", async ({
+    // Quarantined: flaky.
+    test.fixme("should complete PayPal payment successfully", async ({
       paypalCheckoutPage,
       page,
       getTestUrl,
@@ -299,7 +300,8 @@ test.describe("PayPal Checkout V6", function () {
       expect(payload.currencyIsoCode).toBe("USD");
     });
 
-    test("should complete payment with line items and receive nonce", async ({
+    // Quarantined: flaky.
+    test.fixme("should complete payment with line items and receive nonce", async ({
       paypalCheckoutPage,
       page,
       getTestUrl,

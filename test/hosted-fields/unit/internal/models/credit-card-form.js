@@ -889,6 +889,8 @@ describe("credit card model", () => {
       "5555555555554444",
       "378",
       "378282246310005",
+      "589562",
+      "5895621234567890",
       "",
     ])("changes credit card type when the number changes to %p", (num) => {
       testContext.card.set("number.value", num);
@@ -902,6 +904,17 @@ describe("credit card model", () => {
       typesForNumber.forEach((card, index) => {
         expect(card.type).toBe(types[index].type);
       });
+    });
+
+    it("detects Naranja card type from its IIN", () => {
+      testContext.card.set("number.value", "5895621234567890");
+
+      const types = testContext.card.get("possibleCardTypes");
+
+      expect(types.length).toBe(1);
+      expect(types[0].type).toBe("naranja");
+      expect(types[0].niceType).toBe("Naranja");
+      expect(types[0].code.size).toBe(3);
     });
 
     it("validates CVV", () => {

@@ -292,9 +292,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.manual-return.presented"
+      "venmo.manual-return.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -340,9 +341,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.manual-return.presented"
+      "venmo.manual-return.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -384,9 +386,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.manual-return.presented"
+      "venmo.manual-return.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -432,9 +435,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.manual-return.presented"
+      "venmo.manual-return.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -479,9 +483,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.mobile-payment-context.presented"
+      "venmo.mobile-payment-context.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -3080,9 +3085,10 @@ describe("Venmo", () => {
 
           await promise;
 
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            "venmo.tokenize.mobile.start"
+            "venmo.tokenize.mobile.start",
+            expect.anything()
           );
         });
 
@@ -3339,14 +3345,16 @@ describe("Venmo", () => {
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.start",
-          {
+          expect.objectContaining({
             context_id: "context-id",
-          }
+          })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { context_id: "context-id" }
+          expect.objectContaining({
+            context_id: "context-id",
+          })
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
@@ -3480,9 +3488,9 @@ describe("Venmo", () => {
           expect(analytics.sendEventPlus).toBeCalledWith(
             expect.anything(),
             "venmo.tokenize.manual-return.failure",
-            {
+            expect.objectContaining({
               context_id: "context-id",
-            }
+            })
           );
 
           expect(err.code).toBe(
@@ -3512,9 +3520,9 @@ describe("Venmo", () => {
             expect(analytics.sendEventPlus).toBeCalledWith(
               expect.anything(),
               `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`,
-              {
+              expect.objectContaining({
                 context_id: "context-id",
-              }
+              })
             );
           });
         }
@@ -3594,22 +3602,30 @@ describe("Venmo", () => {
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.scanned",
-          { context_id: "context-id" }
+          expect.objectContaining({
+            context_id: "context-id",
+          })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.unknown_status_we_do_not_account_for",
-          { context_id: "context-id" }
+          expect.objectContaining({
+            context_id: "context-id",
+          })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.approved",
-          { context_id: "context-id" }
+          expect.objectContaining({
+            context_id: "context-id",
+          })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { context_id: "context-id" }
+          expect.objectContaining({
+            context_id: "context-id",
+          })
         );
 
         // once to create the payment context
@@ -3650,8 +3666,82 @@ describe("Venmo", () => {
 
         await promise;
       });
-    });
 
+      it("tags manual-return.start/.success with the analytics category", async () => {
+        await venmo.tokenize();
+
+        var expectedPlatform = venmo._determineAnalyticsCategory();
+
+        expect(analytics.sendEventPlus).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.start",
+          expect.objectContaining({ platform: expectedPlatform })
+        );
+        expect(analytics.sendEventPlus).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.success",
+          expect.objectContaining({ platform: expectedPlatform })
+        );
+      });
+
+      it("tags manual-return events with 'popup-bridge' when PopupBridge is installed", async () => {
+        window.popupBridge = { open: jest.fn() };
+
+        await venmo.tokenize();
+
+        expect(analytics.sendEventPlus).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.start",
+          expect.objectContaining({ platform: "popup-bridge" })
+        );
+        expect(analytics.sendEventPlus).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.status-change.approved",
+          expect.objectContaining({ platform: "popup-bridge" })
+        );
+        expect(analytics.sendEventPlus).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.success",
+          expect.objectContaining({ platform: "popup-bridge" })
+        );
+      });
+
+      it("tags manual-return.failure with 'popup-bridge' when PopupBridge is installed", async () => {
+        window.popupBridge = { open: jest.fn() };
+
+        var networkError = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: "VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR",
+          message: "network error",
+        });
+
+        testContext.client.request.mockRejectedValueOnce(networkError);
+
+        await venmo.tokenize().catch(function () {});
+
+        expect(analytics.sendEventPlus).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.failure",
+          expect.objectContaining({ platform: "popup-bridge" })
+        );
+      });
+
+      it("tags manual-return.canceled with 'popup-bridge' when PopupBridge is installed", async () => {
+        window.popupBridge = { open: jest.fn() };
+
+        venmo._venmoWindow = { closed: true };
+        venmo._venmoPaymentContextStatus = "CREATED";
+        venmo._cancelOnReturnToBrowser = true;
+
+        await venmo.tokenize().catch(function () {});
+
+        expect(analytics.sendEventPlus).toBeCalledWith(
+          expect.anything(),
+          "venmo.tokenize.manual-return.canceled",
+          expect.objectContaining({ platform: "popup-bridge" })
+        );
+      });
+    });
     // Note: These iframe breakout tests test appSwitch behavior but are placed here
     // (after mobile polling tests) rather than in the describe('appSwitch') section
     // above to avoid test pollution. When placed before the mobile polling tests,
@@ -3807,9 +3897,10 @@ describe("Venmo", () => {
       it("sends an event when the desktop flow succeeds", async () => {
         await venmo.tokenize();
 
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
           expect.anything(),
-          "venmo.tokenize.desktop.success"
+          "venmo.tokenize.desktop.success",
+          expect.anything()
         );
       });
 
@@ -3852,9 +3943,10 @@ describe("Venmo", () => {
         try {
           await venmo.tokenize();
         } catch (err) {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            "venmo.tokenize.desktop.failure"
+            "venmo.tokenize.desktop.failure",
+            expect.anything()
           );
         }
       });
@@ -3962,6 +4054,7 @@ describe("Venmo", () => {
 
         await venmo.tokenize();
         expect(runWebLogin).toHaveBeenCalledWith({
+          analyticsCallback: expect.any(Function),
           cancelTokenization: expect.any(Function),
           checkForStatusChange: expect.any(Function),
           frameServiceInstance: expect.any(Object),
@@ -3985,6 +4078,7 @@ describe("Venmo", () => {
 
         await venmo.tokenize();
         expect(runWebLogin).toHaveBeenCalledWith({
+          analyticsCallback: expect.any(Function),
           cancelTokenization: expect.any(Function),
           checkForStatusChange: expect.any(Function),
           frameServiceInstance: expect.any(Object),
@@ -4271,22 +4365,40 @@ describe("Venmo", () => {
           });
         });
 
-        it("sends analytics events on start and approval", async () => {
-          const expectedStartEvent = "venmo.tokenize.web-login.start";
-          const expectedApprovedEvent = "venmo.tokenize.web-login.success";
+        const mockStatusCheckRequest = (status) => {
+          testContext.client.request.mockImplementation((options) => {
+            if (options.data.query.includes("mutation CreateVenmo")) {
+              return Promise.resolve({
+                data: {
+                  createVenmoPaymentContext: {
+                    venmoPaymentContext: {
+                      status: "CREATED",
+                      id: mockPaymentContextId,
+                      createdAt: new Date().toString(),
+                      expiresAt: new Date(Date.now() + 30000000).toString(),
+                    },
+                  },
+                },
+              });
+            }
 
+            return Promise.resolve({
+              data: { node: { status: status } },
+            });
+          });
+        };
+
+        it("sends analytics events on start and approval", async () => {
           await venmo._tokenizeWebLoginWithRedirect();
 
-          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-            1,
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            expectedStartEvent,
+            "venmo.tokenize.web-login.start",
             { context_id: "some-context-id" }
           );
-          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-            2,
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            expectedApprovedEvent,
+            "venmo.tokenize.web-login.success",
             { context_id: "some-context-id" }
           );
         });
@@ -4295,30 +4407,60 @@ describe("Venmo", () => {
           expect.assertions(1);
           runWebLogin.mockRejectedValueOnce(new Error("some error!"));
 
-          const expectedApprovedEvent = "venmo.tokenize.web-login.failure";
-
           await venmo._tokenizeWebLoginWithRedirect().catch(() => {
-            expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-              2,
+            expect(analytics.sendEventPlus).toHaveBeenCalledWith(
               expect.anything(),
-              expectedApprovedEvent,
+              "venmo.tokenize.web-login.failure",
               { context_id: "some-context-id" }
             );
           });
         });
 
-        it("sends analytics on gateway status change", async () => {
-          const expectedApprovedEvent =
-            "venmo.tokenize.web-login.status-change";
+        it("sends desktop web login analytics from web-login-backdrop callback", async () => {
+          await venmo._tokenizeWebLoginWithRedirect();
 
-          await venmo._checkPaymentContextStatusAndProcessResult();
+          runWebLogin.mock.calls[0][0].analyticsCallback("login", "start");
 
-          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-            1,
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            expectedApprovedEvent,
+            "venmo.desktop.login.start",
             { context_id: "some-context-id" }
           );
+        });
+
+        it("uses id argument in query-payment-context analytics on success", async () => {
+          await venmo._queryPaymentContextStatus("query-context-id");
+
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            expect.anything(),
+            "venmo.query-payment-context.started",
+            { context_id: "query-context-id" }
+          );
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            expect.anything(),
+            "venmo.query-payment-context.succeeded",
+            { context_id: "query-context-id" }
+          );
+        });
+
+        it("uses id argument in query-payment-context analytics on failure", async () => {
+          expect.assertions(2);
+          testContext.client.request.mockRejectedValueOnce(new Error("fail"));
+
+          await venmo
+            ._queryPaymentContextStatus("query-context-id")
+            .catch(function () {
+              expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+                expect.anything(),
+                "venmo.query-payment-context.started",
+                { context_id: "query-context-id" }
+              );
+              expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+                expect.anything(),
+                "venmo.query-payment-context.failed",
+                { context_id: "query-context-id" }
+              );
+            });
         });
       });
     });
@@ -4955,6 +5097,70 @@ describe("Venmo", () => {
     });
   });
 
+  describe("_determineAnalyticsCategory", () => {
+    let venmo;
+
+    beforeEach(() => {
+      testContext.client.request.mockResolvedValue({
+        data: {
+          createVenmoPaymentContext: {
+            venmoPaymentContext: {
+              id: "mock-context-id",
+              status: "CREATED",
+              createdAt: "2024-01-01T00:00:00.000Z",
+              expiresAt: "2025-01-01T00:00:00.000Z",
+            },
+          },
+        },
+      });
+
+      venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+      });
+      jest.spyOn(venmo, "_popupBridgeIsInstalled").mockReturnValue(false);
+      jest.spyOn(venmo, "_isDesktop").mockReturnValue(false);
+      venmo._useDesktopQRFlow = false;
+    });
+
+    it("returns 'popup-bridge' when popupBridge is installed", () => {
+      jest.spyOn(venmo, "_popupBridgeIsInstalled").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("popup-bridge");
+    });
+
+    it("returns 'qr' when using the desktop QR flow", () => {
+      venmo._useDesktopQRFlow = true;
+
+      expect(venmo._determineAnalyticsCategory()).toBe("desktop-qr");
+    });
+
+    it("returns 'desktop' when on desktop without QR flow or popup-bridge", () => {
+      jest.spyOn(venmo, "_isDesktop").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("desktop");
+    });
+
+    it("returns 'mobile' when not popup-bridge, QR, or desktop", () => {
+      expect(venmo._determineAnalyticsCategory()).toBe("mobile");
+    });
+
+    it("prefers 'popup-bridge' over QR flow and desktop", () => {
+      jest.spyOn(venmo, "_popupBridgeIsInstalled").mockReturnValue(true);
+      venmo._useDesktopQRFlow = true;
+      jest.spyOn(venmo, "_isDesktop").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("popup-bridge");
+    });
+
+    it("prefers 'qr' over desktop when both conditions are true", () => {
+      venmo._useDesktopQRFlow = true;
+      jest.spyOn(venmo, "_isDesktop").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("desktop-qr");
+    });
+  });
+
   describe("cancelOnReturnToBrowser Android override", () => {
     beforeEach(() => {
       testContext.client.request.mockResolvedValue({
@@ -5030,11 +5236,13 @@ describe("Venmo", () => {
       expect(venmo._cancelMobilePaymentContext).not.toHaveBeenCalled();
     };
 
-    beforeEach(() => {
+    beforeEach(async () => {
       jest.clearAllMocks();
       venmo = new Venmo({
         createPromise: Promise.resolve(testContext.client),
       });
+      await flushPromises();
+      analytics.sendEventPlus.mockClear();
       venmo._venmoPaymentContextStatus = "CREATED";
       venmo._venmoPaymentContextId = "test-context-id";
       venmo._cancelMobilePaymentContext = jest.fn().mockResolvedValue();

@@ -220,11 +220,9 @@ export const test = base.extend<{
       }
 
       let url = `${protocol}://localhost:${testServer.port}${path}`;
-      if (process.env.LOCAL_BUILD === "true") {
-        const hasQuery = url.includes("?");
-        const separator = hasQuery ? "&" : "?";
-        url = `${url}${separator}globals=sdkVersion:dev`;
-      }
+      const hasQueryForSdkVersion = url.includes("?");
+      const sdkVersionSeparator = hasQueryForSdkVersion ? "&" : "?";
+      url = `${url}${sdkVersionSeparator}globals=sdkVersion:dev`;
 
       if (process.env.PLAYWRIGHT_INTEGRATION_COVERAGE === "true") {
         const hasQuery = url.includes("?");

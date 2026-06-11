@@ -633,9 +633,8 @@ describe("AJAXDriver", () => {
           expect(sendAnalyticsEventSpy).toHaveBeenCalledWith(
             "core.api-request-latency",
             expect.objectContaining({
-              connection_start_time: 100,
+              connect_start_time: 100,
               domain: "api.braintreegateway.com",
-              duration: 450,
               endpoint: "/v1/payment_methods/credit_cards",
               end_time: 500,
               request_start_time: 150,

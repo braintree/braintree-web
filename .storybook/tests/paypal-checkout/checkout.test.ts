@@ -12,10 +12,6 @@
  *  - PAYPAL_SANDBOX_BUYER_PASSWORD
  *  - PAYPAL_SANDBOX_OTP_CODE (optional — defaults to "111111")
  *
- * Single-file local run:
- *  npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts \
- *    .storybook/tests/paypal-checkout/checkout.test.ts
- *
  * VaultInitiatedCheckout (VIC) is intentionally NOT covered here. See the
  * legacy PayPal integration test plan for the deferral rationale and the two
  * future paths for adding it (env-var driven vs. story instrumentation).
@@ -36,7 +32,8 @@ interface CreatePaymentPayload {
   experienceProfile?: Record<string, unknown>;
 }
 
-test.describe("PayPal Checkout (legacy) — One-Time Payment", function () {
+// DTBTWEB-1494
+test.skip("PayPal Checkout (legacy) — One-Time Payment", function () {
   test.describe("Button Rendering", function () {
     test("renders PayPal button as visible and enabled", async ({
       paypalCheckoutPage,

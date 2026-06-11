@@ -37,36 +37,3 @@ export const PAYPAL_POPUP_TIMEOUTS = {
   APPROVAL_PAGE: 15000,
   FLOW_COMPLETE: 30000,
 };
-
-export const browsers = [
-  {
-    browserName: "chrome",
-    osName: "Windows",
-    deviceName: "Desktop Chrome",
-    osVersion: "10",
-    browserVersion: "latest",
-  },
-  {
-    browserName: "Edge",
-    osName: "Windows",
-    deviceName: "Desktop Edge",
-    osVersion: "10",
-    browserVersion: "latest",
-  },
-  {
-    browserName: "Safari",
-    playwrightName: "playwright-webkit",
-    osName: "OS X",
-    deviceName: "Desktop Safari",
-    osVersion: "Tahoe",
-    browserVersion: "latest",
-  },
-  {
-    browserName: "firefox",
-    playwrightName: "playwright-firefox",
-    osName: "Windows",
-    deviceName: "Desktop Firefox",
-    osVersion: "10",
-    browserVersion: "latest",
-  },
-];

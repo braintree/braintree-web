@@ -34,6 +34,7 @@ function openPopup(options) {
   var cancelTokenization = options.cancelTokenization;
   var checkPaymentContextStatus = options.checkPaymentContextStatus;
   var extendedPromise = new ExtendedPromise();
+  var analyticsCallback = options.analyticsCallback;
 
   document
     .getElementById(ELEMENT_IDS.continueButton)
@@ -51,10 +52,25 @@ function openPopup(options) {
     var retryStartingCount = 1;
 
     if (frameServiceErr) {
+      if (analyticsCallback) {
+        analyticsCallback("login", "failed");
+      }
+
       extendedPromise.reject(frameServiceErr);
     } else {
+      if (analyticsCallback) {
+        analyticsCallback("login", "succeeded");
+        // a little strange to log two different analytics calls back to back here
+        // but we want to be able to track the different phases of the usage funnel with a lot of detail
+        // so we want to track that the login succeeded before we start returning to the merchant
+        analyticsCallback("return-to-merchant", "start");
+      }
       checkForStatusChange(retryStartingCount)
         .then(function (data) {
+          if (analyticsCallback) {
+            analyticsCallback("return-to-merchant", "succeeded");
+          }
+
           extendedPromise.resolve(data);
         })
         .catch(function (statusCheckError) {
@@ -68,10 +84,18 @@ function openPopup(options) {
           // instead of informing the merchant that the customer canceled.
           checkPaymentContextStatus().then(function (node) {
             if (node.status === "CREATED") {
+              if (analyticsCallback) {
+                analyticsCallback("return-to-merchant", "canceled");
+              }
+
               extendedPromise.reject(
                 new BraintreeError(errors.VENMO_CUSTOMER_CANCELED)
               );
             } else {
+              if (analyticsCallback) {
+                analyticsCallback("return-to-merchant", "failed");
+              }
+
               extendedPromise.reject(statusCheckError);
             }
           });
@@ -271,6 +295,7 @@ function buildAndStyleElements(styleCspNonce) {
  * @ignore
  * @param {object} options Options for running the web login flow.
  * @param {string} options.venmoUrl Venmo url that is to be used for logging in.
+ * @param {function} options.analyticsCallback A callback function that sends an analytics event. Takes strings for the event and status, e.g. ("login", "start).
  * @param {Venmo~checkPaymentContextStatusAndProcessResult} options.checkForStatusChange {@link Venmo~checkPaymentContextStatusAndProcessResult} to be invoked in order to check for a payment context status update.
  * @param {Venmo~cancelTokenization} options.cancelTokenization {@link Venmo~cancelTokenization} to be invoked when the appropriate payment context status is retrieved.
  * @param {boolean} options.debug A flag to control whether to use minified assets or not.
@@ -278,6 +303,10 @@ function buildAndStyleElements(styleCspNonce) {
  */
 function runWebLogin(options) {
   buildAndStyleElements(options.styleCspNonce);
+
+  if (options.analyticsCallback) {
+    options.analyticsCallback("login", "start");
+  }
 
   return openPopup(options);
 }

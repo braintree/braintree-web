@@ -53,13 +53,7 @@ Each component has its own CLAUDE.md with detailed guidance. These are automatic
 - `npm run jsdoc` - Generate JSDoc documentation
 - `npm run storybook:dev` - Start Storybook development server on port 6006
 - `npm run storybook:build` - Build Storybook static files
-- `npm run test:playwright` - Run Playwright integration tests on BrowserStack
-- `npm run test:playwright:local` - Run Playwright tests locally with headed browsers
-- `npm run test:integration` - Alias for `test:playwright` (backward compat)
-- `npm run test:integration:local` - Alias for `test:playwright:local` (backward compat)
-- Integration coverage (see `.storybook/CLAUDE.md` "Integration Test Coverage" section):
-  1. `npm run build:integration:coverage` - Build SDK with source maps, copy to Storybook, build Storybook
-  2. `npm run test:integration:coverage` - Chromium-only Playwright run → `coverage/integration/html/index.html`
+- `npm run test:integration` - Run Chromium Playwright integration suite (see `README.md` § Integration Tests)
 
 ## Architecture
 
@@ -83,7 +77,7 @@ Each component has its own CLAUDE.md with detailed guidance. These are automatic
 
 - Jest for unit testing with component-specific configurations
 - Tests mirror src/ structure in test/ directory
-- Integration tests using Playwright with BrowserStack
+- Integration tests using Playwright (Chromium)
 - Storybook for component development and testing
 
 ## Component Implementation Patterns
@@ -234,35 +228,9 @@ For Hosted Fields iframe issues, see `/src/hosted-fields/CLAUDE.md`.
 3. Ensure proper domain configuration for cross-origin
 4. Test with `BRAINTREE_JS_ENV=development` for detailed logging
 
-## Integration Testing with BrowserStack
+## Integration Testing
 
-### Test Structure
-
-Integration tests use Playwright with BrowserStack across multiple browsers:
-
-- Chrome (Windows 10)
-- Safari (macOS Monterey)
-- Firefox (macOS Monterey)
-- Edge (Windows 10)
-
-Tests use custom fixtures and the page object model pattern. See `.storybook/CLAUDE.md` for detailed Playwright test patterns, fixtures, and page objects.
-
-### Running Integration Tests
-
-```bash
-# All tests on BrowserStack
-npm run test:playwright
-
-# Run locally with headed browsers
-npm run test:playwright:local
-
-# Single test file locally
-npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts .storybook/tests/hosted-fields/tokenization.test.ts
-
-# Legacy aliases (backward compat)
-npm run test:integration
-npm run test:integration:local
-```
+Run `npm run test:integration` (Chromium). See `README.md` § Integration Tests for full setup, env vars, opt-in coverage, and single-file invocation.
 
 ## Important Notes
 
@@ -278,8 +246,6 @@ BRAINTREE_JS_API_PROTOCOL=https
 STORYBOOK_BRAINTREE_TOKENIZATION_KEY=sandbox_xxxxx_yyyyyy
 
 # For integration tests only
-BROWSERSTACK_USERNAME=your_username
-BROWSERSTACK_ACCESS_KEY=your_access_key
 PAYPAL_SANDBOX_BUYER_EMAIL=buyer@example.com
 PAYPAL_SANDBOX_OTP_CODE=111111
 ```

@@ -21,8 +21,7 @@ interface VenmoResult {
  *
  * Deferred until a real Venmo sandbox is available:
  *  - QR flow interaction tests (alert status messages, button state during the
- *    flow). The CDN iframe must load for the QR flow to start, and its loading
- *    time is unreliable across browsers on BrowserStack.
+ *    flow). The CDN iframe must load for the QR flow to start.
  *  - APPROVED/success QR flow. The SDK's authorize() emits
  *    VENMO_DESKTOP_AUTHORIZE to the CDN iframe, which verifies against Venmo's
  *    backend. Without a real sandbox the verification fails with

@@ -19,10 +19,9 @@ storybook-static
 cert.pem
 key.pem
 
-browserstack.err
-local.log
-logs/
 .storybook/certs/
+
+.claude/worktrees/
 
 # Playwright
 test-results/

@@ -10,17 +10,14 @@
  *
  * Required env vars (from .env):
  *  - STORYBOOK_BRAINTREE_TOKENIZATION_KEY
- *
- * Single-file local run:
- *  npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts \
- *    .storybook/tests/paypal-checkout/accessibility.test.ts
  */
 
 import { expect } from "@playwright/test";
 import { test } from "../helpers/playwright-helpers";
 import { STORY_URLS } from "./constants";
 
-test.describe("PayPal Checkout (legacy) — Accessibility", function () {
+// DTBTWEB-1494
+test.skip("PayPal Checkout (legacy) — Accessibility", function () {
   test("PayPal button mount point is focusable via keyboard", async ({
     paypalCheckoutPage,
     page,

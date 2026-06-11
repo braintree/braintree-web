@@ -10,10 +10,6 @@
  *
  * Required env vars (from .env):
  *  - STORYBOOK_BRAINTREE_TOKENIZATION_KEY
- *
- * Single-file local run:
- *  npx playwright test --config=.storybook/tests/playwright.browserstack.local.ts \
- *    .storybook/tests/paypal-checkout/lifecycle.test.ts
  */
 
 import { expect } from "@playwright/test";

@@ -112,8 +112,8 @@ test.describe("Hosted Fields CSP", () => {
         // We use securitypolicyviolation DOM events (via addInitScript +
         // page.evaluate) rather than report-uri. This event fires synchronously
         // in the browser when a violation is detected and requires no network
-        // round-trip, making it reliable in remote BrowserStack sessions where
-        // report-uri POSTs are dropped by the tunnel.
+        // round-trip, so the assertion does not depend on the test server
+        // receiving and processing a report POST before the test ends.
         //
         // Because we navigate directly (not inside an SDK-created iframe), the
         // violation fires on window itself — no window.top cross-frame writes

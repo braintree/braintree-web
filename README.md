@@ -198,7 +198,7 @@ The `BRAINTREE_JS_ENV=development` setting is required for:
 - Making hosted-fields iframe URLs load from local resources
 - Running integration tests with local builds
 
-Ensure the sandbox account used for testing is fully configured to use any payment methods that will be tested. For full testing capabilities, follow the steps in [Integration Tests (via Browserstack)](#integration-tests-via-browserstack).
+Ensure the sandbox account used for testing is fully configured to use any payment methods that will be tested. For full testing capabilities, follow the steps in [Integration Tests](#integration-tests).
 
 ### Development server
 
@@ -255,13 +255,13 @@ Unit tests can be run to test the functionality of each individual component. Th
 npm run test
 ```
 
-## Integration Tests (via Browserstack)
+## Integration Tests
+
+Playwright drives the suite on local Chromium.
 
 ### Credentials
 
 From your **Braintree sandbox account**, find your _merchant ID_, _public key_, _private key_, and _tokenization key_.
-
-From **Browserstack**, you will need a _username_ and _access key_.
 
 To test PPCPv6 functionality, you will need to follow the steps [to link your Braintree Sandbox and Paypal developer account](https://developer.paypal.com/braintree/docs/guides/paypal/testing-go-live/javascript/v3/#linked-paypal-testing). From your **Paypal developer account**, you will need the _email_ and _password_.
 
@@ -270,107 +270,63 @@ To test PPCPv6 functionality, you will need to follow the steps [to link your Br
 Follow the [setup](#setup) instructions to create your `.env` file, update the file to include these credentials:
 
 ```shell
-  BRAINTREE_JS_ENV=development
-  STORYBOOK_BRAINTREE_MERCHANT_ID=merchant_ID
-  STORYBOOK_BRAINTREE_PUBLIC_KEY=public_key
-  STORYBOOK_BRAINTREE_PRIVATE_KEY=private_key
-  STORYBOOK_BRAINTREE_TOKENIZATION_KEY=tokenization_key
-  BROWSERSTACK_USERNAME=browserstack_username
-  BROWSERSTACK_ACCESS_KEY=browserstack_access_key
-  PAYPAL_SANDBOX_BUYER_EMAIL=paypal_sandbox_email
-  PAYPAL_SANDBOX_BUYER_PASSWORD=paypal_sandbox_password
+BRAINTREE_JS_ENV=development
+STORYBOOK_BRAINTREE_MERCHANT_ID=merchant_id
+STORYBOOK_BRAINTREE_PUBLIC_KEY=public_key
+STORYBOOK_BRAINTREE_PRIVATE_KEY=private_key
+STORYBOOK_BRAINTREE_TOKENIZATION_KEY=tokenization_key
+PAYPAL_SANDBOX_BUYER_EMAIL=paypal_sandbox_email
+PAYPAL_SANDBOX_BUYER_PASSWORD=paypal_sandbox_password
 ```
 
-To run the Apple Pay tests, you will have to Create SSL certificates for a local HTTPS server:
+To run the Apple Pay tests, generate SSL certificates for the local HTTPS server:
 
 ```shell
  .storybook/scripts/generate-test-certs.sh
 ```
 
-### Testing with CDN versions (default)
-
-To run BrowserStack tests with published CDN versions:
+### Running
 
 ```shell
 npm run test:integration
 ```
 
-### Testing with local builds
-
-To test your local development builds on BrowserStack, use this complete workflow:
-
-```shell
-# 1. One command to build SDK, prepare Storybook, and start HTTPS server
-npm run build:integration
-
-# 2. In a new terminal, start the local development server
-npm run storybook:dev-local
-
-# 3. In a new terminal, run tests using your local builds
-npm run test:integration:local
-```
-
-This is equivalent to:
-
-```shell
-# 1. Build the SDK
-npm run build
-
-# 2. Copy local builds to Storybook
-npm run storybook:copy-local-build
-
-# 3. Start the local Storybook development server with local builds
-npm run storybook:dev-local
-
-# 4. Build Storybook static files
-npm run storybook:build
-
-# 5. Start HTTPS server
-npm run storybook:run-build
-
-# 6. Run tests with LOCAL_BUILD=true
-LOCAL_BUILD=true npm run test:integration
-```
-
-The integration build commands handle all the setup automatically:
-
-- `build:integration`: One-time build
-  - Builds your local SDK changes
-  - Copies local builds to Storybook static directory
-  - Builds Storybook with local assets included
-  - Starts HTTPS server for BrowserStack access
-
-**Important:** You must also run `npm run storybook:dev-local` in a separate terminal while running the integration tests. This starts a local Storybook development server that serves the components being tested.
-
-When testing with local builds, the Storybook version selector will show "Assets from local build" as an option (version: `dev`). Tests can select this to validate local changes before they're published to CDN.
+This builds the SDK with coverage flags (keeps `*-internal.js` + source maps), copies it into Storybook, builds Storybook, then runs the Chromium Playwright suite.
 
 ### Running specific tests
 
-To run a single test file instead of the entire test suite:
+After one initial `npm run test:integration` (or `npm run build:integration` alone) to build assets, invoke Playwright directly for iteration:
 
 ```shell
-npm run test:integration -- .storybook/tests/your-test-file.test.ts
-```
-
-With local builds:
-
-```shell
-npm run test:integration:local -- .storybook/tests/your-test-file.test.ts
+npx playwright test --config=.storybook/tests/playwright.config.ts .storybook/tests/your-test-file.test.ts
 ```
 
 To run only a specific test case within a file, temporarily add `.only` to the test:
 
 ```typescript
-it("should test something", async function () {
+test("should test something", async function () {
   // test code here
 });
 
-it.only("should test something", async function () {
+test.only("should test something", async function () {
   // test code here
 });
 ```
 
-Test results will be viewable in the terminal. A link will also be output in the terminal to view test runs in the Browserstack UI.
+### Coverage (opt-in)
+
+V8 → Istanbul coverage is collected only when `PLAYWRIGHT_INTEGRATION_COVERAGE=true` is set. Default `npm run test:integration` skips coverage so iteration stays fast.
+
+```shell
+PLAYWRIGHT_INTEGRATION_COVERAGE=true npm run test:integration
+```
+
+Reports land in `coverage/integration/`:
+
+- `html/index.html` — per-file line/branch/function coverage
+- `lcov.info` — machine-readable LCOV
+- `coverage-summary.txt` — console-friendly table
+- `coverage-totals.txt` — top-line percentages (consumed by the PR coverage comment)
 
 ## Releases
 
@@ -406,56 +362,21 @@ STORYBOOK_BRAINTREE_TOKENIZATION_KEY="eyJ2ZXJzaW9uIjoyLCJ..."
 
 Note that the generated token is only valid for 24 hours.
 
-### Configuring BrowserStack to use HTTPs
+### HTTPS Test Server
 
-You may wish to run the test server on HTTPs. This is necessary for specific workflows, such as ApplePay. You can run BrowserStack on HTTPs by configuring BrowserStack to accept a self-signed certificate, generating the certificate, and using a test server to use HTTPs.
-
-#### 1. Setting BrowserStack to Self-Signed Certificates
-
-Set the capability in the Playwright configuration. Note that these are already configured for our tests.
-
-```typescript
-capabilities: [
-  {
-    browserName: "Safari",
-    acceptInsecureCerts: true, // ← Required for self-signed certs
-  },
-];
-```
-
-#### 2. Generate SSL Certificates
+Apple Pay and other HTTPS-only flows require local SSL certificates. Generate them with:
 
 ```sh
-.storybook/scripts/generate-test-certs.sh
+npm run generate-test-certs
 ```
 
-This creates:
+This creates `.storybook/certs/localhost.key` and `.storybook/certs/localhost.crt` (self-signed, testing only).
 
-- `.storybook/certs/localhost.key` - Private key
-- `.storybook/certs/localhost.crt` - SSL certificate
-
-**Note:** These are self-signed certificates for testing only. They're automatically accepted by BrowserStack.
-
-#### 3. Use HTTPS in Tests
-
-**Test HTTPS Server Example:**
+To enable HTTPS for a specific test, pass `useHttps: true` via the `testServer` fixture options and set `ignoreHTTPSErrors: true` on the Playwright `use` block:
 
 ```typescript
-import { createTestServer, type TestServerResult } from "./helper";
-
-let server: http.Server | https.Server;
-let serverPort: number;
-
-beforeEach(async function () {
-  const result: TestServerResult = await createTestServer({
-    useHttps: true, // ← Enable HTTPS
-  });
-  server = result.server;
-  serverPort = result.port;
+test.use({
+  testServerOptions: { useHttps: true },
+  ignoreHTTPSErrors: true,
 });
-
-const getTestUrl = (path: string) => {
-  // Use https:// protocol
-  return `https://localhost:${serverPort}${path}`;
-};
 ```
