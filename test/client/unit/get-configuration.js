@@ -208,6 +208,36 @@ describe("getConfiguration", () => {
       );
     });
 
+    it("forwards paymentMethodIdJwt from the client token to the configuration object", async () => {
+      const rawToken = JSON.parse(atob(clientToken));
+
+      rawToken.paymentMethodIdJwt = "fake-pmt-jwt";
+
+      const tokenWithJwt = btoa(JSON.stringify(rawToken));
+
+      jest
+        .spyOn(AJAXDriver, "request")
+        .mockImplementation(yieldsAsync(null, {}));
+
+      const config = await getConfiguration(
+        createAuthorizationData(tokenWithJwt)
+      );
+
+      expect(config.paymentMethodIdJwt).toBe("fake-pmt-jwt");
+    });
+
+    it("sets paymentMethodIdJwt to undefined when not present in client token", async () => {
+      jest
+        .spyOn(AJAXDriver, "request")
+        .mockImplementation(yieldsAsync(null, {}));
+
+      const config = await getConfiguration(
+        createAuthorizationData(clientToken)
+      );
+
+      expect(config.paymentMethodIdJwt).toBeUndefined();
+    });
+
     it("calls the callback with a CLIENT_GATEWAY_NETWORK error if request fails", (done) => {
       const fakeErr = new Error("you goofed!");
 

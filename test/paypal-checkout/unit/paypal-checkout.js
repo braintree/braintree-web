@@ -193,6 +193,99 @@ describe("PayPalCheckout", () => {
         expect(pp).toBeInstanceOf(PayPalCheckout);
       });
     });
+
+    describe("_createBillingAgreementJwt", () => {
+      it("does not fire a request when paymentMethodIdJwt is absent", async () => {
+        const instance = new PayPalCheckout({});
+
+        testContext.client.request.mockClear();
+        await instance._initialize({ client: testContext.client });
+        await instance._billingAgreementJwtPromise;
+
+        const graphqlCalls = testContext.client.request.mock.calls.filter(
+          (call) => call[0].api === "graphQLApi"
+        );
+
+        expect(graphqlCalls).toHaveLength(0);
+      });
+
+      it("fires a graphQLApi request with the paymentMethodIdJwt when present", async () => {
+        const instance = new PayPalCheckout({});
+
+        testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            createBillingAgreementJwt: {
+              jwt: "fake-baid-jwt",
+            },
+          },
+        });
+        await instance._initialize({ client: testContext.client });
+        await instance._billingAgreementJwtPromise;
+
+        const graphqlCall = testContext.client.request.mock.calls.find(
+          (call) => call[0].api === "graphQLApi"
+        );
+
+        expect(graphqlCall[0]).toMatchObject({
+          api: "graphQLApi",
+          data: {
+            variables: {
+              input: { paymentMethodJwt: "fake-pmt-jwt" },
+            },
+          },
+        });
+      });
+
+      it("sets _billingAgreementJwt on success", async () => {
+        const instance = new PayPalCheckout({});
+
+        testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            createBillingAgreementJwt: {
+              jwt: "fake-baid-jwt",
+            },
+          },
+        });
+        await instance._initialize({ client: testContext.client });
+        await instance._billingAgreementJwtPromise;
+
+        expect(instance._billingAgreementJwt).toBe("fake-baid-jwt");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout.create-billing-agreement-jwt.succeeded"
+        );
+      });
+
+      it("sets _billingAgreementJwtError on failure without rejecting _initialize", async () => {
+        const instance = new PayPalCheckout({});
+        const exchangeError = new Error("exchange failed");
+
+        testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+        testContext.client.request.mockRejectedValueOnce(exchangeError);
+
+        await expect(
+          instance._initialize({ client: testContext.client })
+        ).resolves.toBeInstanceOf(PayPalCheckout);
+
+        await instance._billingAgreementJwtPromise;
+
+        expect(instance._billingAgreementJwtError).toBeInstanceOf(
+          BraintreeError
+        );
+        expect(instance._billingAgreementJwtError.code).toBe(
+          "PAYPAL_BILLING_AGREEMENT_JWT_FAILED"
+        );
+        expect(instance._billingAgreementJwtError.details.originalError).toBe(
+          exchangeError
+        );
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout.create-billing-agreement-jwt.failed"
+        );
+      });
+    });
   });
 
   describe("createPayment", () => {
@@ -561,6 +654,65 @@ describe("PayPalCheckout", () => {
                   },
                 }
               );
+            });
+        });
+
+        it("includes editBillingAgreementJwt with paymentMethodIdJwt when editBillingAgreement is true", () => {
+          testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+
+          return testContext.paypalCheckout
+            .createPayment({
+              ...testContext.options,
+              editBillingAgreement: true,
+            })
+            .then(() => {
+              expect(testContext.client.request.mock.calls[0][0]).toMatchObject(
+                {
+                  data: {
+                    editBillingAgreementJwt: "fake-pmt-jwt",
+                  },
+                }
+              );
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreement");
+            });
+        });
+
+        it("does not include editBillingAgreementJwt when editBillingAgreement flag is not set", () => {
+          testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+
+          return testContext.paypalCheckout
+            .createPayment(testContext.options)
+            .then(() => {
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreementJwt");
+            });
+        });
+
+        it("does not include editBillingAgreementJwt when paymentMethodIdJwt is not set", () => {
+          return testContext.paypalCheckout
+            .createPayment({
+              ...testContext.options,
+              editBillingAgreement: true,
+            })
+            .then(() => {
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreementJwt");
+            });
+        });
+
+        it("does not include editBillingAgreementJwt for vault flow even when editBillingAgreement is true", () => {
+          testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+
+          return testContext.paypalCheckout
+            .createPayment({ flow: "vault", editBillingAgreement: true })
+            .then(() => {
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreementJwt");
             });
         });
 
@@ -3776,6 +3928,94 @@ describe("PayPalCheckout", () => {
         expect(XMLHttpRequest.prototype.open).toBeCalledWith(
           "GET",
           expect.stringContaining("user-id-token=custom-auth-fingerprint")
+        );
+      });
+    });
+
+    it("sets data-user-id-token to the BAID JWT when _billingAgreementJwt is set", () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._billingAgreementJwt = "fake-baid-jwt";
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "fake-baid-jwt"
+        );
+      });
+    });
+
+    it("waits for _billingAgreementJwtPromise before injecting BAID JWT", () => {
+      const instance = testContext.paypalCheckout;
+      let resolveExchange;
+
+      instance._billingAgreementJwtPromise = new Promise((resolve) => {
+        resolveExchange = resolve;
+      }).then(() => {
+        instance._billingAgreementJwt = "fake-baid-jwt";
+      });
+
+      const promise = instance.loadPayPalSDK();
+
+      resolveExchange();
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "fake-baid-jwt"
+        );
+      });
+    });
+
+    it("loads the SDK without data-user-id-token when exchange failed", () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._billingAgreementJwtPromise = Promise.resolve();
+      instance._billingAgreementJwtError = new BraintreeError(
+        errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED
+      );
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBeNull();
+        expect(document.head.insertBefore).toBeCalledTimes(1);
+      });
+    });
+
+    it("does not set data-user-id-token to BAID JWT when _billingAgreementJwt is not set", () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK();
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBeNull();
+      });
+    });
+
+    it("does not overwrite merchant-supplied user-id-token with _billingAgreementJwt", () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._billingAgreementJwt = "fake-baid-jwt";
+
+      const promise = instance.loadPayPalSDK({
+        dataAttributes: {
+          "user-id-token": "merchant-supplied-token",
+        },
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "merchant-supplied-token"
         );
       });
     });

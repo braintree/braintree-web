@@ -32,5 +32,63 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
   "github.copilot.chat.codeGeneration.useInstructionFiles": true,
-  "prettier.useTabs": true
+  "prettier.useTabs": true,
+
+  // Configurations for VSCode recommended extensions
+  "cSpell.ignorePaths": [
+    "node_modules/",
+    "dist/",
+    "vendor/",
+    "storybook-static/",
+    ".storybook/static/",
+    ".storybook/types/",
+    "**/coverage/",
+    ".vscode",
+    "CLAUDE.md"
+  ],
+  "cSpell.userWords": [
+    "autofilled",
+    "blik",
+    "describedby",
+    "deeplink",
+    "derequire",
+    "elif",
+    "evented",
+    "framebus",
+    "fraudnet",
+    "fpti",
+    "getopt",
+    "hiper",
+    "iframer",
+    "kount",
+    "luhn",
+    "masterpass",
+    "maxlength",
+    "nvmrc",
+    "paysheet",
+    "roboform",
+    "screenreader",
+    "screenreaders",
+    "sepa",
+    "sjcl",
+    "stylesheet",
+    "threeds",
+    "untypable",
+    "venmo"
+  ],
+  "cSpell.ignoreRegExpList": [
+    "CStyleComment",
+    "Urls",
+    "Email",
+    "\\`\\S*\\`",
+    "\\@\\S*"
+  ],
+  "markdownlint.config": {
+    // allow multiple headings with the same title
+    // as is used in CHANGELOG `### Breaking Changes`
+    "MD024": false,
+    // allow long lines
+    "MD013": false
+  },
+  "markdownlint.lintWorkspaceGlobs": ["**/*.md", "!**/CLAUDE.md", "!jsdoc/**/*"]
 }

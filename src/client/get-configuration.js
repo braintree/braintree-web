@@ -93,6 +93,7 @@ function getConfiguration(authData, inputSessionId) {
           ? "TOKENIZATION_KEY"
           : "CLIENT_TOKEN",
         authorizationFingerprint: attrs.authorizationFingerprint,
+        paymentMethodIdJwt: authData.paymentMethodIdJwt,
         analyticsMetadata: analyticsMetadata,
         gatewayConfiguration: response,
       };

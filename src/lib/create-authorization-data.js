@@ -39,6 +39,7 @@ function createAuthorizationData(authorization) {
     data.environment = parsedClientToken.environment;
     data.attrs.authorizationFingerprint =
       parsedClientToken.authorizationFingerprint;
+    data.paymentMethodIdJwt = parsedClientToken.paymentMethodIdJwt;
     data.configUrl = parsedClientToken.configUrl;
     data.graphQL = parsedClientToken.graphQL;
   }

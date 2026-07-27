@@ -13,4 +13,6 @@ module.exports = {
     teBraintree: "https://www.braintree.stage.paypal.com/sdk/js?",
   },
   BT_INTEGRATION_SOURCE: "BRAINTREE_WEB_SDK",
+  CREATE_BILLING_AGREEMENT_JWT_MUTATION:
+    "mutation CreateBillingAgreementJwt($input: CreateBillingAgreementJwtInput!) { createBillingAgreementJwt(input: $input) { jwt } }",
 };

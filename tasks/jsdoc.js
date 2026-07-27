@@ -64,7 +64,7 @@ gulp.task("jsdoc:generate", function (done) {
       destination: VERSIONED_DIR,
       recurse: true,
       readme: JSDOC_HOME,
-      template: "node_modules/jsdoc-template",
+      template: "node_modules/@braintree/jsdoc-template",
     },
     done
   );

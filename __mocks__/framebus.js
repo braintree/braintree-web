@@ -1,4 +1,4 @@
-/* eslint-env jest */
+/* global jest */
 "use strict";
 
 function Framebus(options) {

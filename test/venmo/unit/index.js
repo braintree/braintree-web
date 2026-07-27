@@ -5,6 +5,7 @@ jest.mock("../../../src/lib/basic-component-verification");
 jest.mock("../../../src/lib/create-deferred-client");
 jest.mock("../../../src/venmo/shared/supports-venmo");
 jest.mock("../../../src/lib/create-assets-url");
+jest.mock("../../../src/venmo/shared/browser-detection");
 
 const analytics = require("../../../src/lib/analytics");
 const basicComponentVerification = require("../../../src/lib/basic-component-verification");
@@ -14,6 +15,7 @@ const { fake } = require("../../helpers");
 const BraintreeError = require("../../../src/lib/braintree-error");
 const supportsVenmo = require("../../../src/venmo/shared/supports-venmo");
 const Venmo = require("../../../src/venmo/venmo");
+const browserDetection = require("../../../src/venmo/shared/browser-detection");
 
 describe("venmo static methods", () => {
   describe("venmo.create", () => {
@@ -28,6 +30,10 @@ describe("venmo static methods", () => {
       jest
         .spyOn(createDeferredClient, "create")
         .mockResolvedValue(testContext.client);
+      browserDetection.isIncognito.mockResolvedValue({
+        isPrivate: false,
+        browserName: "unknown",
+      });
     });
 
     it("verifies with basicComponentVerification", () =>
@@ -129,6 +135,33 @@ describe("venmo static methods", () => {
           "venmo.initialized"
         );
       }));
+
+    it("does not fast-fail create when isIncognito rejects", () => {
+      browserDetection.isIncognito.mockRejectedValueOnce(
+        new Error("incognito detection failed")
+      );
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        data: {
+          createVenmoPaymentContext: {
+            venmoPaymentContext: {
+              status: "CREATED",
+              id: "context-id",
+              createdAt: "2021-01-20T03:25:37.522000Z",
+              expiresAt: "2021-01-20T03:30:37.522000Z",
+            },
+          },
+        },
+      });
+
+      return create({
+        client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
+      }).then((instance) => {
+        expect(instance).toBeInstanceOf(Venmo);
+        expect(instance._isIncognito).toBe(false);
+      });
+    });
   });
 
   describe("venmo.isBrowserSupported", () => {

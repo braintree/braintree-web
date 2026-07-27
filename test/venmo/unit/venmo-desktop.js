@@ -175,7 +175,8 @@ describe("VenmoDesktop", function () {
 
       expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
       expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-        "venmo.tokenize.desktop.restarted-from-error-view"
+        "venmo.tokenize.desktop.restarted-from-error-view",
+        { payment_method_usage: "SINGLE_USE" }
       );
     });
 
@@ -278,7 +279,8 @@ describe("VenmoDesktop", function () {
 
         return instance.launchDesktopFlow().catch(function (err) {
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.tokenize.desktop.status-change.canceled-from-modal"
+            "venmo.tokenize.desktop.status-change.canceled-from-modal",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(err).toEqual({
             allowUIToHandleError: false,
@@ -336,7 +338,8 @@ describe("VenmoDesktop", function () {
         return instance.launchDesktopFlow().catch(function (err) {
           expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.tokenize.desktop.unknown-error"
+            "venmo.tokenize.desktop.unknown-error",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(err).toEqual({
             allowUIToHandleError: false,
@@ -674,7 +677,8 @@ describe("VenmoDesktop", function () {
 
         return instance.startPolling().then(function () {
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.desktop-qr.create-payment-context.started"
+            "venmo.desktop-qr.create-payment-context.started",
+            { payment_method_usage: "SINGLE_USE" }
           );
         });
       });
@@ -688,11 +692,12 @@ describe("VenmoDesktop", function () {
 
         return instance.startPolling().then(function () {
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.desktop-qr.create-payment-context.started"
+            "venmo.desktop-qr.create-payment-context.started",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.create-payment-context.succeeded",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
         });
       });
@@ -708,10 +713,12 @@ describe("VenmoDesktop", function () {
 
         return instance.startPolling().then(function () {
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.desktop-qr.create-payment-context.started"
+            "venmo.desktop-qr.create-payment-context.started",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.desktop-qr.create-payment-context.failed"
+            "venmo.desktop-qr.create-payment-context.failed",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).not.toHaveBeenCalledWith(
             "venmo.desktop-qr.create-payment-context.succeeded",
@@ -780,7 +787,8 @@ describe("VenmoDesktop", function () {
         );
         expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
         expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-          "venmo.tokenize.desktop.status-change.sdk-timeout"
+          "venmo.tokenize.desktop.status-change.sdk-timeout",
+          { payment_method_usage: "SINGLE_USE" }
         );
         expect(err.allowUIToHandleError).toBe(true);
         expect(err.reason).toBe("TIMEOUT");
@@ -949,15 +957,16 @@ describe("VenmoDesktop", function () {
         .pollForStatusChange("CREATED", Date.now() + 100)
         .catch(function (err) {
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.tokenize.desktop.status-change.expired"
+            "venmo.tokenize.desktop.status-change.expired",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.started",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.succeeded",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(err.allowUIToHandleError).toBe(true);
           expect(err.reason).toBe("EXPIRED");
@@ -995,15 +1004,16 @@ describe("VenmoDesktop", function () {
         .pollForStatusChange("CREATED", Date.now() + 100)
         .catch(function (err) {
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.tokenize.desktop.status-change.failed"
+            "venmo.tokenize.desktop.status-change.failed",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.started",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.succeeded",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(err.allowUIToHandleError).toBe(true);
           expect(err.reason).toBe("FAILED");
@@ -1041,15 +1051,16 @@ describe("VenmoDesktop", function () {
         .pollForStatusChange("CREATED", Date.now() + 100)
         .catch(function (err) {
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
-            "venmo.tokenize.desktop.status-change.canceled"
+            "venmo.tokenize.desktop.status-change.canceled",
+            { payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.started",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.succeeded",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(err.allowUIToHandleError).toBe(true);
           expect(err.reason).toBe("CANCELED");
@@ -1079,11 +1090,11 @@ describe("VenmoDesktop", function () {
           expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(2);
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.started",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.failed",
-            { context_id: "fake-id" }
+            { context_id: "fake-id", payment_method_usage: "SINGLE_USE" }
           );
           expect(venmoOptions.sendEvent).not.toHaveBeenCalledWith(
             "venmo.desktop-qr.query-payment-context.succeeded",
@@ -1415,7 +1426,10 @@ describe("VenmoDesktop", function () {
         expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
         expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
           "venmo.desktop-qr.display-qr-code.status.presented",
-          { context_id: "fake-context-id" }
+          {
+            context_id: "fake-context-id",
+            payment_method_usage: "SINGLE_USE",
+          }
         );
       });
     });

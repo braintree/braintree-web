@@ -833,8 +833,26 @@ PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
     cancelUrl: options.cancelUrl || "https://www.paypal.com/checkoutnow/error",
     experienceProfile: {
       brandName: options.displayName || gatewayConfiguration.paypal.displayName,
+      localeCode: options.locale,
+      noShipping: (!options.enableShippingAddress).toString(),
+      landingPageType: options.landingPageType,
     },
   };
+
+  var isAddressOverride = false;
+
+  if (options.hasOwnProperty("shippingAddressEditable")) {
+    isAddressOverride = options.shippingAddressEditable === false;
+  }
+  payload.experienceProfile.addressOverride = isAddressOverride;
+
+  if (options.hasOwnProperty("userAction")) {
+    payload.experienceProfile.userAction = options.userAction;
+  }
+
+  if (options.riskCorrelationId) {
+    payload.correlationId = options.riskCorrelationId;
+  }
 
   if (this._merchantAccountId) {
     payload.merchantAccountId = this._merchantAccountId;
@@ -866,6 +884,14 @@ PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
 
   if (options.billingAgreementDetails) {
     payload.billingAgreementDetails = options.billingAgreementDetails;
+  }
+
+  if (options.planType) {
+    payload.planType = options.planType;
+  }
+
+  if (options.planMetadata) {
+    payload.planMetadata = this._formatPlanMetadata(options.planMetadata);
   }
 
   if (options.shippingCallbackUrl) {
@@ -1280,6 +1306,12 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
     "shippingCallbackUrl",
     "contactPreference",
     "shippingAddressOverride",
+    "planType",
+    "planMetadata",
+    "locale",
+    "landingPageType",
+    "userAction",
+    "riskCorrelationId",
   ];
 
   optionalProperties.forEach(function (property) {
@@ -1287,6 +1319,14 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
       paymentOptions[property] = options[property];
     }
   });
+
+  if (options.hasOwnProperty("enableShippingAddress")) {
+    paymentOptions.enableShippingAddress = options.enableShippingAddress;
+  }
+
+  if (options.hasOwnProperty("shippingAddressEditable")) {
+    paymentOptions.shippingAddressEditable = options.shippingAddressEditable;
+  }
 
   return {
     /**
@@ -1390,6 +1430,12 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  * @param {string} [options.shippingAddressOverride.recipientEmail] Email address of the recipient.
  * @param {string} [options.contactPreference] Optional field to control contact information display. Can be 'NO_CONTACT_INFO' (default, no contact info shown), 'RETAIN_CONTACT_INFO' (contact info shown but not editable), or 'UPDATE_CONTACT_INFO' (contact info shown and editable). Required if using different recipient via shippingAddressOverride.
  * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
+ * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') to customize the PayPal experience language and format.
+ * @param {string} [options.landingPageType] Landing page type: 'login' (shows PayPal login) or 'billing' (shows guest checkout). Defaults to PayPal's selection.
+ * @param {string} [options.userAction] Changes the call-to-action in the PayPal flow: 'continue' or 'pay_now'.
+ * @param {boolean} [options.enableShippingAddress=false] When `true`, prompts the customer for a shipping address.
+ * @param {boolean} [options.shippingAddressEditable=true] Controls whether the displayed shipping address is editable. Pass `false` to make it read-only.
+ * @param {string} [options.riskCorrelationId] Risk correlation ID for advanced fraud protection. Stored and used during tokenization.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
  * @example
  * // Standard PayPal payment
@@ -1654,6 +1700,12 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
  * @param {string} [options.shippingAddressOverride.recipientEmail] Email address of the recipient.
  * @param {string} [options.contactPreference] Optional field to control contact information display. Can be 'NO_CONTACT_INFO' (default, no contact info shown), 'RETAIN_CONTACT_INFO' (contact info shown but not editable), or 'UPDATE_CONTACT_INFO' (contact info shown and editable). Required if using different recipient via shippingAddressOverride.
  * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
+ * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') to customize the PayPal experience language and format.
+ * @param {string} [options.landingPageType] Landing page type: 'login' (shows PayPal login) or 'billing' (shows guest checkout). Defaults to PayPal's selection.
+ * @param {string} [options.userAction] Changes the call-to-action in the PayPal flow: 'continue' or 'pay_now'.
+ * @param {boolean} [options.enableShippingAddress=false] When `true`, prompts the customer for a shipping address.
+ * @param {boolean} [options.shippingAddressEditable=true] Controls whether the displayed shipping address is editable. Pass `false` to make it read-only.
+ * @param {string} [options.riskCorrelationId] Risk correlation ID for advanced fraud protection. Stored and used during tokenization.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
  * @example
  * // Standard Pay Later payment
@@ -1804,6 +1856,12 @@ PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
  * @param {boolean} [options.commit=true] Controls the flow type: `true` for "Pay Now" (immediate payment), `false` for "Continue" (review and confirm). Defaults to `true`.
  * @param {object} [options.billingAgreementDetails] Details for the billing agreement.
  * @param {string} [options.billingAgreementDetails.description] Description for the billing agreement (e.g., 'Monthly subscription to Totally Real Products!').
+ * @param {string} [options.planType] Type of plan: RECURRING, SUBSCRIPTION, UNSCHEDULED, or INSTALLMENTS.
+ * @param {object} [options.planMetadata] Metadata about the plan including billing cycles.
+ * @param {array} [options.planMetadata.billingCycles] Array of billing cycle objects.
+ * @param {string} [options.planMetadata.currencyIsoCode] Currency ISO code for the plan.
+ * @param {string} [options.planMetadata.name] Name of the plan.
+ * @param {string} [options.planMetadata.productDescription] Description of the product.
  * @param {function} options.onApprove Called when the customer approves the payment.
  * @param {function} [options.onCancel] Called when the customer cancels the payment.
  * @param {function} [options.onError] Called when an error occurs.
@@ -1817,6 +1875,12 @@ PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
  * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
+ * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') to customize the PayPal experience language and format.
+ * @param {string} [options.landingPageType] Landing page type: 'login' (shows PayPal login) or 'billing' (shows guest checkout). Defaults to PayPal's selection.
+ * @param {string} [options.userAction] Changes the call-to-action in the PayPal flow: 'continue' or 'pay_now'.
+ * @param {boolean} [options.enableShippingAddress=false] When `true`, prompts the customer for a shipping address.
+ * @param {boolean} [options.shippingAddressEditable=true] Controls whether the displayed shipping address is editable. Pass `false` to make it read-only.
+ * @param {string} [options.riskCorrelationId] Risk correlation ID for advanced fraud protection. Stored and used during tokenization.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
  * @example
  * // Create a checkout session with vault consent
@@ -1906,6 +1970,46 @@ PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
  *
  * button.addEventListener('click', function () {
  *   session.start({ presentationMode: 'auto' });
+ * });
+ *
+ * @example
+ * // Checkout with vault and subscription plan
+ * var session = paypalCheckoutV6Instance.createCheckoutWithVaultSession({
+ *   amount: '10.00',
+ *   currency: 'USD',
+ *   planType: 'SUBSCRIPTION',
+ *   planMetadata: {
+ *     currencyIsoCode: 'USD',
+ *     name: 'Premium Plan',
+ *     billingCycles: [{
+ *       billingFrequency: 1,
+ *       billingFrequencyUnit: 'MONTH',
+ *       sequence: 1,
+ *       pricingScheme: {
+ *         pricingModel: 'FIXED',
+ *         price: '10.00'
+ *       }
+ *     }]
+ *   },
+ *   billingAgreementDetails: {
+ *     description: 'Monthly Premium Subscription'
+ *   },
+ *   onApprove: function (data) {
+ *     return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+ *       // Send nonce to server for both charging and vaulting
+ *       submitToServer(payload.nonce);
+ *     });
+ *   },
+ *   onCancel: function () {
+ *     console.log('Canceled');
+ *   },
+ *   onError: function (err) {
+ *     console.error(err);
+ *   }
+ * });
+ *
+ * button.addEventListener('click', function () {
+ *   session.start();
  * });
  *
  * @returns {object} Payment session object with `start()` method.

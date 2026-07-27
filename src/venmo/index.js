@@ -100,7 +100,9 @@ function create(options) {
     })
     .then(function () {
       var createPromise, instance;
-      var incognitoPromise = browserDetection.isIncognito();
+      var incognitoPromise = browserDetection.isIncognito().catch(function () {
+        return { isPrivate: false, browserName: "unknown" };
+      });
 
       if (options.profileId && typeof options.profileId !== "string") {
         return Promise.reject(
@@ -148,7 +150,6 @@ function create(options) {
       return Promise.all([createPromise, incognitoPromise]).then(
         function (results) {
           var isIncognito = results[1];
-
           options._isIncognito = isIncognito.isPrivate;
 
           options.createPromise = createPromise;

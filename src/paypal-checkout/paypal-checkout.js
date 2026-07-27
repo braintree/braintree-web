@@ -333,6 +333,8 @@ PayPalCheckout.prototype._initialize = function (options) {
 
         analytics.sendEvent(client, "paypal-checkout.initialized");
         this._frameServicePromise = this._setupFrameService(client);
+        this._billingAgreementJwtPromise =
+          this._createBillingAgreementJwt(client);
 
         return client;
       }.bind(this)
@@ -349,6 +351,47 @@ PayPalCheckout.prototype._initialize = function (options) {
   }
 
   return Promise.resolve(this);
+};
+
+PayPalCheckout.prototype._createBillingAgreementJwt = function (client) {
+  var self = this;
+  var paymentMethodIdJwt = this._configuration.paymentMethodIdJwt;
+
+  if (!paymentMethodIdJwt) {
+    return Promise.resolve();
+  }
+
+  return client
+    .request({
+      api: "graphQLApi",
+      data: {
+        query: constants.CREATE_BILLING_AGREEMENT_JWT_MUTATION,
+        variables: {
+          input: {
+            paymentMethodJwt: paymentMethodIdJwt,
+          },
+        },
+      },
+    })
+    .then(function (response) {
+      self._billingAgreementJwt = response.data.createBillingAgreementJwt.jwt;
+      analytics.sendEvent(
+        client,
+        "paypal-checkout.create-billing-agreement-jwt.succeeded"
+      );
+    })
+    .catch(function (err) {
+      self._billingAgreementJwtError = new BraintreeError({
+        type: errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED.type,
+        code: errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED.code,
+        message: errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED.message,
+        details: { originalError: err },
+      });
+      analytics.sendEvent(
+        client,
+        "paypal-checkout.create-billing-agreement-jwt.failed"
+      );
+    });
 };
 
 PayPalCheckout.prototype._setupFrameService = function (client) {
@@ -503,6 +546,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
  * @param {string} [options.paymentReadySessionId] Optional session identifier returned from PaymentReady.createCustomerSession that can be used to track a specific checkout attempt. This ID is used for analytics and to connect multiple API calls associated with a single checkout flow.
+ * @param {boolean} [options.editBillingAgreement] When `true`, initiates the Edit FI (funding instrument) flow for a returning buyer with a vaulted Billing Agreement. Requires the client token to have been generated with a `preferredPaymentMethodToken`. Only applicable to the `checkout` flow.
  * @param {string} [options.userAction=CONTINUE] Changes the call-to-action on the PayPal review page
  *  * `CONTINUE` - Shows the default call-to-action text on the PayPal Express Checkout page.
  *  * `COMMIT` - Shows a deterministic call-to-action for the PayPal Checkout flow.
@@ -727,6 +771,14 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
 
   return this._clientPromise
     .then(function (client) {
+      return Promise.all([
+        client,
+        self._billingAgreementJwtPromise || Promise.resolve(),
+      ]);
+    })
+    .then(function (results) {
+      var client = results[0];
+
       return client
         .request({
           endpoint: endpoint,
@@ -1436,6 +1488,7 @@ PayPalCheckout.prototype.getClientId = function () {
  * @param {object} [options.dataAttributes] The data attributes to apply to the script. Any data attribute can be passed. A subset of the parameters are listed below. For a full list of data attributes, see the [PayPal docs](https://developer.paypal.com/docs/checkout/reference/customize-sdk/#script-parameters).
  * @param {string} [options.dataAttributes.client-token] The client token to use in the script. (usually not needed)
  * @param {string} [options.dataAttributes.csp-nonce] See the [PayPal docs about content security nonces](https://developer.paypal.com/docs/checkout/reference/customize-sdk/#csp-nonce).
+ * @param {string} [options.dataAttributes.user-id-token] Note: do not set this attribute if you want to use the view/edit FI flow.
  * @param {callback} [callback] Called when the PayPal SDK has been loaded onto the page. The second argument is the PayPal Checkout instance. If no callback is provided, the promise resolves with the PayPal Checkout instance when the PayPal SDK has been loaded onto the page.
  * @returns {(Promise|void)} Returns a promise if no callback is provided.
  * @example <caption>Without options</caption>
@@ -1462,8 +1515,9 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
   var idPromise, src;
   var loadPromise = new ExtendedPromise();
   var dataAttributes = (options && options.dataAttributes) || {};
-  var userIdToken =
+  var merchantUserIdToken =
     dataAttributes["user-id-token"] || dataAttributes["data-user-id-token"];
+  var userIdToken = merchantUserIdToken;
 
   if (this._configuration) {
     dataAttributes["client-metadata-id"] = dataAttributes["client-metadata-id"]
@@ -1532,11 +1586,21 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     idPromise = this.getClientId();
   }
 
-  idPromise.then(
-    function (id) {
+  Promise.all([
+    idPromise,
+    this._billingAgreementJwtPromise || Promise.resolve(),
+  ]).then(
+    function (results) {
+      var id = results[0];
+
       options["client-id"] = id;
 
-      if (this._autoSetDataUserIdToken && userIdToken) {
+      if (this._billingAgreementJwt && !merchantUserIdToken) {
+        this._paypalScript.setAttribute(
+          "data-user-id-token",
+          this._billingAgreementJwt
+        );
+      } else if (this._autoSetDataUserIdToken && userIdToken) {
         this._paypalScript.setAttribute("data-user-id-token", userIdToken);
 
         // preloading improves the rendering time of the PayPal button
@@ -1736,6 +1800,14 @@ PayPalCheckout.prototype._formatPaymentResourceCheckoutData = function (
 
     if (options.hasOwnProperty("billingAgreementDetails")) {
       paymentResource.billingAgreementDetails = options.billingAgreementDetails;
+    }
+
+    if (
+      options.editBillingAgreement === true &&
+      this._configuration.paymentMethodIdJwt
+    ) {
+      paymentResource.editBillingAgreementJwt =
+        this._configuration.paymentMethodIdJwt;
     }
   }
 };

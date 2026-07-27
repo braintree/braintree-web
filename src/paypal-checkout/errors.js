@@ -102,4 +102,10 @@ module.exports = {
     code: "PAYPAL_MISSING_REQUIRED_OPTION",
     message: "Missing required option.",
   },
+  PAYPAL_BILLING_AGREEMENT_JWT_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: "PAYPAL_BILLING_AGREEMENT_JWT_FAILED",
+    message:
+      "Could not create a billing agreement token from the payment method JWT.",
+  },
 };
