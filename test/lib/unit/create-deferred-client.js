@@ -3,6 +3,7 @@
 jest.mock("../../../src/lib/assets");
 
 const assets = require("../../../src/lib/assets");
+const analytics = require("../../../src/lib/analytics");
 const { create } = require("../../../src/lib/create-deferred-client");
 const BraintreeError = require("../../../src/lib/braintree-error");
 const { fake } = require("../../helpers");
@@ -41,6 +42,7 @@ describe("createDeferredClient", () => {
 
   afterEach(() => {
     delete window.braintree;
+    jest.restoreAllMocks();
   });
 
   it("resolves with client if a client is passed in", () => {
@@ -130,19 +132,109 @@ describe("createDeferredClient", () => {
       });
     }));
 
-  it("rejects if asset loader rejects", () => {
+  it("rejects if asset loader rejects", async () => {
     const error = new Error("failed!");
 
     delete window.braintree;
     assets.loadScript.mockRejectedValue(error);
 
+    await expect(
+      create({
+        name: "Some Component",
+        authorization: testContext.auth,
+      })
+    ).rejects.toMatchObject({
+      code: "CLIENT_SCRIPT_FAILED_TO_LOAD",
+      details: { originalError: error },
+    });
+
+    expect(assets.loadScript).toHaveBeenCalledTimes(2);
+  });
+
+  it("names the failure kind and preserves enriched detail on the original error", async () => {
+    const error = new Error(
+      "https://example.com/client.min.js failed to load."
+    );
+
+    error.failureKind = "error";
+    error.src = "https://example.com/client.min.js";
+    error.timing = 12;
+    error.onLine = true;
+
+    delete window.braintree;
+    assets.loadScript.mockRejectedValue(error);
+
+    await expect(
+      create({
+        name: "Some Component",
+        authorization: testContext.auth,
+      })
+    ).rejects.toMatchObject({
+      code: "CLIENT_SCRIPT_FAILED_TO_LOAD",
+      message: "Braintree client script failed to load (error).",
+      details: {
+        originalError: {
+          failureKind: "error",
+          src: "https://example.com/client.min.js",
+        },
+      },
+    });
+
+    expect(assets.loadScript).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries once with a cache-busting reload when the first load fails", () => {
+    delete window.braintree;
+    assets.loadScript.mockRejectedValueOnce(new Error("interrupted"));
+
     return create({
       name: "Some Component",
+      assetsUrl: "https://example.com/foo",
       authorization: testContext.auth,
-    }).catch((err) => {
-      expect(err).toBeInstanceOf(BraintreeError);
-      expect(err.code).toBe("CLIENT_SCRIPT_FAILED_TO_LOAD");
-      expect(err.details.originalError).toBe(error);
+    }).then((client) => {
+      expect(assets.loadScript).toHaveBeenCalledTimes(2);
+      expect(assets.loadScript).toHaveBeenNthCalledWith(2, {
+        src: `https://example.com/foo/web/${VERSION}/js/client.min.js`,
+        forceScriptReload: true,
+      });
+      expect(client).toBe(testContext.fakeClient);
+    });
+  });
+
+  it("sends a recovery analytics event when the load recovers after a retry", () => {
+    const sendEventPlus = jest
+      .spyOn(analytics, "sendEventPlus")
+      .mockReturnValue();
+
+    delete window.braintree;
+    assets.loadScript.mockRejectedValueOnce(new Error("interrupted"));
+
+    return create({
+      name: "Some Component",
+      assetsUrl: "https://example.com/foo",
+      authorization: testContext.auth,
+    }).then((client) => {
+      expect(sendEventPlus).toHaveBeenCalledWith(
+        client,
+        "Some Component.deferred-client.load-recovered",
+        expect.objectContaining({ description: "interrupted" })
+      );
+    });
+  });
+
+  it("does not send a recovery event when the load succeeds on the first try", () => {
+    const sendEventPlus = jest
+      .spyOn(analytics, "sendEventPlus")
+      .mockReturnValue();
+
+    delete window.braintree.client;
+
+    return create({
+      name: "Some Component",
+      assetsUrl: "https://example.com/foo",
+      authorization: testContext.auth,
+    }).then(() => {
+      expect(sendEventPlus).not.toHaveBeenCalled();
     });
   });
 

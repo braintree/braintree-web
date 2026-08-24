@@ -6,7 +6,6 @@ const { fake } = require("../../helpers");
 let assetFns = require("../../../src/lib/assets");
 const { create } = require("../../../src/fastlane/");
 const errors = require("../../../src/fastlane/errors");
-const BraintreeError = require("../../../src/lib/braintree-error");
 const VERSION = process.env.npm_package_version;
 
 describe("fastlane", () => {
@@ -180,18 +179,16 @@ describe("fastlane", () => {
 
   it("fails if fastlane create fails", async () => {
     const mockErrorMessage = "omg it broke";
+    const originalError = new Error(mockErrorMessage);
 
-    assetFns.loadFastlane.mockRejectedValue(new Error(mockErrorMessage));
+    assetFns.loadFastlane.mockRejectedValue(originalError);
 
-    const expectedError = new BraintreeError({
+    await expect(create({ client: testContext.client })).rejects.toMatchObject({
       type: errors.FASTLANE_SDK_LOAD_ERROR.type,
       code: errors.FASTLANE_SDK_LOAD_ERROR.code,
-      message: mockErrorMessage,
+      message: errors.FASTLANE_SDK_LOAD_ERROR.message,
+      details: { originalError: originalError },
     });
-
-    await expect(create({ client: testContext.client })).rejects.toEqual(
-      expectedError
-    );
   });
 
   it("uses window.braintree._fastlane.create when available to avoid overwrite issue", async () => {

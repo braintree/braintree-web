@@ -9,5 +9,6 @@ Framebus.prototype.off = jest.fn();
 Framebus.prototype.emit = jest.fn();
 Framebus.prototype.target = jest.fn().mockReturnThis();
 Framebus.prototype.teardown = jest.fn();
+Framebus.prototype.addTargetFrame = jest.fn();
 
 module.exports = Framebus;

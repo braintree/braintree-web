@@ -78,12 +78,12 @@ describe("VenmoDesktop", function () {
     });
   }
 
-  function mockFramebusWithEvent(eventName) {
+  function mockFramebusWithEvent(eventName, payload) {
     Framebus.mockImplementation(function () {
       return {
         on: jest.fn().mockImplementation(function (name, cb) {
           if (name === eventName) {
-            cb();
+            cb(payload);
           }
 
           return true;
@@ -164,7 +164,43 @@ describe("VenmoDesktop", function () {
       expect(instance.startPolling).toHaveBeenCalledTimes(1);
     });
 
-    it("sends analytics event when VENMO_DESKTOP_REQUEST_NEW_QR_CODE fires", function () {
+    it("sends restarted-from-error-view analytics event when VENMO_DESKTOP_REQUEST_NEW_QR_CODE fires with error-view source", function () {
+      mockFramebusWithEvent("VENMO_DESKTOP_REQUEST_NEW_QR_CODE", {
+        source: "error-view",
+      });
+
+      var instance = new VenmoDesktop(venmoOptions);
+
+      jest.spyOn(instance, "startPolling").mockImplementation();
+
+      instance.initialize();
+
+      expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
+      expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
+        "venmo.tokenize.desktop.restarted-from-error-view",
+        { payment_method_usage: "SINGLE_USE" }
+      );
+    });
+
+    it("sends restarted-from-rescan analytics event when VENMO_DESKTOP_REQUEST_NEW_QR_CODE fires with rescan source", function () {
+      mockFramebusWithEvent("VENMO_DESKTOP_REQUEST_NEW_QR_CODE", {
+        source: "rescan",
+      });
+
+      var instance = new VenmoDesktop(venmoOptions);
+
+      jest.spyOn(instance, "startPolling").mockImplementation();
+
+      instance.initialize();
+
+      expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
+      expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
+        "venmo.tokenize.desktop.restarted-from-rescan",
+        { payment_method_usage: "SINGLE_USE" }
+      );
+    });
+
+    it("defaults to restarted-from-error-view analytics event when VENMO_DESKTOP_REQUEST_NEW_QR_CODE fires without a payload", function () {
       mockFramebusWithEvent("VENMO_DESKTOP_REQUEST_NEW_QR_CODE");
 
       var instance = new VenmoDesktop(venmoOptions);
@@ -177,6 +213,50 @@ describe("VenmoDesktop", function () {
       expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
         "venmo.tokenize.desktop.restarted-from-error-view",
         { payment_method_usage: "SINGLE_USE" }
+      );
+    });
+
+    it("listens for the VENMO_DESKTOP_ANALYTICS_EVENT event", function () {
+      return createInitializedInstance().then(function () {
+        var busInstance = Framebus.mock.results[0].value;
+
+        expect(busInstance.on).toHaveBeenCalledWith(
+          "VENMO_DESKTOP_ANALYTICS_EVENT",
+          expect.any(Function)
+        );
+      });
+    });
+
+    it("forwards eventName and includes payment_method_usage when VENMO_DESKTOP_ANALYTICS_EVENT fires without metadata", function () {
+      mockFramebusWithEvent("VENMO_DESKTOP_ANALYTICS_EVENT", {
+        eventName: "some.analytics.event",
+      });
+
+      var instance = new VenmoDesktop(venmoOptions);
+
+      instance.initialize();
+
+      expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
+      expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
+        "some.analytics.event",
+        { payment_method_usage: "SINGLE_USE" }
+      );
+    });
+
+    it("merges payload metadata with payment_method_usage when VENMO_DESKTOP_ANALYTICS_EVENT fires", function () {
+      mockFramebusWithEvent("VENMO_DESKTOP_ANALYTICS_EVENT", {
+        eventName: "some.analytics.event",
+        metadata: { context_id: "ctx-123" },
+      });
+
+      var instance = new VenmoDesktop(venmoOptions);
+
+      instance.initialize();
+
+      expect(venmoOptions.sendEvent).toHaveBeenCalledTimes(1);
+      expect(venmoOptions.sendEvent).toHaveBeenCalledWith(
+        "some.analytics.event",
+        { payment_method_usage: "SINGLE_USE", context_id: "ctx-123" }
       );
     });
 
@@ -529,6 +609,74 @@ describe("VenmoDesktop", function () {
           {
             input: expect.not.objectContaining({
               paysheetDetails: expect.anything(),
+            }),
+          }
+        );
+      });
+    });
+
+    it("includes paysheetDetails with both address options when both are set", function () {
+      venmoOptions.collectCustomerBillingAddress = true;
+      venmoOptions.collectCustomerShippingAddress = true;
+      venmoOptions.apiRequest = jest
+        .fn()
+        .mockResolvedValue(FAKE_CREATE_CONTEXT_RESPONSE);
+
+      var instance = new VenmoDesktop(venmoOptions);
+
+      return instance.startPolling().then(function () {
+        expect(venmoOptions.apiRequest).toHaveBeenCalledWith(
+          expect.stringContaining("mutation CreateVenmoPaymentContext"),
+          {
+            input: expect.objectContaining({
+              paysheetDetails: {
+                collectCustomerBillingAddress: true,
+                collectCustomerShippingAddress: true,
+              },
+            }),
+          }
+        );
+      });
+    });
+
+    it("includes paysheetDetails with only collectCustomerBillingAddress when collectCustomerShippingAddress is not set", function () {
+      venmoOptions.collectCustomerBillingAddress = true;
+      venmoOptions.apiRequest = jest
+        .fn()
+        .mockResolvedValue(FAKE_CREATE_CONTEXT_RESPONSE);
+
+      var instance = new VenmoDesktop(venmoOptions);
+
+      return instance.startPolling().then(function () {
+        expect(venmoOptions.apiRequest).toHaveBeenCalledWith(
+          expect.stringContaining("mutation CreateVenmoPaymentContext"),
+          {
+            input: expect.objectContaining({
+              paysheetDetails: {
+                collectCustomerBillingAddress: true,
+              },
+            }),
+          }
+        );
+      });
+    });
+
+    it("includes paysheetDetails with only collectCustomerShippingAddress when collectCustomerBillingAddress is not set", function () {
+      venmoOptions.collectCustomerShippingAddress = true;
+      venmoOptions.apiRequest = jest
+        .fn()
+        .mockResolvedValue(FAKE_CREATE_CONTEXT_RESPONSE);
+
+      var instance = new VenmoDesktop(venmoOptions);
+
+      return instance.startPolling().then(function () {
+        expect(venmoOptions.apiRequest).toHaveBeenCalledWith(
+          expect.stringContaining("mutation CreateVenmoPaymentContext"),
+          {
+            input: expect.objectContaining({
+              paysheetDetails: {
+                collectCustomerShippingAddress: true,
+              },
             }),
           }
         );

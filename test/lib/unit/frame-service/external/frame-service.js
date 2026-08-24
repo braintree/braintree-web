@@ -24,6 +24,7 @@ const Modal = require("../../../../../src/lib/frame-service/external/strategies/
 const BraintreeBus = require("framebus");
 const BraintreeError = require("../../../../../src/lib/braintree-error");
 const browserDetection = require("../../../../../src/lib/frame-service/shared/browser-detection");
+const isVerifiedDomain = require("../../../../../src/lib/is-verified-domain");
 const { noop, mockWindowOpen } = require("../../../../helpers");
 
 describe("FrameService", () => {
@@ -182,6 +183,8 @@ describe("FrameService", () => {
       expect(_bus).toBeInstanceOf(BraintreeBus);
       expect(BraintreeBus).toBeCalledWith({
         channel: _serviceId,
+        verifyDomain: isVerifiedDomain,
+        targetFrames: [],
       });
     });
 
@@ -294,6 +297,18 @@ describe("FrameService", () => {
         frameService._dispatchFrame
       );
     });
+
+    it("registers the dispatch frame as a target frame on the bus", () => {
+      const frameService = new FrameService(testContext.options);
+
+      jest.spyOn(frameService._bus, "addTargetFrame");
+
+      frameService._writeDispatchFrame();
+
+      expect(frameService._bus.addTargetFrame).toHaveBeenCalledWith(
+        frameService._dispatchFrame
+      );
+    });
   });
 
   describe("_setBusEvents", () => {
@@ -324,6 +339,7 @@ describe("FrameService", () => {
       const context = {
         _bus: createFakeBus(),
         close: jest.fn(),
+        _cleanupFrame: noop,
         _onCompleteCallback: (err, payload) => {
           onCompleteCallbackPayload = [err, payload];
         },
@@ -343,6 +359,7 @@ describe("FrameService", () => {
       const context = {
         _bus: createFakeBus(),
         close: jest.fn(),
+        _cleanupFrame: noop,
         _onCompleteCallback: noop,
         _frame: { close: jest.fn() },
       };
@@ -352,6 +369,22 @@ describe("FrameService", () => {
       context._bus.emit(DISPATCH_FRAME_REPORT, { err: null, payload: null });
 
       expect(context._onCompleteCallback).toBeNull();
+    });
+
+    it("cleans up the frame after a successful report", () => {
+      const _cleanupFrame = jest.fn();
+      const context = {
+        _bus: createFakeBus(),
+        _cleanupFrame,
+        _onCompleteCallback: noop,
+        _frame: { close: jest.fn() },
+      };
+
+      FrameService.prototype._setBusEvents.call(context);
+
+      context._bus.emit(DISPATCH_FRAME_REPORT, { err: null, payload: null });
+
+      expect(_cleanupFrame).toHaveBeenCalled();
     });
   });
 
@@ -535,6 +568,30 @@ describe("FrameService", () => {
         baz: "baz",
         biz: "unchanged value",
       });
+    });
+
+    it("stores the onSuspend and onResume hooks from options", () => {
+      const onSuspend = jest.fn();
+      const onResume = jest.fn();
+
+      testContext.frameService.open({ onSuspend, onResume }, noop);
+
+      expect(testContext.frameService._onSuspend).toBe(onSuspend);
+      expect(testContext.frameService._onResume).toBe(onResume);
+    });
+
+    it("attaches visibility listeners", () => {
+      const spy = jest
+        .spyOn(FrameService.prototype, "_addVisibilityListeners")
+        .mockImplementation(noop);
+
+      testContext.frameService.open({}, noop);
+
+      expect(
+        testContext.frameService._addVisibilityListeners
+      ).toHaveBeenCalled();
+
+      spy.mockRestore();
     });
   });
 
@@ -817,6 +874,7 @@ describe("FrameService", () => {
       const context = {
         _frame: "frame",
         _popupInterval: setInterval(noop, 2e3),
+        _removeVisibilityListeners: noop,
       };
 
       FrameService.prototype._cleanupFrame.call(context);
@@ -829,11 +887,25 @@ describe("FrameService", () => {
         _frame: "frame",
         _onCompleteCallback: null,
         _popupInterval: setInterval(noop, 2e3),
+        _removeVisibilityListeners: noop,
       };
 
       FrameService.prototype._cleanupFrame.call(context);
 
       expect(context._popupInterval).toBeNull();
+    });
+
+    it("removes the visibility listeners", () => {
+      const _removeVisibilityListeners = jest.fn();
+      const context = {
+        _frame: "frame",
+        _popupInterval: setInterval(noop, 2e3),
+        _removeVisibilityListeners,
+      };
+
+      FrameService.prototype._cleanupFrame.call(context);
+
+      expect(_removeVisibilityListeners).toHaveBeenCalled();
     });
   });
 
@@ -857,45 +929,315 @@ describe("FrameService", () => {
       expect(timer).toBe(context._popupInterval);
     });
 
-    it("calls to _cleanupFrame when frame is closed", (done) => {
+    it("calls _reportFrameClosed when frame is closed", (done) => {
       jest.useRealTimers();
 
       let frameClosed = false;
-      const _cleanupFrame = jest.fn();
-      const context = { isFrameClosed: () => frameClosed, _cleanupFrame };
+      const _reportFrameClosed = jest.fn();
+      const context = {
+        isFrameClosed: () => frameClosed,
+        _reportFrameClosed,
+      };
 
       timer = FrameService.prototype._pollForPopupClose.call(context);
       frameClosed = true;
 
       setTimeout(() => {
-        expect(_cleanupFrame).toHaveBeenCalled();
+        expect(_reportFrameClosed).toHaveBeenCalled();
         done();
       }, 200);
     });
 
-    it("calls _onCompleteCallback when frame is closed", () => {
+    it("does not call _reportFrameClosed while the frame is open", () => {
       jest.useFakeTimers();
 
-      let frameClosed = false;
-      const _onCompleteCallback = jest.fn();
+      const _reportFrameClosed = jest.fn();
       const context = {
-        isFrameClosed: () => frameClosed,
-        _onCompleteCallback,
-        _cleanupFrame: jest.fn(),
+        isFrameClosed: () => false,
+        _reportFrameClosed,
       };
 
       FrameService.prototype._pollForPopupClose.call(context);
-      frameClosed = true;
+      jest.advanceTimersByTime(300);
 
-      jest.advanceTimersByTime(100);
+      expect(_reportFrameClosed).not.toHaveBeenCalled();
 
+      jest.useRealTimers();
+    });
+  });
+
+  describe("_reportFrameClosed", () => {
+    it("cleans up the frame and fires the callback with a FRAME_CLOSED error", () => {
+      const _onCompleteCallback = jest.fn();
+      const _cleanupFrame = jest.fn();
+      const context = { _onCompleteCallback, _cleanupFrame };
+
+      FrameService.prototype._reportFrameClosed.call(context);
+
+      expect(_cleanupFrame).toHaveBeenCalled();
       expect(_onCompleteCallback.mock.calls[0][0]).toMatchObject({
         type: BraintreeError.types.INTERNAL,
         code: "FRAME_SERVICE_FRAME_CLOSED",
         message: "Frame closed before tokenization could occur.",
       });
+    });
 
+    it("nulls _onCompleteCallback so it can only fire once", () => {
+      const _onCompleteCallback = jest.fn();
+      const context = { _onCompleteCallback, _cleanupFrame: noop };
+
+      FrameService.prototype._reportFrameClosed.call(context);
+
+      expect(context._onCompleteCallback).toBeNull();
+    });
+
+    it("does not throw when there is no callback", () => {
+      const context = { _onCompleteCallback: null, _cleanupFrame: noop };
+
+      expect(() => {
+        FrameService.prototype._reportFrameClosed.call(context);
+      }).not.toThrow();
+    });
+  });
+
+  describe("visibility handling", () => {
+    afterEach(() => {
       jest.useRealTimers();
+      jest.restoreAllMocks();
+    });
+
+    it("_addVisibilityListeners attaches after the install delay", () => {
+      jest.useFakeTimers();
+
+      const addEventListener = jest.spyOn(window.document, "addEventListener");
+      const context = {};
+
+      FrameService.prototype._addVisibilityListeners.call(context);
+
+      expect(addEventListener).not.toHaveBeenCalledWith(
+        "visibilitychange",
+        expect.any(Function)
+      );
+
+      jest.advanceTimersByTime(500);
+
+      expect(addEventListener).toHaveBeenCalledWith(
+        "visibilitychange",
+        expect.any(Function)
+      );
+
+      FrameService.prototype._removeVisibilityListeners.call(context);
+    });
+
+    it("_handleSuspend fires the onSuspend hook", () => {
+      const _onSuspend = jest.fn();
+      const context = { _onSuspend };
+
+      FrameService.prototype._handleSuspend.call(context);
+
+      expect(_onSuspend).toHaveBeenCalled();
+    });
+
+    it("_handleSuspend is a no-op without an onSuspend hook", () => {
+      expect(() => {
+        FrameService.prototype._handleSuspend.call({});
+      }).not.toThrow();
+    });
+
+    it("_handleSuspend only fires onSuspend once per background", () => {
+      const _onSuspend = jest.fn();
+      const context = { _onSuspend };
+
+      FrameService.prototype._handleSuspend.call(context);
+      FrameService.prototype._handleSuspend.call(context);
+
+      expect(_onSuspend).toHaveBeenCalledTimes(1);
+    });
+
+    it("_handleResume is a no-op when not backgrounded", () => {
+      jest.useFakeTimers();
+
+      const _onResume = jest.fn();
+      const _reportFrameClosed = jest.fn();
+      const context = {
+        _backgrounded: false,
+        _onResume,
+        _reportFrameClosed,
+        isFrameClosed: () => true,
+      };
+
+      FrameService.prototype._handleResume.call(context);
+      jest.advanceTimersByTime(1000);
+
+      expect(_onResume).not.toHaveBeenCalled();
+      expect(_reportFrameClosed).not.toHaveBeenCalled();
+    });
+
+    it("_handleResume only processes the first resume after a background", () => {
+      jest.useFakeTimers();
+
+      const _onResume = jest.fn();
+      const _reportFrameClosed = jest.fn();
+      const context = {
+        _backgrounded: true,
+        _onResume,
+        _reportFrameClosed,
+        isFrameClosed: () => true,
+      };
+
+      // a bfcache restore can drive both pageshow and visibilitychange
+      FrameService.prototype._handleResume.call(context);
+      FrameService.prototype._handleResume.call(context);
+
+      jest.advanceTimersByTime(1000);
+
+      expect(_onResume).toHaveBeenCalledTimes(1);
+      expect(_reportFrameClosed).toHaveBeenCalledTimes(1);
+    });
+
+    it("_handleResume fires onResume then re-checks the frame after the process delay", () => {
+      jest.useFakeTimers();
+
+      const _onResume = jest.fn();
+      const _reportFrameClosed = jest.fn();
+      const context = {
+        _backgrounded: true,
+        _onResume,
+        _reportFrameClosed,
+        isFrameClosed: () => true,
+      };
+
+      FrameService.prototype._handleResume.call(context);
+
+      expect(_onResume).toHaveBeenCalled();
+      expect(_reportFrameClosed).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(1000);
+
+      expect(_reportFrameClosed).toHaveBeenCalled();
+    });
+
+    it("_handleResume does not report closure when the frame is still open", () => {
+      jest.useFakeTimers();
+
+      const _reportFrameClosed = jest.fn();
+      const context = {
+        _backgrounded: true,
+        _onResume: noop,
+        _reportFrameClosed,
+        isFrameClosed: () => false,
+      };
+
+      FrameService.prototype._handleResume.call(context);
+      jest.advanceTimersByTime(1000);
+
+      expect(_reportFrameClosed).not.toHaveBeenCalled();
+    });
+
+    it("routes visibilitychange to suspend when hidden and to resume when visible", () => {
+      jest.useFakeTimers();
+
+      const frameService = new FrameService(testContext.options);
+      const hiddenGetter = jest.spyOn(window.document, "hidden", "get");
+      const handleSuspend = jest
+        .spyOn(FrameService.prototype, "_handleSuspend")
+        .mockImplementation(noop);
+      const handleResume = jest
+        .spyOn(FrameService.prototype, "_handleResume")
+        .mockImplementation(noop);
+
+      frameService._addVisibilityListeners();
+      jest.advanceTimersByTime(500);
+
+      hiddenGetter.mockReturnValue(true);
+      window.document.dispatchEvent(new window.Event("visibilitychange"));
+
+      expect(handleSuspend).toHaveBeenCalled();
+      expect(handleResume).not.toHaveBeenCalled();
+
+      hiddenGetter.mockReturnValue(false);
+      window.document.dispatchEvent(new window.Event("visibilitychange"));
+
+      expect(handleResume).toHaveBeenCalled();
+
+      frameService._removeVisibilityListeners();
+    });
+
+    it("re-checks the frame on bfcache restore (pageshow persisted)", () => {
+      jest.useFakeTimers();
+
+      const frameService = new FrameService(testContext.options);
+      const handleResume = jest
+        .spyOn(FrameService.prototype, "_handleResume")
+        .mockImplementation(noop);
+
+      frameService._addVisibilityListeners();
+      jest.advanceTimersByTime(500);
+
+      window.dispatchEvent(new window.Event("pageshow"));
+      expect(handleResume).not.toHaveBeenCalled();
+
+      const restoreEvent = new window.Event("pageshow");
+
+      Object.defineProperty(restoreEvent, "persisted", { value: true });
+      window.dispatchEvent(restoreEvent);
+
+      expect(handleResume).toHaveBeenCalled();
+
+      frameService._removeVisibilityListeners();
+    });
+
+    it("_removeVisibilityListeners detaches listeners and clears the install timer", () => {
+      const removeFromDocument = jest.spyOn(
+        window.document,
+        "removeEventListener"
+      );
+      const removeFromWindow = jest.spyOn(window, "removeEventListener");
+      const onVisibilityChange = noop;
+      const onPageShow = noop;
+      const context = {
+        _visibilityInstallTimeout: setTimeout(noop, 2e3),
+        _resumeRecheckTimeout: setTimeout(noop, 2e3),
+        _backgrounded: true,
+        _onVisibilityChange: onVisibilityChange,
+        _onPageShow: onPageShow,
+      };
+
+      FrameService.prototype._removeVisibilityListeners.call(context);
+
+      expect(removeFromDocument).toHaveBeenCalledWith(
+        "visibilitychange",
+        onVisibilityChange
+      );
+      expect(removeFromWindow).toHaveBeenCalledWith("pageshow", onPageShow);
+      expect(context._onVisibilityChange).toBeNull();
+      expect(context._onPageShow).toBeNull();
+      expect(context._visibilityInstallTimeout).toBeNull();
+      expect(context._resumeRecheckTimeout).toBeNull();
+      expect(context._backgrounded).toBe(false);
+    });
+
+    it("cancels a pending resume-recheck when the frame is cleaned up", () => {
+      jest.useFakeTimers();
+
+      const _reportFrameClosed = jest.fn();
+      const context = {
+        _backgrounded: true,
+        _onResume: noop,
+        _reportFrameClosed,
+        isFrameClosed: () => true,
+        _cleanupFrame: FrameService.prototype._cleanupFrame,
+        _removeVisibilityListeners:
+          FrameService.prototype._removeVisibilityListeners,
+      };
+
+      FrameService.prototype._handleResume.call(context);
+
+      // frame torn down (e.g. flow completed) before the recheck fires
+      FrameService.prototype._removeVisibilityListeners.call(context);
+      jest.advanceTimersByTime(1000);
+
+      expect(_reportFrameClosed).not.toHaveBeenCalled();
     });
   });
 });

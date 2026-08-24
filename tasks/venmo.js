@@ -12,16 +12,6 @@ var VERSION = require("../package.json").version;
 
 var BASE_PATH = path.resolve(__dirname, "..", "src", "venmo");
 var DIST_PATH = path.resolve(__dirname, "..", "dist", "hosted", "web", VERSION);
-var BUILT_QR_CODE_PATH = path.resolve(
-  __dirname,
-  "..",
-  "src",
-  "venmo",
-  "internal",
-  "vendor",
-  "node-qrcode.js"
-);
-
 gulp.task("build:venmo:landing-frame", function () {
   var stream = gulp
     .src("src/venmo/internal/landing-frame.html")
@@ -35,12 +25,10 @@ gulp.task("build:venmo:desktop-frame:html", function () {
     DIST_PATH + "/js/venmo-desktop-frame-internal.js",
     "utf8"
   );
-  var qrCodeFile = fs.readFileSync(BUILT_QR_CODE_PATH, "utf8");
 
   var stream = gulp
     .src(BASE_PATH + "/internal/venmo-desktop-frame.html")
-    .pipe(replace("@BUILT_FILE", jsFile))
-    .pipe(replace("@QR_CODE_BUILT_FILE", qrCodeFile));
+    .pipe(replace("@BUILT_FILE", jsFile));
 
   return minifyHTML(stream, DIST_PATH + "/html");
 });

@@ -120,6 +120,7 @@ function create(options) {
         .then(function (client) {
           var clientConfiguration = client.getConfiguration();
           var fraudnetConfig = {
+            client: client,
             sessionId:
               options.riskCorrelationId ||
               options.clientMetadataId ||

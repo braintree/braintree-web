@@ -47,11 +47,30 @@ var CloseIcon = /** @class */ (function (_super) {
     container.className = "close-icon";
     container.setAttribute("aria-label", "Close Venmo QR code modal");
     container.innerHTML =
-      '\n      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">\n        <path d="M0.949068 16.2226C0.168019 17.0036 0.168019 18.27 0.949068 19.051C1.73012 19.8321 2.99645 19.832 3.7775 19.051L10 12.8285L16.2226 19.051C17.0036 19.8321 18.27 19.8321 19.051 19.051C19.8321 18.27 19.832 17.0036 19.051 16.2226L12.8285 10L19.051 3.77749C19.8321 2.99645 19.8321 1.73012 19.051 0.949067C18.27 0.168019 17.0036 0.16802 16.2226 0.949068L10 7.17161L3.77749 0.949068C2.99645 0.16802 1.73012 0.16802 0.949067 0.949068C0.168019 1.73012 0.16802 2.99645 0.949068 3.7775L7.17161 10L0.949068 16.2226Z" fill="#6B6E76"/>\n      </svg>\n\n    ';
+      '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '  <path d="M0.949068 16.2226C0.168019 17.0036 0.168019 18.27 0.949068 19.051' +
+      "C1.73012 19.8321 2.99645 19.832 3.7775 19.051L10 12.8285L16.2226 19.051" +
+      "C17.0036 19.8321 18.27 19.8321 19.051 19.051C19.8321 18.27 19.832 17.0036" +
+      " 19.051 16.2226L12.8285 10L19.051 3.77749C19.8321 2.99645 19.8321 1.73012" +
+      " 19.051 0.949067C18.27 0.168019 17.0036 0.16802 16.2226 0.949068L10 7.17161" +
+      "L3.77749 0.949068C2.99645 0.16802 1.73012 0.16802 0.949067 0.949068" +
+      "C0.168019 1.73012 0.16802 2.99645 0.949068 3.7775L7.17161 10" +
+      'L0.949068 16.2226Z" fill="#6B6E76"/>' +
+      "</svg>";
     return container;
   };
   CloseIcon.prototype.getStyleConfig = function () {
-    return "\n      .close-icon {\n        cursor: pointer;\n        position: absolute;\n        top: 15px;\n        right: 15px;\n        z-index: 9999;\n      }\n\n      .close-icon svg {\n        top: 1px;\n        position: relative;\n      }\n    ";
+    return [
+      ".close-icon {",
+      "  cursor: pointer;",
+      "  padding: 10px;",
+      "  border-radius: 50%;",
+      "  background-color: white;",
+      "  display: flex;",
+      "  align-items: center;",
+      "  justify-content: center;",
+      "}",
+    ].join("\n");
   };
   return CloseIcon;
 })(base_1.default);

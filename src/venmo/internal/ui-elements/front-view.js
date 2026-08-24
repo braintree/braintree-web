@@ -48,7 +48,7 @@ var FrontView = /** @class */ (function (_super) {
       onClick: function () {
         _this.displayQRCodeView();
         if (options.onRequestNewQrCode) {
-          options.onRequestNewQrCode();
+          options.onRequestNewQrCode("error-view");
         }
       },
     });
@@ -81,7 +81,15 @@ var FrontView = /** @class */ (function (_super) {
     return container;
   };
   FrontView.prototype.getStyleConfig = function () {
-    return "\n      #front-view {\n        z-index: 2;\n        transform: rotateY(0deg);\n      }\n\n      #view-boxes.is-flipped #front-view {\n        transform: rotateY(180deg);\n        position: absolute;\n      }\n    ";
+    return [
+      "#front-view {",
+      "  z-index: 2;",
+      "  transform: rotateY(0deg);",
+      "}",
+      "#view-boxes.is-flipped #front-view {",
+      "  transform: rotateY(180deg);",
+      "}",
+    ].join("\n");
   };
   return FrontView;
 })(base_1.default);

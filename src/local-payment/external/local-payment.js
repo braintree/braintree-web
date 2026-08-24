@@ -685,10 +685,24 @@ LocalPayment.prototype.startPayment = function (options) {
       }
     );
 
+    self._popupSawResume = false;
     self._frameService.open(
       {
         width: windowOptions.width || DEFAULT_WINDOW_WIDTH,
         height: windowOptions.height || DEFAULT_WINDOW_HEIGHT,
+        onSuspend: function () {
+          analytics.sendEvent(
+            self._client,
+            self._paymentType + ".local-payment.popup.suspended"
+          );
+        },
+        onResume: function () {
+          self._popupSawResume = true;
+          analytics.sendEvent(
+            self._client,
+            self._paymentType + ".local-payment.popup.resumed"
+          );
+        },
       },
       self._startPaymentCallback
     );
@@ -988,6 +1002,15 @@ LocalPayment.prototype._createStartPaymentCallback = function (
 
   return function (err, params) {
     self._authorizationInProgress = false;
+
+    if (self._popupSawResume && !err && params) {
+      analytics.sendEvent(
+        client,
+        self._paymentType + ".local-payment.popup.recovered"
+      );
+    }
+    self._popupSawResume = false;
+
     if (err) {
       if (err.code === "FRAME_SERVICE_FRAME_CLOSED") {
         if (params && params.errorcode === "processing_error") {

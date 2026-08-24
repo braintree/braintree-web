@@ -1,10 +1,12 @@
 "use strict";
 
 jest.mock("../../../src/lib/analytics");
+jest.mock("../../../src/lib/assets");
 jest.mock("../../../src/lib/create-assets-url");
 jest.mock("../../../src/lib/create-deferred-client");
 
 const analytics = require("../../../src/lib/analytics");
+const assets = require("../../../src/lib/assets");
 const createDeferredClient = require("../../../src/lib/create-deferred-client");
 const BraintreeError = require("../../../src/lib/braintree-error");
 const PayPalCheckoutV6 = require("../../../src/paypal-checkout-v6/paypal-checkout-v6");
@@ -157,12 +159,16 @@ describe("PayPalCheckoutV6", () => {
 
       delete window.paypal;
 
+      testContext.fakeScript = document.createElement("script");
+      assets.loadScript.mockReset();
+      assets.loadScript.mockResolvedValue(testContext.fakeScript);
+
       return testContext.instance._initialize({
         client: testContext.client,
       });
     });
 
-    it("sends analytics event when SDK loads", (done) => {
+    it("sends analytics event when SDK loads", () =>
       testContext.instance.loadPayPalSDK().then(() => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(
           testContext.client,
@@ -172,55 +178,38 @@ describe("PayPalCheckoutV6", () => {
           testContext.client,
           "paypal-checkout-v6.sdk-load.succeeded"
         );
-        done();
-      });
+      }));
 
-      // Simulate script load on next tick
-      setTimeout(() => {
-        testContext.instance._paypalScript.onload();
-      }, 0);
-    });
+    it("loads the SDK script through the shared loader and keeps the element", () =>
+      testContext.instance.loadPayPalSDK().then((result) => {
+        expect(result).toBe(testContext.instance);
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: expect.stringContaining("sandbox.paypal.com/web-sdk/v6/core"),
+          forceScriptReload: true,
+        });
+        expect(testContext.instance._paypalScript).toBe(testContext.fakeScript);
+      }));
 
-    it("creates and appends script tag", (done) => {
-      testContext.instance.loadPayPalSDK();
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript).toBeDefined();
-        expect(testContext.instance._paypalScript.src).toContain(
-          "sandbox.paypal.com/web-sdk/v6/core"
-        );
-        expect(testContext.instance._paypalScript.async).toBe(true);
-        done();
-      }, 0);
-    });
-
-    it("uses production URL for production environment", (done) => {
+    it("uses production URL for production environment", () => {
       testContext.configuration.gatewayConfiguration.environment = "production";
 
-      testContext.instance.loadPayPalSDK();
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
+      return testContext.instance.loadPayPalSDK().then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      });
     });
 
-    it("uses sandbox URL for sandbox environment", (done) => {
+    it("uses sandbox URL for sandbox environment", () => {
       testContext.configuration.gatewayConfiguration.environment = "sandbox";
 
-      testContext.instance.loadPayPalSDK();
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.sandbox.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
+      return testContext.instance.loadPayPalSDK().then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      });
     });
 
     it("resolves immediately if SDK is already loaded", () => {
@@ -232,59 +221,75 @@ describe("PayPalCheckoutV6", () => {
           testContext.client,
           "paypal-checkout-v6.sdk-already-loaded"
         );
+        expect(assets.loadScript).not.toHaveBeenCalled();
       });
     });
 
-    it("uses teBraintree URL when env option is teBraintree", (done) => {
-      testContext.instance.loadPayPalSDK({ env: "teBraintree" });
+    it("reports enriched detail and rejects with a BraintreeError when the SDK script fails to load", () => {
+      const originalError = new Error(
+        "https://www.sandbox.paypal.com/web-sdk/v6/core failed to load."
+      );
 
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.braintree.stage.paypal.com/web-sdk/v6/core"
+      originalError.failureKind = "error";
+      originalError.src = "https://www.sandbox.paypal.com/web-sdk/v6/core";
+      originalError.timing = 12;
+      originalError.onLine = true;
+
+      assets.loadScript.mockRejectedValueOnce(originalError);
+
+      return testContext.instance.loadPayPalSDK().catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe("PAYPAL_CHECKOUT_V6_SDK_SCRIPT_LOAD_FAILED");
+        expect(err.details.originalError).toBe(originalError);
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.sdk-load.failed",
+          expect.objectContaining({
+            failure_kind: "error",
+            src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+          })
         );
-        done();
-      }, 0);
+      });
     });
 
-    it("uses stage URL when env option is stage", (done) => {
-      testContext.instance.loadPayPalSDK({ env: "stage" });
+    it("uses teBraintree URL when env option is teBraintree", () =>
+      testContext.instance.loadPayPalSDK({ env: "teBraintree" }).then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.braintree.stage.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      }));
 
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.msmaster.qa.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
-    });
+    it("uses stage URL when env option is stage", () =>
+      testContext.instance.loadPayPalSDK({ env: "stage" }).then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.msmaster.qa.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      }));
 
-    it("falls back to default URL when env option is unknown", (done) => {
+    it("falls back to default URL when env option is unknown", () => {
       testContext.configuration.gatewayConfiguration.environment = "sandbox";
 
-      testContext.instance.loadPayPalSDK({ env: "unknown-env" });
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.sandbox.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
+      return testContext.instance
+        .loadPayPalSDK({ env: "unknown-env" })
+        .then(() => {
+          expect(assets.loadScript).toHaveBeenCalledWith({
+            src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+            forceScriptReload: true,
+          });
+        });
     });
 
-    it("falls back to default URL when options object is empty", (done) => {
+    it("falls back to default URL when options object is empty", () => {
       testContext.configuration.gatewayConfiguration.environment = "sandbox";
 
-      testContext.instance.loadPayPalSDK({});
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.sandbox.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
+      return testContext.instance.loadPayPalSDK({}).then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      });
     });
   });
 
@@ -2785,6 +2790,7 @@ describe("PayPalCheckoutV6", () => {
               type: "PayPalAccount",
               details: {
                 email: "buyer@example.com",
+                implicitlyVaultedPaymentMethodToken: "IVPMT-TOKEN-123",
               },
             },
           ],
@@ -2804,11 +2810,16 @@ describe("PayPalCheckoutV6", () => {
                 data: expect.objectContaining({
                   paypalAccount: expect.objectContaining({
                     billingAgreementToken: "BA-TOKEN-789",
+                    paymentToken: "ORDER123",
+                    payerId: "PAYER123",
                   }),
                 }),
               })
             );
             expect(payload.nonce).toBe("vault-nonce-456");
+            expect(payload.implicitlyVaultedPaymentMethodToken).toBe(
+              "IVPMT-TOKEN-123"
+            );
           });
       });
 

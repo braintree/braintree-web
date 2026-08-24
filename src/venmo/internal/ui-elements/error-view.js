@@ -62,11 +62,42 @@ var ErrorView = /** @class */ (function (_super) {
     var container = document.createElement("div");
     container.id = "venmo-error-view";
     container.innerHTML =
-      '\n      <div id="venmo-error__message"></div>\n      <button id="venmo-error__button">Try scanning again</button>\n    ';
+      '<div id="venmo-error__message"></div>' +
+      '<button id="venmo-error__button">Try scanning again</button>';
     return container;
   };
   ErrorView.prototype.getStyleConfig = function () {
-    return "\n      #venmo-error-view {\n        display: none;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        text-align: center;\n        color: #FFFFFF;\n        background: #2F3033;\n        box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.4);\n        border-radius: 8px;\n        padding: 0 10px;\n      }\n\n      #venmo-error-view.active {\n        display: flex;\n      }\n\n      #venmo-error__button {\n        cursor: pointer;\n        margin-top: 30px;\n        background: linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), #0074DE;\n        border-radius: 24px;\n        padding: 14px;\n        min-width: 300px;\n        font-size: 18px;\n        font-weight: bold;\n        line-height: 24px;\n        color: #FFFFFF;\n      }\n    ";
+    return [
+      "#venmo-error-view {",
+      "  display: none;",
+      "  flex-direction: column;",
+      "  align-items: center;",
+      "  justify-content: center;",
+      "  text-align: center;",
+      "  color: #FFFFFF;",
+      "  background: #2F3033;",
+      "  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.4);",
+      "  border-radius: 8px;",
+      "  padding: 0 10px;",
+      "  height: 382px;",
+      "  width: 512px;",
+      "}",
+      "#venmo-error-view.active {",
+      "  display: flex;",
+      "}",
+      "#venmo-error__button {",
+      "  cursor: pointer;",
+      "  margin-top: 30px;",
+      "  background: linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), #0074DE;",
+      "  border-radius: 24px;",
+      "  padding: 14px;",
+      "  min-width: 300px;",
+      "  font-size: 18px;",
+      "  font-weight: bold;",
+      "  line-height: 24px;",
+      "  color: #FFFFFF;",
+      "}",
+    ].join("\n");
   };
   return ErrorView;
 })(base_1.default);

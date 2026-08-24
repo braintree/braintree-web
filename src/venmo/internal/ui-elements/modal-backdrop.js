@@ -37,18 +37,41 @@ var __importDefault =
   };
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_1 = __importDefault(require("./base"));
+var close_icon_1 = __importDefault(require("./close-icon"));
 var ModalBackdrop = /** @class */ (function (_super) {
   __extends(ModalBackdrop, _super);
-  function ModalBackdrop() {
-    return (_super !== null && _super.apply(this, arguments)) || this;
+  function ModalBackdrop(options) {
+    var _this = _super.call(this, options) || this;
+    close_icon_1.default.create({
+      container: _this.$(".close-icon-container"),
+      onClick: function () {
+        _this.close();
+      },
+    });
+    return _this;
   }
   ModalBackdrop.prototype.constructElement = function () {
     var backdrop = document.createElement("div");
     backdrop.id = "modal-backdrop";
+    backdrop.innerHTML = '<div class="close-icon-container"></div>';
     return backdrop;
   };
   ModalBackdrop.prototype.getStyleConfig = function () {
-    return "\n  #modal-backdrop {\n    cursor: pointer;\n    position: absolute;\n    top: 0;\n    left: 0;\n    bottom: 0;\n    width: 100%;\n    background: rgba(0, 0, 0, 0.4);\n  }";
+    return [
+      "#modal-backdrop {",
+      "  position: absolute;",
+      "  top: 0;",
+      "  left: 0;",
+      "  bottom: 0;",
+      "  width: 100%;",
+      "  background: rgba(0, 0, 0, 0.4);",
+      "}",
+      ".close-icon-container {",
+      "  display: flex;",
+      "  justify-content: flex-end;",
+      "  padding: 24px;",
+      "}",
+    ].join("\n");
   };
   return ModalBackdrop;
 })(base_1.default);

@@ -1,6 +1,8 @@
 "use strict";
 
 var analytics = require("../lib/analytics");
+var assets = require("../lib/assets");
+var assetLoadDetail = require("../lib/asset-load-detail");
 var assign = require("../lib/assign").assign;
 var BraintreeError = require("../lib/braintree-error");
 var convertToBraintreeError = require("../lib/convert-to-braintree-error");
@@ -361,7 +363,6 @@ PayPalCheckoutV6.prototype.loadPayPalSDK = function (options) {
   var self = this;
 
   return this._clientPromise.then(function (client) {
-    var loadPromise = new ExtendedPromise();
     var config = client.getConfiguration();
     var env = config.gatewayConfiguration.environment;
     var subdomain = env === "production" ? "" : "sandbox.";
@@ -387,28 +388,35 @@ PayPalCheckoutV6.prototype.loadPayPalSDK = function (options) {
 
     analytics.sendEvent(client, constants.ANALYTICS_EVENTS.SDK_LOAD_STARTED);
 
-    self._paypalScript = document.createElement("script");
-    self._paypalScript.src = scriptUrl;
-    self._paypalScript.async = true;
+    // forceScriptReload so a previously failed load's cached rejection can't block a retry
+    return assets
+      .loadScript({
+        src: scriptUrl,
+        forceScriptReload: true,
+      })
+      .then(function (script) {
+        self._paypalScript = script;
+        analytics.sendEvent(
+          client,
+          constants.ANALYTICS_EVENTS.SDK_LOAD_SUCCEEDED
+        );
 
-    self._paypalScript.onload = function () {
-      analytics.sendEvent(
-        client,
-        constants.ANALYTICS_EVENTS.SDK_LOAD_SUCCEEDED
-      );
-      loadPromise.resolve(self);
-    };
+        return self;
+      })
+      .catch(function (err) {
+        analytics.sendEventPlus(
+          client,
+          constants.ANALYTICS_EVENTS.SDK_LOAD_FAILED,
+          assetLoadDetail(err)
+        );
 
-    self._paypalScript.onerror = function () {
-      analytics.sendEvent(client, constants.ANALYTICS_EVENTS.SDK_LOAD_FAILED);
-      loadPromise.reject(
-        new BraintreeError(errors.PAYPAL_CHECKOUT_V6_SDK_SCRIPT_LOAD_FAILED)
-      );
-    };
-
-    document.head.appendChild(self._paypalScript);
-
-    return loadPromise;
+        return Promise.reject(
+          convertToBraintreeError(
+            err,
+            errors.PAYPAL_CHECKOUT_V6_SDK_SCRIPT_LOAD_FAILED
+          )
+        );
+      });
   });
 };
 
@@ -2414,160 +2422,230 @@ PayPalCheckoutV6.prototype.tokenizePayment = function (options) {
   var self = this;
 
   return new Promise(function (resolve, reject) {
-    var shouldVault = true;
-    var isBillingAgreement = Boolean(options && options.billingToken);
+    var flags = self._resolveTokenizeFlags(options);
 
-    if (!options) {
-      reject(
-        new BraintreeError(errors.PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA)
-      );
+    if (flags.error) {
+      reject(flags.error);
 
       return;
-    }
-
-    // Validate required parameters
-    // Accept both payerID/orderID (legacy) and payerId/orderId (onApprove payload)
-    // Also accept paymentID as an alternative to orderID (used by VIC)
-    if (
-      !isBillingAgreement &&
-      (!(options.payerID || options.payerId) ||
-        !(
-          options.orderID ||
-          options.orderId ||
-          options.paymentID ||
-          options.paymentId
-        ))
-    ) {
-      reject(
-        new BraintreeError(errors.PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA)
-      );
-
-      return;
-    }
-
-    if (options.hasOwnProperty("vault")) {
-      shouldVault = options.vault;
     }
 
     self._clientPromise.then(function (client) {
-      var endpoint, data, analyticsPrefix;
-
-      if (isBillingAgreement) {
-        analyticsPrefix = constants.ANALYTICS_EVENTS.TOKENIZE_BA_PREFIX;
-        analytics.sendEvent(client, analyticsPrefix + ".started");
-
-        endpoint = "payment_methods/paypal_accounts";
-        data = {
-          paypalAccount: {
-            billingAgreementToken: options.billingToken,
-            merchantAccountId: self._merchantAccountId,
-          },
-        };
-
-        // Use fallback chain for correlationId matching V5 behavior
-        data.paypalAccount.correlationId =
-          self._riskCorrelationId || options.billingToken;
-
-        if (!shouldVault) {
-          data.paypalAccount.vault = false;
-        }
-      } else {
-        analyticsPrefix = constants.ANALYTICS_EVENTS.TOKENIZE_PAYMENT_PREFIX;
-        analytics.sendEventPlus(
-          self._clientPromise,
-          analyticsPrefix + ".started",
-          {
-            flow: self._flow,
-            context_id: self._contextId, // eslint-disable-line camelcase
-          }
-        );
-
-        data = self._formatTokenizeData({
-          payerId: options.payerID || options.payerId,
-          orderId: options.orderID || options.orderId,
-          paymentId: options.paymentID || options.paymentId,
-        });
-        endpoint = "payment_methods/paypal_accounts";
-      }
+      var request = self._buildTokenizeRequest(options, {
+        isCheckoutWithVault: flags.isCheckoutWithVault,
+        isBillingAgreement: flags.isBillingAgreement,
+        shouldVault: flags.shouldVault,
+        client: client,
+      });
 
       return client
         .request({
-          endpoint: endpoint,
+          endpoint: request.endpoint,
           method: "post",
-          data: data,
+          data: request.data,
         })
         .then(function (response) {
-          var payload;
-          var creditAnalyticsEvent;
-
-          payload = self._formatTokenizePayload(response);
-
-          if (isBillingAgreement) {
-            analytics.sendEvent(client, analyticsPrefix + ".succeeded");
-          } else {
-            if (payload.creditFinancingOffered) {
-              // Send appropriate analytics event based on session type
-              creditAnalyticsEvent =
-                self._sessionType === "pay-later"
-                  ? constants.ANALYTICS_EVENTS.PAY_LATER_ACCEPTED
-                  : constants.ANALYTICS_EVENTS.CREDIT_ACCEPTED;
-
-              analytics.sendEventPlus(
-                self._clientPromise,
-                creditAnalyticsEvent,
-                {
-                  flow: self._flow,
-                  context_id: self._contextId, // eslint-disable-line camelcase
-                }
-              );
-            }
-
-            analytics.sendEventPlus(
-              self._clientPromise,
-              analyticsPrefix + ".success",
-              {
-                flow: self._flow,
-                context_id: self._contextId, // eslint-disable-line camelcase
-              }
-            );
-          }
-
-          return payload;
+          return self._handleTokenizeSuccess(
+            client,
+            response,
+            request.analyticsPrefix,
+            flags.isBillingAgreement
+          );
         })
         .catch(function (err) {
-          if (isBillingAgreement) {
-            analytics.sendEvent(client, analyticsPrefix + ".failed");
-
-            throw new BraintreeError({
-              type: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.type,
-              code: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.code,
-              message: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.message,
-              details: { originalError: err },
-            });
-          } else {
-            analytics.sendEventPlus(
-              self._clientPromise,
-              analyticsPrefix + ".failed",
-              {
-                flow: self._flow,
-                context_id: self._contextId, // eslint-disable-line camelcase
-              }
-            );
-
-            if (self._setupError) {
-              throw self._setupError;
-            }
-
-            throw convertToBraintreeError(err, {
-              type: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.type,
-              code: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.code,
-              message: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.message,
-            });
-          }
+          return self._handleTokenizeError(
+            client,
+            err,
+            request.analyticsPrefix,
+            flags.isBillingAgreement
+          );
         })
         .then(resolve)
         .catch(reject);
     });
+  });
+};
+
+/**
+ * @private
+ * @param {object} options Tokenization options passed to tokenizePayment.
+ * @returns {object} Flow flags and an optional validation error.
+ */
+PayPalCheckoutV6.prototype._resolveTokenizeFlags = function (options) {
+  var hasBillingToken = Boolean(options && options.billingToken);
+  // Accept both orderID/orderId (legacy/onApprove) and paymentID/paymentId
+  // (used by VIC) as the one-time-payment identifier.
+  var hasOrderIdOrPaymentId = Boolean(
+    options &&
+    (options.orderID ||
+      options.orderId ||
+      options.paymentID ||
+      options.paymentId)
+  );
+  // Accept both payerID (legacy) and payerId (onApprove payload).
+  var hasPayerId = Boolean(options && (options.payerID || options.payerId));
+  var hasCheckoutFields = hasOrderIdOrPaymentId && hasPayerId;
+  // Checkout+Vault (BA w/ Purchase): billingToken AND orderId both present.
+  // Pure vault: billingToken only (no orderId).
+  var isCheckoutWithVault = hasBillingToken && hasOrderIdOrPaymentId;
+  var isBillingAgreement = hasBillingToken && !hasOrderIdOrPaymentId;
+  var flags = {
+    isCheckoutWithVault: isCheckoutWithVault,
+    isBillingAgreement: isBillingAgreement,
+    shouldVault: true,
+    error: null,
+  };
+
+  // Validate required parameters. Billing-agreement-only flows only need
+  // billingToken; all other flows require both an order/payment id and a
+  // payer id.
+  if (!options || (!isBillingAgreement && !hasCheckoutFields)) {
+    flags.error = new BraintreeError(
+      errors.PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA
+    );
+
+    return flags;
+  }
+
+  if (options.hasOwnProperty("vault")) {
+    flags.shouldVault = options.vault;
+  }
+
+  return flags;
+};
+
+/**
+ * @private
+ * @param {object} options Tokenization options passed to tokenizePayment.
+ * @param {object} flags Flow flags and the resolved client.
+ * @returns {object} The endpoint, data, and analyticsPrefix for the request.
+ */
+PayPalCheckoutV6.prototype._buildTokenizeRequest = function (options, flags) {
+  var data;
+  var analyticsPrefix;
+  var endpoint = "payment_methods/paypal_accounts";
+
+  if (flags.isBillingAgreement) {
+    analyticsPrefix = constants.ANALYTICS_EVENTS.TOKENIZE_BA_PREFIX;
+    analytics.sendEvent(flags.client, analyticsPrefix + ".started");
+
+    data = {
+      paypalAccount: {
+        billingAgreementToken: options.billingToken,
+        merchantAccountId: this._merchantAccountId,
+        // Use fallback chain for correlationId matching V5 behavior
+        correlationId: this._riskCorrelationId || options.billingToken,
+      },
+    };
+
+    if (!flags.shouldVault) {
+      data.paypalAccount.vault = false;
+    }
+
+    return { endpoint: endpoint, data: data, analyticsPrefix: analyticsPrefix };
+  }
+
+  // Checkout, or BA w/ Purchase (checkout+vault).
+  analyticsPrefix = constants.ANALYTICS_EVENTS.TOKENIZE_PAYMENT_PREFIX;
+  analytics.sendEventPlus(this._clientPromise, analyticsPrefix + ".started", {
+    flow: this._flow,
+    context_id: this._contextId, // eslint-disable-line camelcase
+  });
+
+  data = this._formatTokenizeData({
+    payerId: options.payerID || options.payerId,
+    orderId: options.orderID || options.orderId,
+    paymentId: options.paymentID || options.paymentId,
+    // BA w/ Purchase: send billingToken too so the gateway returns
+    // ImplicitlyVaultedPaymentMethodToken.
+    billingToken: flags.isCheckoutWithVault ? options.billingToken : undefined,
+  });
+
+  return { endpoint: endpoint, data: data, analyticsPrefix: analyticsPrefix };
+};
+
+/**
+ * @private
+ * @param {object} client The Braintree client instance.
+ * @param {object} response The tokenization response.
+ * @param {string} analyticsPrefix The analytics event prefix for this flow.
+ * @param {boolean} isBillingAgreement Whether this is a billing agreement flow.
+ * @returns {object} The formatted tokenization payload.
+ */
+PayPalCheckoutV6.prototype._handleTokenizeSuccess = function (
+  client,
+  response,
+  analyticsPrefix,
+  isBillingAgreement
+) {
+  var creditAnalyticsEvent;
+  var payload = this._formatTokenizePayload(response);
+
+  if (isBillingAgreement) {
+    analytics.sendEvent(client, analyticsPrefix + ".succeeded");
+
+    return payload;
+  }
+
+  if (payload.creditFinancingOffered) {
+    // Send appropriate analytics event based on session type
+    creditAnalyticsEvent =
+      this._sessionType === "pay-later"
+        ? constants.ANALYTICS_EVENTS.PAY_LATER_ACCEPTED
+        : constants.ANALYTICS_EVENTS.CREDIT_ACCEPTED;
+
+    analytics.sendEventPlus(this._clientPromise, creditAnalyticsEvent, {
+      flow: this._flow,
+      context_id: this._contextId, // eslint-disable-line camelcase
+    });
+  }
+
+  analytics.sendEventPlus(this._clientPromise, analyticsPrefix + ".success", {
+    flow: this._flow,
+    context_id: this._contextId, // eslint-disable-line camelcase
+  });
+
+  return payload;
+};
+
+/**
+ * @private
+ * @param {object} client The Braintree client instance.
+ * @param {object} err The error from the tokenization request.
+ * @param {string} analyticsPrefix The analytics event prefix for this flow.
+ * @param {boolean} isBillingAgreement Whether this is a billing agreement flow.
+ * @returns {void} Always throws a BraintreeError.
+ */
+PayPalCheckoutV6.prototype._handleTokenizeError = function (
+  client,
+  err,
+  analyticsPrefix,
+  isBillingAgreement
+) {
+  if (isBillingAgreement) {
+    analytics.sendEvent(client, analyticsPrefix + ".failed");
+
+    throw new BraintreeError({
+      type: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.type,
+      code: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.code,
+      message: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.message,
+      details: { originalError: err },
+    });
+  }
+
+  analytics.sendEventPlus(this._clientPromise, analyticsPrefix + ".failed", {
+    flow: this._flow,
+    context_id: this._contextId, // eslint-disable-line camelcase
+  });
+
+  if (this._setupError) {
+    throw this._setupError;
+  }
+
+  throw convertToBraintreeError(err, {
+    type: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.type,
+    code: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.code,
+    message: errors.PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED.message,
   });
 };
 
@@ -2591,6 +2669,10 @@ PayPalCheckoutV6.prototype._formatTokenizeData = function (params) {
         this._configuration.gatewayConfiguration.paypal.unvettedMerchant,
     },
   };
+
+  if (params.billingToken) {
+    data.paypalAccount.billingAgreementToken = params.billingToken;
+  }
 
   if (this._merchantAccountId) {
     data.merchantAccountId = this._merchantAccountId;
@@ -2632,6 +2714,11 @@ PayPalCheckoutV6.prototype._formatTokenizePayload = function (response) {
 
   if (account.details && account.details.cobrandedCardLabel) {
     payload.cobrandedCardLabel = account.details.cobrandedCardLabel;
+  }
+
+  if (account.details && account.details.implicitlyVaultedPaymentMethodToken) {
+    payload.implicitlyVaultedPaymentMethodToken =
+      account.details.implicitlyVaultedPaymentMethodToken;
   }
 
   return payload;

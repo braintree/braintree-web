@@ -6,5 +6,6 @@ module.exports = {
   FASTLANE_SDK_LOAD_ERROR: {
     type: BraintreeError.types.MERCHANT,
     code: "FASTLANE_SDK_LOAD_ERROR",
+    message: "Fastlane SDK failed to load.",
   },
 };

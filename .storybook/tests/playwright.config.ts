@@ -14,7 +14,9 @@ module.exports = defineConfig({
   workers: 1,
   retries: 2,
   timeout: 90000,
-  reporter: process.env.CI ? [["blob"]] : [["list"], ["html"]],
+  reporter: process.env.CI
+    ? [["list"], ["html", { open: "never" }]]
+    : [["list"], ["html"]],
   globalSetup: require.resolve("./global-setup.ts"),
   globalTeardown: require.resolve("./global-teardown.ts"),
   use: {

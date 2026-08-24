@@ -27,6 +27,14 @@ function copyLocalBuildToStatic() {
 
     console.log(`✅ Symlinked local-build/ → dist/hosted/web/${version}/`);
 
+    // Also create web/{version}/ path so that components loading HTML frames
+    // (e.g., venmo-desktop-frame.html) via assetsUrl can resolve them locally
+    const webVersionPath = path.join(staticPath, "web", version);
+    fs.mkdirSync(path.join(staticPath, "web"), { recursive: true });
+    fs.symlinkSync(distPath, webVersionPath);
+
+    console.log(`✅ Symlinked web/${version}/ → dist/hosted/web/${version}/`);
+
     fs.copyFileSync(VERSIONS_PATH, `${STATIC_FILES_PATH}versions.json`);
 
     return true;

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
+import { patchClientAssetsUrlForLocalDev } from "../../utils/patch-assets-url";
 import type {
   IBraintreeError,
   IVenmoCreateOptions,
@@ -66,6 +67,7 @@ const setupVenmo = (
       authorization: authorization,
     })
     .then((clientInstance) => {
+      patchClientAssetsUrlForLocalDev(clientInstance);
       return window.braintree!.venmo.create({
         client: clientInstance,
         riskCorrelationId: "foo-bar-test",
@@ -187,13 +189,15 @@ export const DesktopQR: StoryObj = {
     (container) => {
       const formContainer = createVenmoForm(
         "Venmo Desktop QR",
-        "Desktop QR code integration for multi-use payment methods with enhanced desktop support."
+        "Desktop QR code integration for single-use payment methods with enhanced desktop support."
       );
       container.appendChild(formContainer);
       setupVenmo(formContainer, {
         allowDesktop: true,
         paymentMethodUsage: "single_use",
         totalAmount: "10.00",
+        collectCustomerBillingAddress: true,
+        collectCustomerShippingAddress: true,
       });
     },
     ["client.min.js", "venmo.min.js"]

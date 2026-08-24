@@ -1180,6 +1180,93 @@ describe("LocalPayment", () => {
       return testContext.localPayment._initialize();
     });
 
+    it("emits a suspended event when the popup is backgrounded", async () => {
+      let openOptions;
+
+      testContext.frameServiceInstance.open = jest.fn((options, cb) => {
+        openOptions = options;
+        cb(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        });
+      });
+
+      await testContext.localPayment.startPayment(testContext.options);
+
+      openOptions.onSuspend();
+
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.suspended"
+      );
+    });
+
+    it("emits a resumed event when the app returns", async () => {
+      let openOptions;
+
+      testContext.frameServiceInstance.open = jest.fn((options, cb) => {
+        openOptions = options;
+        cb(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        });
+      });
+
+      await testContext.localPayment.startPayment(testContext.options);
+
+      openOptions.onResume();
+
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.resumed"
+      );
+    });
+
+    it("emits a recovered event when the popup returns after a resume", async () => {
+      testContext.frameServiceInstance.open = jest.fn((options, cb) => {
+        options.onResume();
+        cb(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        });
+      });
+
+      await testContext.localPayment.startPayment(testContext.options);
+
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.recovered"
+      );
+    });
+
+    it("does not emit a recovered event when the popup completes without a resume", async () => {
+      await testContext.localPayment.startPayment(testContext.options);
+
+      expect(analytics.sendEvent).not.toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.recovered"
+      );
+    });
+
+    it("does not emit a recovered event when the popup is closed after a resume", async () => {
+      testContext.frameServiceInstance.open = jest.fn((options, cb) => {
+        options.onResume();
+        cb({ code: "FRAME_SERVICE_FRAME_CLOSED" });
+      });
+
+      await testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(() => {});
+
+      expect(analytics.sendEvent).not.toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.recovered"
+      );
+    });
+
     it.each([["onPaymentStart"], ["paymentType"], ["amount"], ["fallback"]])(
       "errors when no %s param is provided",
       (requiredParam) => {
@@ -1450,6 +1537,8 @@ describe("LocalPayment", () => {
             {
               width: 1282,
               height: 720,
+              onSuspend: expect.any(Function),
+              onResume: expect.any(Function),
             },
             expect.any(Function)
           );
@@ -1472,6 +1561,8 @@ describe("LocalPayment", () => {
             {
               width: 90,
               height: 50,
+              onSuspend: expect.any(Function),
+              onResume: expect.any(Function),
             },
             expect.any(Function)
           );

@@ -712,6 +712,58 @@ describe("Venmo", () => {
     });
   });
 
+  it("rejects with VENMO_ECD_DISABLED when collectCustomerBillingAddress is true and enrichedCustomerDataEnabled is false", async () => {
+    testContext.configuration.gatewayConfiguration.payWithVenmo.enrichedCustomerDataEnabled = false;
+
+    var venmo = new Venmo({
+      allowDesktop: true,
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
+      collectCustomerBillingAddress: true,
+    });
+
+    await expect(venmo._createPromise).rejects.toMatchObject({
+      code: venmoErrors.VENMO_ECD_DISABLED.code,
+      type: venmoErrors.VENMO_ECD_DISABLED.type,
+      message: venmoErrors.VENMO_ECD_DISABLED.message,
+    });
+  });
+
+  it("rejects with VENMO_ECD_DISABLED when collectCustomerShippingAddress is true and enrichedCustomerDataEnabled is false", async () => {
+    testContext.configuration.gatewayConfiguration.payWithVenmo.enrichedCustomerDataEnabled = false;
+
+    var venmo = new Venmo({
+      allowDesktop: true,
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
+      collectCustomerShippingAddress: true,
+    });
+
+    await expect(venmo._createPromise).rejects.toMatchObject({
+      code: venmoErrors.VENMO_ECD_DISABLED.code,
+      type: venmoErrors.VENMO_ECD_DISABLED.type,
+      message: venmoErrors.VENMO_ECD_DISABLED.message,
+    });
+  });
+
+  it("rejects with VENMO_ECD_DISABLED when both collect address flags are true and enrichedCustomerDataEnabled is false", async () => {
+    testContext.configuration.gatewayConfiguration.payWithVenmo.enrichedCustomerDataEnabled = false;
+
+    var venmo = new Venmo({
+      allowDesktop: true,
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
+      collectCustomerBillingAddress: true,
+      collectCustomerShippingAddress: true,
+    });
+
+    await expect(venmo._createPromise).rejects.toMatchObject({
+      code: venmoErrors.VENMO_ECD_DISABLED.code,
+      type: venmoErrors.VENMO_ECD_DISABLED.type,
+      message: venmoErrors.VENMO_ECD_DISABLED.message,
+    });
+  });
+
   it("sets up a payment context with amount and line item fields when passed", async () => {
     const expectedLineItems = [
       {

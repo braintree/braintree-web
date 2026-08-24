@@ -1,12 +1,15 @@
 {
   "name": "braintree-web",
-  "version": "3.144.0",
+  "version": "3.145.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/braintree/braintree-web"
+  },
+  "engines": {
+    "npm": ">11.7.0"
   },
   "scripts": {
     "clean:integration": "rm -rf test-results/ && rm -rf log*/ && rm -rf playwright-report/ && rm local.log",
@@ -42,7 +45,7 @@
     "typecheck": "scripts/generate-version-list && tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@braintree/asset-loader": "2.0.3",
+    "@braintree/asset-loader": "2.1.0",
     "@braintree/browser-detection": "2.1.0",
     "@braintree/event-emitter": "0.4.1",
     "@braintree/extended-promise": "1.0.0",
@@ -56,6 +59,7 @@
     "framebus": "6.1.0",
     "inject-stylesheet": "7.0.0",
     "promise-polyfill": "8.2.3",
+    "qrcode": "1.5.4",
     "restricted-input": "4.0.3"
   },
   "devDependencies": {

@@ -13,6 +13,7 @@ var convertMethodsToError = require("../lib/convert-methods-to-error");
 var wrapPromise = require("@braintree/wrap-promise");
 var BraintreeError = require("../lib/braintree-error");
 var inIframe = require("../lib/in-iframe");
+var documentVisibility = require("../lib/document-visibility");
 var ExtendedPromise = require("@braintree/extended-promise");
 var getVenmoUrl = require("./shared/get-venmo-url");
 var desktopWebLogin = require("./shared/web-login-backdrop");
@@ -127,6 +128,14 @@ function Venmo(options) {
     this._createPromise = this._createPromise.then(function (client) {
       var config = client.getConfiguration().gatewayConfiguration;
 
+      if (
+        (self._collectCustomerBillingAddress ||
+          self._collectCustomerShippingAddress) &&
+        !config.payWithVenmo.enrichedCustomerDataEnabled
+      ) {
+        return Promise.reject(new BraintreeError(errors.VENMO_ECD_DISABLED));
+      }
+
       return createVenmoDesktop({
         url:
           config.assetsUrl +
@@ -138,6 +147,8 @@ function Venmo(options) {
         profileId: self._profileId || config.payWithVenmo.merchantId,
         paymentMethodUsage: self._paymentMethodUsage,
         riskCorrelationId: self._riskCorrelationId,
+        collectCustomerBillingAddress: self._collectCustomerBillingAddress,
+        collectCustomerShippingAddress: self._collectCustomerShippingAddress,
         displayName: self._displayName,
         Promise: Promise,
         apiRequest: function (query, data) {
@@ -1588,7 +1599,7 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
     var delay =
       options.processResultsDelay || constants.DEFAULT_PROCESS_RESULTS_DELAY;
 
-    if (!window.document.hidden) {
+    if (!documentVisibility.isDocumentHidden()) {
       if (self._venmoWindow && !self._venmoWindow.closed) {
         self._venmoWindow.close();
       }
@@ -1612,7 +1623,7 @@ Venmo.prototype._tokenizeForMobileWithHashChangeListeners = function (options) {
     // Add a brief delay to ignore visibility change events that occur right before app switch
     setTimeout(function () {
       window.document.addEventListener(
-        documentVisibilityChangeEventName(),
+        documentVisibility.getVisibilityChangeEventName(),
         self._visibilityChangeListener
       );
     }, constants.DOCUMENT_VISIBILITY_CHANGE_EVENT_DELAY);
@@ -1759,7 +1770,7 @@ Venmo.prototype.teardown = function () {
 Venmo.prototype._removeVisibilityEventListener = function () {
   window.removeEventListener("hashchange", this._onHashChangeListener);
   window.document.removeEventListener(
-    documentVisibilityChangeEventName(),
+    documentVisibility.getVisibilityChangeEventName(),
     this._visibilityChangeListener
   );
 
@@ -1997,22 +2008,6 @@ function formatTokenizePayload(payload) {
   }
 
   return formattedPayload;
-}
-
-// From https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
-function documentVisibilityChangeEventName() {
-  var visibilityChange;
-
-  if (typeof window.document.hidden !== "undefined") {
-    // Opera 12.10 and Firefox 18 and later support
-    visibilityChange = "visibilitychange";
-  } else if (typeof window.document.msHidden !== "undefined") {
-    visibilityChange = "msvisibilitychange";
-  } else if (typeof window.document.webkitHidden !== "undefined") {
-    visibilityChange = "webkitvisibilitychange";
-  }
-
-  return visibilityChange;
 }
 
 function isIosWebviewInDeepLinkReturnUrlFlow() {

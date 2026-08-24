@@ -18,10 +18,17 @@ module.exports = function start() {
     targetFrames: [window.parent],
   });
   setup_iframe_base_1.default();
+  var sendEvent = function (eventName, metadata) {
+    bus.emit(events_1.VENMO_DESKTOP_ANALYTICS_EVENT, {
+      eventName: eventName,
+      metadata: metadata || {},
+    });
+  };
   var modal = modal_1.default.create({
     container: document.body,
-    onRequestNewQrCode: function () {
-      bus.emit(events_1.VENMO_DESKTOP_REQUEST_NEW_QR_CODE);
+    sendEvent: sendEvent,
+    onRequestNewQrCode: function (source) {
+      bus.emit(events_1.VENMO_DESKTOP_REQUEST_NEW_QR_CODE, { source: source });
     },
     onClose: function () {
       bus.emit(events_1.VENMO_DESKTOP_CUSTOMER_CANCELED);

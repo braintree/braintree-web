@@ -7,7 +7,6 @@ var cheerio = require("cheerio");
 
 // Common constants and configurations
 var CONDITIONAL_COMMENT_REGEX = /<!--\[if[^>]*\]>.*?<!\[endif\]-->/gs;
-var IE9_CONDITIONAL_REGEX = /<!--\[if IE 9\s*\]>(.*?)<!\[endif\]-->/gs;
 var CHEERIO_CONFIG = {
   xmlMode: false,
   decodeEntities: false,
@@ -64,82 +63,62 @@ function extractInlineScripts(htmlContent) {
 }
 
 /**
- * Process a script element and add it to conditional comments
- * @param {Object} element - Cheerio element
- * @param {Array} conditionalComments - Array to add processed script to
- */
-function processScriptElement(element, conditionalComments) {
-  var src = element.attribs.src;
-  var scriptTag;
-  var attributes;
-  var attr;
-  var normalizedContent;
-
-  if (src) {
-    // Get the original script tag HTML by reconstructing it
-    scriptTag = "<script";
-
-    attributes = element.attribs;
-
-    for (attr in attributes) {
-      if (Object.prototype.hasOwnProperty.call(attributes, attr)) {
-        scriptTag += " " + attr + '="' + attributes[attr] + '"';
-      }
-    }
-
-    scriptTag += "></script>";
-
-    normalizedContent = normalizeLineEndings(scriptTag);
-
-    conditionalComments.push({
-      type: "conditional_comment",
-      condition: "IE 9",
-      src: src,
-      content: normalizedContent,
-      hash: "sha256-" + calculateHash(normalizedContent),
-    });
-  }
-}
-
-/**
- * Extract conditional comments from HTML content
+ * Extract external scripts from HTML content and hash their file contents
  * @param {string} htmlContent - HTML content to parse
- * @returns {Array} Array of conditional comment objects
+ * @param {string} htmlDir - Directory of the HTML file (for resolving relative paths)
+ * @returns {Array} Array of external script objects
  */
-function extractConditionalComments(htmlContent) {
-  var conditionalComments = [];
-  var match;
-  var conditionalContent;
+function extractExternalScripts(htmlContent, htmlDir) {
+  // First, remove conditional comments to avoid matching IE9 polyfill scripts
+  var cleanedContent = htmlContent.replace(CONDITIONAL_COMMENT_REGEX, "");
+  var externalScripts = [];
   var $;
 
-  // Reset regex state to ensure consistent behavior on repeated calls
-  IE9_CONDITIONAL_REGEX.lastIndex = 0;
-  match = IE9_CONDITIONAL_REGEX.exec(htmlContent);
+  $ = cheerio.load(cleanedContent, CHEERIO_CONFIG);
 
-  while (match !== null) {
-    conditionalContent = match[1];
+  $("script[src]").each(function () {
+    var src = $(this).attr("src");
+    var resolvedPath = path.resolve(htmlDir, src);
+    var rawBuffer;
 
-    $ = cheerio.load(conditionalContent, CHEERIO_CONFIG);
+    if (!fs.existsSync(resolvedPath)) {
+      throw new Error(
+        "External script file not found: " +
+          resolvedPath +
+          " (referenced as " +
+          src +
+          ")"
+      );
+    }
 
-    $("script[src]").each(function () {
-      processScriptElement(this, conditionalComments);
+    // Read as raw buffer and hash the exact bytes. Unlike inline scripts,
+    // browsers hash external scripts using the bytes received over the network,
+    // without any line-ending normalization.
+    rawBuffer = fs.readFileSync(resolvedPath);
+
+    externalScripts.push({
+      type: "external",
+      src: src,
+      hash:
+        "sha256-" +
+        crypto.createHash("sha256").update(rawBuffer).digest("base64"),
+      size: rawBuffer.length,
     });
+  });
 
-    match = IE9_CONDITIONAL_REGEX.exec(htmlContent);
-  }
-
-  return conditionalComments;
+  return externalScripts;
 }
 
 /**
- * Extract all scripts from HTML content
+ * Extract all scripts from HTML content (inline and external)
  * @param {string} htmlContent - HTML content to parse
- * @returns {Array} Array of script objects with type, content, and hash
+ * @param {string} htmlDir - Directory of the HTML file (for resolving relative src paths)
+ * @returns {Array} Array of script objects (inline: type, hash, size; external: type, hash, size, src)
  */
-function extractScripts(htmlContent) {
-  return []
-    .concat(extractInlineScripts(htmlContent))
-    .concat(extractConditionalComments(htmlContent));
+function extractScripts(htmlContent, htmlDir) {
+  return extractInlineScripts(htmlContent).concat(
+    extractExternalScripts(htmlContent, htmlDir)
+  );
 }
 
 /**
@@ -152,22 +131,21 @@ function generateCSPHeader(scripts) {
     return "'" + script.hash + "'";
   });
 
-  // Add 'self' to allow external scripts from same origin
-  hashes.push("'self'");
-
-  return "script-src " + hashes.join(" ");
+  return (
+    "script-src " + hashes.join(" ") + "; style-src 'self' 'unsafe-inline'"
+  );
 }
 
 /**
  * Generate CSP metadata for an HTML file
  * @param {string} htmlFilePath - Path to HTML file
- * @param {string} version - Version string
  * @returns {Object} CSP metadata object
  */
 function generateCSPMetadata(htmlFilePath) {
   var htmlContent = fs.readFileSync(htmlFilePath, "utf8");
+  var htmlDir = path.dirname(htmlFilePath);
   var fileName = path.basename(htmlFilePath);
-  var scripts = extractScripts(htmlContent);
+  var scripts = extractScripts(htmlContent, htmlDir);
   var cspHeader = generateCSPHeader(scripts);
 
   return {

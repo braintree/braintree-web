@@ -1,5 +1,7 @@
 "use strict";
 
+var analytics = require("../lib/analytics");
+var assetLoadDetail = require("../lib/asset-load-detail");
 var FRAUDNET_FNCLS = require("../lib/constants").FRAUDNET_FNCLS;
 var FRAUDNET_SOURCE = require("../lib/constants").FRAUDNET_SOURCE;
 var FRAUDNET_URL = require("../lib/constants").FRAUDNET_URL;
@@ -70,10 +72,15 @@ Fraudnet.prototype.initialize = function (options) {
 
       return self;
     })
-    .catch(function () {
-      // if the fraudnet script fails to load
-      // we just resolve with nothing
-      // and data collector ignores it
+    .catch(function (err) {
+      if (options.client) {
+        analytics.sendEventPlus(
+          options.client,
+          "data-collector.fraudnet.load-failed",
+          assetLoadDetail(err)
+        );
+      }
+
       return null;
     });
 };

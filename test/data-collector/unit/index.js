@@ -97,6 +97,7 @@ describe("dataCollector", () => {
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             environment: "custom-environment-value",
             clientSessionId: "fakeSessionId",
           });
@@ -112,6 +113,7 @@ describe("dataCollector", () => {
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             sessionId: "custom-risk-correlation-id",
             environment: "sandbox",
             clientSessionId: "fakeSessionId",
@@ -128,6 +130,7 @@ describe("dataCollector", () => {
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             sessionId: "custom-correlation-id",
             environment: "sandbox",
             clientSessionId: "fakeSessionId",
@@ -144,6 +147,7 @@ describe("dataCollector", () => {
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             sessionId: "custom-correlation-id",
             environment: "sandbox",
             clientSessionId: "fakeSessionId",
@@ -161,6 +165,7 @@ describe("dataCollector", () => {
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             sessionId: "custom-risk-correlation-id",
             environment: "sandbox",
             clientSessionId: "fakeSessionId",
@@ -178,6 +183,7 @@ describe("dataCollector", () => {
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             sessionId: "custom-client-metadata-id",
             environment: "sandbox",
             clientSessionId: "fakeSessionId",

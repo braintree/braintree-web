@@ -37,6 +37,9 @@ var VenmoDesktop = /** @class */ (function () {
     this.paymentMethodUsage = options.paymentMethodUsage;
     this.riskCorrelationId = options.riskCorrelationId;
     this.shouldUseLegacyQRCodeMutation = !this.paymentMethodUsage;
+    this.collectCustomerBillingAddress = options.collectCustomerBillingAddress;
+    this.collectCustomerShippingAddress =
+      options.collectCustomerShippingAddress;
     var frameUrl = options.url + "#" + this.env + "_" + this.id;
     this.bus = new framebus_1.default({
       channel: this.id,
@@ -79,11 +82,25 @@ var VenmoDesktop = /** @class */ (function () {
       _this.bus.on(events_1.VENMO_DESKTOP_IFRAME_READY, function () {
         resolve(_this);
       });
-      _this.bus.on(events_1.VENMO_DESKTOP_REQUEST_NEW_QR_CODE, function () {
-        _this.sendEvent("venmo.tokenize.desktop.restarted-from-error-view", {
-          payment_method_usage: _this.paymentMethodUsage,
-        });
-        _this.startPolling();
+      _this.bus.on(
+        events_1.VENMO_DESKTOP_REQUEST_NEW_QR_CODE,
+        function (payload) {
+          var eventName =
+            payload && payload.source === "rescan"
+              ? "venmo.tokenize.desktop.restarted-from-rescan"
+              : "venmo.tokenize.desktop.restarted-from-error-view";
+          _this.sendEvent(eventName, {
+            payment_method_usage: _this.paymentMethodUsage,
+          });
+          _this.startPolling();
+        }
+      );
+      _this.bus.on(events_1.VENMO_DESKTOP_ANALYTICS_EVENT, function (payload) {
+        var metadata = __assign(
+          { payment_method_usage: _this.paymentMethodUsage },
+          payload.metadata || {}
+        );
+        _this.sendEvent(payload.eventName, metadata);
       });
       document.body.appendChild(_this.iframe);
       document.body.appendChild(_this.alertBox);
@@ -366,6 +383,24 @@ var VenmoDesktop = /** @class */ (function () {
       venmoRiskCorrelationId: this.riskCorrelationId,
       customerClient: "DESKTOP",
     };
+
+    if (
+      this.collectCustomerBillingAddress ||
+      this.collectCustomerShippingAddress
+    ) {
+      input.paysheetDetails = {};
+    }
+
+    if (this.collectCustomerBillingAddress) {
+      input.paysheetDetails.collectCustomerBillingAddress =
+        this.collectCustomerBillingAddress;
+    }
+
+    if (this.collectCustomerShippingAddress) {
+      input.paysheetDetails.collectCustomerShippingAddress =
+        this.collectCustomerShippingAddress;
+    }
+
     if (this.profileId) {
       input.merchantProfileId = this.profileId;
     }

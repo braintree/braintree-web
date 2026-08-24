@@ -1,3 +1,5 @@
+import { patchClientAssetsUrlForLocalDev } from "../../../utils/patch-assets-url";
+
 class BaseIntegration {
   private authorization;
   private braintreeClient;
@@ -23,6 +25,7 @@ class BaseIntegration {
     this.braintreeClient = await window.braintree.client.create({
       authorization: this.authorization,
     });
+    patchClientAssetsUrlForLocalDev(this.braintreeClient);
   }
 }
 

@@ -1,6 +1,6 @@
 "use strict";
 
-var BraintreeError = require("../lib/braintree-error");
+var convertToBraintreeError = require("../lib/convert-to-braintree-error");
 var errors = require("./errors");
 var loadFastlane = require("../lib/assets").loadFastlane;
 var wrapPromise = require("@braintree/wrap-promise");
@@ -55,11 +55,7 @@ function fastlane(options) {
     })
     .catch(function (err) {
       return Promise.reject(
-        new BraintreeError({
-          type: errors.FASTLANE_SDK_LOAD_ERROR.type,
-          code: errors.FASTLANE_SDK_LOAD_ERROR.code,
-          message: err.message,
-        })
+        convertToBraintreeError(err, errors.FASTLANE_SDK_LOAD_ERROR)
       );
     });
 }

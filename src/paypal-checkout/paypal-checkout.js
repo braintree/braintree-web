@@ -1092,8 +1092,31 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
           return frameCommunicationPromise;
         });
 
+      self._popupSawResume = false;
       self._frameService.open(
-        {},
+        {
+          onSuspend: function () {
+            analytics.sendEventPlus(
+              self._clientPromise,
+              "paypal-checkout.popup.suspended",
+              {
+                flow: self._flow,
+                context_id: self._contextId, // eslint-disable-line camelcase
+              }
+            );
+          },
+          onResume: function () {
+            self._popupSawResume = true;
+            analytics.sendEventPlus(
+              self._clientPromise,
+              "paypal-checkout.popup.resumed",
+              {
+                flow: self._flow,
+                context_id: self._contextId, // eslint-disable-line camelcase
+              }
+            );
+          },
+        },
         self._createFrameServiceCallback(frameCommunicationPromise)
       );
 
@@ -1265,6 +1288,18 @@ PayPalCheckout.prototype._createFrameServiceCallback = function (
   // with a webview using the web SDK, we will have to add popupbridge
   // support
   return function (err, payload) {
+    if (self._popupSawResume && !err && payload) {
+      analytics.sendEventPlus(
+        self._clientPromise,
+        "paypal-checkout.popup.recovered",
+        {
+          flow: self._flow,
+          context_id: self._contextId, // eslint-disable-line camelcase
+        }
+      );
+    }
+    self._popupSawResume = false;
+
     if (err) {
       frameCommunicationPromise.reject(err);
     } else if (payload) {

@@ -2330,7 +2330,10 @@ describe("PayPalCheckout", () => {
 
       expect(testContext.fakeFrameService.open).toBeCalledTimes(1);
       expect(testContext.fakeFrameService.open).toBeCalledWith(
-        {},
+        {
+          onSuspend: expect.any(Function),
+          onResume: expect.any(Function),
+        },
         expect.any(Function)
       );
       expect(testContext.fakeFrameService.redirect).toBeCalledTimes(2);
@@ -2339,6 +2342,88 @@ describe("PayPalCheckout", () => {
       );
       expect(testContext.fakeFrameService.redirect).toBeCalledWith(
         expect.stringContaining("/paypal-landing-frame.min.html")
+      );
+    });
+
+    it("emits a suspended event when the popup is backgrounded", async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      const openOptions = testContext.fakeFrameService.open.mock.calls[0][0];
+
+      openOptions.onSuspend();
+
+      expect(analytics.sendEventPlus).toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.suspended",
+        { flow: "checkout", context_id: "context-id" }
+      );
+    });
+
+    it("emits a resumed event when the app returns", async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      const openOptions = testContext.fakeFrameService.open.mock.calls[0][0];
+
+      openOptions.onResume();
+
+      expect(analytics.sendEventPlus).toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.resumed",
+        { flow: "checkout", context_id: "context-id" }
+      );
+    });
+
+    it("emits a recovered event when the flow completes after a resume", async () => {
+      testContext.fakeFrameService.open.mockImplementation((options, cb) => {
+        options.onResume();
+        cb(null, {
+          token: "token",
+          PayerID: "payer-id",
+          paymentId: "payment-id",
+        });
+      });
+
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEventPlus).toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.recovered",
+        { flow: "checkout", context_id: "context-id" }
+      );
+    });
+
+    it("does not emit a recovered event when the flow completes without a resume", async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEventPlus).not.toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.recovered",
+        expect.anything()
+      );
+    });
+
+    it("does not emit a recovered event when the popup is canceled after a resume", async () => {
+      testContext.fakeFrameService.open.mockImplementation((options, cb) => {
+        options.onResume();
+        cb({ code: "FRAME_SERVICE_FRAME_CLOSED" });
+      });
+
+      await testContext.paypalCheckout
+        .startVaultInitiatedCheckout(testContext.options)
+        .catch(() => {});
+
+      expect(analytics.sendEventPlus).not.toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.recovered",
+        expect.anything()
       );
     });
 

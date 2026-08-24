@@ -1,15 +1,19 @@
 "use strict";
 
 jest.mock("../../../src/lib/assets", () => ({
-  loadScript: () => Promise.resolve(),
+  loadScript: jest.fn().mockResolvedValue(),
 }));
+jest.mock("../../../src/lib/analytics");
 
+const assets = require("../../../src/lib/assets");
+const analytics = require("../../../src/lib/analytics");
 const fraudNet = require("../../../src/data-collector/fraudnet");
 
 describe("FraudNet", () => {
   afterEach(() => {
     fraudNet.clearSessionIdCache();
     document.body.innerHTML = "";
+    assets.loadScript.mockResolvedValue();
   });
 
   it('appends a script type of "application/json" to the document', async () => {
@@ -154,5 +158,41 @@ describe("FraudNet", () => {
     });
 
     expect(result.sessionId).toBe(characterToRepeat.repeat(truncatedLength));
+  });
+
+  it("resolves null and reports an analytics event when the script fails to load", async () => {
+    const client = { fake: "client" };
+    const err = new Error("https://c.paypal.com/da/r/fb.js failed to load.");
+
+    err.failureKind = "error";
+    err.src = "https://c.paypal.com/da/r/fb.js";
+    err.timing = 5;
+    err.onLine = true;
+
+    assets.loadScript.mockRejectedValueOnce(err);
+
+    const result = await fraudNet.setup({
+      sessionId: "custom-session",
+      client: client,
+    });
+
+    expect(result).toBeNull();
+    expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+      client,
+      "data-collector.fraudnet.load-failed",
+      expect.objectContaining({
+        failure_kind: "error",
+        src: "https://c.paypal.com/da/r/fb.js",
+      })
+    );
+  });
+
+  it("stays non-fatal and skips analytics on load failure when no client is present", async () => {
+    assets.loadScript.mockRejectedValueOnce(new Error("boom"));
+
+    const result = await fraudNet.setup({ sessionId: "custom-session" });
+
+    expect(result).toBeNull();
+    expect(analytics.sendEventPlus).not.toHaveBeenCalled();
   });
 });
